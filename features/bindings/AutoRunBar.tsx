@@ -1,11 +1,11 @@
 "use client";
 
 // Mandate-wide pause/resume is not implemented across execution callers.
-// Mapping completeness cannot establish that capability. Keep this control
-// unavailable until the runtime can enforce it for every invocation.
-
-import { FieldHelp } from "@/components/official/ConfigurationFields";
-import { ToggleLeft } from "lucide-react";
+// Mapping completeness cannot establish that capability, so there is NO
+// "Run instantly" control until the runtime can enforce it for every
+// invocation. Owner ruling (Arman, 2026-09-25): a control nobody can use is
+// absent — never a disabled-looking toggle that says "Unavailable". What
+// remains is the server's own sentences about the last write.
 
 import { ServerNotes } from "@/components/official/ServerNotes";
 import {
@@ -100,31 +100,11 @@ export interface AutoRunBarProps {
 
 export function AutoRunBar({ serverNotes = [] }: AutoRunBarProps) {
   return (
-    <div>
-      <div
-        className="flex items-center gap-2 text-sm"
-        data-testid="mandate-run-instantly"
-      >
-        <span className="font-semibold">Run instantly</span>
-        <FieldHelp
-          label="Run instantly"
-          triggerLabel="Run instantly — unavailable"
-          unavailable
-          triggerIcon={
-            <ToggleLeft className="h-6 w-6 opacity-50" aria-hidden />
-          }
-        >
-          Unavailable: this mandate cannot enforce a pause for user intervention
-          across all execution paths.
-        </FieldHelp>
-        <span>Unavailable</span>
-      </div>
-      <ServerNotes
-        heading="What the save did"
-        notes={serverNotes}
-        className="mt-1.5"
-        testId="binding-save-notes"
-      />
-    </div>
+    <ServerNotes
+      heading="What the save did"
+      notes={serverNotes}
+      className="mt-1.5"
+      testId="binding-save-notes"
+    />
   );
 }

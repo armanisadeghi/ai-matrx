@@ -9,17 +9,23 @@
  *   <!-- pagebreak -->   (canonical)   \pagebreak   \newpage
  *   <!-- newpage -->   <div style="page-break-after: always"></div>
  *
- * A directive can reach the AST in two shapes, and both are handled:
- *  - an `html` node — a comment or `<div>` on its own line, parsed as raw HTML;
- *  - a `paragraph` whose only content is the directive as TEXT — `\newpage`,
- *    or a `<div …>` that the chat's preprocessing escaped to entities.
+ * Screen and paper must agree line for line, so the rules mirror the printer:
+ *  - Only TOP-LEVEL lines are directives (the printer reads lines; a `> \newpage`
+ *    or `- \newpage` is a quote/list item there, so it is one here too).
+ *  - A directive is judged on its RAW source line (so an escaped `\\newpage`
+ *    stays text, as it does on paper), for both shapes it can take in the AST:
+ *    an `html` node (comment / `<div>` on its own line) or a `paragraph`
+ *    (`\newpage`, or a `<div …>` the chat preprocessing escaped to entities).
+ *  - `isolatePageBreakLines` runs on the SOURCE before parsing, so a directive
+ *    written directly under a line of text becomes its own block instead of
+ *    melting into that paragraph (the printer breaks there; so must we).
  *
  * Code spans and fences are never touched: they are `code` / `inlineCode`
- * nodes, not `html` or `paragraph`.
+ * nodes, and the isolation pass skips fenced regions.
  *
  * The divider carries the `matrx-page-break` class (the print package's class)
- * so a browser print of the page breaks there too — see the print rule in
- * `styles/globals.css`.
+ * so a browser print of the page breaks there too — see the print rule at the
+ * end of `app/globals.css`.
  */
 
 import {
@@ -33,7 +39,43 @@ interface MdastNode {
   value?: string;
   children?: MdastNode[];
   data?: Record<string, unknown>;
+  position?: { start: { offset?: number }; end: { offset?: number } };
   [key: string]: unknown;
+}
+
+interface SourceFile {
+  value?: unknown;
+}
+
+/**
+ * Give every directive line its own block: blank lines around it, outside
+ * fenced code. Pure and idempotent; returns the input untouched when there is
+ * no directive (the common case costs one scan).
+ */
+export function isolatePageBreakLines(source: string): string {
+  if (!source) return source;
+  const lines = source.split("\n");
+  let fence: string | null = null;
+  let changed = false;
+  const out: string[] = [];
+  for (const line of lines) {
+    const f = /^\s*(`{3,}|~{3,})/.exec(line);
+    if (f) {
+      const marker = f[1] as string;
+      if (fence === null) fence = marker;
+      else if (marker[0] === fence[0] && marker.length >= fence.length) fence = null;
+      out.push(line);
+      continue;
+    }
+    if (fence === null && isPageBreakLine(line)) {
+      if (out.length > 0 && (out[out.length - 1] ?? "").trim() !== "") out.push("");
+      out.push(line, "");
+      changed = true;
+      continue;
+    }
+    out.push(line);
+  }
+  return changed ? out.join("\n") : source;
 }
 
 const RULE_CLASS = [
@@ -93,28 +135,32 @@ function pageBreakNode(): MdastNode {
   };
 }
 
-function isDirectiveNode(node: MdastNode): boolean {
+/** The node's own source text, when the parser recorded where it came from. */
+function rawSource(node: MdastNode, file: SourceFile | undefined): string | null {
+  const source = typeof file?.value === "string" ? file.value : null;
+  const start = node.position?.start.offset;
+  const end = node.position?.end.offset;
+  if (source === null || start === undefined || end === undefined) return null;
+  return source.slice(start, end);
+}
+
+function isDirectiveNode(node: MdastNode, file: SourceFile | undefined): boolean {
+  if (node.type !== "html" && node.type !== "paragraph") return false;
+  const raw = rawSource(node, file);
+  if (raw !== null) return isPageBreakLine(raw);
+  // No positions (a caller built the tree by hand): judge the parsed text.
   if (node.type === "html") return isPageBreakLine(node.value ?? "");
-  if (node.type !== "paragraph" || !node.children?.length) return false;
-  if (!node.children.every((c) => c.type === "text")) return false;
+  if (!node.children?.length || !node.children.every((c) => c.type === "text")) return false;
   return isPageBreakLine(node.children.map((c) => c.value ?? "").join(""));
 }
 
-function transform(parent: MdastNode): void {
-  const children = parent.children;
-  if (!children) return;
-  for (let i = 0; i < children.length; i++) {
-    const child = children[i] as MdastNode;
-    if (isDirectiveNode(child)) {
-      children[i] = pageBreakNode();
-      continue;
-    }
-    if (child.type !== "code" && child.type !== "inlineCode") transform(child);
-  }
-}
-
 export default function remarkMatrxPageBreak() {
-  return (tree: MdastNode) => {
-    transform(tree);
+  return (tree: MdastNode, file?: SourceFile) => {
+    // Top level only — see the header.
+    const children = tree.children;
+    if (!children) return;
+    for (let i = 0; i < children.length; i++) {
+      if (isDirectiveNode(children[i] as MdastNode, file)) children[i] = pageBreakNode();
+    }
   };
 }

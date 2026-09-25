@@ -11,9 +11,12 @@
 // what a query needs into `p_facts` (./facts.ts), and each page's rows are
 // built from them.
 //
-// Two phases: code truth + coverage first; the impact grades (the slowest
-// read, which needs every holder agent id from the database) second, bumping
-// `version` so the shell re-asks and the Grade/Blocker cells fill in.
+// 🚨 THE LIST NEVER WAITS FOR A REPORT. The database page paints first; the
+// three reports load IN PARALLEL behind it, and each one that lands bumps
+// `version` so the shell re-asks and that report's cells fill in. Until a
+// report settles its cells say they are still being read (`settled[source]`
+// false) — never blank, never a guessed verdict. (Measured 2026-09-25: the old
+// order held the first row behind code truth + coverage.)
 //
 // A failed source is recorded in `failures` and its cells read as unknown —
 // never as "none".
@@ -28,11 +31,22 @@ import { fetchMandateCoverage } from "@/features/mandates/coverage";
 import type { MandateAdminReports } from "./facts";
 import { callMandateAdminList } from "./rpc";
 
+export type MandateAdminReportName = "codeTruth" | "coverage" | "impact";
+
+const NOTHING_SETTLED: Record<MandateAdminReportName, boolean> = {
+  codeTruth: false,
+  coverage: false,
+  impact: false,
+};
+
 export interface MandateAdminListState {
   status: "idle" | "loading" | "ready" | "failed";
   reports: MandateAdminReports;
-  /** True once the impact read answered or failed (the Grade cells stop saying "loading"). */
-  impactSettled: boolean;
+  /**
+   * Per report: true once it answered or failed. False = its cells still say
+   * "checking" (the Grade cells, Coverage, Health's code verdict).
+   */
+  settled: Record<MandateAdminReportName, boolean>;
   /** Provision key → offered value names, for the Inputs cell (filled per page). */
   offersByProvision: Map<string, string[]>;
   /** Source name → its own error sentence. */
@@ -51,13 +65,12 @@ const EMPTY_REPORTS: MandateAdminReports = {
 let state: MandateAdminListState = {
   status: "idle",
   reports: EMPTY_REPORTS,
-  impactSettled: false,
+  settled: NOTHING_SETTLED,
   offersByProvision: new Map(),
   failures: {},
   error: null,
   version: 0,
 };
-let inflight: Promise<MandateAdminReports> | null = null;
 let generation = 0;
 const listeners = new Set<() => void>();
 
@@ -94,86 +107,79 @@ export function recordMandateAdminFailure(source: string, message: string): void
   publish({ failures: { ...state.failures, [source]: message } }, false);
 }
 
-async function loadReports(
-  dispatch: AppDispatch,
+/** One report landed (or failed): publish it alone, so its cells fill now. */
+function settle(
   myGeneration: number,
-): Promise<MandateAdminReports> {
-  const failures: Record<string, string> = {};
-  const [truth, coverage] = await Promise.allSettled([
-    fetchMandateCodeTruthReport(dispatch),
-    fetchMandateCoverage(dispatch),
-  ]);
-  if (truth.status === "rejected") failures.codeTruth = describe(truth.reason);
-  if (coverage.status === "rejected") failures.coverage = describe(coverage.reason);
-  const reports: MandateAdminReports = {
-    codeTruth:
-      truth.status === "fulfilled"
-        ? Object.fromEntries(
-            truth.value.mandates.map((s): [string, MandateCodeTruth] => [s.mandate_key, s]),
-          )
-        : null,
-    coverage: coverage.status === "fulfilled" ? coverage.value : null,
-    impact: null,
-  };
-  if (myGeneration !== generation) return reports;
-  publish({ status: "ready", reports, failures, error: null, impactSettled: false });
-
-  // ── Phase two: impact grades, over every holder agent in the corpus. ─────
-  try {
-    const agentIds = await callMandateAdminList<string[]>({ p_mode: "agents" });
-    const impact =
-      agentIds.length > 0
-        ? await fetchStandingImpact(dispatch, [...agentIds].sort())
-        : null;
-    if (myGeneration !== generation) return reports;
-    const graded = { ...reports, impact };
-    publish({ reports: graded, impactSettled: true });
-    return graded;
-  } catch (error) {
-    if (myGeneration !== generation) return reports;
+  source: MandateAdminReportName,
+  outcome: { value: unknown } | { error: unknown },
+): void {
+  if (myGeneration !== generation) return;
+  const settled = { ...state.settled, [source]: true };
+  const allIn = settled.codeTruth && settled.coverage && settled.impact;
+  if ("error" in outcome) {
     publish({
-      impactSettled: true,
-      failures: { ...state.failures, impact: describe(error) },
+      settled,
+      status: allIn ? "ready" : state.status,
+      failures: { ...state.failures, [source]: describe(outcome.error) },
     });
-    return reports;
+    return;
   }
+  publish({
+    settled,
+    status: allIn ? "ready" : state.status,
+    reports: { ...state.reports, [source]: outcome.value },
+  });
+}
+
+function track<T>(
+  myGeneration: number,
+  source: MandateAdminReportName,
+  read: Promise<T>,
+  shape: (value: T) => unknown,
+): void {
+  read.then(
+    (value) => settle(myGeneration, source, { value: shape(value) }),
+    (error: unknown) => settle(myGeneration, source, { error }),
+  );
+}
+
+/** Start all three reports at once. Nothing awaits them. */
+function startReports(dispatch: AppDispatch, myGeneration: number): void {
+  track(myGeneration, "codeTruth", fetchMandateCodeTruthReport(dispatch), (report) =>
+    Object.fromEntries(
+      report.mandates.map((s): [string, MandateCodeTruth] => [s.mandate_key, s]),
+    ),
+  );
+  track(myGeneration, "coverage", fetchMandateCoverage(dispatch), (report) => report);
+  // The grades need every holder agent id from the database first — one
+  // indexed read — then grade in bounded pages (features/mandates/admin/impact.ts).
+  track(
+    myGeneration,
+    "impact",
+    callMandateAdminList<string[]>({ p_mode: "agents" }).then((agentIds) =>
+      agentIds.length > 0 ? fetchStandingImpact(dispatch, [...agentIds].sort()) : null,
+    ),
+    (impact) => impact,
+  );
 }
 
 /**
- * The reports, loading them if nobody has yet. Resolves after PHASE ONE — the
- * list renders then; the grades land through `version`.
+ * The reports AS THEY STAND — starting the reads if nobody has yet. Never
+ * waits: a page asked before a report lands is built without it and says so
+ * per cell; the report's arrival bumps `version` and the page is asked again.
  */
 export function ensureMandateAdminReports(
   dispatch: AppDispatch,
 ): Promise<MandateAdminReports> {
-  if (state.status === "ready") return Promise.resolve(state.reports);
-  if (inflight) return inflight;
-  const myGeneration = ++generation;
-  publish({ status: "loading", error: null });
-  inflight = new Promise<MandateAdminReports>((resolve, reject) => {
-    let settled = false;
-    const unsubscribe = subscribeMandateAdminList(() => {
-      if (settled || myGeneration !== generation) return;
-      if (state.status === "ready") {
-        settled = true;
-        unsubscribe();
-        resolve(state.reports);
-      }
-    });
-    loadReports(dispatch, myGeneration).catch((error: unknown) => {
-      unsubscribe();
-      if (myGeneration !== generation) return;
-      const failure = error instanceof Error ? error : new Error(describe(error));
-      publish({ status: "failed", error: failure });
-      if (!settled) {
-        settled = true;
-        reject(failure);
-      }
-    });
-  }).finally(() => {
-    inflight = null;
-  });
-  return inflight;
+  if (state.status === "idle") {
+    const myGeneration = ++generation;
+    publish(
+      { status: "loading", error: null, failures: {}, reports: EMPTY_REPORTS, settled: NOTHING_SETTLED },
+      false,
+    );
+    startReports(dispatch, myGeneration);
+  }
+  return Promise.resolve(state.reports);
 }
 
 /**
@@ -184,8 +190,10 @@ export function ensureMandateAdminReports(
 export function invalidateMandateAdminList(reloadReports = false): void {
   if (reloadReports) {
     generation += 1;
-    inflight = null;
-    publish({ status: "idle", impactSettled: false });
+    // A write that changes what the reports classify makes the old ones wrong,
+    // so their cells go back to "checking" rather than keep showing a verdict
+    // the write just invalidated.
+    publish({ status: "idle", settled: NOTHING_SETTLED, reports: EMPTY_REPORTS });
     return;
   }
   publish({});

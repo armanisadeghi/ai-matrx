@@ -204,8 +204,8 @@ export const BLOCKER_META: Record<ImpactBlocker | "none", BlockerMeta> = {
   unsupported_holder: {
     label: "Not an agent",
     meaning:
-      "The holder is not an agent (for example a workflow), so the agent classifier does not judge it.",
-    remedy: "Open the mandate to review its holder by hand.",
+      "The Mandate Holder is not an agent (for example a workflow), so the agent classifier does not judge it.",
+    remedy: "Open the mandate to review its Mandate Holder by hand.",
     toneClassName: "border-border text-muted-foreground",
   },
 };

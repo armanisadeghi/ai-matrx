@@ -55,7 +55,7 @@ agent may not extend Arman's decision to cover them.
 
 | File | Lines | What it is |
 |---|---|---|
-| `features/agent-context/components/ScopePicker.tsx` | 195 | **A duplicate.** Tags an entity with scopes via an older `agent-context/redux/scope/*` slice family, while the canonical primitive is `features/scopes/components/entity-context/EntityScopeTagger.tsx` and the live task surface already assigns scopes through `TaskContextSection` → `ContextAssignmentField`. |
+| ~~`features/agent-context/components/ScopePicker.tsx`~~ | 195 | **RETIRED 2026-09-25** (lane SCOPE-PICKER-RETIRE, on Arman's 2026-09-25 ruling that the canonical scope pickers replace every bespoke one). Deleted with its only companion, `features/agent-context/hooks/useScopeAssignment.ts` (also consumerless). Its last call site (`TaskDetailPage`) was already on `TaskContextSection` → `ContextAssignmentField`. The `agent-context/redux/scope/*` slices stay: still imported elsewhere (see `common-docs/projects/data-doctrine-adoption/v5/PROGRESS-SCOPE-PICKER-RETIRE.md`). |
 | `features/tasks/components/TaskList.tsx` | 41 | Fragment of the retired task screen. |
 | `features/tasks/components/TaskHeader.tsx` | 16 | Fragment of the retired task screen. |
 

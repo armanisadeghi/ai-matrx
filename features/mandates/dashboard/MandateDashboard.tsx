@@ -241,7 +241,7 @@ export function MandateDashboard() {
             href={mandateListHref({ [COL.holder]: "Workflow" })}
           />
           <KpiTile
-            label="No default holder"
+            label="No default Mandate Holder"
             value={n(defs?.defaultsNone)}
             tone={defs && defs.defaultsNone > 0 ? "warn" : "neutral"}
             loading={consoleSlot.loading}

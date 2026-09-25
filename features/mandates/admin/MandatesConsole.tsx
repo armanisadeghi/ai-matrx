@@ -842,7 +842,7 @@ export function MandatesConsole() {
       title: `Remove "${row.mandateKey}"?`,
       description:
         `Everywhere that runs this job stops finding it: the console, the pickers, and any call that names the key "${row.mandateKey}" will report it missing. ` +
-        `Anything bound to it — every rung's holder and mapping — stops applying with it. ` +
+        `Anything bound to it — every rung's Mandate Holder and mapping — stops applying with it. ` +
         `This is a soft removal: the record and its history are kept, so an admin can restore it if this was a mistake.`,
       confirmLabel: "Remove it",
       cancelLabel: "Keep it",
@@ -953,7 +953,7 @@ export function MandatesConsole() {
     for (const r of displayedRows) {
       if (r.behindLatest) health.behind_latest += 1;
       if (r.health === "ok") health.ok += 1;
-      else if (r.health === "no holder yet") health.no_holder_yet += 1;
+      else if (r.health === "no Mandate Holder yet") health.no_holder_yet += 1;
       else if (r.health === "code ↔ agent drift") health.code_agent_drift += 1;
       else if (r.health === "code ↔ contract drift")
         health.code_contract_drift += 1;

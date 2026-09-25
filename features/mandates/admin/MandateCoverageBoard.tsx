@@ -123,7 +123,7 @@ export function MandateCoverageBoard({
       {view && view.orange.length > 0 ? (
         <NamedRows
           tone="orange"
-          heading={`${view.orange.length} running on a fallback Holder`}
+          heading={`${view.orange.length} running on a fallback Mandate Holder`}
           rows={view.orange.map((row) => ({
             key: row.mandateKey,
             detail: row.detail,

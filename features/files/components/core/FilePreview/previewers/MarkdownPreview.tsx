@@ -26,7 +26,9 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import rehypePrism from "rehype-prism-plus";
 // Page breaks preview here exactly as in every MarkdownCore preset.
-import remarkMatrxPageBreak from "@/components/mardown-display/chat-markdown/page-break/remarkMatrxPageBreak";
+import remarkMatrxPageBreak, {
+  isolatePageBreakLines,
+} from "@/components/mardown-display/chat-markdown/page-break/remarkMatrxPageBreak";
 import "katex/dist/katex.min.css";
 // Math rules are the core's, never local: same normalizer, same options.
 import {
@@ -166,7 +168,9 @@ export function MarkdownPreview({
           >
             {/* Guard a stray `$$` / unclosed `[` from swallowing a section
                 (lib/markdown/delimiter-guard.ts). */}
-            {normalizeMathDelimiters(guardMarkdownDelimiters(content).text)}
+            {normalizeMathDelimiters(
+              isolatePageBreakLines(guardMarkdownDelimiters(content).text),
+            )}
           </ReactMarkdown>
         </article>
       </div>

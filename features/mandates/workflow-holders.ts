@@ -76,7 +76,7 @@ export async function fetchWorkflowHolderCandidates(
         .eq("is_archived", false)
         .order("id", { ascending: true })
         .range(from, to),
-    { label: "workflow.definition (Holder candidates)" },
+    { label: "workflow.definition (Mandate Holder candidates)" },
   );
 
   const matching: WorkflowHolderCandidate[] = [];

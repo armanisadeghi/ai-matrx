@@ -6,9 +6,12 @@
  * Context Item → value … the more selective I get, the more you change the
  * data").
  *
- * One row of four pickers. Each loads its options from the previous choice
- * only; choosing one clears the ones after it; the value of the chosen context
- * item sits read-only at the end of the row. Below, the old-vs-new compare
+ * The four steps are the platform's Miller Columns (lane CONTEXT-INSPECTOR-3,
+ * Arman 2026-09-25: "we have a large series of scope selection components …
+ * use one here") — Organizations → Scope types → Scopes → Context items, one
+ * pick per column (`useDrillPathEngine`: a pick clears the columns after it),
+ * each long column searchable. The value of the chosen context item sits
+ * read-only under the columns. Below, the old-vs-new compare
  * re-resolves on every choice with the SAME selection on both sides
  * (`selection.ts#previewRequest` — the server's own `ContextSelection`; a
  * scope type reaches both sides as every one of its scopes, no cap). No Run
@@ -18,41 +21,39 @@
  * Controlled: the page owns the selection (the address), this renders it. The
  * one reverse flow is the deep link — `?scope=<id>` alone — where the scope
  * names its own organization and type (read from the scope, never from the
- * active organization) and the earlier steps are filled in.
+ * active organization) and the earlier steps are filled in: from the scope
+ * tree when the scope is in it (`drillPathForScope`), otherwise from the scope
+ * row itself.
  */
 
-import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { MillerColumnsCore } from "@/features/scopes/components/active-context/miller-columns/MillerColumns";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger, Skeleton } from "@ai-matrx/design-system";
-import { cn } from "@/lib/utils";
-import { useUserOrganizations } from "@/features/organizations/hooks";
+  drillPathForScope,
+  useDrillPathEngine,
+  useUniverse,
+  type DrillPath,
+} from "@/features/scopes/components/active-context/quick-pick/engine";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { ContextItemRow, ContextItemValue, ScopesRpcResult } from "@/features/scopes/types";
 import { ContextCompareView } from "../ContextCompareView";
-import {
-  chooseStep,
-  previewRequest,
-  type InspectorSelection,
-  type InspectorStep,
-} from "./selection";
+import { previewRequest, type InspectorSelection } from "./selection";
 
-interface Option {
-  id: string;
-  label: string;
-  hint?: string;
-}
+const toPath = (s: InspectorSelection): DrillPath => ({
+  orgId: s.org,
+  typeId: s.scopeType,
+  scopeId: s.scope,
+  itemId: s.item,
+});
+const fromPath = (p: DrillPath): InspectorSelection => ({
+  org: p.orgId,
+  scopeType: p.typeId,
+  scope: p.scopeId,
+  item: p.itemId,
+});
 
 type Load<T> =
   | { state: "idle" }
@@ -92,17 +93,6 @@ function unwrap<T>(result: ScopesRpcResult<T>): T {
   return (result as { ok: true; data: T }).data;
 }
 
-async function loadScopeTypes(organizationId: string): Promise<Option[]> {
-  const { types } = unwrap(await scopesService.listScopeTypesForOrganization(organizationId));
-  return types.map((t) => ({ id: t.id, label: t.label_plural || t.label_singular }));
-}
-
-async function loadScopes(key: string): Promise<Option[]> {
-  const [organizationId, scopeTypeId] = key.split(":");
-  const { scopes } = unwrap(await scopesService.listScopesOfType(organizationId, scopeTypeId));
-  return scopes.map((s) => ({ id: s.id, label: s.name }));
-}
-
 interface ItemWithValue {
   item: Pick<ContextItemRow, "id" | "key" | "display_name" | "sort_order">;
   value: ContextItemValue | null;
@@ -139,114 +129,6 @@ export function displayValue(value: ContextItemValue | null): string | null {
   return null;
 }
 
-function Picker({
-  step,
-  label,
-  load,
-  options,
-  selectedId,
-  selectedFallback,
-  disabledSentence,
-  emptySentence,
-  searchPlaceholder,
-  onChoose,
-}: {
-  step: InspectorStep;
-  label: string;
-  load: Load<unknown>;
-  options: Option[];
-  selectedId: string | null;
-  /** Shown when the selected id is not (yet) among the options. */
-  selectedFallback?: string;
-  /** Why this step cannot be chosen yet — the previous step is empty. */
-  disabledSentence: string;
-  emptySentence: string;
-  searchPlaceholder: string;
-  onChoose: (id: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  if (load.state === "loading") {
-    return (
-      <div className="min-w-0 flex-1 basis-40" data-inspector-step={step} data-state="loading">
-        <Skeleton className="h-9 w-full" />
-      </div>
-    );
-  }
-  const selected = options.find((o) => o.id === selectedId);
-  const ready = load.state === "ready";
-  const empty = ready && options.length === 0;
-  const text =
-    load.state === "idle"
-      ? disabledSentence
-      : load.state === "error"
-        ? `${label} could not load`
-        : empty
-          ? emptySentence
-          : selected
-            ? selected.label
-            : selectedId && selectedFallback
-              ? selectedFallback
-              : `Choose ${label.toLowerCase()}`;
-  return (
-    <div className="min-w-0 flex-1 basis-40" data-inspector-step={step} data-state={load.state}>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            role="combobox"
-            aria-label={label}
-            aria-expanded={open}
-            disabled={!ready || empty}
-            className="h-9 w-full justify-between gap-1 px-2.5 font-normal"
-          >
-            <span className="flex min-w-0 items-baseline gap-1.5">
-              <span className="shrink-0 text-[11px] text-muted-foreground">{label}</span>
-              <span
-                className={cn("truncate text-sm", !selected && "text-muted-foreground")}
-                title={text}
-              >
-                {text}
-              </span>
-            </span>
-            <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent sizing="content" className="p-0" align="start">
-          <Command>
-            <CommandInput placeholder={searchPlaceholder} />
-            <CommandList className="max-h-72">
-              <CommandEmpty>Nothing matches.</CommandEmpty>
-              <CommandGroup>
-                {options.map((option) => (
-                  <CommandItem
-                    key={option.id}
-                    value={`${option.label} ${option.hint ?? ""} ${option.id}`}
-                    onSelect={() => {
-                      onChoose(option.id);
-                      setOpen(false);
-                    }}
-                  >
-                    <Check
-                      className={cn("h-4 w-4", option.id === selectedId ? "opacity-100" : "opacity-0")}
-                    />
-                    <span className="min-w-0 truncate">{option.label}</span>
-                    {option.hint && (
-                      <span className="ml-auto shrink-0 pl-3 text-xs text-muted-foreground">
-                        {option.hint}
-                      </span>
-                    )}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
-}
-
 export function ContextInspector({
   selection,
   onChange,
@@ -261,69 +143,60 @@ export function ContextInspector({
   /** The page writes the chosen agent to the address. */
   onAgentChange?: (agentId: string | null) => void;
 }) {
-  // ── Step 1: the person's own organizations (access is personal). ──
-  const orgs = useUserOrganizations();
+  // ── The columns: the person's own scope tree (access is personal). ──
+  const universe = useUniverse();
+  const treeReady = universe.treeStatus === "ready" || universe.treeStatus === "empty";
 
-  // ── The deep link: a scope with no organization or type names its own. ──
+  // ── The deep link: a scope with no organization or type names its own —
+  //    from the tree when it is in it, otherwise from the scope row. ──
   const needsHome = Boolean(selection.scope && (!selection.org || !selection.scopeType));
-  const home = useStepLoad(needsHome ? selection.scope : null, async (scopeId) =>
-    unwrap(await scopesService.getScopeHome(scopeId)).scope,
+  const fromTree =
+    needsHome && selection.scope ? drillPathForScope(universe.orgs, selection.scope) : null;
+  const home = useStepLoad(
+    needsHome && treeReady && !fromTree ? selection.scope : null,
+    async (scopeId) => unwrap(await scopesService.getScopeHome(scopeId)).scope,
   );
+  const treeOrg = fromTree?.orgId ?? null;
+  const treeType = fromTree?.typeId ?? null;
   useEffect(() => {
-    if (!needsHome || home.state !== "ready" || !home.data) return;
-    onChange(
-      {
-        ...selection,
-        org: home.data.organization_id,
-        scopeType: home.data.scope_type_id,
-      },
-      { replace: true },
-    );
-  }, [needsHome, home, selection, onChange]);
+    if (!needsHome) return;
+    if (treeOrg && treeType) {
+      onChange({ ...selection, org: treeOrg, scopeType: treeType }, { replace: true });
+    } else if (home.state === "ready" && home.data) {
+      onChange(
+        { ...selection, org: home.data.organization_id, scopeType: home.data.scope_type_id },
+        { replace: true },
+      );
+    }
+  }, [needsHome, treeOrg, treeType, home, selection, onChange]);
 
-  // ── Steps 2–4, each from the previous choice only. ──
-  const typesLoad = useStepLoad(selection.org, loadScopeTypes);
-  const scopesLoad = useStepLoad(
-    selection.org && selection.scopeType ? `${selection.org}:${selection.scopeType}` : null,
-    loadScopes,
-  );
+  // ── The chosen scope's items and their stored values (the value step). ──
   const itemsLoad = useStepLoad(
     selection.scopeType && selection.scope ? `${selection.scopeType}:${selection.scope}` : null,
     loadItems,
   );
-
-  const orgOptions = useMemo<Option[]>(() => {
-    const list = orgs.organizations.map((o) => ({ id: o.id, label: o.name }));
-    // A shared link to a scope in an organization the person reaches only
-    // through that scope: the scope's organization still stands (it is read
-    // from the scope), labelled as such.
-    if (selection.org && !orgs.loading && !list.some((o) => o.id === selection.org)) {
-      list.push({ id: selection.org, label: "This scope's organization" });
-    }
-    return list;
-  }, [orgs.organizations, orgs.loading, selection.org]);
-  const typeOptions = typesLoad.state === "ready" ? typesLoad.data : [];
-  const scopeOptions = scopesLoad.state === "ready" ? scopesLoad.data : [];
   const itemRows = itemsLoad.state === "ready" ? itemsLoad.data : [];
-  const itemOptions = itemRows.map(({ item, value }) => ({
-    id: item.id,
-    label: item.display_name,
-    hint: value ? undefined : "no value",
-  }));
-
-  const orgLoad: Load<unknown> = orgs.loading
-    ? { state: "loading" }
-    : orgs.error
-      ? { state: "error", message: orgs.error }
-      : { state: "ready", data: null };
-
-  const choose = (step: InspectorStep) => (id: string) => onChange(chooseStep(selection, step, id));
-
-  const orgName = orgOptions.find((o) => o.id === selection.org)?.label ?? null;
-  const typeName = typeOptions.find((o) => o.id === selection.scopeType)?.label ?? null;
-  const scopeName = scopeOptions.find((o) => o.id === selection.scope)?.label ?? null;
   const chosenItem = itemRows.find((r) => r.item.id === selection.item) ?? null;
   const chosenValue = chosenItem ? displayValue(chosenItem.value) : null;
+
+  const onPath = useCallback((next: DrillPath) => onChange(fromPath(next)), [onChange]);
+  const engine = useDrillPathEngine({
+    orgs: universe.orgs,
+    path: toPath(selection),
+    onChange: onPath,
+    itemLabel: chosenItem?.item.display_name ?? null,
+  });
+
+  const org = universe.orgs.find((o) => o.id === selection.org) ?? null;
+  const type = org?.scope_types.find((t) => t.id === selection.scopeType) ?? null;
+  const scope = type?.scopes.find((sc) => sc.id === selection.scope) ?? null;
+  const orgName = org?.name ?? null;
+  const typeName = type?.label_plural ?? null;
+  const scopeName = scope?.name ?? null;
+  // A shared scope in an organization the person reaches only through that scope: the
+  // compare still reads it (the organization is read from the scope); the columns cannot
+  // show a tree the person does not have, and say so.
+  const outsideTree = Boolean(treeReady && selection.org && !org && !needsHome);
 
   const request = previewRequest(selection);
   // The item step narrows the SHOWN compare to one item; it waits for the item's key.
@@ -336,16 +209,16 @@ export function ContextInspector({
   const previewReady =
     request &&
     (request.depth !== "item" || focus) &&
-    (request.depth !== "scopeType" || scopesLoad.state === "ready");
+    (request.depth !== "scopeType" || type || outsideTree);
 
   const errors = [
-    orgs.error ? `Your organizations could not load: ${orgs.error}` : null,
+    universe.treeStatus === "error"
+      ? `Your organizations could not load: ${universe.treeError ?? "unknown error"}`
+      : null,
     home.state === "error" ? `This scope's organization could not be read: ${home.message}` : null,
     home.state === "ready" && !home.data
       ? "This scope was not found, or it has not been shared with you. Check the id in the address."
       : null,
-    typesLoad.state === "error" ? `The scope types could not load: ${typesLoad.message}` : null,
-    scopesLoad.state === "error" ? `The scopes could not load: ${scopesLoad.message}` : null,
     itemsLoad.state === "error" ? `The context items could not load: ${itemsLoad.message}` : null,
   ].filter((e): e is string => Boolean(e));
 
@@ -355,7 +228,7 @@ export function ContextInspector({
   } else if (request?.depth === "scopeType") {
     // The count is the scope step's own list — the same scopes, read the same way (the
     // person's own access), that the server hands both sides.
-    const n = scopesLoad.state === "ready" ? scopesLoad.data.length : null;
+    const n = type ? type.scopes.length : null;
     caption =
       n === 0
         ? null
@@ -367,77 +240,44 @@ export function ContextInspector({
   } else if (request?.depth === "item" && focus) {
     caption = `${focus.label} on ${scopeName ?? "this scope"}, as the agent sees it.`;
   }
-  const typeIsEmpty =
-    request?.depth === "scopeType" && scopesLoad.state === "ready" && scopesLoad.data.length === 0;
+  const typeIsEmpty = request?.depth === "scopeType" && type !== null && type.scopes.length === 0;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2" data-context-inspector>
-      <div className="flex flex-wrap items-center gap-2" data-inspector-row>
-        <Picker
-          step="org"
-          label="Organization"
-          load={orgLoad}
-          options={orgOptions}
-          selectedId={selection.org}
-          disabledSentence=""
-          emptySentence="You belong to no organizations"
-          searchPlaceholder="Search organizations…"
-          onChoose={choose("org")}
-        />
-        <Picker
-          step="scopeType"
-          label="Scope type"
-          load={needsHome && !selection.org ? { state: "loading" } : typesLoad}
-          options={typeOptions}
-          selectedId={selection.scopeType}
-          disabledSentence="Choose an organization first"
-          emptySentence="No scope types yet"
-          searchPlaceholder="Search scope types…"
-          onChoose={choose("scopeType")}
-        />
-        <Picker
-          step="scope"
-          label="Scope"
-          load={needsHome && !selection.scopeType ? { state: "loading" } : scopesLoad}
-          options={scopeOptions}
-          selectedId={selection.scope}
-          disabledSentence="Choose a scope type first"
-          emptySentence="This scope type has no scopes yet"
-          searchPlaceholder={`Search ${typeName?.toLowerCase() ?? "scopes"}…`}
-          onChoose={choose("scope")}
-        />
-        <Picker
-          step="item"
-          label="Context item"
-          load={itemsLoad}
-          options={itemOptions}
-          selectedId={selection.item}
-          disabledSentence="Choose a scope first"
-          emptySentence="This scope type has no context items yet"
-          searchPlaceholder="Search context items…"
-          onChoose={choose("item")}
-        />
-        <div
-          className="flex h-9 min-w-0 flex-1 basis-40 items-center rounded-md border border-dashed border-border bg-muted/30 px-2.5"
-          data-inspector-value={chosenItem ? (chosenValue ?? "") : undefined}
-          aria-label="Context item value"
-        >
-          <span className="shrink-0 pr-1.5 text-[11px] text-muted-foreground">Value</span>
-          {chosenItem ? (
-            chosenValue !== null ? (
-              <span className="truncate font-mono text-sm text-foreground" title={chosenValue}>
-                {chosenValue}
-              </span>
-            ) : (
-              <span className="truncate text-sm italic text-muted-foreground">
-                No value on this scope
-              </span>
-            )
+      <MillerColumnsCore
+        universe={universe}
+        engine={engine}
+        mode="filter"
+        variant="full"
+        includeEngagements={false}
+        className="h-[300px] shrink-0"
+      />
+      <div
+        className="flex h-9 min-w-0 items-center rounded-md border border-dashed border-border bg-muted/30 px-2.5"
+        data-inspector-value={chosenItem ? (chosenValue ?? "") : undefined}
+        aria-label="Context item value"
+      >
+        <span className="shrink-0 pr-1.5 text-[11px] text-muted-foreground">Value</span>
+        {chosenItem ? (
+          chosenValue !== null ? (
+            <span className="truncate font-mono text-sm text-foreground" title={chosenValue}>
+              {chosenItem.item.display_name}: {chosenValue}
+            </span>
           ) : (
-            <span className="truncate text-sm text-muted-foreground">Choose a context item</span>
-          )}
-        </div>
+            <span className="truncate text-sm italic text-muted-foreground">
+              {chosenItem.item.display_name} has no value on this scope
+            </span>
+          )
+        ) : (
+          <span className="truncate text-sm text-muted-foreground">Choose a context item</span>
+        )}
       </div>
+      {outsideTree && (
+        <p className="text-xs text-muted-foreground" data-inspector-outside-tree>
+          This scope belongs to an organization you are not a member of, so the columns cannot
+          show it; the preview below still reads it from the scope.
+        </p>
+      )}
 
       {errors.map((e) => (
         <Alert key={e} variant="destructive">

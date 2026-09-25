@@ -246,6 +246,88 @@ describe("no agent door speaks the mandate system's noun", () => {
   });
 });
 
+/**
+ * ── "HOLDER" ALONE IS NOT THE WORD (Arman, 2026-09-25) ───────────────────────
+ *
+ * The owner's term is "Mandate Holder". A bare "holder" in a sentence a person
+ * reads — "Saved — this holder fulfils the job for you now.", "Holder Type",
+ * "Configured holders" — is banned on every mandate screen. Code identifiers
+ * (`holder_type`, `data-testid="holder-…"`, the `"holder"` tab id) are not copy
+ * and are not swept.
+ */
+const BARE_HOLDER = /(?<!\bmandate )\bholders?\b(?!-)/i;
+
+/** The mandate route trees outside `features/` whose metadata a person reads. */
+const MANDATE_ROUTE_TREES = [
+  "app/(core)/mandates",
+  "app/(admin)/administration/mandates",
+  "app/(core)/organizations/[orgId]/mandates",
+  "app/(core)/organizations/[orgId]/settings/mandates",
+] as const;
+
+/**
+ * Literals that are MACHINE KEYS, not copy: the list view's health values as the
+ * server's `mandate.vw_*` rows spell them. Each renders through `healthMeta`,
+ * whose labels say "Mandate Holder". Listed verbatim.
+ */
+const HOLDER_KEY_LITERALS: readonly string[] = [
+  "holder archived",
+  "holder missing",
+  "holder unreachable",
+];
+
+function bareHolderOffenders(): string[] {
+  const offenders: string[] = [];
+  const files = [
+    ...SWEPT_TREES.flatMap(sourceFilesUnder),
+    ...MANDATE_ROUTE_TREES.flatMap(sourceFilesUnder),
+  ];
+  for (const file of files) {
+    const source = readFileSync(file, "utf8");
+    for (const { line, text: raw } of copyStringsOf(source)) {
+      if (HOLDER_KEY_LITERALS.includes(raw)) continue;
+      // A template's `${…}` holes are code (`holder.rung`, a route segment).
+      const text = raw.replace(/\$\{[^}]*\}/g, "");
+      // Short labels ("Holder", "Holder Type") are copy too — the 12-char
+      // floor in `looksLikeCopy` would wave them through.
+      const shortLabel = /^[A-Z][A-Za-z ]{0,20}$/.test(text.trim());
+      if (!shortLabel && !looksLikeCopy(text)) continue;
+      // Code that the JSX-text pass swallowed between two tags.
+      // Code the literal/JSX passes swallowed when two quotes mis-paired.
+      if (/=>|&&|===|[{}<>]|\bconst\b|\breturn\b|\bnew Set\b/.test(text)) continue;
+      if (!BARE_HOLDER.test(text)) continue;
+      offenders.push(`${relative(REPO_ROOT, file)}:${line} — "${text}"`);
+    }
+  }
+  return offenders;
+}
+
+describe("no mandate screen says a bare \"holder\"", () => {
+  it("every rendered sentence says Mandate Holder", () => {
+    expect(bareHolderOffenders()).toEqual([]);
+  });
+
+  it("would still catch the strings as they shipped", () => {
+    // RED-THEN-GREEN, kept executable.
+    for (const shipped of [
+      "Saved — this holder fulfils the job for you now.",
+      "Holder Type",
+      "Configured holders",
+      "Local holder",
+      "Holder",
+    ]) {
+      expect(BARE_HOLDER.test(shipped)).toBe(true);
+    }
+    for (const fine of [
+      "Saved — this Mandate Holder fulfils the job for you now.",
+      "Mandate Holder Type",
+      "holder-draft-panel",
+    ]) {
+      expect(BARE_HOLDER.test(fine)).toBe(false);
+    }
+  });
+});
+
 describe("no mandate screen speaks the old system's nouns", () => {
   it("sweeps the rendered copy of every mandate-screen component", () => {
     const offenders = sweep().map(

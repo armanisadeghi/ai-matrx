@@ -3,11 +3,14 @@
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
 
-/** One scope-aware explanation for code-owned and system-owned definitions. */
+/**
+ * The admin route's explanation for a definition section that has no editor
+ * (code-owned, or no editor on this page). Outside the admin route the section
+ * shows `DefinitionEditDoor` instead — never a pencil the viewer cannot use.
+ */
 export function DefinitionEditHelp({
   data,
   section,
-  authoring,
 }: {
   data: Pick<MandateWorkspaceData, "offer" | "provisionKey" | "contract"> & {
     mandate: Pick<
@@ -16,19 +19,7 @@ export function DefinitionEditHelp({
     >;
   };
   section: "Goal" | "Provision" | "Output";
-  authoring: boolean;
 }) {
-  if (!authoring) {
-    return (
-      <p>
-        This mandate’s {section.toLowerCase()} cannot be edited here because it
-        belongs to the platform definition. To change the definition, create a
-        separate mandate and connect it to a surface or another part of the
-        system you control. Changing the Holder does not change this definition.
-      </p>
-    );
-  }
-
   const codeOwned =
     section === "Provision"
       ? Boolean(data.provisionKey || data.offer)

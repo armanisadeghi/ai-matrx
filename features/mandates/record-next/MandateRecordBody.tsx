@@ -110,6 +110,7 @@ import {
 } from "@/features/mandates/overrides-simple/MandateOverridesSimple";
 import type { MandateWorkspaceTab } from "@/features/mandates/workspace/MandateWorkspace";
 import { RecordAdminPanels } from "./RecordAdminPanels";
+import { RequestAccess } from "@/features/access-gate/components/RequestAccess";
 import {
   visibleRecordTabs,
   type RecordTab,
@@ -438,7 +439,28 @@ function OneMandateRecordBody({
             : "hidden"
         }
       >
-        {readOnly ? null : (
+        {readOnly ? (
+          // A member who does not manage the organization cannot change its
+          // binding: no controls, one way to ask the admins who can.
+          principal.kind === "org" ? (
+            <RequestAccess
+              target={{
+                action: "Change binding",
+                resource: {
+                  kind: "Mandate",
+                  name: data.mandate.label?.trim() || data.mandate.mandate_key,
+                  type: "mandate",
+                  id: data.mandate.id,
+                },
+                owner: {
+                  organizationId: principal.orgId,
+                  organizationName: nameOfOrg(principal.orgId),
+                },
+                manageHref: `/organizations/${encodeURIComponent(principal.orgId)}/settings/mandates/${encodeURIComponent(data.mandate.mandate_key)}`,
+              }}
+            />
+          ) : null
+        ) : (
         <BindingSection
           data={data}
           principal={principal}
@@ -874,7 +896,7 @@ function FulfillmentSection({ resolution }: { resolution: FulfillmentView }) {
     droppedRungs,
   } = resolution;
   return (
-    <Section title="Effective holder">
+    <Section title="Effective Mandate Holder">
       <div className="rounded-lg border border-border bg-card px-3">
         <PropertyRow
           label="Mandate Holder"
@@ -1034,9 +1056,9 @@ function LadderSection({
   }
 
   return (
-    <Section title="Configured holders">
+    <Section title="Configured Mandate Holders">
       <ConfigurationTable
-        label="Configured holders"
+        label="Configured Mandate Holders"
         columns={HOLDER_LADDER_COLUMNS}
       >
         {ladder.rows.map((row) => (
@@ -1099,7 +1121,7 @@ function LadderRow({
             "Workflow"
           ) : changesHolder ? (
             row.holder_version_id ? (
-              "Pinned holder"
+              "Pinned Mandate Holder"
             ) : (
               "Unavailable"
             )
@@ -1131,7 +1153,7 @@ function LadderRow({
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label={`Duplicate ${words.title} holder`}
+                aria-label={`Duplicate ${words.title} Mandate Holder`}
                 disabled={copying}
                 onClick={() =>
                   void copyAndOpen({

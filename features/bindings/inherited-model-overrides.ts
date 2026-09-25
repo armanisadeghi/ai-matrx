@@ -40,7 +40,7 @@ export function inheritedModelOverrides(
       merged[key] = value;
       sources[key] =
         value === null
-          ? `${MODEL_OVERRIDE_SOURCE[rung]} · Holder default`
+          ? `${MODEL_OVERRIDE_SOURCE[rung]} · Mandate Holder default`
           : MODEL_OVERRIDE_SOURCE[rung];
     }
   }

@@ -181,7 +181,7 @@ import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 const MANDATE_MAP_WORDS: SuggestionWords = {
   sourceNoun: "offered value",
   supplierNoun: "this job",
-  actionsHeading: "What this job's holder could drive",
+  actionsHeading: "What this job's Mandate Holder could drive",
   intro: (agentName) =>
     `The mapping helper reads what this job offers and what ${agentName} needs, then proposes the whole match for you to review. Several offered values may feed one input — it can propose that too.`,
 };
@@ -895,7 +895,7 @@ function BindingDraft({
         store.getState(),
         referenceId,
       );
-      if (!payload.isReady) throw new Error("Holder defaults unavailable");
+      if (!payload.isReady) throw new Error("Mandate Holder defaults unavailable");
       const holderSettings = buildInstanceBaseSettings(
         payload.settings,
         payload.modelId,
@@ -938,7 +938,7 @@ function BindingDraft({
           setSettingsError(
             error instanceof Error
               ? error.message
-              : "Holder defaults unavailable",
+              : "Mandate Holder defaults unavailable",
           );
       })
       .finally(() => {
@@ -1127,9 +1127,9 @@ function BindingDraft({
   const saveRefusal =
     overrideValidationError ??
     (settingsBusy
-      ? "Holder defaults: Reading"
+      ? "Mandate Holder defaults: Reading"
       : settingsError
-        ? "Holder defaults: Unavailable"
+        ? "Mandate Holder defaults: Unavailable"
         : writingDefinitionDefault
           ? defaultHolderRefusal
           : !holderChosen
@@ -1412,7 +1412,7 @@ function BindingDraft({
       // courtesy, and a courtesy that repeats the record is only a way for it
       // to outlive its subject.
       const failure = describeFailure(err, {
-        action: "saving this holder",
+        action: "saving this Mandate Holder",
         // The write is an upsert of one rung's holder — the same click twice
         // leaves the same row, so a retry can be offered without hedging.
         retrySafe: true,
@@ -1438,10 +1438,10 @@ function BindingDraft({
       title: `Remove ${words.noun}?`,
       description:
         rung === "user"
-          ? "This job goes back to the layer below — your organization's holder if one is set, otherwise the system's."
+          ? "This job goes back to the layer below — your organization's Mandate Holder if one is set, otherwise the system's."
           : rung === "org"
             ? "Everyone in this organization goes back to the system answer, unless they set their own."
-            : "Everybody goes back to the mandate's own default holder.",
+            : "Everybody goes back to the default Mandate Holder.",
       confirmLabel: "Remove it",
       variant: "destructive",
     });
@@ -1461,7 +1461,7 @@ function BindingDraft({
       onChanged();
     } catch (err) {
       toastFailure(err, {
-        action: "removing this holder",
+        action: "removing this Mandate Holder",
         // Removing a rung that is already gone is a no-op at the door.
         retrySafe: true,
         fallback: "Remove failed.",
@@ -2008,7 +2008,7 @@ function BindingDraft({
             agentName={
               holderName ??
               (agentId ? data.agentsById[agentId]?.name : null) ??
-              "This holder"
+              "This Mandate Holder"
             }
             agentDeclarations={
               holder.kind === "agent" && agentPayload.isReady
@@ -2107,7 +2107,7 @@ function BindingDraft({
                         Provision Mapping
                       </h3>
                       <FieldHelp label="Provision Mapping">
-                        Each card is a Holder destination. Choose the source for
+                        Each card is a Mandate Holder destination. Choose the source for
                         its variable, context policy or workflow input.
                         Offered-value availability belongs to the selected
                         source. Multiple sources are joined in order with a
@@ -2247,7 +2247,7 @@ function BindingDraft({
                   : "min-w-0"
               }
             >
-              <ConfigurationTable label="Holder checks" columns={CHECK_COLUMNS}>
+              <ConfigurationTable label="Mandate Holder checks" columns={CHECK_COLUMNS}>
                 <ConfigurationTableRow
                   columns={CHECK_COLUMNS}
                   cells={{
@@ -2431,11 +2431,11 @@ function BindingDraft({
                   activeSection === "overrides" ||
                   overridesReady ? (
                     settingsBusy ? (
-                      <PropertyRow label="Holder defaults" value="Reading" />
+                      <PropertyRow label="Mandate Holder defaults" value="Reading" />
                     ) : settingsError ? (
                       <div>
                         <PropertyRow
-                          label="Holder defaults"
+                          label="Mandate Holder defaults"
                           value={
                             <StatusToken status="error" label={settingsError} />
                           }
@@ -2477,7 +2477,7 @@ function BindingDraft({
                   value={
                     holder.kind === "workflow"
                       ? "Not supported for workflows"
-                      : "No holder selected"
+                      : "No Mandate Holder selected"
                   }
                 />
               )}
@@ -2674,7 +2674,7 @@ function MiddleBody({
   if (holderStatus === "none") {
     return (
       <p className="py-8 text-center text-[12px] leading-relaxed text-muted-foreground">
-        No holder yet — pick one above to start mapping, or come back when the
+        No Mandate Holder yet — pick one above to start mapping, or come back when the
         intelligence exists.
       </p>
     );
@@ -2724,7 +2724,7 @@ function MiddleBody({
     return (
       <p className="py-8 text-center text-[12px] leading-relaxed text-muted-foreground">
         This job offers nothing to map yet, so every input below falls back to
-        the holder&apos;s own defaults. Describe the job&apos;s inputs in the
+        the Mandate Holder&apos;s own defaults. Describe the job&apos;s inputs in the
         INPUT section above and they appear here as values you can map.
       </p>
     );
@@ -2833,11 +2833,11 @@ function savedWords(rung: WorkspaceRung, defaultHolderLabel?: string): string {
       // Named by its HOME, because "the default" alone does not say whose.
       return `Saved — ${defaultHolderLabel ?? "the job's own default"} now names who runs this job.`;
     case "global":
-      return "Saved — everybody gets this holder now.";
+      return "Saved — everybody gets this Mandate Holder now.";
     case "org":
-      return "Saved — everyone in this organization gets this holder now.";
+      return "Saved — everyone in this organization gets this Mandate Holder now.";
     default:
-      return "Saved — this holder fulfils the job for you now.";
+      return "Saved — this Mandate Holder fulfils the job for you now.";
   }
 }
 
@@ -2869,7 +2869,7 @@ function ladderLine(
   const here = rungWords(rung).covers;
   const state =
     answered.length === 0
-      ? "Nothing overrides this job yet — the mandate's own default holder answers for everybody."
+      ? "Nothing overrides this job yet — the default Mandate Holder answers for everybody."
       : `Answered today by: ${answered.join(", ")}.`;
   const orgNote =
     rung === "org" && !organizationId ? " Choose the organization below." : "";

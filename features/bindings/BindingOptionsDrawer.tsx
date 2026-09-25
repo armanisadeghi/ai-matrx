@@ -416,7 +416,7 @@ export function BindingOptionsDrawer({
                 <PropertyRow
                   label="Preferences scope"
                   value="Shared mandate"
-                  help="These preferences belong to the mandate and apply across its system, organization, and personal holder bindings. They are not personal preferences."
+                  help="These preferences belong to the mandate and apply across its system, organization, and personal Mandate Holder bindings. They are not personal preferences."
                 />
                 <PropertyRow
                   label="Owner"
@@ -436,7 +436,7 @@ export function BindingOptionsDrawer({
                   help={
                     treatmentId === null
                       ? "No preferences row exists. Creating shared preferences is authorized by the database for this mandate's organization."
-                      : "Edit access is checked against the shared preferences record, independently of holder-binding scope."
+                      : "Edit access is checked against the shared preferences record, independently of Mandate Holder binding scope."
                   }
                 />
                 {treatmentId !== null && !access?.exists ? (
@@ -631,7 +631,7 @@ export function BindingOptionsDrawer({
                   )}
                   <FieldHelp label="Save shared preferences">
                     Saves display preferences and permissions for this mandate.
-                    Holder selection and model overrides are saved separately.
+                    Mandate Holder selection and model overrides are saved separately.
                   </FieldHelp>
                   <Button
                     size="sm"

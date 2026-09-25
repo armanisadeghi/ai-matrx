@@ -377,7 +377,7 @@ function assertRunnableVerdict(
   if (verdict.holder_type !== "agent" || !verdict.agent_id) {
     throw new Error(
       `mandate "${mandateKey}": the ${rung} rung names a ${verdict.holder_type} ` +
-        `Holder, and this screen can only run an agent. Rebind the ${rung} rung ` +
+        `Mandate Holder, and this screen can only run an agent. Rebind the ${rung} rung ` +
         `to an agent, or route this consumer through the server.`,
     );
   }
@@ -386,7 +386,7 @@ function assertRunnableVerdict(
     const definitionId = verdict.definition_agent_id;
     if (!definitionId) {
       throw new Error(
-        `mandate "${mandateKey}": the ${rung} rung is pinned to a Holder ` +
+        `mandate "${mandateKey}": the ${rung} rung is pinned to a Mandate Holder ` +
           `version, but the resolution door did not name the agent that ` +
           `version belongs to. This screen cannot paint or attribute the run ` +
           `without that id. Retry; if it persists the door is missing ` +
@@ -661,7 +661,7 @@ export async function fetchMandatePins(
       // Master id is backfilled on every research mandate; a NULL here is a data
       // defect worth screaming about, not silently skipping.
       console.error(
-        `[mandates] mandate "${row.mandate_key}" has no default Holder — backfill the master id on ${MANDATE_STORAGE_LABEL}`,
+        `[mandates] mandate "${row.mandate_key}" has no default Mandate Holder — backfill the master id on ${MANDATE_STORAGE_LABEL}`,
       );
       continue;
     }

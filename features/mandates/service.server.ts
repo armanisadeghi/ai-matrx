@@ -108,7 +108,7 @@ export async function resolveMandateServer(
   const systemHolder = holderOfMandate(mandate);
   if (!systemHolder.holderId) {
     throw new Error(
-      `mandate "${mandateKey}" has no default Holder — assign one on ${MANDATE_STORAGE_LABEL} before this screen can paint`,
+      `mandate "${mandateKey}" has no default Mandate Holder — assign one on ${MANDATE_STORAGE_LABEL} before this screen can paint`,
     );
   }
 
@@ -153,7 +153,7 @@ export async function resolveMandateServer(
     // any particular workspace. See the module header's contract with the page.
     organizationId: null,
     freshness:
-      "Rendered before first paint from the job's own default Holder, with no organization in play. Your workspace's and your own overrides are applied by the browser as soon as this page hydrates.",
+      "Rendered before first paint from the job's own default Mandate Holder, with no organization in play. Your workspace's and your own overrides are applied by the browser as soon as this page hydrates.",
     consumptionMap: null,
     autoRun: null,
     // The same contract the browser resolver carries — required variables are a

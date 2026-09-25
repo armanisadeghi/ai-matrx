@@ -52,6 +52,12 @@ this directory.
    second apply-template path, a second set-value RPC, a duplicate scope-type read path and a third
    full-context read (`get_user_full_context`). Delete the allowlist entry when the duplicate path
    goes; it is not a standing exemption.
+   Retired from that duplicate family (2026-09-25, lane SCOPE-PICKER-RETIRE): the bespoke
+   `features/agent-context/components/ScopePicker.tsx` and its companion hook
+   `features/agent-context/hooks/useScopeAssignment.ts` — both consumerless; entity scope tagging is
+   `ContextAssignmentField` / `EntityScopeTagger` only. Neither file was on the allowlist (they reached
+   `context.*` only through the slices), so the allowlist is unchanged; the slices stay until
+   `HierarchyCascade`, `scope-admin/*`, `features/scope-system/**` and the org routes stop importing them.
 
    Write an exempt path as a glob, never as a literal dynamic route: ESLint globs are minimatch,
    where `[scopeId]` is a character class, so `app/(core)/scopes/s/[scopeId]/page.tsx` matches

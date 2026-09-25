@@ -9,7 +9,7 @@ import { AdminMandateWorkspacePage } from "@/features/mandates/admin/AdminMandat
  */
 export const metadata = {
   title: "Mandate",
-  description: "One mandate — its job, its holder, and the admin controls",
+  description: "One mandate — its job, its Mandate Holder, and the admin controls",
 };
 
 export default async function AdminMandateRoute({

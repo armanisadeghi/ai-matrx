@@ -52,7 +52,7 @@ export const DEFAULT_HOLDER_RUNG = "system" as const;
  * is exactly the class this campaign kills.
  */
 export const DEFAULT_HOLDER_IS_HOLDER_ONLY =
-  "The mapping, the settings and auto-run live on a binding above this rung — this one names the holder and nothing else.";
+  "The mapping, the settings and auto-run live on a binding above this rung — this one names the Mandate Holder and nothing else.";
 
 export interface DefaultHolderRungInput {
   /** The mandate's HOME organization — `mandate.definition.organization_id`. */

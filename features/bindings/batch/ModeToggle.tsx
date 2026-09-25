@@ -48,7 +48,7 @@ export function ModeToggle({
         ))}
       </div>
       <p className="text-[11.5px] leading-snug text-muted-foreground">
-        Same rows, same four sources, same validation — the rung and the holder
+        Same rows, same four sources, same validation — the rung and the Mandate Holder
         above apply to every place.
       </p>
     </div>

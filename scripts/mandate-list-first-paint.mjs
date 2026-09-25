@@ -31,19 +31,28 @@ await page.goto(`${ORIGIN}${ROUTE}`, { waitUntil: "domcontentloaded", timeout: 2
 const chooser = page.getByText("Choose an organization");
 await Promise.race([
   chooser.waitFor({ timeout: 240000 }),
-  page.waitForSelector("tbody tr", { timeout: 240000 }),
+  page.waitForSelector("[data-row-id]", { timeout: 240000 }),
 ]).catch(() => {});
+const dismiss = page.getByRole("button", { name: "Dismiss for today" });
+if (await dismiss.count()) await dismiss.first().click().catch(() => {});
 if (await chooser.count()) {
-  await page.getByText(process.env.ORG_NAME ?? "admin's Workspace", { exact: true }).first().click();
+  await page
+    .getByText(process.env.ORG_NAME ?? "admin's Workspace", { exact: true })
+    .locator("visible=true")
+    .first()
+    .click();
   await page.waitForTimeout(3000);
 }
-await page.waitForSelector("tbody tr", { timeout: 240000 }).catch(() => {});
+await page.waitForSelector("[data-row-id]", { timeout: 240000 }).catch(() => {});
+// Let the warm-up's own report reads finish so none of them is timed below.
+await page.waitForTimeout(Number(process.env.SETTLE_MS ?? 10000));
 
 let t0 = 0;
 const at = () => ((performance.now() - t0) / 1000).toFixed(2);
 const reqs = new Map();
 const interesting = (url) =>
-  /matrxserver\.com\/(mandates|api)\/|\/rpc\/|\/rest\/v1\/(mandate|mnd_)/.test(url) && !/auth\/v1/.test(url);
+  (/matrxserver\.com\/(mandates|api)\/|\/rpc\/mnd_|\/rest\/v1\/(definition|binding|definition_version)\b/.test(url) ||
+    /\/rest\/v1\/rpc\/(mnd_|agx_)/.test(url)) && !/auth\/v1/.test(url);
 page.on("request", (r) => {
   if (interesting(r.url())) reqs.set(r, { url: r.url().replace(/\?.*/, ""), method: r.method(), start: at(), body: (r.postData() ?? "").slice(0, 60) });
 });
@@ -52,25 +61,47 @@ page.on("requestfinished", (r) => {
   if (hit) hit.end = at();
 });
 
+const printRequests = () => {
+  for (const r of [...reqs.values()].sort((a, b) => a.start - b.start)) {
+    console.log(`  ${r.start}→${r.end ?? "…"}s  ${r.method} ${r.url.replace(/^https?:\/\/[^/]+/, "")} ${r.body}`);
+  }
+};
+const report = (line) => console.log(line);
+try {
 t0 = performance.now();
 await page.goto(`${ORIGIN}${ROUTE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
 const navDone = at();
 await page.waitForFunction(
-  () => [...document.querySelectorAll("tbody tr")].some((tr) => tr.querySelectorAll("td").length > 3 && tr.innerText.trim().length > 10),
+  () => [...document.querySelectorAll("[data-row-id]")].some((row) => row.innerText.trim().length > 10),
   null,
-  { timeout: 240000, polling: 50 },
+  { timeout: 90000, polling: 50 },
 );
 const firstRow = at();
-const gradingAtFirstRow = await page.locator("tbody", { hasText: "Grading" }).count();
-await page.waitForFunction(() => !document.querySelector("tbody")?.innerText.includes("Grading"), null, {
+// Cells whose report has not landed say so: "Grading" (impact) and "Checking" (code truth, coverage).
+const pendingText = () =>
+  page.evaluate(() =>
+    [...document.querySelectorAll("[data-row-id]")].map((row) => row.innerText).join("\n"),
+  );
+const atFirstRow = await pendingText();
+const pendingAtFirstRow = ["Grading", "Checking"].filter((word) => atFirstRow.includes(word));
+await page.waitForFunction(
+  () => {
+    const text = [...document.querySelectorAll("[data-row-id]")].map((row) => row.innerText).join("\n");
+    return text.length > 0 && !/Grading|Checking/.test(text);
+  },
+  null,
+  {
   timeout: 240000,
   polling: 100,
 });
 const gradesIn = at();
 await page.waitForTimeout(1500);
 
-console.log(`domcontentloaded ${navDone}s · first real row ${firstRow}s (grade cells still loading: ${gradingAtFirstRow > 0}) · grades filled ${gradesIn}s`);
-for (const r of [...reqs.values()].sort((a, b) => a.start - b.start)) {
-  console.log(`  ${r.start}→${r.end ?? "…"}s  ${r.method} ${r.url.replace(/^https?:\/\/[^/]+/, "")} ${r.body}`);
+report(`domcontentloaded ${navDone}s · first real row ${firstRow}s (cells still reading at that moment: ${pendingAtFirstRow.join(", ") || "none"}) · every report cell filled ${gradesIn}s`);
+  printRequests();
+} catch (error) {
+  console.log(`FAILED at ${at()}s: ${String(error).split("\n")[0]}`);
+  await page.screenshot({ path: process.env.SHOT ?? "/tmp/mandate-list-first-paint-failure.png" }).catch(() => {});
+  printRequests();
 }
 await browser.close();

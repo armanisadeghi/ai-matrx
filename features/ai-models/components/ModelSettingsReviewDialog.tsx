@@ -58,7 +58,7 @@ const INSTANCE_KEY = "model-replace-review";
 const REPLACE_WORDS = {
   heading: "Replacement settings",
   scopeNote:
-    "Untouched rows keep the replacement model's defaults. Only values you change are written onto the agents.",
+    "Each agent keeps its own settings. Only values you change here are written onto every agent.",
   noModelNote: "No replacement model selected.",
   baselineSourceLabel: "Replacement model",
   baselineDefaultLabel: "Model default",
@@ -176,9 +176,8 @@ export function ModelSettingsReviewDialog({
                 with <strong className="text-foreground">{toLabel}</strong>.
               </p>
               <p>
-                These are {toLabel}&apos;s real settings. Change only what you
-                want written onto the agents — everything else keeps the new
-                model&apos;s defaults.
+                Every agent keeps its own settings. Anything you change below
+                is written onto all of them; the suggested swaps are optional.
               </p>
             </div>
           </DialogDescription>

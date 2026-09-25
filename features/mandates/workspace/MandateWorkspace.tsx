@@ -168,7 +168,7 @@ const WORKSPACE_TABS: {
   admin?: boolean;
 }[] = [
   { id: "definition", label: "Definition" },
-  { id: "holder", label: "Holder" },
+  { id: "holder", label: "Mandate Holder" },
   { id: "create-agent", label: "Create Agent" },
   { id: "overrides", label: "Overrides" },
   { id: "display", label: "Display Options" },
@@ -978,7 +978,7 @@ function BindingSection({
       <Section
         title={
           {
-            holder: "Holder",
+            holder: "Mandate Holder",
             "create-agent": "Create the agent that holds this job",
             overrides: "Execution overrides",
             display: "Display Options",
@@ -1060,10 +1060,10 @@ function FulfillmentSection({ resolution }: { resolution: FulfillmentView }) {
     droppedRungs,
   } = resolution;
   return (
-    <Section title="Effective holder">
+    <Section title="Effective Mandate Holder">
       <div className="rounded-lg border border-border bg-card px-3">
         <PropertyRow
-          label="Holder"
+          label="Mandate Holder"
           value={
             loading ? (
               <SuspenseLoader />
@@ -1153,7 +1153,7 @@ function FulfillmentSection({ resolution }: { resolution: FulfillmentView }) {
             </Button>
             <FieldHelp label="Duplicate & customize">
               Copies this resolved agent into your account and opens the
-              builder. Assign the copy in Holder to use it for this mandate.
+              builder. Assign the copy in the Mandate Holder tab to use it for this mandate.
             </FieldHelp>
           </div>
         ) : null}
@@ -1220,9 +1220,9 @@ function LadderSection({
   }
 
   return (
-    <Section title="Configured holders">
+    <Section title="Configured Mandate Holders">
       <ConfigurationTable
-        label="Configured holders"
+        label="Configured Mandate Holders"
         columns={HOLDER_LADDER_COLUMNS}
       >
         {ladder.rows.map((row) => (
@@ -1241,7 +1241,7 @@ function LadderSection({
 
 const HOLDER_LADDER_COLUMNS = [
   { key: "scope", label: "Scope" },
-  { key: "holder", label: "Holder" },
+  { key: "holder", label: "Mandate Holder" },
   { key: "version", label: "Version" },
   { key: "status", label: "Status" },
 ];
@@ -1285,7 +1285,7 @@ function LadderRow({
             "Workflow"
           ) : changesHolder ? (
             row.holder_version_id ? (
-              "Pinned holder"
+              "Pinned Mandate Holder"
             ) : (
               "Unavailable"
             )
@@ -1317,7 +1317,7 @@ function LadderRow({
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label={`Duplicate ${words.title} holder`}
+                aria-label={`Duplicate ${words.title} Mandate Holder`}
                 disabled={copying}
                 onClick={() =>
                   void copyAndOpen({

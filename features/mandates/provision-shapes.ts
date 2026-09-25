@@ -533,9 +533,9 @@ export function holderNotExecutableMessage(
     layer === "organization" ? "an organization binding" : "your binding";
   const which = bindingId ? ` (${bindingId})` : "";
   return (
-    `mandate "${mandateKey}": ${where}${which} names a '${holderType}' Holder — ` +
-    "this browser path can only launch an agent Holder directly. " +
-    "Workflow Holders run on the server; call this mandate through the " +
+    `mandate "${mandateKey}": ${where}${which} names a '${holderType}' Mandate Holder — ` +
+    "this browser path can only launch an agent Mandate Holder directly. " +
+    "Workflow Mandate Holders run on the server; call this mandate through the " +
     // The remedy in the job's own words (V2 round 4 vocabulary sweep): this
     // used to end "…for surfaces that resolve in the browser", which named the
     // old system on a mandate refusal a person reads.

@@ -58,7 +58,7 @@ export function HolderInputsColumn({
       <header className="shrink-0 border-b border-border px-3 py-2">
         <div className="flex items-baseline gap-2">
           <h3 className="text-[12.5px] font-semibold text-foreground">
-            This holder needs
+            This Mandate Holder needs
           </h3>
           {inputs.status === "ready" ? (
             <span className="rounded bg-muted px-1.5 text-[10px] text-muted-foreground">
@@ -73,7 +73,7 @@ export function HolderInputsColumn({
 
       {inputs.status === "none" ? (
         <p className="px-3 py-6 text-[11.5px] leading-relaxed text-muted-foreground">
-          No holder chosen yet — pick one above and its inputs appear here.
+          No Mandate Holder chosen yet — pick one above and its inputs appear here.
         </p>
       ) : inputs.status === "loading" ? (
         <p className="px-3 py-6 text-[11.5px] text-muted-foreground">
@@ -93,13 +93,13 @@ export function HolderInputsColumn({
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
           <InputGroup
             title="Variables"
-            emptyWords="None — this holder takes everything as context."
+            emptyWords="None — this Mandate Holder takes everything as context."
             items={variables}
             fedBy={fedBy}
           />
           <InputGroup
             title="Context policies"
-            emptyWords="None — this holder has no context slots."
+            emptyWords="None — this Mandate Holder has no context slots."
             items={contextSlots}
             fedBy={fedBy}
           />

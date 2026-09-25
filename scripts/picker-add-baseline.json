@@ -39,7 +39,6 @@
     "features/agents/agent-creators/tabbed-builder/TaskTab.tsx",
     "features/agents/agent-creators/tabbed-builder/ToneTab.tsx",
     "features/agents/agent-creators/chatbot-customizer/AIOptionComponents.tsx",
-    "features/agent-context/components/ScopePicker.tsx",
     "components/ssr/select/navigation-select.tsx",
     "components/official/IconDropdownMenu.tsx",
     "components/official/settings/primitives/SettingsSelect.tsx",

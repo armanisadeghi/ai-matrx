@@ -118,7 +118,7 @@ export function buildBindingSavePayload(args: SavePayloadArgs): MandateBindingIn
     // Never trust a UI state that drifted into both — refuse client-side with
     // the same rule the server enforces, before any network call.
     throw new Error(
-      "A binding names ONE holder reference: a floating agent or a pinned version, never both.",
+      "A binding names ONE Mandate Holder reference: a floating agent or a pinned version, never both.",
     );
   }
 

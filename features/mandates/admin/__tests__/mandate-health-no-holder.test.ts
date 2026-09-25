@@ -40,7 +40,7 @@ function mandate(overrides: Record<string, unknown>): MandateDefinitionRow {
 }
 
 describe("holderless mandates read as calm, not broken", () => {
-  it("a mandate with no holder and no version is 'no holder yet'", () => {
+  it("a mandate with no holder and no version is 'no Mandate Holder yet'", () => {
     const row = buildRow(
       mandate({
         default_agent_id: null,
@@ -50,7 +50,7 @@ describe("holderless mandates read as calm, not broken", () => {
       }),
       EMPTY_DATA,
     );
-    expect(row.health).toBe("no holder yet");
+    expect(row.health).toBe("no Mandate Holder yet");
     expect(row.health).not.toBe("unresolved pin");
     expect(row.agentId).toBeNull();
   });
@@ -79,7 +79,7 @@ describe("holderless mandates read as calm, not broken", () => {
         source: null,
       } as never,
     );
-    expect(row.health).toBe("no holder yet");
+    expect(row.health).toBe("no Mandate Holder yet");
   });
 
   it("a pin whose agent cannot be read is STILL 'unresolved pin'", () => {

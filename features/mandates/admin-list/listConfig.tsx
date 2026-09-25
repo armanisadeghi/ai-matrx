@@ -41,7 +41,7 @@ async function removeMandate(row: MandateAdminRow): Promise<void> {
       `Everywhere that runs this job stops finding it: the lists, the pickers, and any call that names the key "${row.mandateKey}" will report it missing. ` +
       (row.overridesCount === 0
         ? "It has no customizations, so nothing bound to it is lost. "
-        : `Its ${row.overridesCount} customization${row.overridesCount === 1 ? "" : "s"} — every holder, setting and mapping bound to it — stop applying with it. `) +
+        : `Its ${row.overridesCount} customization${row.overridesCount === 1 ? "" : "s"} — every Mandate Holder, setting and mapping bound to it — stop applying with it. `) +
       `This is a soft removal: the record and its history are kept, so an admin can restore it if this was a mistake.`,
     confirmLabel: "Remove it",
     cancelLabel: "Keep it",
@@ -144,7 +144,7 @@ export const adminMandateListConfig: EntityListConfig<MandateAdminRow> = {
     rowKind: "mandate",
     listKind: "mandate-list",
     humanRow: (row) =>
-      `${row.name} (${row.mandateKey}) — ${row.featureLabel}; holder ${row.agentName}, ${row.pinText}`,
+      `${row.name} (${row.mandateKey}) — ${row.featureLabel}; Mandate Holder ${row.agentName}, ${row.pinText}`,
     showRow: false,
     showToolbar: false,
   },

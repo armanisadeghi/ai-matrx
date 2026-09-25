@@ -264,7 +264,7 @@ export function applyRefusal(
   }
   const blocked = healths.filter((h) => h.blockers.length > 0).length;
   if (blocked > 0) {
-    return `${blocked} ${blocked === 1 ? "place" : "places"} cannot take this holder — the red rows say why. Remove them from the batch, or fix the holder.`;
+    return `${blocked} ${blocked === 1 ? "place" : "places"} cannot take this Mandate Holder — the red rows say why. Remove them from the batch, or fix the Mandate Holder.`;
   }
   const broken = healths.filter((h) => h.problems.length > 0).length;
   if (broken > 0) {
@@ -282,7 +282,7 @@ export function applyRefusal(
   const unfed = healths.reduce((acc, h) => acc + h.unfedRequired.length, 0);
   if (unfed > 0) {
     const places = healths.filter((h) => h.unfedRequired.length > 0).length;
-    return `${unfed} required ${unfed === 1 ? "input" : "inputs"} across ${places} ${places === 1 ? "place" : "places"} ${unfed === 1 ? "has" : "have"} nothing feeding ${unfed === 1 ? "it" : "them"} and the holder has no default of its own — this batch cannot run in that state. Feed ${unfed === 1 ? "it" : "them"}, or remove ${places === 1 ? "that place" : "those places"} from the batch.`;
+    return `${unfed} required ${unfed === 1 ? "input" : "inputs"} across ${places} ${places === 1 ? "place" : "places"} ${unfed === 1 ? "has" : "have"} nothing feeding ${unfed === 1 ? "it" : "them"} and the Mandate Holder has no default of its own — this batch cannot run in that state. Feed ${unfed === 1 ? "it" : "them"}, or remove ${places === 1 ? "that place" : "those places"} from the batch.`;
   }
   return null;
 }
@@ -354,7 +354,7 @@ export function batchScopeSentence({
   openedIn: boolean;
   openedKey: string;
 }): string {
-  const head = "Every job picked here gets the rung and holder chosen above.";
+  const head = "Every job picked here gets the rung and Mandate Holder chosen above.";
   if (selectedCount === 0) {
     return `${head} Nothing is picked — not even the one you opened (${openedKey}), so Apply has nothing to write. Tick a job below.`;
   }

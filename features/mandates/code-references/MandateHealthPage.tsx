@@ -1,0 +1,314 @@
+"use client";
+
+// features/mandates/code-references/MandateHealthPage.tsx
+//
+// /administration/mandates/health-preview — "Mandate health": every open way a
+// mandate is broken, one row per finding: how bad, which mandate, what is
+// wrong in plain words, where in the code, and the fix. Merges the old
+// references page's open findings with code ↔ database drift (./health.ts).
+// The old /administration/mandates/references page stays untouched beside it.
+
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Copy, ExternalLink } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
+import { Muted, TextCell, type EntityColumnSpec } from "@/lib/entity-list/columns";
+import type {
+  EntityListConfig,
+  EntityRowActionsResult,
+} from "@/lib/entity-list/config";
+import type { ItemMenuConfig, ItemMenuEntry } from "@/components/official/item/types";
+import { createMemoryListService } from "@/lib/entity-list/memoryService";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import type { AppDispatch } from "@/lib/redux/store";
+import { toast } from "@/lib/toast";
+import {
+  KIND_LABEL,
+  SEVERITY_LABEL,
+  SEVERITY_RANK,
+  SOURCE_LABEL,
+  fetchMandateHealth,
+  type HealthFinding,
+  type HealthLoad,
+} from "./health";
+
+type Spec = EntityColumnSpec<HealthFinding>;
+
+function copy(text: string, what: string) {
+  void navigator.clipboard.writeText(text).then(() => toast.success(`Copied ${what}`));
+}
+
+const SEVERITY_CLASS: Record<HealthFinding["severity"], string> = {
+  high: "border-red-500/40 text-red-700 dark:text-red-400",
+  medium: "border-amber-500/40 text-amber-700 dark:text-amber-400",
+  low: "border-border text-muted-foreground",
+};
+
+const COLUMNS: Spec[] = [
+  {
+    id: "severity",
+    label: "Severity",
+    facet: "severity",
+    formatFacetValue: (v) => SEVERITY_LABEL[v as HealthFinding["severity"]] ?? v,
+    sortWords: { asc: "least severe first", desc: "most severe first" },
+    column: {
+      id: "severity",
+      header: "Severity",
+      filter: "select",
+      width: 96,
+      cell: (row) => (
+        <Badge variant="outline" className={SEVERITY_CLASS[row.severity]}>
+          {SEVERITY_LABEL[row.severity]}
+        </Badge>
+      ),
+    },
+  },
+  {
+    id: "mandate",
+    label: "Mandate",
+    facet: "mandate",
+    formatFacetValue: (v) => (v === "__none__" ? "Unreadable" : v),
+    column: {
+      id: "mandate",
+      header: "Mandate",
+      filter: "select",
+      width: 200,
+      cell: (row) =>
+        row.mandateKey ? (
+          row.fixHref ? (
+            <Link
+              href={row.fixHref}
+              title={row.mandateKey}
+              className="block truncate hover:underline"
+              onClick={(event) => event.stopPropagation()}
+            >
+              {row.mandateName}
+            </Link>
+          ) : (
+            <span className="block truncate" title={row.mandateKey}>
+              {row.mandateName}
+            </span>
+          )
+        ) : (
+          <Muted>Unreadable</Muted>
+        ),
+    },
+  },
+  {
+    id: "problem",
+    label: "Problem",
+    locked: true,
+    column: {
+      id: "problem",
+      header: "Problem",
+      filter: "text",
+      width: 360,
+      cell: (row) => (
+        <span className="block truncate" title={row.detail ? `${row.problem} — ${row.detail}` : row.problem}>
+          {row.problem}
+          {row.detail ? <span className="text-muted-foreground"> · {row.detail}</span> : null}
+        </span>
+      ),
+    },
+  },
+  {
+    id: "where",
+    label: "Where",
+    column: {
+      id: "where",
+      header: "Where",
+      filter: "text",
+      width: 320,
+      cell: (row) =>
+        !row.location ? (
+          <Muted>No code location</Muted>
+        ) : row.codeUrl ? (
+          <a
+            href={row.codeUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={`${row.location} — open on GitHub`}
+            className="block truncate font-mono text-xs text-primary hover:underline"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {row.location}
+          </a>
+        ) : (
+          <TextCell value={row.location} className="font-mono text-xs" />
+        ),
+    },
+  },
+  {
+    id: "fix",
+    label: "Fix",
+    column: {
+      id: "fix",
+      header: "Fix",
+      filter: "text",
+      width: 280,
+      cell: (row) =>
+        row.fixHref ? (
+          <Link
+            href={row.fixHref}
+            className="block truncate text-primary hover:underline"
+            title={`${row.fix} — open the mandate`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            {row.fix}
+          </Link>
+        ) : (
+          <TextCell value={row.fix} />
+        ),
+    },
+  },
+  {
+    id: "kind",
+    label: "Type",
+    facet: "kind",
+    formatFacetValue: (v) => KIND_LABEL[v as HealthFinding["kind"]] ?? v,
+    column: {
+      id: "kind",
+      header: "Type",
+      filter: "select",
+      width: 170,
+      cell: (row) => <TextCell value={KIND_LABEL[row.kind]} muted />,
+    },
+  },
+  {
+    id: "source",
+    label: "Found by",
+    facet: "source",
+    defaultHidden: true,
+    formatFacetValue: (v) => SOURCE_LABEL[v as HealthFinding["source"]] ?? v,
+    column: {
+      id: "source",
+      header: "Found by",
+      filter: "select",
+      width: 140,
+      cell: (row) => <TextCell value={SOURCE_LABEL[row.source]} muted />,
+    },
+  },
+  {
+    id: "repo",
+    label: "Repo",
+    facet: "repo",
+    defaultHidden: true,
+    formatFacetValue: (v) => (v === "__none__" ? "No code location" : v),
+    column: { id: "repo", header: "Repo", filter: "select", width: 130, cell: (row) => <TextCell value={row.repo} /> },
+  },
+];
+
+function useRowActions(): EntityRowActionsResult<HealthFinding> {
+  const router = useRouter();
+  const menuFor = (row: HealthFinding) => (): ItemMenuConfig => {
+    const open: ItemMenuEntry[] = [];
+    if (row.fixHref) open.push({ id: "open-mandate", label: "Open mandate", icon: ExternalLink, kind: "link", href: row.fixHref });
+    if (row.codeUrl) {
+      open.push({ id: "open-code", label: "Open code on GitHub", icon: ExternalLink, kind: "link", href: row.codeUrl, target: "_blank" });
+    }
+    const copies: ItemMenuEntry[] = [];
+    if (row.location) copies.push({ id: "copy-location", label: "Copy location", icon: Copy, onSelect: () => copy(row.location, "location") });
+    if (row.mandateKey) copies.push({ id: "copy-key", label: "Copy mandate key", icon: Copy, onSelect: () => copy(row.mandateKey, "key") });
+    return { sections: [{ id: "open", items: open }, { id: "copy", items: copies }] };
+  };
+  return {
+    actions: {
+      menuFor,
+      onOpenRow: (row) => {
+        if (row.fixHref) router.push(row.fixHref);
+        else if (row.codeUrl) window.open(row.codeUrl, "_blank", "noopener,noreferrer");
+      },
+    },
+  };
+}
+
+function buildConfig(dispatch: AppDispatch, onLoad: (load: HealthLoad) => void): EntityListConfig<HealthFinding> {
+  return {
+    surfaceKey: "admin-mandates-health-preview",
+    entityLabel: { singular: "finding", plural: "findings" },
+    sourceFeature: "agents-other",
+    scopes: ["system"],
+    service: createMemoryListService<HealthFinding>({
+      load: async () => {
+        const load = await fetchMandateHealth(dispatch);
+        onLoad(load);
+        if (load.findings.length === 0 && load.failures.length > 0) {
+          throw new Error(load.failures.map((f) => `${SOURCE_LABEL[f.source]}: ${f.message}`).join(" · "));
+        }
+        return load.findings;
+      },
+      scope: "system",
+      defaultSort: "severity",
+      fields: {
+        severity: { value: (r) => r.severity, sortValue: (r) => SEVERITY_RANK[r.severity], facet: true },
+        mandate: { value: (r) => r.mandateName, search: true, facet: true },
+        problem: { value: (r) => `${r.problem} ${r.detail}`, search: true },
+        where: { value: (r) => r.location, search: true },
+        fix: { value: (r) => r.fix },
+        kind: { value: (r) => r.kind, facet: true },
+        source: { value: (r) => r.source, facet: true },
+        repo: { value: (r) => r.repo, facet: true },
+        key: { value: (r) => r.mandateKey, search: true },
+      },
+    }),
+    columns: COLUMNS,
+    prefsVersion: 1,
+    prefsDefaults: { sort: "severity", direction: "desc", pageSize: 50 },
+    getRowId: (row) => row.id,
+    getRowName: (row) => `${row.mandateName || "Unreadable mandate"}: ${row.problem}`,
+    urlState: true,
+    supportsArchived: false,
+    tableToolbar: { tableId: "admin-mandates-health-preview" },
+    searchPlaceholder: "Search mandates, problems, files…",
+    useRowActions,
+    facetSections: [],
+    copy: {
+      label: "Mandate health finding",
+      listLabel: "Mandate health",
+      location: "/administration/mandates/health-preview",
+      rowKind: "mandate-health-finding",
+      listKind: "mandate-health-list",
+      humanRow: (row) =>
+        `[${SEVERITY_LABEL[row.severity]}] ${row.mandateName || "Unreadable mandate"} — ${row.problem}${row.detail ? ` (${row.detail})` : ""}; ${row.location || "no code location"}; fix: ${row.fix}`,
+      showRow: false,
+      showToolbar: false,
+    },
+    emptyState: {
+      title: "No open findings",
+      description: "The code scan and the code-vs-database check found nothing wrong.",
+    },
+  };
+}
+
+export function MandateHealthPage() {
+  const dispatch = useAppDispatch();
+  const [failures, setFailures] = useState<HealthLoad["failures"]>([]);
+  const [config] = useState(() => buildConfig(dispatch, (load) => setFailures(load.failures)));
+  return (
+    <EntityListPage
+      config={config}
+      defaultScope={{ kind: "system" }}
+      clearsShellHeader={false}
+      notice={
+        failures.length > 0 ? (
+          <div
+            role="status"
+            className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-xs text-amber-800 dark:text-amber-300"
+          >
+            {failures.map((f) => `${SOURCE_LABEL[f.source]} unavailable: ${f.message}`).join(" · ")}
+          </div>
+        ) : null
+      }
+      headerActions={
+        <Link
+          href="/administration/mandates/unconverted-preview"
+          className="whitespace-nowrap rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
+          Unconverted AI calls
+        </Link>
+      }
+    />
+  );
+}

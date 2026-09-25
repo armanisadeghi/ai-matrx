@@ -873,7 +873,7 @@ function CodeAgentDriftPanel({
           size="sm"
         />
         <Button size="sm" variant="outline" onClick={onOpenRebind}>
-          Open holder mapping
+          Open Mandate Holder mapping
         </Button>
         <FieldHelp label="Code repair actions">
           Mapping keeps the supplied value and routes it to a declared variable.
@@ -904,7 +904,7 @@ export const HOLDER_HEALTH_VERDICTS: readonly MandateHealth[] = [
   "ok",
   "not a system agent",
   "agent archived",
-  "no holder yet",
+  "no Mandate Holder yet",
   "unresolved pin",
 ];
 
@@ -1044,7 +1044,7 @@ function StatusBanner({
             </Button>
           ) : null}
           <Button size="sm" variant="outline" onClick={onOpenRebind}>
-            Assign a different holder
+            Assign a different Mandate Holder
           </Button>
         </div>
       );
@@ -1103,13 +1103,13 @@ function StatusBanner({
     // mandate a person had just created. Neutral chrome, the true fact, and
     // the door to the one binding UI — never a remedy for a problem that does
     // not exist.
-    case "no holder yet":
+    case "no Mandate Holder yet":
       return (
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs">
           <Info className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="font-medium text-foreground">No holder yet</span>
+          <span className="font-medium text-foreground">No Mandate Holder yet</span>
           <span className="text-muted-foreground">
-            {HEALTH_HINT["no holder yet"]}
+            {HEALTH_HINT["no Mandate Holder yet"]}
           </span>
           <Button
             size="sm"
@@ -1117,7 +1117,7 @@ function StatusBanner({
             className="h-7 text-xs"
             onClick={onOpenRebind}
           >
-            Choose a holder
+            Choose a Mandate Holder
           </Button>
         </div>
       );
@@ -1275,7 +1275,7 @@ function FactsPanel({
           <span className="inline-flex items-center gap-1.5">
             <StatusToken status="neutral" label="Not applicable" />
             <FieldHelp label="Code / contract check">
-              Provision inputs are checked through holder matching. This legacy
+              Provision inputs are checked through Mandate Holder matching. This legacy
               variable comparison does not evaluate them.
             </FieldHelp>
           </span>
@@ -1416,7 +1416,7 @@ function FactsPanel({
                 </code>
                 <span className="text-muted-foreground">
                   — the entire input declaration; the binding&apos;s consumption
-                  map decides what the Holder consumes.
+                  map decides what the Mandate Holder consumes.
                 </span>
               </span>
             </Fact>
@@ -1786,7 +1786,7 @@ export function MandateDetailView({
         code_report_status: row.codeTruth ? "Read" : "Unavailable",
         variable_flow: liveVerdictState,
         provision_key: row.provisionKey,
-        code_contract_check: row.provisionKey ? "Not applicable: provision inputs are checked through holder matching" : row.codeTruth?.drift ?? "Not yet evaluated",
+        code_contract_check: row.provisionKey ? "Not applicable: provision inputs are checked through Mandate Holder matching" : row.codeTruth?.drift ?? "Not yet evaluated",
       }) }, "diagnostics");
   useMandateAlchemyTabCapture("permissions", {
     status: "ready", data: normalizeTransferJson({

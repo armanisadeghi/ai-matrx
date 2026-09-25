@@ -176,7 +176,7 @@ async function replaceModelReferencesViaAdmin(
       `${result.skipped} reference${result.skipped === 1 ? "" : "s"} still point at the old model`,
       {
         description:
-          "They are private to their owners, so an admin session cannot rewrite them. Everything else was replaced.",
+          "This admin session could not write them (their access rules refused it, or the write failed). Everything else was replaced.",
       },
     );
   }
@@ -1233,6 +1233,8 @@ export const aiModelService = {
           .schema("agent")
           .from("definition")
           .select("id, name, model_id, settings")
+          // Builtins are the leg above — without this they were counted twice.
+          .neq("agent_type", "builtin")
           .or(
             `model_id.eq.${modelId},settings->>model_id.eq.${modelId},model_tiers->>default.eq.${modelId}`,
           )

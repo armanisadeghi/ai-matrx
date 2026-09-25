@@ -84,6 +84,7 @@ function goalSectionScope(
 import { MandateUserTextLine } from "../components/MandateUserTextLine";
 import { Section, SectionEditAction } from "./Section";
 import { DefinitionEditHelp } from "./DefinitionEditHelp";
+import { DefinitionEditDoor } from "./DefinitionEditDoor";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toastFailure } from "@/lib/failure/toastFailure";
@@ -226,26 +227,26 @@ export function TriadInputSection({
     <Section
       title="Provision"
       actions={
-        <SectionEditAction
-          label="Edit provision"
-          unavailable={
-            data.provisionKey || data.offer || !authoring ? (
-              <DefinitionEditHelp
-                data={data}
-                section="Provision"
-                authoring={authoring}
-              />
-            ) : editing ? (
-              "Editor open."
-            ) : undefined
-          }
-          onEdit={() => {
-            setDraft(
-              draftInputs.length > 0 ? draftInputs : [{ description: "" }],
-            );
-            setEditing(true);
-          }}
-        />
+        !authoring ? (
+          <DefinitionEditDoor data={data} section="Provision" />
+        ) : (
+          <SectionEditAction
+            label="Edit provision"
+            unavailable={
+              data.provisionKey || data.offer ? (
+                <DefinitionEditHelp data={data} section="Provision" />
+              ) : editing ? (
+                "Editor open."
+              ) : undefined
+            }
+            onEdit={() => {
+              setDraft(
+                draftInputs.length > 0 ? draftInputs : [{ description: "" }],
+              );
+              setEditing(true);
+            }}
+          />
+        )
       }
     >
       <div className="space-y-3">
@@ -369,7 +370,7 @@ function HolderDeclaredInputs({ mandateKey }: { mandateKey: string }) {
     <div className="space-y-1.5">
       <PropertyRow
         label="Declared by"
-        value={surface.holderName || "Holder name unavailable"}
+        value={surface.holderName || "Mandate Holder name unavailable"}
       />
       <PropertyRow label="Declared inputs" value={surface.inputs.length} />
       <ProvisionOfferList
@@ -653,24 +654,18 @@ export function TriadGoalSection({
     <Section
       title="Goal"
       actions={
-        <SectionEditAction
-          label="Edit goal"
-          unavailable={
-            !authoring ? (
-              <DefinitionEditHelp
-                data={data}
-                section="Goal"
-                authoring={authoring}
-              />
-            ) : editing ? (
-              "Editor open."
-            ) : undefined
-          }
-          onEdit={() => {
-            setDraft(goal ?? "");
-            setEditing(true);
-          }}
-        />
+        !authoring ? (
+          <DefinitionEditDoor data={data} section="Goal" />
+        ) : (
+          <SectionEditAction
+            label="Edit goal"
+            unavailable={editing ? "Editor open." : undefined}
+            onEdit={() => {
+              setDraft(goal ?? "");
+              setEditing(true);
+            }}
+          />
+        )
       }
     >
       <div className="space-y-3 rounded-xl border border-border bg-card p-4">
@@ -765,16 +760,14 @@ export function TriadOutputSection({
     <Section
       title="Output"
       actions={
-        <SectionEditAction
-          label="Edit output"
-          unavailable={
-            <DefinitionEditHelp
-              data={data}
-              section="Output"
-              authoring={authoring}
-            />
-          }
-        />
+        !authoring ? (
+          <DefinitionEditDoor data={data} section="Output" />
+        ) : (
+          <SectionEditAction
+            label="Edit output"
+            unavailable={<DefinitionEditHelp data={data} section="Output" />}
+          />
+        )
       }
     >
       <ConfigurationTable label="Output contract" columns={OUTPUT_COLUMNS}>

@@ -75,11 +75,11 @@ export function homeScopePhrase(home: HomeScope): string {
 function remedyFor(code: string): string | null {
   switch (code) {
     case "output_contract_unmet":
-      return "Assign a holder that declares the output this job requires, or give this one that output schema.";
+      return "Assign a Mandate Holder that declares the output this job requires, or give this one that output schema.";
     case "holder_unreachable":
-      return "Assign a holder the organization this job answers for can open.";
+      return "Assign a Mandate Holder the organization this job answers for can open.";
     case "platform_disabled":
-      return "Assign a different holder, or ask a platform administrator to turn this one back on.";
+      return "Assign a different Mandate Holder, or ask a platform administrator to turn this one back on.";
     default:
       // An unknown code is a newer database than this browser. The door's own
       // sentence still stands; inventing a remedy for it would not.

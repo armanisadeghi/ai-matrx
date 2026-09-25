@@ -19,7 +19,9 @@ import rehypeRaw from "rehype-raw";
 import remarkMatrxVariable from "@/components/mardown-display/chat-markdown/matrx-variables/remarkMatrxVariable";
 import remarkMatrxCite from "@/components/mardown-display/chat-markdown/citations/remarkMatrxCite";
 import rehypeSafeRawHtml from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
-import remarkMatrxPageBreak from "@/components/mardown-display/chat-markdown/page-break/remarkMatrxPageBreak";
+import remarkMatrxPageBreak, {
+  isolatePageBreakLines,
+} from "@/components/mardown-display/chat-markdown/page-break/remarkMatrxPageBreak";
 import type { Options } from "react-markdown";
 import {
   normalizeMathDelimiters,
@@ -75,5 +77,8 @@ export const MARKDOWN_PRESETS: Record<MarkdownPreset, MarkdownPluginSet> = {
 
 /** The source a preset parses: math presets run the one normalizer. */
 export function prepareCoreSource(source: string, preset: MarkdownPreset): string {
-  return MARKDOWN_PRESETS[preset].math ? normalizeMathDelimiters(source) : source;
+  if (preset === "plain") return source;
+  // Page-break lines get their own block before parsing (remarkMatrxPageBreak).
+  const isolated = isolatePageBreakLines(source);
+  return MARKDOWN_PRESETS[preset].math ? normalizeMathDelimiters(isolated) : isolated;
 }

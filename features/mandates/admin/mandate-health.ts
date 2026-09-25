@@ -36,13 +36,13 @@ export type MandateHealth =
   | "agent archived"
   | "code ↔ contract drift"
   | "output contract unmet"
-  | "no holder yet"
+  | "no Mandate Holder yet"
   | "ok";
 
 /**
  * Stable worst-first order for both primary-health selection and table rows.
  *
- * 🚨 `no holder yet` IS NOT A DEFECT and sorts beside `ok`, not with the red
+ * 🚨 `no Mandate Holder yet` IS NOT A DEFECT and sorts beside `ok`, not with the red
  * states. See `buildRow`'s `hasPin` note: a mandate that was never pinned used
  * to be reported as `unresolved pin` — a rose alert offering to replace an
  * agent that had never been chosen, on EVERY mandate a person creates.
@@ -62,7 +62,7 @@ export const HEALTH_PRIORITY: Record<MandateHealth, number> = {
   // contract, which `enforced_holder_contract` keeps in force ALWAYS. Ranked
   // above version drift because a drifted pin still runs and this does not.
   "output contract unmet": 5.5,
-  "no holder yet": 7,
+  "no Mandate Holder yet": 7,
   ok: 8,
 };
 
@@ -346,7 +346,7 @@ export function buildRow(
                 ? "output contract unmet"
                 : hasPin
                   ? "ok"
-                  : "no holder yet";
+                  : "no Mandate Holder yet";
 
   // The contract is the mandate's factual I/O declaration — the Inputs and
   // Output columns render THIS, never the bare input_kind/output_kind
@@ -422,7 +422,7 @@ export const HEALTH_CLASS: Record<MandateHealth, string> = {
   ok: "text-success border-success/40 bg-success/10",
   // Neutral on purpose — this is the true resting state of a new mandate,
   // not a problem. Nothing red, nothing amber.
-  "no holder yet": "text-muted-foreground border-border bg-muted/40",
+  "no Mandate Holder yet": "text-muted-foreground border-border bg-muted/40",
   "code ↔ agent drift": "text-foreground border-destructive/40 bg-destructive/10",
   "code truth import failed":
     "text-foreground border-warning/40 bg-warning/10",
@@ -447,9 +447,9 @@ export const HEALTH_HINT: Partial<Record<MandateHealth, string>> = {
     "This mandate serves every user, but its default is a personal agent only some of them can see.",
   "agent archived": "The pinned agent is archived — rebind before it breaks.",
   "output contract unmet":
-    "The holder does not declare the structured output keys this job's consumers require, so the assignment fails at run time. Give the holder an output schema that declares them, or bind one that already does.",
-  "no holder yet":
-    "Nothing is bound to this mandate yet, which is where every new mandate starts. Choose a holder above whenever the intelligence exists.",
+    "The Mandate Holder does not declare the structured output keys this job's consumers require, so the assignment fails at run time. Give the Mandate Holder an output schema that declares them, or bind one that already does.",
+  "no Mandate Holder yet":
+    "Nothing is bound to this mandate yet, which is where every new mandate starts. Choose a Mandate Holder above whenever the intelligence exists.",
 };
 
 // ── Drift remedy — which "newest" is real, and which button can reach it ─────

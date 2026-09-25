@@ -22,7 +22,7 @@ export function sourceLabelsFor(
 ): Required<SourceLabels> {
   return {
     agent_default:
-      holderKind === "workflow" ? "Holder Default" : "Agent Default",
+      holderKind === "workflow" ? "Mandate Holder Default" : "Agent Default",
     surface_value: "Offered Value",
     direct_value: "Direct Value",
     prompt_user: "Prompt User",
@@ -36,7 +36,7 @@ export function sourceLabelsFor(
  * while an offered value only exists where a value of that name is offered.
  */
 export const FILL_DOWN_LIMITS =
-  "Direct values, questions and holder defaults fill cleanly. An offered value only lands where that place offers a value of the same name — elsewhere the row re-binds to a value named like the input, or clears and goes red.";
+  "Direct values, questions and Mandate Holder defaults fill cleanly. An offered value only lands where that place offers a value of the same name — elsewhere the row re-binds to a value named like the input, or clears and goes red.";
 
 /**
  * WHAT FEEDS ONE HOLDER INPUT, SAID BY KIND (V1 finding F2, 2026-08-31).
@@ -77,8 +77,8 @@ export function feedSentence(
         ? "Waiting for you to pick which offered value feeds this — nothing feeds it yet."
         : `Waiting for you to pick ${unpicked} offered values — nothing feeds this yet.`
       : holderHasDefault
-        ? "Nothing feeds this — the holder's own default applies."
-        : "Nothing feeds this, and the holder has no default of its own — nothing arrives for it.";
+        ? "Nothing feeds this — the Mandate Holder's own default applies."
+        : "Nothing feeds this, and the Mandate Holder has no default of its own — nothing arrives for it.";
   }
 
   const offered = settled.filter(isOfferedSource).length;
@@ -149,20 +149,20 @@ export function coverageLine({
 }): string {
   if (!hasHolder) {
     return offeredCount === null
-      ? "Pick a holder and this job's offered values become its inputs."
+      ? "Pick a Mandate Holder and this job's offered values become its inputs."
       : offeredCount === 0
-        ? "This job offers nothing yet, so a holder here would run on what its caller passes and nothing else."
-        : `Pick a holder and these ${offeredCount} offered values become the inputs it can be fed from.`;
+        ? "This job offers nothing yet, so a Mandate Holder here would run on what its caller passes and nothing else."
+        : `Pick a Mandate Holder and these ${offeredCount} offered values become the inputs it can be fed from.`;
   }
-  if (!inputsReady) return "Reading what this holder needs…";
+  if (!inputsReady) return "Reading what this Mandate Holder needs…";
   if (totalInputs === 0) {
-    return "This holder declares no inputs, so there is nothing on this screen to feed.";
+    return "This Mandate Holder declares no inputs, so there is nothing on this screen to feed.";
   }
 
   const head =
     fedInputs === totalInputs
-      ? `Every input this holder needs is fed — all ${totalInputs}.`
-      : `${fedInputs} of the ${totalInputs} inputs this holder needs ${
+      ? `Every input this Mandate Holder needs is fed — all ${totalInputs}.`
+      : `${fedInputs} of the ${totalInputs} inputs this Mandate Holder needs ${
           fedInputs === 1 ? "is" : "are"
         } fed.`;
 
@@ -182,7 +182,7 @@ export function coverageLine({
 
   const slack =
     unfedRequired === 0 && fedInputs < totalInputs
-      ? ` The other ${totalInputs - fedInputs} fall back to the holder's own defaults.`
+      ? ` The other ${totalInputs - fedInputs} fall back to the Mandate Holder's own defaults.`
       : "";
 
   return `${head}${asks}${blocked}${slack}`;
@@ -230,7 +230,7 @@ export const JOB_ADVANCED_WORDS: Partial<AdvancedSectionWords> = {
   // (That they are two stores at all is the D5/D7 split; it is not this wave's
   // to unify, but it is this wave's not to lie about.)
   llmOverridesHint:
-    "Which model runs this job, and the settings it runs with, when it is launched from a menu or from a place in the app. Stored with this job's own options, so it is one answer for everyone — options have no per-person rung. Left alone, the holder's own model and settings are used. (Runs through the job itself use the binding's own settings, under Settings above.)",
+    "Which model runs this job, and the settings it runs with, when it is launched from a menu or from a place in the app. Stored with this job's own options, so it is one answer for everyone — options have no per-person rung. Left alone, the Mandate Holder's own model and settings are used. (Runs through the job itself use the binding's own settings, under Settings above.)",
   jsonExtractionHint:
     "How this job pulls a structured result out of the answer while it is still being written. Leave empty for off.",
 };
@@ -248,18 +248,18 @@ export const JOB_ADVANCED_WORDS: Partial<AdvancedSectionWords> = {
 export const JOB_OVERRIDE_WORDS = {
   heading: "Model settings for this binding",
   scopeNote:
-    "These are stored on this binding and applied whenever the server resolves this binding for someone this rung covers — not to one conversation. Resetting a value hands it back to the holder's own default.",
+    "These are stored on this binding and applied whenever the server resolves this binding for someone this rung covers — not to one conversation. Resetting a value hands it back to the Mandate Holder's own default.",
   noModelNote:
-    "No model resolved for this holder yet — its settings appear once it is read.",
+    "No model resolved for this Mandate Holder yet — its settings appear once it is read.",
   // The job vocabulary's own word for the picker's "no override" choice. The
   // shared default says "the agent's own model", which is right on an agent
   // door and wrong here: a job's runner is its HOLDER, agent or workflow.
-  modelEmptyChoiceLabel: "Use the holder's own model",
+  modelEmptyChoiceLabel: "Use the Mandate Holder's own model",
   // The baseline's noun, same reason: a job's runner is its HOLDER. The shared
   // panel's default says "Agent", which is right on an agent door and wrong on
   // a job's binding, where the runner may be a workflow.
-  baselineSourceLabel: "Holder",
-  baselineDefaultLabel: "Holder default",
+  baselineSourceLabel: "Mandate Holder",
+  baselineDefaultLabel: "Mandate Holder default",
 };
 
 /**
@@ -273,10 +273,10 @@ export const JOB_OVERRIDE_WORDS = {
 export const JOB_TREATMENT_OVERRIDE_WORDS = {
   heading: "Model settings for this job's own options",
   scopeNote:
-    "These are stored with this job's options and used when it is launched from a menu or from a place in the app. One answer for everyone — options have no per-person rung. Resetting a value hands it back to the holder's own default.",
+    "These are stored with this job's options and used when it is launched from a menu or from a place in the app. One answer for everyone — options have no per-person rung. Resetting a value hands it back to the Mandate Holder's own default.",
   noModelNote:
-    "No model chosen — this job runs on its holder's own model unless you pick one.",
-  modelEmptyChoiceLabel: "Use the holder's own model",
-  baselineSourceLabel: "Holder",
-  baselineDefaultLabel: "Holder default",
+    "No model chosen — this job runs on its Mandate Holder's own model unless you pick one.",
+  modelEmptyChoiceLabel: "Use the Mandate Holder's own model",
+  baselineSourceLabel: "Mandate Holder",
+  baselineDefaultLabel: "Mandate Holder default",
 };

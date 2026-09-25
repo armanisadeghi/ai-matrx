@@ -289,7 +289,7 @@ export function BatchMode({
               .map((r) => `"${r.name}"`)
               .join(", ");
             out.push(
-              `${agentName} doesn't declare ${missing} — this job's caller passes it and the holder could never receive it.`,
+              `${agentName} doesn't declare ${missing} — this job's caller passes it and the Mandate Holder could never receive it.`,
             );
           }
         }
@@ -577,7 +577,7 @@ export function BatchMode({
     setApplying(false);
     if (failed.length === 0) {
       toast.success(
-        `${written.length} ${written.length === 1 ? "place" : "places"} now use this holder.`,
+        `${written.length} ${written.length === 1 ? "place" : "places"} now use this Mandate Holder.`,
       );
     } else {
       toast.error(
@@ -653,7 +653,7 @@ export function BatchMode({
       <section className="space-y-1.5">
         <div>
           <h3 className="text-[12.5px] font-semibold text-foreground">
-            The holder&apos;s inputs
+            The Mandate Holder&apos;s inputs
           </h3>
           <p className="text-[11px] leading-snug text-muted-foreground">
             Decide each input once for every place, or per place in the grid
@@ -685,7 +685,7 @@ export function BatchMode({
               {gridRows.length === 1 ? "place" : "places"}
             </h3>
             <p className="text-[11px] leading-snug text-muted-foreground">
-              The same middle, transposed. Places are rows, the holder&apos;s
+              The same middle, transposed. Places are rows, the Mandate Holder&apos;s
               inputs are columns.
             </p>
           </div>
@@ -796,7 +796,7 @@ export function BatchMode({
       <ApplyRefusal refusal={refusal} />
 
       <p className="text-right text-[11px] leading-relaxed text-muted-foreground/80">
-        Batch writes the match, the holder and the rung. &quot;Run
+        Batch writes the match, the Mandate Holder and the rung. &quot;Run
         instantly&quot; is a fact about ONE map, so each place keeps the promise
         it already had — open a place in “Map one place” to change it.
       </p>
@@ -841,9 +841,9 @@ function holderRefusal({
   if (rung === "global" && !canBindGlobal) {
     return "The system answer is a super-admin decision — the server refuses this write.";
   }
-  if (holderStatus === "loading") return "Reading the holder's inputs…";
+  if (holderStatus === "loading") return "Reading the Mandate Holder's inputs…";
   if (holderStatus === "error") {
-    return "The holder's inputs could not be read, so there is nothing honest to map.";
+    return "The Mandate Holder's inputs could not be read, so there is nothing honest to map.";
   }
   return null;
 }

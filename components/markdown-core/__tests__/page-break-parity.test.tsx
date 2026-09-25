@@ -134,6 +134,34 @@ describe("page break previews as a divider in every markdown entry point", () =>
   }
 });
 
+describe("screen agrees with paper (review cases, 2026-09-25)", () => {
+  const CASES: Array<{ name: string; source: string; breaks: number; literal?: string }> = [
+    { name: "a directive in a blockquote is a quote, not a break", source: "> \\pagebreak", breaks: 0 },
+    { name: "a directive as a list item is a list item, not a break", source: "- \\newpage", breaks: 0 },
+    { name: "a directive right under a line of text is still a break", source: "Text line\n\\newpage\nMore text", breaks: 1 },
+    { name: "an escaped directive stays text", source: "\\\\newpage", breaks: 0 },
+    { name: "a 4-space indented directive is code, not a break", source: "Intro\n\n    <!-- pagebreak -->\n\nOutro", breaks: 0 },
+  ];
+  for (const c of CASES) {
+    for (const r of RENDERERS) {
+      it(`${r.name}: ${c.name}`, async () => {
+        const { container, root } = await mount(r.render(c.source));
+        try {
+          expect(container.querySelectorAll(".matrx-page-break")).toHaveLength(c.breaks);
+          if (c.breaks === 1) {
+            expect(container.textContent).toContain("Text line");
+            expect(container.textContent).toContain("More text");
+            expect(container.textContent).not.toContain("\\newpage");
+          }
+        } finally {
+          act(() => root.unmount());
+          container.remove();
+        }
+      });
+    }
+  }
+});
+
 describe("the chat splitter keeps every page-break form inside the text block", () => {
   const source = FORMS.map((f, i) => `Section ${i}.\n\n${f}`).join("\n\n") + "\n\nEnd.";
 

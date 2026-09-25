@@ -37,7 +37,7 @@ export function mandateCopyFor(
       "The mandate registry as currently filtered and sorted, with per-caller resolution (who decides each job).",
     humanRow: (row: MandateListRow) =>
       `${row.label} (${row.mandate_key}) — ${layerMeta(row.resolved_layer).label} · ` +
-      `${row.resolved_agent_name ?? "no holder"}${row.drift ? ` · ${row.drift}` : ""}`,
+      `${row.resolved_agent_name ?? "no Mandate Holder"}${row.drift ? ` · ${row.drift}` : ""}`,
     agentRow: (row: MandateListRow) => ({
       id: row.id,
       mandate_key: row.mandate_key,

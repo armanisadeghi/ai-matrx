@@ -92,7 +92,7 @@ const APPLIED_OVERRIDE_COLUMNS = [
 const ORIGIN_LABEL: Record<ServedInput["origin"], string> = {
   provision: "Provision",
   mandate_input: "Mandate",
-  holder: "Holder",
+  holder: "Mandate Holder",
   variable: "Variable declaration",
   field: "Field declaration",
   binding_prompt: "Binding",
@@ -288,7 +288,7 @@ export function TryItNowPanel({
   function fillSample(sample: AgentSampleRow) {
     try {
       if (!sampleSource || sample.agent_id !== sampleSource.agentId)
-        throw new Error("The selected holder changed. Reopen its samples.");
+        throw new Error("The selected Mandate Holder changed. Reopen its samples.");
       if (sampleAttachmentParts(sample).length)
         throw new Error(
           "This sample contains attachments. The mandate test endpoint cannot accept those message parts yet; no inputs were changed.",
@@ -355,7 +355,7 @@ export function TryItNowPanel({
         candidate: {
           candidate_id: crypto.randomUUID(),
           label:
-            testContext === "system" ? "System default" : "My effective holder",
+            testContext === "system" ? "System default" : "My effective Mandate Holder",
           selection: "current",
         },
         ...(testContext === "viewer"
@@ -487,7 +487,7 @@ export function TryItNowPanel({
       ) : null}
       <PropertyRow
         label="Test mode"
-        help={`${allowPrincipalSelection ? "Server test executes the selected test context" : "Server test executes the system default"} and returns diagnostics. My display preview executes your resolved holder with saved display defaults; it does not reproduce the original feature. Test inputs come from the signed-in organization, so cross-principal input compatibility has not been verified.`}
+        help={`${allowPrincipalSelection ? "Server test executes the selected test context" : "Server test executes the system default"} and returns diagnostics. My display preview executes your resolved Mandate Holder with saved display defaults; it does not reproduce the original feature. Test inputs come from the signed-in organization, so cross-principal input compatibility has not been verified.`}
         value={
           <Select
             value={testMode}
@@ -514,7 +514,7 @@ export function TryItNowPanel({
           label="Test context"
           value={
             testMode === "display" ? (
-              "My effective holder"
+              "My effective Mandate Holder"
             ) : (
               <Select
                 value={testContext}
@@ -529,12 +529,12 @@ export function TryItNowPanel({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="system">System default</SelectItem>
-                  <SelectItem value="viewer">My effective holder</SelectItem>
+                  <SelectItem value="viewer">My effective Mandate Holder</SelectItem>
                 </SelectContent>
               </Select>
             )
           }
-          help="System default preserves the administrator bench. My effective holder includes your organization and personal binding overrides. Both execute as the signed-in administrator."
+          help="System default preserves the administrator bench. My effective Mandate Holder includes your organization and personal binding overrides. Both execute as the signed-in administrator."
         />
       ) : null}
       {surfaceState.status === "loading" ? (
@@ -608,7 +608,7 @@ export function TryItNowPanel({
               !field.pinned ? (
                 <p className="text-xs leading-snug text-warning">
                   This job asks you for this. Leave it blank and the run uses
-                  the holder&rsquo;s own default instead of an answer from you.
+                  the Mandate Holder&rsquo;s own default instead of an answer from you.
                 </p>
               ) : null}
               {field.pinned ? (
@@ -817,7 +817,7 @@ export function TryItNowPanel({
             ) : (
               <ConfigurationTableRow
                 columns={APPLIED_OVERRIDE_COLUMNS}
-                cells={{ setting: "None", value: "Holder defaults" }}
+                cells={{ setting: "None", value: "Mandate Holder defaults" }}
               />
             )}
           </ConfigurationTable>
@@ -830,7 +830,7 @@ export function TryItNowPanel({
             }
           />
           <PropertyRow
-            label="Holder type"
+            label="Mandate Holder type"
             value={runHolder?.holderType === "workflow" ? "Workflow" : "Agent"}
           />
           {runHolder?.holderType === "workflow" ? (

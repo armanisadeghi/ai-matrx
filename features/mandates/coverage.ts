@@ -77,7 +77,7 @@ export const COVERAGE_META: Record<
   green: {
     label: "Assigned",
     description:
-      "A Holder is assigned to this Mandate — its own default, or an org/user binding.",
+      "A Mandate Holder is assigned to this Mandate — its own default, or an org/user binding.",
     toneClassName:
       "border-emerald-500/40 text-emerald-700 dark:text-emerald-400",
     iconClassName: "text-emerald-600 dark:text-emerald-400",
@@ -85,14 +85,14 @@ export const COVERAGE_META: Record<
   orange: {
     label: "Running on fallback",
     description:
-      "Nothing is assigned here — another Mandate's Holder is carrying it. Named below.",
+      "Nothing is assigned here — another Mandate's own Mandate Holder carries it. Named below.",
     toneClassName: "border-amber-500/40 text-amber-700 dark:text-amber-400",
     iconClassName: "text-amber-600 dark:text-amber-400",
   },
   red: {
     label: RED_WORD,
     description:
-      "No Holder and no fallback resolves — this Mandate has no runnable resolution.",
+      "No Mandate Holder and no fallback resolves — this Mandate has no runnable resolution.",
     toneClassName: "border-rose-500/40 text-rose-700 dark:text-rose-400",
     iconClassName: "text-rose-600 dark:text-rose-400",
   },

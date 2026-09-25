@@ -152,7 +152,7 @@ function Row({
     >
       <span className="flex w-[9.5rem] shrink-0 items-center gap-1 text-[12px] font-medium text-foreground">
         {label}
-        {help ? <FieldHelp label="Eligible holders">{help}</FieldHelp> : null}
+        {help ? <FieldHelp label="Eligible Mandate Holders">{help}</FieldHelp> : null}
       </span>
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
         {children}
@@ -181,10 +181,10 @@ export function HolderAssignment({
       {/* 1 — HOLDER TYPE. A switch between the only two things that can hold
           a job. Changing it clears the other kind's value rather than carrying
           a stale id under a label that no longer names it. */}
-      <Row label="Holder Type" control="type" help={holderTypeHelp}>
+      <Row label="Mandate Holder Type" control="type" help={holderTypeHelp}>
         <div
           role="radiogroup"
-          aria-label="Holder Type"
+          aria-label="Mandate Holder Type"
           className="flex flex-wrap gap-1.5"
         >
           {(
@@ -330,7 +330,7 @@ export function HolderAssignment({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="latest">Latest</SelectItem>
-                <SelectItem value="unselected">Select holder</SelectItem>
+                <SelectItem value="unselected">Select Mandate Holder</SelectItem>
               </SelectContent>
             </Select>
             {isWorkflow ? (

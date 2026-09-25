@@ -157,9 +157,9 @@ export const LAYER_META: Record<MandateResolvedLayer, BadgeMeta> = {
 export const HEALTH_META: Record<MandateListHealth, BadgeMeta> = {
   ok: { label: "OK", className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
   drift: { label: "Drift", className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400" },
-  "holder archived": { label: "Holder archived", className: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400" },
+  "holder archived": { label: "Mandate Holder archived", className: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400" },
   "holder missing": { label: "Binding needed", className: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400" },
-  "holder unreachable": { label: "Holder unreachable", className: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400" },
+  "holder unreachable": { label: "Mandate Holder unreachable", className: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400" },
   "version unreachable": { label: "Version unreachable", className: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400" },
   "global rung dropped": { label: "Global choice dropped", className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400" },
   "org rung dropped": { label: "Org choice dropped", className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400" },

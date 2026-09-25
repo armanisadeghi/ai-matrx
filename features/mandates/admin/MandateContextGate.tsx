@@ -72,7 +72,7 @@ export function MandateContextGate({
       <ShortcutFieldRow
         title="Automatic context"
         source="Mandate"
-        hint="A mandate can block automatic context. It cannot reopen context blocked by the holder. Required context policies still apply."
+        hint="A mandate can block automatic context. It cannot reopen context blocked by the Mandate Holder. Required context policies still apply."
         metadata={
           <>
             <span>
@@ -82,7 +82,7 @@ export function MandateContextGate({
               <strong>State:</strong> {saving ? "Saving" : "Saved"}
             </span>
             <span>
-              <strong>Holder:</strong> {holderClosed ? "Blocked" : "Allowed"}
+              <strong>Mandate Holder:</strong> {holderClosed ? "Blocked" : "Allowed"}
             </span>
             <span className="inline-flex items-center gap-1">
               <strong>Effective:</strong>{" "}

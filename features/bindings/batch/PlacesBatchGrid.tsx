@@ -93,7 +93,7 @@ export function PlacesBatchGrid({
   if (rows.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-border bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
-        No places in this batch yet — pick the jobs this holder should fulfil
+        No places in this batch yet — pick the jobs this Mandate Holder should fulfil
         above, and they become rows here.
       </div>
     );
@@ -188,7 +188,7 @@ export function PlacesBatchGrid({
                 ...health.problems,
                 ...health.unfedRequired.map(
                   (name) =>
-                    `"${name}" is required and nothing feeds it, and the holder has no default of its own.`,
+                    `"${name}" is required and nothing feeds it, and the Mandate Holder has no default of its own.`,
                 ),
               ];
               return (

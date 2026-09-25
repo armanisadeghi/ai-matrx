@@ -431,7 +431,7 @@ export function ScopeHolderBar({
         // that pins it (`system-rung-holder-refusal.test.tsx`) reads this
         // sentence. Only its home moved.
         systemHolderViolation
-          ? "This holder is NOT a system agent, and the system rung runs for every user on the platform. Duplicate it into a system agent through the system-agents admin, then bind the copy."
+          ? "This Mandate Holder is NOT a system agent, and the system rung runs for every user on the platform. Duplicate it into a system agent through the system-agents admin, then bind the copy."
           : null
       }
       disabled={disabled}
@@ -672,18 +672,18 @@ export function ScopeHolderBar({
         <PropertyRow
           label="Coverage"
           value={job.coverageLine}
-          help="Whether what this job offers actually feeds every input the chosen holder requires."
+          help="Whether what this job offers actually feeds every input the chosen Mandate Holder requires."
         />
         {(holder.kind === "agent" && !holder.agentId) ||
         (holder.kind === "workflow" && !holder.workflowId) ? (
           <PropertyRow
-            label="Local holder"
+            label="Local Mandate Holder"
             value="Not assigned"
             source={pinnedRungWords(rung, defaultHolderOffer).noun}
             help={
               onDefaultHolderRung
                 ? "No mandate default is assigned."
-                : "No holder is assigned at this scope. The resolution chain can still provide an inherited holder."
+                : "No Mandate Holder is assigned at this scope. The resolution chain can still provide an inherited Mandate Holder."
             }
           />
         ) : null}
