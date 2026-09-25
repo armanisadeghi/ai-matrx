@@ -58,6 +58,7 @@ import {
   splitContentIntoBlocksWith,
 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-core";
 import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
+import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 
 const FORMS = [
   "<!-- pagebreak -->",
@@ -172,8 +173,8 @@ describe("the chat splitter keeps every page-break form inside the text block", 
   });
 
   it("streamed in small chunks", () => {
-    const latest = new Map<string, { type: string; content?: string; blockIndex: number }>();
-    const acc = new StreamBlockAccumulator("pb", (payload: { block: { blockId: string; type: string; content?: string; blockIndex: number } }) => {
+    const latest = new Map<string, RenderBlockPayload>();
+    const acc = new StreamBlockAccumulator("pb", (payload) => {
       latest.set(payload.block.blockId, payload.block);
       return payload;
     });
