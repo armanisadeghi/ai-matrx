@@ -153,6 +153,34 @@ describe("parseAgentVariableDefinitions", () => {
     expect(parseAgentVariableDefinitions(definitions)).toEqual(definitions);
   });
 
+  it("reads a kit-installed agent's stored merge_field binding unchanged", () => {
+    // Stored shape of a forked kit agent (data kits P2 installer), 2026-09-25.
+    const stored = [
+      { name: "prompt_purpose", defaultValue: "" },
+      {
+        name: "model_selection_guidance",
+        binding: {
+          kind: "merge_field",
+          limit: 40,
+          source: "record",
+          missing: "absent",
+          table_id: "67fbacf8-419a-4cc8-bde5-4ccb24a4ec7a",
+          transform: {
+            max: 40,
+            join: "\n",
+            name: "list",
+            template:
+              "- {purpose}: {model.common_name} — model `{model.name}` (id `{model.id}`). {why}",
+          },
+          semantic_type: "collection",
+          override_policy: "shown_locked",
+        },
+        defaultValue: "",
+      },
+    ];
+    expect(parseAgentVariableDefinitions(stored)).toEqual(stored);
+  });
+
   it("keeps an in-progress custom-data binding (no table chosen yet) readable", () => {
     const definitions = [
       {
