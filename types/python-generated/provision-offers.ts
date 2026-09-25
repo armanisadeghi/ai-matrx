@@ -1351,6 +1351,30 @@ export interface KnowledgeSectionQaOffer {
   document_outline?: string[];
 }
 
+/** Offered shape of provision `local.pipeline_code` (kind `local.pipeline_code.offer`). */
+export interface LocalPipelineCodeOffer {
+  __kind?: "local.pipeline_code.offer";
+  code: string;
+}
+
+/** Offered shape of provision `local.pipeline_question` (kind `local.pipeline_question.offer`). */
+export interface LocalPipelineQuestionOffer {
+  __kind?: "local.pipeline_question.offer";
+  question: string;
+}
+
+/** Offered shape of provision `local.pipeline_text` (kind `local.pipeline_text.offer`). */
+export interface LocalPipelineTextOffer {
+  __kind?: "local.pipeline_text.offer";
+  text: string;
+}
+
+/** Offered shape of provision `local.transcript_polish` (kind `local.transcript_polish.offer`). */
+export interface LocalTranscriptPolishOffer {
+  __kind?: "local.transcript_polish.offer";
+  transcript: string;
+}
+
 /** Offered shape of provision `mandate_outcome.goal_text` (kind `mandate_outcome.goal_text.offer`). */
 export interface MandateOutcomeGoalTextOffer {
   __kind?: "mandate_outcome.goal_text.offer";
@@ -3387,6 +3411,10 @@ export interface ProvisionOffers {
   "knowledge.document_verification": KnowledgeDocumentVerificationOffer;
   "knowledge.section_derivation": KnowledgeSectionDerivationOffer;
   "knowledge.section_qa": KnowledgeSectionQaOffer;
+  "local.pipeline_code": LocalPipelineCodeOffer;
+  "local.pipeline_question": LocalPipelineQuestionOffer;
+  "local.pipeline_text": LocalPipelineTextOffer;
+  "local.transcript_polish": LocalTranscriptPolishOffer;
   "mandate_outcome.goal_text": MandateOutcomeGoalTextOffer;
   "mandate_outcome.judged_run": MandateOutcomeJudgedRunOffer;
   "mandates.holder_draft_brief": MandatesHolderDraftBriefOffer;
@@ -3652,6 +3680,10 @@ export const PROVISION_OFFER_KINDS = {
   "knowledge.document_verification": "knowledge.document_verification.offer",
   "knowledge.section_derivation": "knowledge.section_derivation.offer",
   "knowledge.section_qa": "knowledge.section_qa.offer",
+  "local.pipeline_code": "local.pipeline_code.offer",
+  "local.pipeline_question": "local.pipeline_question.offer",
+  "local.pipeline_text": "local.pipeline_text.offer",
+  "local.transcript_polish": "local.transcript_polish.offer",
   "mandate_outcome.goal_text": "mandate_outcome.goal_text.offer",
   "mandate_outcome.judged_run": "mandate_outcome.judged_run.offer",
   "mandates.holder_draft_brief": "mandates.holder_draft_brief.offer",
