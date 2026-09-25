@@ -10,6 +10,13 @@ const target: RowAgentActionTarget = {
   title: "Tango — annual vaccines",
   action: "Draft reminder",
   prompt: "  Draft a friendly reminder text for this appointment.  ",
+  // `rowAgentOffer`/`rowAgentLaunch` never read these four (they take the row and columns as
+  // their own arguments) — carried here only so `target` satisfies the required shape the Grid
+  // (records-ui 0.85.7+) actually sends; the "no second read" tests below override them.
+  tableName: "Appointments",
+  fields: [],
+  document: {},
+  level: null,
 };
 
 const columns = [
@@ -116,14 +123,15 @@ describe("no second read", () => {
     const rpc = jest.fn();
     const launches: Array<{ key: string; options: unknown }> = [];
     const refusals: Array<{ title: string; why: string }> = [];
+    // `level` is dropped entirely — the one field an older records-ui, or a caller that
+    // regressed to it, would omit — never inherited from `target`'s own `level: null`.
+    const { level: _droppedLevel, ...targetWithoutLevel } = target;
     await runRowAgentAction({
       target: {
-        ...target,
+        ...targetWithoutLevel,
         tableName: "Appointments",
         fields: [{ id: "f1", key: "patient", label: "Patient", type: "text", sort: 0 }] as never,
         document: { patient: "Tango" } as never,
-        // `level` is left off entirely — the one field an older records-ui, or a caller
-        // that regressed to it, would omit.
       } as never,
       dataSource: { rpc } as never,
       actor: { actor: "user", user_id: "87a6e699-3622-4869-8843-d0867456c0dd", on_behalf_of: null } as never,
