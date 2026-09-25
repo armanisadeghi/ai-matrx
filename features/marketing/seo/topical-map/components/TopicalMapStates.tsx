@@ -49,11 +49,14 @@ export function TopicalMapEmpty({
 }
 
 /**
- * A failed read or write. The SQLSTATE is shown beside the message because the
- * map's four raised codes mean four different things to the reader: 22023 is
- * "you sent something the function will not take", 23514 is "a policy refused
- * and here is everything blocking it", 42501 is "you cannot reach that", and
- * P0002 is "that slug is not in this map".
+ * A failed read or write. The screen shows the function's own sentence (see
+ * `../errors.ts`) and, when Postgres attached one, its detail/hint — never the
+ * raw SQLSTATE as page text. The map's four raised codes still mean four
+ * different things (22023 a bad argument, 23514 a policy refusal, 42501
+ * denied, P0002 not in this map), but that meaning belongs in the sentence a
+ * person reads, not in a code printed at them. The code stays reachable, on a
+ * `data-topical-map-error-code` attribute and a hover `title`, for whoever has
+ * to trace the report afterwards — never as visible body text.
  */
 export function TopicalMapFailed({
   what,
@@ -93,6 +96,17 @@ function TopicalMapFault({ what, error }: { what: string; error: unknown }) {
     <div
       role="alert"
       className="rounded-xl border border-destructive/40 bg-destructive/5 p-4"
+      /*
+       * 🚨 THE MACHINE CODE IS AN ATTRIBUTE, NEVER PAGE TEXT — the same
+       * affordance as `features/hr/time/shared/RefusalNotice.tsx` and
+       * `features/hr/shared/HrStates.tsx#HrError`. This used to render
+       * `SQLSTATE {code}` as a visible line under the message, which is the
+       * engine's own token, not a fact the reader can act on. It stays on the
+       * DOM as a data attribute and a hover title so it can still be copied
+       * into a support conversation or an error report.
+       */
+      data-topical-map-error-code={code ?? undefined}
+      title={code ? `Reference: ${code}` : undefined}
     >
       <p className="flex items-center gap-2 font-medium text-destructive">
         <AlertTriangle className="h-4 w-4" aria-hidden />
@@ -110,11 +124,6 @@ function TopicalMapFault({ what, error }: { what: string; error: unknown }) {
       {hint ? (
         <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">
           {hint}
-        </p>
-      ) : null}
-      {code ? (
-        <p className="mt-2 font-mono text-xs text-muted-foreground">
-          SQLSTATE {code}
         </p>
       ) : null}
     </div>
