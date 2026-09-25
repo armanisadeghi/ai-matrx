@@ -8,7 +8,7 @@
  * `POST /mandates/{key}/workflow-starter` creates a workflow owned by the
  * caller whose first step already asks for the job's inputs (keyed by the same
  * names, so a binding needs no mapping) and whose declared output kind is the
- * job's. The studio opens it in a new tab; the caller is then taken to the
+ * job's. The Workflow Studio (the authoring app) opens it in a new tab; the caller is then taken to the
  * Binding tab, where the finished workflow is picked. It is not bound here: a
  * workflow with no steps cannot answer the job yet, and the bind gate would
  * rightly refuse it.
@@ -19,6 +19,7 @@ import { callApi } from "@/lib/api/call-api";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
 
 export interface WorkflowStarterResult {
   workflow_id: string;
@@ -39,6 +40,11 @@ function isStarterResult(value: unknown): value is WorkflowStarterResult {
     typeof record.studio_path === "string" &&
     typeof record.message === "string"
   );
+}
+
+/** The Workflow Studio (the authoring app) address of a workflow. */
+export function workflowStudioHref(studioPath: string): string {
+  return `${WORKFLOWS_APP_URL}${studioPath.startsWith("/") ? "" : "/"}${studioPath}`;
 }
 
 export function workflowStarterPath(mandateKey: string): string {
@@ -67,14 +73,15 @@ export function useStartMandateWorkflow(): {
         throw new Error("The server did not say which workflow it created.");
       }
       const created = response.data;
-      if (studio) studio.location.href = created.studio_path;
+      const studioHref = workflowStudioHref(created.studio_path);
+      if (studio) studio.location.href = studioHref;
+      // Always a door, even when the tab opened: a browser (or an embedded
+      // pane) may swallow the pre-opened tab without saying so.
       toast.success(created.message, {
-        action: studio
-          ? undefined
-          : {
-              label: "Open it",
-              onClick: () => window.open(created.studio_path, "_blank"),
-            },
+        action: {
+          label: "Open in studio",
+          onClick: () => window.open(studioHref, "_blank"),
+        },
       });
       if (created.skipped.length > 0) {
         toast.warning(
