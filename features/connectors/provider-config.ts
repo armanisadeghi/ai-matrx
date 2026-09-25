@@ -209,8 +209,8 @@ const MARKETING_GROUP = "marketing";
 /**
  * GOOGLE — the first provider config.
  *
- * Product rows follow PLAN §2 exactly: nine rows, two groups, one sentence
- * each. `drive_files`, `docs`, `sheets` and `slides` are four server
+ * The original product rows follow PLAN §2; Gmail changes adds a separate
+ * internal-test row. `drive_files`, `docs`, `sheets` and `slides` are four server
  * capabilities and ONE row, because "Docs, Sheets & Drive files" is one decision
  * for the person and one `drive.file` grant at Google.
  *
