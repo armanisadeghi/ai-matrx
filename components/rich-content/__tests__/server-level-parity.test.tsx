@@ -221,4 +221,23 @@ describe("server level renders the same HTML as the client levels", () => {
     const staticSsr = serverHtml(<RichContentStaticInline source={FLASHCARD_FRONT} />);
     expect(staticSsr).toBe(server);
   });
+
+  it('links="text": a card preview inside a link keeps its formatting and emits no anchor', () => {
+    const summary =
+      "Covers **Newton's laws** and \\(F = ma\\) — see [the full guide](https://example.com/guide).";
+    const asLink = serverHtml(<RichContentServer level="inline" source={summary} />);
+    const asText = serverHtml(
+      <RichContentServer level="inline" links="text" source={summary} />,
+    );
+    const clientText = clientHtml(<RichContentInline links="text" source={summary} />);
+    const staticText = serverHtml(<RichContentStaticInline links="text" source={summary} />);
+    expect(asLink).toContain("<a");
+    expect(asText).not.toContain("<a");
+    expect(asText).toContain("Newton's laws</strong>");
+    expect(asText).toContain('class="katex"');
+    expect(asText).toContain("the full guide");
+    expect(clientText).toBe(asText);
+    expect(staticText).toBe(asText);
+  });
 });
+

@@ -112,10 +112,18 @@ export function DrillDeckCore({
   const rows: DeckRow[] = useMemo(() => {
     const out: DeckRow[] = [];
     if (engagementRungs) {
+      // A host that accepts only organizations gets flat rows — nothing below
+      // an organization could be picked, so its rows do not drill.
+      const drillsBelowOrg =
+        !allowedKinds || allowedKinds.has("project") || allowedKinds.has("task");
       if (deck.t === "root") {
         for (const org of u.orgs) {
           const node = orgNodeOf(org, u.orgs);
-          out.push({ key: node.id, node, drill: { t: "org", node } });
+          out.push({
+            key: node.id,
+            node,
+            drill: drillsBelowOrg ? { t: "org", node } : undefined,
+          });
         }
       } else if (deck.t === "org") {
         for (const project of u.projects) {
@@ -203,7 +211,7 @@ export function DrillDeckCore({
       }
     }
     return out;
-  }, [deck, engagementRungs, includeEngagements, itemsQ.items, orgName, u]);
+  }, [deck, engagementRungs, allowedKinds, includeEngagements, itemsQ.items, orgName, u]);
 
   const title =
     deck.t === "root"

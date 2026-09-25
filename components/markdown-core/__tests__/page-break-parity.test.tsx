@@ -37,10 +37,6 @@ jest.mock("@/features/files/hooks/useFileBlob", () => ({
     return { blob: mockBlobs.get(mockBlobText), loading: false, error: null };
   },
 }));
-jest.mock("rehype-prism-plus", () => ({
-  __esModule: true,
-  default: () => () => undefined,
-}));
 jest.mock("@/components/matrx/buttons/MarkdownCopyButton", () => ({
   InlineCopyButton: () => null,
 }));

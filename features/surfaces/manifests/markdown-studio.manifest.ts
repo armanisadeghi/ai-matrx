@@ -153,7 +153,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "view_mode",
     label: "View mode",
     description:
-      "Which mode the workspace is in — \"studio\" (editor beside live preview) or \"analysis\" (parser-drift report). Always present.",
+      "Which mode the workspace is in — \"studio\" (editor beside live preview), \"analysis\" (parser-drift report) or \"editor\" (the rich editor: visual, source and preview views; saves only to a disposable copy). Always present.",
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 8,
@@ -238,7 +238,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "view_mode",
     label: "View mode",
     description:
-      'Switches which mode the workspace shows. Exactly one of "studio" (editor beside the live rendered preview) or "analysis" (the parser-drift report for the same buffer) — any other value is refused. Ephemeral view state only: the buffer is untouched and there is nothing to save. Use it when the user asks to SEE the document a particular way, not as a step in writing one.',
+      'Switches which mode the workspace shows. Exactly one of "studio" (editor beside the live rendered preview), "analysis" (the parser-drift report for the same buffer) or "editor" (the rich editor over the same buffer) — any other value is refused. Ephemeral view state only: the buffer is untouched and there is nothing to save. Use it when the user asks to SEE the document a particular way, not as a step in writing one.',
     valueType: "string",
     updatesValue: "view_mode",
     mode: "ui",
@@ -254,7 +254,7 @@ export const markdownStudioManifest: SurfaceManifest = {
   label: "Markdown Studio",
   urlPattern: "/markdown-studio",
   intro: `<surface_intro>
-You are on Markdown Studio — a full-page markdown workspace. The user writes or pastes markdown into one buffer (content) and views it two ways: "studio" mode puts the editor beside a live rendered preview, "analysis" mode reports how the platform's parser reads the same text. view_mode tells you which they are looking at.
+You are on Markdown Studio — a full-page markdown workspace. The user writes or pastes markdown into one buffer (content) and views it three ways: "studio" mode puts the editor beside a live rendered preview, "analysis" mode reports how the platform's parser reads the same text, and "editor" mode is the rich editor (visual, source and preview views) whose saves go only to a disposable copy. view_mode tells you which they are looking at.
 The buffer can be linked to one of the user's saved samples (sample_id / sample_name / is_from_library); is_dirty says whether it has diverged from that saved copy. detected_blocks lists the render-block types the parser found.
 When asked to write, fix, or transform text here, operate on content and return valid markdown — the preview and the analysis view both parse whatever you produce.
 </surface_intro>`,

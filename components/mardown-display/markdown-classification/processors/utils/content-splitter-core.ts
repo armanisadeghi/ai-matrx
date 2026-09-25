@@ -54,6 +54,10 @@ import {
   classifyInnerFenceLine,
   fenceNestsInnerFences,
 } from "@ai-matrx/content-ir/source";
+import {
+  findBalancedXmlClose,
+  initialXmlBalance,
+} from "./xml-tag-balance";
 
 /**
  * All block type strings this splitter can emit — the union of:
@@ -1151,10 +1155,14 @@ function extractXmlBlock(
   matchedTag: string,
   startIndex: number,
   lines: string[],
+  trackFences = true,
 ): ExtractionResult {
   const content: string[] = [];
   let i = startIndex;
   let foundClosingTag = false;
+  // Same-name sections nest; the container closes on its BALANCED closer
+  // (xml-tag-balance.ts — shared with the live accumulator).
+  const balance = initialXmlBalance();
   // Collects any text that appears after the closing tag on the same line
   // (e.g. a new opening tag). Inserted back into `lines` so the caller's
   // loop can process it as a new block.
@@ -1200,14 +1208,11 @@ function extractXmlBlock(
   while (i < lines.length) {
     const currentTrimmed = normalizeLine(lines[i]).trim();
 
-    if (currentTrimmed === closingTag) {
-      foundClosingTag = true;
-      i++;
-      break;
-    }
-
-    // Closing tag inline: "content</reasoning>" or "---</flashcards><flashcards>"
-    const closingIdx = currentTrimmed.indexOf(closingTag);
+    // Closing tag on its own line or inline: "content</reasoning>" or
+    // "---</flashcards><flashcards>" — the closer that balances the container.
+    const closingIdx = findBalancedXmlClose(currentTrimmed, tagName, balance, {
+      trackFences,
+    });
     if (closingIdx !== -1) {
       const beforeClosing = currentTrimmed.slice(0, closingIdx).trim();
       if (beforeClosing) content.push(beforeClosing);
@@ -1236,6 +1241,13 @@ function extractXmlBlock(
 
     content.push(lines[i]);
     i++;
+  }
+
+  // The fence-aware reading ran off the end inside an unclosed ``` in the
+  // section body: the text is malformed there, so read the tags plainly
+  // rather than let the section swallow the rest of the message.
+  if (!foundClosingTag && trackFences && balance.fence !== null) {
+    return extractXmlBlock(type, matchedTag, startIndex, lines, false);
   }
 
   const fullContent = content.join("\n");

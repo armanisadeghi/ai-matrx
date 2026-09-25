@@ -428,7 +428,7 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
               ? `Not yet — this mandate still needs ${missing.join(", ")}.`
               : keyIsTaken
                 ? "Not yet — that key belongs to a live job; change it and this works."
-                : "No agent needed yet — bind one whenever it exists."}
+                : "No agent or workflow needed yet — bind one whenever it exists."}
           </span>
         </div>
       </div>

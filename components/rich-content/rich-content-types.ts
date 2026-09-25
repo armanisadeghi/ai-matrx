@@ -50,4 +50,9 @@ export interface RichContentProps {
   depthCap?: number;
   /** Typography variant (standard / full); default `default`. */
   variant?: RichContentVariant;
+  /**
+   * Inline only: `text` renders markdown links as their formatted text, for
+   * content that already sits inside a link (card previews). Default `link`.
+   */
+  links?: "link" | "text";
 }

@@ -45,8 +45,9 @@ import {
 import { RichContentVariantRoot } from "../prose/variant-root";
 import { detectTextDirection, preprocessProse } from "../prose/prose-prepare";
 import {
-  INLINE_LEVEL_ELEMENTS,
   INLINE_LEVEL_WRAPPER_CLASS,
+  inlineLevelElements,
+  type InlineLinks,
 } from "../prose/inline-level-elements";
 import {
   PROSE_BLOCK_ELEMENTS,
@@ -65,6 +66,8 @@ export interface RichContentServerProps {
   depthCap?: number;
   /** Typography variant (standard); `reading` for long-form public pages. */
   variant?: RichContentVariant;
+  /** Inline only: `text` when the content sits inside a link (card previews). */
+  links?: InlineLinks;
 }
 
 /** XML control sections whose body is prose — the same set StandardBlock nests. */
@@ -113,7 +116,15 @@ export function ProseServer({ content }: { content: string }) {
   );
 }
 
-function InlineServer({ source, className }: { source: string; className?: string }) {
+function InlineServer({
+  source,
+  className,
+  links,
+}: {
+  source: string;
+  className?: string;
+  links?: InlineLinks;
+}) {
   if (!source.trim()) return null;
   const { text, report } = guarded(source, "RichContentServer.inline");
   return (
@@ -122,7 +133,7 @@ function InlineServer({ source, className }: { source: string; className?: strin
         data-rich-content="inline"
         className={cn(INLINE_LEVEL_WRAPPER_CLASS, className)}
       >
-        <MarkdownCoreServer preset="chat" components={INLINE_LEVEL_ELEMENTS}>
+        <MarkdownCoreServer preset="chat" components={inlineLevelElements(links)}>
           {text}
         </MarkdownCoreServer>
       </span>
@@ -225,9 +236,10 @@ export function RichContentServer({
   className,
   depthCap = DEFAULT_RICH_CONTENT_DEPTH_CAP,
   variant,
+  links,
 }: RichContentServerProps) {
   if (level === "inline") {
-    return <InlineServer source={source} className={className} />;
+    return <InlineServer source={source} className={className} links={links} />;
   }
   return (
     <RichContentVariantRoot variant={variant}>

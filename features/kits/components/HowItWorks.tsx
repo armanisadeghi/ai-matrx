@@ -105,7 +105,7 @@ export function HowItWorks({ manifest }: { manifest: KitManifest }) {
             tone="agent"
             icon={<BrainCircuit className="h-3.5 w-3.5" />}
             eyebrow="Agent variable"
-            title={<code className="font-mono text-[13px]">{`{{${b.variable}}}`}</code>}
+            title={<code className="break-all font-mono text-[12.5px]">{`{{${b.variable}}}`}</code>}
           >
             in {agent.name}
           </Node>

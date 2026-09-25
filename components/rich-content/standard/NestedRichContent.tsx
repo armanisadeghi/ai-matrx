@@ -13,6 +13,7 @@
 
 import { useState } from "react";
 import { Layers } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { RichContentDepthProvider, useRichContentDepth } from "../depth";
 import { StandardBlocks } from "./StandardBlocks";
 
@@ -27,9 +28,26 @@ export function NestedRichContent({
   isStreaming,
   className,
 }: NestedRichContentProps) {
-  const { depth, cap } = useRichContentDepth();
+  const { depth, cap, ancestors } = useRichContentDepth();
   const [opened, setOpened] = useState(false);
   const next = depth + 1;
+
+  // RECURSION ON IDENTICAL CONTENT IS REFUSED BY CONSTRUCTION. A nested
+  // render whose text is the same as a section it sits inside can only ever
+  // produce itself again (a lone `<inf` fragment split into an "XML block"
+  // whose body is `<inf`, …) — it is text, rendered once, never re-entered.
+  // No depth budget or "Render it" reset can loop past this.
+  const key = source.trim();
+  if (key && ancestors.some((ancestor) => ancestor.trim() === key)) {
+    return (
+      <div
+        data-rich-content-self-nested
+        className={cn("whitespace-pre-wrap break-words", className)}
+      >
+        {source}
+      </div>
+    );
+  }
 
   if (next > cap && !opened) {
     return (
@@ -54,7 +72,11 @@ export function NestedRichContent({
 
   // Opened past the cap: this one section restarts its own depth budget.
   return (
-    <RichContentDepthProvider depth={opened ? 0 : next} cap={cap}>
+    <RichContentDepthProvider
+      depth={opened ? 0 : next}
+      cap={cap}
+      source={source}
+    >
       <StandardBlocks
         source={source}
         isStreaming={isStreaming}

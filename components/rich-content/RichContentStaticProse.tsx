@@ -20,8 +20,9 @@ import MarkdownCoreImpl from "@/components/markdown-core/MarkdownCoreImpl";
 import { cn } from "@/lib/utils";
 import { detectTextDirection, preprocessProse } from "./prose/prose-prepare";
 import {
-  INLINE_LEVEL_ELEMENTS,
   INLINE_LEVEL_WRAPPER_CLASS,
+  inlineLevelElements,
+  type InlineLinks,
 } from "./prose/inline-level-elements";
 import {
   PROSE_BLOCK_ELEMENTS,
@@ -63,14 +64,17 @@ export function RichContentStaticProse({
 /**
  * The `inline` level, statically (SSR'd) — phrasing only, valid inside a <p>.
  * Markup identical to RichContentServer level="inline" (parity guard).
- * Never inside a link: a markdown link would nest an anchor.
+ * Inside a link, pass `links="text"` (no nested anchor).
  */
 export function RichContentStaticInline({
   source,
   className,
+  links,
 }: {
   source: string;
   className?: string;
+  /** `text` when the content sits inside a link. */
+  links?: InlineLinks;
 }) {
   if (!source.trim()) return null;
   const { text, violations } = guardMarkdownDelimiters(preprocessProse(source));
@@ -80,7 +84,7 @@ export function RichContentStaticInline({
         data-rich-content="inline"
         className={cn(INLINE_LEVEL_WRAPPER_CLASS, className)}
       >
-        <MarkdownCoreImpl preset="chat" components={INLINE_LEVEL_ELEMENTS}>
+        <MarkdownCoreImpl preset="chat" components={inlineLevelElements(links)}>
           {text}
         </MarkdownCoreImpl>
       </span>

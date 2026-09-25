@@ -41,6 +41,7 @@ import type { ContentSource } from "@/features/rich-document/types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { AnalysisView } from "./AnalysisView";
+import { StudioEditorMode } from "./StudioEditorMode";
 import { SampleLibrarySheet } from "./SampleLibrarySheet";
 import { TemplatesPalette } from "./TemplatesPalette";
 import { useUserMarkdownSamples } from "./useUserMarkdownSamples";
@@ -59,7 +60,7 @@ import type { HeaderAction } from "@/features/shell/components/header/variants/t
  * surface write handler, which validates against this array rather than
  * re-typed literals, can never drift apart.
  */
-export const MARKDOWN_STUDIO_MODES = ["studio", "analysis"] as const;
+export const MARKDOWN_STUDIO_MODES = ["studio", "analysis", "editor"] as const;
 type StudioMode = (typeof MARKDOWN_STUDIO_MODES)[number];
 
 const EMPTY = "";
@@ -266,6 +267,8 @@ export function MarkdownStudio() {
     const handler = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
       if (!mod) return;
+      // Editor mode owns its own keys (⌘S saves the proving copy there).
+      if (mode === "editor") return;
       if (e.key === "s" && !e.shiftKey) {
         e.preventDefault();
         if (loadedSample && isDirty) void handleQuickUpdate();
@@ -280,7 +283,7 @@ export function MarkdownStudio() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [loadedSample, isDirty, content, handleQuickUpdate]);
+  }, [loadedSample, isDirty, content, handleQuickUpdate, mode]);
 
   const contentLabel =
     loadedSampleName ?? (content.trim() ? "Untitled" : "Empty");
@@ -468,6 +471,7 @@ export function MarkdownStudio() {
           options={[
             { icon: "Eye", label: "Studio", value: "studio" },
             { icon: "GitCompare", label: "Analysis", value: "analysis" },
+            { icon: "PenLine", label: "Editor", value: "editor" },
           ]}
           active={mode}
           onChange={setMode}
@@ -592,6 +596,14 @@ export function MarkdownStudio() {
               />
               </div>
             </div>
+          ) : mode === "editor" ? (
+            <StudioEditorMode
+              key={loadedSource ? `${loadedSource.kind}:${loadedSource.id}` : (loadedSampleId ?? "buffer")}
+              content={content}
+              title={contentLabel}
+              contentSource={loadedSource?.contentSource ?? RAW_SOURCE}
+              onContentChange={handleChange}
+            />
           ) : (
             <AnalysisView content={content} contentLabel={contentLabel} />
           )}

@@ -34,9 +34,10 @@ export function RichContent({
   className,
   depthCap,
   variant,
+  links,
 }: RichContentProps) {
   if (level === "inline") {
-    return <RichContentInline source={source} className={className} />;
+    return <RichContentInline source={source} className={className} links={links} />;
   }
   if (level === "standard") {
     return (

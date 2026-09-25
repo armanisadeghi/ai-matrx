@@ -154,3 +154,24 @@ export const INLINE_LEVEL_WRAPPER_CLASS = cn(
   "rich-content-inline min-w-0 break-words",
   "[&>[data-rc-block]+[data-rc-block]]:mt-1 [&>[data-rc-block]+[data-rc-block]]:block",
 );
+
+/**
+ * How the inline level renders markdown links.
+ *  - `link`  a real link (default).
+ *  - `text`  the link's text with its formatting, no anchor — for inline
+ *            content that already sits INSIDE a link (a card preview whose
+ *            whole card is a `<Link>`); a nested `<a>` is invalid HTML and
+ *            breaks hydration.
+ */
+export type InlineLinks = "link" | "text";
+
+/** The inline map with links rendered as their text (no anchor). */
+export const INLINE_LEVEL_ELEMENTS_LINKS_AS_TEXT = {
+  ...INLINE_LEVEL_ELEMENTS,
+  a: ({ children }) => <span data-rc-link-text="">{children}</span>,
+} as Components;
+
+/** The inline element map for a `links` choice. */
+export function inlineLevelElements(links: InlineLinks = "link"): Components {
+  return links === "text" ? INLINE_LEVEL_ELEMENTS_LINKS_AS_TEXT : INLINE_LEVEL_ELEMENTS;
+}

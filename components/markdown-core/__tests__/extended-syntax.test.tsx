@@ -35,7 +35,6 @@ jest.mock("@/components/markdown-core/MarkdownCore", () => {
     ),
   };
 });
-jest.mock("rehype-prism-plus", () => ({ __esModule: true, default: () => () => undefined }));
 jest.mock("@/components/matrx/buttons/MarkdownCopyButton", () => ({ InlineCopyButton: () => null }));
 jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
   __esModule: true,

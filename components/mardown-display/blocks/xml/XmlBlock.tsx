@@ -5,6 +5,7 @@ import { ChevronRight, ChevronDown, Copy, Check } from "lucide-react";
 import { NestedRichContent } from "@/components/rich-content/standard/NestedRichContent";
 import { cn } from "@/styles/themes/utils";
 import { readXmlTag } from "./readXmlTag";
+import { useMarkdownStreaming } from "@/components/markdown-core/streaming-context";
 
 interface XmlBlockProps {
   content: string;
@@ -247,6 +248,7 @@ const XmlBlock: React.FC<XmlBlockProps> = ({
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
   const [cardCollapsed, setCardCollapsed] = useState(false);
   const tokens = tokenizeXml(content);
+  const isStreaming = useMarkdownStreaming();
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content);
@@ -298,6 +300,24 @@ const XmlBlock: React.FC<XmlBlockProps> = ({
     for (let j = idx + 1; j < (end ?? tokens.length); j++) {
       hiddenRanges.add(j);
     }
+  }
+
+
+  // NOT XML: no complete tag, comment, CDATA or declaration anywhere — only a
+  // fragment like `<inf` / `<thinkin` (an opener whose `>` has not arrived,
+  // or never will). While a stream is live it is pending text and shows
+  // nothing yet; once settled it is the literal text it is. Never an XML card
+  // whose body is itself — that is what recursed into nested empty cards.
+  if (!tokens.some((token) => token.type !== "markdown")) {
+    if (isStreaming) return null;
+    return (
+      <div
+        data-xml-fragment
+        className={cn("my-2 whitespace-pre-wrap break-words", className)}
+      >
+        {content}
+      </div>
+    );
   }
 
   return (

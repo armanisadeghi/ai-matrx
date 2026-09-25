@@ -8,7 +8,7 @@
  * stay currency, and code spans/fences must never become math.
  *
  * Renders the REAL pipeline (react-markdown + remark-math + rehype-katex); the
- * only stand-ins are the file blob fetch and the Prism highlighter for
+ * only stand-ins are the file blob fetch and the code highlighter for
  * MarkdownPreview, the code-editor block and MarkdownRenderer's copy button
  * (none of which touch math).
  */
@@ -41,13 +41,6 @@ jest.mock("@/features/files/hooks/useFileBlob", () => ({
     }
     return { blob: mockBlobs.get(mockBlobText), loading: false, error: null };
   },
-}));
-
-// Syntax highlighting (refractor is ESM-only under jest) never touches math;
-// a no-op plugin keeps the previewer's math pipeline real.
-jest.mock("rehype-prism-plus", () => ({
-  __esModule: true,
-  default: () => () => undefined,
 }));
 
 // MarkdownRenderer's copy button opens overlays through Redux; not math.

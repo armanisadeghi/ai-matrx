@@ -156,6 +156,13 @@ export interface FetchMandateConsoleDataOptions {
    */
   mandateKeys?: readonly string[];
   /**
+   * The ids of those same mandates, when the caller already holds them (a
+   * server-paged list does). Lets the bindings read start at once, beside the
+   * definitions read, instead of after it. Only rows the definitions read
+   * returns keep their bindings — the ids never widen the scope.
+   */
+  mandateIds?: readonly string[];
+  /**
    * WHOSE mandates this load is about. The console passes `system` — it IS
    * the system home of the one list door — and is refused, in words, if the
    * caller is not a platform admin. Everything else (the mandate window, the
@@ -212,6 +219,28 @@ export async function fetchMandateConsoleData(
       ? [...new Set(options.mandateKeys)]
       : null;
 
+  const readBindings = async (ids: readonly string[]) => {
+    const pages = await Promise.all(
+      chunked(ids, ID_FILTER_CHUNK).map(async (chunk) => {
+        const { data, error } = await mandateBindings(supabase)
+          .select("*")
+          .is("deleted_at", null)
+          .in("mandate_id", chunk)
+          .order("created_at");
+        if (error) throw error;
+        return data ?? [];
+      }),
+    );
+    return pages.flat();
+  };
+  // Started now when the ids are already known; awaited after the definitions.
+  const earlyBindings =
+    scopedKeys && options.mandateIds && options.mandateIds.length > 0
+      ? readBindings([...new Set(options.mandateIds)])
+      : null;
+  // Never an unhandled rejection while the definitions read is still pending.
+  earlyBindings?.catch(() => undefined);
+
   let mandates: MandateDefinitionRow[];
   if (scopedKeys) {
     // A named handful: the key list IS the declared scope, and RLS is the
@@ -253,18 +282,10 @@ export async function fetchMandateConsoleData(
   }
 
   const mandateIds = mandates.map((row) => row.id);
-  const bindingPages = await Promise.all(
-    chunked(mandateIds, ID_FILTER_CHUNK).map(async (chunk) => {
-      const { data, error } = await mandateBindings(supabase)
-        .select("*")
-        .is("deleted_at", null)
-        .in("mandate_id", chunk)
-        .order("created_at");
-      if (error) throw error;
-      return data ?? [];
-    }),
-  );
-  const bindings = bindingPages.flat();
+  const admitted = new Set(mandateIds);
+  const bindings = earlyBindings
+    ? (await earlyBindings).filter((binding) => admitted.has(binding.mandate_id))
+    : await readBindings(mandateIds);
 
   const agentIds = new Set<string>();
   const versionIds = new Set<string>();
@@ -281,6 +302,24 @@ export async function fetchMandateConsoleData(
   };
   for (const mandate of mandates) collect(holderOfMandate(mandate));
   for (const binding of bindings) collect(holderOfBinding(binding));
+
+  const readAgents = async (ids: readonly string[]) => {
+    if (ids.length === 0) return [];
+    const { data, error } = await supabase
+      .schema("agent")
+      .from("definition")
+      .select(
+        "id, name, version, is_archived, agent_type, auto_context_disabled, variable_definitions, context_policies, output_schema",
+      )
+      .in("id", [...ids]);
+    if (error) throw error;
+    return data ?? [];
+  };
+  // The holder agents are known now; read them beside the pinned versions and
+  // only go back for an agent a version names that no holder did.
+  const holderAgentIds = [...agentIds];
+  const holderAgents = readAgents(holderAgentIds);
+  holderAgents.catch(() => undefined);
 
   const workflowsById: Record<string, MandateWorkflowInfo> = {};
   if (workflowIds.size > 0) {
@@ -315,6 +354,7 @@ export async function fetchMandateConsoleData(
     }
   }
 
+
   const versionsById: Record<string, MandateVersionInfo> = {};
   if (versionIds.size > 0) {
     const { data, error } = await supabase
@@ -336,16 +376,13 @@ export async function fetchMandateConsoleData(
 
   const agentsById: Record<string, MandateAgentInfo> = {};
   const outputSchemas: Record<string, unknown> = {};
-  if (agentIds.size > 0) {
-    const { data, error } = await supabase
-      .schema("agent")
-      .from("definition")
-      .select(
-        "id, name, version, is_archived, agent_type, auto_context_disabled, variable_definitions, context_policies, output_schema",
-      )
-      .in("id", [...agentIds]);
-    if (error) throw error;
-    for (const row of data ?? []) {
+  {
+    const asked = new Set(holderAgentIds);
+    const [first, rest] = await Promise.all([
+      holderAgents,
+      readAgents([...agentIds].filter((id) => !asked.has(id))),
+    ]);
+    for (const row of [...first, ...rest]) {
       agentsById[row.id] = {
         id: row.id,
         name: row.name ?? row.id,

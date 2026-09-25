@@ -319,17 +319,34 @@ export const SAMPLE_ZPL_LABELS: QrLabel[] = [
     { qrValue: "https://aimatrx.com/l/AST-88214", caption: "HP EliteBook 840 G10", lines: ["Asset AST-88214", "Intake 2026-08-31"], badge: "IT" },
 ];
 
-export const SAMPLE_MARKDOWN = `# Quarterly Field Report
+export const SAMPLE_MARKDOWN = `---
+title: Quarterly Field Report
+subtitle: Intake, labeling and dock operations
+author: Operations team
+date: today
+cover: true
+toc: true
+numberSections: true
+header: "{title} | | {date}"
+footer: "Page {page} of {pages}"
+csl: apa
+references:
+  - id: gs1-2023
+    title: GS1 General Specifications
+    author: [{ literal: GS1 }]
+    issued: 2023
+    publisher: GS1
+---
 
-Prepared for the operations review. Every figure below is illustrative.
-
-## Summary
+# Summary {#sec:summary}
 
 The intake lane processed **12,480 units** across four sites, a 14% increase
-over the previous quarter. Label rejection at the dock fell to 0.3% after the
-switch to spec quiet zones.
+over the previous quarter (see @tbl:sites). Label rejection at the dock fell to
+0.3% after the switch to spec quiet zones [@gs1-2023, p. 5.3].
 
-## Site throughput
+# Site throughput
+
+Table: Units and rejection rate by site {#tbl:sites}
 
 | Site | Units | Rejection |
 | --- | ---: | ---: |
@@ -338,12 +355,14 @@ switch to spec quiet zones.
 | Atlanta | 2,210 | 0.4% |
 | Newark | 1,210 | 0.5% |
 
-## What changed
+<!-- pagebreak -->
+
+# What changed
 
 1. Error correction level M became the floor on every printed code.
 2. Calibration sheets are printed once per stock change.
 3. Asset-spec labels now carry the serial in the human-readable line.
 
 > Codes that scan on a design monitor and fail at a dock door are almost always
-> a quiet-zone problem, not a printer problem.
+> a quiet-zone problem, not a printer problem. @sec:summary has the numbers.
 `;

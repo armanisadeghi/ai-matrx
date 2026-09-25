@@ -32,6 +32,11 @@ import XmlBlock from "@/components/mardown-display/blocks/xml/XmlBlock";
 import MarkdownPreviewBlock from "@/components/mardown-display/blocks/markdown-preview/MarkdownPreviewBlock";
 import { fenceNestsInnerFences } from "@ai-matrx/content-ir/source";
 import { NestedRichContent } from "./NestedRichContent";
+import { healStreamingTail } from "./stream-holdback";
+import {
+  MarkdownStreamingProvider,
+  useMarkdownStreaming,
+} from "@/components/markdown-core/streaming-context";
 
 // Heavy engines stay behind React.lazy (an async edge inside the parent's
 // existing chunk graph — no new loadable; code-splitting rule 3), exactly as
@@ -58,22 +63,6 @@ const SECTION_TYPES = new Set([
 ]);
 
 const XML_LANGUAGES = new Set(["xml", "svg"]);
-
-/**
- * Heal the tail of a still-streaming source so the splitter never sees a
- * half-arrived construct as literal text: a trailing `<tag` with no `>` yet,
- * or a line of one/two backticks that is about to become a fence.
- */
-export function healStreamingTail(source: string): string {
-  const lastNewline = source.lastIndexOf("\n");
-  const lastLine = source.slice(lastNewline + 1);
-  if (/^\s*`{1,2}\s*$/.test(lastLine)) return source.slice(0, lastNewline + 1);
-  const partialTag = /<\/?[A-Za-z][\w:-]*(?:\s[^<>]*)?$/.exec(lastLine);
-  if (partialTag) {
-    return source.slice(0, lastNewline + 1 + partialTag.index);
-  }
-  return source;
-}
 
 /** The fallback for a code block while its highlighter chunk loads. */
 function PlainCode({ code }: { code: string }) {
@@ -230,19 +219,25 @@ export function StandardBlocks({
   isStreaming,
   className,
 }: StandardBlocksProps) {
+  // A live stream either announced by the caller or inherited from the chat
+  // engine above: the tail is held back (stream-holdback.ts) and every
+  // MarkdownCore leaf below heals half-arrived inline syntax (stream-heal.ts).
+  const live = useMarkdownStreaming() || !!isStreaming;
   const blocks = splitContentIntoBlocksV2(
-    isStreaming ? healStreamingTail(source) : source,
+    live ? healStreamingTail(source) : source,
   );
   return (
-    <div data-rich-content="standard" className={className ?? "min-w-0"}>
-      {blocks.map((block, index) => (
-        <StandardBlock
-          key={index}
-          block={block}
-          isStreaming={isStreaming && index === blocks.length - 1}
-        />
-      ))}
-    </div>
+    <MarkdownStreamingProvider value={live}>
+      <div data-rich-content="standard" className={className ?? "min-w-0"}>
+        {blocks.map((block, index) => (
+          <StandardBlock
+            key={index}
+            block={block}
+            isStreaming={live && index === blocks.length - 1}
+          />
+        ))}
+      </div>
+    </MarkdownStreamingProvider>
   );
 }
 

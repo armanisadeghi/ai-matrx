@@ -16,6 +16,11 @@
 
 import { FENCE_META_KEY, splitFenceInfo } from "@/components/markdown-core/fence-meta";
 import {
+  findBalancedXmlClose,
+  initialXmlBalance,
+  type XmlBalanceState,
+} from "@/components/mardown-display/markdown-classification/processors/utils/xml-tag-balance";
+import {
   classifyInnerFenceLine,
   fenceNestsInnerFences,
 } from "@ai-matrx/content-ir/source";
@@ -157,6 +162,12 @@ type BlockSubState =
       attributes: Record<string, string>;
       /** True for tags in ATTR_XML_TAGS — drives whether we build typed metadata. */
       isAttrXml: boolean;
+      /**
+       * Same-name nesting depth (`<info>…<info>…</info>…</info>`): the section
+       * closes on its BALANCED closer — xml-tag-balance.ts, shared with the
+       * static splitter.
+       */
+      balance: XmlBalanceState;
     }
   | { kind: "table" }
   | { kind: "generic_xml"; tracker: UnrecognizedXmlContainerTracker }
@@ -962,6 +973,7 @@ export class StreamBlockAccumulator {
           openingTagText: midLine.openingTagText,
           attributes: midLine.attributes,
           isAttrXml: true,
+          balance: initialXmlBalance(),
         };
         this.appendToCurrentBlock(fromTag);
         if (fromTag.includes(`</${midLine.tag}>`)) {
@@ -1258,7 +1270,7 @@ export class StreamBlockAccumulator {
       }
 
       case "xml_tag": {
-        const { closingTag, isAttrXml } = this.subState;
+        const { closingTag, isAttrXml, tagName, balance } = this.subState;
         // Strip the literal closing tag out of the line before it's committed
         // to the block's content. Simple tags (thinking/reasoning/etc.) are
         // rendered as plain prose, so leaving the raw "</reasoning>" substring
@@ -1272,7 +1284,11 @@ export class StreamBlockAccumulator {
         // (a schema-bound agent's `</reasoning>{"__kind":…}`) re-enters
         // processLine below, so a JSON payload opens its region live instead
         // of being baked invisibly into the tag block.
-        const closingIdxRaw = rawLine.indexOf(closingTag);
+        // The closer that BALANCES the section — a same-name inner section's
+        // `</info>` is content, not the end (xml-tag-balance.ts).
+        const closingIdxRaw = findBalancedXmlClose(rawLine, tagName, balance, {
+          trackFences: false,
+        });
         const remainder =
           closingIdxRaw === -1
             ? ""
@@ -1433,6 +1449,7 @@ export class StreamBlockAccumulator {
       openingTagText,
       attributes,
       isAttrXml,
+      balance: initialXmlBalance(),
     };
 
     // Strip the literal opening tag text (simple tags only — attribute-XML

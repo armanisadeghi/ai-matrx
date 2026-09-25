@@ -607,6 +607,7 @@ export function ShortcutDirectory({
                     ))}
                   </SelectContent>
                 </Select>
+                {/* canonical-agent-picker-exempt: a row facet, not an agent choice — it lists only the agents these shortcuts already name (plus "All agents") and filters the table; the package picker would offer agents no row carries. */}
                 <Select value={agentFilter} onValueChange={setAgentFilter}>
                   <SelectTrigger className="h-8 w-[180px]">
                     <SelectValue placeholder="Agent" />

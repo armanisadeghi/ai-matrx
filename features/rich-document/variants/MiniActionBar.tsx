@@ -23,7 +23,10 @@ export interface MiniActionBarProps {
 export function MiniActionBar(props: MiniActionBarProps): React.ReactElement {
   const { actions, getCtx, sourceId, className } = props;
   const nonTransferActions = actions.filter(
-    (action) => action.category !== "copy",
+    // The Alchemy menu is the one-tap copy; every OTHER copy format in the
+    // registry (Markdown, plain, rich, table CSV/TSV, thinking…) stays in the
+    // "Copy as" submenu so the bar offers the whole registry (RC-B6).
+    (action) => action.id !== "copy",
   );
   const hasCopy = actions.some((action) => action.category === "copy");
   return (

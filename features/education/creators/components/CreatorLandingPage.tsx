@@ -76,7 +76,9 @@ function FreeToolCard({ item }: { item: FeaturedResource }) {
         {item.title}
       </h3>
       {item.description ? (
-        <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">{item.description}</p>
+        <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">
+          <RichContentServer level="inline" links="text" source={item.description} />
+        </p>
       ) : null}
       <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
         <span>{typeof cardCount === "number" ? `${cardCount} cards` : "Open"}</span>

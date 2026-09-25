@@ -29,7 +29,7 @@ import MathProblem from "@/features/math/components/MathProblem";
 // context for zero SSR benefit. The light majority is STATIC — one compile,
 // one fetch with the canvas chunk. Only the genuinely heavy engines keep a
 // boundary, as in-gate `React.lazy` (build-cheap, no manifest entry):
-//   - CodeBlock / CodePreviewCanvas → react-syntax-highlighter
+//   - CodeBlock / CodePreviewCanvas → the Shiki code view + Monaco edit mode
 //   - InteractiveDiagramBlock → reactflow
 import { SavedCanvasItems } from "./SavedCanvasItems";
 import { CanvasShareSheet } from "@/features/canvas/social/CanvasShareSheet";

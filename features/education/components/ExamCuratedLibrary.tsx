@@ -10,6 +10,7 @@
 //
 // Anon + cookie-free reads only, so the exam pages stay statically generable
 // (ISR). Renders nothing when an exam has no curated content yet.
+import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
 import Link from "next/link";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { fetchExamCertifiedDecks } from "../library/queries";
@@ -98,7 +99,7 @@ export async function ExamCuratedLibrary({
                       <ArrowRight className="h-3.5 w-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-                      {guide.summary}
+                      <RichContentServer level="inline" links="text" source={guide.summary} />
                     </p>
                   </div>
                 </Link>

@@ -6,8 +6,8 @@
 // the instant the active tab changes the suppression must follow it.
 
 // The rule under test is a pure function, but its module pulls in the render
-// tree (LiveTurnCard → BasicMarkdownContent → react-syntax-highlighter, which
-// ships ESM Jest does not transform). Stubbing the one child component keeps
+// tree (LiveTurnCard → BasicMarkdownContent → the code highlighter). Stubbing
+// the one child component keeps
 // this a unit test of the decision, not of the markdown pipeline.
 jest.mock("../ExpertFeedSection", () => ({ ExpertFeedSection: () => null }));
 
