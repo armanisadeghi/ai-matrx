@@ -304,5 +304,23 @@ describe("server level renders the same HTML as the client levels", () => {
     expect(server).toBe(client);
     expect(staticSsr).toBe(client);
   });
+
+  it("HTML-like cards: the prose inside <custom-note>/<math> matches the app", () => {
+    const cards = [
+      "Dock notes:",
+      "",
+      "<custom-note>Remember **the scale ticket** for every load.</custom-note>",
+      "",
+      "<math>net weight \\(w = g - t\\)</math>",
+      "",
+      "Done.",
+    ].join("\n");
+    const server = serverHtml(<RichContentServer level="standard" source={cards} />);
+    const staticSsr = serverHtml(<RichContentStaticStandard source={cards} />);
+    const client = clientHtml(<StandardBlocks source={cards} />);
+    expect(server).toContain("the scale ticket</strong>");
+    expect(server).toBe(client);
+    expect(staticSsr).toBe(client);
+  });
 });
 

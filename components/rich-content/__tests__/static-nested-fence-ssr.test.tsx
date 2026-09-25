@@ -57,3 +57,29 @@ describe.each([
     expect(html).toContain("bold</strong>");
   });
 });
+
+const CARDS = [
+  "Dock notes:",
+  "",
+  "<custom-note>Remember **the scale ticket** for every load.</custom-note>",
+  "",
+  "<math>net weight \\(w = g - t\\)</math>",
+  "",
+  "<script>alert(1)</script>",
+  "",
+  "Done.",
+].join("\n");
+
+describe.each([
+  ["server level", () => <RichContentServer level="standard" source={CARDS} />],
+  ["static leaf (share pages)", () => <RichContentStaticStandard source={CARDS} />],
+])("%s: text inside HTML-like cards is in the server HTML", (_name, make) => {
+  it("renders each card's prose through the core on the server; raw tags stay inert", () => {
+    const html = renderToStaticMarkup(make());
+    expect(html).toContain("the scale ticket</strong>");
+    expect(html).toContain('class="katex"');
+    expect(html).not.toMatch(/<script>alert/);
+    expect(html).toContain("Done.");
+  });
+});
+

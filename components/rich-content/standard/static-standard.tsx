@@ -14,7 +14,7 @@
 // Guard: __tests__/server-level-parity.test.tsx (nested-fence share case).
 // ─────────────────────────────────────────────────────────────────────────
 
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 import {
   NO_SPLITTER_ENVELOPES,
   splitContentIntoBlocksWith,
@@ -24,6 +24,8 @@ import { RichContentDepthProvider } from "../depth";
 import { fenceNestsInnerFences } from "@ai-matrx/content-ir/source";
 import MarkdownPreviewBlock from "@/components/mardown-display/blocks/markdown-preview/MarkdownPreviewBlock";
 import { StandardBlock } from "./StandardBlocks";
+import XmlBlock from "@/components/mardown-display/blocks/xml/XmlBlock";
+import { tokenizeXml } from "@/components/mardown-display/blocks/xml/xml-tokenize";
 import {
   computeDocumentNumbering,
   type DocumentNumbering,
@@ -49,6 +51,9 @@ const SECTION_TYPES = new Set([
   "reasoning",
   "consolidated_reasoning",
 ]);
+
+/** The same set StandardBlock routes to XmlBlock. */
+const XML_LANGUAGES = new Set(["xml", "svg"]);
 
 const MUTED_SECTIONS = new Set([
   "thinking",
@@ -109,6 +114,35 @@ function StaticBlock({
             <StaticStandard source={content} depth={depth + 1} cap={cap} Prose={Prose} numbering={numbering} />
           }
         />
+      </RichContentDepthProvider>
+    );
+  }
+
+  // An XML / SVG card (generic tags like <math>, <iframe>, <custom-note>):
+  // the same card the app draws, with its prose segments rendered HERE so
+  // the text between the tags is in the server HTML. Tokenized by the one
+  // tokenizer XmlBlock uses (xml-tokenize.ts), keyed by token index. The
+  // prose goes through the same core — raw tags inside stay inert text.
+  const xmlLanguage =
+    type === "svg" ? "svg" : type === "code" ? block.language?.toLowerCase() : undefined;
+  if (xmlLanguage && XML_LANGUAGES.has(xmlLanguage) && depth + 1 <= cap) {
+    const renderedProse: Record<number, ReactNode> = {};
+    tokenizeXml(content).forEach((token, idx) => {
+      if (token.type === "markdown" && token.text?.trim()) {
+        renderedProse[idx] = (
+          <StaticStandard
+            source={token.text}
+            depth={depth + 1}
+            cap={cap}
+            Prose={Prose}
+            numbering={numbering}
+          />
+        );
+      }
+    });
+    return (
+      <RichContentDepthProvider depth={depth} cap={cap}>
+        <XmlBlock content={content} language={xmlLanguage} renderedProse={renderedProse} />
       </RichContentDepthProvider>
     );
   }
