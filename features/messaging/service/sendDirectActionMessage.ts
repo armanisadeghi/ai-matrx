@@ -47,12 +47,20 @@ function asActionPayload(action: MessageActionData): Readonly<Record<string, unk
   return action.payload;
 }
 
-async function repository() {
+/**
+ * 🚨 THE ORGANIZATION COMES FROM WHAT THE MESSAGE IS ABOUT (lane ACCESS-FIX-18, VERIFIER-18 H4).
+ * A notification about ONE object — "shared a table with you" — names that object's
+ * organization. Without it this fell back to the active organization and, with none picked,
+ * raised the organization gate: pressing Share on a table asked "Which workspace is this for?"
+ * over 44 organizations although the table names its own. `ensureOrgId` is only for a message
+ * about nothing in particular.
+ */
+async function repository(organizationId?: string | null) {
   const client = createClient();
-  const organizationId = await ensureOrgId(undefined);
+  const resolvedOrganizationId = organizationId ?? (await ensureOrgId(undefined));
   return createMessagingRepository({
     client,
-    organizationId: asOrganizationId(organizationId),
+    organizationId: asOrganizationId(resolvedOrganizationId),
     resolveSession: async () => {
       const { data } = await client.auth.getSession();
       return data.session !== null;
@@ -68,13 +76,16 @@ async function repository() {
  */
 export async function findOrCreateDirectConversation(
   recipientId: string,
+  organizationId?: string | null,
 ): Promise<string> {
-  const repo = await repository();
+  const repo = await repository(organizationId);
   return repo.getOrCreateDirectConversation(asUserId(recipientId));
 }
 
 export interface SendDirectActionMessageArgs {
   recipientId: string;
+  /** The organization of the object the message is about. Name it whenever there is one. */
+  organizationId?: string | null;
   content: string;
   actionData?: MessageActionData;
 }
@@ -88,11 +99,12 @@ export async function sendDirectActionMessage({
   recipientId,
   content,
   actionData,
+  organizationId,
 }: SendDirectActionMessageArgs): Promise<{
   conversationId: string;
   messageId: string;
 }> {
-  const repo = await repository();
+  const repo = await repository(organizationId);
   const conversationId = await repo.getOrCreateDirectConversation(
     asUserId(recipientId),
   );

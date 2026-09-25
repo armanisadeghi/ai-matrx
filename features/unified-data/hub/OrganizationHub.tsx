@@ -88,9 +88,20 @@ export interface OrganizationHubProps {
    * above owns both.
    */
   inbox?: ReactNode | undefined;
+  /**
+   * The NAME of the organization this list shows, when the ADDRESS names it (`?org=`, e.g. the
+   * way back from a table that was just archived). Absent, the list is the active
+   * organization's and its name is read from the selection.
+   */
+  organizationName?: string | null | undefined;
 }
 
-export function OrganizationHub({ organizationId, dataSource, inbox }: OrganizationHubProps) {
+export function OrganizationHub({
+  organizationId,
+  dataSource,
+  inbox,
+  organizationName: namedOrganizationName,
+}: OrganizationHubProps) {
   const router = useRouter();
   /**
    * THE FILTER IS NAMED, AND "ALL" IS ONE CLICK (lane ACCESS-IS-PERSONAL, owner's law
@@ -99,7 +110,8 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
    */
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const organizationName = useAppSelector(selectOrganizationName);
+  const selectedOrganizationName = useAppSelector(selectOrganizationName);
+  const organizationName = namedOrganizationName ?? selectedOrganizationName;
   const showingAll = searchParams.get("scope") === "all";
   const setScope = useCallback(
     (all: boolean) => {

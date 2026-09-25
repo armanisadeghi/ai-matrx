@@ -105,9 +105,17 @@ export function rowAgentOffer(args: {
 }
 
 /** The launch the older grid makes, for this row — `data.row_action` in the flexible panel. */
-export function rowAgentLaunch(target: RowAgentActionTarget, offer: Offer): ManagedAgentOptions {
+export function rowAgentLaunch(
+  target: RowAgentActionTarget,
+  offer: Offer,
+  /** The TABLE's organization (the page's resolver), never the active one (ACCESS-FIX-18). */
+  organizationId: string,
+): ManagedAgentOptions {
   return {
     surfaceKey: `data-v2-row-action:${target.tableId}:${target.recordId}`,
+    // The run is filed in the organization the row lives in; unnamed, the launcher took the
+    // active organization and, with none picked, asked "Which workspace is this for?".
+    organizationId,
     sourceFeature: "chat",
     config: {
       displayMode: "flexible-panel",
@@ -172,7 +180,7 @@ export async function runRowAgentAction(args: {
     actingPersonCanEdit: level !== null && WRITES.has(level),
   });
   try {
-    await args.launchMandate(MANDATE_KEYS.data__row_action, rowAgentLaunch(target, offer));
+    await args.launchMandate(MANDATE_KEYS.data__row_action, rowAgentLaunch(target, offer, args.organizationId));
   } catch (e) {
     args.onRefused(
       `Could not start "${target.action}"`,

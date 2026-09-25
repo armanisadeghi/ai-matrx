@@ -15,8 +15,9 @@
  *     had selected their second organization was shown — and could write to —
  *     the first one's credentials. The fixture gives two memberships and
  *     selects the SECOND, so a first-membership fallback lands on the wrong
- *     id observably; with nothing selected the tab must refuse out loud and
- *     change no scope.
+ *     id observably; with nothing selected the tab opens the organization
+ *     chooser and reads nothing until the person picks (ACCESS-FIX-18: it
+ *     used to toast and change nothing — a dead control).
  */
 import { act, type ComponentProps } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -290,22 +291,44 @@ describe("VaultWorkspace scope routing", () => {
     expect(container.textContent).not.toContain("My Personal Login");
   });
 
-  it("refuses the Organization scope out loud when nothing is selected", async () => {
-    selectedOrganizationId = null;
+  /**
+   * THE TAB IS NEVER DEAD (ACCESS-FIX-18, VERIFIER-18 M4). With nothing selected — or with a
+   * personal workspace selected, which has no Organization list (admin's Workspace on
+   * production) — pressing Organization used to toast and change nothing. It must open the
+   * chooser, read NOTHING until the person picks (never a first-membership guess), and the pick
+   * must open that organization's credentials.
+   */
+  async function pickFromChooser(name: string): Promise<void> {
+    const option = Array.from(document.querySelectorAll<HTMLElement>("[role=option]")).find(
+      (candidate) => (candidate.textContent ?? "").includes(name),
+    );
+    if (!option) throw new Error(`The organization chooser offers no "${name}"`);
+    await act(async () => option.click());
+  }
+
+  it.each([
+    ["nothing is selected", null],
+    ["a personal workspace is selected", "org-personal"],
+  ])("opens the organization chooser when %s, and the pick opens that list", async (_label, selected) => {
+    selectedOrganizationId = selected;
     await mount();
 
     await clickScope("Organization");
 
-    // No second read, and the list still holds the person's own credentials —
-    // the silent fallback to `availableOrganizations[0]` would have asked for
-    // `organization:org-first` here.
+    // The chooser is open and offers both organizations; nothing was read yet.
+    const offered = Array.from(document.querySelectorAll<HTMLElement>("[role=option]")).map(
+      (o) => o.textContent,
+    );
+    expect(offered).toEqual(expect.arrayContaining(["First Org", "Selected Org"]));
     expect(requestedScopes()).toEqual(["mine"]);
-    expect(container.textContent).toContain("My Personal Login");
     expect(container.textContent).not.toContain("First Org Login");
-    expect(toastError).toHaveBeenCalledTimes(1);
-    const [message] = toastError.mock.calls[0] as [string];
-    expect(message).toMatch(/organization/i);
-    expect(message).toMatch(/choose|select|pick/i);
+    expect(toastError).not.toHaveBeenCalled();
+
+    await pickFromChooser("Selected Org");
+
+    expect(requestedScopes()).toEqual(["mine", "organization:org-selected"]);
+    expect(container.textContent).toContain("Selected Org Login");
+    expect(container.textContent).not.toContain("My Personal Login");
   });
 
   it("loads the SELECTED organization's credentials, never the first membership", async () => {

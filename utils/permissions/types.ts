@@ -103,6 +103,14 @@ export interface ShareWithUserOptions {
    * card ("X shared '<title>' with you"). Falls back to the type label.
    */
   resourceName?: string;
+  /**
+   * The organization the SHARED OBJECT lives in, from the page that opened the dialog (the
+   * object's own resolver — never the active organization). The in-app notification is filed
+   * there. Absent, the notification is filed in the organization the person is working in, and
+   * when none is picked it is skipped and said — it never raises "Which workspace is this for?"
+   * (lane ACCESS-FIX-18, VERIFIER-18 H4).
+   */
+  organizationId?: string | null;
 }
 
 export interface ShareWithOrgOptions {

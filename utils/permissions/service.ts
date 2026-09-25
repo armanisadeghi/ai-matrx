@@ -32,6 +32,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { getActiveOrgId } from "@/lib/organizations/activeOrg";
 import type { Database, Json } from "@/types/database.types";
 import {
   Permission,
@@ -333,8 +334,14 @@ export async function shareWithUser(
   options: ShareWithUserOptions,
 ): Promise<ShareActionResult> {
   try {
-    const { resourceType, resourceId, userId, permissionLevel, resourceName } =
-      options;
+    const {
+      resourceType,
+      resourceId,
+      userId,
+      permissionLevel,
+      resourceName,
+      organizationId,
+    } = options;
 
     const { data, error } = await supabase.rpc("share_resource_with_user", {
       p_resource_type: resourceType,
@@ -372,10 +379,30 @@ export async function shareWithUser(
 
       // (2) In-app DM with a clickable resource card. Lazy import keeps the
       // messaging service out of the permissions bundle.
+      //
+      // 🚨 THE DM IS FILED IN THE SHARED OBJECT'S ORGANIZATION (ACCESS-FIX-18, VERIFIER-18
+      // H4). Unnamed, the messaging door fell back to the active organization and, with
+      // none picked, raised the organization gate over the Share dialog — "Which workspace
+      // is this for?" with 44 organizations, for a table that names its own — and the pick
+      // closed the Share dialog with it. The share has already landed here; a notification
+      // is never a reason to ask anything.
+      const dmOrganizationId =
+        organizationId ??
+        // object-org-exempt: a share dialog opened with no object organization (a non-record resource) files its notification where the person works, and never prompts
+        getActiveOrgId();
+      if (!dmOrganizationId) {
+        console.warn(
+          "[sharing] The in-app message about this share was not sent: the dialog was opened " +
+            "without the shared object's organization and none is picked. The share itself and " +
+            "its email notification are unaffected. Remedy: pass organizationId to <ShareModal>.",
+        );
+        return;
+      }
       import("@/features/messaging/service/sendDirectActionMessage")
         .then(({ sendDirectActionMessage }) =>
           sendDirectActionMessage({
             recipientId: userId,
+            organizationId: dmOrganizationId,
             content: `${user.user_metadata?.full_name || user.user_metadata?.name || user.email || "Someone"} shared a ${resourceLabel} with you`,
             actionData: {
               kind: "resource_shared",

@@ -65,7 +65,9 @@ describe("an agent button on the new table page", () => {
 
   it("launches the same job the older grid launches, with the prompt as the only user input", () => {
     const offer = rowAgentOffer({ target, tableName: "Appointments", columns, document, actingPersonId: null, actingPersonCanEdit: false });
-    const launch = rowAgentLaunch(target, offer);
+    const launch = rowAgentLaunch(target, offer, "org-cedar-ridge-veterinary");
+    // The run is filed in the TABLE's organization, never the active one (ACCESS-FIX-18).
+    expect(launch.organizationId).toBe("org-cedar-ridge-veterinary");
     expect(launch.runtime?.userInput).toBe("Draft a friendly reminder text for this appointment.");
     expect(launch.runtime?.variables).toBe(offer);
     expect(launch.runtime?.context).toBe(offer);

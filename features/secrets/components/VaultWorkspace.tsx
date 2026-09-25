@@ -38,7 +38,6 @@ import { useAppSelector } from "@/lib/redux/hooks";
 // object-org-exempt: only the Organization list tab and item-state keying read it; a routed credential opens by useCredentialHome
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { toast } from "@/lib/toast";
 import {
   Select,
   SelectContent,
@@ -146,14 +145,32 @@ export function VaultWorkspace({
   const scopeSwitchOrganizationId =
     availableOrganizations.find((org) => org.id === selectedOrganizationId)
       ?.id ?? null;
-  const switchToOrganizationScope = (): string | null => {
-    if (!scopeSwitchOrganizationId) {
-      toast.error(
-        "Select an organization from the avatar menu to view its credentials.",
-      );
-      return null;
-    }
-    return scopeSwitchOrganizationId;
+  /**
+   * 🚨 THE ORGANIZATION TAB IS NEVER A DEAD CONTROL (lane ACCESS-FIX-18, VERIFIER-18 M4). With
+   * no usable selection — none picked, or the one picked is a personal workspace, which has no
+   * Organization list — pressing it used to raise a toast and change nothing; clicked twice on
+   * production, "nothing says why". Now it opens the organization's credentials:
+   *   · the organization the person is working in, when it has a list;
+   *   · the one organization they belong to, when there is exactly one;
+   *   · otherwise the organization chooser opens right there, and the pick opens that list.
+   * Still never a silent first-membership pick (d30f8934e0): with several, THEY choose, and the
+   * chooser beside the tab names which list is showing afterwards.
+   */
+  const [organizationChooser, setOrganizationChooser] = useState<
+    "aside" | "bar" | "compact" | null
+  >(null);
+  const switchToOrganizationScope = (
+    from: "aside" | "bar" | "compact",
+  ): string | null => {
+    if (scopeSwitchOrganizationId) return scopeSwitchOrganizationId;
+    if (availableOrganizations.length === 1) return availableOrganizations[0]!.id;
+    setOrganizationChooser(from);
+    return null;
+  };
+  const chooseOrganizationVault = (organizationId: string) => {
+    setOrganizationChooser(null);
+    setUserScope({ kind: "organization", organizationId });
+    setSelectedId(null);
   };
   const [localUncontrolledScope, setLocalUncontrolledScope] = useState<VaultScope>({
     kind: "mine",
@@ -407,7 +424,7 @@ export function VaultWorkspace({
                             : null
                         }
                         onClick={() => {
-                          const organizationId = switchToOrganizationScope();
+                          const organizationId = switchToOrganizationScope("aside");
                           if (!organizationId) return;
                           setUserScope({
                             kind: "organization",
@@ -416,31 +433,16 @@ export function VaultWorkspace({
                           setSelectedId(null);
                         }}
                       />
-                      {scope.kind === "organization" && (
-                        <Select
-                          value={scope.organizationId}
-                          onValueChange={(organizationId) => {
-                            setUserScope({
-                              kind: "organization",
-                              organizationId,
-                            });
-                            setSelectedId(null);
-                          }}
-                        >
-                          <SelectTrigger
-                            className="h-8 w-full"
-                            aria-label="Organization vault"
-                          >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableOrganizations.map((org) => (
-                              <SelectItem key={org.id} value={org.id}>
-                                {org.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                      {(scope.kind === "organization" ||
+                        organizationChooser === "aside") && (
+                        <OrganizationVaultChooser
+                          value={scope.kind === "organization" ? scope.organizationId : null}
+                          organizations={availableOrganizations}
+                          open={organizationChooser === "aside"}
+                          onOpenChange={(next) => setOrganizationChooser(next ? "aside" : null)}
+                          onPick={chooseOrganizationVault}
+                          className="h-8 w-full"
+                        />
                       )}
                     </>
                   )}
@@ -536,7 +538,7 @@ export function VaultWorkspace({
                         role="tab"
                         aria-selected={scope.kind === "organization"}
                         onClick={() => {
-                          const organizationId = switchToOrganizationScope();
+                          const organizationId = switchToOrganizationScope("bar");
                           if (!organizationId) return;
                           setUserScope({
                             kind: "organization",
@@ -556,31 +558,16 @@ export function VaultWorkspace({
                     )}
                   </div>
                 )}
-                {principal.type === "user" && scope.kind === "organization" && (
-                  <Select
-                    value={scope.organizationId}
-                    onValueChange={(organizationId) => {
-                      setUserScope({
-                        kind: "organization",
-                        organizationId,
-                      });
-                      setSelectedId(null);
-                    }}
-                  >
-                    <SelectTrigger
-                      className="h-8 w-auto min-w-40"
-                      aria-label="Organization vault"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableOrganizations.map((org) => (
-                        <SelectItem key={org.id} value={org.id}>
-                          {org.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                {principal.type === "user" &&
+                  (scope.kind === "organization" || organizationChooser === "bar") && (
+                  <OrganizationVaultChooser
+                    value={scope.kind === "organization" ? scope.organizationId : null}
+                    organizations={availableOrganizations}
+                    open={organizationChooser === "bar"}
+                    onOpenChange={(next) => setOrganizationChooser(next ? "bar" : null)}
+                    onPick={chooseOrganizationVault}
+                    className="h-8 w-auto min-w-40"
+                  />
                 )}
                 {familiesPresent.length > 1 && (
                   <Select
@@ -939,7 +926,7 @@ export function VaultWorkspace({
                 role="tab"
                 aria-selected={scope.kind === "organization"}
                 onClick={() => {
-                  const organizationId = switchToOrganizationScope();
+                  const organizationId = switchToOrganizationScope("compact");
                   if (!organizationId) return;
                   setUserScope({ kind: "organization", organizationId });
                   setSelectedId(null);
@@ -956,28 +943,16 @@ export function VaultWorkspace({
             )}
           </div>
         )}
-        {principal.type === "user" && scope.kind === "organization" && (
-          <Select
-            value={scope.organizationId}
-            onValueChange={(organizationId) => {
-              setUserScope({ kind: "organization", organizationId });
-              setSelectedId(null);
-            }}
-          >
-            <SelectTrigger
-              className="h-8 w-auto min-w-40"
-              aria-label="Organization vault"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {availableOrganizations.map((org) => (
-                <SelectItem key={org.id} value={org.id}>
-                  {org.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {principal.type === "user" &&
+          (scope.kind === "organization" || organizationChooser === "compact") && (
+          <OrganizationVaultChooser
+            value={scope.kind === "organization" ? scope.organizationId : null}
+            organizations={availableOrganizations}
+            open={organizationChooser === "compact"}
+            onOpenChange={(next) => setOrganizationChooser(next ? "compact" : null)}
+            onPick={chooseOrganizationVault}
+            className="h-8 w-auto min-w-40"
+          />
         )}
 
         <div className="relative min-w-0 flex-1 basis-56">
@@ -1629,5 +1604,49 @@ function VaultEmptyState({
         </Button>
       )}
     </div>
+  );
+}
+
+/**
+ * WHICH ORGANIZATION'S CREDENTIALS ARE SHOWING, AND THE WAY TO CHANGE IT — one control for the
+ * three places the Organization tab lives. Opened by the tab itself when the person has not
+ * said which organization (ACCESS-FIX-18); the pick opens that organization's list.
+ */
+function OrganizationVaultChooser({
+  value,
+  organizations,
+  open,
+  onOpenChange,
+  onPick,
+  className,
+}: {
+  value: string | null;
+  organizations: ReadonlyArray<{ id: string; name: string }>;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onPick: (organizationId: string) => void;
+  className: string;
+}) {
+  return (
+    <Select
+      // ALWAYS CONTROLLED ("" = nothing chosen yet, the placeholder shows). Uncontrolled, Radix
+      // reports the pick from an effect, after the pick has already closed — and unmounted —
+      // this chooser, so the pick was lost.
+      value={value ?? ""}
+      open={open}
+      onOpenChange={onOpenChange}
+      onValueChange={onPick}
+    >
+      <SelectTrigger className={className} aria-label="Organization vault">
+        <SelectValue placeholder="Choose an organization" />
+      </SelectTrigger>
+      <SelectContent>
+        {organizations.map((org) => (
+          <SelectItem key={org.id} value={org.id}>
+            {org.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

@@ -383,6 +383,9 @@ export default function UnifiedDataTableRoute({
     (ask: AgentBuildAsk) => {
       void launchMandate(MANDATE_KEYS.data__page_guidance, {
         surfaceKey: `data-v2:${ask.tableId}`,
+        // THE TABLE'S ORGANIZATION (ACCESS-FIX-18): the page already knows it, so the agent's
+        // run is filed there and nothing asks "Which workspace is this for?".
+        organizationId: readingOrganizationId,
         // The declared source feature for the unified data tables surface.
         sourceFeature: "udt",
         /**
@@ -416,7 +419,7 @@ export default function UnifiedDataTableRoute({
         },
       });
     },
-    [launchMandate],
+    [launchMandate, readingOrganizationId],
   );
 
   /**
@@ -656,7 +659,17 @@ export default function UnifiedDataTableRoute({
                 silently stops opening. */}
             <TablePage
               tableId={tableId}
-              onLeave={() => router.push("/data-v2")}
+              /* THE WAY BACK NAMES THE TABLE'S ORGANIZATION (ACCESS-FIX-18, VERIFIER-18 H4).
+                 Archiving calls this; it used to land on the bare list, which reads the ACTIVE
+                 organization and, with none picked, said "An organization is needed for data
+                 records" about a table that had just named its own. */
+              onLeave={() =>
+                router.push(
+                  readingOrganizationId
+                    ? `/data-v2?org=${encodeURIComponent(readingOrganizationId)}`
+                    : "/data-v2",
+                )
+              }
               activeDashboardId={activeDashboardId}
               activeRecordId={activeRecordId}
               activeView={activeView}

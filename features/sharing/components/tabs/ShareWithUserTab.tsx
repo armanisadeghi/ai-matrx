@@ -28,7 +28,6 @@ import type {
   ShareActionResult,
 } from "@/utils/permissions/types";
 import { PermissionLevelDescription } from "../PermissionBadge";
-import { useToast } from "@/components/ui/use-toast";
 import { createClient } from "@/utils/supabase/client";
 import {
   useUserConnections,
@@ -107,7 +106,6 @@ export function ShareWithUserTab({
   const [selectedContact, setSelectedContact] = useState<ConnectionUser | null>(
     null,
   );
-  const { toast } = useToast();
 
   // Scoped: this dialog is about ONE thing, in ONE organization, and the people it offers are
   // the people in that organization. Past conversations are not folded in — a conversation is
@@ -218,17 +216,16 @@ export function ShareWithUserTab({
       if (!errorMsg) {
         setStatus({
           type: "success",
-          message: `Successfully shared with ${trimmedEmail}`,
+          // THE CONFIRMATION LIVES HERE, IN THE DIALOG THAT DID IT (law 4: a sentence with an
+          // inline home is not also toasted). It used to ride a legacy Radix toast, and on a
+          // table page the organization gate's pick closed this dialog before anyone read it
+          // (VERIFIER-18 H4) — the dialog now stays open, saying it worked.
+          message: `Shared with ${trimmedEmail}. They can open it now.`,
         });
         setEmail("");
         setSelectedContact(null);
         setPermissionLevel("viewer");
 
-        toast({
-          title: "Shared Successfully",
-          description: `Access granted to ${trimmedEmail}`,
-          duration: 5000,
-        });
 
         setTimeout(() => {
           onSuccess();

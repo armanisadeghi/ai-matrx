@@ -276,6 +276,12 @@ export function useSharing(
   resourceId: string,
   enabled: boolean = true,
   resourceName?: string,
+  /**
+   * The organization the object lives in, from the page that opened the dialog (its own
+   * resolver). Carried to the share's in-app notification so no action on an object ever asks
+   * which workspace it is for (ACCESS-FIX-18).
+   */
+  organizationId?: string | null,
 ) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -322,6 +328,7 @@ export function useSharing(
           userId,
           permissionLevel,
           resourceName,
+          organizationId: organizationId ?? null,
         });
 
         if (!result.success) {
@@ -340,7 +347,7 @@ export function useSharing(
         setLoading(false);
       }
     },
-    [resourceType, resourceId, resourceName, refresh],
+    [resourceType, resourceId, resourceName, organizationId, refresh],
   );
 
   const handleShareWithOrg = useCallback(

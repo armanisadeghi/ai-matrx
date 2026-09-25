@@ -45,7 +45,9 @@ interface ShareModalProps {
   resourceName: string;
   /**
    * The organization this resource belongs to. Pass it whenever the caller knows: it scopes
-   * the contact picker to that organization's members (FIX-7B). It is NOT used for any write —
+   * the contact picker to that organization's members (FIX-7B), and the share's in-app
+   * notification is filed there (ACCESS-FIX-18) — without it, a share from a page with no
+   * organization picked raised "Which workspace is this for?". It is NOT used for the grant —
    * the store still resolves a record's organization off the row itself.
    */
   organizationId?: string;
@@ -225,6 +227,9 @@ export function ShareModal({
     resourceId,
     isOpen && !configError,
     resourceName,
+    // The object's organization, as the page that opened this resolved it — the share's
+    // notification is filed there and never asks which workspace this is for.
+    organizationId ?? null,
   );
 
   // Filter permissions by type for each tab

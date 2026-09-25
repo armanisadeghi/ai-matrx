@@ -126,4 +126,15 @@ describe("HubListing groups same-titled 'kept by the app' rows", () => {
         const toggle = host.querySelector('[data-hub-listing-toggle="kept-by-the-app"]');
         expect(toggle?.textContent).toContain("2");
     });
+
+    // ONE COUNT FROM ONE DOOR (ACCESS-FIX-18, VERIFIER-18 M3). The header counted the GROUPS
+    // ("Kept by the app 4") while the sentence under the list counted the TABLES ("the 5
+    // tables the app keeps for itself"). A count on a list of tables counts tables.
+    it("counts the tables in its header, not the rows they are grouped into", async () => {
+        const { host, root } = await render({ phase: "read", items: ITEMS });
+        mounts.push({ root, host });
+
+        const header = host.querySelector('[data-hub-listing-toggle="kept-by-the-app"] .tabular-nums');
+        expect(header?.textContent).toBe(String(ITEMS.length));
+    });
 });

@@ -23,7 +23,7 @@
  *      caller that is not a route.
  * WHAT FAILS. Any of these reads of the person's active organization in a scanned file:
  *   useOrganizationRequired · selectOrganizationId · selectActiveOrganizationId ·
- *   useActiveOrganization · ensureOrgId · selectOrganizationName
+ *   useActiveOrganization · ensureOrgId · selectOrganizationName · getActiveOrgId
  * A single line may be excused by a comment on it or on the line above —
  *   `// object-org-exempt: <reason>` — and the reason must say why that line is not about
  * opening an object (creating a NEW table in the organization the person picked is the worked
@@ -33,9 +33,23 @@
  * itself, for its announced stand-in while the door is absent from a database; it is not in
  * the scan set.
  *
+ * ACTION SURFACES (lane ACCESS-FIX-18, VERIFIER-18 H4). The object page was right and the
+ * dialogs it mounted were not: pressing Share on a table asked "Which workspace is this for?"
+ * with 44 organizations, because the share's notification opened a direct message through a door
+ * that falls back to the active organization and, with none selected, to the organization gate.
+ * So two more things are scanned and fail:
+ *   3. ACTION SURFACES — the declared dialogs and helpers an object page mounts for an action on
+ *      that object (share, run an agent). They may not read the active organization either.
+ *   4. ORG-DEFAULTING DOORS — a call, in any scanned file, to a door that quietly takes the
+ *      active organization (and raises the organization gate) when the caller names none:
+ *        sendDirectActionMessage · findOrCreateDirectConversation · launchMandate ·
+ *        launchAgent · launchAgentExecution
+ *      must name `organizationId` in its arguments — the object's, from the page's resolver.
+ *
  * `--self-test` proves both directions on planted fixtures: RED on a route reading the active
  * organization, RED on a reasonless exemption, GREEN on the resolver's shape and on a reasoned
- * exemption.
+ * exemption, RED/GREEN on an action surface and on an org-defaulting door with and without the
+ * object's organization.
  */
 
 import { readFileSync, readdirSync, statSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
@@ -54,6 +68,80 @@ export const OBJECT_HELPERS: readonly string[] = [
   // /vault/<id> — the credential workspace the route mounts (ACTIVE-ORG-PAGES).
   "features/secrets/components/VaultWorkspace.tsx",
 ];
+
+/**
+ * ACTION SURFACES — what an object page mounts to act on THAT object. Each takes the object's
+ * organization from the page (the resolver's answer rides in as a prop or argument); none may
+ * read the active organization, and none may call an org-defaulting door without naming it.
+ */
+export const ACTION_SURFACES: readonly string[] = [
+  // The one share dialog, as the record store's table and record screens mount it.
+  "features/sharing/components/RecordStoreShareSurface.tsx",
+  "features/sharing/components/ShareModal.tsx",
+  "features/sharing/components/tabs/ShareWithUserTab.tsx",
+  "features/sharing/components/tabs/ShareWithOrgTab.tsx",
+  "features/sharing/components/tabs/PublicAccessTab.tsx",
+  "utils/permissions/hooks.ts",
+  "utils/permissions/service.ts",
+  // A row's agent button on the table page.
+  "features/unified-data/row-agent-action/rowAgentAction.ts",
+];
+
+/**
+ * Doors that take the ACTIVE organization when the caller names none — and, with none selected,
+ * raise the organization gate ("Which workspace is this for?"). From an object's page or its
+ * action surfaces, every call must name the object's `organizationId`.
+ */
+const ORG_DEFAULTING_DOORS =
+  /\b(sendDirectActionMessage|findOrCreateDirectConversation|launchMandate|launchAgent|launchAgentExecution)\s*\(/g;
+
+/** The text between the call's `(` and its matching `)`, or the rest of the file if unbalanced. */
+function callArguments(text: string, openParen: number): string {
+  let depth = 0;
+  for (let i = openParen; i < text.length; i += 1) {
+    const c = text[i];
+    if (c === "(") depth += 1;
+    else if (c === ")") {
+      depth -= 1;
+      if (depth === 0) return text.slice(openParen + 1, i);
+    }
+  }
+  return text.slice(openParen + 1);
+}
+
+/** Every org-defaulting door call in `file` that does not name `organizationId`. */
+export function unnamedOrganizationCalls(root: string, file: string): Finding[] {
+  let text: string;
+  try {
+    text = readFileSync(join(root, file), "utf8");
+  } catch {
+    return [];
+  }
+  // Blank comments out (keeping offsets) so prose naming a door is never a call.
+  const code = text
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
+    .replace(/\/\/.*$/gm, (m) => " ".repeat(m.length));
+  const findings: Finding[] = [];
+  for (const m of code.matchAll(ORG_DEFAULTING_DOORS)) {
+    const at = m.index ?? 0;
+    // A declaration (`function launchAgent(`, `async launchMandate(`) is not a call.
+    const before = code.slice(Math.max(0, at - 16), at);
+    if (/(function|async)\s+$/.test(before)) continue;
+    const args = callArguments(code, at + m[0].length - 1);
+    if (/\borganizationId\b/.test(args)) continue;
+    const line = code.slice(0, at).split("\n").length;
+    const raw = text.split("\n")[line - 1] ?? "";
+    const exemption = EXEMPT.exec(raw) ?? EXEMPT.exec(text.split("\n")[line - 2] ?? "");
+    if (exemption && (exemption[1] ?? "").trim().length >= 12) continue;
+    findings.push({
+      file,
+      line,
+      text: raw.trim(),
+      why: `${m[1]}(…) names no organizationId, so it takes the ACTIVE organization (and raises "Which workspace is this for?" when none is picked) — pass the object's organization from the page's resolver`,
+    });
+  }
+  return findings;
+}
 
 /**
  * MUST ASK THE OBJECT — an object page outside the record store answers "where does this live"
@@ -83,6 +171,8 @@ const FORBIDDEN: readonly RegExp[] = [
   /\buseActiveOrganization\b/,
   /\bensureOrgId\s*\(/,
   /\bselectOrganizationName\b/,
+  // The non-hook read of the same selection (lib/organizations/activeOrg.ts) — ACCESS-FIX-18.
+  /\bgetActiveOrgId\s*\(/,
 ];
 
 /**
@@ -196,8 +286,9 @@ export function scan(
   helpers: readonly string[] = OBJECT_HELPERS,
   excused: Readonly<Record<string, string>> = {},
   mustAsk: Readonly<Record<string, RegExp>> = {},
+  actionSurfaces: readonly string[] = [],
 ): { scanned: string[]; findings: Finding[] } {
-  const scanned = [...new Set([...objectRoutes(root), ...helpers])].sort();
+  const scanned = [...new Set([...objectRoutes(root), ...helpers, ...actionSurfaces])].sort();
   const findings: Finding[] = [];
   for (const [f, re] of Object.entries(mustAsk)) {
     let body = "";
@@ -217,6 +308,7 @@ export function scan(
     }
   }
   for (const f of scanned) {
+    findings.push(...unnamedOrganizationCalls(root, f));
     const hits = scanFile(root, f);
     if (excused[f] !== undefined) {
       if (hits.length === 0) {
@@ -317,6 +409,30 @@ function selfTest(): number {
   const green5 = scan(dir, [], {}, { "features/x/asks.tsx": /\buseCredentialHome\s*\(/ }).findings;
   expect("GREEN-5 an object workspace that asks the object passes", !green5.some((f) => f.file === "features/x/asks.tsx"));
 
+  // ACTION SURFACES (ACCESS-FIX-18): the share dialog's notification, and a table page's agent launch.
+  write(
+    "features/x/shareService.ts",
+    `export async function shareWithUser(o) {\n  // sendDirectActionMessage( in a comment is not a call\n  void sendDirectActionMessage({\n    recipientId: o.userId,\n    content: "shared",\n  });\n}\n`,
+  );
+  write(
+    "features/x/shareServiceNamed.ts",
+    `export async function shareWithUser(o) {\n  void sendDirectActionMessage({\n    recipientId: o.userId,\n    organizationId: o.organizationId,\n    content: "shared",\n  });\n}\n`,
+  );
+  write("features/x/shareDialog.tsx", `import { selectOrganizationId } from "r";\nconst org = useAppSelector(selectOrganizationId);\n`);
+  write(
+    "app/(core)/data-v2/[tableId]/Launch.tsx",
+    `import { TablePage } from "@ai-matrx/records-ui";\nconst go = () => launchMandate(KEY, { surfaceKey: "s", runtime: { context: { t: 1 } } });\n`,
+  );
+  const red7 = scan(dir, [], {}, {}, ["features/x/shareService.ts"]).findings;
+  expect("RED-7 an action surface calling sendDirectActionMessage without organizationId fails", red7.some((f) => f.file === "features/x/shareService.ts" && f.line === 3));
+  expect("GREEN-7 a door named in a comment is not a call", !red7.some((f) => f.file === "features/x/shareService.ts" && f.line === 2));
+  const green7 = scan(dir, [], {}, {}, ["features/x/shareServiceNamed.ts"]).findings;
+  expect("GREEN-8 the same call naming the object's organizationId passes", !green7.some((f) => f.file === "features/x/shareServiceNamed.ts"));
+  const red8 = scan(dir, [], {}, {}, ["features/x/shareDialog.tsx"]).findings;
+  expect("RED-8 an action surface reading the active organization fails", red8.some((f) => f.file === "features/x/shareDialog.tsx"));
+  const red9 = scan(dir, []).findings;
+  expect("RED-9 an object route launching an agent with no organizationId fails", red9.some((f) => f.file.endsWith("Launch.tsx") && /launchMandate/.test(f.why)));
+
   console.log(failures === 0 ? "[ OK ] self-test: every arm answered as designed" : `[FAIL] self-test: ${failures} arm(s) wrong`);
   return failures === 0 ? 0 : 1;
 }
@@ -325,7 +441,7 @@ if (require.main === module) {
   if (process.argv.includes("--self-test")) {
     process.exit(selfTest());
   }
-  const { scanned, findings } = scan(ROOT, OBJECT_HELPERS, EXCUSED, MUST_ASK_THE_OBJECT);
+  const { scanned, findings } = scan(ROOT, OBJECT_HELPERS, EXCUSED, MUST_ASK_THE_OBJECT, ACTION_SURFACES);
   findings.push(...guessedRefusals(ROOT));
   process.exit(report(findings, scanned));
 }

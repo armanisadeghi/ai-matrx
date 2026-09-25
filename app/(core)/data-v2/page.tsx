@@ -13,8 +13,8 @@
 // here, which is what the unified data ramp screen sets, once, for everybody.
 // The per-person `custom.code_paths_enabled` half is gone (lane NAV-FIX).
 
-import { useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ActionInbox, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
@@ -26,7 +26,8 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { useOrganizationRequired, type OrganizationState } from "@/features/organizations/useOrganizationRequired";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import { getOrganizationMembers } from "@/features/organizations/service";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { createClient } from "@/utils/supabase/client";
@@ -39,7 +40,46 @@ import { openPath } from "@/lib/deep-link/openPath";
 export default function UnifiedDataPage() {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
-  const { organizationId, organizationState } = useOrganizationRequired();
+  const active = useOrganizationRequired();
+  /**
+   * `?org=<id>` — THE LIST OF ONE NAMED ORGANIZATION (lane ACCESS-FIX-18, VERIFIER-18 H4).
+   *
+   * Archiving a table from its own page came back here and read "An organization is needed for
+   * data records … pick the one you are working in", although the table page had just named
+   * its organization. The way back now carries that organization on the address, and this
+   * list shows it — named by the hub's own strip ("Showing what is in <organization> · Change
+   * · All my organizations"), which is the owner's rule for a list filtered by organization.
+   * Only an organization the person belongs to is honoured; anything else is ignored and the
+   * list is the active organization's, as before. The active organization is never moved.
+   */
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const namedOrganizationId = searchParams.get("org");
+  const { organizations: myOrganizations, loading: myOrganizationsLoading } = useUserOrganizations();
+  const namedOrganization = namedOrganizationId
+    ? myOrganizations.find((org) => org.id === namedOrganizationId)
+    : undefined;
+  const organizationId: string | null = namedOrganization ? namedOrganization.id : active.organizationId;
+  const organizationState: OrganizationState = namedOrganization
+    ? "ready"
+    : namedOrganizationId && myOrganizationsLoading
+      ? "resolving"
+      : active.organizationState;
+  /**
+   * CHANGE MEANS CHANGE. The strip's Change opens the platform's one organization picker; when
+   * the person picks there, the list follows the pick, so the address's organization is
+   * dropped rather than left overriding what they just chose.
+   */
+  const lastActive = useRef(active.organizationId);
+  useEffect(() => {
+    if (lastActive.current === active.organizationId) return;
+    lastActive.current = active.organizationId;
+    if (!namedOrganizationId) return;
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("org");
+    const query = next.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [active.organizationId, namedOrganizationId, pathname, router, searchParams]);
   // ONE SWITCH: does THIS organization keep its data in the record store? Set
   // once, for everybody, on the unified data ramp screen. There is no second,
   // per-person switch any more (lane NAV-FIX, 19 September).
@@ -115,6 +155,7 @@ export default function UnifiedDataPage() {
             <OrganizationHub
               organizationId={organizationId!}
               dataSource={dataSource}
+              organizationName={namedOrganization?.name ?? null}
               /* WHAT IS WAITING ON THIS PERSON — one inbox for what they were
                  assigned, what needs their approval and what an agent has
                  proposed (PRODUCTS.md row 6), the store's own `custom.work_inbox`,

@@ -163,7 +163,6 @@ import {
   CELL_TINT_CLASS,
   ROW_TINT_CLASS,
   applyStylePath,
-  colorForChoice,
   parseTableStyle,
   resolveCellColor,
   resolveRowColor,
@@ -173,6 +172,7 @@ import {
   type StylePath,
   type TableStyle,
 } from "@ai-matrx/design-system/data-table/table-style";
+import { sheetChoiceColorLookup } from "@/features/data-tables/sheet-colors";
 import { ColorRulesDialog } from "@/features/data-tables/components/ColorRulesDialog";
 import { isChoiceFormat } from "@/lib/field-formats/choices";
 import { isComputedColumn } from "@/features/data-tables/formulas";
@@ -1149,15 +1149,21 @@ const UserTableViewer = ({
   );
 
   // ─── Colors (table-style.ts) ─────────────────────────────────────────────
+  const onTheRecordStoreForColors = isRecordStoreTable(tableId);
   const serverStyle = tableStyleFromMetadata(tableInfo?.metadata);
   const tableStyle: TableStyle =
     localStyle && localStyle.base === tableInfo?.metadata
       ? localStyle.style
       : serverStyle;
 
-  /** A choice column's option color for a value — what color-by paints with. */
-  const choiceColorFor: ChoiceColorLookup = (fieldName, value) =>
-    colorForChoice(choiceMap.get(fieldName)?.choices, value);
+  /**
+   * What color-by paints with. A RECORD-STORE table paints with the SAME lookup as the default
+   * grid and every card (`sheet-colors.ts`, VERIFIER-18 H3); the older store keeps its option colors.
+   */
+  const choiceColorFor: ChoiceColorLookup = sheetChoiceColorLookup(
+    onTheRecordStoreForColors,
+    (fieldName) => choiceMap.get(fieldName)?.choices,
+  );
 
   /** Write ONE style path: optimistic repaint, then the server's answer wins. */
   const writeStylePath = async (path: StylePath, value: unknown) => {
