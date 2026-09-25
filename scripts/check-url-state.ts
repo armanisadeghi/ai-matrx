@@ -47,6 +47,9 @@ const SKIP = new Set([
 function isExempt(rel: string): boolean {
   return (
     rel === "lib/url-state/useUrlState.ts" ||
+    // The one address door (lane URL-STATE, 2026-09-24); lint rule
+    // matrx/no-navigation-for-query-state bans every other raw write.
+    rel === "lib/url-state/addressWithoutNavigating.ts" ||
     rel.startsWith("scripts/") ||
     rel.endsWith(".test.ts") ||
     rel.endsWith(".test.tsx") ||

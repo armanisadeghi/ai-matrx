@@ -3,6 +3,10 @@ import { createRoot, type Root } from "react-dom/client";
 import ProvidersContainer from "./ProvidersContainer";
 import { aiModelService } from "../../service";
 import type { AiProvider } from "../../types";
+import {
+  installNextHistoryModel,
+  uninstallNextHistoryModel,
+} from "@/lib/url-state/__tests__/nextHistoryModel";
 
 type ProviderTableProbeProps = {
   providers: AiProvider[];
@@ -14,7 +18,6 @@ type ProviderTableProbeProps = {
 };
 
 let tableProps: ProviderTableProbeProps | null = null;
-let query = "";
 
 jest.mock("./ProviderTable", () => ({
   __esModule: true,
@@ -73,15 +76,11 @@ jest.mock("./ProviderForm", () => ({
   ),
 }));
 
-jest.mock("next/navigation", () => ({
-  usePathname: () => "/administration/ai/ai-models/providers",
-  useRouter: () => ({
-    push: (url: string) => {
-      query = url.split("?")[1] ?? "";
-    },
-  }),
-  useSearchParams: () => new URLSearchParams(query),
-}));
+// Next as it really behaves (lane URL-STATE): selecting a provider is a history write through
+// lib/url-state's door, and Next's patched history moves useSearchParams — no router call.
+jest.mock("next/navigation", () =>
+  jest.requireActual("@/lib/url-state/__tests__/nextHistoryModel").nextNavigationModel,
+);
 
 jest.mock("../../service", () => ({
   aiModelService: {
@@ -145,7 +144,7 @@ describe("ProvidersContainer refresh races", () => {
     jest.mocked(aiModelService.updateProvider).mockReset();
     jest.mocked(aiModelService.deleteProvider).mockReset();
     tableProps = null;
-    query = "";
+    installNextHistoryModel("/administration/ai/ai-models/providers");
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
@@ -154,6 +153,7 @@ describe("ProvidersContainer refresh races", () => {
   afterEach(() => {
     act(() => root.unmount());
     host.remove();
+    uninstallNextHistoryModel();
     jest.useRealTimers();
   });
 

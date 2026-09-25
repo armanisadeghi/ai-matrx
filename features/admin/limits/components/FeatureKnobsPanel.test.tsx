@@ -116,8 +116,13 @@ describe("FeatureKnobsPanel register affordances", () => {
 
   it("drops the deep link when the search is cleared, so the box cannot refill itself", async () => {
     searchParams = new URLSearchParams("knob=orchestration.loop_guard.failure_threshold");
+    window.history.replaceState(null, "", "/administration/users/limits?knob=orchestration.loop_guard.failure_threshold");
+    const historyReplace = jest.spyOn(window.history, "replaceState");
     await mount();
     await type("");
-    expect(replace).toHaveBeenCalledWith("?", { scroll: false });
+    // A history write through lib/url-state's door, never a navigation (lane URL-STATE).
+    expect(historyReplace).toHaveBeenCalledWith(null, "", "/administration/users/limits");
+    expect(replace).not.toHaveBeenCalled();
+    historyReplace.mockRestore();
   });
 });

@@ -50,7 +50,9 @@ it("blocks concurrent duplicate requests, reports failure, and permits a success
     expect(aiModelService.create).toHaveBeenLastCalledWith({ name: "model-copy", common_name: "Model (Copy)", is_primary: false });
     expect(rows.map(row => row.id)).toEqual(["copy", "source"]);
     expect(toast.success).toHaveBeenCalledWith("Model duplicated", { id: "notice" });
-    expect(push).toHaveBeenCalled();
+    // Opening the copy is a history push through lib/url-state's door, not a navigation.
+    expect(new URLSearchParams(window.location.search).get("model")).toBe("copy");
+    expect(push).not.toHaveBeenCalled();
   } finally {
     await act(async () => root.unmount());
     errorLog.mockRestore();

@@ -23,9 +23,13 @@ function Harness() {
 describe("snapshot append URL state", () => {
   let host: HTMLDivElement;
   let root: Root;
+  let historyReplace: jest.SpyInstance;
   beforeEach(() => {
     jest.useFakeTimers();
     replace.mockReset();
+    // The address bar the hook writes through (lane URL-STATE: a history write, not a navigation).
+    window.history.replaceState(null, "", "/marketing/snapshots?page=3&pageSize=999&q=hello&q_match=whole_words");
+    historyReplace = jest.spyOn(window.history, "replaceState");
     urlState = "page=3&pageSize=999&q=hello&q_match=whole_words";
     host = document.createElement("div");
     document.body.append(host);
@@ -33,6 +37,7 @@ describe("snapshot append URL state", () => {
     act(() => root.render(<Harness />));
   });
   afterEach(() => {
+    historyReplace.mockRestore();
     act(() => root.unmount());
     host.remove();
     jest.useRealTimers();
@@ -44,8 +49,10 @@ describe("snapshot append URL state", () => {
     expect(normalized).toMatchObject({ page: 1, pageSize: 25, searchMatchMode: "whole_words" });
     act(() => table!.onStateChange({ ...table!.state, search: "typing" }));
     act(() => table!.replaceState(normalized));
-    expect(replace).toHaveBeenCalledWith("/marketing/snapshots?q=hello&q_match=whole_words", { scroll: false });
+    expect(historyReplace).toHaveBeenCalledWith(null, "", "/marketing/snapshots?q=hello&q_match=whole_words");
     act(() => jest.advanceTimersByTime(300));
-    expect(replace).toHaveBeenCalledTimes(1);
+    expect(historyReplace).toHaveBeenCalledTimes(1);
+    // Query state never costs a navigation.
+    expect(replace).not.toHaveBeenCalled();
   });
 });

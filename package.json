@@ -312,6 +312,7 @@
     "check:sync-fields:strict": "tsx scripts/check-agent-sync-fields.ts --strict",
     "check:sync-fields:refresh": "tsx scripts/check-agent-sync-fields.ts --refresh",
     "check:url-state": "npx tsx scripts/check-url-state.ts",
+    "check:no-navigation-for-query-state:self-test": "node --test scripts/lint-rules/no-navigation-for-query-state.selftest.mjs",
     "check:retired-db-ref": "npx tsx scripts/check-retired-db-ref.ts",
     "check:hr-time-arithmetic": "npx tsx scripts/check-hr-time-arithmetic.ts",
     "check:hr-time-arithmetic:strict": "npx tsx scripts/check-hr-time-arithmetic.ts --strict",

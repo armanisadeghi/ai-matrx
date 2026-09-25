@@ -259,8 +259,13 @@ async function fillStepOne(store: Store) {
   const choice = buttonWith(KNOWLEDGE_CHOICE);
   expect(choice).toBeDefined();
   click(choice!);
+  const historyPush = jest.spyOn(window.history, "pushState");
   click(buttonWith("Continue")!);
-  expect(mockPush).toHaveBeenCalledWith("/masterwork/new?step=2");
+  // Step 2 is query state: a history push through lib/url-state's door, never a
+  // navigation (lane URL-STATE).
+  expect(historyPush).toHaveBeenCalledWith(null, "", "/masterwork/new?step=2");
+  expect(mockPush).not.toHaveBeenCalled();
+  historyPush.mockRestore();
 }
 
 it("puts the goal AND the multi-select answer back after a reload on ?step=2", async () => {

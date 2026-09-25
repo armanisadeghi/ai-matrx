@@ -55,6 +55,7 @@ const page: HtmlPageSummary = {
 describe("HtmlPageListView", () => {
   let host: HTMLDivElement;
   let root: Root;
+  let historyReplace: jest.SpyInstance;
 
   beforeEach(() => {
     tableProps = null;
@@ -64,12 +65,15 @@ describe("HtmlPageListView", () => {
       "",
       "/cms/html-pages?view=table&q=launch&sort=meta_title&dir=asc",
     );
+    // The list writes its query through lib/url-state's door, never a navigation (lane URL-STATE).
+    historyReplace = jest.spyOn(window.history, "replaceState");
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
   });
 
   afterEach(() => {
+    historyReplace.mockRestore();
     act(() => root.unmount());
     host.remove();
   });
@@ -131,16 +135,14 @@ describe("HtmlPageListView", () => {
         sort: { id: "meta_description", direction: "desc" },
       });
     });
-    expect(replace).toHaveBeenLastCalledWith(
-      "/cms/html-pages?view=table&q=description&sort=meta_description",
-      { scroll: false },
-    );
+    expect(historyReplace).toHaveBeenLastCalledWith(null, "", "/cms/html-pages?view=table&q=description&sort=meta_description");
+    expect(replace).not.toHaveBeenCalled();
 
     const facet = tableProps.toolbar?.facets?.[0];
     if (!facet || facet.type !== "button-group") {
       throw new Error("Indexable facet is missing");
     }
-    replace.mockClear();
+    historyReplace.mockClear();
     act(() => {
       facet.onChange("indexable");
       controlledQuery.onStateChange({
@@ -152,10 +154,8 @@ describe("HtmlPageListView", () => {
         sort: { id: "meta_title", direction: "asc" },
       });
     });
-    expect(replace).toHaveBeenLastCalledWith(
-      "/cms/html-pages?view=table&q=launch&ix=1&sort=meta_title&dir=asc",
-      { scroll: false },
-    );
+    expect(historyReplace).toHaveBeenLastCalledWith(null, "", "/cms/html-pages?view=table&q=launch&ix=1&sort=meta_title&dir=asc");
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it("keeps the canonical Add control mounted for an empty table view", () => {

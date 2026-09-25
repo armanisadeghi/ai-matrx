@@ -126,9 +126,13 @@ it("consumes the parameter so a refresh does not re-open the canvas", async () =
     tab: "audit",
   });
 
+  const historyReplace = jest.spyOn(window.history, "replaceState");
   const view = await mount();
 
-  expect(nav.replaced).toEqual(["/chat?tab=audit"]);
+  // A history write through lib/url-state's door, never a navigation (lane URL-STATE).
+  expect(historyReplace).toHaveBeenCalledWith(null, "", "/chat?tab=audit");
+  expect(nav.replaced).toEqual([]);
+  historyReplace.mockRestore();
   await view.unmount();
 });
 
