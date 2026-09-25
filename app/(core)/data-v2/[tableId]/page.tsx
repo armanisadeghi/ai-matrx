@@ -19,6 +19,7 @@ import { Button } from "@ai-matrx/design-system";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import {
   PendingTableInvitation,
@@ -603,22 +604,18 @@ export default function UnifiedDataTableRoute({
         ) : object.state === "not-given" && pendingInvitation ? (
           <PendingTableInvitation invitation={pendingInvitation} />
         ) : object.state === "not-given" ? (
-          /* THE HONEST REFUSAL. The store answers "not given to you" and "not there" the
-             same way on purpose — a guessed link learns nothing — so the sentence says both,
-             and says what to do. It never mentions the organization she is working in,
-             because that has nothing to do with it. */
-          <div className="flex flex-col items-start gap-2 rounded-md border border-dashed p-6">
-            <p className="text-sm font-medium">You have not been given this table</p>
-            <p className="max-w-prose text-xs text-muted-foreground">
-              Nobody has shared it with you, or it no longer exists &mdash; the store gives the
-              same answer for both, so a link can never reveal a table you were not given. Ask
-              the person who sent you the link to share it with you, and it will open here as
-              soon as they do. Which organization you are working in makes no difference.
-            </p>
-            <Button size="sm" variant="outline" onClick={() => router.push("/data-v2")}>
-              Back to your tables
-            </Button>
-          </div>
+          /* THE CANONICAL NO ACCESS PAGE. A Table is a record of the store (token `record`,
+             custom.record), so `access_denied_context` answers which of the four it really is —
+             not shared with you, deleted, never there, or signed out — and offers the ask to
+             whoever can grant it (the table's creator; the organization's admins for a shared
+             one). Grants land on the same ladder `custom.where_id_opens` reads. */
+          <AccessGate
+            token="record"
+            id={tableId}
+            onRetry={object.retry}
+            fallbackHref="/data-v2"
+            fallbackLabel="Back to your tables"
+          />
         ) : object.state === "unavailable" ? (
           <div className="flex flex-col items-start gap-2 rounded-md border border-dashed p-6">
             <p className="text-sm font-medium">We could not find out where this table is</p>
