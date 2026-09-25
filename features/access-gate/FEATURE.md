@@ -85,6 +85,29 @@ it. The states it can render:
 `ok` is the state everyone forgets. Rendering a denial to someone who has access
 is the same class of lie this feature exists to kill.
 
+## A control you cannot use — `RequestAccess` (owner ruling, 2026-09-25)
+
+> *"Remove [the control] if they can't use it … If someone wants to edit and they
+> can't, offer them a way to message someone who can."* — Arman
+
+A control the viewer cannot use is **absent** — never a faded pencil, a dead
+toggle, or a Save that cannot save. Where they would plausibly want it, render
+`<RequestAccess target={{ action, resource: { kind, name, type?, id? }, owner, manageHref? }} variant="inline" | "icon" />`
+(`useRequestAccess(target)` for a custom trigger). One line + **Ask for access**
+(or a key icon) → a compact dialog: note box + the context we already know
+(what, on which record, page URL, who is asking). Routing, by `owner`:
+
+| Owner | Lands in | Mechanism |
+| --- | --- | --- |
+| `{ organizationId }` | that org's owners/admins: DM + `/settings/access-requests` | `setting_access_request_create`, action `request_access.manual` (admin opens the setting, then **Mark as done**) |
+| `"system"` or the system org id | the platform team's feedback queue | `submitFeedback`, `feedback_type: "other"`, `metadata.kind = "access_request"` |
+
+`manageHref` is where an admin makes the change and must sit under
+`/organizations/<org>/settings` (the ledger's link rule); otherwise the org's
+settings home is used. A repeat ask for the same record + action is a no-op.
+Pure routing/text lives in `service/requestAccess.ts` (tested). First consumer:
+mandates (definition sections, org Binding tab).
+
 ## Files
 
 | Path                                                         | Role                                                                                                                                                                                                                                                                                                 |
@@ -97,6 +120,7 @@ is the same class of lie this feature exists to kill.
 | `components/AccessRequestsSurface.tsx`                       | The INBOX — both directions, at `/settings/access-requests`. Answers with the same service calls the DM chip uses; never its own copy.                                                                                                                                                               |
 | `../../app/(core)/settings/access-requests/page.tsx`         | The route. Signed-out → `ModuleSignInGate`. Reached from the settings nav (`Access requests`).                                                                                                                                                                                                       |
 | `components/RequestAccessPanel.tsx`                          | Ask → pending → answered, in place.                                                                                                                                                                                                                                                                  |
+| `components/RequestAccess.tsx` · `hooks/useRequestAccess.ts` · `service/requestAccess.ts` | The generic "ask someone who can" affordance for a control the viewer cannot use (section above). |
 | `components/SettingAccessGate.tsx`                           | Org-admin setting composition: admins get the control; members get a contextual request.                                                                                                                                                                                                             |
 | `components/SettingRequestActionButtons.tsx`                 | One inline apply/open/decline component reused by DM bubbles and the durable inbox.                                                                                                                                                                                                                  |
 | `components/GovernedActionDialog.tsx`                        | The reusable write-denial UI: explains the required level and offers direct deletion or full-access requests.                                                                                                                                                                                        |
@@ -264,6 +288,12 @@ surface means importing them too, never reimplementing the RPC call.
   `recordUnavailable`, assert some consumer reads `.isError`/`.error`.
 
 ## Change Log
+
+- **2026-09-25** — **`RequestAccess`: the platform answer to a control you
+  cannot use.** Org-owned asks reuse the setting-request ledger + DM (new
+  generic action `request_access.manual`); system-owned asks become a user
+  feedback item. Mandates adopted it: the faded definition pencils on member
+  surfaces became the ask, and the dead "Run instantly" toggle is gone.
 
 - **2026-09-23** — **Slug pages get the gate.** `access_gate_resolve_slug`
   gained content_ir_kind, learn_doc, pc_episode, pc_show and app branches

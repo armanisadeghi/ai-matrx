@@ -7,6 +7,7 @@ jest.mock("@/features/organizations/orgModuleSettings", () => ({
 import {
   getSettingRequestAction,
   ORG_MODULE_CUSTOM_VALUE_ADD_ACTION,
+  REQUEST_ACCESS_MANUAL_ACTION,
 } from "../settingRequestActionRegistry";
 
 const payload = {
@@ -40,5 +41,16 @@ describe("setting request action registry", () => {
       action?.execute(payload, { organizationId: "org-2" }),
     ).rejects.toThrow("does not match its organization");
     expect(mockAddOrgModuleCustomValue).not.toHaveBeenCalled();
+  });
+
+  it("marks a generic RequestAccess ask done only inside its own organization", async () => {
+    const action = getSettingRequestAction(REQUEST_ACCESS_MANUAL_ACTION);
+    expect(action?.label).toBe("Mark as done");
+    await expect(
+      action?.execute({ organization_id: "org-1" }, { organizationId: "org-1" }),
+    ).resolves.toBeUndefined();
+    await expect(
+      action?.execute({ organization_id: "org-1" }, { organizationId: "org-2" }),
+    ).rejects.toThrow("does not match its organization");
   });
 });

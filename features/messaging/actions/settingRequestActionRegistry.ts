@@ -11,6 +11,12 @@ import type { JsonObject } from "@/types/json";
 
 export const ORG_MODULE_CUSTOM_VALUE_ADD_ACTION = "org_module_custom_value.add";
 export const ORG_CHANGE_POLICY_SET_ACTION = "org_change_policy.set";
+/**
+ * The generic `RequestAccess` ask (features/access-gate/components/RequestAccess.tsx):
+ * the admin makes the change through "Open setting", then marks it done here.
+ * There is no write to replay — the payload is context, never an instruction.
+ */
+export const REQUEST_ACCESS_MANUAL_ACTION = "request_access.manual";
 
 interface SettingRequestAction {
   label: string;
@@ -30,6 +36,15 @@ function requiredString(payload: JsonObject, key: string): string {
 }
 
 const ACTIONS: Record<string, SettingRequestAction> = {
+  [REQUEST_ACCESS_MANUAL_ACTION]: {
+    label: "Mark as done",
+    completedLabel: "Marked as done",
+    execute: async (payload, context) => {
+      if (requiredString(payload, "organization_id") !== context.organizationId) {
+        throw new Error("This request does not match its organization.");
+      }
+    },
+  },
   [CMS_SITE_MEMBER_ADD_ACTION]: {
     label: "Add site member",
     completedLabel: "Site access granted",
