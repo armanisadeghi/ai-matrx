@@ -52,6 +52,7 @@ import {
   waitForOrganizationAdmission,
 } from "@/lib/api/organization-admission";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { fileOrganizationId } from "@/features/files/api/fileOrganization";
 import { fileHandler } from "@/features/files/handler/handler";
 import type { CloudFile, Visibility } from "@/features/files/types";
 import { selectFileById } from "@/features/files/redux/selectors";
@@ -122,7 +123,12 @@ async function filesFetch(
     return globalThis.fetch(input, { ...init, headers });
   }
 
-  let organizationId = peekSelectedOrganizationId();
+  // A request about ONE file goes in THAT FILE'S organization, read from the file (its row as
+  // the person loaded it), never the picker's — access is personal and an object resolves its
+  // organization from the object (GATES-TAIL, VERIFIER-21 #2). Only a request that names no
+  // known file falls back to the active selection below.
+  const fileId = fileIdInRequest(input);
+  let organizationId = (fileId ? fileOrganizationId(fileId) : null) ?? peekSelectedOrganizationId();
   if (!organizationId) {
     const admission = await waitForOrganizationAdmission();
     organizationId = admission === "ready" ? peekSelectedOrganizationId() : null;
@@ -151,6 +157,17 @@ async function filesFetch(
   resetUnresolvedOrganizationReport();
   headers.set("X-Organization-Id", organizationId);
   return globalThis.fetch(input, { ...init, headers });
+}
+
+/** Test seam: the one transport every package door passes through. */
+export const __filesFetchForTest = filesFetch;
+
+const ONE_FILE_PATH = /\/(?:files|assets)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:[/?#]|$)/i;
+
+/** The file id a request is about (`/files/<id>…`, `/assets/<id>…`), or null. */
+function fileIdInRequest(input: RequestInfo | URL): string | null {
+  const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+  return ONE_FILE_PATH.exec(url)?.[1] ?? null;
 }
 
 /** The app's diagnostics sinks: Error Inspector capture + console scream. */
