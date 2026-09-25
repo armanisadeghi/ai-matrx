@@ -9,7 +9,7 @@ client. Two paths, two Resend keys: see `features/email/FEATURE.md`.
 
 - **client.ts** - Core email sending via Resend, email templates for welcome, invitations, sharing
 - **exportService.ts** - "Email to me" features for exporting content (chat responses, table exports, share links)
-- **notificationService.ts** - Notification emails with user preference checking (task assignments, comments, messages, due dates)
+- **notificationService.ts** - Legacy notification emails with user preference checking (task-assignment fallback, comments, messages, due dates)
 
 ## Environment Variables
 
@@ -36,7 +36,7 @@ CRON_SECRET=              # optional — cron endpoints
 
 | Endpoint | Auth | Description |
 |----------|------|-------------|
-| `POST /api/notifications/task-assigned` | Required | Send task assignment notification |
+| `POST /api/notifications/task-assigned` | Required | Send assignment DM and legacy email fallback until the transactional outbox row exists |
 | `POST /api/notifications/comment-added` | Required | Send comment notification |
 | `POST /api/notifications/message-received` | Required | Send offline message notification |
 | `GET /api/cron/due-date-reminders` | Cron Secret | Process and send due date reminders |
@@ -71,18 +71,10 @@ await fetch('/api/chat/email-response', {
 });
 ```
 
-### Send Task Assignment Notification
-```typescript
-import { sendTaskAssignmentEmail } from '@/lib/email/notificationService';
-
-await sendTaskAssignmentEmail({
-  assigneeId: 'user-uuid',
-  assignerName: 'John Doe',
-  taskTitle: 'Review PR',
-  taskId: 'task-uuid',
-  taskDescription: 'Please review...'
-});
-```
+After the assignment-outbox activation, a saved assignment queues its email in
+the task write transaction. Until activation, the authenticated route sends
+the legacy email. It always sends the actionable DM. The release lane activates
+the trigger only after this route's compatibility read is live.
 
 ### Cron Job Setup (Vercel)
 

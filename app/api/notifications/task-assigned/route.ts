@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { sendTaskAssignmentEmail } from "@/lib/email/notificationService";
 import { sendDm } from "@/lib/services/system-dm";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { createAdminClient } from "@/utils/supabase/adminClient";
 import { z } from "zod";
 
 const assignmentNoticeRequest = z.object({
@@ -75,13 +76,51 @@ export async function POST(request: Request) {
     const taskTitle = taskRow.title;
     const taskDescription = taskRow.description ?? undefined;
 
-    // Don't send notification if assigning to yourself
     if (assigneeId === user.id) {
       return NextResponse.json({
         success: true,
         msg: "Self-assignment, no notification needed",
         skipped: true,
       });
+    }
+
+    // This route remains the actionable DM producer during the email cutover.
+    // The database activation marker is written only after this compatibility
+    // code is live. A saved outbox row wins even if the activation occurred
+    // while the task write was finishing; older writes keep the email fallback.
+    const admin = createAdminClient();
+    const { data: eventType, error: eventError } = await admin
+      .schema("communication").from("notification_event_type")
+      .select("config")
+      .eq("event_key", "task.assigned")
+      .maybeSingle();
+    if (eventError) {
+      console.error("[task-assigned] event read failed:", eventError);
+      return NextResponse.json({ success: false, msg: "Could not verify assignment email" }, { status: 503 });
+    }
+    const eventConfig = eventType?.config;
+    const configValues: Record<string, unknown> | null = eventConfig &&
+      typeof eventConfig === "object" && !Array.isArray(eventConfig)
+        ? eventConfig as Record<string, unknown>
+        : null;
+    const cutoverAt = configValues?.assignment_outbox_active === true &&
+      typeof configValues.assignment_outbox_activated_at === "string"
+        ? Date.parse(configValues.assignment_outbox_activated_at)
+        : NaN;
+    const outboxActive = Number.isFinite(cutoverAt);
+    let outboxOwnsEmail = false;
+    if (outboxActive) {
+      const { data: notice, error: noticeError } = await admin
+        .schema("communication").from("notification")
+        .select("id")
+        .eq("organization_id", taskRow.organization_id)
+        .eq("dedupe_key", `task.assigned:${taskId}:${taskVersion}:email`)
+        .maybeSingle();
+      if (noticeError) {
+        console.error("[task-assigned] outbox read failed:", noticeError);
+        return NextResponse.json({ success: false, msg: "Could not verify assignment email" }, { status: 503 });
+      }
+      outboxOwnsEmail = Boolean(notice) || Date.parse(taskRow.updated_at) >= cutoverAt;
     }
 
     // Get assigner's name
@@ -100,6 +139,19 @@ export async function POST(request: Request) {
 
     // In-app DM (actionable: Open / Complete / Snooze) + email, in parallel.
     // Both best-effort; the assignment itself already succeeded.
+    const emailDelivery: Promise<Awaited<ReturnType<typeof sendTaskAssignmentEmail>>> =
+      outboxOwnsEmail ? Promise.resolve({
+        success: true,
+        skipped: true,
+        message: "Assignment email handled by the notification outbox",
+      }) : sendTaskAssignmentEmail({
+        assigneeId,
+        organizationId: taskRow.organization_id,
+        assignerName,
+        taskTitle,
+        taskId,
+        taskDescription,
+      });
     const [dmResult, result] = await Promise.all([
       sendDm({
         senderId: user.id,
@@ -111,14 +163,7 @@ export async function POST(request: Request) {
           payload: { task_id: taskId, title: taskTitle },
         },
       }),
-      sendTaskAssignmentEmail({
-        assigneeId,
-        organizationId: taskRow.organization_id,
-        assignerName,
-        taskTitle,
-        taskId,
-        taskDescription,
-      }),
+      emailDelivery,
     ]);
     if (!dmResult.ok && dmResult.error !== "self") {
       console.error("[task-assigned] DM failed:", dmResult.error);

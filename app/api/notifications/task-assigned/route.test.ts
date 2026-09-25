@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import { sendDm } from "@/lib/services/system-dm";
 import { sendTaskAssignmentEmail } from "@/lib/email/notificationService";
+import { createAdminClient } from "@/utils/supabase/adminClient";
 
 jest.mock("next/server", () => ({
   NextResponse: {
@@ -16,6 +17,7 @@ jest.mock("@/utils/supabase/server", () => ({ createClient: jest.fn() }));
 jest.mock("@/utils/supabase/resolveUser", () => ({ getClaimsUser: jest.fn() }));
 jest.mock("@/lib/services/system-dm", () => ({ sendDm: jest.fn() }));
 jest.mock("@/lib/email/notificationService", () => ({ sendTaskAssignmentEmail: jest.fn() }));
+jest.mock("@/utils/supabase/adminClient", () => ({ createAdminClient: jest.fn() }));
 
 const taskId = "a0111111-1111-4111-8111-111111111111";
 const actorId = "b0222222-2222-4222-8222-222222222222";
@@ -50,6 +52,17 @@ describe("task assignment notification admission", () => {
     eq: jest.fn().mockReturnThis(),
     single: jest.fn().mockResolvedValue({ data: { display_name: "Alex" }, error: null }),
   };
+  const eventQuery = {
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    is: jest.fn().mockReturnThis(),
+    maybeSingle: jest.fn(),
+  };
+  const noticeQuery = {
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    maybeSingle: jest.fn(),
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -58,10 +71,17 @@ describe("task assignment notification admission", () => {
         from: jest.fn(() => name === "workspace" ? taskQuery : profileQuery),
       })),
     } as never);
+    jest.mocked(createAdminClient).mockReturnValue({
+      schema: jest.fn(() => ({
+        from: jest.fn((table: string) => table === "notification" ? noticeQuery : eventQuery),
+      })),
+    } as never);
     jest.mocked(getClaimsUser).mockResolvedValue({
       data: { user: { id: actorId, user_metadata: {} } }, error: null,
     } as never);
     taskQuery.maybeSingle.mockResolvedValue({ data: savedTask, error: null });
+    eventQuery.maybeSingle.mockResolvedValue({ data: null, error: null });
+    noticeQuery.maybeSingle.mockResolvedValue({ data: null, error: null });
     jest.mocked(sendDm).mockResolvedValue({ ok: true });
     jest.mocked(sendTaskAssignmentEmail).mockResolvedValue({ success: true, message: "sent" });
   });
@@ -101,6 +121,72 @@ describe("task assignment notification admission", () => {
 
     expect(response.status).toBe(409);
     expect(sendDm).not.toHaveBeenCalled();
+    expect(sendTaskAssignmentEmail).not.toHaveBeenCalled();
+  });
+
+  it("keeps the DM but leaves email to an exact saved outbox intent", async () => {
+    eventQuery.maybeSingle.mockResolvedValue({ data: {
+      config: {
+        assignment_outbox_active: true,
+        assignment_outbox_activated_at: new Date(Date.now() - 60_000).toISOString(),
+      },
+    }, error: null });
+    noticeQuery.maybeSingle.mockResolvedValue({ data: { id: taskId }, error: null });
+
+    const response = await POST(request({ taskId, taskVersion: 4 }));
+
+    expect(response.status).toBe(200);
+    expect(sendDm).toHaveBeenCalledTimes(1);
+    expect(sendTaskAssignmentEmail).not.toHaveBeenCalled();
+    expect(noticeQuery.eq).toHaveBeenCalledWith("dedupe_key", `task.assigned:${taskId}:4:email`);
+  });
+
+  it("uses the legacy email fallback for a write older than activation with no outbox row", async () => {
+    taskQuery.maybeSingle.mockResolvedValue({ data: {
+      ...savedTask, updated_at: new Date(Date.now() - 120_000).toISOString(),
+    }, error: null });
+    eventQuery.maybeSingle.mockResolvedValue({ data: {
+      config: {
+        assignment_outbox_active: true,
+        assignment_outbox_activated_at: new Date(Date.now() - 60_000).toISOString(),
+      },
+    }, error: null });
+
+    const response = await POST(request({ taskId, taskVersion: 4 }));
+
+    expect(response.status).toBe(200);
+    expect(sendDm).toHaveBeenCalledTimes(1);
+    expect(sendTaskAssignmentEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not bypass a current event or recipient preference when no outbox row was queued", async () => {
+    eventQuery.maybeSingle.mockResolvedValue({ data: {
+      config: {
+        assignment_outbox_active: true,
+        assignment_outbox_activated_at: new Date(Date.now() - 60_000).toISOString(),
+      },
+    }, error: null });
+
+    const response = await POST(request({ taskId, taskVersion: 4 }));
+
+    expect(response.status).toBe(200);
+    expect(sendDm).toHaveBeenCalledTimes(1);
+    expect(sendTaskAssignmentEmail).not.toHaveBeenCalled();
+  });
+
+  it("keeps the activation marker when the event is soft-deleted", async () => {
+    eventQuery.maybeSingle.mockResolvedValue({ data: {
+      deleted_at: new Date().toISOString(),
+      config: {
+        assignment_outbox_active: true,
+        assignment_outbox_activated_at: new Date(Date.now() - 60_000).toISOString(),
+      },
+    }, error: null });
+
+    const response = await POST(request({ taskId, taskVersion: 4 }));
+
+    expect(response.status).toBe(200);
+    expect(eventQuery.is).not.toHaveBeenCalled();
     expect(sendTaskAssignmentEmail).not.toHaveBeenCalled();
   });
 });

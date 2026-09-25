@@ -2,7 +2,7 @@
 
 **Status:** `active` — both features in production
 **Tier:** `2`
-**Last updated:** `2026-09-22`
+**Last updated:** `2026-09-25`
 
 > Combined doc. **Projects and Tasks are first-class _containers_** (like orgs and scopes): nearly every resource table carries both a `project_id` and a `task_id` column, so "what belongs to this project/task" is a direct FK query — the same shape as the org workspace's `organization_id`. Tasks nest under projects (`project_id`) and under each other (`parent_task_id`). They share the org-scoped architecture documented in [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
 
@@ -80,7 +80,7 @@ Org-scoped project management. Projects group work within an organization; tasks
 - **Project membership + invites** → canonical `iam.memberships` / `iam.invitations`, reached only via `membershipsService` (`mbr_*` RPCs) / `invitationsService` (`inv_*` RPCs) in `features/organizations/service/`. The legacy `ctx_project_members` / `ctx_project_invitations` junctions are no longer read by app code (2026-06-25 cutover).
 - **Comments** → `platform.comments` (canonical, threaded; the `cmt_*` RPCs via `@ai-matrx/associations` — host wiring `features/scopes/service/commentsService.ts`; the UI is the package `CommentThread`). The legacy `ctx_task_comments` junction is no longer read by app code.
 - **Attachments** → a `user_file → task` edge in `platform.associations` (`associationsService` to write; the `get_task_associations` `files` array to read). The legacy `ctx_task_attachments` junction is no longer read by app code.
-- **Assignments** → the primary assignee lives on `ctx_tasks.assignee_id` (no junction; the legacy `ctx_task_assignments` table is unused).
+- **Assignments** → the primary assignee lives on `workspace.tasks.assignee_id` (no junction; the legacy `ctx_task_assignments` table is unused). Once activated, `communication._task_assignment_outbox` enqueues a deduplicated email intent on a saved assignee transition. The browser-triggered route still sends the actionable DM and serves as a temporary email fallback until activation.
 - **Generic task↔entity M2M** → canonical `platform.associations`. Reads use `get_task_associations` (denormalized preview bundle) / `get_tasks_for_entity`; writes use the generic `assoc_*` primitives via the `associationsService` chokepoint. **`associate_with_task` + `create_task_with_association` were GRAVEYARDED 2026-06-29** (dropped — `migrations/graveyard_buggy_task_assoc_rpcs.sql`): both hand-rolled a 4-column `ON CONFLICT` that matched no unique index (the real key is the 5-tuple incl. `role`) and threw `42P10`. `taskAssociationsSlice`'s `associateWithTask` thunk now calls `associationsService.add` (entity→task); `createTaskWithAssociation` inserts the task via the task service then wires edges through the chokepoint (task creation no longer aborts on an edge failure — edge errors are loud, not fatal). `dissociate_from_task` / `create_tasks_bulk` unchanged. The legacy `ctx_task_associations` table is retired to the `graveyard` schema.
 - **`get_task_associations` mirrors task visibility.** Its explicit `SECURITY DEFINER` gate includes the same `platform_admin_all` lane as `workspace.tasks`; an admin who can open an internal task must not be rejected when its attachment bundle loads.
 - `getProjectReferences(projectId)` RPC — every table FK-referencing a project (`{schemaName, tableName, columnName, rowCount}`)
@@ -151,16 +151,17 @@ Org-scoped project management. Projects group work within an organization; tasks
 
 ## Notifications — channels and placement (deliberate decision)
 
-The legacy task email/DM producers below remain frontend-side. Shared notification dispatch and delayed SMS execution live in aidream; extend that shared service for new channels and timed delivery. Cross-repo contracts: `/Users/armanisadeghi/code/common-docs/systems/communications/STATE.md`.
+Task-assignment email enters the shared notification outbox in the task transaction after database activation. The actionable DM and due-date reminder cron remain legacy frontend producers; shared dispatch and delayed SMS execution live in aidream. Cross-repo contracts: `/Users/armanisadeghi/code/common-docs/systems/communications/STATE.md`.
 
-1. **Email** — `lib/email/notificationService.ts`, preference-gated (`users.user_email_preferences.task_notifications`).
-2. **In-app DM** (canonical in-app channel) — `lib/services/system-dm.ts` `sendDm()` (sender = user or the Matrx System bot `system@aimatrx.com`); action chips via `features/messaging/actions/messageActionRegistry.tsx` `task_reminder` kind (Open / Complete — recurrence-aware / Snooze 1d, all inline). Senders: task assignment (`app/api/notifications/task-assigned`), the reminder cron (ONE volume-aware DM per user per run: single task → actionable chips; several → digest + `open_link` to /tasks).
+1. **Assignment email** — `migrations/communications_p1_task_assignment_outbox.sql` installs an inert trigger; `migrations/communications_p1_task_assignment_outbox_activate.sql` enables it only after the compatible frontend route is live. It then inserts one `task.assigned` email intent per saved assignee transition. The shared event/organization switches, user preference and legacy Email-tab `task_notifications=false` suppress it. The signed-in route checks the outbox and activation time before using the direct-email fallback. The trigger does not enqueue SMS.
+2. **In-app DM** — `lib/services/system-dm.ts` `sendDm()` (sender = the assigning user or the Matrx System bot `system@aimatrx.com`); action chips via `features/messaging/actions/messageActionRegistry.tsx` `task_reminder` kind (Open / Complete — recurrence-aware / Snooze 1d, all inline). Assignment uses the signed-in route; the reminder cron sends one volume-aware DM per user per run: single task → actionable chips; several → digest + `open_link` to /tasks.
 3. **Reminder cron** — `app/api/cron/due-date-reminders/route.ts`, `vercel.json` daily 15:00 UTC, main deployment only, fail-closed on missing `CRON_SECRET` (set on Vercel prod 2026-08-07), snooze/dismiss-aware (`task_user_state`), 3-emails-per-user cap.
 
 Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tasks-world-class.md).
 
 ## Change log
 
+- `2026-09-25` — Added staged task-assignment email outbox and activation migrations. The authenticated route keeps the actionable DM and direct-email fallback until activation, then uses the exact outbox row/cutover time. Source engineering and isolated-clone checks are separate from database rollout and delivery evidence.
 - `2026-09-22` — The task text confirmation describes `DONE` and `SNOOZE 1H`, including texting-policy delays and unchanged task due date. Corrected the obsolete claim that aidream has no notification service.
 
 - `2026-09-18` — **F-89 (V-22, NEW-1): the import control stops telling people
