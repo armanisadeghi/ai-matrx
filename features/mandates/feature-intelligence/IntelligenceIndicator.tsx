@@ -59,11 +59,24 @@ export function IntelligenceIndicator({
   const resolvedFeature = feature
     ? canonicalFeature(feature)
     : mandateKeys?.[0] ? featureOfMandateKey(mandateKeys[0]) : null;
-  const keys = mandateKeys
+  const registered = mandateKeys
     ? [...mandateKeys]
     : live
         .map((ref) => ref.mandateKey as string)
         .filter((key) => (resolvedFeature ? keyInFeature(key, resolvedFeature) : true));
+  // A door on a page that has not registered its jobs yet (the growth loop
+  // before it starts) still lists the feature's jobs from its places map,
+  // never an empty list under "the AI jobs behind this".
+  const keys =
+    registered.length > 0 || !resolvedFeature
+      ? registered
+      : [
+          ...new Set(
+            (declaredPlacesFor(resolvedFeature)?.places ?? []).flatMap(
+              (place) => place.mandateKeys,
+            ),
+          ),
+        ];
   const does = new Map(live.map((ref) => [ref.mandateKey as string, ref.does]));
 
   const [open, setOpen] = useState(false);
