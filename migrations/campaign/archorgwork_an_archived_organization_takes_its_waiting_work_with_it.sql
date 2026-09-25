@@ -170,6 +170,13 @@ $function$;
 comment on function custom._organization_work_withdraw(uuid, uuid) is
   'Lane ARCHIVED-ORG-WORK. An archived organization gives up what was waiting in it: pending approvals withdrawn (withdrawn_with organization), open assignments unassigned, unanswered signature requests stopped; one history.migration_log archive event (target_kind organization) lists what it took. Internal: called by iam.organization_archive and the audited repair; no client calls it.';
 revoke all on function custom._organization_work_withdraw(uuid, uuid) from public, anon, authenticated;
+insert into platform.client_callable_door (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
+values ('custom', '_organization_work_withdraw', 'p_organization_id uuid, p_by uuid', array['uuid'::regtype, 'uuid'::regtype]::oid[],
+        'p_organization_id: acted on only when that organization is archived (null or live answers null). p_by: recorded as the archiver, may be null.',
+        'archorgwork_an_archived_organization_takes_its_waiting_work_with_it.sql',
+        'internal: not a door. Called only from inside iam.organization_archive / iam.organization_restore (which check owner or platform admin first) and the audited repair; no client ever calls it.',
+        false, false)
+on conflict (schema_name, function_name, identity_argtypes) do nothing;
 
 -- ── 2. THE RESTORE HALF ─────────────────────────────────────────────────────────────────────────
 create or replace function custom._organization_work_return(p_organization_id uuid, p_by uuid)
@@ -294,6 +301,13 @@ $function$;
 comment on function custom._organization_work_return(uuid, uuid) is
   'Lane ARCHIVED-ORG-WORK. A restored organization gets back exactly what its open archive event(s) took, only while each subject is still live and unchanged; what stays behind is written into the event with why, and the event is stamped undone. Internal: called by iam.organization_restore; no client calls it.';
 revoke all on function custom._organization_work_return(uuid, uuid) from public, anon, authenticated;
+insert into platform.client_callable_door (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
+values ('custom', '_organization_work_return', 'p_organization_id uuid, p_by uuid', array['uuid'::regtype, 'uuid'::regtype]::oid[],
+        'p_organization_id: acted on only when that organization is live (still archived answers null). p_by: recorded as who restored it, may be null.',
+        'archorgwork_an_archived_organization_takes_its_waiting_work_with_it.sql',
+        'internal: not a door. Called only from inside iam.organization_archive / iam.organization_restore (which check owner or platform admin first) and the audited repair; no client ever calls it.',
+        false, false)
+on conflict (schema_name, function_name, identity_argtypes) do nothing;
 
 -- ── 3. BOTH DOORS THAT ARCHIVE AND RESTORE AN ORGANIZATION CARRY ITS WORK ─────────────────────
 -- Folded into the two doors rather than a new trigger on iam.organizations: `pnpm db:rehearse`

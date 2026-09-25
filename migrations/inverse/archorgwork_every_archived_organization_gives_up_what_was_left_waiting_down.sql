@@ -2,7 +2,8 @@
 -- (lane ARCHIVED-ORG-WORK). Gives back exactly what the repair took, without restoring any
 -- organization: every row listed by an OPEN history.migration_log event tagged
 -- inverse.repair = 'archorgwork' that still carries the repair's own marks goes back as it was,
--- and the event is stamped undone. Run BEFORE the trigger file's inverse.
+-- and the event is stamped undone. Run BEFORE the organization-doors file's inverse.
+-- chair-step: gives back what the archorgwork repair withdrew from archived organizations, without restoring any organization.
 
 set lock_timeout = '30s';
 set statement_timeout = '300s';

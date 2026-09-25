@@ -5,6 +5,11 @@
 -- What an archive already withdrew stays withdrawn (its history.migration_log event still lists it);
 -- run the repair file's inverse first to give that back.
 
+-- chair-step: inverse of lane ARCHIVED-ORG-WORK's organization-archive file; restores the three pre-file bodies and drops two internal functions.
+-- based-on: iam.organization_archive(uuid, text, text) 8f654a8eb3f77aa90f1752b16ea86454e60ebdd3472d3ef2e5d772c4afabb747
+-- based-on: iam.organization_restore(uuid, text) 78811d51df8e3f8a3c26704068620d6dfaf89e4839214e02f65ceb09dcb13a0e
+-- based-on: custom._inbox_items(uuid, uuid, boolean) 9f3f7ac773c74bc887c72ad1e55f8f0befccd01d984647224942bacfdc19931a
+
 set lock_timeout = '30s';
 set statement_timeout = '120s';
 
@@ -315,3 +320,4 @@ revoke all on function custom._inbox_items(uuid, uuid, boolean) from public, ano
 
 drop function if exists custom._organization_work_return(uuid, uuid);
 drop function if exists custom._organization_work_withdraw(uuid, uuid);
+delete from platform.client_callable_door where schema_name = 'custom' and function_name in ('_organization_work_withdraw', '_organization_work_return');
