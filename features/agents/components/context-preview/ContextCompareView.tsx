@@ -42,6 +42,7 @@ import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
 import { getUserId } from "@/utils/auth/getUserId";
 import { extractErrorMessage } from "@/utils/errors";
 import type { components } from "@/types/python-generated/api-types";
+import { usePageCaptureContribution } from "@/components/agent-copy/page-capture/usePageCapture";
 import { useContextPreview, type ContextSelection } from "./useContextPreview";
 
 type ContextCompare = components["schemas"]["ContextCompare"];
@@ -408,6 +409,28 @@ function AnswerBoth({
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnswerBoth | null>(null);
+  const agents = useAppSelector(selectAllAgents);
+  const agentName = agentId ? ((agents?.[agentId]?.name as string | undefined) ?? null) : null;
+  // The alchemy capture: the chosen agent, the question, and both answers.
+  usePageCaptureContribution(
+    "context-compare:answer-both",
+    () => [
+      {
+        id: "answers",
+        title: "Answer on both paths",
+        role: "data",
+        value: {
+          agent: { id: agentId ?? null, name: agentName },
+          question: question || null,
+          running,
+          error,
+          result,
+        },
+        brief: result ? result.says : running ? "Answering twice" : "Not asked",
+      },
+    ],
+    `${agentId}|${agentName}|${running}|${error}|${result ? "r" : ""}|${question.length}`,
+  );
 
   const heading = (
     <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
@@ -571,6 +594,76 @@ export function ContextCompareView({
   const diff = useMemo(
     () => lineDiff(compare?.old.block ?? "", compare?.new.block ?? ""),
     [compare],
+  );
+
+  // The alchemy capture: the request both sides answered, each side's block as
+  // shown, the summary, every difference and the new side's checks.
+  usePageCaptureContribution(
+    "context-compare",
+    () => {
+      const shown = (side: CompareSide) => {
+        const full = side.block ?? "";
+        return {
+          ...side,
+          block_as_shown: focus ? focusLines(full, focus.key).join("\n") : full,
+        };
+      };
+      const differences = focus
+        ? (compare?.differences ?? []).filter((d) => d.item_id === focus.itemId)
+        : (compare?.differences ?? []);
+      return [
+        {
+          id: "compare-request",
+          title: "Compare request",
+          role: "request" as const,
+          value: {
+            request: {
+              method: "POST",
+              path: "/ai/context/preview",
+              body: {
+                conversation_id: conversationId ?? null,
+                agent_id: agentId ?? null,
+                path: "both",
+                ...(selection ? { selection } : {}),
+              },
+            },
+            status,
+            error,
+            response_carries_compare: Boolean(compare),
+          },
+          brief: `${status}${error ? `: ${error}` : ""}`,
+        },
+        ...(compare
+          ? [
+              {
+                id: "compare-summary",
+                title: "Compare summary",
+                role: "data" as const,
+                value: {
+                  defects: compare.defects,
+                  identical_cells: compare.identical_cells,
+                  counts: compare.counts,
+                  ruling: compare.ruling,
+                  follow: compare.follow,
+                  excluded: compare.excluded,
+                  focus: focus ?? null,
+                },
+                brief: `${compare.defects ?? 0} defects, ${(compare.differences ?? []).length} differences`,
+              },
+              { id: "current-system", title: "Current system", role: "data" as const, value: shown(compare.old) },
+              { id: "record-store", title: "Record store", role: "data" as const, value: shown(compare.new) },
+              {
+                id: "differences",
+                title: "Every difference",
+                role: "data" as const,
+                value: differences,
+                brief: `${differences.length} differences`,
+              },
+            ]
+          : []),
+      ];
+    },
+    `${status}|${error}|${compare ? `${compare.defects}:${(compare.differences ?? []).length}:${compare.old.block?.length}:${compare.new.block?.length}` : ""}|${focus?.key ?? ""}`,
   );
 
   return (

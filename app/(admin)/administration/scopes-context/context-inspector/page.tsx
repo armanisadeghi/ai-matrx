@@ -25,6 +25,7 @@ import {
   pushAddressWithoutNavigating,
   replaceAddressWithoutNavigating,
 } from "@/lib/url-state/addressWithoutNavigating";
+import { PageCaptureButton } from "@/components/agent-copy/page-capture/PageCaptureButton";
 import { ContextInspector } from "@/features/agents/components/context-preview/inspector/ContextInspector";
 import {
   agentSearch,
@@ -71,6 +72,8 @@ export default function ContextInspectorPage() {
         <span className="text-xs text-muted-foreground">
           Current system beside the record store, for what you choose
         </span>
+        <span className="flex-1" />
+        <PageCaptureButton />
       </div>
       <Suspense fallback={null}>
         <InspectorFromAddress />

@@ -16,6 +16,7 @@ import { createRoot } from "react-dom/client";
 let search = "";
 jest.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(search),
+  usePathname: () => "/administration/scopes-context/context-inspector",
 }));
 jest.mock("@/lib/url-state/addressWithoutNavigating", () => ({
   currentPathWithSearch: (s: string) => `/administration/scopes-context/context-inspector?${s}`,
@@ -25,6 +26,15 @@ jest.mock("@/lib/url-state/addressWithoutNavigating", () => ({
 const AI_MATRX = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
 const APPS = "5155b79c-4c54-4694-b644-2e21ea6833b7";
 const MATRX_FRONTEND = "2ba5cb52-9530-4682-a12c-3ededff23c2c";
+// The page capture reads the store's request log and publishes to the admin
+// debug context; both are Redux-backed, so the test hands them a stand-in store.
+jest.mock("@/lib/redux/hooks", () => {
+  const store = { getState: () => ({ apiConfig: { recentCalls: [] } }) };
+  return { ...jest.requireActual("@/lib/redux/hooks"), useAppStore: () => store };
+});
+jest.mock("@/hooks/useDebugContext", () => ({
+  useDebugContext: () => ({ publish: jest.fn(), publishKey: jest.fn(), isActive: false }),
+}));
 jest.mock("@/features/scopes/components/active-context/quick-pick/engine", () => {
   const actual = jest.requireActual("@/features/scopes/components/active-context/quick-pick/engine");
   const org = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
@@ -120,6 +130,10 @@ it("is Miller Columns — no hand-rolled pickers, no slug boxes, no tier, no Ren
   expect(columns).not.toMatch(/Projects|Tasks/);
   expect(host.querySelector("input, textarea")).toBeNull();
   expect(columns).not.toMatch(/Render context|Serializer variation|Tier A|Scope type slug/);
+  // The alchemy menu sits in the page's header row (lane ALCHEMY-BUTTON) — red on the page
+  // Arman found without it.
+  await act(async () => undefined);
+  expect(host.querySelector('[data-page-capture="admin-page"]')).not.toBeNull();
   await act(async () => root.unmount());
 });
 

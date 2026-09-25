@@ -17,6 +17,8 @@ import {
 import MatrxDynamicPanel from "@/components/matrx/resizable/MatrxDynamicPanel";
 import PageDebugDisplay from "@/components/admin/debug/PageDebugDisplay";
 import { buildAgentContext } from "@/components/admin/debug/buildAgentContext";
+import { getActivePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
+import { pageCaptureMarkdown } from "@/components/agent-copy/page-capture/pageCapture";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectIsDebugMode,
@@ -104,7 +106,7 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
   );
 
   const handleCopyContext = useCallback(async () => {
-    const context = buildAgentContext({
+    const baseContext = buildAgentContext({
       routeContext,
       debugData,
       consoleErrors,
@@ -115,6 +117,12 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
       recentApiCalls: recentCalls,
       userEmail: reduxUser?.email,
     });
+    // The page's own capture (usePageCapture): page, selection, data, requests —
+    // debug mode or not (lane ALCHEMY-BUTTON).
+    const page = getActivePageCapture();
+    const context = page
+      ? `${baseContext}\n\n## Page capture\n\n${pageCaptureMarkdown(page).replace(/^# /, "### ")}`
+      : baseContext;
     try {
       await navigator.clipboard.writeText(context);
       setCopied(true);

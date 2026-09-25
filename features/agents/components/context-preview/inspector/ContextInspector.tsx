@@ -39,6 +39,8 @@ import {
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { ContextItemRow, ContextItemValue, ScopesRpcResult } from "@/features/scopes/types";
+import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
+import { adminPageCapture } from "@/components/agent-copy/page-capture/pageCapture";
 import { ContextCompareView } from "../ContextCompareView";
 import { previewRequest, type InspectorSelection } from "./selection";
 
@@ -241,6 +243,61 @@ export function ContextInspector({
     caption = `${focus.label} on ${scopeName ?? "this scope"}, as the agent sees it.`;
   }
   const typeIsEmpty = request?.depth === "scopeType" && type !== null && type.scopes.length === 0;
+
+  // ── The alchemy capture: this page, the four picks by name AND id, the value,
+  //    the exact selection both sides of the compare receive (the compare view
+  //    adds both sides, the differences and the answers). ──
+  usePageCapture(() =>
+    adminPageCapture({
+      title: "Context inspector",
+      route: "/administration/scopes-context/context-inspector",
+      identity: { Depth: request?.depth ?? null },
+      selection: {
+        Organization: { id: selection.org, name: orgName },
+        "Scope type": { id: selection.scopeType, name: typeName },
+        Scope: { id: selection.scope, name: scopeName },
+        "Context item": {
+          id: selection.item,
+          name: chosenItem ? `${chosenItem.item.display_name} (key ${chosenItem.item.key})` : null,
+        },
+        Agent: { id: agentId ?? null, name: null },
+      },
+      errors,
+      sections: [
+        {
+          id: "value",
+          title: "Context item value",
+          role: "data",
+          value: chosenItem
+            ? {
+                item: chosenItem.item.display_name,
+                key: chosenItem.item.key,
+                shown: chosenValue,
+                stored: chosenItem.value,
+              }
+            : "No context item chosen.",
+        },
+        {
+          id: "compare-selection",
+          title: "Selection sent to both sides",
+          description: "The server's ContextSelection, identical for the current system and the record store.",
+          role: "data",
+          value: request ? { depth: request.depth, selection: request.selection, focus: focus ?? null } : "Nothing chosen yet; no compare runs.",
+        },
+        {
+          id: "page-says",
+          title: "What the page says",
+          role: "data",
+          value: [
+            caption,
+            outsideTree ? "This scope belongs to an organization you are not a member of." : null,
+            typeIsEmpty ? "This scope type has no scopes yet." : null,
+            !selection.org && !needsHome ? "Choose an organization." : null,
+          ].filter(Boolean),
+        },
+      ],
+    }),
+  );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2" data-context-inspector>

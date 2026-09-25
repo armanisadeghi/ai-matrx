@@ -62,6 +62,15 @@ const TREE = [
   { id: TITANIUM, name: "Titanium", scope_types: [] },
 ];
 
+// The page capture reads the store's request log and publishes to the admin
+// debug context; both are Redux-backed, so the test hands them a stand-in store.
+jest.mock("@/lib/redux/hooks", () => {
+  const store = { getState: () => ({ apiConfig: { recentCalls: [] } }) };
+  return { ...jest.requireActual("@/lib/redux/hooks"), useAppStore: () => store };
+});
+jest.mock("@/hooks/useDebugContext", () => ({
+  useDebugContext: () => ({ publish: jest.fn(), publishKey: jest.fn(), isActive: false }),
+}));
 jest.mock("@/features/scopes/components/active-context/quick-pick/engine", () => {
   const actual = jest.requireActual("@/features/scopes/components/active-context/quick-pick/engine");
   return {
@@ -108,6 +117,8 @@ jest.mock("../ContextCompareView", () => ({
 
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { ContextInspector } from "./ContextInspector";
+import { getActivePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
+import { pageCaptureMarkdown, pageCapturePayload } from "@/components/agent-copy/page-capture/pageCapture";
 import { EMPTY_SELECTION, type InspectorSelection } from "./selection";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -303,4 +314,28 @@ it("a scope outside the tree back-fills from the scope row; one not shared says 
   expect(svc.getScopeHome).toHaveBeenCalledWith(OUTSIDE);
   expect(host.textContent).toContain("This scope was not found, or it has not been shared with you");
   expect(compareProps).toHaveLength(0);
+});
+
+it("the alchemy capture names the page and the four picks with names AND ids, and the selection both sides get (lane ALCHEMY-BUTTON)", async () => {
+  await mount(EMPTY_SELECTION);
+  await pick("Castellano & Reyes, LLP");
+  await pick("Clients");
+  await pick("Meridian Risk Services");
+  await pick("Contact Phone");
+  const c = getActivePageCapture();
+  expect(c).not.toBeNull();
+  const md = pageCaptureMarkdown(c!);
+  expect(md).toContain("# Context inspector");
+  expect(md).toContain(`Organization: Castellano & Reyes, LLP (${CASTELLANO})`);
+  expect(md).toContain(`Scope type: Clients (${CLIENTS})`);
+  expect(md).toContain(`Scope: Meridian Risk Services (${MERIDIAN})`);
+  expect(md).toContain(`Context item: Contact Phone (key contact_phone) (${PHONE})`);
+  expect(md).toContain("(619) 555-0177");
+  const payload = pageCapturePayload(c!, "data");
+  const data = payload.data as Record<string, unknown>;
+  expect(data["compare-selection"]).toMatchObject({
+    depth: "item",
+    selection: { organization_id: CASTELLANO, scope_type_id: CLIENTS, scope_id: MERIDIAN, context_item_id: PHONE },
+  });
+  expect(payload.context).toMatchObject({ page: "Context inspector", Scope: `Meridian Risk Services (${MERIDIAN})` });
 });
