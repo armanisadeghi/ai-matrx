@@ -64,7 +64,9 @@ export function GmailReadReview() {
     setDataIdentity(null);
   }
   useEffect(() => {
-    currentIdentity.current = { identity, epoch: currentIdentity.current.epoch + 1 };
+    if (currentIdentity.current.identity !== identity) {
+      currentIdentity.current = { identity, epoch: currentIdentity.current.epoch + 1 };
+    }
   }, [identity]);
   const sameMailbox = dataIdentity === identity;
   const [query, setQuery] = useState("");
@@ -91,6 +93,9 @@ export function GmailReadReview() {
   async function onSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!connectionId || !query.trim() || busy) return;
+    if (currentIdentity.current.identity !== identity) {
+      currentIdentity.current = { identity, epoch: currentIdentity.current.epoch + 1 };
+    }
     const epoch = currentIdentity.current.epoch;
     setDataIdentity(identity);
     setBusy(true);
