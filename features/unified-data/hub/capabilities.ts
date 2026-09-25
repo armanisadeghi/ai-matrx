@@ -143,7 +143,7 @@ export function withHubTableFacts(
       ...t,
       visibility: f.visibility,
       created_by: f.mine ? (userId ?? t.created_by) : t.created_by,
-      ...(false ? { kept_by_the_app: true } : {}),
+      ...(f.kept_by_the_app === true ? { kept_by_the_app: true } : {}),
       ...(typeof f.keeper_says === "string" && f.keeper_says.trim() ? { keeper_says: f.keeper_says } : {}),
     } as Table;
   });
