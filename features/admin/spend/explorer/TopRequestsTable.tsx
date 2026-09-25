@@ -75,18 +75,26 @@ export function TopRequestsTable({
       width: 90,
       align: "right",
       cell: (r) => (
-        <span className="tabular-nums font-medium">
-          {usd(r.cost)}
-          <span className="ml-1 text-[10px] text-muted-foreground">
-            {formatPercentFromFraction(r.share)}
-          </span>
+        <span className="tabular-nums font-medium">{usd(r.cost)}</span>
+      ),
+    },
+    {
+      id: "share",
+      header: "Share",
+      accessorFn: (r) => r.share,
+      filter: "number",
+      width: 80,
+      align: "right",
+      cell: (r) => (
+        <span className="tabular-nums text-muted-foreground">
+          {formatPercentFromFraction(r.share)}
         </span>
       ),
     },
     {
       id: "conversation",
       header: "Conversation",
-      accessorFn: (r) => r.conversation ?? r.feature,
+      accessorFn: (r) => r.conversation ?? "",
       width: 260,
       cell: (r) => (
         <div className="flex min-w-0 items-center gap-1.5">
@@ -161,6 +169,28 @@ export function TopRequestsTable({
       ),
     },
     {
+      id: "provider",
+      header: "Provider",
+      accessorFn: (r) => r.provider ?? "",
+      filter: "select",
+      width: 130,
+      cell: (r) => (
+        <span className="truncate text-muted-foreground">
+          {r.provider ?? "—"}
+        </span>
+      ),
+    },
+    {
+      id: "source",
+      header: "Source",
+      accessorFn: (r) => r.source,
+      filter: "select",
+      width: 130,
+      cell: (r) => (
+        <span className="truncate text-muted-foreground">{r.source}</span>
+      ),
+    },
+    {
       id: "trigger",
       header: "Trigger",
       accessorFn: (r) => r.trigger,
@@ -172,18 +202,24 @@ export function TopRequestsTable({
             r.trigger === "manual" ? "text-foreground" : "text-muted-foreground"
           }
         >
-          {r.trigger === "manual" ? "manual" : "automated"}
-          <span className="ml-1 text-[10px] text-muted-foreground">
-            {r.origin}
-          </span>
+          {r.trigger}
         </span>
+      ),
+    },
+    {
+      id: "origin",
+      header: "Origin",
+      accessorFn: (r) => r.origin,
+      filter: "select",
+      width: 130,
+      cell: (r) => (
+        <span className="truncate text-muted-foreground">{r.origin}</span>
       ),
     },
     {
       id: "status",
       header: "Outcome",
-      accessorFn: (r) =>
-        `${r.status ?? ""}${r.finishReason ? ` ${r.finishReason}` : ""}`,
+      accessorFn: (r) => r.status ?? "",
       filter: "select",
       width: 130,
       cell: (r) =>
@@ -194,32 +230,82 @@ export function TopRequestsTable({
         ) : (
           <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[11px] font-medium text-destructive">
             {r.status}
-            {r.finishReason && r.finishReason !== "stop"
-              ? ` · ${r.finishReason}`
-              : ""}
           </span>
         ),
     },
     {
-      id: "calls",
-      header: "Calls / tools",
-      accessorFn: (r) => r.iterations,
-      width: 100,
-      align: "right",
+      id: "finish_reason",
+      header: "Finish reason",
+      accessorFn: (r) => r.finishReason ?? "",
+      filter: "select",
+      width: 130,
       cell: (r) => (
-        <span className="tabular-nums text-muted-foreground">
-          {r.iterations} / {r.toolCalls}
+        <span className="truncate text-muted-foreground">
+          {r.finishReason ?? "—"}
         </span>
       ),
     },
     {
-      id: "tokens",
-      header: "Tokens in / cached / out",
-      accessorFn: (r) => r.tokensIn + r.tokensCached,
-      width: 170,
+      id: "calls",
+      header: "Calls",
+      accessorFn: (r) => r.iterations,
+      filter: "number",
+      width: 80,
+      align: "right",
       cell: (r) => (
         <span className="tabular-nums text-muted-foreground">
-          {compactNumber(r.tokensIn)} / {compactNumber(r.tokensCached)} /{" "}
+          {r.iterations}
+        </span>
+      ),
+    },
+    {
+      id: "tool_calls",
+      header: "Tools",
+      accessorFn: (r) => r.toolCalls,
+      filter: "number",
+      width: 80,
+      align: "right",
+      cell: (r) => (
+        <span className="tabular-nums text-muted-foreground">
+          {r.toolCalls}
+        </span>
+      ),
+    },
+    {
+      id: "tokens_in",
+      header: "Input tokens",
+      accessorFn: (r) => r.tokensIn,
+      filter: "number",
+      width: 110,
+      align: "right",
+      cell: (r) => (
+        <span className="tabular-nums text-muted-foreground">
+          {compactNumber(r.tokensIn)}
+        </span>
+      ),
+    },
+    {
+      id: "tokens_cached",
+      header: "Cached tokens",
+      accessorFn: (r) => r.tokensCached,
+      filter: "number",
+      width: 110,
+      align: "right",
+      cell: (r) => (
+        <span className="tabular-nums text-muted-foreground">
+          {compactNumber(r.tokensCached)}
+        </span>
+      ),
+    },
+    {
+      id: "tokens_out",
+      header: "Output tokens",
+      accessorFn: (r) => r.tokensOut,
+      filter: "number",
+      width: 110,
+      align: "right",
+      cell: (r) => (
+        <span className="tabular-nums text-muted-foreground">
           {compactNumber(r.tokensOut)}
         </span>
       ),
