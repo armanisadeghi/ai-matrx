@@ -17,9 +17,12 @@
 // passed EXPLICITLY to every writer (the records client, the agent fork, the
 // workflow create). Nothing here reads the active organization mid-install.
 //
-// CONCURRENCY, AT THE DATA LAYER: a brand-new install claims the ledger's `live_key`
-// column, which the store keeps UNIQUE among live records — a second tab's claim is
-// refused by the store and that tab attaches to the existing record. Resuming an
+// CONCURRENCY, AT THE DATA LAYER: a brand-new install record is written with a
+// DETERMINISTIC id — a name-based UUID of (organization, kit, how many earlier installs
+// of it were removed). Two tabs racing compute the same id, the store's primary key
+// refuses the second write (23505), and that tab attaches to the existing record.
+// (A promoted UNIQUE column was tried first: building its index is not a door a person
+// may open — `custom.promote_field` is not executable by `authenticated`.) Resuming an
 // existing record takes a lease (`run_id` + `run_until`) and every later write of the
 // record carries the version it last wrote (`expectedVersion`), so a second runner
 // that slipped past the lease loses its next write and stops.
@@ -84,9 +87,6 @@ const LEDGER_FIELDS: NewFieldSpec[] = [
   { key: "status", label: "Status", type: "text", sort: 30 },
   { key: "steps", label: "What it created", type: "long_text", sort: 40 },
   { key: "error", label: "Last problem", type: "long_text", sort: 50 },
-  // The claim: the kit key while the install is live, `removed:<id>` once removed.
-  // UNIQUE among live records (promoted index), so two claims cannot both land.
-  { key: "live_key", label: "Live claim", type: "text", sort: 60 },
   { key: "run_id", label: "Running in", type: "text", sort: 70 },
   { key: "run_until", label: "Running until", type: "text", sort: 80 },
 ];
@@ -100,7 +100,7 @@ export async function findLedger(client: RecordsClient): Promise<string | null> 
 }
 
 /**
- * The ledger with its full shape: every column, `live_key` unique, and the table
+ * The ledger with its full shape: every column, and the table
  * itself kept by the app (it lives in the app lane, not the person's data list)
  * and closed to agents. Idempotent — safe on every install start.
  */
@@ -138,21 +138,23 @@ async function ensureLedger(client: RecordsClient): Promise<string> {
     const added = await client.fieldDeclare({ table_id: ledger, spec: fieldDeclarationFor(spec) });
     if (!added.ok) throw refusal(`Could not add the "${spec.label}" column to the install table`, added.error.message, added.error.hint);
   }
-  const refreshed = await client.fields({ table_id: ledger });
-  if (!refreshed.ok) throw refusal("Could not read the install table's columns", refreshed.error.message, refreshed.error.hint);
-  const liveKey = refreshed.data.find((f) => f.key === "live_key");
-  if (!liveKey) throw new InstallError("The install table has no claim column after adding it.");
-  // The Field row carries the flag in its stored document; the typed shape does not
-  // name it, so it is read off the row as data. Promoting again is idempotent.
-  const liveKeyDoc = liveKey as unknown as Record<string, unknown>;
-  const isUnique = liveKeyDoc.unique === true || (isRecord(liveKey.config) && liveKey.config.unique === true);
-  if (!isUnique) {
-    const made = await client.fieldUpdate({ field_id: liveKey.id, patch: { promoted: true, unique: true } });
-    if (!made.ok) {
-      throw refusal("Could not make the install claim unique, so two installs could start at once", made.error.message, made.error.hint);
-    }
-  }
   return ledger;
+}
+
+/** RFC 4122 name-based (SHA-1, v5) UUID — the same inputs give the same id in every tab. */
+async function nameBasedUuid(name: string): Promise<string> {
+  // A fixed namespace for kit installs (itself a random v4, chosen once).
+  const ns = "6f1c2c3e-8d7a-4a51-9b0e-3c2d1f4e5a6b".replace(/-/g, "");
+  const nsBytes = new Uint8Array(ns.match(/../g)!.map((h) => parseInt(h, 16)));
+  const nameBytes = new TextEncoder().encode(name);
+  const buf = new Uint8Array(nsBytes.length + nameBytes.length);
+  buf.set(nsBytes);
+  buf.set(nameBytes, nsBytes.length);
+  const hash = new Uint8Array(await crypto.subtle.digest("SHA-1", buf)).slice(0, 16);
+  hash[6] = (hash[6]! & 0x0f) | 0x50;
+  hash[8] = (hash[8]! & 0x3f) | 0x80;
+  const hex = Array.from(hash, (b) => b.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
 function parseSteps(raw: unknown): KitInstallSteps {
@@ -168,7 +170,6 @@ function parseSteps(raw: unknown): KitInstallSteps {
 
 interface LedgerRow {
   install: KitInstallRecord;
-  liveKey: string | null;
   runId: string | null;
   runUntil: number | null;
 }
@@ -197,7 +198,6 @@ async function readLedgerRow(
       error: typeof doc.error === "string" && doc.error ? doc.error : null,
       ledger_table_id: ledger,
     },
-    liveKey: typeof doc.live_key === "string" && doc.live_key ? doc.live_key : null,
     runId: typeof doc.run_id === "string" && doc.run_id ? doc.run_id : null,
     runUntil: Number.isFinite(until) ? until : null,
   };
@@ -499,18 +499,24 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
     const ledger = await ensureLedger(client);
     let row = await readLedgerRow(client, organizationId, manifest.key);
     if (!row) {
-      const written = await client.recordWrite({
+      const earlier = await client.list({ table_id: ledger, filter: { kit_key: manifest.key }, limit: 200 });
+      if (!earlier.ok) throw refusal("Could not read earlier installs", earlier.error.message, earlier.error.hint);
+      const generation = earlier.data.rows.length;
+      const claimId = await nameBasedUuid(`${organizationId}:${manifest.key}:${generation}`);
+      const written = await client.recordWriteMany({
         table_id: ledger,
-        data: {
-          kit_key: manifest.key,
-          kit_version: manifest.version,
-          status: "installing",
-          steps: "{}",
-          error: "",
-          live_key: manifest.key,
-          run_id: runId,
-          run_until: new Date(Date.now() + RUN_LEASE_MS).toISOString(),
-        },
+        ids: [claimId],
+        rows: [
+          {
+            kit_key: manifest.key,
+            kit_version: manifest.version,
+            status: "installing",
+            steps: "{}",
+            error: "",
+            run_id: runId,
+            run_until: new Date(Date.now() + RUN_LEASE_MS).toISOString(),
+          },
+        ],
       });
       if (!written.ok) {
         if (written.error.code === "already_exists" || written.error.sqlstate === "23505") {
@@ -521,7 +527,7 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
         throw refusal("Could not write the install record", written.error.message, written.error.hint);
       }
       row = await readLedgerRow(client, organizationId, manifest.key);
-      if (!row || row.install.id !== written.data) {
+      if (!row || row.install.id !== claimId) {
         throw new InstallError("The install record was written but could not be read back.");
       }
     } else if (row.runId && row.runId !== runId && (row.runUntil ?? 0) > Date.now()) {
@@ -538,7 +544,6 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
         error: "",
         run_id: runId,
         run_until: new Date(Date.now() + RUN_LEASE_MS).toISOString(),
-        ...(row.liveKey ? {} : { live_key: manifest.key }),
       },
     });
     if (!claimed.ok) throw refusal("Could not claim the install record", claimed.error.message, claimed.error.hint);
@@ -849,8 +854,6 @@ export async function removeInstall(client: RecordsClient, install: KitInstallRe
       error: next.error ?? "",
       run_id: "",
       run_until: "",
-      // Free the claim so the kit can be installed again.
-      ...(next.status === "removed" ? { live_key: `removed:${install.id}` } : {}),
     },
   });
   if (!saved.ok) problems.push(`the install record could not be updated (${saved.error.message})`);
