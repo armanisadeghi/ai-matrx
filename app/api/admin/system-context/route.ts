@@ -36,7 +36,33 @@ const COMPUTED_KEYS = new Set<string>([
   "current_time",
   "current_year",
   "current_user_id",
+  "current_timezone",
 ]);
+
+/** The platform knob naming the System items every agent receives without naming them. */
+const SYSTEM_ITEM_DEFAULTS_KNOB = { feature: "context", key: "system_item_defaults" } as const;
+
+/**
+ * 🚨 A DECLARED GAP, NOT A HATCH. `public.resolve_full_context` gained its fifth argument
+ * `p_system_item_refs text[]` in
+ * `migrations/campaign/cvn2_a_system_item_is_read_only_when_it_is_named.sql` (lane
+ * CONTEXT-VALUES-NAMED-2) and `types/database.types.ts` is regenerated wholesale by
+ * `pnpm db-types`, shared by every lane in this checkout. Until it carries the argument, the one
+ * call this route makes is described here, by name and argument, so its shape is still checked.
+ * When the generated types carry it, delete this and call `.rpc()` directly.
+ */
+type ResolveFullContextRpc = {
+  rpc(
+    fn: "resolve_full_context",
+    args: {
+      p_user_id: string;
+      p_entity_type: string;
+      p_entity_id: string;
+      p_scope_ids?: string[];
+      p_system_item_refs: string[];
+    },
+  ): PromiseLike<{ data: Json | null; error: { message: string } | null }>;
+};
 
 type ValueType = Database["public"]["Enums"]["context_value_type"];
 type Sensitivity = Database["public"]["Enums"]["context_sensitivity"];
@@ -166,18 +192,43 @@ export interface ResolvedPreviewEntry {
 }
 
 // Preview exactly what an agent receives for global System context (no scope
-// selected) — proves the whole pipeline end-to-end (ambient computes, curated
-// values, dataset pointers) by calling the live resolver.
+// selected, no agent naming anything) — the platform's default list, read from
+// the knob `context/system_item_defaults` and handed to the live resolver, which
+// reads only the System items it names (lane CONTEXT-VALUES-NAMED-2). Ambient
+// values are computed by the server per turn, so they show their placeholder here.
 async function buildPreview(
   admin: AdminClient,
   userId: string,
 ): Promise<NextResponse> {
-  const { data, error } = await admin.rpc("resolve_full_context", {
-    p_user_id: userId,
-    p_entity_type: "conversation",
-    p_entity_id: "00000000-0000-0000-0000-000000000000",
-    p_scope_ids: undefined,
-  });
+  const { data: knob, error: knobError } = await admin
+    .schema("platform")
+    .from("feature_knob")
+    .select("value")
+    .eq("feature", SYSTEM_ITEM_DEFAULTS_KNOB.feature)
+    .eq("key", SYSTEM_ITEM_DEFAULTS_KNOB.key)
+    .is("archived_at", null)
+    .maybeSingle();
+  if (knobError)
+    return NextResponse.json({ error: knobError.message }, { status: 500 });
+  if (!knob || !Array.isArray(knob.value))
+    return NextResponse.json(
+      {
+        error:
+          "The platform knob context/system_item_defaults is missing or is not a list of System item keys, so the preview cannot say what every agent receives.",
+      },
+      { status: 500 },
+    );
+  const defaults = knob.value.filter((k): k is string => typeof k === "string");
+
+  const { data, error } = await (admin as unknown as ResolveFullContextRpc).rpc(
+    "resolve_full_context",
+    {
+      p_user_id: userId,
+      p_entity_type: "conversation",
+      p_entity_id: "00000000-0000-0000-0000-000000000000",
+      p_system_item_refs: defaults,
+    },
+  );
   if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });
 
