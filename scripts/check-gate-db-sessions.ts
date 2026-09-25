@@ -58,6 +58,14 @@ function stripComments(src: string): string {
   return src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:"'`\\])\/\/[^\n]*/g, "$1");
 }
 
+/** Blank string and template literal bodies: a session named inside a string is not a session. */
+function stripStrings(code: string): string {
+  return code
+    .replace(/`(?:[^`\\]|\\.)*`/g, "``")
+    .replace(/"(?:[^"\\\n]|\\.)*"/g, '""')
+    .replace(/'(?:[^'\\\n]|\\.)*'/g, "''");
+}
+
 const PG_IMPORT = /from\s+["']pg["']|require_?\(\s*["']pg["']\s*\)|import\(\s*["']pg["']\s*\)/;
 const RAW_SESSION: Array<[RegExp, string, boolean]> = [
   [/\bnew\s+pg\.(Client|Pool)\s*\(/, "constructs a pg.$1 directly", false],
@@ -67,7 +75,7 @@ const RAW_SESSION: Array<[RegExp, string, boolean]> = [
 
 /** What in this source opens a session outside the helper. Exported for the self-test. */
 export function rawSessionsIn(src: string): string[] {
-  const code = stripComments(src);
+  const code = stripStrings(stripComments(src));
   const importsPg = PG_IMPORT.test(src);
   const out: string[] = [];
   for (const [re, what, needsPgImport] of RAW_SESSION) {
@@ -298,7 +306,7 @@ function main(): number {
   for (const f of findings) console.log(`         ${f.file}: ${f.what}  (gate: ${f.gate})`);
   console.log(
     "       Remedy: open the session with openGateDb()/withGateDb() from scripts/lib/gate-db.ts " +
-      "(a shell gate: psql -1 -c \"$(pnpm exec tsx scripts/gate-db-limits.ts <gate>)\").",
+      "(a shell gate: psql -v gate_limits=\"$(pnpm exec tsx scripts/gate-db-limits.ts <gate>)\", run first inside the file's own transaction).",
   );
   return STRICT ? 1 : 0;
 }
