@@ -21,7 +21,17 @@ import { useEffect, useState } from "react";
 const LIST_PATHS = new Set([
   "/administration/mandates",
   "/administration/mandates/list-preview",
+  "/mandates",
+  "/mandates/list-preview",
 ]);
+
+/** An organization's mandate list: /organizations/<org>/mandates. */
+const ORG_LIST_PATH = /^\/organizations\/[^/]+\/mandates$/;
+
+/** Is this pathname a mandate LIST Back may return to? Pure. */
+export function isMandateListPath(pathname: string): boolean {
+  return LIST_PATHS.has(pathname) || ORG_LIST_PATH.test(pathname);
+}
 
 interface NavigationEntryLike {
   url: string | null;
@@ -50,7 +60,7 @@ export function listUrlBehind(
     const url = new URL(raw, origin);
     if (url.origin !== origin) return null;
     if (url.pathname === recordPathname) continue; // a tab switch on this record
-    return LIST_PATHS.has(url.pathname)
+    return isMandateListPath(url.pathname)
       ? `${url.pathname}${url.search}`
       : null;
   }

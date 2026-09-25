@@ -75,8 +75,39 @@ export function parseRecordTab(
   value: string | null | undefined,
   showAdmin: boolean,
 ): RecordTabId {
-  const found = visibleRecordTabs(showAdmin).find((tab) => tab.id === value);
+  return parseRecordTabFrom(value, visibleRecordTabs(showAdmin));
+}
+
+/** A `?tab=` value read back against an explicit tab set. */
+export function parseRecordTabFrom(
+  value: string | null | undefined,
+  tabs: readonly RecordTab[],
+): RecordTabId {
+  const found = tabs.find((tab) => tab.id === value);
   return found ? found.id : DEFAULT_RECORD_TAB;
+}
+
+/**
+ * Which seat the record page is opened from. `system` is the admin route
+ * (every tab); `person` and `organization` are the member pages, where the
+ * admin tabs are ABSENT (never disabled) whoever is looking — a super admin on
+ * a member page sees what a member sees.
+ */
+export type RecordLevel = "system" | "person" | "organization";
+
+/** Tabs a read-only seat (an organization member who does not manage it) sees. */
+const READ_ONLY_TAB_IDS: readonly RecordTabId[] = ["definition", "holder", "notes"];
+
+/** The tabs for a seat. Pure. */
+export function recordTabsForLevel(
+  level: RecordLevel,
+  options: { readOnly?: boolean } = {},
+): readonly RecordTab[] {
+  if (level === "system") return visibleRecordTabs(true);
+  if (options.readOnly) {
+    return RECORD_TABS.filter((tab) => READ_ONLY_TAB_IDS.includes(tab.id));
+  }
+  return visibleRecordTabs(false);
 }
 
 /** Where the record's Back goes when this tab did not come from a mandate list. */

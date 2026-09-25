@@ -110,7 +110,11 @@ import {
 } from "@/features/mandates/overrides-simple/MandateOverridesSimple";
 import type { MandateWorkspaceTab } from "@/features/mandates/workspace/MandateWorkspace";
 import { RecordAdminPanels } from "./RecordAdminPanels";
-import { visibleRecordTabs, type RecordTabId } from "./record-tabs";
+import {
+  visibleRecordTabs,
+  type RecordTab,
+  type RecordTabId,
+} from "./record-tabs";
 
 /** Tabs `BindingSection` renders — one mounted draft owner across them. */
 const BINDING_TABS: readonly string[] = [
@@ -135,8 +139,12 @@ export interface MandateRecordChrome {
 export interface MandateRecordBodyProps {
   /** Mandate key or row uuid — both open. */
   mandateKeyOrId: string;
-  /** `admin-route` = system perspective + authoring; `window` = person. */
-  host: "admin-route" | "window";
+  /**
+   * `admin-route` = system perspective + authoring; `window` = the window
+   * panel; `route` = a member page (/mandates/record-preview,
+   * /organizations/<org>/mandates/<key>) whose perspective is the principal's.
+   */
+  host: "admin-route" | "window" | "route";
   activeTab: RecordTabId;
   onTabChange: (tab: RecordTabId) => void;
   /** Where the host puts the name, the export menu and its actions. */
@@ -144,6 +152,22 @@ export interface MandateRecordBodyProps {
   /** Where "All mandates" goes when the address cannot be read. */
   listHref: string;
   principal?: WorkspacePrincipal;
+  /**
+   * The tab set the host shows (the export menu speaks the same set). Absent →
+   * the admin tabs follow `showAdminPanels`.
+   */
+  tabs?: readonly RecordTab[];
+  /**
+   * Mount the admin tab bodies (Test, Usage, Health). Absent → the admin route,
+   * or a super admin in the window. A member page passes `false`: its admin
+   * tabs are absent whoever is looking.
+   */
+  showAdminPanels?: boolean;
+  /**
+   * A seat that may look but not change (an organization member who does not
+   * manage it): no binding editor and no overrides are mounted at all.
+   */
+  readOnly?: boolean;
 }
 
 /** Keyed to the job, exactly like the original (R-O6). */
@@ -166,6 +190,9 @@ function OneMandateRecordBody({
   renderChrome,
   listHref,
   principal = { kind: "user" },
+  tabs,
+  showAdminPanels,
+  readOnly = false,
 }: MandateRecordBodyProps) {
   useEffect(() => {
     const openHolder = () => onTabChange("holder");
@@ -192,7 +219,7 @@ function OneMandateRecordBody({
   const authoring = host === "admin-route";
   // Admin tab bodies: the admin route, or a super admin in the window (this
   // replaces the old window's separate "Admin" pane — no toggle).
-  const showAdmin = authoring || isSuperAdmin;
+  const showAdmin = showAdminPanels ?? (authoring || isSuperAdmin);
 
   const personalKey =
     perspective === "person" && data
@@ -274,7 +301,7 @@ function OneMandateRecordBody({
   const feature = featureLabelOf(data.mandate.mandate_key, null);
   // The export menu speaks the workspace's tab ids; the simple Overrides tab
   // is this page's addition, so it exports as the Overrides tab it mirrors.
-  const tabIds = visibleRecordTabs(showAdmin)
+  const tabIds = (tabs ?? visibleRecordTabs(showAdmin))
     .map((tab) => tab.id)
     .filter((id): id is MandateWorkspaceTab => id !== "overrides-simple");
   const exportTab: MandateWorkspaceTab =
@@ -411,6 +438,7 @@ function OneMandateRecordBody({
             : "hidden"
         }
       >
+        {readOnly ? null : (
         <BindingSection
           data={data}
           principal={principal}
@@ -432,6 +460,7 @@ function OneMandateRecordBody({
           }
           onChanged={refresh}
         />
+        )}
       </div>
       {showAdmin ? (
         <RecordAdminPanels
@@ -447,7 +476,7 @@ function OneMandateRecordBody({
         hidden={activeTab !== "overrides-simple"}
         className={activeTab === "overrides-simple" ? "space-y-3" : "hidden"}
       >
-        {activeTab === "overrides-simple" ? (
+        {activeTab === "overrides-simple" && !readOnly ? (
           <MandateOverridesSimple
             data={data}
             level={perspective}

@@ -33268,6 +33268,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mandates/soft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Soft Mandate
+         * @description Create a SOFT mandate homed in the caller's personal organization
+         *     (level='user') or in an organization the caller administers
+         *     (level='organization'). Same key validation, same 409/422 as ``POST /mandates``.
+         */
+        post: operations["create_soft_mandate_mandates_soft_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mandates/{mandate_key}/goal": {
         parameters: {
             query?: never;
@@ -103506,7 +103528,7 @@ export interface components {
         };
         /**
          * PushIngestResult
-         * @description What one Pub/Sub push produced. The router returns this verbatim.
+         * @description What one Pub/Sub push durably handed off. The router returns this verbatim.
          */
         PushIngestResult: {
             /** Accepted */
@@ -115273,6 +115295,57 @@ export interface components {
             indicator: "critical" | "major" | "minor" | "none";
             /** Operational */
             operational: boolean;
+        };
+        /**
+         * SoftMandateCreateRequest
+         * @description A SOFT mandate authored by an ordinary user or an organization admin.
+         *
+         *     Soft = origin 'user', goal_grounding 'H', no Holder — exactly what
+         *     ``create_user_mandate`` writes. ``level`` picks the home: the caller's
+         *     personal organization (visibility 'personal') or an organization they
+         *     administer (visibility 'internal'). System mandates stay platform-admin only
+         *     on ``POST /mandates``.
+         */
+        SoftMandateCreateRequest: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Label */
+            label: string;
+            /** Goal */
+            goal: string;
+            /** Description */
+            description?: string | null;
+            /** Output Kind */
+            output_kind?: string | null;
+            /** Output Constraints */
+            output_constraints?: string | null;
+            /**
+             * Draft Inputs
+             * @default []
+             */
+            draft_inputs?: components["schemas"]["DraftInputItem"][];
+            /**
+             * Level
+             * @enum {string}
+             */
+            level: "organization" | "user";
+            /** Organization Id */
+            organization_id?: string | null;
+        };
+        /** SoftMandateCreatedResponse */
+        SoftMandateCreatedResponse: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Mandate Id */
+            mandate_id: string;
+            /** Goal Grounding */
+            goal_grounding: string;
+            /** Origin */
+            origin: string;
+            /** Organization Id */
+            organization_id: string;
+            /** Visibility */
+            visibility: string;
         };
         /**
          * SortBoundaryQuestion
@@ -186247,6 +186320,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MandateCreatedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_soft_mandate_mandates_soft_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SoftMandateCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SoftMandateCreatedResponse"];
                 };
             };
             /** @description Validation Error */

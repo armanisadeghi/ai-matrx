@@ -22,6 +22,8 @@ import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { pushAppHref } from "@/lib/deployment/navigate";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { softDeleteMandate } from "@/features/mandates/admin/service";
@@ -40,13 +42,32 @@ import { RecordTabStrip } from "./RecordTabStrip";
 import {
   DEFAULT_RECORD_TAB,
   MANDATE_LIST_PREVIEW_HREF,
-  parseRecordTab,
-  visibleRecordTabs,
+  parseRecordTabFrom,
+  recordTabsForLevel,
+  type RecordLevel,
   type RecordTabId,
 } from "./record-tabs";
 import { useRecordBackHref } from "./useRecordBackHref";
+import { MandateVisibilityControl } from "./MandateVisibilityControl";
 
-export function MandateRecordPage({ mandateKey }: { mandateKey: string }) {
+/**
+ * Which seat opens the record. `system` (the default) is the admin route,
+ * unchanged. `person` is /mandates/record-preview/<key>; `organization` is
+ * /organizations/<org>/mandates/<key> — same page, same body, the level only
+ * decides the tabs, the principal, and which header actions exist.
+ */
+export interface MandateRecordPageProps {
+  mandateKey: string;
+  level?: RecordLevel;
+  /** Organization level: the route's organization id. */
+  orgId?: string | null;
+  /** Organization level: the viewer is an owner/admin of `orgId`. */
+  canManageOrg?: boolean;
+  /** Where Back goes when the tab did not come from a list. */
+  listHref?: string;
+}
+
+export function MandateRecordPage(props: MandateRecordPageProps) {
   return (
     <Suspense
       fallback={
@@ -55,17 +76,25 @@ export function MandateRecordPage({ mandateKey }: { mandateKey: string }) {
         </div>
       }
     >
-      <MandateRecordPageInner mandateKey={mandateKey} />
+      <MandateRecordPageInner {...props} />
     </Suspense>
   );
 }
 
-function MandateRecordPageInner({ mandateKey }: { mandateKey: string }) {
+function MandateRecordPageInner({
+  mandateKey,
+  level = "system",
+  orgId = null,
+  canManageOrg = false,
+  listHref = MANDATE_LIST_PREVIEW_HREF,
+}: MandateRecordPageProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const activeTab = parseRecordTab(searchParams.get("tab"), true);
-  const backHref = useRecordBackHref(MANDATE_LIST_PREVIEW_HREF);
+  const readOnly = level === "organization" && !canManageOrg;
+  const tabs = recordTabsForLevel(level, { readOnly });
+  const activeTab = parseRecordTabFrom(searchParams.get("tab"), tabs);
+  const backHref = useRecordBackHref(listHref);
 
   const hrefFor = (tab: RecordTabId) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -95,10 +124,18 @@ function MandateRecordPageInner({ mandateKey }: { mandateKey: string }) {
         <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-3 sm:px-6">
           <MandateRecordBody
             mandateKeyOrId={mandateKey}
-            host="admin-route"
+            host={level === "system" ? "admin-route" : "route"}
+            principal={
+              level === "organization" && orgId
+                ? { kind: "org", orgId }
+                : { kind: "user" }
+            }
+            tabs={tabs}
+            showAdminPanels={level === "system" ? undefined : false}
+            readOnly={readOnly}
             activeTab={activeTab}
             onTabChange={onTabChange}
-            listHref={MANDATE_LIST_PREVIEW_HREF}
+            listHref={listHref}
             renderChrome={({ name, data, exportMenu, refresh }) => (
               <>
                 <RecordHeader
@@ -107,11 +144,16 @@ function MandateRecordPageInner({ mandateKey }: { mandateKey: string }) {
                   exportMenu={exportMenu}
                   refresh={refresh}
                   backHref={backHref}
+                  level={level}
+                  orgId={orgId}
+                  canManageOrg={canManageOrg}
+                  listHref={listHref}
                 />
                 {/* The admin route is super-admin gated by its layout, so
-                    every tab shows. */}
+                    every tab shows there; a member page shows only the tabs
+                    its seat may use (record-tabs.ts `recordTabsForLevel`). */}
                 <RecordTabStrip
-                  tabs={visibleRecordTabs(true)}
+                  tabs={tabs}
                   value={activeTab}
                   onChange={onTabChange}
                   className="mb-3"
@@ -125,21 +167,55 @@ function MandateRecordPageInner({ mandateKey }: { mandateKey: string }) {
   );
 }
 
+/**
+ * May this seat remove the mandate? The admin route always could; a person
+ * only their own soft mandate; an organization's manager only that
+ * organization's own soft mandate. Pure — exported for tests.
+ */
+export function recordCanRemove(
+  mandate: Pick<MandateWorkspaceData["mandate"], "organization_id" | "created_by" | "origin">,
+  seat: { level: RecordLevel; userId: string | null; orgId: string | null; canManageOrg: boolean },
+): boolean {
+  if (seat.level === "system") return true;
+  if (mandate.origin === "code") return false;
+  if ((mandate.organization_id ?? "").toLowerCase() === SYSTEM_ORGANIZATION_ID.toLowerCase()) {
+    return false;
+  }
+  if (seat.level === "person") return Boolean(seat.userId) && mandate.created_by === seat.userId;
+  return seat.canManageOrg && Boolean(seat.orgId) && mandate.organization_id === seat.orgId;
+}
+
 function RecordHeader({
   name,
   data,
   exportMenu,
   refresh,
   backHref,
+  level,
+  orgId,
+  canManageOrg,
+  listHref,
 }: {
   name: string;
   data: MandateWorkspaceData;
   exportMenu: React.ReactNode;
   refresh: () => void;
   backHref: string;
+  level: RecordLevel;
+  orgId: string | null;
+  canManageOrg: boolean;
+  listHref: string;
 }) {
   const router = useRouter();
+  const userId = useAppSelector(selectUserId);
   const [removing, setRemoving] = useState(false);
+  const canRemove = recordCanRemove(data.mandate, { level, userId, orgId, canManageOrg });
+  // Sharing is the creator's call, on their own soft mandate (person seat).
+  const canShare =
+    level === "person" &&
+    data.mandate.origin !== "code" &&
+    Boolean(userId) &&
+    data.mandate.created_by === userId;
 
   // The consequence first, then the soft removal — the same service call and
   // the same words as the original page's Remove control.
@@ -159,7 +235,7 @@ function RecordHeader({
     try {
       await softDeleteMandate(data.mandate.id);
       toast.success("Mandate removed.");
-      pushAppHref(router, MANDATE_LIST_PREVIEW_HREF);
+      pushAppHref(router, listHref);
     } catch (error: unknown) {
       toast.error(
         error instanceof Error ? error.message : "That mandate was not removed.",
@@ -175,8 +251,12 @@ function RecordHeader({
       entityLabel={name}
       right={
         <div className="flex items-center gap-1">
+          {canShare ? (
+            <MandateVisibilityControl mandate={data.mandate} onChanged={refresh} />
+          ) : null}
           {exportMenu}
-          {data.mandate.organization_id !== SYSTEM_ORGANIZATION_ID ? (
+          {level === "system" &&
+          data.mandate.organization_id !== SYSTEM_ORGANIZATION_ID ? (
             <PromoteToSystemMandateButton
               mandate={data.mandate}
               onPromoted={refresh}
@@ -184,15 +264,19 @@ function RecordHeader({
           ) : null}
         </div>
       }
-      actions={[
-        {
-          label: removing ? "Removing…" : "Remove",
-          icon: Trash2,
-          destructive: true,
-          disabled: removing,
-          onPress: () => void remove(),
-        },
-      ]}
+      actions={
+        canRemove
+          ? [
+              {
+                label: removing ? "Removing…" : "Remove",
+                icon: Trash2,
+                destructive: true,
+                disabled: removing,
+                onPress: () => void remove(),
+              },
+            ]
+          : []
+      }
     />
   );
 }

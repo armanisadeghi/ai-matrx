@@ -71977,6 +71977,48 @@
         }
       }
     },
+    "/mandates/soft": {
+      "post": {
+        "tags": [
+          "Mandates"
+        ],
+        "summary": "Create Soft Mandate",
+        "description": "Create a SOFT mandate homed in the caller's personal organization\n(level='user') or in an organization the caller administers\n(level='organization'). Same key validation, same 409/422 as ``POST /mandates``.",
+        "operationId": "create_soft_mandate_mandates_soft_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SoftMandateCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SoftMandateCreatedResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mandates/{mandate_key}/goal": {
       "patch": {
         "tags": [
@@ -234662,7 +234704,7 @@
           "accepted"
         ],
         "title": "PushIngestResult",
-        "description": "What one Pub/Sub push produced. The router returns this verbatim."
+        "description": "What one Pub/Sub push durably handed off. The router returns this verbatim."
       },
       "PusherServiceStatus": {
         "properties": {
@@ -261810,6 +261852,130 @@
           "operational"
         ],
         "title": "SocioServiceStatus"
+      },
+      "SoftMandateCreateRequest": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "goal": {
+            "type": "string",
+            "title": "Goal"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kind"
+          },
+          "output_constraints": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Constraints"
+          },
+          "draft_inputs": {
+            "items": {
+              "$ref": "#/components/schemas/DraftInputItem"
+            },
+            "type": "array",
+            "title": "Draft Inputs",
+            "default": []
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "organization",
+              "user"
+            ],
+            "title": "Level"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "label",
+          "goal",
+          "level"
+        ],
+        "title": "SoftMandateCreateRequest",
+        "description": "A SOFT mandate authored by an ordinary user or an organization admin.\n\nSoft = origin 'user', goal_grounding 'H', no Holder — exactly what\n``create_user_mandate`` writes. ``level`` picks the home: the caller's\npersonal organization (visibility 'personal') or an organization they\nadminister (visibility 'internal'). System mandates stay platform-admin only\non ``POST /mandates``."
+      },
+      "SoftMandateCreatedResponse": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "mandate_id": {
+            "type": "string",
+            "title": "Mandate Id"
+          },
+          "goal_grounding": {
+            "type": "string",
+            "title": "Goal Grounding"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "visibility": {
+            "type": "string",
+            "title": "Visibility"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "mandate_id",
+          "goal_grounding",
+          "origin",
+          "organization_id",
+          "visibility"
+        ],
+        "title": "SoftMandateCreatedResponse"
       },
       "SortBoundaryQuestion": {
         "properties": {
