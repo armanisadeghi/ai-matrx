@@ -675,11 +675,39 @@ export const INTEGRATIONS: Integration[] = [
     plain: "for a table that has been copied but not switched, agents, workflow steps, chat and the browser extension write into the copy while you are still working in the older table",
     owner: "aidream packages/matrx-records/matrx_records/server/table_home.py; matrx-frontend features/unified-data/whereThisTableLives.ts (+ data-source/locate-table.ts); matrx-extend src/lib/records/tables.ts",
     proofs: [
+      // Lane WHERE-LIVES-SWITCH (2026-09-25): every resolver asks the store's one door,
+      // custom.where_tables_live (read from the organization's switch), never a copy's existence;
+      // the copy of a live older table is read-only until the switch (the copy fence).
       {
         kind: "contains", repo: "aidream", file: "packages/matrx-records/matrx_records/server/table_home.py",
         from: "async def table_home", to: "async def organization_is_moved",
-        pattern: "udt_datasets|older_tables_moved|MOVED_KNOB|cutover_seam",
-        says: "the server's answer asks whether the older table is still the live one",
+        pattern: "custom\\.where_tables_live",
+        says: "the server's table_home asks the store's one door, read from the organization's switch",
+      },
+      {
+        kind: "contains", repo: "matrx-frontend", file: "features/unified-data/whereThisTableLives.ts",
+        pattern: "\\btableLivesIn\\(",
+        says: "the web app's whereThisTableLives (and locateTable through it) asks the switch before it looks for a copy",
+      },
+      {
+        kind: "contains", repo: "matrx-frontend", file: "features/unified-data/tableLivesIn.ts",
+        pattern: "where_tables_live",
+        says: "the web app's one helper asks the store's one door",
+      },
+      {
+        kind: "contains", repo: "matrx-extend", file: "src/lib/records/tables.ts",
+        pattern: "where_tables_live",
+        says: "the extension's one helper asks the store's one door",
+      },
+      {
+        kind: "lacks", repo: "matrx-extend", files: ["src/lib/supabase/user-tables.ts"],
+        pattern: "store\\.some\\(\\(t\\) => t\\.id === tableId\\)",
+        says: "the extension no longer decides an append's store from whether the store lists a same-id copy",
+      },
+      {
+        kind: "db",
+        sql: "select (to_regprocedure('custom.where_tables_live(uuid[])') is not null and to_regprocedure('platform.table_lives_in(uuid)') is not null and pg_get_functiondef('custom._context_copy_fence()'::regprocedure) like '%_older_table_copy_refusal%') as ok, 'the store answers where a table lives from the switch, and refuses a write to the copy of a live older table' as detail",
+        says: "the store's door and the copy fence are live",
       },
     ],
   },

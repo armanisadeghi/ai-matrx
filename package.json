@@ -79,6 +79,7 @@
     "check:org-refusal-honesty:self-test": "tsx scripts/check-org-refusal-honesty.ts --self-test",
     "check:no-default-organization": "tsx scripts/check-no-default-organization.ts",
     "check:object-pages-read-the-objects-organization": "tsx scripts/check-object-pages-read-the-objects-organization.ts",
+    "check:table-home-reads-the-switch": "tsx scripts/check-table-home-reads-the-switch.ts",
     "check:object-pages-read-the-objects-organization:self-test": "tsx scripts/check-object-pages-read-the-objects-organization.ts --self-test",
     "check:not-found-is-honest": "tsx scripts/check-not-found-is-honest.ts",
     "check:not-found-is-honest:self-test": "tsx scripts/check-not-found-is-honest.ts --self-test",

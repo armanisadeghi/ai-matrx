@@ -23,6 +23,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { resolveObjectOrganization } from "./objectOrganization";
+import { tableLivesIn } from "./tableLivesIn";
 
 export type OtherStore =
   /** The record store holds it, in `organizationId` — the TABLE'S organization, never the caller's. */
@@ -53,6 +54,13 @@ export type OtherStore =
  * Returns `unknown` rather than `nowhere` on a transport failure, because telling somebody
  * their table does not exist when the truth is that we could not ask is the same lie in a
  * different sentence.
+ *
+ * 0. FIRST, THE SWITCH (lane WHERE-LIVES-SWITCH, census row X1): `tableLivesIn` — the store's
+ *    one answer, read from the organization's Data tables switch. "older" → `nowhere` (the caller
+ *    reads and writes the older table), even when the record store holds a same-id copy: COPY
+ *    mode keeps the older table the one in use until the owner presses the switch, and its copy
+ *    is read-only. Steps 1–3 below only ever run for a table the switch says is the store's; they
+ *    decide its organization and whether this person may open it, never which store it is in.
  */
 export async function whereThisTableLives(
   client: SupabaseClient,
@@ -66,6 +74,10 @@ export async function whereThisTableLives(
   tableId: string,
 ): Promise<OtherStore> {
   const store = client.schema("custom" as never);
+
+  const home = await tableLivesIn(client, tableId);
+  if (!home.ok) return { kind: "unknown", why: home.why };
+  if (home.livesIn === "older") return { kind: "nowhere" };
 
   // THE TABLE NAMES ITS OWN ORGANIZATION. Zero rows is "not a record-store table this person
   // was given" — which, here, is "ask the older store"; the older viewer then says, honestly,
