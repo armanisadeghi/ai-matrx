@@ -18,6 +18,9 @@ jest.mock("@ai-matrx/design-system/data-table", () => ({
 jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
   SurfaceRuntimeProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
+jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({
+  NonEditableContextMenu: ({ children }: { children: React.ReactNode }) => children,
+}));
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -37,17 +40,30 @@ describe("report scoreboard clocks", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     container.remove();
+    jest.restoreAllMocks();
     jest.useRealTimers();
   });
 
   it.each([
     ["ESLint debt", createElement(LintDebtConsole, { report: lintReport as LintDebtReport, history: [], problems: [] })],
     ["No Dead Ends", createElement(DeadEndsConsole, { report: deadEndsReport as DeadEndReport, history: [], problems: [] })],
-    ["Unwired Work", createElement(UnwiredConsole, { report: unwiredReport as UnwiredReport, history: [], problems: [] })],
-  ])("mounts %s and ticks without a render loop", async (title, element) => {
+    ["Unwired work", createElement(UnwiredConsole, { report: unwiredReport as UnwiredReport, history: [], problems: [] })],
+  ])("mounts %s when the wall clock advances on every read", async (title, element) => {
+    const start = Date.now();
+    let reads = 0;
+    jest.spyOn(Date, "now").mockImplementation(() => start + reads++);
     await act(async () => root.render(element));
     expect(container.textContent).toContain(title);
+  });
+
+  it.each([
+    ["ESLint debt", createElement(LintDebtConsole, { report: { ...lintReport, generatedAt: "2026-09-18T12:00:30Z" } as LintDebtReport, history: [], problems: [] }), "This snapshot is"],
+    ["No Dead Ends", createElement(DeadEndsConsole, { report: { ...deadEndsReport, generatedAt: "2026-09-18T12:00:30Z" } as DeadEndReport, history: [], problems: [] }), "Snapshot is"],
+    ["Unwired work", createElement(UnwiredConsole, { report: { ...unwiredReport, generatedAt: "2026-09-17T12:00:30Z" } as UnwiredReport, history: [], problems: [] }), "Snapshot is"],
+  ])("updates %s stale state when the shared clock ticks", async (_title, element, staleText) => {
+    await act(async () => root.render(element));
+    expect(container.textContent).not.toContain(staleText);
     await act(async () => jest.advanceTimersByTime(60_000));
-    expect(container.textContent).toContain(title);
+    expect(container.textContent).toContain(staleText);
   });
 });

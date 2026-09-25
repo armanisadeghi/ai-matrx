@@ -31,6 +31,17 @@ import {
 } from "lucide-react";
 
 import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
+import {
+  useTableUrlState,
+} from "@ai-matrx/design-system/data-table/url-state";
+import type {
+  ColumnFilterValue,
+} from "@ai-matrx/design-system/data-table/types";
+
+import {
   Table,
   TableHeader,
   TableBody,
@@ -43,15 +54,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
-import { KgInspectorColumnHeader } from "./KgInspectorColumnHeader";
-import {
-  applyColumnFilters,
-  sortRows,
-  toggleSort,
-  type ColumnDef,
-  type ColumnFilter,
-  type SortDirection,
-} from "../utils/tableFilters";
 import {
   fetchOrganizationNamesByIds,
   organizationDisplayName,
@@ -74,66 +76,6 @@ import {
 
 const PAGE_SIZE = 50;
 const FETCH_MAX = 200;
-const ANY = "__any__";
-
-type EntitySortKey =
-  | "kind"
-  | "canonical_name"
-  | "organization_name"
-  | "mention_count"
-  | "source_count"
-  | "confidence_avg"
-  | "created_at";
-
-type EdgeSortKey = "source" | "kind" | "target" | "weight";
-
-const ENTITY_CLIENT_COLUMNS: ColumnDef<KgEntityRow>[] = [
-  {
-    key: "mention_count",
-    type: "number",
-    getValue: (row) => row.mention_count,
-  },
-  {
-    key: "source_count",
-    type: "number",
-    getValue: (row) => row.source_count,
-  },
-  {
-    key: "confidence_avg",
-    type: "number",
-    getValue: (row) => row.confidence_avg,
-  },
-  {
-    key: "created_at",
-    type: "date",
-    getValue: (row) => row.created_at,
-  },
-];
-
-const ENTITY_SORT_COLUMNS: ColumnDef<KgEntityRow>[] = [
-  { key: "kind", type: "enum", getValue: (row) => row.kind },
-  {
-    key: "canonical_name",
-    type: "text",
-    getValue: (row) => row.canonical_name,
-  },
-  ...ENTITY_CLIENT_COLUMNS,
-];
-
-const EDGE_COLUMNS: ColumnDef<KgEdgeRow>[] = [
-  {
-    key: "source",
-    type: "text",
-    getValue: (row) => `${row.src_kind} ${row.src_name}`,
-  },
-  { key: "kind", type: "enum", getValue: (row) => row.kind },
-  {
-    key: "target",
-    type: "text",
-    getValue: (row) => `${row.dst_kind} ${row.dst_name}`,
-  },
-  { key: "weight", type: "number", getValue: (row) => row.weight },
-];
 
 // Code-graph kinds are present today; NER widens this set as Phase C fills.
 const ENTITY_KINDS = [
@@ -156,6 +98,11 @@ const EDGE_KINDS = [
   "calls",
   "references",
 ] as const;
+
+function selectedFilterValue(filter: ColumnFilterValue | undefined): string | null {
+  if (!filter || filter.kind !== "select") return null;
+  return filter.values?.[0] ?? filter.value ?? null;
+}
 
 function KindChip({ kind }: { kind: string }) {
   return (
@@ -276,17 +223,15 @@ function EntitiesTab({
   const [serverTotal, setServerTotal] = useState(0);
   const [orgNames, setOrgNames] = useState<Record<string, string>>({});
   const [orgNamesLoading, setOrgNamesLoading] = useState(false);
-  const [kind, setKind] = useState<string>(ANY);
-  const [searchInput, setSearchInput] = useState("");
-  const [q, setQ] = useState("");
-  const [page, setPage] = useState(0);
-  const [sortKey, setSortKey] = useState<EntitySortKey>("mention_count");
-  const [sortDir, setSortDir] = useState<SortDirection>("desc");
-  const [columnFilters, setColumnFilters] = useState<
-    Record<string, ColumnFilter>
-  >({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const tableQuery = useTableUrlState({
+    tableId: "kg-inspector-entities",
+    defaultSort: { id: "mention_count", direction: "desc" },
+    defaultPageSize: PAGE_SIZE,
+  });
+  const kind = selectedFilterValue(tableQuery.queryState.columnFilters.kind);
+  const q = tableQuery.queryState.search.trim();
 
   const organizationIds = useMemo(
     () => [
@@ -300,21 +245,12 @@ function EntitiesTab({
   );
 
   useEffect(() => {
-    const t = setTimeout(() => setQ(searchInput.trim()), 350);
-    return () => clearTimeout(t);
-  }, [searchInput]);
-
-  useEffect(() => {
-    setPage(0);
-  }, [kind, q, columnFilters, sortKey, sortDir]);
-
-  useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
     setError(null);
     listKgEntities(
       {
-        kind: kind === ANY ? null : kind,
+        kind,
         q: q || null,
         limit: FETCH_MAX,
         offset: 0,
@@ -360,348 +296,207 @@ function EntitiesTab({
     };
   }, [organizationIds]);
 
-  const entityColumnDefs = useMemo(() => {
-    const organizationColumn: ColumnDef<KgEntityRow> = {
-      key: "organization_name",
-      type: "text",
-      getValue: (row) =>
-        organizationDisplayName(row.organization_id, orgNames) ?? "",
-    };
-    return {
-      filterColumns: [organizationColumn, ...ENTITY_CLIENT_COLUMNS],
-      sortColumns: [
-        ...ENTITY_SORT_COLUMNS.slice(0, 2),
-        organizationColumn,
-        ...ENTITY_CLIENT_COLUMNS,
-      ],
-    };
-  }, [orgNames]);
-
-  const processedRows = useMemo(() => {
-    const filtered = applyColumnFilters(
-      rawRows,
-      entityColumnDefs.filterColumns,
-      columnFilters,
-    );
-    return sortRows(filtered, entityColumnDefs.sortColumns, sortKey, sortDir);
-  }, [rawRows, columnFilters, sortKey, sortDir, entityColumnDefs]);
-
-  const pageStart = processedRows.length === 0 ? 0 : page * PAGE_SIZE + 1;
-  const pageEnd = Math.min((page + 1) * PAGE_SIZE, processedRows.length);
-  const displayRows = processedRows.slice(
-    page * PAGE_SIZE,
-    page * PAGE_SIZE + PAGE_SIZE,
-  );
-
-  const handleSort = (key: string) => {
-    const next = toggleSort(sortKey, sortDir, key);
-    setSortKey(next.sortKey as EntitySortKey);
-    setSortDir(next.sortDir);
-  };
-
-  const setColumnFilter = (key: string, value: ColumnFilter | undefined) => {
-    setColumnFilters((prev) => {
-      const next = { ...prev };
-      if (!value || Object.keys(value).length === 0) delete next[key];
-      else next[key] = value;
-      return next;
-    });
-  };
-
-  const kindSelectOptions = [
-    { value: ANY, label: "All kinds" },
-    ...ENTITY_KINDS.map((k) => ({ value: k, label: k })),
+  const entityColumns: MatrxColumnDef<KgEntityRow>[] = [
+    {
+      id: "kind",
+      accessorKey: "kind",
+      header: "Kind",
+      filter: "select",
+      filterSingle: true,
+      filterOptions: ENTITY_KINDS.map((value) => ({ value, label: value })),
+      width: 140,
+      cell: (row) => <KindChip kind={row.kind} />,
+    },
+    {
+      id: "canonical_name",
+      accessorKey: "canonical_name",
+      header: "Canonical name",
+      // Name search belongs to the source-backed canonical toolbar, where the
+      // RPC can search every matching entity before the 200-row window.
+      filter: false,
+      width: 220,
+      cell: (row) => (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onSelectEntity({ id: row.id, name: row.canonical_name, kind: row.kind });
+          }}
+          title={`Show mentions of ${row.canonical_name}`}
+          className="max-w-full truncate text-left font-medium text-foreground underline-offset-2 hover:text-primary hover:underline"
+        >
+          {row.canonical_name}
+        </button>
+      ),
+    },
+    {
+      id: "organization_name",
+      header: "Organization",
+      accessorFn: (row) => organizationDisplayName(row.organization_id, orgNames) ?? "",
+      filter: "text",
+      width: 180,
+      cell: (row) =>
+        !row.organization_id ? (
+          "—"
+        ) : orgNamesLoading && !(row.organization_id in orgNames) ? (
+          <Skeleton className="h-4 w-28" />
+        ) : (
+          <EntityRef
+            token="organization"
+            id={row.organization_id}
+            name={organizationDisplayName(row.organization_id, orgNames) ?? null}
+          />
+        ),
+    },
+    {
+      id: "mention_count",
+      accessorKey: "mention_count",
+      header: "Mentions",
+      filter: "number",
+      align: "right",
+      width: 112,
+      cell: (row) => <span className="tabular-nums">{row.mention_count}</span>,
+    },
+    {
+      id: "source_count",
+      accessorKey: "source_count",
+      header: "Sources",
+      filter: "number",
+      align: "right",
+      width: 104,
+      cell: (row) => <span className="tabular-nums">{row.source_count}</span>,
+    },
+    {
+      id: "confidence_avg",
+      accessorKey: "confidence_avg",
+      header: "Confidence",
+      filter: "number",
+      width: 140,
+      cell: (row) => <ConfidenceBar value={row.confidence_avg} />,
+    },
+    {
+      id: "created_at",
+      accessorKey: "created_at",
+      header: "Created",
+      filter: "date",
+      width: 170,
+      cell: (row) => (
+        <span className="whitespace-nowrap text-xs text-muted-foreground">
+          {new Date(row.created_at).toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      id: "graph",
+      header: "Graph",
+      filter: false,
+      sortable: false,
+      compact: true,
+      align: "center",
+      width: 48,
+      cell: () => (
+        <AppLink
+          href="/knowledge/graph"
+          onClick={(event) => event.stopPropagation()}
+          className="inline-flex items-center text-muted-foreground hover:text-primary"
+          title="Open knowledge-graph canvas"
+          aria-label="View graph"
+        >
+          <Network className="h-3.5 w-3.5" />
+        </AppLink>
+      ),
+    },
   ];
 
   return (
-    <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: "kg_inspector", kg_inspector_tab: "entities", kg_entities_filter: { kind, q, page, sortKey, sortDir, columnFilters }, kg_entities: processedRows })}>
+    <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: "kg_inspector", kg_inspector_tab: "entities", kg_entities_filter: { kind, q, tableQuery: tableQuery.state }, kg_entities: rawRows })}>
     <div className="flex flex-col gap-3">
-      {serverTotal > FETCH_MAX ? (
-        <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          Showing up to {FETCH_MAX} of {serverTotal} matching entities. Narrow
-          Kind or Name filters to refine server results; column sort and other
-          filters apply within this window.
-        </div>
-      ) : null}
-
       {error ? (
         <div className="rounded-md border border-border bg-card p-4 text-sm text-destructive">
           {error}
         </div>
       ) : null}
 
-      <div className="overflow-x-auto rounded-md border border-border">
-        {/* Phone reflow: THE PHONE-STACK TABLE (app/globals.css). */}
-        <Table wrapperClassName="phone-stack">
-          <TableHeader className="sticky top-0 z-10 bg-card">
-            <TableRow>
-              <TableHead className="min-w-[140px]">
-                <KgInspectorColumnHeader
-                  label="Kind"
-                  sortKey="kind"
-                  activeSortKey={sortKey}
-                  sortDir={sortDir}
-                  onSort={handleSort}
-                  filterType="enum"
-                  selectValue={kind}
-                  selectOptions={kindSelectOptions}
-                  onSelectChange={setKind}
-                />
-              </TableHead>
-              <TableHead className="min-w-[180px]">
-                <KgInspectorColumnHeader
-                  label="Canonical name"
-                  sortKey="canonical_name"
-                  activeSortKey={sortKey}
-                  sortDir={sortDir}
-                  onSort={handleSort}
-                  filterType="text"
-                  textValue={searchInput}
-                  onTextChange={setSearchInput}
-                />
-              </TableHead>
-              <TableHead className="min-w-[160px]">
-                <KgInspectorColumnHeader
-                  label="Organization"
-                  sortKey="organization_name"
-                  activeSortKey={sortKey}
-                  sortDir={sortDir}
-                  onSort={handleSort}
-                  filterType="text"
-                  textValue={columnFilters.organization_name?.text ?? ""}
-                  onTextChange={(text) =>
-                    setColumnFilter(
-                      "organization_name",
-                      text ? { text } : undefined,
-                    )
-                  }
-                />
-              </TableHead>
-              <TableHead className="min-w-[120px] text-right">
-                <KgInspectorColumnHeader
-                  label="Mentions"
-                  sortKey="mention_count"
-                  activeSortKey={sortKey}
-                  sortDir={sortDir}
-                  onSort={handleSort}
-                  align="right"
-                  filterType="number"
-                  columnFilter={columnFilters.mention_count}
-                  onColumnFilterChange={(value) =>
-                    setColumnFilter("mention_count", value)
-                  }
-                />
-              </TableHead>
-              <TableHead className="min-w-[120px] text-right">
-                <KgInspectorColumnHeader
-                  label="Sources"
-                  sortKey="source_count"
-                  activeSortKey={sortKey}
-                  sortDir={sortDir}
-                  onSort={handleSort}
-                  align="right"
-                  filterType="number"
-                  columnFilter={columnFilters.source_count}
-                  onColumnFilterChange={(value) =>
-                    setColumnFilter("source_count", value)
-                  }
-                />
-              </TableHead>
-              <TableHead className="min-w-[140px]">
-                <KgInspectorColumnHeader
-                  label="Confidence"
-                  sortKey="confidence_avg"
-                  activeSortKey={sortKey}
-                  sortDir={sortDir}
-                  onSort={handleSort}
-                  filterType="number"
-                  columnFilter={columnFilters.confidence_avg}
-                  onColumnFilterChange={(value) =>
-                    setColumnFilter("confidence_avg", value)
-                  }
-                />
-              </TableHead>
-              <TableHead className="min-w-[150px]">
-                <KgInspectorColumnHeader
-                  label="Created"
-                  sortKey="created_at"
-                  activeSortKey={sortKey}
-                  sortDir={sortDir}
-                  onSort={handleSort}
-                  filterType="date"
-                  columnFilter={columnFilters.created_at}
-                  onColumnFilterChange={(value) =>
-                    setColumnFilter("created_at", value)
-                  }
-                />
-              </TableHead>
-              <TableHead className="w-12 text-right">
-                <KgInspectorColumnHeader
-                  label="Graph"
-                  sortKey="graph"
-                  activeSortKey={sortKey}
-                  sortDir={sortDir}
-                  onSort={handleSort}
-                  align="right"
-                  sortable={false}
-                  filterable={false}
-                />
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          {loading ? (
-            <TableSkeleton rows={8} cols={8} />
-          ) : (
-            <TableBody>
-              {displayRows.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className="py-8 text-center text-muted-foreground"
-                  >
-                    No entities match the current filters.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                displayRows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    className="cursor-pointer"
-                    onClick={() =>
-                      onSelectEntity({
-                        id: row.id,
-                        name: row.canonical_name,
-                        kind: row.kind,
-                      })
-                    }
-                  >
-                    <TableCell data-phone="inline">
-                      <KindChip kind={row.kind} />
-                    </TableCell>
-                    <TableCell
-                      className="font-medium text-foreground"
-                      data-phone="lead"
-                    >
-                      {/* The entity has no route of its own (no `hrefFor` for a
-                          kg entity — see the sweep handoff), but it DOES have a
-                          destination inside this console: its mentions. The row
-                          click already went there for the mouse; this makes the
-                          name itself the door, reachable by keyboard. */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelectEntity({
-                            id: row.id,
-                            name: row.canonical_name,
-                            kind: row.kind,
-                          });
-                        }}
-                        title={`Show mentions of ${row.canonical_name}`}
-                        className="max-w-full truncate text-left underline-offset-2 hover:text-primary hover:underline"
-                      >
-                        {row.canonical_name}
-                      </button>
-                    </TableCell>
-                    <TableCell
-                      className="text-sm text-foreground"
-                      data-label="Organization"
-                      data-phone="inline"
-                    >
-                      {!row.organization_id ? (
-                        "—"
-                      ) : orgNamesLoading &&
-                        !(row.organization_id in orgNames) ? (
-                        <Skeleton className="h-4 w-28" />
-                      ) : (
-                        /* THE DOOR LAW: the owning org is a real record with a
-                           route + peek. `name` is deliberately null when the
-                           lookup returned nothing — a failed/forbidden read is
-                           NOT "Unknown organization"; EntityRef then shows the
-                           truncated id, which is the honest answer. */
-                        <EntityRef
-                          token="organization"
-                          id={row.organization_id}
-                          name={
-                            organizationDisplayName(
-                              row.organization_id,
-                              orgNames,
-                            ) ?? null
-                          }
-                        />
-                      )}
-                    </TableCell>
-                    <TableCell
-                      className="text-right tabular-nums"
-                      data-label="Mentions"
-                      data-phone="inline"
-                    >
-                      {row.mention_count}
-                    </TableCell>
-                    <TableCell
-                      className="text-right tabular-nums"
-                      data-label="Sources"
-                      data-phone="inline"
-                    >
-                      {row.source_count}
-                    </TableCell>
-                    <TableCell data-label="Confidence" data-phone="inline">
-                      <ConfidenceBar value={row.confidence_avg} />
-                    </TableCell>
-                    <TableCell
-                      className="whitespace-nowrap text-xs text-muted-foreground"
-                      data-label="Created"
-                      data-phone="inline"
-                    >
-                      {new Date(row.created_at).toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right" data-phone="actions">
-                      <AppLink
-                        href="/knowledge/graph"
-                        onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center text-muted-foreground hover:text-primary"
-                        title="Open knowledge-graph canvas"
-                        aria-label="View graph"
-                      >
-                        <Network className="h-3.5 w-3.5" />
-                      </AppLink>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          )}
-        </Table>
-      </div>
-
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span className="tabular-nums">
-          {pageStart}–{pageEnd} of {processedRows.length}
-          {serverTotal > processedRows.length
-            ? ` (${serverTotal} server matches)`
-            : ""}
-        </span>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page === 0 || loading}
-            onClick={() => setPage(Math.max(0, page - 1))}
+      <MatrxDataTable<KgEntityRow>
+        tableId="kg-inspector-entities"
+        viewTabs={false}
+        data={rawRows}
+        columns={entityColumns}
+        getRowId={(row) => row.id}
+        isLoading={loading && rawRows.length === 0}
+        isFetching={loading && rawRows.length > 0}
+        query={{
+          mode: "controlled-local",
+          state: tableQuery.state,
+          onStateChange: tableQuery.onStateChange,
+          // Only Name and Kind narrow the source. Organization, counts,
+          // confidence, created date, and sort operate on the loaded window.
+          sourceProcessing: { search: "source", sourceTotal: serverTotal },
+        }}
+        coverage={{
+          loaded: rawRows.length,
+          matched: serverTotal,
+          cap: FETCH_MAX,
+          answeredBy: "client",
+          noun: "entity",
+        }}
+        pageSize={PAGE_SIZE}
+        localPagination={{
+          mode: "numbered",
+          reason: "Preserves the existing 50-entity forensic scan pages.",
+          approvedBy: "KG inspector canonical-table request",
+        }}
+        stickyHeader
+        detail={{ enabled: false }}
+        copy={false}
+        toolbar={{
+          title: "Entities",
+          titleCount: { value: serverTotal, label: "server matches" },
+          search: true,
+          searchPlaceholder: "Search canonical names…",
+        }}
+        emptyState={{ title: "No entities match the current filters." }}
+        onRowOpen={(row) =>
+          onSelectEntity({ id: row.id, name: row.canonical_name, kind: row.kind })
+        }
+        mobileCards={(row) => (
+          <div
+            className="rounded-md border border-border bg-card p-3"
+            onClick={() =>
+              onSelectEntity({ id: row.id, name: row.canonical_name, kind: row.kind })
+            }
           >
-            <ChevronLeft className="h-4 w-4" />
-            Prev
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={pageEnd >= processedRows.length || loading}
-            onClick={() => setPage(page + 1)}
-          >
-            Next
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+            <div className="flex items-start gap-2">
+              <KindChip kind={row.kind} />
+              <button
+                type="button"
+                className="min-w-0 flex-1 truncate text-left font-medium underline-offset-2 hover:text-primary hover:underline"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onSelectEntity({ id: row.id, name: row.canonical_name, kind: row.kind });
+                }}
+              >
+                {row.canonical_name}
+              </button>
+              <AppLink
+                href="/knowledge/graph"
+                onClick={(event) => event.stopPropagation()}
+                aria-label={`View ${row.canonical_name} in the graph`}
+                title="Open knowledge-graph canvas"
+              >
+                <Network className="h-4 w-4 text-muted-foreground" />
+              </AppLink>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+              <div><span className="text-muted-foreground">Organization</span><div>{!row.organization_id ? "—" : organizationDisplayName(row.organization_id, orgNames) ?? row.organization_id}</div></div>
+              <div><span className="text-muted-foreground">Mentions</span><div className="tabular-nums">{row.mention_count}</div></div>
+              <div><span className="text-muted-foreground">Sources</span><div className="tabular-nums">{row.source_count}</div></div>
+              <div><span className="text-muted-foreground">Confidence</span><div>{row.confidence_avg === null ? "—" : row.confidence_avg.toFixed(2)}</div></div>
+              <div className="col-span-2"><span className="text-muted-foreground">Created</span><div>{new Date(row.created_at).toLocaleString()}</div></div>
+            </div>
+          </div>
+        )}
+      />
     </div>
     </SurfaceRuntimeProvider>
   );
@@ -888,14 +683,14 @@ function EdgesTab({
   const [rawRows, setRawRows] = useState<KgEdgeRow[]>([]);
   const [orgInput, setOrgInput] = useState("");
   const [orgId, setOrgId] = useState("");
-  const [edgeKind, setEdgeKind] = useState<string>(ANY);
-  const [sortKey, setSortKey] = useState<EdgeSortKey>("weight");
-  const [sortDir, setSortDir] = useState<SortDirection>("desc");
-  const [columnFilters, setColumnFilters] = useState<
-    Record<string, ColumnFilter>
-  >({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const tableQuery = useTableUrlState({
+    tableId: "kg-inspector-edges",
+    defaultSort: { id: "weight", direction: "desc" },
+    defaultPageSize: 0,
+  });
+  const edgeKind = selectedFilterValue(tableQuery.queryState.columnFilters.kind);
 
   useEffect(() => {
     const t = setTimeout(() => setOrgId(orgInput.trim()), 350);
@@ -908,7 +703,7 @@ function EdgesTab({
     setError(null);
     listKgTopEdges(
       {
-        kind: edgeKind === ANY ? null : edgeKind,
+        kind: edgeKind,
         organizationId: orgId || null,
         limit: FETCH_MAX,
       },
@@ -925,174 +720,113 @@ function EdgesTab({
     return () => controller.abort();
   }, [edgeKind, orgId]);
 
-  const displayRows = useMemo(() => {
-    const filtered = applyColumnFilters(rawRows, EDGE_COLUMNS, columnFilters);
-    return sortRows(filtered, EDGE_COLUMNS, sortKey, sortDir);
-  }, [rawRows, columnFilters, sortKey, sortDir]);
-
-  const handleSort = (key: string) => {
-    const next = toggleSort(sortKey, sortDir, key);
-    setSortKey(next.sortKey as EdgeSortKey);
-    setSortDir(next.sortDir);
-  };
-
-  const setColumnFilter = (key: string, value: ColumnFilter | undefined) => {
-    setColumnFilters((prev) => {
-      const next = { ...prev };
-      if (!value || Object.keys(value).length === 0) delete next[key];
-      else next[key] = value;
-      return next;
-    });
-  };
-
-  const edgeKindOptions = [
-    { value: ANY, label: "All edge kinds" },
-    ...EDGE_KINDS.map((k) => ({ value: k, label: k })),
+  const edgeColumns: MatrxColumnDef<KgEdgeRow>[] = [
+    {
+      id: "source",
+      header: "Source",
+      accessorFn: (row) => `${row.src_kind} ${row.src_name}`,
+      filter: "text",
+      width: 250,
+      cell: (row) => (
+        <div className="flex min-w-0 items-center gap-2">
+          <KindChip kind={row.src_kind} />
+          <EdgeEndpointButton id={row.src_id} name={row.src_name} kind={row.src_kind} onSelectEntity={onSelectEntity} />
+        </div>
+      ),
+    },
+    {
+      id: "kind",
+      accessorKey: "kind",
+      header: "Edge",
+      filter: "select",
+      filterSingle: true,
+      filterOptions: EDGE_KINDS.map((value) => ({ value, label: value })),
+      width: 170,
+      cell: (row) => <Badge variant="outline" className="font-mono">{row.kind}</Badge>,
+    },
+    {
+      id: "target",
+      header: "Target",
+      accessorFn: (row) => `${row.dst_kind} ${row.dst_name}`,
+      filter: "text",
+      width: 250,
+      cell: (row) => (
+        <div className="flex min-w-0 items-center gap-2">
+          <KindChip kind={row.dst_kind} />
+          <EdgeEndpointButton id={row.dst_id} name={row.dst_name} kind={row.dst_kind} onSelectEntity={onSelectEntity} />
+        </div>
+      ),
+    },
+    {
+      id: "weight",
+      accessorKey: "weight",
+      header: "Weight",
+      filter: "number",
+      align: "right",
+      width: 120,
+      cell: (row) => <span className="tabular-nums">{row.weight === null ? "—" : row.weight.toFixed(2)}</span>,
+    },
   ];
 
   return (
-    <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: "kg_inspector", kg_inspector_tab: "edges", kg_edges_filter: { orgId, edgeKind, sortKey, sortDir, columnFilters }, kg_edges: displayRows })}>
+    <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: "kg_inspector", kg_inspector_tab: "edges", kg_edges_filter: { orgId, edgeKind, tableQuery: tableQuery.state }, kg_edges: rawRows })}>
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <Input
-          value={orgInput}
-          onChange={(e) => setOrgInput(e.target.value)}
-          placeholder="Organization ID (optional)"
-          className="h-8 w-64 text-base"
-        />
-      </div>
-
       {error ? (
         <div className="rounded-md border border-border bg-card p-4 text-sm text-destructive">
           {error}
         </div>
       ) : null}
 
-      <div className="overflow-x-auto rounded-md border border-border">
-        {/* Phone reflow: THE PHONE-STACK TABLE (app/globals.css). */}
-        <Table wrapperClassName="phone-stack">
-          <TableHeader className="sticky top-0 z-10 bg-card">
-            <TableRow>
-              <TableHead className="min-w-[220px]">
-                <KgInspectorColumnHeader
-                  label="Source"
-                  sortKey="source"
-                  activeSortKey={sortKey}
-                  sortDir={sortDir}
-                  onSort={handleSort}
-                  filterType="text"
-                  textValue={columnFilters.source?.text ?? ""}
-                  onTextChange={(text) =>
-                    setColumnFilter("source", text ? { text } : undefined)
-                  }
-                />
-              </TableHead>
-              <TableHead className="min-w-[140px]">
-                <KgInspectorColumnHeader
-                  label="Edge"
-                  sortKey="kind"
-                  activeSortKey={sortKey}
-                  sortDir={sortDir}
-                  onSort={handleSort}
-                  filterType="enum"
-                  selectValue={edgeKind}
-                  selectOptions={edgeKindOptions}
-                  onSelectChange={setEdgeKind}
-                />
-              </TableHead>
-              <TableHead className="min-w-[220px]">
-                <KgInspectorColumnHeader
-                  label="Target"
-                  sortKey="target"
-                  activeSortKey={sortKey}
-                  sortDir={sortDir}
-                  onSort={handleSort}
-                  filterType="text"
-                  textValue={columnFilters.target?.text ?? ""}
-                  onTextChange={(text) =>
-                    setColumnFilter("target", text ? { text } : undefined)
-                  }
-                />
-              </TableHead>
-              <TableHead className="min-w-[120px] text-right">
-                <KgInspectorColumnHeader
-                  label="Weight"
-                  sortKey="weight"
-                  activeSortKey={sortKey}
-                  sortDir={sortDir}
-                  onSort={handleSort}
-                  align="right"
-                  filterType="number"
-                  columnFilter={columnFilters.weight}
-                  onColumnFilterChange={(value) =>
-                    setColumnFilter("weight", value)
-                  }
-                />
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          {loading ? (
-            <TableSkeleton rows={8} cols={4} />
-          ) : (
-            <TableBody>
-              {displayRows.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={4}
-                    className="py-8 text-center text-muted-foreground"
-                  >
-                    No edges match the current filters.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                displayRows.map((e) => (
-                  <TableRow key={e.id}>
-                    <TableCell data-phone="lead">
-                      <div className="flex items-center gap-2">
-                        <KindChip kind={e.src_kind} />
-                        <EdgeEndpointButton
-                          id={e.src_id}
-                          name={e.src_name}
-                          kind={e.src_kind}
-                          onSelectEntity={onSelectEntity}
-                        />
-                      </div>
-                    </TableCell>
-                    <TableCell data-label="Edge" data-phone="inline">
-                      <Badge variant="outline" className="font-mono">
-                        {e.kind}
-                      </Badge>
-                    </TableCell>
-                    <TableCell data-label="Target" data-phone="inline">
-                      <div className="flex items-center gap-2">
-                        <KindChip kind={e.dst_kind} />
-                        <EdgeEndpointButton
-                          id={e.dst_id}
-                          name={e.dst_name}
-                          kind={e.dst_kind}
-                          onSelectEntity={onSelectEntity}
-                        />
-                      </div>
-                    </TableCell>
-                    <TableCell
-                      className="text-right tabular-nums"
-                      data-label="Weight"
-                      data-phone="inline"
-                    >
-                      {e.weight === null ? "—" : e.weight.toFixed(2)}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          )}
-        </Table>
-      </div>
-
-      <div className="text-sm text-muted-foreground tabular-nums">
-        {displayRows.length} edge{displayRows.length === 1 ? "" : "s"}
-        {rawRows.length >= FETCH_MAX ? ` (top ${FETCH_MAX} from server)` : ""}
-      </div>
+      <MatrxDataTable<KgEdgeRow>
+        tableId="kg-inspector-edges"
+        viewTabs={false}
+        data={rawRows}
+        columns={edgeColumns}
+        getRowId={(row) => row.id}
+        isLoading={loading && rawRows.length === 0}
+        isFetching={loading && rawRows.length > 0}
+        query={{ mode: "controlled-local", state: tableQuery.state, onStateChange: tableQuery.onStateChange }}
+        coverage={rawRows.length >= FETCH_MAX ? {
+          loaded: rawRows.length,
+          cap: FETCH_MAX,
+          answeredBy: "client",
+          noun: "edge",
+        } : undefined}
+        pageSize={0}
+        stickyHeader
+        detail={{ enabled: false }}
+        copy={false}
+        toolbar={{
+          title: "Top edges",
+          search: false,
+          leading: (
+            <Input
+              value={orgInput}
+              onChange={(event) => setOrgInput(event.target.value)}
+              placeholder="Organization ID (optional)"
+              className="h-8 w-64 text-base"
+              aria-label="Filter edges by organization ID"
+            />
+          ),
+        }}
+        emptyState={{ title: "No edges match the current filters." }}
+        mobileCards={(row) => (
+          <div className="rounded-md border border-border bg-card p-3">
+            <div className="flex items-center gap-2">
+              <KindChip kind={row.src_kind} />
+              <EdgeEndpointButton id={row.src_id} name={row.src_name} kind={row.src_kind} onSelectEntity={onSelectEntity} />
+            </div>
+            <div className="my-2 border-l border-border pl-3 text-xs text-muted-foreground">
+              <Badge variant="outline" className="font-mono">{row.kind}</Badge>
+              <span className="ml-2 tabular-nums">Weight {row.weight === null ? "—" : row.weight.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <KindChip kind={row.dst_kind} />
+              <EdgeEndpointButton id={row.dst_id} name={row.dst_name} kind={row.dst_kind} onSelectEntity={onSelectEntity} />
+            </div>
+          </div>
+        )}
+      />
     </div>
     </SurfaceRuntimeProvider>
   );
