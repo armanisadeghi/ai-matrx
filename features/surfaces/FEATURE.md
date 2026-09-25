@@ -2005,6 +2005,8 @@ on the first.
 
 ## Change Log
 
+- **2026-09-25 — `matrx-user/artifacts` goes `stub` → `partial` with emitters on both routes, and `pnpm check:surface-drift` is green again.** The 2026-08-17 stub had been declared from a code read and was wrong in places (its status filter was "empty when unfiltered", but the default view hides archived rows; search, visible rows, load status, the preview's content, and the detail's access-gate state were undeclared). Vocabulary 11 → 26 own values, all emitted and verified live in the Surface Context window. Separately, drift was RED on main because `education-learn` and `education-study-guides` both used the label "Study guides"; the public reader is now "Study guide library".
+
 - **2026-09-25 — Drift-report "Remap to / Remove" works again: it writes as
   the signed-in admin through `assoc_add`.** `POST /api/admin/surfaces/remediate-mapping`
   handed the service-role client to `remediateBrokenMapping`, whose direct

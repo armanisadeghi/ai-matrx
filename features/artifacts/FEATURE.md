@@ -43,6 +43,15 @@ the node's `STATE.md` in the same session.
 
 ## Change log
 
+- 2026-09-25 — **The Content Library is agent-readable: `matrx-user/artifacts` emits on both routes.**
+  `CmsArtifactList` and `CmsArtifactDetail` each mount `SurfaceRuntimeProvider` around the
+  canonical `NonEditableContextMenu`, building through `lib/artifacts-scope.ts` (pure, no fetch —
+  the Surface Context window polls it every 400ms). The list emits its filters, search, visible
+  rows and load status; the detail emits the artifact, its origin, its load state (ready /
+  canvas item / access gate) and the preview's content, which `CanvasItemPreview` publishes into a
+  ref the detail owns rather than mounting a second provider. Also fixed: deleting from the detail
+  page returned to `/cms`; it now returns to `/artifacts`.
+
 - `2026-09-19` — **Content Library is a Finder/Drive list, not a card grid.** The padded tiles (tinted icon chip, single-line truncated titles, status badges on every published item) are gone. Rows are name-first: 16px Lucide glyph with no background, the full title wrapping in the name column, kind and date as quiet columns, and status only when it is not published. Archive is hidden unless that status is chosen. Delete names the consequence and uses `confirm()`. Champion: Apple Files + Google Drive list.
 
 - `2026-09-17` — **The artifacts route's upsert carries the validated organization, not `?? null`.** `app/api/artifacts/route.ts` already refused a create with no `organizationId`, but the value it put in the payload was typed `string | null`, so the write still read as a possible NULL — and `chat.artifact` carries `public._stamp_org_default`, which files a NULL in the WRITER'S personal workspace. The validated id is now a plain non-empty string and the refusal is unchanged (400 `organization_context_required`, with the sentence that tells the person to choose an organization). Guard: `pnpm check:organization-context`.
