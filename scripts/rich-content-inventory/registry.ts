@@ -106,7 +106,12 @@ export const LEGACY_PIECES: LegacyPiece[] = [
   md("pkg:rehype", "rehype-* plugins", "^rehype(-|/|$)"),
   md("pkg:katex", "katex (direct)", "^katex(/|$)"),
   md("pkg:react-katex", "react-katex", "^react-katex(/|$)"),
-  md("pkg:marked", "marked", "^marked(/|$)"),
+  {
+    ...md("pkg:marked", "marked", "^marked(/|$)"),
+    // The one editor's parse edge: `marked`'s LEXER as a byte-mapped tokenizer for the
+    // visual mode's fidelity gate (rich-content PLAN §3.6). It renders nothing.
+    allowedFiles: [CORE_EDGE, "components/rich-editor/core/markdown-parse.ts"],
+  },
   md("pkg:markdown-it", "markdown-it", "^markdown-it(-|/|$)"),
 
   // ── Legacy editors ──────────────────────────────────────────────────────────
