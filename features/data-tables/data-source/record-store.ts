@@ -35,12 +35,13 @@ import { actionRefusals } from "@ai-matrx/records";
 import type {
   DecorationPath,
   Field,
+  HiddenFieldNotice,
   RecordHistoryEntry,
   RecordsError,
   RowAction as StoreRowAction,
-  TableDecorations as StoreDecorations,
 } from "@ai-matrx/records";
-import { declareTable, personActor, recordsDataSource, type NewFieldSpec } from "@ai-matrx/records-ui";
+import { declareTable, personActor, recordsDataSource, resolveTableStyle, type NewFieldSpec } from "@ai-matrx/records-ui";
+import { withheldCells, type WithheldCells } from "../withheld-cells";
 
 import { createClient } from "@/utils/supabase/client";
 import type { FieldChoice } from "@/lib/field-formats/types";
@@ -115,7 +116,10 @@ function plainFailure(message: string): ServiceErr {
 
 // ─── the snapshot: one table, read once per question ────────────────────────
 
-type GridRow = { id: string; data: Record<string, unknown> };
+/** One row as the Sheet holds it; `withheld` = the columns the store masked for this reader, with its reason. */
+type ReadRowHidden = Record<string, HiddenFieldNotice>;
+
+type GridRow = { id: string; data: Record<string, unknown>; withheld?: WithheldCells };
 
 type Snapshot = {
   table: Dataset;
@@ -193,15 +197,17 @@ async function choicesFor(client: RecordsClient, field: Field): Promise<FieldCho
 async function readEveryRow(
   client: RecordsClient,
   tableId: string,
-): Promise<ServiceResult<Array<{ id: string; document: Record<string, unknown> }>>> {
-  const out: Array<{ id: string; document: Record<string, unknown> }> = [];
+): Promise<ServiceResult<Array<{ id: string; document: Record<string, unknown>; hidden?: ReadRowHidden }>>> {
+  const out: Array<{ id: string; document: Record<string, unknown>; hidden?: ReadRowHidden }> = [];
   // Until an EMPTY page: the door clamps the page size to its own, so a short
   // page is not proof of the end.
   for (let offset = 0; ; ) {
     const page = await client.list({ table_id: tableId, limit: READ_PAGE, offset });
     if (!page.ok) return refused(page.error);
     if (page.data.rows.length === 0) break;
-    for (const row of page.data.rows) out.push({ id: row.id, document: row.document as Record<string, unknown> });
+    for (const row of page.data.rows) {
+      out.push({ id: row.id, document: row.document as Record<string, unknown>, hidden: (row as { hidden?: ReadRowHidden }).hidden });
+    }
     offset += page.data.rows.length;
     if (out.length > READ_CEILING) {
       return plainFailure(
@@ -333,7 +339,10 @@ async function readSnapshot(home: RecordStoreHome, tableId: string): Promise<Ser
   const columns = fields.map((f, i) => olderColumnFromField(f as Field & { expression?: unknown }, tableId, choiceSets[i] ?? null));
   const rowsRead = await readEveryRow(client, tableId);
   if (!rowsRead.success) return rowsRead;
-  const rows = rowsRead.data.map((row) => ({ id: row.id, data: olderRowData(row.document, columns) }));
+  const rows: GridRow[] = rowsRead.data.map((row) => {
+    const withheld = withheldCells(row.hidden, fields);
+    return { id: row.id, data: olderRowData(row.document, columns), ...(withheld ? { withheld } : {}) };
+  });
   const level = levelRead.ok ? (levelRead.data.find((l) => l.id === tableId)?.level ?? null) : null;
   const document = tableRead.data.document as Record<string, unknown>;
   const [decorations, actions] = await Promise.all([
@@ -341,7 +350,9 @@ async function readSnapshot(home: RecordStoreHome, tableId: string): Promise<Ser
     client.rowActions({ table_id: tableId }),
   ]);
   const metadata: Record<string, unknown> = {};
-  if (decorations.ok) metadata.style = olderStyle(decorations.data, fields);
+  // THE TABLE'S COLOURS, TRANSLATED BY THE ONE RESOLVER the grid, the kanban, the calendar and the
+  // gallery read (records-ui `resolveTableStyle`); the Sheet has no view style of its own.
+  if (decorations.ok) metadata.style = resolveTableStyle(decorations.data, fields, undefined);
   if (actions.ok) metadata.row_actions = olderRowActions(actions.data.actions, fields);
   const hand = await readHandOrder(home, client, tableId, document.row_order);
   const titleField = typeof document.title_field === "string" ? document.title_field : null;
@@ -773,38 +784,6 @@ function idOf(fields: readonly Field[], key: string): string | null {
   return fields.find((f) => f.key === key)?.id ?? null;
 }
 
-function olderStyle(doc: StoreDecorations, fields: readonly Field[]): Record<string, unknown> {
-  const style: Record<string, unknown> = { version: 1 };
-  if (doc.color_by?.field) {
-    const field = keyOf(fields, doc.color_by.field);
-    if (field) style.colorBy = { field, target: doc.color_by.target };
-  }
-  if (Array.isArray(doc.rules)) {
-    style.rules = doc.rules.flatMap((r) => {
-      const field = keyOf(fields, r.field);
-      if (!field) return [];
-      return [{ ...r, field, ...(r.value === undefined || r.value === null ? {} : { value: String(r.value) }) }];
-    });
-  }
-  if (doc.rows && Object.keys(doc.rows).length) style.rows = { ...doc.rows };
-  const columns: Record<string, string> = {};
-  for (const [id, color] of Object.entries(doc.columns ?? {})) {
-    const key = keyOf(fields, id);
-    if (key) columns[key] = color;
-  }
-  if (Object.keys(columns).length) style.columns = columns;
-  const cells: Record<string, Record<string, string>> = {};
-  for (const [rowId, byField] of Object.entries(doc.cells ?? {})) {
-    for (const [id, color] of Object.entries(byField ?? {})) {
-      const key = keyOf(fields, id);
-      if (!key) continue;
-      (cells[rowId] ??= {})[key] = color;
-    }
-  }
-  if (Object.keys(cells).length) style.cells = cells;
-  return style;
-}
-
 /** The older style path + value → the store's decoration path + value. Null = the path names a column that is gone. */
 function storeDecorationWrite(
   path: readonly string[],
@@ -918,7 +897,7 @@ export async function setTableStyle(
   const answer = await clientFor(home).tableDecorate({ table_id: args.tableId, path: write.path as DecorationPath, value: write.value });
   invalidateRecordStoreTable(args.tableId);
   if (!answer.ok) return doorRefused(answer);
-  return { success: true, data: { style: olderStyle(answer.data, fields.data) } };
+  return { success: true, data: { style: resolveTableStyle(answer.data, fields.data, undefined) } };
 }
 
 export async function setTableRowActions(

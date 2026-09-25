@@ -261,6 +261,7 @@ import {
 } from "@/features/data-tables/hooks/useDataTableWriteHandlers";
 import { TableCopyControls } from "@/features/data-tables/components/TableCopyControls";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { SheetWithheldCell, withheldCellOf, type WithheldCells } from "@/features/data-tables/withheld-cells";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 interface TableDataRow {
@@ -275,6 +276,8 @@ interface TableDataRow {
   updated_at?: string;
   /** Server insert time — what a "Created time" system column shows. */
   created_at?: string;
+  /** The columns the record store withheld from this reader, with its reason (`withheld-cells.tsx`). */
+  withheld?: WithheldCells;
 }
 
 interface RowOrderingConfig {
@@ -354,6 +357,9 @@ function asTableDataRows(raw: unknown): TableDataRow[] {
           ...(typeof updatedAt === "string" ? { updated_at: updatedAt } : {}),
           ...(typeof (row as { created_at?: unknown }).created_at === "string"
             ? { created_at: (row as { created_at: string }).created_at }
+            : {}),
+          ...((row as { withheld?: WithheldCells }).withheld
+            ? { withheld: (row as { withheld: WithheldCells }).withheld }
             : {}),
         },
       ];
@@ -4958,6 +4964,9 @@ const UserTableViewer = ({
                   </TableCell>
                   {viewFields.map((field) => {
                     const rawValue = row.data[field.field_name];
+                    // A column the record store withheld from this reader says so, with the
+                    // store's reason — never "—", which means empty (records-ui's one helper).
+                    const withheldCell = withheldCellOf(row, field.field_name);
                     const cellData =
                       rawValue !== null
                         ? formatCellValue(rawValue, field.data_type)
@@ -4989,7 +4998,9 @@ const UserTableViewer = ({
                     const formulaError = formulaErrors.get(
                       `${row.id}::${field.field_name}`,
                     );
-                    const display = formulaError ? (
+                    const display = withheldCell ? (
+                      <SheetWithheldCell cell={withheldCell} />
+                    ) : formulaError ? (
                       <span
                         className="text-amber-700 dark:text-amber-300"
                         title={formulaError}

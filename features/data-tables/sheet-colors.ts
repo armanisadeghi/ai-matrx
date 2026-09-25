@@ -12,11 +12,9 @@
  * is the design system's `resolveRowColor` / `resolveCellColor` — the function records-ui's
  * grid calls. The older store (tables not on the record store) keeps its own option colors.
  *
- * LEFT BEHIND, SAID HERE: `record-store.ts`'s `olderStyle` still translates the decorations
- * itself (the same translation as records-ui's `styleFromDecorations`, field by field). It is
- * replaced by `resolveTableStyle` from `@ai-matrx/records-ui` as soon as the version that
- * exports it (records-ui Unreleased, lane UI-FIX-18) is in this app's lockfile; importing it
- * today would break the build against 0.85.4.
+ * The decorations themselves (Field ids → keys, rule ids) are translated by records-ui's
+ * `resolveTableStyle` in `record-store.ts` — the one translation the grid and every card read
+ * (lane POST-PUBLISH-FE deleted the Sheet's own copy, `olderStyle`).
  */
 import { colorFromTheValue } from "@ai-matrx/records-ui";
 import { colorForChoice, type ChoiceColorLookup } from "@ai-matrx/design-system/data-table/table-style";
