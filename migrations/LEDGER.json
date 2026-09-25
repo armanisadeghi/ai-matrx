@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-25T02:00:36.269Z",
+  "generated_at": "2026-09-25T13:51:43.514Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -2450,6 +2450,12 @@
       "checksum": "e743b59def6d495d009d954eea5d064cdd40c0c370fa9ed594e77406e58f662b",
       "applied_at": "2026-09-20 14:28:42.597637+00"
     },
+    "migrations/campaign/inspectortails_the_context_door_reads_the_triple_from_the_record_it_opened.sql": {
+      "source": "matrx-frontend",
+      "filename": "inspectortails_the_context_door_reads_the_triple_from_the_record_it_opened.sql",
+      "checksum": "364ccadbad6213d80e0566fc33c8358c4598dc7f16437f19ec6048655a7c235f",
+      "applied_at": "2026-09-25 13:51:33.271074+00"
+    },
     "migrations/campaign/invitedelivery_admission_is_the_ladder_not_the_membership_row.sql": {
       "source": "matrx-frontend",
       "filename": "invitedelivery_admission_is_the_ladder_not_the_membership_row.sql",
@@ -3019,6 +3025,12 @@
       "filename": "portalbind_the_portal_accept_doors_are_reachable.sql",
       "checksum": "fd7963e8fd91aaf8c7b0597260b24e68f07fa7fb7c3206130d8a7690244f4b36",
       "applied_at": "2026-09-21 22:29:57.273243+00"
+    },
+    "migrations/campaign/rcb6_output_feedback_doors_decide_as_the_person.sql": {
+      "source": "matrx-frontend",
+      "filename": "rcb6_output_feedback_doors_decide_as_the_person.sql",
+      "checksum": "c356026fc1d4117f2680f96a9400c57ad93ec31e4ef65fb48a7e85245cfa8e19",
+      "applied_at": "2026-09-25 13:51:40.55719+00"
     },
     "migrations/campaign/reach_the_client_doors_of_the_store.sql": {
       "source": "matrx-frontend",
