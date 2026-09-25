@@ -33,6 +33,7 @@ import { continueMarkupOnEnter, makeLink, setLinePrefix, toggleWrap, type Source
 import { markdownSourceLanguage } from "./markdown-language";
 import { RICH_EDITOR_SHORTCUTS, TYPED_TRIGGERS } from "../core/shortcuts";
 import { variableNamesInText, variableSuggestions } from "../core/variables";
+import { islandsReleasedBetweenTexts } from "../core/history-approval";
 import { IslandPreview } from "../islands/IslandPreview";
 import { useRichEditorContext } from "../RichEditorContext";
 import type { EditorViewHandle, ViewFindState } from "../visual/VisualEditor";
@@ -102,6 +103,7 @@ export function SourceEditor({
   const emitChange = useEffectEvent((text: string) => onChange(text));
   const getShell = useEffectEvent(() => shell);
   const getVariables = useEffectEvent(() => context.variables);
+  const approveIsland = useEffectEvent((raw: string) => context.approveIsland(raw));
   const initial = useEffectEvent(() => initialText);
 
   useEffect(() => {
@@ -224,7 +226,13 @@ export function SourceEditor({
             },
           }),
           EditorView.updateListener.of((update) => {
-            if (update.docChanged) emitChange(update.state.doc.toString());
+            if (!update.docChanged) return;
+            const text = update.state.doc.toString();
+            // Undo/redo is the person's own act — see core/history-approval.ts.
+            if (update.transactions.some((tr) => tr.isUserEvent("undo") || tr.isUserEvent("redo"))) {
+              for (const raw of islandsReleasedBetweenTexts(update.startState.doc.toString(), text)) approveIsland(raw);
+            }
+            emitChange(text);
           }),
         ],
       }),

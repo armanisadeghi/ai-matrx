@@ -26,7 +26,7 @@
 // DOM, and none survive a split (`keepOnSplit: false`), so new nodes fall back
 // to the defaults in markdown-serialize.ts.
 
-import { Extension, Node, mergeAttributes, type Extensions } from "@tiptap/core";
+import { Extension, Mark, Node, mergeAttributes, type Extensions } from "@tiptap/core";
 import { Document } from "@tiptap/extension-document";
 import { Text } from "@tiptap/extension-text";
 import { Paragraph } from "@tiptap/extension-paragraph";
@@ -315,6 +315,25 @@ const InlineTableHeader = TableHeader.extend({
 /** Inline code may sit under bold/italic/link like the source allows. */
 const CombinableCode = Code.extend({ excludes: "" });
 
+/**
+ * An author's backslash escape (`\*`, `\_`, `\#`…): the reader sees the
+ * literal character, the stored bytes keep the backslash. The text node holds
+ * the bare character under this mark and the serializer writes `\` before each
+ * ASCII punctuation character in it. Not inclusive, so text typed beside it is
+ * plain (the editor never ADDS an escape); combinable with every other mark.
+ */
+export const EscapedText = Mark.create({
+  name: "mdEscape",
+  inclusive: false,
+  excludes: "",
+  parseHTML() {
+    return [{ tag: "span[data-md-escape]" }];
+  },
+  renderHTML() {
+    return ["span", { "data-md-escape": "" }, 0];
+  },
+});
+
 export interface RichEditorExtensionOptions {
   /** Placeholder shown in an empty document. */
   placeholder?: string;
@@ -344,6 +363,7 @@ export function createRichEditorExtensions(
     Italic,
     Strike,
     CombinableCode,
+    EscapedText,
     Link.configure({
       openOnClick: false,
       autolink: false,

@@ -293,6 +293,7 @@ export default function RichEditorImpl({
     uploadImage,
     variables: () => variables,
     declareVariable: (name) => onDeclareVariable?.(name),
+    approveIsland: (raw) => approved.current.add(raw),
   };
   useEffect(() => {
     shellRef.current = liveShell;
@@ -314,6 +315,7 @@ export default function RichEditorImpl({
     uploadImage: (file) => shellRef.current?.uploadImage(file) ?? Promise.resolve(null),
     variables: () => shellRef.current?.variables() ?? null,
     declareVariable: (name) => shellRef.current?.declareVariable(name),
+    approveIsland: (raw) => shellRef.current?.approveIsland(raw),
   }));
 
   const contextValue: RichEditorContextValue = {
@@ -334,7 +336,7 @@ export default function RichEditorImpl({
     onTranscriptionComplete: (text) => {
       if (text.trim()) handle.current?.replaceSelection(text.trim());
     },
-    onTranscriptionError: (message) => toast.error(`Dictation stopped: ${message}`),
+    // No toast here: useMicField shows the one honest error (with its troubleshooting action).
   });
 
   const getApplicationScope = () => {

@@ -16,6 +16,7 @@ import {
   serializeVisualDocument,
 } from "../core/visual-document";
 import { planSave } from "../core/save-plan";
+import { islandsReleasedBetweenTexts, islandsReleasedByHistory } from "../core/history-approval";
 import {
   fenceFromParagraph,
   insertCodeBlock,
@@ -81,6 +82,59 @@ const PICKUP_TABLE = `Weekly tote counts:
 
 Totals reconcile Friday.`;
 
+describe("author escapes: the reader sees the character, the bytes keep the backslash", () => {
+  const ESCAPED = "Literal asterisks stay literal: 5 \\* 3 = 15, and \\_name\\_ stays; a \\| pipe and a \\\\ backslash.";
+
+  it("Visual shows no backslash, and a no-edit save is the stored bytes", () => {
+    const { editor, save } = open(ESCAPED);
+    expect(editor.state.doc.textContent).toBe("Literal asterisks stay literal: 5 * 3 = 15, and _name_ stays; a | pipe and a \\ backslash.");
+    expect(save()).toBe(ESCAPED);
+  });
+
+  it("editing the same paragraph keeps every author escape and adds none", () => {
+    const { editor, save } = open(ESCAPED);
+    cursorAtEndOf(editor, "Literal asterisks");
+    editor.commands.insertContent(" Also 2 * 2.");
+    expect(save()).toBe(`${ESCAPED} Also 2 * 2.`);
+  });
+
+  it("typing right after an escaped character writes plain text (the escape mark is not inclusive)", () => {
+    const { editor, save } = open("Price \\* 2");
+    const pos = find(editor.state.doc, (node) => node.isText === true && node.text === "*");
+    editor.commands.setTextSelection(pos + 1);
+    editor.commands.insertContent("x");
+    expect(save()).toBe("Price \\*x 2");
+  });
+});
+
+describe("undo of an island edit is the person's own act", () => {
+  const LOAD = "Weight limit:\n\n$$\nW_{max} = \\frac{P}{1.25}\n$$\n\nCheck before lifting.";
+
+  it("undo after a save takes the equation back without a consent question", () => {
+    const { editor, save } = open(LOAD);
+    const released: string[] = [];
+    editor.on("transaction", ({ transaction }) => released.push(...islandsReleasedByHistory(transaction)));
+    const pos = find(editor.state.doc, (node) => node.type.name === "islandBlock");
+    replaceIslandRaw(editor, pos, "$$\nW_{max} = \\frac{P}{1.5}\n$$");
+    const saved = save(); // what the database now holds
+    expect(released).toEqual([]); // a plain edit releases nothing
+    editor.commands.undo();
+    const undone = save();
+    expect(undone).toBe(LOAD);
+    // Without the history approval the gate asks (the case the verifier hit)…
+    expect(planSave(saved, undone).needsConsent.map((delta) => delta.kind)).toEqual(["changed"]);
+    // …with it, the reversal saves without a question.
+    expect(released).toEqual(["$$\nW_{max} = \\frac{P}{1.5}\n$$"]);
+    expect(planSave(saved, undone, { approvedIslands: new Set(released) }).needsConsent).toEqual([]);
+  });
+
+  it("the Source view's undo releases the same island bytes", () => {
+    const edited = LOAD.replace("1.25", "1.5");
+    expect(islandsReleasedBetweenTexts(edited, LOAD)).toEqual(["$$\nW_{max} = \\frac{P}{1.5}\n$$"]);
+    expect(islandsReleasedBetweenTexts(LOAD, `${LOAD} More.`)).toEqual([]);
+  });
+});
+
 describe("tables", () => {
   it("editing one cell rewrites only that row", () => {
     const { editor, save } = open(PICKUP_TABLE);
@@ -92,6 +146,17 @@ describe("tables", () => {
     expect(save()).toBe(PICKUP_TABLE.replace("| Barranca |     2 | Devin   |", "| Barranca | 2 | Devin R. |"));
   });
 
+  it("re-aligning a spaced delimiter row keeps its spaces and the other cells", () => {
+    const spaced = "| Site | Totes |\n| :--- | ---: |\n| Alton | 6 |";
+    const { editor, save } = open(spaced);
+    const pos = find(editor.state.doc, (node) => node.type.name === "tableHeader" && node.textContent === "Site");
+    editor.commands.command(({ tr }) => {
+      tr.setNodeMarkup(pos, undefined, { ...editor.state.doc.nodeAt(pos)?.attrs, align: "center" });
+      return true;
+    });
+    expect(save()).toBe(spaced.replace("| :--- |", "| :--: |"));
+  });
+
   it("adding a row keeps every stored row byte-for-byte", () => {
     const { editor, save } = open(PICKUP_TABLE);
     const pos = find(editor.state.doc, (node) => node.isText === true && node.text === "Devin");
@@ -100,22 +165,22 @@ describe("tables", () => {
     expect(save()).toBe(PICKUP_TABLE.replace("| Barranca |     2 | Devin   |", "| Barranca |     2 | Devin   |\n|  |  |  |"));
   });
 
-  it("changing a column's alignment rewrites only the delimiter row", () => {
+  it("changing a column's alignment rewrites only that column's delimiter cell", () => {
     const { editor, save } = open(PICKUP_TABLE);
     const pos = find(editor.state.doc, (node) => node.type.name === "tableHeader" && node.textContent === "Driver");
     editor.commands.command(({ tr }) => {
       tr.setNodeMarkup(pos, undefined, { ...editor.state.doc.nodeAt(pos)?.attrs, align: "center" });
       return true;
     });
-    expect(save()).toBe(PICKUP_TABLE.replace("|:---------|------:|---------|", "| :--- | ---: | :---: |"));
+    expect(save()).toBe(PICKUP_TABLE.replace("|:---------|------:|---------|", "|:---------|------:|:-------:|"));
   });
 
-  it("aligning a column from inside a body cell rewrites only the delimiter row", () => {
+  it("aligning a column from inside a body cell rewrites only that column's delimiter cell", () => {
     const { editor, save } = open(PICKUP_TABLE);
     const pos = find(editor.state.doc, (node) => node.isText === true && node.text === "Devin");
     editor.commands.setTextSelection(pos + 1);
     setColumnAlign(editor, "right");
-    expect(save()).toBe(PICKUP_TABLE.replace("|:---------|------:|---------|", "| :--- | ---: | ---: |"));
+    expect(save()).toBe(PICKUP_TABLE.replace("|:---------|------:|---------|", "|:---------|------:|--------:|"));
   });
 
   it("deleting a column rewrites every row, and only the table", () => {

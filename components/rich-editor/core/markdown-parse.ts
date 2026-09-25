@@ -162,7 +162,9 @@ function inlineJSON(
         break;
       }
       case "escape":
-        pushText(out, token.raw, marks, state);
+        // `\*` → "*" under the escape mark: the reader sees the character, the
+        // serializer writes the backslash back (markdown-serialize.ts leafText).
+        pushText(out, token.raw.slice(1), [...marks, { type: "mdEscape" }], state);
         break;
       case "strong":
         inlineJSON((token as Tokens.Strong).tokens, [

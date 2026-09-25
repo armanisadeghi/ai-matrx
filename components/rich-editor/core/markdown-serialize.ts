@@ -265,11 +265,49 @@ function freshCell(text: string): string {
   return text.replace(/\n/g, " ").replace(/(?<!\\)\|/g, "\\|");
 }
 
-function delimiterFor(align: ColumnAlign): string {
-  if (align === "left") return ":---";
-  if (align === "right") return "---:";
-  if (align === "center") return ":---:";
-  return "---";
+function delimiterFor(align: ColumnAlign, width?: number): string {
+  if (width === undefined) {
+    if (align === "left") return ":---";
+    if (align === "right") return "---:";
+    if (align === "center") return ":---:";
+    return "---";
+  }
+  const n = Math.max(width, 3);
+  if (align === "left") return `:${"-".repeat(n - 1)}`;
+  if (align === "right") return `${"-".repeat(n - 1)}:`;
+  if (align === "center") return `:${"-".repeat(n - 2)}:`;
+  return "-".repeat(n);
+}
+
+function alignOfDelimiter(cell: string): ColumnAlign {
+  const core = cell.trim();
+  const left = core.startsWith(":");
+  const right = core.endsWith(":");
+  if (left && right) return "center";
+  if (left) return "left";
+  if (right) return "right";
+  return null;
+}
+
+/**
+ * The stored delimiter row with ONLY the re-aligned columns' cells rewritten
+ * (same width, same surrounding spaces). Null when the column count changed —
+ * then the whole row is written fresh.
+ */
+function respliceDelimiter(stored: string, aligns: readonly ColumnAlign[], lead: boolean, trail: boolean): string | null {
+  const segments = stored.split("|");
+  const first = lead ? 1 : 0;
+  const last = trail ? segments.length - 1 : segments.length;
+  const cells = segments.slice(first, last);
+  if (cells.length !== aligns.length) return null;
+  const next = cells.map((cell, index) => {
+    const align = aligns[index] ?? null;
+    if (alignOfDelimiter(cell) === align) return cell;
+    const core = cell.trim();
+    const start = cell.indexOf(core);
+    return `${cell.slice(0, start)}${delimiterFor(align, core.length)}${cell.slice(start + core.length)}`;
+  });
+  return [...segments.slice(0, first), ...next, ...segments.slice(last)].join("|");
 }
 
 function parseJsonArray(value: string | null): unknown[] | null {
@@ -310,10 +348,13 @@ function serializeTable(table: PMNode): string {
     if (index === 0) {
       const storedAligns = attr<string>(table, "mdAligns");
       const delim = attr<string>(table, "mdDelim");
+      const fresh = () => `${lead ? "| " : ""}${aligns.map((align) => delimiterFor(align)).join(" | ")}${trail ? " |" : ""}`;
       lines.push(
-        delim !== null && storedAligns === JSON.stringify(aligns)
-          ? delim
-          : `${lead ? "| " : ""}${aligns.map(delimiterFor).join(" | ")}${trail ? " |" : ""}`,
+        delim === null
+          ? fresh()
+          : storedAligns === JSON.stringify(aligns)
+            ? delim
+            : (respliceDelimiter(delim, aligns, lead, trail) ?? fresh()),
       );
     }
   });
@@ -330,8 +371,14 @@ const MARK_RANK: Record<string, number> = {
   code: 4,
 };
 
+/** CommonMark's escapable characters: ASCII punctuation. */
+const ESCAPABLE = /[!-/:-@[-`{-~]/g;
+
 function leafText(node: PMNode): string {
-  if (node.isText) return node.text ?? "";
+  if (node.isText) {
+    const text = node.text ?? "";
+    return node.marks.some((mark) => mark.type.name === "mdEscape") ? text.replace(ESCAPABLE, "\\$&") : text;
+  }
   if (node.type.name === "inlineIsland") return String(node.attrs.raw ?? "");
   if (node.type.name === "hardBreak") return attr<string>(node, "mdRaw") ?? "\n";
   return node.textContent;

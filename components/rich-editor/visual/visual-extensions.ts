@@ -12,6 +12,7 @@ import Suggestion from "@tiptap/suggestion";
 import { NodeSelection, Plugin, PluginKey, TextSelection, type EditorState } from "@tiptap/pm/state";
 import { TrailingNode } from "@tiptap/extensions";
 import { createRichEditorExtensions } from "../core/extensions";
+import { islandsReleasedByHistory } from "../core/history-approval";
 import { fenceFromParagraph, insertInlineIsland, insertVariable, TASK_OPEN } from "../core/commands";
 import { RICH_EDITOR_SHORTCUTS, TYPED_TRIGGERS } from "../core/shortcuts";
 import { SHORTCUT_HANDLERS, type RichShellActions } from "./shortcut-handlers";
@@ -252,8 +253,18 @@ export function createVisualExtensions(options: {
 
   // An empty trailing paragraph gives the cursor somewhere to go after a final
   // island; an empty paragraph is never written, so the stored bytes are unmoved.
+  // Undo/redo is the person's own act: the island bytes it takes away are
+  // approved, so reversing an island edit never asks for consent at save.
+  const historyApproval = Extension.create({
+    name: "richEditorHistoryApproval",
+    onTransaction({ transaction }) {
+      for (const raw of islandsReleasedByHistory(transaction)) shell.approveIsland(raw);
+    },
+  });
+
   return [
     ...base,
+    historyApproval,
     keymap,
     slash,
     variables,

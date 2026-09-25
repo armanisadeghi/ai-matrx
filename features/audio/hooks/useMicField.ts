@@ -60,7 +60,11 @@ export interface UseMicFieldOptions {
   onRequestClose?: () => void;
   /** Mirrors ProTextarea's `onTranscriptionComplete(text)`. */
   onTranscriptionComplete?: (text: string) => void;
-  /** Mirrors ProTextarea's `onTranscriptionError(error)`. */
+  /**
+   * Mirrors ProTextarea's `onTranscriptionError(error)`. The hook ALREADY shows
+   * the one error toast (with its troubleshooting action) — use this for state,
+   * never for a second toast (guard: features/audio/__tests__/mic-field-one-toast.test.ts).
+   */
   onTranscriptionError?: (error: string) => void;
 }
 

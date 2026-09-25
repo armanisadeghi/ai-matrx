@@ -26,6 +26,8 @@ export interface RichShellActions {
   uploadImage: (file: File) => Promise<string | null>;
   variables: () => readonly DeclaredVariable[] | null;
   declareVariable: (name: string) => void;
+  /** Approve a deliberate change to an island whose stored bytes are `raw`. */
+  approveIsland: (raw: string) => void;
 }
 
 type Handler = (editor: Editor, shell: RichShellActions) => boolean;
