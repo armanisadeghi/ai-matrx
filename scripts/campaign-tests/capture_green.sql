@@ -209,7 +209,7 @@ begin
     raise exception '4: % File records, expected 2', cardinality(v_files);
   end if;
 
-  v_doc := custom.read_record(v_org, v_rec, true);
+  v_doc := custom.read_record(v_org, v_rec, false);
   if v_doc ->> 'bin_id' <> 'B-1' then
     raise exception '4: the door reads bin_id %', v_doc ->> 'bin_id';
   end if;
@@ -252,7 +252,7 @@ begin
 
   -- and the File record carries its own, because a photograph separated from when and
   -- where it was taken is not evidence of anything.
-  v_doc := custom.read_record(v_org, v_files[1], true);
+  v_doc := custom.read_record(v_org, v_files[1], false);
   if v_doc -> '_source' ->> 'via' <> 'capture' or v_doc -> '_source' ->> 'device' is null then
     raise exception '5: the File record has no provenance of its own: %', v_doc -> '_source';
   end if;

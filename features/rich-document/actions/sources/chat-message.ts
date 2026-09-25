@@ -53,8 +53,9 @@ export const chatMessageAdapter: ContentSourceAdapter = {
         "This editor did not say what text it opened on, so the answer was not saved (it could drop hidden reasoning). Edit the answer in place instead.",
       );
     }
-    await dispatch(
+    const result = await dispatch(
       saveAnswerEdit({ conversationId, messageId, displayEdit: { previous: previousContent, next: newContent } }),
     ).unwrap();
+    return { kind: "chat-answer", written: result.written, changedSpans: result.changedSpans };
   },
 };

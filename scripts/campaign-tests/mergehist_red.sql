@@ -274,7 +274,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform custom.share_grant(v_org, v_ch1, 'user', c_dana, 'viewer'::public.permission_level);
   perform set_config('request.jwt.claims', c_dana_j, true);
-  if (custom.read_record(v_org, v_ch1, true) ->> 'pname') is null then
+  if (custom.read_record(v_org, v_ch1, false) ->> 'pname') is null then
     raise exception 'ACCESS: the record shared with test@test.com at viewer does not read back for her';
   end if;
   perform set_config('request.jwt.claims', c_admin_j, true);

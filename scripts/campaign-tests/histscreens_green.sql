@@ -439,9 +439,9 @@ begin
   if (v_res ->> 'version') is null then
     raise exception '7b: the restore did not say which version it wrote: %', v_res;
   end if;
-  if (custom.read_record(v_org, v_job, true) -> 'price')::text <> '1200' then
+  if (custom.read_record(v_org, v_job, false) -> 'price')::text <> '1200' then
     raise exception '7c: after the restore the price is %',
-      custom.read_record(v_org, v_job, true) -> 'price';
+      custom.read_record(v_org, v_job, false) -> 'price';
   end if;
 
   -- IT IS A NEW VERSION, AND NOTHING WAS REWRITTEN.
@@ -466,7 +466,7 @@ begin
   -- target version used to survive its own restore in silence.
   -- ══════════════════════════════════════════════════════════════════════════
   perform custom.record_update(v_org, v_job, jsonb_build_object('notes','added after v2'));
-  if (custom.read_record(v_org, v_job, true) ->> 'notes') is null then
+  if (custom.read_record(v_org, v_job, false) ->> 'notes') is null then
     raise exception '8a: the fixture note did not land';
   end if;
   v_prev := custom.record_restore_preview(v_org, v_job, 2, null);
@@ -475,9 +475,9 @@ begin
     raise exception '8b: the preview does not warn that "notes" would be cleared: %', v_prev -> 'changes';
   end if;
   perform custom.record_restore_version(v_org, v_job, 2);
-  if (custom.read_record(v_org, v_job, true) ->> 'notes') is not null then
+  if (custom.read_record(v_org, v_job, false) ->> 'notes') is not null then
     raise exception '8c: THE DEFECT IS BACK — a key added after version 2 survived the restore to version 2: %',
-      custom.read_record(v_org, v_job, true) ->> 'notes';
+      custom.read_record(v_org, v_job, false) ->> 'notes';
   end if;
   raise notice '8 PASSED — the preview warned that Notes would be cleared, and the restore cleared it.';
 

@@ -591,7 +591,7 @@ begin
   --     stores the inverse WHILE it runs, and `custom.migrations` is how the person reads the
   --     log back. Neither `history.migration_log` nor `history.migration_record` is reachable
   --     from this seat at all.
-  v_txt := custom.read_record(v_org, v_rec, true) ->> 'client_name';
+  v_txt := custom.read_record(v_org, v_rec, false) ->> 'client_name';
   v_res := custom.migrate_rename(v_org, v_rec, 'Renamed',
              'W3-HIST C-17: rename, with the old name stored at the time');
   v_log := (v_res ->> 'migration_id')::uuid;
@@ -610,9 +610,9 @@ begin
   select coalesce(max(id), 0) into v_mark from history.row_versions;
   perform set_config('role', 'authenticated', true);
   v_undo := custom.migrate_undo(v_org, v_log);
-  if (custom.read_record(v_org, v_rec, true) ->> 'client_name') <> v_txt then
+  if (custom.read_record(v_org, v_rec, false) ->> 'client_name') <> v_txt then
     raise exception 'HIS-8 (c): the undo left the name as "%" and it was "%" before the rename',
-      custom.read_record(v_org, v_rec, true) ->> 'client_name', v_txt;
+      custom.read_record(v_org, v_rec, false) ->> 'client_name', v_txt;
   end if;
   if not exists (select 1 from custom.migrations(v_org, v_rec) m
                   where m.id = v_log and m.undone_at is not null) then
@@ -825,7 +825,7 @@ begin
     raise exception 'VIS-16 (e): test@test.com, a plain member, was told who else could see this record';
   end if;
   -- THE CONTROL: the record she was shared, she reads, and its own past she may ask about.
-  if (custom.read_record(v_org, v_rec, true) ->> 'client_name') is null then
+  if (custom.read_record(v_org, v_rec, false) ->> 'client_name') is null then
     raise exception 'VIS-16 (e) control: the record shared with test@test.com at viewer does not read back for her';
   end if;
   if custom.query_record_as_of(v_org, v_rec, v_t_ask, null) is null then

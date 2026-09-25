@@ -126,10 +126,10 @@ begin
   -- is where it really is: the work is done and the invoice is on her table. Marking it
   -- Paid is what asks for sign-off — her second rule — and that is the card that sits
   -- still saying it is waiting.
-  if (custom.read_record(v_org, v_basement, true) -> 'document' ->> 'quote_stage') is distinct from 'approved' then
+  if (custom.read_record(v_org, v_basement, false) -> 'document' ->> 'quote_stage') is distinct from 'approved' then
     perform custom.record_update(v_org, v_basement, jsonb_build_object('quote_stage', 'Approved'), null);
     raise notice 'the $58,000 basement bid is on the board in Approved: %',
-                 custom.read_record(v_org, v_basement, true) -> 'document' ->> 'quote_stage';
+                 custom.read_record(v_org, v_basement, false) -> 'document' ->> 'quote_stage';
   end if;
 
   -- ── AND THE BOARD SAYS SO, THROUGH THE DOORS ────────────────────────────────────────

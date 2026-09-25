@@ -9,7 +9,7 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import { AtSign, CalendarDays, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -28,7 +28,8 @@ const MENTION_QUERY = /(^|\s)@([^\s@]{0,40}(?: [^\s@]{1,20})?)$/;
 
 export interface MentionComposerProps {
   source: AnnotationSource;
-  onSubmit: (text: string, secondary?: string) => Promise<void> | void;
+  /** Return `false` to keep the text in the box (e.g. an edit conflict the person must settle). */
+  onSubmit: (text: string, secondary?: string) => Promise<void | false> | void | false;
   onCancel?: () => void;
   placeholder?: string;
   submitLabel?: string;
@@ -39,6 +40,8 @@ export interface MentionComposerProps {
   /** A second, optional field (a suggestion's reason). */
   secondary?: { placeholder: string };
   className?: string;
+  /** The textarea, for a host that must hand focus to it (a menu that just closed). */
+  inputRef?: MutableRefObject<HTMLTextAreaElement | null>;
 }
 
 export function MentionComposer({
@@ -52,12 +55,14 @@ export function MentionComposer({
   mentions = true,
   secondary,
   className,
+  inputRef,
 }: MentionComposerProps) {
   const [value, setValue] = useState(initialValue);
   const [second, setSecond] = useState("");
   const [query, setQuery] = useState<string | null>(null);
   const [options, setOptions] = useState<Option[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchFailed, setSearchFailed] = useState(false);
   const [cursor, setCursor] = useState(0);
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +80,7 @@ export function MentionComposer({
     let stale = false;
     const handle = setTimeout(async () => {
       setSearching(true);
+      setSearchFailed(false);
       const next: Option[] = [];
       const date = parseDateQuery(query);
       if (date) {
@@ -82,9 +88,17 @@ export function MentionComposer({
         next.push({ kind: "date", key: `date:${token}`, label: token.slice(2, token.indexOf("]")), detail: "Date", insert: token });
       }
       const [people, records] = await Promise.all([
-        mentions ? mentionCandidates(source, query).catch(() => []) : Promise.resolve([]),
+        mentions ? mentionCandidates(source, query).catch((e: unknown) => {
+          console.error("[annotations] people search failed", e);
+          setSearchFailed(true);
+          return [];
+        }) : Promise.resolve([]),
         query.length >= 2
-          ? searchCandidatesAcrossTokens({ search: query, perTokenLimit: 3 }).catch(() => [])
+          ? searchCandidatesAcrossTokens({ search: query, perTokenLimit: 3 }).catch((e: unknown) => {
+              console.error("[annotations] record search failed", e);
+              setSearchFailed(true);
+              return [];
+            })
           : Promise.resolve([]),
       ]);
       for (const p of people) {
@@ -137,9 +151,11 @@ export function MentionComposer({
     setPosting(true);
     setError(null);
     try {
-      await onSubmit(text, secondary ? second.trim() : undefined);
-      setValue("");
-      setSecond("");
+      const kept = await onSubmit(text, secondary ? second.trim() : undefined);
+      if (kept !== false) {
+        setValue("");
+        setSecond("");
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -150,7 +166,10 @@ export function MentionComposer({
   return (
     <div className={cn("relative grid gap-1.5", className)}>
       <textarea
-        ref={ref}
+        ref={(el) => {
+          ref.current = el;
+          if (inputRef) inputRef.current = el;
+        }}
         value={value}
         aria-label={placeholder ?? "Comment"}
         placeholder={placeholder}
@@ -196,7 +215,7 @@ export function MentionComposer({
             </div>
           ) : options.length === 0 ? (
             <p className="px-2 py-1.5 text-xs text-muted-foreground">
-              {mentions ? "No person, record or date matches." : "No record or date matches. Mentioning people switches on with the comment update."}
+              {searchFailed ? "Search failed — check your connection and type again." : mentions ? "No person, record or date matches." : "No record or date matches. Mentioning people switches on with the comment update."}
             </p>
           ) : (
             options.map((opt, i) => (
@@ -235,7 +254,7 @@ export function MentionComposer({
         )}
         <Button size="sm" onClick={() => void submit()} disabled={posting || !value.trim()}>
           {posting ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
-          {submitLabel}
+          {error && !posting ? "Retry" : submitLabel}
         </Button>
       </div>
     </div>

@@ -380,7 +380,7 @@ begin
   -- green. The old clause was only ever right because this block ran beside the seat. Both
   -- faces are asserted now, which is stricter than the id alone: the word a person reads, AND
   -- the id underneath it, have to be the state that was moved to.
-  v_doc := custom.read_record(v_org, v_rec, true);
+  v_doc := custom.read_record(v_org, v_rec, false);
   if (v_doc ->> 'status') is distinct from v_ip_name
      or (v_doc -> '_choices' -> 'status' ->> 'id') is distinct from v_ip::text then
     raise exception 'PART 1 — an allowed move did not land. The read door says: %', v_doc;

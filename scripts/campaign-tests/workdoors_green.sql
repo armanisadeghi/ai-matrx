@@ -243,7 +243,7 @@ begin
     raise exception '2b: a record nobody assigned her is in her work list';
   end if;
   begin
-    perform custom.read_record(v_org, v_other, true);
+    perform custom.read_record(v_org, v_other, false);
     raise exception '2b: she could open a record nobody shared with her';
   exception when insufficient_privilege or no_data_found then null;
   end;
@@ -314,11 +314,11 @@ begin
     raise exception '4a: a request nobody could answer was filed anyway: %', v_appr;
   end if;
   -- NOTHING HAPPENED YET. That is the point of asking.
-  if (custom.read_record(v_org, v_quote, true) ->> 'price')::numeric <> 1000 then
+  if (custom.read_record(v_org, v_quote, false) ->> 'price')::numeric <> 1000 then
     raise exception '4a: asking for approval CHANGED the record, which is the opposite of asking';
   end if;
   raise notice '4a PASSED — "%" and the price is still %.', v_appr ->> 'message',
-    custom.read_record(v_org, v_quote, true) ->> 'price';
+    custom.read_record(v_org, v_quote, false) ->> 'price';
 
   -- 4b — SHE CANNOT DECIDE HER OWN.
   if custom.work_approval_may_decide(v_org, v_appr_id) then
@@ -341,9 +341,9 @@ begin
   if not (v_res ->> 'applied')::boolean then
     raise exception '4c: approved and not applied: %', v_res;
   end if;
-  if (custom.read_record(v_org, v_quote, true) ->> 'price')::numeric <> 750 then
+  if (custom.read_record(v_org, v_quote, false) ->> 'price')::numeric <> 750 then
     raise exception '4c: THE WHOLE DEFECT — it was marked approved and the record still says %',
-      custom.read_record(v_org, v_quote, true) ->> 'price';
+      custom.read_record(v_org, v_quote, false) ->> 'price';
   end if;
   -- Decided once.
   begin
@@ -352,7 +352,7 @@ begin
   exception when unique_violation then null;
   end;
   raise notice '4c PASSED — "%" and the record now says %.', v_res ->> 'message',
-    custom.read_record(v_org, v_quote, true) ->> 'price';
+    custom.read_record(v_org, v_quote, false) ->> 'price';
 
   -- 4d — HISTORY NAMES EACH STEP, in the same transaction as the decision.
   -- The timeline IS the record: every Value carries its own version, its writer and when it
@@ -467,7 +467,7 @@ begin
       custom.work_instantiation_shape(v_org, (v_inst ->> 'instantiation_id')::uuid),
       custom.work_template_shape(v_org, v_tpl);
   end if;
-  if custom.read_record(v_org, ((v_inst -> 'refs') ->> 'kickoff')::uuid, true) ->> 'name'
+  if custom.read_record(v_org, ((v_inst -> 'refs') ->> 'kickoff')::uuid, false) ->> 'name'
      <> 'Kick-off call — Borealis Foods' then
     raise exception '6b: the override did not reach the record it named';
   end if;

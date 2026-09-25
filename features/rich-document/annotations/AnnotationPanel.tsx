@@ -9,7 +9,9 @@
 
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { newRequestId } from "./useAnnotationSidecar";
+import { EditConflictError } from "./errors";
 import {
   AtSign,
   CalendarDays,
@@ -74,6 +76,9 @@ export function AnnotationPanel({ className }: { className?: string }) {
   const [showResolved, setShowResolved] = useState(false);
   const [composer, setComposer] = useState<"comment" | "note" | null>(null);
   const [linkOpen, setLinkOpen] = useState(false);
+  // The composer the Add menu opens takes focus when the menu finishes closing — the menu's
+  // own focus return would otherwise land on its trigger or the page (verify-RC-B11 F5).
+  const composerInput = useRef<HTMLTextAreaElement | null>(null);
   const visible = items
     .filter((i) => matches(i, filter))
     .filter((i) => showResolved || !i.resolvedAt)
@@ -107,16 +112,25 @@ export function AnnotationPanel({ className }: { className?: string }) {
           </DropdownMenuTrigger>
           {/* The composer this opens takes focus itself; the menu must not hand
               focus back to its trigger afterwards (it stole the caret mid-typing). */}
-          <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
+          <DropdownMenuContent
+            align="end"
+            onCloseAutoFocus={(e) => {
+              if (!composerInput.current) return;
+              e.preventDefault();
+              composerInput.current.focus();
+            }}
+          >
             <DropdownMenuItem onSelect={() => setComposer("comment")}>
               <MessageSquare className="mr-2 h-3.5 w-3.5" aria-hidden />Comment on the document
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setComposer("note")}>
               <NotebookPen className="mr-2 h-3.5 w-3.5" aria-hidden />Private note
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setLinkOpen(true)}>
-              <Link2 className="mr-2 h-3.5 w-3.5" aria-hidden />Link a record to the document
-            </DropdownMenuItem>
+            {capabilities.links && (
+              <DropdownMenuItem onSelect={() => setLinkOpen(true)}>
+                <Link2 className="mr-2 h-3.5 w-3.5" aria-hidden />Link a record to the document
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -130,6 +144,7 @@ export function AnnotationPanel({ className }: { className?: string }) {
             <MentionComposer
               source={source}
               autoFocus
+              inputRef={composerInput}
               mentions={composer === "comment" && capabilities.collaborationDoors}
               submitLabel={composer === "comment" ? "Comment" : "Save note"}
               placeholder={composer === "comment" ? "Comment — type @ to mention" : "Write a note…"}
@@ -346,24 +361,74 @@ function ThreadActions({
   const { api, source } = useSidecar();
   const [replying, setReplying] = useState(false);
   const [editing, setEditing] = useState(false);
+  // One id per reply draft, reused when the person presses Reply again after a failure.
+  const [replyRequestId, setReplyRequestId] = useState(newRequestId);
+  const [conflict, setConflict] = useState<{ mine: string; theirs: string } | null>(null);
   const doors = api.state.capabilities.collaborationDoors;
   const id = item.commentId!;
-  return (
-    <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
-      {editing ? (
+  const base = { body: item.body, version: item.version ?? null };
+  const conflictBox = conflict && (
+    <div role="alert" className="mt-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs">
+      <p className="font-medium text-foreground">Someone changed this comment while you were editing it.</p>
+      <p className="mt-1 text-muted-foreground">It now says:</p>
+      <p className="mt-0.5 whitespace-pre-wrap text-foreground">{conflict.theirs || "(empty)"}</p>
+      <p className="mt-1 text-muted-foreground">Your version is still in the box above.</p>
+      <div className="mt-1.5 flex gap-1">
+        <Button
+          size="sm"
+          className="h-7 px-2 text-xs"
+          onClick={async () => {
+            try {
+              await api.editComment(id, conflict.mine, base, true);
+              setConflict(null);
+              setEditing(false);
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : String(e));
+            }
+          }}
+        >
+          Replace theirs with mine
+        </Button>
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => { setConflict(null); setEditing(false); }}>
+          Keep theirs
+        </Button>
+      </div>
+    </div>
+  );
+
+  if (editing) {
+    return (
+      <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
         <MentionComposer
           source={source}
           autoFocus
           mentions={doors}
           initialValue={item.body}
           submitLabel="Save"
-          onCancel={() => setEditing(false)}
+          onCancel={() => { setEditing(false); setConflict(null); }}
           onSubmit={async (text) => {
-            setEditing(false);
-            await run(api.editComment(id, text));
+            // The editor closes only when the edit is saved; a failure throws, so the
+            // composer keeps the text with the reason and a Retry (verify-RC-B11 F3).
+            try {
+              await api.editComment(id, text, base);
+              setEditing(false);
+            } catch (e) {
+              if (e instanceof EditConflictError) {
+                setConflict({ mine: text, theirs: e.currentBody });
+                return false; // the person's version stays in the box
+              }
+              throw e;
+            }
           }}
         />
-      ) : replying ? (
+        {conflictBox}
+      </div>
+    );
+  }
+
+  if (replying) {
+    return (
+      <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
         <MentionComposer
           source={source}
           autoFocus
@@ -372,45 +437,53 @@ function ThreadActions({
           placeholder="Reply — type @ to mention"
           onCancel={() => setReplying(false)}
           onSubmit={async (text) => {
+            // Throws on failure: the composer stays open with the text, the reason and Retry,
+            // and the same request id means a lost-but-landed reply is never written twice.
+            const notice = await api.postComment({ body: text, anchor: null, parentId: id, clientRequestId: replyRequestId });
             setReplying(false);
-            announceMentions(await api.postComment({ body: text, anchor: null, parentId: id }));
+            setReplyRequestId(newRequestId());
+            announceMentions(notice);
           }}
         />
-      ) : (
-        <div className="flex flex-wrap items-center gap-1">
-          {item.kind === "suggestion" && !item.resolvedAt && canApply && (
-            <Button size="sm" className="h-7 px-2 text-xs" onClick={() => void run(api.acceptSuggestion(item), "Applied — only that part of the document changed.")}>
-              <Check className="mr-1 h-3 w-3" aria-hidden />Accept
-            </Button>
-          )}
-          {item.kind === "suggestion" && !item.resolvedAt && (
-            <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => void run(api.rejectSuggestion(id), "Suggestion rejected.")}>
-              Reject
-            </Button>
-          )}
-          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setReplying(true)}>Reply</Button>
-          {doors && (
-            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => void run(api.resolveComment(id, !item.resolvedAt))}>
-              {item.resolvedAt ? "Reopen" : "Resolve"}
-            </Button>
-          )}
-          {item.mine && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="icon" variant="ghost" className="ml-auto h-7 w-7" aria-label="More">
-                  <MoreHorizontal className="h-3.5 w-3.5" aria-hidden />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
-                <DropdownMenuItem onSelect={() => setEditing(true)}>Edit</DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive" onSelect={() => void run(api.deleteComment(id), "Comment deleted.")}>
-                  <Trash2 className="mr-2 h-3.5 w-3.5" aria-hidden />Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
+      <div className="flex flex-wrap items-center gap-1">
+        {item.kind === "suggestion" && !item.resolvedAt && canApply && (
+          <Button size="sm" className="h-7 px-2 text-xs" onClick={() => void run(api.acceptSuggestion(item), "Applied — only that part of the document changed.")}>
+            <Check className="mr-1 h-3 w-3" aria-hidden />Accept
+          </Button>
+        )}
+        {item.kind === "suggestion" && !item.resolvedAt && (
+          <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => void run(api.rejectSuggestion(id), "Suggestion rejected.")}>
+            Reject
+          </Button>
+        )}
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setReplying(true)}>Reply</Button>
+        {doors && (
+          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => void run(api.resolveComment(id, !item.resolvedAt))}>
+            {item.resolvedAt ? "Reopen" : "Resolve"}
+          </Button>
+        )}
+        {item.mine && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="ml-auto h-7 w-7" aria-label="More">
+                <MoreHorizontal className="h-3.5 w-3.5" aria-hidden />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
+              <DropdownMenuItem onSelect={() => setEditing(true)}>Edit</DropdownMenuItem>
+              <DropdownMenuItem className="text-destructive" onSelect={() => void run(api.deleteComment(id), "Comment deleted.")}>
+                <Trash2 className="mr-2 h-3.5 w-3.5" aria-hidden />Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
     </div>
   );
 }

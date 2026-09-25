@@ -121,8 +121,8 @@ begin
      or (v_res2 ->> 'rows_archived')::integer <> 1 then
     raise exception 'G10b: the second refresh was not the same table, 1 new / 2 updated / 1 archived: %', v_res2;
   end if;
-  if custom.read_record(v_org, v_keep, true) ->> 'called_owner' is distinct from 'true'
-     or custom.read_record(v_org, v_older, true) ->> 'due' is distinct from '2026-10-18' then
+  if custom.read_record(v_org, v_keep, false) ->> 'called_owner' is distinct from 'true'
+     or custom.read_record(v_org, v_older, false) ->> 'due' is distinct from '2026-10-18' then
     raise exception 'G10c: the refresh lost Marisol''s own column or missed Juniper''s new due date';
   end if;
   perform set_config('role', 'postgres', true);

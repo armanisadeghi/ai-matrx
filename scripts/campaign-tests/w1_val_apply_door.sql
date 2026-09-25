@@ -131,7 +131,7 @@ begin
     raise exception 'A: this organization''s store reads OFF before anything was turned off';
   end if;
   v_rec := custom.record_write(v_org, v_table, jsonb_build_object('full_name', 'Nora Castellan'));
-  if v_rec is null or (custom.read_record(v_org, v_rec, true) ->> 'full_name') <> 'Nora Castellan' then
+  if v_rec is null or (custom.read_record(v_org, v_rec, false) ->> 'full_name') <> 'Nora Castellan' then
     raise exception 'A FAILED: the person''s valid write did not land through custom.record_write.';
   end if;
   raise notice 'A. a signed-in person writes with the switch ON and it LANDS, validated, and reads back through the read door (record %).', v_rec;
@@ -226,7 +226,7 @@ begin
   if v_caught is null then
     raise exception 'D FAILED: test@test.com changed the shape of a table she is not an admin of';
   end if;
-  if (custom.read_record(v_org, v_rec, true) ->> 'full_name') <> 'Nora Castellan' then
+  if (custom.read_record(v_org, v_rec, false) ->> 'full_name') <> 'Nora Castellan' then
     raise exception 'D FAILED: the record shared with test@test.com at viewer does not read back for her';
   end if;
   perform set_config('request.jwt.claims', c_admin_j, true);

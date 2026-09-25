@@ -51,7 +51,7 @@ begin
   -- books all ten in one transaction, so the tie-break is what decides here.
   perform set_config('role', 'postgres', true);
   select array_agg(n order by o), array_agg(o order by o) into v_nums, v_want
-    from (select (custom.read_record(v_org, r.id, true) ->> 'visit_number')::integer as n,
+    from (select (custom.read_record(v_org, r.id, false) ->> 'visit_number')::integer as n,
                  row_number() over (order by r.created_at, r.id)::integer as o
             from custom.record r where r.organization_id = v_org and r.table_id = v_appts and r.data_class = 'record') x;
   perform set_config('role', 'authenticated', true);
@@ -62,8 +62,8 @@ begin
   if (v_res ->> 'numbered')::integer is distinct from 0 then raise exception '1c: a second backfill renumbered % visits', v_res ->> 'numbered'; end if;
   v_new := custom.record_write(v_org, v_appts, jsonb_build_object('patient', 'Clementine (Osei)', 'species', 'Cat',
              'visit_status', 'Scheduled', 'visit_on', '2026-09-24', 'visit_fee', 142.5, 'owner_phone', '(541) 290-5518'));
-  if (custom.read_record(v_org, v_new, true) ->> 'visit_number')::integer is distinct from 11 then
-    raise exception '1d: the next booked visit is %, not 11', custom.read_record(v_org, v_new, true) ->> 'visit_number';
+  if (custom.read_record(v_org, v_new, false) ->> 'visit_number')::integer is distinct from 11 then
+    raise exception '1d: the next booked visit is %, not 11', custom.read_record(v_org, v_new, false) ->> 'visit_number';
   end if;
   raise notice '1 PASS — the ten visits are 1 … 10 in booking order, a second backfill numbers nothing, Clementine is 11.';
 

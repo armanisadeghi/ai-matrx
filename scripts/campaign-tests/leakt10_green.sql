@@ -128,13 +128,13 @@ begin
   perform set_config('request.jwt.claims', c_dana_j, true);
 
   -- 1a. the record door opens X's risk …
-  if custom.read_record(v_org, v_rx, true) is null then
+  if custom.read_record(v_org, v_rx, false) is null then
     raise exception '1a: custom.read_record would not open the risk in the project she WAS shared';
   end if;
   -- 1b. … and refuses Y's.
   v_opened := true;
   begin
-    perform custom.read_record(v_org, v_ry, true);
+    perform custom.read_record(v_org, v_ry, false);
   exception when insufficient_privilege then v_opened := false;
   end;
   if v_opened then

@@ -18,6 +18,9 @@ import type {
   YouTubeAnalyticsPreview,
   GmailSearchResult,
   GmailMessageDetail,
+  GmailModifyAction,
+  GmailModifyResult,
+  GmailLabelsResult,
 } from "@/features/marketing/google/types";
 import { isGoogleConnectionResourceType } from "@/features/marketing/google/types";
 import { readConnectionStatus } from "@/features/connectors/connection-status";
@@ -598,6 +601,38 @@ export async function readGmailMessage(
     "This Gmail message could not open. Try again.",
   );
   return (await response.json()) as GmailMessageDetail;
+}
+
+/** A single user-invoked mailbox change on an already authorized connection. */
+export async function modifyGmailMessage(input: {
+  connectionId: string;
+  messageId: string;
+  action: GmailModifyAction;
+  labelId?: string;
+}): Promise<GmailModifyResult> {
+  const response = await postGoogleBackend(
+    "/api/google-integrations/gmail/modify",
+    {
+      connection_id: input.connectionId,
+      message_id: input.messageId,
+      action: input.action,
+      ...(input.labelId ? { label_id: input.labelId } : {}),
+    },
+    "This Gmail message could not be changed. Try again.",
+  );
+  return (await response.json()) as GmailModifyResult;
+}
+
+/** Lists named Gmail labels only after the user requests them. */
+export async function listGmailLabels(
+  connectionId: string,
+): Promise<GmailLabelsResult> {
+  const response = await postGoogleBackend(
+    "/api/google-integrations/gmail/labels",
+    { connection_id: connectionId },
+    "Gmail labels could not load. Try again.",
+  );
+  return (await response.json()) as GmailLabelsResult;
 }
 
 export async function getYouTubeChannelPreview(

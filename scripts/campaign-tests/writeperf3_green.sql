@@ -198,7 +198,7 @@ begin
     raise exception '4: the batched door handed back % ids for 500 records', coalesce(array_length(v_ids,1),0);
   end if;
   for i in 1..500 loop
-    if (custom.read_record(v_org, v_ids[i], true) -> 'data' ->> 'reference') <> 'CC-2026-' || lpad(i::text, 5, '0') then
+    if (custom.read_record(v_org, v_ids[i], false) -> 'data' ->> 'reference') <> 'CC-2026-' || lpad(i::text, 5, '0') then
       raise exception '4: id % is not the record that was handed in at that position', i;
     end if;
   end loop;
@@ -266,7 +266,7 @@ begin
   -- "there is no record …" — which is what the first draft of this clause did.
   v_ids := custom.record_write_many(v_org, v_tbl,
              array[jsonb_build_object('reference','CC-2026-90023', 'dock_note','Reefer pre-cooled to -18C')]);
-  if (custom.read_record(v_org, v_ids[1], true) -> 'data' ->> 'dock_note') <> 'Reefer pre-cooled to -18C' then
+  if (custom.read_record(v_org, v_ids[1], false) -> 'data' ->> 'dock_note') <> 'Reefer pre-cooled to -18C' then
     raise exception '7: the column declared mid-transaction is not readable through the door';
   end if;
   raise notice '7  a record arriving keeps the memo, a Field arriving empties it, and the new column is written at once';

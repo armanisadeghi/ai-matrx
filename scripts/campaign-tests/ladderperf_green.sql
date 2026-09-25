@@ -159,7 +159,7 @@ begin
   -- PART 1 — THE READ DOOR STILL ANSWERS WHAT THE LADDER SAYS, FOR THIS PERSON.
   ---------------------------------------------------------------------------------------------
   if v_seat = 'admin' then
-    v_row := custom.read_record(v_org, v_private, true);
+    v_row := custom.read_record(v_org, v_private, false);
     if v_row is null or (v_row ->> 'tname') is distinct from 'Nobody shared this' then
       raise exception '1a: the owner could not read her own record through the door — %', v_row;
     end if;
@@ -172,7 +172,7 @@ begin
     raise notice '1b: custom.my_level answers % for the owner — the halving still climbs.', v_lvl;
   else
     -- 1c — THE CONTROL SHE CAN DO. Without it, a door that refused her everything passes 1d.
-    v_row := custom.read_record(v_org, v_shared, true);
+    v_row := custom.read_record(v_org, v_shared, false);
     if v_row is null or (v_row ->> 'tname') is distinct from 'Shared with Dana' then
       raise exception '1c: the record shared with her at viewer did not read back — %', v_row;
     end if;
@@ -187,7 +187,7 @@ begin
     -- 1e — THE NEGATIVE. She is a member, the organization says shared_only, nobody shared this
     -- row with her.
     begin
-      perform custom.read_record(v_org, v_private, true);
+      perform custom.read_record(v_org, v_private, false);
       raise exception '1e: the door read her a record nobody shared with her';
     exception when insufficient_privilege then
       get stacked diagnostics v_msg = message_text;

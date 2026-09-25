@@ -28,6 +28,15 @@
  */
 
 import { NON_ANSWER_BLOCK_TYPES } from "../active-requests/active-requests.selectors";
+import {
+  blockRangeEdit,
+  islandEdit,
+  listIslands,
+  spliceSave,
+  tokenizeSource,
+  type SourceEdit,
+} from "@ai-matrx/content-ir/source";
+import { removeThinkingContent } from "@ai-matrx/print/markdown";
 
 type Part = { type?: unknown; text?: unknown } & Record<string, unknown>;
 
@@ -172,63 +181,116 @@ export function spliceAnswerText(content: unknown, newText: string): AnswerSplic
   return { changed: true, content: spliced };
 }
 
-/** Inline reasoning sections the chat view scrubs (`removeThinkingContent`). */
-const REASONING_OPEN = /^<(thinking|think|reasoning)>/i;
+/** What the chat view shows for a stored answer text (reasoning scrubbed, blank-line runs collapsed, trimmed). */
+export function displayOfStoredAnswer(stored: string): string {
+  return removeThinkingContent(stored);
+}
+
+/** One contiguous change between two display texts, in PREVIOUS-display offsets. */
+export interface DisplayHunk {
+  start: number;
+  end: number;
+  text: string;
+}
+
+const TOKEN = /\s+|\w+|[^\s\w]/gu;
+
+function tokens(text: string): string[] {
+  return text.match(TOKEN) ?? [];
+}
 
 /**
- * Map an edit made on DISPLAY text onto the STORED answer text (RC-B5).
- *
- * In-body editors (code blocks, tables, inline decisions, task toggles) edit
- * the text the renderer shows, which is NOT the stored text: the view trims,
- * collapses runs of blank lines and drops inline `<thinking>` / `<reasoning>`
- * sections. Writing that display text back rewrote whitespace across the
- * whole answer. Instead:
- *
- *   1. diff `previousDisplay` → `nextDisplay` (longest common prefix/suffix):
- *      the changed span and the text typed into it;
- *   2. align `previousDisplay` onto `stored` character by character — a stored
- *      character the view dropped (extra whitespace, a reasoning section) is
- *      skipped; anything else that disagrees refuses (never a guess);
- *   3. replace only the aligned span of `stored`.
- *
- * Every stored byte outside the changed span is kept exactly — blank-line
- * runs, trailing spaces, reasoning sections included.
+ * Word-level Myers diff → SEPARATE hunks. Two typos a paragraph apart are two
+ * hunks, never one span that overwrites everything between them.
  */
-export function spliceDisplayEdit(
-  stored: string,
-  previousDisplay: string,
-  nextDisplay: string,
-): { text: string } | { error: string } {
-  if (previousDisplay === nextDisplay) return { text: stored };
-  let prefix = 0;
-  const maxPrefix = Math.min(previousDisplay.length, nextDisplay.length);
-  while (prefix < maxPrefix && previousDisplay.charCodeAt(prefix) === nextDisplay.charCodeAt(prefix)) prefix++;
-  let suffix = 0;
-  const maxSuffix = maxPrefix - prefix;
-  while (
-    suffix < maxSuffix &&
-    previousDisplay.charCodeAt(previousDisplay.length - 1 - suffix) ===
-      nextDisplay.charCodeAt(nextDisplay.length - 1 - suffix)
-  ) {
-    suffix++;
-  }
-  const displayEnd = previousDisplay.length - suffix;
-  const inserted = nextDisplay.slice(prefix, nextDisplay.length - suffix);
-
-  // storedAt[j] = index in `stored` of display character j.
-  const storedAt: number[] = new Array(previousDisplay.length);
-  let i = 0;
-  for (let j = 0; j < previousDisplay.length; j++) {
-    for (;;) {
-      if (i >= stored.length) {
-        return { error: "The edited block no longer matches the saved answer — reload and edit again." };
+export function diffDisplayHunks(previous: string, next: string): DisplayHunk[] {
+  const a = tokens(previous);
+  const b = tokens(next);
+  const n = a.length;
+  const m = b.length;
+  const max = n + m;
+  const offset = max + 1;
+  const v = new Int32Array(2 * max + 3);
+  const trace: Int32Array[] = [];
+  let found = false;
+  for (let d = 0; d <= max && !found; d++) {
+    trace.push(v.slice());
+    for (let k = -d; k <= d; k += 2) {
+      let x =
+        k === -d || (k !== d && v[offset + k - 1] < v[offset + k + 1])
+          ? v[offset + k + 1]
+          : v[offset + k - 1] + 1;
+      let y = x - k;
+      while (x < n && y < m && a[x] === b[y]) {
+        x++;
+        y++;
       }
-      if (stored[i] === previousDisplay[j]) break;
-      const rest = stored.slice(i, i + 12);
-      const open = REASONING_OPEN.exec(rest);
+      v[offset + k] = x;
+      if (x >= n && y >= m) {
+        found = true;
+        break;
+      }
+    }
+  }
+  // Backtrack into an edit script of kept / deleted / inserted tokens.
+  type Op = { kind: "keep" | "del" | "ins"; token: string };
+  const ops: Op[] = [];
+  let x = n;
+  let y = m;
+  for (let d = trace.length - 1; d >= 0 && (x > 0 || y > 0); d--) {
+    const vd = trace[d];
+    const k = x - y;
+    const prevK =
+      k === -d || (k !== d && vd[offset + k - 1] < vd[offset + k + 1]) ? k + 1 : k - 1;
+    const prevX = vd[offset + prevK];
+    const prevY = prevX - prevK;
+    while (x > prevX && y > prevY) {
+      ops.push({ kind: "keep", token: a[x - 1] });
+      x--;
+      y--;
+    }
+    if (d > 0) {
+      if (x === prevX) ops.push({ kind: "ins", token: b[y - 1] });
+      else ops.push({ kind: "del", token: a[x - 1] });
+    }
+    x = prevX;
+    y = prevY;
+  }
+  ops.reverse();
+  const hunks: DisplayHunk[] = [];
+  let pos = 0;
+  let open: DisplayHunk | null = null;
+  for (const op of ops) {
+    if (op.kind === "keep") {
+      if (open) hunks.push(open);
+      open = null;
+      pos += op.token.length;
+      continue;
+    }
+    if (!open) open = { start: pos, end: pos, text: "" };
+    if (op.kind === "del") {
+      pos += op.token.length;
+      open.end = pos;
+    } else {
+      open.text += op.token;
+    }
+  }
+  if (open) hunks.push(open);
+  return hunks;
+}
+
+/** storedAt[j] = offset in `stored` of display character j (greedy; only dropped characters are skipped). */
+function alignDisplay(stored: string, display: string): number[] | null {
+  const storedAt: number[] = new Array(display.length);
+  let i = 0;
+  for (let j = 0; j < display.length; j++) {
+    for (;;) {
+      if (i >= stored.length) return null;
+      if (stored[i] === display[j]) break;
+      const open = /^<(thinking|think|reasoning)>/i.exec(stored.slice(i, i + 12));
       if (open) {
         const close = stored.indexOf(`</${open[1]}>`, i);
-        if (close === -1) return { error: "The saved answer has an unclosed reasoning section; edit it in the editor." };
+        if (close === -1) return null;
         i = close + open[1].length + 3;
         continue;
       }
@@ -236,16 +298,149 @@ export function spliceDisplayEdit(
         i++;
         continue;
       }
-      return { error: "The edited block no longer matches the saved answer — reload and edit again." };
+      return null;
     }
     storedAt[j] = i;
     i++;
   }
-  const endOfMatch = i;
-  const at = (j: number) => (j < previousDisplay.length ? storedAt[j] : endOfMatch);
-  // A pure insertion lands right after the preceding displayed character, so
-  // stored whitespace the view collapsed stays on its own side.
-  const storedStart = prefix === displayEnd && prefix > 0 ? storedAt[prefix - 1] + 1 : at(prefix);
-  const storedEnd = prefix === displayEnd ? storedStart : storedAt[displayEnd - 1] + 1;
-  return { text: stored.slice(0, storedStart) + inserted + stored.slice(storedEnd) };
+  return storedAt;
+}
+
+export type DisplayEditResult =
+  | { text: string; changedSpans: number }
+  | { error: string };
+
+/**
+ * Map an edit made on DISPLAY text onto the STORED answer text (RC-B5).
+ *
+ * The display text is `displayOfStoredAnswer(stored)`: reasoning scrubbed,
+ * blank-line runs collapsed, trimmed. Writing it back rewrites the stored
+ * bytes; a single first-to-last-change span overwrote everything between two
+ * edits — a reasoning section included (verify-RC-B5 round 2, row 1f81e7f0).
+ * So:
+ *
+ *   1. the stored text must still show as `previousDisplay` (else refuse);
+ *   2. the approved text is diffed against it into SEPARATE hunks;
+ *   3. each hunk is mapped to stored offsets on its own — a replacement only
+ *      where the stored bytes under it are exactly the displayed ones (a hunk
+ *      across a collapsed line break or a hidden section is refused), an
+ *      insertion right before the next displayed character;
+ *   4. a hunk inside one protected island (code, math, a kind, an XML
+ *      section) changes it through `islandEdit`; a hunk that crosses an
+ *      island's edge is refused; prose hunks become block edits;
+ *   5. `spliceSave` applies them — every other byte, and every island not
+ *      named, is carried through untouched (integrity is required);
+ *   6. the result must SHOW exactly as approved, or nothing is written.
+ */
+export function spliceDisplayEdit(
+  stored: string,
+  previousDisplay: string,
+  nextDisplay: string,
+): DisplayEditResult {
+  if (previousDisplay === nextDisplay) return { text: stored, changedSpans: 0 };
+  if (displayOfStoredAnswer(stored) !== previousDisplay) {
+    return {
+      error: "The answer changed since this text was shown (or it is still being written). Nothing was saved — reload and try again.",
+    };
+  }
+  const storedAt = alignDisplay(stored, previousDisplay);
+  if (!storedAt) {
+    return { error: "The shown text could not be matched to the saved answer, so nothing was saved." };
+  }
+  const endOfMatch = previousDisplay.length ? storedAt[previousDisplay.length - 1] + 1 : 0;
+  const blocks = tokenizeSource(stored);
+  const islands = listIslands(blocks);
+
+  type Placed = { start: number; end: number; text: string };
+  const placed: Placed[] = [];
+  for (const hunk of diffDisplayHunks(previousDisplay, nextDisplay)) {
+    if (hunk.start === hunk.end) {
+      const at = hunk.start < previousDisplay.length ? storedAt[hunk.start] : endOfMatch;
+      placed.push({ start: at, end: at, text: hunk.text });
+      continue;
+    }
+    const first = storedAt[hunk.start];
+    const last = storedAt[hunk.end - 1];
+    if (last - first !== hunk.end - 1 - hunk.start) {
+      return {
+        error:
+          "One change spans text the view hides or collapses (a hidden reasoning section or extra blank lines), so it cannot be placed exactly. Nothing was saved — make that change in the editor.",
+      };
+    }
+    placed.push({ start: first, end: last + 1, text: hunk.text });
+  }
+
+  const islandEdits = new Map<(typeof islands)[number], Placed[]>();
+  const prose: Placed[] = [];
+  for (const p of placed) {
+    const host = islands.find((isl) => p.start > isl.start && p.end < isl.end);
+    if (host) {
+      if (/^<(thinking|think|reasoning)>/i.test(host.raw)) {
+        return { error: "A change landed inside hidden reasoning, which is never edited this way. Nothing was saved." };
+      }
+      islandEdits.set(host, [...(islandEdits.get(host) ?? []), p]);
+      continue;
+    }
+    const crosses = islands.some(
+      (isl) => (p.start < isl.end && p.end > isl.start) && !(p.start >= isl.end || p.end <= isl.start),
+    );
+    if (crosses) {
+      return {
+        error: "One change crosses the edge of protected content (code, math, a table or a section). Nothing was saved — change it inside that block or in the editor.",
+      };
+    }
+    prose.push(p);
+  }
+
+  const apply = (base: string, baseStart: number, spans: Placed[]) => {
+    let out = base;
+    for (const sp of [...spans].sort((l, r) => r.start - l.start)) {
+      out = out.slice(0, sp.start - baseStart) + sp.text + out.slice(sp.end - baseStart);
+    }
+    return out;
+  };
+
+  const edits: SourceEdit[] = [];
+  for (const [isl, spans] of islandEdits) {
+    edits.push(islandEdit(isl, apply(isl.raw, isl.start, spans)));
+  }
+  // Prose hunks → block-aligned edits, merging hunks that share blocks.
+  const blockIndex = (pos: number) => {
+    const inside = blocks.findIndex((b) => pos >= b.start && pos < b.end);
+    if (inside !== -1) return inside;
+    const ending = blocks.findIndex((b) => pos === b.end);
+    return ending !== -1 ? ending : blocks.length - 1;
+  };
+  const runs: { first: number; last: number; spans: Placed[] }[] = [];
+  for (const p of [...prose].sort((l, r) => l.start - r.start)) {
+    const first = blockIndex(p.start);
+    const last = Math.max(first, blockIndex(Math.max(p.start, p.end - 1)));
+    const prev = runs[runs.length - 1];
+    if (prev && first <= prev.last) {
+      prev.last = Math.max(prev.last, last);
+      prev.spans.push(p);
+    } else {
+      runs.push({ first, last, spans: [p] });
+    }
+  }
+  for (const run of runs) {
+    const a = blocks[run.first];
+    const b = blocks[run.last];
+    edits.push(blockRangeEdit(a, b, apply(stored.slice(a.start, b.end), a.start, run.spans)));
+  }
+
+  let text: string;
+  try {
+    text = spliceSave(stored, edits).text;
+  } catch (error) {
+    return {
+      error: `Saving would disturb protected content, so nothing was saved (${error instanceof Error ? error.message : String(error)}).`,
+    };
+  }
+  if (displayOfStoredAnswer(text) !== nextDisplay) {
+    return {
+      error: "The saved answer would not show exactly what you approved, so nothing was saved. Make this change in the editor.",
+    };
+  }
+  return { text, changedSpans: placed.length };
 }

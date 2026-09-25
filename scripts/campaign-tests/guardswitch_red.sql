@@ -970,7 +970,7 @@ begin
     -- and the record her organization's default lets her see.
     if not custom.store_is_open(v_a) then
       raise exception 'ACCESS: a member of this organization cannot read the switch that governs every door she uses.'; end if;
-    if (custom.read_record(v_a, v_rec_a, true) ->> 'title') <> 'Red Case' then
+    if (custom.read_record(v_a, v_rec_a, false) ->> 'title') <> 'Red Case' then
       raise exception 'ACCESS: a member of an organization whose default is all_records cannot read one of its records.'; end if;
     perform set_config('request.jwt.claims', c_admin_j, true);
     raise notice '[SEAT] the wall is real for a second person, and it is not a wall against everyone.';

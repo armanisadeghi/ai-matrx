@@ -45,7 +45,7 @@ importers:
         version: 0.16.1
       '@ai-matrx/content-ir-react':
         specifier: latest
-        version: 0.11.10(react@19.3.0)
+        version: 0.11.11(react@19.3.0)
       '@ai-matrx/data':
         specifier: latest
         version: 0.18.1(@supabase/supabase-js@2.117.1(@opentelemetry/api@1.9.0))(react@19.3.0)
@@ -72,7 +72,7 @@ importers:
         version: 0.14.0(@supabase/supabase-js@2.117.1(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/print':
         specifier: latest
-        version: 0.8.3(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 0.8.4(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/realtime':
         specifier: latest
         version: 0.8.7(react@19.3.0)
@@ -1038,8 +1038,8 @@ packages:
       react-dom:
         optional: true
 
-  '@ai-matrx/content-ir-react@0.11.10':
-    resolution: {integrity: sha512-I4U5JbvknfQDxfa9X+VJgf31ETG5bjCD6wUYJ/u7DLdFvkiRbQoH3MGIlU+nYJmf/pEIucf6/MCuGSogoOXXZg==}
+  '@ai-matrx/content-ir-react@0.11.11':
+    resolution: {integrity: sha512-WtFGeYefh0+YJ7NVr6BjSF0ZBnJJomcMWxCchzeXWl+GO72S0bejvHV9HjSgfOEyS0doFKWGxh1rkRqMvqczpA==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=19.0.0'
@@ -1119,8 +1119,8 @@ packages:
       react:
         optional: true
 
-  '@ai-matrx/print@0.8.3':
-    resolution: {integrity: sha512-zTo+kyamJzg4hoOG0+4wKUGYQ/1rY7+Js6iOuxRhapSEp5a4m1nll/Vb6OeQCm6KVB2CYifLjHiykW0uhRKmcA==}
+  '@ai-matrx/print@0.8.4':
+    resolution: {integrity: sha512-wxZUcA/L5EEbtmsYRRRA1Zxgh4KVeiWTnWY7uUOVN8K4Ynci4yzdU7MOFkhipVltbFmNhGZzpuiqFJsqwmaV4Q==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -12762,7 +12762,7 @@ snapshots:
     optionalDependencies:
       react-dom: 19.3.0(react@19.3.0)
 
-  '@ai-matrx/content-ir-react@0.11.10(react@19.3.0)':
+  '@ai-matrx/content-ir-react@0.11.11(react@19.3.0)':
     dependencies:
       '@ai-matrx/content-ir': 0.16.1
       react: 19.3.0
@@ -12897,11 +12897,12 @@ snapshots:
       - react-native-svg
       - supports-color
 
-  '@ai-matrx/print@0.8.3(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@ai-matrx/print@0.8.4(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@ai-matrx/content-ir': 0.16.1
       '@ai-matrx/kit': 0.16.4(react@19.3.0)
       '@radix-ui/react-dialog': 1.1.23(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      bidi-js: 1.1.0
       bwip-js: 4.11.4
       citeproc: 2.4.63
       docx: 9.7.2
@@ -12936,7 +12937,7 @@ snapshots:
     dependencies:
       '@ai-matrx/alchemy': 0.3.6(@supabase/supabase-js@2.117.1(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/design-system': 0.39.4(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@ai-matrx/print': 0.8.3(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@ai-matrx/print': 0.8.4(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/records': 0.58.13(react@19.3.0)
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)

@@ -24,7 +24,7 @@
 export const ANCHOR_WRITES_ENABLED = false;
 
 export const ANCHOR_WRITES_OFF_SENTENCE =
-  "Saving to a passage is not switched on yet: it waits on a privacy update to how quoted passages are stored. Your draft is kept, and you can comment on or link to the whole document now.";
+  "Saving to a passage is not switched on yet: it waits on a privacy update to how quoted passages are stored. Your draft is kept, and you can still comment on the whole document.";
 
 export const HIGHLIGHT_COLORS = ["yellow", "green", "blue", "pink", "purple"] as const;
 export type HighlightColor = (typeof HIGHLIGHT_COLORS)[number];

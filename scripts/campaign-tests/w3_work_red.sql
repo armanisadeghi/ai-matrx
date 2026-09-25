@@ -163,7 +163,7 @@ begin
   -- that had gone through. Both halves are asserted now, which is what the resolving read
   -- actually promises: the person reads the WORD, and the word still points at the option the
   -- store was given.
-  v_doc := custom.read_record(v_org, v_rec, true);
+  v_doc := custom.read_record(v_org, v_rec, false);
   if (v_doc ->> 'status') is distinct from 'Done' then
     raise exception 'RED 1 did not go red: with the model removed the move should have landed, and the person reads status "%"',
       coalesce(v_doc ->> 'status', 'nothing at all');

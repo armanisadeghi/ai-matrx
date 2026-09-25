@@ -186,11 +186,11 @@ begin
   if coalesce(v_r ->> 'sentence', '') = '' then
     raise exception '2b: the refusal carries no sentence';
   end if;
-  if lower(custom.read_record(v_org, v_kowal, true) ->> 'call_stage') <> 'new' then
-    raise exception '2c: the refused card moved anyway: it is in %', custom.read_record(v_org, v_kowal, true) ->> 'call_stage';
+  if lower(custom.read_record(v_org, v_kowal, false) ->> 'call_stage') <> 'new' then
+    raise exception '2c: the refused card moved anyway: it is in %', custom.read_record(v_org, v_kowal, false) ->> 'call_stage';
   end if;
   select count(*) into v_n from unnest(v_calls) c
-   where c <> v_kowal and lower(custom.read_record(v_org, c, true) ->> 'call_stage') = 'scheduled';
+   where c <> v_kowal and lower(custom.read_record(v_org, c, false) ->> 'call_stage') = 'scheduled';
   if v_n <> 5 then
     raise exception '2d: five cards should be in Scheduled and % are', v_n;
   end if;
@@ -232,8 +232,8 @@ begin
   if (v_r ->> 'current_version')::int <= v_old then
     raise exception '3a: the stale answer must name the version that won: %', v_r;
   end if;
-  if lower(custom.read_record(v_org, v_id, true) ->> 'call_stage') <> 'on site' then
-    raise exception '3b: THE OFFICE''S MOVE WAS OVERWRITTEN — the card is in %', custom.read_record(v_org, v_id, true) ->> 'call_stage';
+  if lower(custom.read_record(v_org, v_id, false) ->> 'call_stage') <> 'on site' then
+    raise exception '3b: THE OFFICE''S MOVE WAS OVERWRITTEN — the card is in %', custom.read_record(v_org, v_id, false) ->> 'call_stage';
   end if;
   if v_out -> 'results' -> 1 ->> 'verdict' <> 'moved' then
     raise exception '3c: a stale card held back the fresh one beside it: %', v_out -> 'results' -> 1;
@@ -245,7 +245,7 @@ begin
   v_out := custom.pipeline_move_many(v_org, jsonb_build_array(
     jsonb_build_object('record_id', v_calls[1], 'stage', 'On site')));
   if v_out -> 'results' -> 0 ->> 'verdict' <> 'refused' or (v_out ->> 'moved')::int <> 0
-     or lower(custom.read_record(v_org, v_calls[1], true) ->> 'call_stage') <> 'scheduled' then
+     or lower(custom.read_record(v_org, v_calls[1], false) ->> 'call_stage') <> 'scheduled' then
     raise exception '3d: a versionless batch move was tried: %', v_out;
   end if;
   -- 3e — THE SAME CARD TWICE IN ONE BATCH: the second is not tried.

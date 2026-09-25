@@ -121,7 +121,7 @@ begin
       'room', v_guest::text, 'contractor', v_hearth::text,
       'quote_amount', 7200, 'quote_date', '2026-09-12', 'valid_until', '2026-10-12',
       'status', 'Pending', 'quote_stage', 'Received'));
-  elsif lower(coalesce(custom.read_record(v_org, v_requote, true) ->> 'quote_stage','')) = 'approved' then
+  elsif lower(coalesce(custom.read_record(v_org, v_requote, false) ->> 'quote_stage','')) = 'approved' then
     -- 🚨 THE WALK HAS ALREADY BEEN MADE, AND IT CANNOT BE REPLAYED (lane RED-SUITES-2,
     -- 2026-09-21). This file COMMITS to the homeowner's real board. It ran, the house rule
     -- did its job, Ferro & Sons' competing bid arrived and the $7,200 re-quote reached
@@ -156,7 +156,7 @@ begin
   exception when check_violation then
     raise notice 'AND THE STORE SAYS THE SAME THING: "%"', sqlerrm;
   end;
-  v_row := custom.read_record(v_org, v_requote, true);
+  v_row := custom.read_record(v_org, v_requote, false);
   if lower(coalesce(v_row ->> 'quote_stage','')) <> 'received' then
     raise exception 'LIVE PROOF FAILED — nothing should have been written and the quote is in %',
       v_row ->> 'quote_stage';
@@ -182,7 +182,7 @@ begin
   -- defect. So: if the move has already been made, the end state is asserted instead of the
   -- transition being re-performed on the homeowner's live board. The clause is unchanged —
   -- with a competing bid from a different contractor, the $7,200 re-quote reaches Approved.
-  if lower(coalesce(custom.read_record(v_org, v_requote, true) ->> 'quote_stage','')) = 'approved' then
+  if lower(coalesce(custom.read_record(v_org, v_requote, false) ->> 'quote_stage','')) = 'approved' then
     raise notice 'ALREADY MADE — the re-quote is Approved from an earlier run of this walk; asserting the end state rather than dragging the card again.';
   else
     v_ref := custom.pipeline_transition_refusal(v_org, v_requote, 'Approved');
@@ -195,7 +195,7 @@ begin
       raise exception 'LIVE PROOF FAILED — the store still refused: %', v_move ->> 'why';
     end if;
   end if;
-  v_row := custom.read_record(v_org, v_requote, true);
+  v_row := custom.read_record(v_org, v_requote, false);
   if lower(coalesce(v_row ->> 'quote_stage','')) <> 'approved' then
     raise exception 'LIVE PROOF FAILED — the quote is in %', v_row ->> 'quote_stage';
   end if;

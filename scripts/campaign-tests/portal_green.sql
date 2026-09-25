@@ -215,11 +215,14 @@ begin
 
   -- ══ PART 3 — AND NOTHING ELSE. THE RECORD DOOR AGREES WITH THE LISTS ═════════════
   select id into v_id from custom.read_records(v_org, v_jobs, true, 1, 0);
-  v_doc := custom.read_record(v_org, v_id, true);
+  v_doc := custom.read_record(v_org, v_id, false);
   if v_doc is null then raise exception '3a: a job the list handed her would not open'; end if;
   -- `custom.read_record` answers the DOCUMENT itself, with what it would not show under
   -- `_hidden` and the reason. Assert what the door says, not what the row holds.
-  if v_doc ? 'internal_margin' then
+  -- STORE-READ-PERF-2: a withheld Field comes back as JSON null with its notice under `_hidden`
+  -- (custom.mask_document). This clause used to read the id-keyed document, where the defect that
+  -- renamed only HIDDEN keys to ids made the name look absent; the value is what must not arrive.
+  if v_doc ? 'internal_margin' and jsonb_typeof(v_doc -> 'internal_margin') <> 'null' then
     raise exception '3b: the record door handed Ada "internal_margin", which the portal does not show: %', v_doc;
   end if;
   if not (v_doc -> '_hidden' ? 'internal_margin') then
@@ -230,7 +233,7 @@ begin
   end if;
   -- Bruno's client record: the list never named it, and the record door must refuse it too.
   begin
-    perform custom.read_record(v_org, v_bru, true);
+    perform custom.read_record(v_org, v_bru, false);
     raise exception '3d: Ada opened Bruno''s client record';
   exception when insufficient_privilege or no_data_found then null;
   end;
@@ -248,13 +251,13 @@ begin
 
   -- ══ PART 4 — SHE CAN WRITE WHAT THE PORTAL OPENED, AND ONLY THAT ═════════════════
   perform custom.record_update(v_org, v_id, jsonb_build_object('client_notes', 'Gate code is 4417, please use the side entrance.'), null);
-  v_doc := custom.read_record(v_org, v_id, true);
+  v_doc := custom.read_record(v_org, v_id, false);
   if (v_doc ->> 'client_notes') is distinct from 'Gate code is 4417, please use the side entrance.' then
     raise exception '4a: her note did not land — %', v_doc ->> 'client_notes';
   end if;
   begin
     perform custom.record_update(v_org, v_id, jsonb_build_object('internal_margin', '99%%'), null);
-    v_doc := custom.read_record(v_org, v_id, true);
+    v_doc := custom.read_record(v_org, v_id, false);
     raise exception '4b: Ada''s write to internal_margin was not refused (the door answered, and the field now reads %)',
       coalesce(v_doc ->> 'internal_margin', '<still hidden from her>');
   exception when insufficient_privilege or check_violation or undefined_column or invalid_parameter_value then null;
@@ -270,7 +273,7 @@ begin
     raise exception '5b: Bruno can see one of Ada''s jobs';
   end if;
   begin
-    perform custom.read_record(v_org, v_ada, true);
+    perform custom.read_record(v_org, v_ada, false);
     raise exception '5c: Bruno opened Ada''s client record';
   exception when insufficient_privilege or no_data_found then null;
   end;
@@ -288,7 +291,7 @@ begin
   end;
   if v_n <> 0 then raise exception '6a: after revoke, Ada still sees % jobs', v_n; end if;
   begin
-    perform custom.read_record(v_org, v_id, true);
+    perform custom.read_record(v_org, v_id, false);
     raise exception '6b: after revoke, Ada still opened a job';
   exception when insufficient_privilege or no_data_found then null;
   end;

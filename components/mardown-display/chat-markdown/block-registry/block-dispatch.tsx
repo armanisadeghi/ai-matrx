@@ -1208,11 +1208,18 @@ const PROTOCOL_BLOCK_DISPATCH = {
     return renderNestedSection(ctx);
   },
 
-  matrx: ({ block, index }) => (
+  matrx: ({ block, index, isStreamActive }) => (
     // A ```matrx fence — one Matrx Envelope. In-content position resolves only
     // reference/secret (chips); other kinds show a neutral card. Fail-safe:
     // invalid JSON renders raw, never throws. See features/matrx-envelope/.
-    <BlockComponents.MatrxEnvelopeBlock key={index} content={block.content} />
+    // `streaming` lets an UNFINISHED directive render the package's
+    // provisional card instead of the growing raw JSON, and read as cut off
+    // once the stream has ended.
+    <BlockComponents.MatrxEnvelopeBlock
+      key={index}
+      content={block.content}
+      streaming={isStreamActive === true}
+    />
   ),
 
   matrx_file: ({ block, index }) => (

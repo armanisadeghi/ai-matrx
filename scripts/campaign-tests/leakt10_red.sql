@@ -480,7 +480,7 @@ begin
   -- did not leak — but a second reading path is a second place the door's masking does not
   -- apply, and that argument is exactly the one that failed for seo.keyword_value_map.
   begin
-    v_doc := custom.read_record(p_organization_id, p_record_id, true);
+    v_doc := custom.read_record(p_organization_id, p_record_id, false);
   exception when sqlstate '42501' then
     -- THE READ DOOR SAID NO WHERE THE ACCESS QUESTION SAID YES, and that disagreement is not
     -- this door's to resolve. `custom.read_record` decides from the derived containment graph,
@@ -609,7 +609,7 @@ begin
   -- …AND THE RECORD DOOR STILL REFUSES IT, which is what makes this a disagreement and not a
   -- policy. If this ever stops being true the defect has changed shape.
   begin
-    perform custom.read_record(v_org, v_ry, true);
+    perform custom.read_record(v_org, v_ry, false);
     raise exception 'RED 4 IS GREEN — custom.read_record opened it too, so the two doors agree and there is no disagreement to find.';
   exception when insufficient_privilege then
     v_red := v_red + 1;

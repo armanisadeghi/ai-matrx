@@ -28,7 +28,7 @@
 -- the door a signed-in person reaches:
 --   · `insert into custom.record … 'record'`  →  `custom.record_write`
 --   · `update custom.record set data = …`     →  `custom.record_update`
---   · `select … from custom."table"`          →  `custom.read_record(org, table_id, true)`
+--   · `select … from custom."table"`          →  `custom.read_record(org, table_id, false)`
 --   · `select count(*) … where table_id = X`  →  `custom.read_records(org, X, true, 200, 0)`
 --   · the Field rows the old file INSERTed    →  `custom.field_declare`
 --   · `custom.reachable_from`                 →  the parent walk `custom.read_record` exposes
@@ -170,7 +170,7 @@ begin
 
   -- REC-1 read back through the READ DOOR, not out of the jsonb we just wrote and not out of
   -- `custom."table"`, which carries no grant for a signed-in person at all.
-  v_doc := custom.read_record(v_org, v_color, true);
+  v_doc := custom.read_record(v_org, v_color, false);
   if (v_doc ->> 'display') <> 'list' then
     raise exception 'T4 setup: Colour should be display list, is %', v_doc ->> 'display';
   end if;
@@ -222,7 +222,7 @@ begin
   perform custom.field_declare(v_org, v_color, jsonb_build_object('key','hex','label','Hex','plain','text'));
   perform custom.field_declare(v_org, v_color, jsonb_build_object('key','shade','label','Shade','plain','text'));
 
-  v_doc := custom.read_record(v_org, v_color, true);
+  v_doc := custom.read_record(v_org, v_color, false);
   if (v_doc ->> 'display') <> 'page' then
     raise exception 'T4: Colour did not become a page, it is %', v_doc ->> 'display';
   end if;
@@ -341,7 +341,7 @@ begin
   -- walked the way a screen walks it: each record's `parent_id`, out of `custom.read_record`.
   v_walk := v_r1; v_next := null;
   for i in 1..32 loop
-    v_doc := custom.read_record(v_org, v_walk, true);
+    v_doc := custom.read_record(v_org, v_walk, false);
     exit when v_doc is null or (v_doc ->> 'parent_id') is null;
     v_walk := (v_doc ->> 'parent_id')::uuid;
     if v_walk = v_x then v_next := v_x; exit; end if;
@@ -350,7 +350,7 @@ begin
 
   v_walk := v_r2; v_next := null;
   for i in 1..32 loop
-    v_doc := custom.read_record(v_org, v_walk, true);
+    v_doc := custom.read_record(v_org, v_walk, false);
     exit when v_doc is null or (v_doc ->> 'parent_id') is null;
     v_walk := (v_doc ->> 'parent_id')::uuid;
     if v_walk = v_x then v_next := v_x; exit; end if;
@@ -359,7 +359,7 @@ begin
 
   v_walk := v_i1; v_next := null;
   for i in 1..32 loop
-    v_doc := custom.read_record(v_org, v_walk, true);
+    v_doc := custom.read_record(v_org, v_walk, false);
     exit when v_doc is null or (v_doc ->> 'parent_id') is null;
     v_walk := (v_doc ->> 'parent_id')::uuid;
     if v_walk = v_x then v_next := v_x; exit; end if;
@@ -388,7 +388,7 @@ begin
     'fields', jsonb_build_array(jsonb_build_object('name', 'body')),
     'title_field', 'body', 'parent_id', v_hq::text));
   perform custom.field_declare(v_org, v_note_tbl, jsonb_build_object('key','body','label','Body','plain','text'));
-  v_doc := custom.read_record(v_org, v_note_tbl, true);
+  v_doc := custom.read_record(v_org, v_note_tbl, false);
   if (v_doc ->> 'type') <> 'detail' then
     raise exception 'REC-1/REC-66: the detail Table does not read back as detail: %', v_doc ->> 'type';
   end if;
@@ -461,7 +461,7 @@ begin
   -- ceiling and not a door that refuses every containment.
   v_next := custom.record_write(v_org, v_project,
     jsonb_build_object('pname', 'chain 16b', 'parent_id',
-      (custom.read_record(v_org, v_prev, true) ->> 'parent_id')));
+      (custom.read_record(v_org, v_prev, false) ->> 'parent_id')));
   if v_next is null then raise exception 'REC-N-4: a record one level inside the ceiling was refused'; end if;
 
   -- REPARENT UNDER A DESCENDANT, at the same depth-17 edge: put HQ - the root of that
@@ -488,7 +488,7 @@ begin
   end;
   -- PAIRED POSITIVE CONTROL: a reparent that is NOT a cycle lands through the same door.
   perform custom.record_reparent(v_org, v_r1, v_y);
-  if (custom.read_record(v_org, v_r1, true) ->> 'parent_id')::uuid <> v_y then
+  if (custom.read_record(v_org, v_r1, false) ->> 'parent_id')::uuid <> v_y then
     raise exception 'REC-8: a legal reparent was refused, so the door refuses every reparent';
   end if;
   perform custom.record_reparent(v_org, v_r1, v_x);
@@ -498,14 +498,14 @@ begin
   -- REC-10 — AN OWNED RELATION MAKES ITS TARGET CONTAINED
   -- ════════════════════════════════════════════════════════════════════════════
   v_next := custom.record_write(v_org, v_paint_tbl, jsonb_build_object('pname', 'loose paint'));
-  if (custom.read_record(v_org, v_next, true) ->> 'parent_id') is not null then
+  if (custom.read_record(v_org, v_next, false) ->> 'parent_id') is not null then
     raise exception 'REC-10 setup: the target is contained before the owned relation';
   end if;
 
   perform custom.relation_own(v_org, v_x, v_next);
-  if (custom.read_record(v_org, v_next, true) ->> 'parent_id')::uuid is distinct from v_x then
+  if (custom.read_record(v_org, v_next, false) ->> 'parent_id')::uuid is distinct from v_x then
     raise exception 'REC-10: the owned target''s parent is %, expected the owner %',
-      custom.read_record(v_org, v_next, true) ->> 'parent_id', v_x;
+      custom.read_record(v_org, v_next, false) ->> 'parent_id', v_x;
   end if;
   raise notice 'REC-10 GREEN - an owned relation put its target inside the owner, read back through the read door';
 
@@ -584,7 +584,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform custom.share_grant(v_org, v_r1, 'user', c_dana, 'viewer'::public.permission_level);
   perform set_config('request.jwt.claims', c_dana_j, true);
-  if (custom.read_record(v_org, v_r1, true) ->> 'title') <> 'X risk' then
+  if (custom.read_record(v_org, v_r1, false) ->> 'title') <> 'X risk' then
     raise exception '5c: the record shared with test@test.com at viewer does not read back for her';
   end if;
   perform set_config('request.jwt.claims', c_admin_j, true);

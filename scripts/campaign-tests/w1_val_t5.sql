@@ -206,7 +206,7 @@ begin
   -- interned pointer and hands back `_alternates -> <key>` as a ranked list carrying the
   -- SOURCE. The old suite read `custom.record.data::text` and asserted the STORED shape
   -- (`_values`, `_sources`, `src`), which needs a table privilege no person holds.
-  v_doc := custom.read_record(v_org, v_rec, true);
+  v_doc := custom.read_record(v_org, v_rec, false);
   if (v_doc ->> 'phone') <> '+1-415-555-0101' then
     raise exception 'T5: the surviving phone number is not what the read door hands back: %', v_doc;
   end if;
@@ -566,7 +566,7 @@ begin
   -- J. THE PLAIN READ DOES NOT LEAK THE ENVELOPE. `custom.record_values` holds no
   --    client grant, so the plain read a person actually gets is the read DOOR.
   -- ══════════════════════════════════════════════════════════════════════════
-  v_doc := custom.read_record(v_org, v_rec, true);
+  v_doc := custom.read_record(v_org, v_rec, false);
   if v_doc ? '_values' or v_doc ? '_sources' then
     raise exception 'the read door returns the envelope block as if it were one of the record''s own values: %',
                     (select array_agg(k) from jsonb_object_keys(v_doc) k);

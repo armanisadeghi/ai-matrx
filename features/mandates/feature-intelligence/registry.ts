@@ -21,6 +21,7 @@ import { CONTENT_PLAN_PLACES } from "@/features/marketing/content-plan/intellige
 import { MARKETING_PLACES } from "@/features/marketing/intelligence-places";
 import { PODCAST_PLACES } from "@/features/podcasts/intelligence-places";
 import { EDUCATION_PLACES } from "@/features/education/intelligence-places";
+import { MASTERWORK_PLACES } from "@/features/masterwork/intelligence-places";
 import type { FeaturePlaces } from "./types";
 
 export const DECLARED_FEATURES: readonly FeaturePlaces[] = [
@@ -39,6 +40,7 @@ export const DECLARED_FEATURES: readonly FeaturePlaces[] = [
   SCRAPER_PLACES,
   VOICE_PLACES,
   TRANSCRIPT_STUDIO_PLACES,
+  MASTERWORK_PLACES,
 ];
 
 export function declaredPlacesFor(feature: string): FeaturePlaces | null {

@@ -19,7 +19,16 @@ import { hydrateMessages, type MessageRecord } from "../../messages/messages.sli
 import { extractFlatText } from "../../messages/messages.selectors";
 import { saveAnswerEdit, saveMessageDisplayEdit } from "../save-answer-edit.thunk";
 import { chatMessageAdapter } from "@/features/rich-document/actions/sources/chat-message";
-import { projectAnswerText, spliceAnswerText, spliceDisplayEdit } from "../answer-text-splice";
+import {
+  diffDisplayHunks,
+  displayOfStoredAnswer,
+  projectAnswerText,
+  spliceAnswerText,
+  spliceDisplayEdit,
+} from "../answer-text-splice";
+import { savePreparedContentEdit } from "@/features/rich-document/actions/handlers/preparedEdit";
+import { getSourceAdapter } from "@/features/rich-document/actions/sources";
+import type { ChatAnswerSaveReceipt, RichDocumentActionContext } from "@/features/rich-document/types";
 import { commitInlineContentEdit, flushPendingInlineEdit } from "../commit-inline-edit.thunk";
 import { removeThinkingContent } from "@ai-matrx/print/markdown";
 import { listIslands, tokenizeSource } from "@ai-matrx/content-ir/source";
@@ -169,7 +178,7 @@ describe("saveAnswerEdit — byte-exact splice", () => {
     expected[2] = { ...expected[2], text: ", and lower at altitude.\n\n## Why\n\nAir pressure falls as you climb." };
     expect(args.p_new_content).toEqual(expected);
     expect(JSON.stringify(args.p_new_content)).toBe(JSON.stringify(expected));
-    expect(result).toEqual({ written: true, storedText: edited });
+    expect(result).toEqual({ written: true, storedText: edited, changedSpans: 1 });
   });
 
   test("an edit inside the cited segment keeps its citations and every other part", () => {
@@ -230,7 +239,7 @@ describe("saveAnswerEdit — a no-op save writes nothing", () => {
       )
       .unwrap();
     expect(rpc).not.toHaveBeenCalled();
-    expect(result).toEqual({ written: false, storedText: projectAnswerText(STORED).text });
+    expect(result).toEqual({ written: false, storedText: projectAnswerText(STORED).text, changedSpans: 0 });
     const row = s.getState().messages.byConversationId[CONVERSATION_ID].byId[MESSAGE_ID];
     expect(row.status).toBe("active");
   });
@@ -362,7 +371,7 @@ describe("in-body edits (code block, table, decision) splice against the STORED 
   test("a table edit keeps the trailing spaces and blank-line runs around it", () => {
     const display = extractFlatText(record(stored));
     const result = spliceDisplayEdit(storedText, display, display.replace("| 5y | 7.5% |", "| 5y | 7.25% |"));
-    expect(result).toEqual({ text: storedText.replace("| 5y | 7.5% |", "| 5y | 7.25% |") });
+    expect(result).toEqual({ text: storedText.replace("| 5y | 7.5% |", "| 5y | 7.25% |"), changedSpans: 1 });
   });
 
   test("a display that no longer matches the stored text refuses instead of guessing", () => {
@@ -430,5 +439,125 @@ describe("verify-RC-B5 F1: a display-text editor never drops inline reasoning", 
       }),
     ).rejects.toThrow(/did not say what text it opened on/);
     expect(rpc).not.toHaveBeenCalled();
+  });
+});
+
+describe("verify-RC-B5 round 2: separate hunks, each mapped on its own, islands never overwritten", () => {
+  // Row 1f81e7f0, live: Clean up fixed "Teh", "recieved", "sheduled" around a
+  // <thinking> section; the old one-span splice overwrote everything from the
+  // first fix to the last and deleted the reasoning, while the toast said
+  // "everything else untouched".
+  const storedText =
+    "Teh warehouse recieved 40 pallets on Monday.\n<thinking>confirm the pallet count with the dock log</thinking>\nThe dock team sheduled the next delivery for Thursday.";
+  const row = [
+    { type: "thinking", text: "Provider reasoning." },
+    { type: "text", text: storedText },
+  ];
+  const cleaned = storedText
+    .replace("Teh warehouse", "The warehouse")
+    .replace("recieved", "received")
+    .replace("sheduled", "scheduled");
+  const shown = displayOfStoredAnswer(storedText);
+  const approved = shown
+    .replace("Teh warehouse", "The warehouse")
+    .replace("recieved", "received")
+    .replace("sheduled", "scheduled");
+
+  test("the view hides the reasoning (the trap)", () => {
+    expect(shown).not.toContain("<thinking>");
+    expect(diffDisplayHunks(shown, approved)).toHaveLength(3);
+  });
+
+  test("three typos → three spans; the reasoning and every other byte stay", () => {
+    expect(spliceDisplayEdit(storedText, shown, approved)).toEqual({ text: cleaned, changedSpans: 3 });
+  });
+
+  function chatCtx(s: ReturnType<typeof store>): RichDocumentActionContext {
+    return {
+      content: shown,
+      source: { type: "chat-message", conversationId: CONVERSATION_ID, messageId: MESSAGE_ID },
+      dispatch: s.dispatch,
+      getState: s.getState,
+      sourceAdapter: getSourceAdapter("chat-message"),
+    } as unknown as RichDocumentActionContext;
+  }
+
+  test("Clean up / Help with this / Custom agent (the review Apply path) write only the fixes, and say so", async () => {
+    const s = store(row);
+    let receipt: ChatAnswerSaveReceipt | null = null;
+    await savePreparedContentEdit({
+      ctx: chatCtx(s),
+      source: { type: "chat-message", conversationId: CONVERSATION_ID, messageId: MESSAGE_ID },
+      newContent: approved,
+      previousContent: shown,
+      onReceipt: (r) => {
+        receipt = r;
+      },
+    });
+    const [, args] = rpc.mock.calls[0] as [string, { p_new_content: unknown }];
+    expect(args.p_new_content).toEqual([row[0], { type: "text", text: cleaned }]);
+    expect(receipt).toEqual({ kind: "chat-answer", written: true, changedSpans: 3 });
+  });
+
+  test("HTML preview save (the bridge's door) writes only the fixes", async () => {
+    const s = store(row);
+    await saveMessageDisplayEdit(s.dispatch, s.getState, {
+      conversationId: CONVERSATION_ID,
+      messageId: MESSAGE_ID,
+      previous: shown,
+      next: approved,
+    });
+    const [, args] = rpc.mock.calls[0] as [string, { p_new_content: unknown }];
+    expect(args.p_new_content).toEqual([row[0], { type: "text", text: cleaned }]);
+  });
+
+  test("an in-body edit writes only its fix", async () => {
+    const s = store(row);
+    s.dispatch(
+      commitInlineContentEdit({
+        conversationId: CONVERSATION_ID,
+        messageId: MESSAGE_ID,
+        newText: shown.replace("sheduled", "scheduled"),
+        previousText: shown,
+      }),
+    );
+    s.dispatch(flushPendingInlineEdit(MESSAGE_ID));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const [, args] = rpc.mock.calls[0] as [string, { p_new_content: unknown }];
+    expect(args.p_new_content).toEqual([row[0], { type: "text", text: storedText.replace("sheduled", "scheduled") }]);
+  });
+
+  test("an insertion right after the hidden reasoning lands after it, not inside or before it", () => {
+    const next = shown.replace("The dock team", "Update: The dock team");
+    expect(spliceDisplayEdit(storedText, shown, next)).toEqual({
+      text: storedText.replace("\nThe dock team", "\nUpdate: The dock team"),
+      changedSpans: 1,
+    });
+  });
+
+  test("an edit across the collapsed line break (where the reasoning hides) is refused, not guessed", () => {
+    const next = shown.replace("Monday.\nThe dock", "Monday. The dock");
+    expect(next).not.toBe(shown);
+    const result = spliceDisplayEdit(storedText, shown, next);
+    expect("error" in result).toBe(true);
+  });
+
+  test("an edit inside a code island changes the island through its own door", () => {
+    const code = "Run this:\n\n```python\nprint(1)\n```\n\n\n\nDone.";
+    const view = displayOfStoredAnswer(code);
+    expect(spliceDisplayEdit(code, view, view.replace("print(1)", "print(2)"))).toEqual({
+      text: code.replace("print(1)", "print(2)"),
+      changedSpans: 1,
+    });
+  });
+
+  test("a result that would not show what was approved is refused (the gate)", () => {
+    const result = spliceDisplayEdit(storedText, shown, `${shown}\n\n\n`);
+    expect("error" in result).toBe(true);
+  });
+
+  test("a stale base (the answer no longer shows as the editor's text) is refused", () => {
+    const result = spliceDisplayEdit(storedText, "Some other text.", "Some other text!");
+    expect("error" in result).toBe(true);
   });
 });

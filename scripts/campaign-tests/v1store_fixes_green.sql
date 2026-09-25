@@ -220,7 +220,7 @@ begin
                     coalesce(v_caught, 'no refusal at all');
   end if;
   -- the control: this organization's own Table, the same door, the same person — it lands.
-  if (custom.read_record(v_org_b, v_rec_b, true) ->> 'name') is distinct from 'PO-1' then
+  if (custom.read_record(v_org_b, v_rec_b, false) ->> 'name') is distinct from 'PO-1' then
     raise exception 'GREEN 1a: this organization''s own Table was refused too, so the wall refuses everything';
   end if;
   raise notice 'GREEN 1a — a foreign Table is refused at custom.record_write; this organization''s own lands.';
@@ -281,7 +281,7 @@ begin
   -- the control: the same write into this organization's own Home — it lands.
   v_id := custom.record_write(v_org_b, v_table_b,
     jsonb_build_object('name','PO-3','parent_id', v_home_b::text));
-  if (custom.read_record(v_org_b, v_id, true) ->> 'name') is distinct from 'PO-3' then
+  if (custom.read_record(v_org_b, v_id, false) ->> 'name') is distinct from 'PO-3' then
     raise exception 'GREEN 1d: this organization''s own container was refused too';
   end if;
   raise notice 'GREEN 1d — containment refuses a foreign container in its own words, and takes this organization''s.';
@@ -476,7 +476,7 @@ begin
   -- 4c. And she reaches nothing at all in organization A, which she is not a member of.
   v_caught := null;
   begin
-    perform custom.read_record(v_org_a, v_rec_a, true);
+    perform custom.read_record(v_org_a, v_rec_a, false);
   exception when others then get stacked diagnostics v_caught = message_text;
   end;
   if v_caught is null then

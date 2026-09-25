@@ -91,6 +91,39 @@ function describeError(error: unknown): string {
   return "Unknown error";
 }
 
+/**
+ * Soft-delete ONE row and PROVE it landed. A PostgREST `update` that RLS
+ * filters to zero rows returns no error, so a bare `.update().eq("id")` reports
+ * success while nothing changed — the editor toasted "Card deleted" and the
+ * card stayed. `.select("id")` returns the rows actually written (the
+ * education `std_select` policies do not hide a row for its own `deleted_at`),
+ * and zero rows is a refusal the caller must see.
+ */
+async function softDeleteOne(
+  table: "fc_set" | "fc_card" | "fc_detail",
+  id: string,
+  context: string,
+  noun: string,
+): Promise<FcResult<null>> {
+  try {
+    const { data, error } = await EDU()
+      .from(table)
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id");
+    if (error) return fail(context, error);
+    if (!data || data.length === 0) {
+      return fail(
+        context,
+        `Nothing was removed: this ${noun} no longer exists, or your access does not allow removing it`,
+      );
+    }
+    return { data: null, error: null };
+  } catch (e) {
+    return fail(context, e);
+  }
+}
+
 export const fcService = {
   // ─── SETS ───────────────────────────────────────────────────────────────
   async createSet(input: NewSetInput): Promise<FcResult<FcSetRow>> {
@@ -224,16 +257,7 @@ export const fcService = {
 
   /** Soft-delete a set (RLS/ownership-gated by the update itself). */
   async deleteSet(setId: string): Promise<FcResult<null>> {
-    try {
-      const { error } = await EDU()
-        .from("fc_set")
-        .update({ deleted_at: new Date().toISOString() })
-        .eq("id", setId);
-      if (error) return fail("deleteSet", error);
-      return { data: null, error: null };
-    } catch (e) {
-      return fail("deleteSet", e);
-    }
+    return softDeleteOne("fc_set", setId, "deleteSet", "set");
   },
 
   async getSet(setId: string): Promise<FcResult<FcSetRow>> {
@@ -866,16 +890,7 @@ export const fcService = {
    * card row is filtered by `deleted_at` everywhere it's read), avoiding a
    * second round-trip for something with no user-visible effect. */
   async deleteCard(cardId: string): Promise<FcResult<null>> {
-    try {
-      const { error } = await EDU()
-        .from("fc_card")
-        .update({ deleted_at: new Date().toISOString() })
-        .eq("id", cardId);
-      if (error) return fail("deleteCard", error);
-      return { data: null, error: null };
-    } catch (e) {
-      return fail("deleteCard", e);
-    }
+    return softDeleteOne("fc_card", cardId, "deleteCard", "card");
   },
 
   /**
@@ -1001,16 +1016,7 @@ export const fcService = {
 
   /** Soft-delete one detail row (all reads filter `deleted_at is null`). */
   async softDeleteDetail(detailId: string): Promise<FcResult<null>> {
-    try {
-      const { error } = await EDU()
-        .from("fc_detail")
-        .update({ deleted_at: new Date().toISOString() })
-        .eq("id", detailId);
-      if (error) return fail("softDeleteDetail", error);
-      return { data: null, error: null };
-    } catch (e) {
-      return fail("softDeleteDetail", e);
-    }
+    return softDeleteOne("fc_detail", detailId, "softDeleteDetail", "card detail");
   },
 
   /**
@@ -1171,11 +1177,19 @@ export const fcService = {
         .neq("kind", "spoken_front");
       if (detailErr) return fail("mergeCards", detailErr);
 
-      const { error: delErr } = await EDU()
+      const { data: removed, error: delErr } = await EDU()
         .from("fc_card")
         .update({ deleted_at: new Date().toISOString() })
-        .in("id", losers);
+        .in("id", losers)
+        .select("id");
       if (delErr) return fail("mergeCards", delErr);
+      // Zero-row RLS refusals return no error — count what actually landed.
+      if ((removed ?? []).length !== losers.length) {
+        return fail(
+          "mergeCards",
+          `The merged card was saved, but ${losers.length - (removed ?? []).length} of the merged-away cards could not be removed (your access does not allow it) — they are still in the set`,
+        );
+      }
 
       return { data: updated.data, error: null };
     } catch (e) {

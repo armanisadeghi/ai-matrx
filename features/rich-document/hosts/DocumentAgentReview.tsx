@@ -20,6 +20,7 @@
 import * as React from "react";
 import { DiffViewer } from "@ai-matrx/diff/react";
 import { toast } from "@/lib/toast";
+import { hasPendingOrganizationRequest } from "@/lib/organization/organization-gate";
 import {
   Dialog,
   DialogContent,
@@ -45,7 +46,7 @@ import {
   savePreparedContentEdit,
 } from "../actions/handlers/preparedEdit";
 import { spliceProposal } from "../review/proposedEdit";
-import type { ContentSource, RichDocumentActionContext } from "../types";
+import type { ChatAnswerSaveReceipt, ContentSource, RichDocumentActionContext } from "../types";
 
 export interface DocumentAgentReviewProps {
   actionId: ProTextareaAgentActionId;
@@ -105,6 +106,7 @@ export function DocumentAgentReview({
 
   const apply = async () => {
     if (!prepared || !splice) return;
+    const got: { receipt: ChatAnswerSaveReceipt | null } = { receipt: null };
     setSaving(true);
     try {
       await savePreparedContentEdit({
@@ -115,9 +117,20 @@ export function DocumentAgentReview({
         // chat answer: its display projection) — the adapter maps the change
         // onto the stored bytes.
         previousContent: prepared.content,
+        onReceipt: (r) => {
+          got.receipt = r;
+        },
       });
+      // Say what was WRITTEN, not what the proposal intended: a chat answer
+      // reports the spans its save changed (every other stored byte is
+      // byte-identical by the splice); other sources report the proposal.
+      const receipt = got.receipt;
+      const spans = receipt ? receipt.changedSpans : splice.changes.length;
       toast.success(definition.applySuccessToast, {
-        description: `${splice.changes.length} changed ${splice.changes.length === 1 ? "part" : "parts"} saved; everything else untouched.`,
+        description:
+          receipt && !receipt.written
+            ? "Nothing needed changing — the saved text already reads this way."
+            : `${spans} ${spans === 1 ? "place" : "places"} changed; everything else is exactly as it was.`,
       });
       onClose();
     } catch (error) {
@@ -215,7 +228,14 @@ export function DocumentAgentReview({
   }
 
   return (
-    <Dialog open onOpenChange={(open) => !open && !saving && onClose()}>
+    // Held and set: the workspace picker a run may open takes focus — that must
+    // not close this review and abandon the run.
+    <Dialog
+      open
+      onOpenChange={(open) =>
+        !open && !saving && !hasPendingOrganizationRequest() && onClose()
+      }
+    >
       <DialogContent className="flex max-h-[85dvh] w-[min(56rem,95vw)] max-w-none flex-col">
         <DialogHeader>
           <DialogTitle>{definition.popoverTitle}</DialogTitle>

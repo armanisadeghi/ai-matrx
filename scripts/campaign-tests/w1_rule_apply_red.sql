@@ -139,9 +139,9 @@ begin
   insert into harbor_dental_red_ledger.landed values
     ('RED 1', 'a Rule now reads the merge field that resolves through it - the circle is stored, saved from the seat through custom.record_update',
      v_r_all, jsonb_build_object(
-       'rule', custom.read_record(v_org, v_r_all, true) ->> 'name',
-       'reads_merge_field', custom.read_record(v_org, v_r_all, true) #> '{expr,args,1,merge_field}',
-       'merge_field_resolves_through', custom.read_record(v_org, v_mf, true) ->> 'rule_id'));
+       'rule', custom.read_record(v_org, v_r_all, false) ->> 'name',
+       'reads_merge_field', custom.read_record(v_org, v_r_all, false) #> '{expr,args,1,merge_field}',
+       'merge_field_resolves_through', custom.read_record(v_org, v_mf, false) ->> 'rule_id'));
 
   -- ── RED 2: two Rules working each other's answers out, both saved BY A PERSON. ────
   v_t2 := custom.table_declare(v_org, jsonb_build_object(

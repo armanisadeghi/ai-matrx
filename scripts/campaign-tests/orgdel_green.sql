@@ -316,7 +316,7 @@ begin
   if (custom.record_resolve(v_orgA, v_tblA) ->> 'live')::boolean is not true then
     raise exception '3c: the undo did not bring the Table back';
   end if;
-  if (custom.read_record(v_orgA, v_rA, true) ->> 'jname') is distinct from 'Roof survey' then
+  if (custom.read_record(v_orgA, v_rA, false) ->> 'jname') is distinct from 'Roof survey' then
     raise exception '3c: the Table came back without the record it had taken with it';
   end if;
   raise notice '3c PASSED — one undo put the whole retired Table, and the record inside it, back.';

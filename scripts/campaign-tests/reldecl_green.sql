@@ -250,7 +250,7 @@ begin
   -- 3f. A ROLLUP over the multi relation, declared and read back through the read door.
   v_f_roll := custom.field_declare(v_org, v_job, jsonb_build_object(
     'label','Crew size','type','rollup','via','crew','agg','count','of','cname'));
-  v_j := custom.read_record(v_org, v_a1, true);
+  v_j := custom.read_record(v_org, v_a1, false);
   if (v_j ->> 'crew_size') is distinct from '2' then
     raise exception '3f: the rollup over the relation answers %, not 2', coalesce(v_j ->> 'crew_size','<null>'); end if;
 
@@ -258,7 +258,7 @@ begin
   perform custom.record_update(v_org, v_a1, jsonb_build_object('crew', jsonb_build_array(v_b1::text)));
   select count(*) into v_n from platform.relations_from(v_org, v_a1) f where f.role = 'crew';
   if v_n <> 1 then raise exception '3g: after the unlink the record still points at % crew, not 1', v_n; end if;
-  v_j := custom.read_record(v_org, v_a1, true);
+  v_j := custom.read_record(v_org, v_a1, false);
   if (v_j ->> 'crew_size') is distinct from '1' then
     raise exception '3g: after the unlink the rollup answers %, not 1', coalesce(v_j ->> 'crew_size','<null>'); end if;
 
@@ -277,7 +277,7 @@ begin
 
   -- 4a. set_null — deleting the target detaches, and the VALUE goes too (T7).
   perform custom.record_delete(v_org, v_b1);
-  v_j := custom.read_record(v_org, v_a1, true);
+  v_j := custom.read_record(v_org, v_a1, false);
   if v_j ? 'client' and nullif(v_j ->> 'client','') is not null then
     raise exception '4a: set_null left the pointer % sitting in the document', v_j ->> 'client'; end if;
   select count(*) into v_n from platform.relations_from(v_org, v_a1) f where f.role = 'crew';

@@ -282,7 +282,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform set_config('role', 'authenticated', true);
 
-  if (custom.read_record(v_org, v_rec, true) ->> 'client_signature') <> 'Dana Okonkwo' then
+  if (custom.read_record(v_org, v_rec, false) ->> 'client_signature') <> 'Dana Okonkwo' then
     raise exception '7a: the signature is not a Value on the record';
   end if;
   select * into v_env from custom.value_read(v_org, v_rec, 'client_signature') limit 1;

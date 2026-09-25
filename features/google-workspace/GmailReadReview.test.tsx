@@ -11,6 +11,8 @@ import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 
 const mockSearch = jest.fn();
 const mockRead = jest.fn();
+const mockModify = jest.fn();
+const mockLabels = jest.fn();
 const mockInventory = jest.fn();
 const mockCapabilities = jest.fn();
 const mockOpenConsent = jest.fn();
@@ -32,6 +34,8 @@ jest.mock("@/lib/redux/selectors/userSelectors", () => ({
 jest.mock("@/features/marketing/google/service", () => ({
   searchGmail: (...args: unknown[]) => mockSearch(...args),
   readGmailMessage: (...args: unknown[]) => mockRead(...args),
+  modifyGmailMessage: (...args: unknown[]) => mockModify(...args),
+  listGmailLabels: (...args: unknown[]) => mockLabels(...args),
 }));
 
 const owned = {
@@ -52,6 +56,8 @@ beforeEach(() => {
   root = createRoot(container);
   mockSearch.mockReset();
   mockRead.mockReset();
+  mockModify.mockReset();
+  mockLabels.mockReset();
   mockInventory.mockReset();
   mockCapabilities.mockReset();
   mockOpenConsent.mockReset();
@@ -208,4 +214,50 @@ it("reads nothing on load, excludes foreign accounts, then opens only the chosen
   });
   expect(mockRead).toHaveBeenCalledWith("owned-connection", "message_1");
   expect(container.textContent).toContain("The selected body");
+  expect(container.textContent).toContain("Message changes require a separate Gmail change grant.");
+  expect(mockModify).not.toHaveBeenCalled();
+});
+
+it("changes only an opened message on the selected modify-granted account", async () => {
+  mockInventory.mockReturnValue({
+    data: {
+      connections: [{ ...owned, scopes: [GOOGLE_SCOPE.gmailReadonly, GOOGLE_SCOPE.gmailModify] }],
+      resources: [],
+    },
+    isLoading: false,
+    isError: false,
+  });
+  mockSearch.mockResolvedValue({
+    messages: [{ id: "message_1", subject: "Review note", from_address: "sender@example.com", date: "Today", snippet: "Preview" }],
+    has_more: false,
+    access_mode: "on_demand_read_only",
+  });
+  mockRead.mockResolvedValue({
+    id: "message_1", subject: "Review note", from_address: "sender@example.com", to_address: "reviewer@example.com", date: "Today", snippet: "Preview", text_body: "Body", truncated: false, access_mode: "on_demand_read_only",
+  });
+  mockModify.mockResolvedValue({ message_id: "message_1", label_ids: ["STARRED"] });
+  mockLabels.mockResolvedValue({ labels: [{ id: "Label_1", name: "Projects", type: "user" }], has_more: false });
+  await act(async () => root.render(<GmailReadReview />));
+  expect(mockModify).not.toHaveBeenCalled();
+  const input = container.querySelector<HTMLInputElement>("#gmail-read-query")!;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "from:sender@example.com");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await act(async () => container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+  await act(async () => container.querySelector<HTMLButtonElement>("section[aria-label='Gmail search results'] button")!.click());
+  const action = (label: string) => Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find((button) => button.textContent?.trim() === label)!;
+  await act(async () => action("Star").click());
+  expect(mockModify).toHaveBeenCalledWith({ connectionId: "owned-connection", messageId: "message_1", action: "star" });
+  expect(container.querySelector("[role='status']")?.textContent).toContain("Starred in Gmail.");
+  await act(async () => action("Load Gmail labels").click());
+  expect(mockLabels).toHaveBeenCalledWith("owned-connection");
+  const picker = container.querySelector<HTMLSelectElement>("#gmail-label-picker")!;
+  expect(picker.options[1].text).toBe("Projects");
+  await act(async () => {
+    picker.value = "Label_1";
+    picker.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await act(async () => action("Add label").click());
+  expect(mockModify).toHaveBeenLastCalledWith({ connectionId: "owned-connection", messageId: "message_1", action: "add_label", labelId: "Label_1" });
 });

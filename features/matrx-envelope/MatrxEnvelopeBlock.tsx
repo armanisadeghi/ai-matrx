@@ -40,11 +40,21 @@ import "@/features/matrx-envelope/registry";
 interface MatrxEnvelopeBlockProps {
   /** The raw fence body (JSON string) or an already-parsed shell. */
   content: unknown;
+  /**
+   * Whether the message this fence sits in is still streaming. An unfinished
+   * directive renders the package's provisional card ("Writing…") while true
+   * and reads as CUT OFF once false — never the growing raw JSON, and never
+   * "Writing…" on a stream that has ended.
+   */
+  streaming?: boolean;
 }
 
-const MatrxEnvelopeBlock: React.FC<MatrxEnvelopeBlockProps> = ({ content }) => (
+const MatrxEnvelopeBlock: React.FC<MatrxEnvelopeBlockProps> = ({
+  content,
+  streaming = false,
+}) => (
   <DirectiveHostProvider host={matrxDirectiveHost}>
-    <DirectiveRender content={content} />
+    <DirectiveRender content={content} streaming={streaming} />
   </DirectiveHostProvider>
 );
 

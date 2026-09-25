@@ -224,9 +224,9 @@ begin
   -- 2d — SIGN IT, AND THE SAME MOVE LANDS. One record, one difference, two answers.
   perform custom.pipeline_move(v_org, v_acme, 'Won',
                                jsonb_build_object('signed_proposal','signed 2026-09-20'));
-  if (custom.read_record(v_org, v_acme, true) -> 'document' ->> 'stage') <> 'Won' then
+  if (custom.read_record(v_org, v_acme, false) -> 'document' ->> 'stage') <> 'Won' then
     raise exception '2d: the signed deal did not land in Won — it reads %',
-      custom.read_record(v_org, v_acme, true) -> 'document' ->> 'stage';
+      custom.read_record(v_org, v_acme, false) -> 'document' ->> 'stage';
   end if;
   -- 2e — AND THE MOVE IS IN THE RECORD'S HISTORY, because a move IS a write.
   select count(*) into v_hist from custom.record_history(v_org, v_acme, 50, 0);
@@ -295,7 +295,7 @@ begin
 
   -- 5a — SHE SEES THE BOARD. A viewer who could not see it would have nothing to be
   -- refused about, so this is the control that makes 5b mean something.
-  if (custom.read_record(v_org, v_globex, true) -> 'document' ->> 'name') <> 'Globex' then
+  if (custom.read_record(v_org, v_globex, false) -> 'document' ->> 'name') <> 'Globex' then
     raise exception '5a: the member cannot see the deal she was shown';
   end if;
   v_ref := custom.pipeline_transition_refusal(v_org, v_globex, 'Won');
@@ -339,7 +339,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform custom.pipeline_move(v_org, v_globex, 'Won',
                                jsonb_build_object('signed_proposal','signed 2026-09-20'));
-  if (custom.read_record(v_org, v_globex, true) -> 'document' ->> 'stage') <> 'Won' then
+  if (custom.read_record(v_org, v_globex, false) -> 'document' ->> 'stage') <> 'Won' then
     raise exception '5d: the admin could not make the move either';
   end if;
   raise notice '5d PASSED — the same move, by an admin, lands. The rule is about the rung, not about the words.';

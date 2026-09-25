@@ -137,17 +137,17 @@ begin
     'company','Delgado Plumbing & Heating','trade','Hydrocollator and water lines',
     'hourly_rate', 96, 'parent_id', v_home::text));
 
-  v_doc := custom.read_record(v_org, v_r_hale, true);
+  v_doc := custom.read_record(v_org, v_r_hale, false);
   if jsonb_typeof(v_doc -> 'insured') <> 'boolean' or (v_doc -> 'insured') <> 'true'::jsonb then
     raise exception '2: the read door hands back % for a ticked box, and it must hand back a real boolean true',
                     coalesce(jsonb_typeof(v_doc -> 'insured'), 'nothing');
   end if;
-  v_doc := custom.read_record(v_org, v_r_okafor, true);
+  v_doc := custom.read_record(v_org, v_r_okafor, false);
   if jsonb_typeof(v_doc -> 'insured') <> 'boolean' or (v_doc -> 'insured') <> 'false'::jsonb then
     raise exception '2: an unticked box reads back as %, and it must be a real boolean false',
                     coalesce(jsonb_typeof(v_doc -> 'insured'), 'nothing');
   end if;
-  v_doc := custom.read_record(v_org, v_r_delgado, true);
+  v_doc := custom.read_record(v_org, v_r_delgado, false);
   if v_doc ? 'insured' then
     raise exception '2: a contractor nobody has asked carries an answer (%), and never-asked is not false',
                     v_doc -> 'insured';

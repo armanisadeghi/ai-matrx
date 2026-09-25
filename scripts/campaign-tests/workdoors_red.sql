@@ -305,7 +305,7 @@ begin
     raise exception 'RED 4 DID NOT GO RED: the work list showed her a record she has no access to';
   end if;
   begin
-    perform custom.read_record(v_org, v_new, true);
+    perform custom.read_record(v_org, v_new, false);
     raise exception 'RED 4 DID NOT GO RED: she could open a record that was never shared with her';
   exception when insufficient_privilege or no_data_found then null;
   end;
@@ -359,7 +359,7 @@ begin
   if not (v_res ->> 'applied')::boolean then
     raise exception 'RED 5: the fixture is wrong — the red body did not even claim to apply';
   end if;
-  v_price := (custom.read_record(v_org, v_rec, true) ->> 'price')::numeric;
+  v_price := (custom.read_record(v_org, v_rec, false) ->> 'price')::numeric;
   if v_price <> 1000 then
     raise exception 'RED 5 DID NOT GO RED: the change was applied, so this body is not the defect';
   end if;

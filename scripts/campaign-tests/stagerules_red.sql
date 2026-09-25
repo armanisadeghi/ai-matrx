@@ -158,7 +158,7 @@ begin
     v_move;
 
   -- ── RED 7 — AND THE $7,200 SINGLE BID IS APPROVED, WHICH IS THE WHOLE POINT. ──────
-  if lower(custom.read_record(v_org, v_requote, true) #>> '{quote_stage}') <> 'approved' then
+  if lower(custom.read_record(v_org, v_requote, false) #>> '{quote_stage}') <> 'approved' then
     raise exception 'RED 7 CAME BACK GREEN — something stopped the single bid, and nothing here can';
   end if;
   v_red := v_red + 1;

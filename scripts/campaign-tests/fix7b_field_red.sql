@@ -98,13 +98,13 @@ begin
   v_f_link := custom.field_declare(v_org, v_job, jsonb_build_object(
     'label','Customer', 'type','relation', 'relation_target', v_cust::text,
     'on_target_delete','set_null', 'multi', false, 'sort', 20));
-  v_doc := custom.read_record(v_org, v_f_link, true);
+  v_doc := custom.read_record(v_org, v_f_link, false);
   raise notice 'RED, before the patch: multi=%  relation_max=%', v_doc ->> 'multi', v_doc ->> 'relation_max';
 
   -- ── THE DEFECT, ASKED OF THE PRE-FIX DOOR. ──────────────────────────────────
   -- It answers with the field id, so nothing throws and a client is told "saved".
   perform custom.field_update(v_org, v_f_link, jsonb_build_object('multi', true));
-  v_doc := custom.read_record(v_org, v_f_link, true);
+  v_doc := custom.read_record(v_org, v_f_link, false);
   raise notice 'RED, after {"multi": true} ALONE: multi=%  relation_max=%', v_doc ->> 'multi', v_doc ->> 'relation_max';
 
   if coalesce((v_doc ->> 'multi')::boolean, false) then

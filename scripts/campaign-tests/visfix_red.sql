@@ -306,7 +306,7 @@ begin
   if not custom.query_can_see(v_org, v_x, 'viewer') then
     raise exception '[RED FAILED] Dana cannot see Project X, which was shared with her directly — this file is measuring a broken seat, not the defect';
   end if;
-  if (custom.read_record(v_org, v_x, true) ->> 'name') <> 'Project X' then
+  if (custom.read_record(v_org, v_x, false) ->> 'name') <> 'Project X' then
     raise exception '[RED FAILED] the record shared with Dana does not read back for her';
   end if;
   raise notice '[RED] clause 1 — query_can_see(contained record) = false for a viewer on the project that contains it, while the project itself still reads back.';

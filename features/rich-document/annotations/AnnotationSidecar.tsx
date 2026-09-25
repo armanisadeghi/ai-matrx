@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { AnchorBuildError, buildTextAnchor, type TextAnchor } from "./anchor";
 import { HIGHLIGHT_COLORS, type HighlightColor } from "./constants";
-import { rangeToSource, sourceOffsetAtPoint, type SourceProjection } from "./projection";
+import { projectSource, rangeToSource, sourceOffsetAtPoint, type SourceProjection } from "./projection";
 import { paintCss, useSidecarPaint } from "./useSidecarPaint";
 import { useAnnotationSidecar, type AnnotationSidecarApi } from "./useAnnotationSidecar";
 import { MentionComposer } from "./MentionComposer";
@@ -38,6 +38,8 @@ import type { AnnotationSource } from "./types";
 export interface CapturedSelection {
   anchor: TextAnchor;
   rect: { left: number; top: number; bottom: number; width: number };
+  /** Opened from the keyboard: focus moves into the toolbar. */
+  focusToolbar?: boolean;
 }
 
 interface SidecarContextValue {
@@ -132,7 +134,7 @@ export function AnnotatedContent({
     });
   });
 
-  const capture = () => {
+  const capture = (focusToolbar = false) => {
     if (!root) return;
     const sel = typeof window !== "undefined" ? window.getSelection() : null;
     if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
@@ -141,7 +143,7 @@ export function AnnotatedContent({
     }
     const range = sel.getRangeAt(0);
     if (!root.contains(range.commonAncestorContainer)) return;
-    if (!projection.current) return;
+    if (!projection.current) projection.current = projectSource(root, source.body);
     const mapped = rangeToSource(projection.current, range);
     if (!mapped) {
       setCaptureError("That selection is not part of the document's own text (for example a formula or a label), so it cannot be pinned. Select the words around it instead.");
@@ -154,14 +156,33 @@ export function AnnotatedContent({
       while (start < end && /\s/.test(source.body[start])) start += 1;
       while (end > start && /\s/.test(source.body[end - 1])) end -= 1;
       const anchor = buildTextAnchor(source.body, start, end, source.contentVersion);
-      const r = range.getBoundingClientRect();
+      // A collapsed-rect or unsupported range (some engines, keyboard-made selections) anchors
+      // the toolbar to the content box instead of failing the capture.
+      const measured = typeof range.getBoundingClientRect === "function" ? range.getBoundingClientRect() : null;
+      const r = measured && (measured.width || measured.height) ? measured : root.getBoundingClientRect();
       setCaptureError(null);
-      setSelection({ anchor, rect: { left: r.left, top: r.top, bottom: r.bottom, width: r.width } });
+      setSelection({ anchor, rect: { left: r.left, top: r.top, bottom: r.bottom, width: r.width }, focusToolbar });
     } catch (e) {
       setSelection(null);
       setCaptureError(e instanceof AnchorBuildError ? e.message : String(e));
     }
   };
+
+  // KEYBOARD PATH (verify-RC-B11 F7): after selecting text (Shift+arrows with caret browsing,
+  // or any selection), Ctrl/Cmd+Alt+M — the Google Docs comment chord — opens the toolbar with
+  // focus on its first control; arrows move through it; Escape returns to the text.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.altKey && (e.ctrlKey || e.metaKey) && (e.code === "KeyM" || e.key.toLowerCase() === "m"))) return;
+      const sel = window.getSelection();
+      if (!root || !sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+      if (!root.contains(sel.getRangeAt(0).commonAncestorContainer)) return;
+      e.preventDefault();
+      capture(true);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  });
 
   // A click on painted text (no selection) focuses its item in the panel.
   const onClick = (e: React.MouseEvent) => {
@@ -181,7 +202,7 @@ export function AnnotatedContent({
       <div
         ref={setRoot}
         data-annotation-root=""
-        onPointerUp={capture}
+        onPointerUp={() => capture()}
         onKeyUp={(e) => {
           if (e.shiftKey || e.key === "Shift") capture();
         }}
@@ -218,6 +239,7 @@ function SelectionToolbar({
     setSelection(null);
     window.getSelection()?.removeAllRanges();
   };
+  const toolbarRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
@@ -225,6 +247,26 @@ function SelectionToolbar({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
+  const controls = () =>
+    [...(toolbarRef.current?.querySelectorAll<HTMLElement>("button:not([disabled])") ?? [])];
+  useEffect(() => {
+    if (selection.focusToolbar) controls()[0]?.focus();
+  }, [selection]);
+  const onToolbarKey = (e: React.KeyboardEvent) => {
+    if (mode !== "menu") return; // the comment/suggest composer owns its keys
+    const keys = ["ArrowDown", "ArrowRight", "ArrowUp", "ArrowLeft", "Home", "End"];
+    if (!keys.includes(e.key)) return;
+    const list = controls();
+    if (list.length === 0) return;
+    e.preventDefault();
+    const at = list.indexOf(document.activeElement as HTMLElement);
+    const next =
+      e.key === "Home" ? 0
+      : e.key === "End" ? list.length - 1
+      : e.key === "ArrowDown" || e.key === "ArrowRight" ? (at + 1) % list.length
+      : (at - 1 + list.length) % list.length;
+    list[next].focus();
+  };
   const width = mode === "menu" ? 260 : 340;
   const left = Math.max(12, Math.min(window.innerWidth - width - 12, selection.rect.left));
   const top = Math.max(12, Math.min(window.innerHeight - 300, selection.rect.bottom + 8));
@@ -240,8 +282,12 @@ function SelectionToolbar({
     <div
       className="fixed z-50 rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg"
       style={{ left, top, width }}
+      ref={toolbarRef}
       role="toolbar"
       aria-label="Annotate the selected passage"
+      aria-orientation="vertical"
+      aria-keyshortcuts="Control+Alt+M Meta+Alt+M"
+      onKeyDown={onToolbarKey}
       onPointerUp={(e) => e.stopPropagation()}
     >
       {reattachItem ? (
@@ -289,10 +335,10 @@ function SelectionToolbar({
             <PencilLine className="mr-2 h-3.5 w-3.5" aria-hidden />
             Suggest an edit
           </Button>
-          <Button size="sm" variant="ghost" className="justify-start" onClick={() => setLinkOpen(true)}>
+          {api.state.capabilities.links && <Button size="sm" variant="ghost" className="justify-start" onClick={() => setLinkOpen(true)}>
             <Link2 className="mr-2 h-3.5 w-3.5" aria-hidden />
             Link a flashcard, task, note…
-          </Button>
+          </Button>}
           {extraActions && (
             <>
               <div className="my-0.5 h-px bg-border" />

@@ -216,9 +216,9 @@ begin
   -- The naive sum is computed HERE, from the SAME doors: the parent's own document names its
   -- lines and each line is read with `custom.read_record`. That is what a rollup without
   -- DISTINCT would answer, and the two are compared rather than one being asserted.
-  select sum((custom.read_record(v_org, (t #>> '{}')::uuid, true) ->> 'amount')::numeric)
+  select sum((custom.read_record(v_org, (t #>> '{}')::uuid, false) ->> 'amount')::numeric)
     into v_naive
-    from jsonb_array_elements(custom.read_record(v_org, v_rec, true) -> 'lines') t;
+    from jsonb_array_elements(custom.read_record(v_org, v_rec, false) -> 'lines') t;
   select v.value into v_v from custom.value_read(v_org, v_rec, 'line_total') v;
   if v_naive <> 450 then
     raise exception 'D FAILED: the fixture no longer lists a line twice (naive sum %), so the clause proves nothing', v_naive;
@@ -267,7 +267,7 @@ begin
   if (v_src ->> 'parity') <> 'formula' or (v_src ->> 'field_id')::uuid is distinct from v_f_tax then
     raise exception 'F FAILED: the answer does not say what produced it — source %', v_src;
   end if;
-  if custom.read_record(v_org, v_rec, true) ? '_derived' then
+  if custom.read_record(v_org, v_rec, false) ? '_derived' then
     raise exception 'F FAILED: the internal _derived stamp reached a person through custom.read_record';
   end if;
   raise notice 'F PASS — 440 then 1100, and the answer reaches a person naming its formula Field, its version and its moment';
@@ -276,11 +276,11 @@ begin
   -- Through the doors: the parent's own document names the photo, `custom.read_record`
   -- answers what it is, and `custom.read_records` of the kernel File Table proves it is a
   -- record OF that Table rather than a storage key on the parent.
-  v_doc := custom.read_record(v_org, v_rec, true);
+  v_doc := custom.read_record(v_org, v_rec, false);
   if jsonb_array_length(coalesce(v_doc -> 'photos', '[]'::jsonb)) <> 1 then
     raise exception 'G FAILED: the parent names % photos', jsonb_array_length(coalesce(v_doc -> 'photos','[]'::jsonb));
   end if;
-  if (custom.read_record(v_org, (v_doc -> 'photos' ->> 0)::uuid, true) ->> 'mime') <> 'image/png' then
+  if (custom.read_record(v_org, (v_doc -> 'photos' ->> 0)::uuid, false) ->> 'mime') <> 'image/png' then
     raise exception 'G FAILED: the attachment is not the png File record';
   end if;
   select count(*) into v_n from custom.read_records(v_org, custom.file_kernel_id(), true, 200, 0) f
@@ -397,21 +397,21 @@ begin
   -- A currency that says it is a plain number gets its unit: it cannot be a currency in
   -- name only.
   v_id := custom.field_declare(v_org, v_tbl, '{"key":"cedar_quote_amount","label":"Declared currency","parity_type":"currency","config":{"kind":"number"}}'::jsonb);
-  v_doc := custom.read_record(v_org, v_id, true);
+  v_doc := custom.read_record(v_org, v_id, false);
   if coalesce(v_doc ->> 'unit','') = '' or (v_doc ->> 'format') <> 'currency' then
     raise exception 'J FAILED: a currency landed with no unit or no format: %', v_doc;
   end if;
   -- A rollup that asks to be stamped at write time is made read-time: a stored total is
   -- stale the moment one of the things it adds up changes.
   v_id := custom.field_declare(v_org, v_tbl, '{"key":"cedar_purchases_total","label":"Declared rollup","parity_type":"rollup","via":"lines","of":"amount","agg":"sum","compute_on":"write"}'::jsonb);
-  v_doc := custom.read_record(v_org, v_id, true);
+  v_doc := custom.read_record(v_org, v_id, false);
   if (v_doc ->> 'compute_on') <> 'read' then
     raise exception 'J FAILED: a rollup landed stamped at % time', v_doc ->> 'compute_on';
   end if;
   -- A url gets its pattern Rule: a format is how to SHOW it, and only a Rule makes it
   -- enforceable (FLD-3 / FLD-11).
   v_id := custom.field_declare(v_org, v_tbl, '{"key":"cedar_vendor_website","label":"Declared url","parity_type":"url"}'::jsonb);
-  v_doc := custom.read_record(v_org, v_id, true);
+  v_doc := custom.read_record(v_org, v_id, false);
   if not exists (select 1 from jsonb_array_elements(coalesce(v_doc -> 'rules','[]'::jsonb)) r
                   where r ->> 'kind' = 'pattern') then
     raise exception 'J FAILED: a url landed with nothing saying what a url looks like: %', v_doc;
@@ -450,7 +450,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform custom.share_grant(v_org, v_rec2, 'user', c_dana, 'viewer'::public.permission_level);
   perform set_config('request.jwt.claims', c_dana_j, true);
-  if (custom.read_record(v_org, v_rec2, true) ->> 'title') <> 'Positive control' then
+  if (custom.read_record(v_org, v_rec2, false) ->> 'title') <> 'Positive control' then
     raise exception 'K FAILED: the record shared with test@test.com at viewer does not read back for her';
   end if;
   perform set_config('request.jwt.claims', c_admin_j, true);

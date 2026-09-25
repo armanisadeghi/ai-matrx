@@ -460,7 +460,7 @@ begin
   -- 6c. THE CONTROL, so 6a and 6b are not a door that refuses her everything: the record she
   --     IS given, she reads, and the ladder answers editor on it and below editor on the one
   --     she was not given.
-  if (custom.read_record(v_org, v_d1, true) ->> 'title') <> 'D1' then
+  if (custom.read_record(v_org, v_d1, false) ->> 'title') <> 'D1' then
     raise exception 'AGT-N-8 FAIL: the record shared with test@test.com at editor does not read back for her';
   end if;
   if custom.my_level(v_org, v_d1) < 'editor'::public.permission_level then

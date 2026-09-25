@@ -266,7 +266,7 @@ begin
   -- Through the READ DOOR, not a select on custom.record: the seat holds no privilege on that
   -- table (PART 0 proves it), and what a person can see of the note's document is exactly what
   -- this clause is about.
-  if custom.read_record(v_org, r_note, true) ?| array['about','relations','_relations'] then
+  if custom.read_record(v_org, r_note, false) ?| array['about','relations','_relations'] then
     raise exception 'FAIL REL-11: the note''s document says something about the relation';
   end if;
   raise notice 'PASS REL-10 / REL-4 / REL-11 — three edges, three Tables, one role, order on the edge, nothing in the document.';

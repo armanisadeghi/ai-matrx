@@ -377,7 +377,7 @@ begin
   exception when others then
     raise exception 'RED 2 DID NOT FLIP the way it was written to: the pre-ruling write path answered %', sqlerrm;
   end;
-  v_doc := custom.read_record(v_org, v_id, true);
+  v_doc := custom.read_record(v_org, v_id, false);
   if jsonb_typeof(v_doc -> 'insured') <> 'string' then
     raise exception 'RED 2 DID NOT FLIP: the word "Yes" did not land in the tick box as a string';
   end if;

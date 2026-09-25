@@ -148,7 +148,7 @@ begin
   -- `custom.read_record`. `custom.containment_chain` carries no client grant.
   v_walk := v_landed; v_n := 0;
   for i in 1..64 loop
-    v_doc := custom.read_record(v_org, v_walk, true);
+    v_doc := custom.read_record(v_org, v_walk, false);
     exit when v_doc is null or (v_doc ->> 'parent_id') is null;
     v_walk := (v_doc ->> 'parent_id')::uuid;
     v_n := v_n + 1;
@@ -160,7 +160,7 @@ begin
 
   -- and the cycle, with the same trigger off, through the same reparent door.
   perform custom.record_reparent(v_org, v_hq, v_landed);
-  if (custom.read_record(v_org, v_hq, true) ->> 'parent_id')::uuid is distinct from v_landed then
+  if (custom.read_record(v_org, v_hq, false) ->> 'parent_id')::uuid is distinct from v_landed then
     raise exception 'RED 1b did not go red: a reparent under its own deepest descendant did not take with the guard DISABLED';
   end if;
   raise notice 'RED 1b - with the same trigger DISABLED, custom.record_reparent put HQ inside its own deepest descendant. "this would put it inside itself" comes from the trigger.';
@@ -190,7 +190,7 @@ begin
     raise exception 'RED 2 did not go red: a Table with no title field did not land through custom.table_declare with the shape guard DISABLED';
   end if;
   -- read it back through the READ DOOR, not out of the jsonb the door was handed.
-  v_doc := custom.read_record(v_org, v_landed, true);
+  v_doc := custom.read_record(v_org, v_landed, false);
   if v_doc is null or (v_doc ->> 'title_field') is not null then
     raise exception 'RED 2: the half-declared Table did not read back through custom.read_record with NO title field: %', v_doc;
   end if;

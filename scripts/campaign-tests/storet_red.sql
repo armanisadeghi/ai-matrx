@@ -184,7 +184,7 @@ begin
   -- ══════ BLOCK 1 — T2: the old table question, from her seat ══════════════════════════
   perform set_config('request.jwt.claims', c_dana_j, true);
   begin
-    perform custom.read_record(v_shared, v_note, true);
+    perform custom.read_record(v_shared, v_note, false);
     raise notice 'BLOCK 1 NOT REPRODUCIBLE — T2: with this lane''s door arm removed she STILL reads the note, because lane SHARED-ONLY closed the same class in the KERNEL (custom.reaches_directly arm 3, "including the Table a record lives in") 4 minutes after this lane closed it in the door. Two independent fixes for one defect; this lane''s arm is now the second of the two. Reverting the kernel is not this suite''s to do.';
   exception when insufficient_privilege then
     v_t2_red := true;
@@ -198,7 +198,7 @@ begin
   perform set_config('role', 'postgres', true);       -- the old door refuses the word entirely
   begin
     perform custom.field_update(v_open, v_f_code, jsonb_build_object('plain','number'));
-    v_doc := custom.read_record(v_open, v_b, true);
+    v_doc := custom.read_record(v_open, v_b, false);
     if (v_doc -> 'code') is distinct from '12'::jsonb then
       v_red := v_red + 1;
       raise notice 'BLOCK 2 RED — T12: custom.field_update returned ok and "12" is still %', coalesce((v_doc -> 'code')::text,'absent');

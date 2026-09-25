@@ -126,7 +126,7 @@ begin
 
   perform set_config('request.jwt.claims', c_dana_j, true);
   -- 1a. She reads the note itself.
-  v_doc := custom.read_record(v_shared, v_note, true);
+  v_doc := custom.read_record(v_shared, v_note, false);
   if coalesce(v_doc ->> 'body', '') <> 'the note' then
     raise exception '1a: the note is shared with her through The Unfinished Object and the read door answers %', coalesce(v_doc::text,'nothing');
   end if;
@@ -198,11 +198,11 @@ begin
   -- ══════════════════════════════════════════════════════════════════════════════════════
   perform custom.field_update(v_open, v_f_code, jsonb_build_object('plain','number'));
 
-  v_doc := custom.read_record(v_open, v_b, true);
+  v_doc := custom.read_record(v_open, v_b, false);
   if (v_doc -> 'code') is distinct from '12'::jsonb then
     raise exception '3a: "12" did not convert to the number 12 — it is now %', coalesce((v_doc -> 'code')::text,'absent');
   end if;
-  v_doc := custom.read_record(v_open, v_a, true);
+  v_doc := custom.read_record(v_open, v_a, false);
   if v_doc ? 'code' then
     raise exception '3b: "abc" is still sitting in the document after the column became a number';
   end if;
@@ -251,7 +251,7 @@ begin
   -- resolves it to the label. The old assertion is now the RED one and lives in
   -- `choiceval_red.sql` RED 1.
   v_s1 := custom.record_write(v_open, v_sh_t, jsonb_build_object('shname','S1','kind','Circle','parent_id',v_h2::text));
-  v_doc := custom.read_record(v_open, v_s1, true);
+  v_doc := custom.read_record(v_open, v_s1, false);
   if (v_doc ->> 'kind') ~* '^[0-9a-f]{8}-' then
     raise exception '4a: the read door answers %, and a person reads a word', v_doc ->> 'kind';
   end if;

@@ -182,7 +182,7 @@ begin
   if n <> 0 then
     raise exception 'N1: test@test.com reads % of the jobs nobody shared with her.', n;
   end if;
-  if (custom.read_record(v_org, v_hers, true) ->> 'title') <> 'Hers' then
+  if (custom.read_record(v_org, v_hers, false) ->> 'title') <> 'Hers' then
     raise exception 'N2: the one record shared with test@test.com at viewer does not read back for her.';
   end if;
   raise notice 'NEGATIVE PASSED — test@test.com reads none of the jobs and reads the one record she was given.';

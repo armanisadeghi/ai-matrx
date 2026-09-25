@@ -123,7 +123,7 @@ begin
   end if;
 
   -- AND IT READS BACK THROUGH THE DOOR A CONSUMER HAS.
-  v_j := custom.read_record(v_org, v_landed, true);
+  v_j := custom.read_record(v_org, v_landed, false);
   if not ((v_j -> 'expr' -> 'args' -> 0) ? 'field_name') then
     raise exception 'RED 1: the field NAME reference did not survive — REC-17''s save-time refusal is doing nothing else';
   end if;
@@ -198,7 +198,7 @@ begin
   if v_landed is null then
     raise exception 'RED 2: the write did not land with custom._record_rule_uses gone';
   end if;
-  v_j := custom.read_record(v_org, v_landed, true);
+  v_j := custom.read_record(v_org, v_landed, false);
   if (v_j ->> 'width') <> '4' or (v_j ->> 'height') <> '5' then
     raise exception 'RED 2: the square with unequal sides did not survive';
   end if;
@@ -258,7 +258,7 @@ begin
   -- EVERY GUARD IS ON. The Field is renamed through the door a person renames a column with,
   -- exactly as the green suite's §D does.
   perform custom.migrate_rename(v_org, v_f_width, 'Breadth', 'w1_rule_red RED 3');
-  v_expr := custom.read_record(v_org, v_rule, true) -> 'expr';
+  v_expr := custom.read_record(v_org, v_rule, false) -> 'expr';
 
   -- THE ID-KEYED READING (what is built): decided, and false — so the bad square is refused.
   -- Asked from the seat, the way a person asks it.
@@ -333,9 +333,9 @@ begin
 
   -- AND IT REACHES A PERSON THROUGH THE READ DOOR, overriding the typed Title and wearing a
   -- Rule version that never existed.
-  if (custom.read_record(v_org, v_landed, true) ->> 'title') <> 'forged' then
+  if (custom.read_record(v_org, v_landed, false) ->> 'title') <> 'forged' then
     raise exception 'RED 4: the forged answer did not reach custom.read_record — it reads %',
-                    custom.read_record(v_org, v_landed, true) ->> 'title';
+                    custom.read_record(v_org, v_landed, false) ->> 'title';
   end if;
   select v.value, v.source into v_v, v_src from custom.value_read(v_org, v_landed, 'title') v;
   if (v_v #>> '{}') <> 'forged' then raise exception 'RED 4: the versioned read does not carry the forged answer'; end if;
@@ -407,11 +407,11 @@ begin
 
   -- AND NOW SHE DOES IT.
   perform custom.record_update(v_org, v_rule, '{"message":"Dana says anything goes"}'::jsonb);
-  if (custom.read_record(v_org, v_rule, true) ->> 'message') <> 'Dana says anything goes' then
+  if (custom.read_record(v_org, v_rule, false) ->> 'message') <> 'Dana says anything goes' then
     raise exception 'RED 5 INCONCLUSIVE: the rewrite was still refused, so §K is held by something other than custom.assert_client_may_change';
   end if;
   raise notice 'RED 5 CONFIRMED — with custom.assert_client_may_change neutered, test@test.com rewrote the Rule that judges everybody else''s squares to "%"',
-               custom.read_record(v_org, v_rule, true) ->> 'message';
+               custom.read_record(v_org, v_rule, false) ->> 'message';
 end;
 $r5$;
 

@@ -13,7 +13,7 @@
 //
 // 🚨 THE CHIP NEVER PRINTS THE KEY (cold walk 20, 2026-09-22). It used to, and
 // the Rulebook read `Understudy  masterwork.understudy` on every single load
-// while the interview drawer read `masterwork.scout`. The key still travels —
+// while the interview drawer read the scout's key. The key still travels —
 // in the href, which is where an identifier belongs — but the words a person
 // reads are words. See `features/mandates/useMandateDisplayName`.
 
@@ -33,7 +33,7 @@ import {
 
 export interface AgentCreditProps {
   /**
-   * The mandate key this surface resolves through, e.g. "masterwork.scout".
+   * The mandate key this surface resolves through, e.g. the scout job (masterwork.scout).
    * Typed, never `string` (V-L6a, 2026-09-17): this credit names the job to the
    * Expert and links to its admin, so a retired key here would show a real
    * person a dead mandate. A wrong key fails `pnpm type-check` instead.
@@ -51,7 +51,7 @@ export interface AgentCreditProps {
  * never a greyed-out stub (jobs-bar-2026-09-16, item 12).
  *
  * That gate is NOT what makes the key safe, and treating it as though it were
- * is exactly how cold walk 20 found `masterwork.understudy` on screen: the walk
+ * is exactly how cold walk 20 found the understudy's key on screen: the walk
  * signed in as `admin@admin.com`, which is the identity every operator, tester
  * and walk driver uses. An admin is a person too. The key is therefore gone
  * from the rendered words for everyone, admin included.

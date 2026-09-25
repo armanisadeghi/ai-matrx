@@ -25,7 +25,7 @@
 --   has_visibility(dana, …)      → seated AS Dana, `custom.query_can_see(org, id, level)`
 --   effective_level(admin, …)    → seated AS the author, `custom.my_level(org, id, 'record')`
 --   insert into custom.record    → `custom.record_write` / `custom.table_declare`
---   select … from custom.record  → `custom.read_record(org, id, true)`
+--   select … from custom.record  → `custom.read_record(org, id, false)`
 -- The fixture's own ids are carried between transactions in the HQ record exactly as before,
 -- but the HQ now has a FIXED id so the seat can read it back by the one door that takes an id.
 
@@ -167,7 +167,7 @@ begin
     'a', v_a::text, 'b', v_b::text, 'c', v_c::text, 'note', v_note::text, 'tn', v_tn::text), null);
 
   -- and the door hands them back, which is the only read this suite has.
-  if (custom.read_record(v_org, v_hq, true) ->> 'note')::uuid is distinct from v_note then
+  if (custom.read_record(v_org, v_hq, false) ->> 'note')::uuid is distinct from v_note then
     raise exception 'FIXTURE FAILED — the ids did not land in the HQ record through the write door.';
   end if;
 end $t$;
@@ -208,7 +208,7 @@ begin
   exception when insufficient_privilege then null;
   end;
 
-  v_doc  := custom.read_record(v_org, v_hq, true);
+  v_doc  := custom.read_record(v_org, v_hq, false);
   v_a    := (v_doc ->> 'a')::uuid;
   v_c    := (v_doc ->> 'c')::uuid;
   v_note := (v_doc ->> 'note')::uuid;
@@ -261,7 +261,7 @@ begin
     raise exception 'T2 FAILED — a viewer on C may edit the note.';
   end if;
   -- and she READS it, which is the whole point of a viewer share.
-  if (custom.read_record(v_org, v_note, true) ->> 'title') <> 'The note' then
+  if (custom.read_record(v_org, v_note, false) ->> 'title') <> 'The note' then
     raise exception 'T2 FAILED — the note she is a viewer of does not read back for her.';
   end if;
 
@@ -321,7 +321,7 @@ begin
   exception when insufficient_privilege then null;
   end;
 
-  v_tn := (custom.read_record(v_org, v_hq, true) ->> 'tn')::uuid;
+  v_tn := (custom.read_record(v_org, v_hq, false) ->> 'tn')::uuid;
 
   -- The Table is LIGHT and sits at the thirty-day floor. Ten days is below it.
   begin

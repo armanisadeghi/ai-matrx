@@ -158,6 +158,7 @@ import { motion } from "motion/react";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { useMicField } from "@/features/audio/hooks/useMicField";
 import { cn } from "@/lib/utils";
+import { hasPendingOrganizationRequest } from "@/lib/organization/organization-gate";
 import { Label } from "@/components/ui/label";
 import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { CheckTapButton } from "@ai-matrx/tap-target/buttons";
@@ -807,6 +808,11 @@ export const ProTextarea = React.forwardRef<
     // ── Menu + agent actions ───────────────────────────────────────────────
     const handleMenuOpenChange = useCallback(
       (open: boolean) => {
+        // HELD AND SET: an agent action that needs an organization opens the
+        // workspace picker, which takes focus. That focus move must not close
+        // this popover and reset the run — the action continues with the
+        // person's choice, right here (lib/organization/organization-gate.ts).
+        if (!open && hasPendingOrganizationRequest()) return;
         setMenuOpen(open);
         if (open && boundAgentsEnabled) {
           void refreshBoundAgents();

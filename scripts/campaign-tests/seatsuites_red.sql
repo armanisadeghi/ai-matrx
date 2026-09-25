@@ -453,7 +453,7 @@ begin
   v_a := custom.record_write(v_org,v_tbl,jsonb_build_object('pname','The Golden Goal','nickname','Goldies'));
   v_b := custom.record_write(v_org,v_tbl,jsonb_build_object('pname','The Golden Goal','nickname','The Goal'));
   perform custom.migrate_merge(v_org,v_a,v_b,'inv 7');
-  v_doc := custom.read_record(v_org,v_a,true);
+  v_doc := custom.read_record(v_org,v_a,false);
   if v_doc ? '_retired' then raise exception 'INVERSE PROOF FAILED: read_record still carries _retired'; end if;
   raise notice 'RED 7 IS RED with the inverse in place: the read door answers % with no _retired.', v_doc;
   raise notice '=== ALL THREE SEAT-SUITES FIXES PROVEN RED BY THEIR OWN INVERSES. This transaction rolls back. ===';

@@ -91,7 +91,7 @@ begin
 
   -- ══ 2 — THE WALL IS DECIDED FIRST ═════════════════════════════════════════════════════
   begin
-    perform custom.read_record(v_calder, v_invented, true);
+    perform custom.read_record(v_calder, v_invented, false);
     raise exception '2 FAILED: read_record answered for a tenant she is not a member of';
   exception when insufficient_privilege then
     get stacked diagnostics v_msg = message_text;
@@ -102,13 +102,13 @@ begin
   end;
 
   -- ══ 3 — EXISTS AND DOES-NOT-EXIST ANSWER THE SAME THING ══════════════════════════════
-  begin perform custom.read_record(v_calder, v_hidden, true);
+  begin perform custom.read_record(v_calder, v_hidden, false);
         raise exception '3 FAILED: she read a record inside a tenant she is not a member of';
   exception when others then
     get stacked diagnostics v_st = returned_sqlstate, v_tx = message_text;
     v_exists := v_st || ' ' || v_tx;
   end;
-  begin perform custom.read_record(v_calder, v_invented, true);
+  begin perform custom.read_record(v_calder, v_invented, false);
         raise exception '3 FAILED: an invented id answered';
   exception when others then
     get stacked diagnostics v_st = returned_sqlstate, v_tx = message_text;
@@ -142,10 +142,10 @@ begin
   end $b$;
   perform set_config('role', 'authenticated', true);
 
-  begin perform custom.read_record(v_calder, v_hidden, true);
+  begin perform custom.read_record(v_calder, v_hidden, false);
         raise exception '4 FAILED: the old body returned the record';
   exception when others then get stacked diagnostics v_exists = returned_sqlstate; end;
-  begin perform custom.read_record(v_calder, v_invented, true);
+  begin perform custom.read_record(v_calder, v_invented, false);
         raise exception '4 FAILED: the old body returned an invented id';
   exception when others then get stacked diagnostics v_absent = returned_sqlstate; end;
   if v_exists = v_absent then

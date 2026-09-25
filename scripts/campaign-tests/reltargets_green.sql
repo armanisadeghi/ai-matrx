@@ -151,12 +151,12 @@ begin
   v_call1 := custom.record_write(v_org, v_calls, jsonb_build_object(
     'call_summary', 'No heat — furnace short-cycling at 1422 Alder Ct',
     'assigned_technician', v_dana::text));
-  v_doc := custom.read_record(v_org, v_call1, true);
+  v_doc := custom.read_record(v_org, v_call1, false);
   v_person := nullif(v_doc ->> 'assigned_technician', '')::uuid;
   if v_person is null or v_person = v_dana then
     raise exception 'CLAUSE 1 FAILED: the cell holds % — not a Person record id', v_doc -> 'assigned_technician';
   end if;
-  if coalesce(custom.read_record(v_org, v_person, true) ->> 'user_id', '') <> v_dana::text then
+  if coalesce(custom.read_record(v_org, v_person, false) ->> 'user_id', '') <> v_dana::text then
     raise exception 'CLAUSE 1 FAILED: record % is not the Person record carrying Dana''s user id', v_person;
   end if;
   select count(*) into v_n from platform.relations_from(v_org, v_call1) r
@@ -171,7 +171,7 @@ begin
   v_call2 := custom.record_write(v_org, v_calls, jsonb_build_object(
     'call_summary', 'AC not cooling — condenser fan seized, 88 Wren Way',
     'assigned_technician', v_dana::text));
-  v_person2 := nullif(custom.read_record(v_org, v_call2, true) ->> 'assigned_technician', '')::uuid;
+  v_person2 := nullif(custom.read_record(v_org, v_call2, false) ->> 'assigned_technician', '')::uuid;
   if v_person2 is distinct from v_person then
     raise exception 'CLAUSE 2 FAILED: the second assignment made or found a different Person record (% vs %)', v_person2, v_person;
   end if;
@@ -181,7 +181,7 @@ begin
   v_call3 := custom.record_write(v_org, v_calls, jsonb_build_object(
     'call_summary', 'Annual maintenance — two-zone heat pump, 310 Harbor View Dr',
     'assigned_technician', v_person::text));
-  if nullif(custom.read_record(v_org, v_call3, true) ->> 'assigned_technician', '')::uuid is distinct from v_person then
+  if nullif(custom.read_record(v_org, v_call3, false) ->> 'assigned_technician', '')::uuid is distinct from v_person then
     raise exception 'CLAUSE 3 FAILED: a Person record id was rewritten';
   end if;
   raise notice 'CLAUSE 3 PASS — a Person record id is stored as given';
@@ -189,11 +189,11 @@ begin
   -- 4 · the signed form by its files.files id lands as a File record
   v_wo := custom.record_write(v_org, v_wos, jsonb_build_object(
     'order_number', 'WO-4471', 'signed_authorization', v_form::text));
-  v_file_rec := nullif(custom.read_record(v_org, v_wo, true) ->> 'signed_authorization', '')::uuid;
+  v_file_rec := nullif(custom.read_record(v_org, v_wo, false) ->> 'signed_authorization', '')::uuid;
   if v_file_rec is null or v_file_rec = v_form then
     raise exception 'CLAUSE 4 FAILED: the attachment cell holds % — not a File record id', v_file_rec;
   end if;
-  v_doc := custom.read_record(v_org, v_file_rec, true);
+  v_doc := custom.read_record(v_org, v_file_rec, false);
   if coalesce(v_doc ->> 'file_id', '') <> v_form::text
      or coalesce(v_doc ->> 'name', '') <> 'WO-4471-repair-authorization-signed.pdf'
      or coalesce(v_doc ->> 'mime', '') <> 'application/pdf' then
@@ -207,7 +207,7 @@ begin
 
   -- 5 · re-assign to the other member: both halves move
   perform custom.record_update(v_org, v_call1, jsonb_build_object('assigned_technician', v_admin::text));
-  v_admin_person := nullif(custom.read_record(v_org, v_call1, true) ->> 'assigned_technician', '')::uuid;
+  v_admin_person := nullif(custom.read_record(v_org, v_call1, false) ->> 'assigned_technician', '')::uuid;
   if v_admin_person is null or v_admin_person in (v_admin, v_person) then
     raise exception 'CLAUSE 5 FAILED: after re-assignment the cell holds %', v_admin_person;
   end if;

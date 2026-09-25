@@ -308,7 +308,7 @@ begin
     raise exception '3 FAILED — the owner of the organization answers % on her own record.',
       coalesce(custom.my_level(c_org, c_rec, 'record')::text, 'nothing');
   end if;
-  if (custom.read_record(c_org, c_rec, true)) is null then
+  if (custom.read_record(c_org, c_rec, false)) is null then
     raise exception '3 FAILED — the owner cannot read her own record.';
   end if;
   raise notice 'PART 3 PASSED — the owner still answers admin and still reads the record.';

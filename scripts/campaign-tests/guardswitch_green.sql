@@ -713,7 +713,7 @@ begin
   -- 4a. She cannot read a record nobody gave her.
   v_caught := null;
   begin
-    perform custom.read_record(v_a, v_rec, true);
+    perform custom.read_record(v_a, v_rec, false);
   exception when others then
     v_caught := sqlerrm;
   end;

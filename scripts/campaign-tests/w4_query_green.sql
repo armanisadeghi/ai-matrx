@@ -596,11 +596,11 @@ begin
 
   -- 7c. THE CONTROL, so 7a and 7b are not a door that refuses her everything: the job she IS
   --     given at editor, she reads through the read door and changes through the write door.
-  if (custom.read_record(v_org, v_j1, true) ->> 'title') <> 'J1 corrected' then
+  if (custom.read_record(v_org, v_j1, false) ->> 'title') <> 'J1 corrected' then
     raise exception 'DOOR-10 FAIL: the job shared with test@test.com at editor does not read back for her';
   end if;
   perform custom.record_update(v_org, v_j1, jsonb_build_object('title','J1 hers'));
-  if (custom.read_record(v_org, v_j1, true) ->> 'title') <> 'J1 hers' then
+  if (custom.read_record(v_org, v_j1, false) ->> 'title') <> 'J1 hers' then
     raise exception 'DOOR-10 FAIL: test@test.com holds editor on J1 and her write did not land';
   end if;
   perform set_config('request.jwt.claims', c_admin_j, true);

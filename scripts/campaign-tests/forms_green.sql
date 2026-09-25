@@ -271,7 +271,7 @@ begin
   select s.record_id into v_rec from custom.anon_submission s
    where s.organization_id = v_org and s.state = 'cleared' limit 1;
   perform set_config('role', 'authenticated', true);
-  v_doc := custom.read_record(v_org, v_rec, true);
+  v_doc := custom.read_record(v_org, v_rec, false);
   if v_doc -> '_source' ->> 'via' <> 'form' then
     raise exception '7: the record does not say it came from a form: %', v_doc -> '_source';
   end if;

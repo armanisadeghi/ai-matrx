@@ -171,11 +171,11 @@ begin
     raise exception '1a: the house rule was declared and no gate came back — %', v_pipe -> 'rules';
   end if;
   -- Read back through the door a person reaches, never off the table.
-  v_doc := custom.read_record(v_org, (v_pipe #>> '{rules,gate:approved:1}')::uuid, true);
+  v_doc := custom.read_record(v_org, (v_pipe #>> '{rules,gate:approved:1}')::uuid, false);
   if v_doc ->> 'on_fail' <> 'refuse' then
     raise exception '1a: the Approved gate says it will % when it stops somebody', v_doc ->> 'on_fail';
   end if;
-  v_doc := custom.read_record(v_org, (v_pipe #>> '{rules,gate:paid:1}')::uuid, true);
+  v_doc := custom.read_record(v_org, (v_pipe #>> '{rules,gate:paid:1}')::uuid, false);
   if v_doc ->> 'on_fail' <> 'require_approval' then
     raise exception '1a: the Paid gate says it will % when it stops somebody', v_doc ->> 'on_fail';
   end if;
@@ -260,9 +260,9 @@ begin
   if v_caught !~* 'without a second quote from a different contractor' then
     raise exception '2b: the store refused it, saying %', v_caught;
   end if;
-  if (custom.read_record(v_org, v_requote, true) #>> '{quote_stage}') not in ('received','Received') then
+  if (custom.read_record(v_org, v_requote, false) #>> '{quote_stage}') not in ('received','Received') then
     raise exception '2b: nothing should have been written, and the quote is now in %',
-      custom.read_record(v_org, v_requote, true) #>> '{quote_stage}';
+      custom.read_record(v_org, v_requote, false) #>> '{quote_stage}';
   end if;
   raise notice '2b PASSED — the store refuses the same move in the same words, and wrote nothing.';
 
@@ -287,9 +287,9 @@ begin
   if not (v_move ->> 'applied')::boolean then
     raise exception '2d: the store still refused the move: %', v_move ->> 'why';
   end if;
-  if lower(custom.read_record(v_org, v_requote, true) #>> '{quote_stage}') <> 'approved' then
+  if lower(custom.read_record(v_org, v_requote, false) #>> '{quote_stage}') <> 'approved' then
     raise exception '2d: the quote should be in Approved and it is in %',
-      custom.read_record(v_org, v_requote, true) #>> '{quote_stage}';
+      custom.read_record(v_org, v_requote, false) #>> '{quote_stage}';
   end if;
   raise notice '2d PASSED — one competing bid from a different company, and the same move goes through.';
 
@@ -324,9 +324,9 @@ begin
     raise exception '3b: nothing was filed — %', v_move;
   end if;
   v_appr := (v_move ->> 'approval_id')::uuid;
-  if lower(custom.read_record(v_org, v_requote, true) #>> '{quote_stage}') <> 'approved' then
+  if lower(custom.read_record(v_org, v_requote, false) #>> '{quote_stage}') <> 'approved' then
     raise exception '3b: THE CARD MOVED WHILE SOMEBODY IS STILL DECIDING. It is in %',
-      custom.read_record(v_org, v_requote, true) #>> '{quote_stage}';
+      custom.read_record(v_org, v_requote, false) #>> '{quote_stage}';
   end if;
   v_pend := custom.record_stage_pending(v_org, v_requote);
   if jsonb_array_length(v_pend) <> 1 or lower(v_pend -> 0 ->> 'to') <> 'paid' then
@@ -342,9 +342,9 @@ begin
   perform set_config('request.jwt.claims', c_dana_j, true);
   v_doc := custom.work_approval_decide(v_org, v_appr, true, 'Final invoice is in the folder on the counter.');
   perform set_config('request.jwt.claims', c_admin_j, true);
-  if lower(custom.read_record(v_org, v_requote, true) #>> '{quote_stage}') <> 'paid' then
+  if lower(custom.read_record(v_org, v_requote, false) #>> '{quote_stage}') <> 'paid' then
     raise exception '3c: the approval was decided yes and the quote is in %',
-      custom.read_record(v_org, v_requote, true) #>> '{quote_stage}';
+      custom.read_record(v_org, v_requote, false) #>> '{quote_stage}';
   end if;
   if jsonb_array_length(custom.record_stage_pending(v_org, v_requote)) <> 0 then
     raise exception '3c: the card still says it is waiting after the answer came';
@@ -407,7 +407,7 @@ begin
   -- ════════════════════════════════════════════════════════════════════════════
   perform set_config('request.jwt.claims', c_dana_j, true);
   -- The control she CAN do: she holds admin on the re-quote from part 3c, so she reads it.
-  if custom.read_record(v_org, v_requote, true) is null then
+  if custom.read_record(v_org, v_requote, false) is null then
     raise exception '5a: the record shared with her at admin does not read back, so this seat refuses everything';
   end if;
   -- And the thing she cannot: she was never given anything on the Backyard Deck bid.

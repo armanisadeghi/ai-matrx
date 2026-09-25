@@ -20,6 +20,7 @@ import "./rich-editor.css";
 import { useDeferredValue, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   AlignLeft,
+  Check,
   Code2,
   Eye,
   Focus,
@@ -29,6 +30,7 @@ import {
   Mic,
   MicOff,
   Minimize2,
+  MoreHorizontal,
   Save,
   Search,
   ShieldCheck,
@@ -36,7 +38,17 @@ import {
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, useIsMobile } from "@ai-matrx/design-system";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  useIsMobile,
+} from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
@@ -411,6 +423,28 @@ export default function RichEditorImpl({
       </EditableContextMenu>
     );
 
+  // The toolbar's tools, ONE list: buttons on desktop, a "More tools" menu on phones.
+  const tools: Array<{ id: string; label: string; icon: typeof Search; active?: boolean; disabled?: boolean; run: () => void }> = [
+    { id: "find", label: "Find & replace (⌘F)", icon: Search, active: findMode !== null, disabled: view === "preview", run: () => setFindMode((mode) => (mode ? null : "find")) },
+    { id: "outline", label: "Outline (⌘⌥H)", icon: ListTree, active: outlineOpen, run: () => setOutlineOpen((open) => !open) },
+    { id: "focus", label: "Focus mode (⌘⇧F)", icon: Focus, active: focusMode, disabled: view === "preview", run: () => setFocusMode((on) => !on) },
+    ...(view === "source"
+      ? [{ id: "islands", label: renderIslands ? "Show protected blocks as source" : "Render protected blocks", icon: AlignLeft, active: renderIslands, run: () => setRenderIslands((on) => !on) }]
+      : []),
+    { id: "shortcuts", label: "Keyboard shortcuts (⌘/)", icon: Keyboard, run: () => setHelpOpen(true) },
+  ];
+
+  const micButton =
+    mic.available && !readOnly && view !== "preview" ? (
+      <ToolbarButton
+        label={mic.isRecording ? "Stop dictation" : mic.isTranscribing ? "Finishing the transcript…" : "Dictate at the cursor"}
+        active={mic.isRecording}
+        onClick={() => void mic.handleVoiceClick()}
+      >
+        {mic.isTranscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : mic.isRecording ? <MicOff className="h-4 w-4 text-destructive" /> : <Mic className="h-4 w-4" />}
+      </ToolbarButton>
+    ) : null;
+
   const cancelButton = onCancel ? (
     <button
       type="button"
@@ -482,6 +516,7 @@ export default function RichEditorImpl({
                     key={option}
                     type="button"
                     role="tab"
+                    title={VIEW_META[option].label}
                     aria-selected={view === option}
                     onClick={() => switchView(option)}
                     className={cn(
@@ -490,40 +525,50 @@ export default function RichEditorImpl({
                     )}
                   >
                     <Icon className="h-3.5 w-3.5" />
-                    {VIEW_META[option].label}
+                    <span className={cn(isMobile && "sr-only")}>{VIEW_META[option].label}</span>
                   </button>
                 );
               })}
             </div>
-            <span className="mx-1 h-5 w-px shrink-0 bg-border" />
-            <ToolbarButton label="Find & replace (⌘F)" active={findMode !== null} onClick={() => setFindMode((mode) => (mode ? null : "find"))} disabled={view === "preview"}>
-              <Search className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton label="Outline (⌘⌥H)" active={outlineOpen} onClick={() => setOutlineOpen((open) => !open)}>
-              <ListTree className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton label="Focus mode (⌘⇧F)" active={focusMode} onClick={() => setFocusMode((on) => !on)} disabled={view === "preview"}>
-              <Focus className="h-4 w-4" />
-            </ToolbarButton>
-            {view === "source" && (
-              <ToolbarButton label={renderIslands ? "Show protected blocks as source" : "Render protected blocks"} active={renderIslands} onClick={() => setRenderIslands((on) => !on)}>
-                <AlignLeft className="h-4 w-4" />
-              </ToolbarButton>
+            {!isMobile && (
+              <>
+                <span className="mx-1 h-5 w-px shrink-0 bg-border" />
+                {tools.map((tool) => (
+                  <ToolbarButton key={tool.id} label={tool.label} active={tool.active} onClick={tool.run} disabled={tool.disabled}>
+                    <tool.icon className="h-4 w-4" />
+                  </ToolbarButton>
+                ))}
+                {micButton}
+              </>
             )}
-            {mic.available && !readOnly && view !== "preview" && (
-              <ToolbarButton
-                label={mic.isRecording ? "Stop dictation" : mic.isTranscribing ? "Finishing the transcript…" : "Dictate at the cursor"}
-                active={mic.isRecording}
-                onClick={() => void mic.handleVoiceClick()}
-              >
-                {mic.isTranscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : mic.isRecording ? <MicOff className="h-4 w-4 text-destructive" /> : <Mic className="h-4 w-4" />}
-              </ToolbarButton>
-            )}
-            <ToolbarButton label="Keyboard shortcuts (⌘/)" onClick={() => setHelpOpen(true)}>
-              <Keyboard className="h-4 w-4" />
-            </ToolbarButton>
             </div>
             <div className="flex shrink-0 items-center gap-1">
+              {/* A phone keeps dictation at hand and every other tool one tap
+                  away in a menu — nothing sits off-screen. */}
+              {isMobile && micButton}
+              {isMobile && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="More tools"
+                      title="More tools"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-60">
+                    {tools.map((tool) => (
+                      <DropdownMenuItem key={tool.id} disabled={tool.disabled} onSelect={tool.run}>
+                        <tool.icon className="mr-2 h-4 w-4" />
+                        <span className="flex-1">{tool.label}</span>
+                        {tool.active && <Check className="ml-2 h-4 w-4 text-primary" />}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
               {toolbarExtras}
               {cancelButton}
               {saveButton}

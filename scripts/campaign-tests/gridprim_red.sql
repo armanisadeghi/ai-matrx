@@ -103,7 +103,7 @@ begin
   perform set_config('request.jwt.claims', '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}', true);
   perform custom.field_declare(v_org, v_appts, jsonb_build_object('key', 'balance_due', 'label', 'Balance due',
             'type', 'formula', 'formula_text', '{Visit fee} - {Deposit taken}'));
-  v_bal := custom.read_record(v_org, (select v from gp where k = 'r1'), true) ->> 'balance_due';
+  v_bal := custom.read_record(v_org, (select v from gp where k = 'r1'), false) ->> 'balance_due';
   if v_bal is not distinct from '135' then
     raise exception 'ARM C: Rule-only evaluation still worked out Biscuit''s balance — the G3 green part 3a would not catch the loss';
   end if;

@@ -142,7 +142,7 @@ begin
   -- A. REC-15 — ONE ROW, FOUR USES, declared rather than described
   -- ══════════════════════════════════════════════════════════════════════════
   -- THE ROW ITSELF, through the read door a person has.
-  v_j := custom.read_record(v_org, v_rule, true);
+  v_j := custom.read_record(v_org, v_rule, false);
   if v_j is null then raise exception 'REC-15: the seeded Rule does not read back through custom.read_record'; end if;
   if jsonb_array_length(v_j -> 'uses') <> 4 then
     raise exception 'REC-15: the Rule declares % uses, and the law is four', jsonb_array_length(v_j -> 'uses');
@@ -215,7 +215,7 @@ begin
   -- THE DOOR'S OWN ANSWER: `custom.read_record` merges the worked-out Value in beside the
   -- typed ones, without a reader knowing they are stored apart — and it never leaks the
   -- storage shape.
-  v_j := custom.read_record(v_org, v_sq, true);
+  v_j := custom.read_record(v_org, v_sq, false);
   if (v_j -> 'sides_equal') <> to_jsonb(true) then
     raise exception 'REC-15 compute: the square''s sides_equal reads %, and 4 by 4 is equal', v_j -> 'sides_equal';
   end if;
@@ -238,7 +238,7 @@ begin
 
   -- THE SECOND INPUT, from the SAME ROW: a rectangle's answer is FALSE. A compute use that
   -- always returned true would pass every assertion above and fail here.
-  v_j := custom.read_record(v_org, v_rect, true);
+  v_j := custom.read_record(v_org, v_rect, false);
   if (v_j -> 'sides_equal') <> to_jsonb(false) then
     raise exception 'REC-15 compute second input: the rectangle''s sides_equal reads %, and 3 by 4 is not equal', v_j -> 'sides_equal';
   end if;
@@ -268,7 +268,7 @@ begin
   -- answer is RETIRED with its reason, its Rule and the version that produced it.
   v_r2 := custom.record_write(v_org, v_tbl, '{"title":"S8","kind":"square","width":5,"height":5}'::jsonb);
   perform custom.record_update(v_org, v_r2, '{"kind":"circle"}'::jsonb);
-  v_j := custom.read_record(v_org, v_r2, true);
+  v_j := custom.read_record(v_org, v_r2, false);
   if v_j ? 'sides_equal' then
     raise exception 'T8 retype: the retyped record still shows a worked-out answer — %', v_j -> 'sides_equal';
   end if;
@@ -343,9 +343,9 @@ begin
   end;
   -- The positive control, and the SECOND input: it lands, and its worked-out answer is true.
   v_r2 := custom.record_write(v_org, v_tbl, '{"title":"S4","kind":"square","width":7,"height":7}'::jsonb);
-  if (custom.read_record(v_org, v_r2, true) -> 'sides_equal') <> to_jsonb(true) then
+  if (custom.read_record(v_org, v_r2, false) -> 'sides_equal') <> to_jsonb(true) then
     raise exception 'REC-17 after rename: the worked-out answer reads %, and 7 by 7 is equal',
-                    custom.read_record(v_org, v_r2, true) -> 'sides_equal';
+                    custom.read_record(v_org, v_r2, false) -> 'sides_equal';
   end if;
 
   -- THE COMPLEMENT, which is what makes the clause above mean something: every sentence a
@@ -794,7 +794,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform custom.share_grant(v_org, v_sq, 'user', c_dana, 'viewer'::public.permission_level);
   perform set_config('request.jwt.claims', c_dana_j, true);
-  if (custom.read_record(v_org, v_sq, true) -> 'sides_equal') <> to_jsonb(true) then
+  if (custom.read_record(v_org, v_sq, false) -> 'sides_equal') <> to_jsonb(true) then
     raise exception 'K FAILED: the record shared with test@test.com at viewer does not read back with its worked-out answer';
   end if;
   perform set_config('request.jwt.claims', c_admin_j, true);

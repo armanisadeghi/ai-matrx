@@ -387,7 +387,7 @@ begin
   if v_caught is null then
     raise exception 'RED 3: with three triggers dropped on platform.associations, test@test.com could also reshape a table — those drops were supposed to touch the relation contract and not the ladder';
   end if;
-  if (custom.read_record(v_org, v_note, true) ->> 'title') <> 'Thank-you call note' then
+  if (custom.read_record(v_org, v_note, false) ->> 'title') <> 'Thank-you call note' then
     raise exception 'RED 3: the record shared with test@test.com at viewer does not read back for her';
   end if;
   perform set_config('request.jwt.claims', c_admin_j, true);

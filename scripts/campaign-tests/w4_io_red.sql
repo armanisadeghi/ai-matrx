@@ -382,7 +382,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform custom.share_grant(v_org, v_rec, 'user', c_dana, 'viewer'::public.permission_level);
   perform set_config('request.jwt.claims', c_dana_j, true);
-  if (custom.read_record(v_org, v_rec, true) ->> 'name') <> 'Ada' then
+  if (custom.read_record(v_org, v_rec, false) ->> 'name') <> 'Ada' then
     raise exception 'RED TWIN CONTROL FAILED (break 5): the record shared with test@test.com at viewer does not read back for her';
   end if;
   if (select count(*) from custom.io_comments(v_org, v_rec, true)) < 1 then

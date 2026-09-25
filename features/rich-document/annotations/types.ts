@@ -46,6 +46,8 @@ export interface AnnotationAuthor {
 
 export interface CommentReply {
   id: string;
+  /** Row version for compare-and-swap edits (null until the RC-B11 door returns it). */
+  version: number | null;
   body: string;
   author: AnnotationAuthor;
   createdAt: string;
@@ -78,6 +80,12 @@ export interface AnnotationItem {
   resolvedAt?: string | null;
   replies: CommentReply[];
   link?: LinkedTarget;
+  /** Minted once per draft, reused by every Retry: the create is idempotent on it. */
+  clientRequestId?: string;
+  /** When this draft's first attempt started (bounds the lost-response read-back). */
+  firstAttemptAt?: string;
+  /** Row version of a comment, for compare-and-swap edits. */
+  version?: number | null;
   /** Server identities, per kind. */
   commentId?: string;
   annotationDocumentId?: string;
@@ -95,6 +103,8 @@ export interface SidecarCapabilities {
   anchoredWrites: boolean;
   /** The RC-B11 comment doors (resolution, suggestions, mentions) are live. */
   collaborationDoors: boolean;
+  /** The installed association vocabulary knows this source type, so links can be written. */
+  links: boolean;
   /** CSS Custom Highlight API present — otherwise the panel still lists everything. */
   paint: boolean;
 }

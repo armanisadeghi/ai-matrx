@@ -87,8 +87,14 @@ export function hasPageCapture(): boolean {
   return captures.length > 0;
 }
 
-/** The live capture: the most recent page registration plus every contribution. */
-export function getActivePageCapture(): PageCapture | null {
+/**
+ * The live capture: the most recent page registration plus every contribution.
+ *
+ * `_version` is the registry version a component read with `usePageCaptureVersion()`. Pass it
+ * from render: the React Compiler memoizes a call with no reactive input, so a render-time
+ * `getActivePageCapture()` with no argument is computed once and never again.
+ */
+export function getActivePageCapture(_version?: number): PageCapture | null {
   const top = captures[captures.length - 1];
   if (!top) return null;
   const merged: PageCaptureContribution[] = contributions.map((c) => {

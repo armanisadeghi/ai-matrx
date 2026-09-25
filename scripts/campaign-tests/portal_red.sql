@@ -207,7 +207,7 @@ begin
   select id into v_id from custom.read_records(v_org, v_jobs, true, 1, 0);
   v_txt := null;
   begin
-    perform custom.read_record(v_org, v_id, true);
+    perform custom.read_record(v_org, v_id, false);
   exception when insufficient_privilege or no_data_found then v_txt := 'refused';
   end;
   if v_txt is distinct from 'refused' then
@@ -337,7 +337,7 @@ begin
   $red3$;
   perform set_config('role', 'authenticated', true);
   select id into v_id from custom.read_records(v_org, v_jobs, true, 1, 0);
-  v_doc := custom.read_record(v_org, v_id, true);
+  v_doc := custom.read_record(v_org, v_id, false);
   if not (v_doc ? 'internal_margin') then
     raise exception 'RED 3 IS NOT RED: without the narrowing the door still withheld internal_margin — %', v_doc;
   end if;

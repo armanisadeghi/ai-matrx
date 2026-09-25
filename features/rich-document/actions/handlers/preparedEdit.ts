@@ -6,6 +6,7 @@ import {
 import { advancePreparedNoteSource, isPreparedEditableNoteSource } from "@/features/notes/richDocumentSource";
 import { validateNoteSaveReceipt } from "@/features/notes/service/validateNoteSaveReceipt";
 import type {
+  ChatAnswerSaveReceipt,
   ContentSource,
   NoteEditableContentSource,
   PreparedContentEdit,
@@ -118,16 +119,23 @@ export async function savePreparedContentEdit(args: {
   newContent: string;
   /** The text the editor opened on (chat: a display projection). */
   previousContent?: string;
+  /** Told what the save actually wrote (chat answers), so a toast can say it truthfully. */
+  onReceipt?: (receipt: ChatAnswerSaveReceipt) => void;
 }): Promise<ContentSource> {
-  const { ctx, newContent, previousContent } = args;
+  const { ctx, newContent, previousContent, onReceipt } = args;
   const edit = ctx.sourceAdapter.edit;
   if (!edit) throw new Error("This content no longer has a save target.");
   let source = args.source;
   try {
     const result = await edit({ newContent, previousContent, source, dispatch: ctx.dispatch });
+    if (result && "kind" in result && result.kind === "chat-answer") onReceipt?.(result);
     if (source.type === "note") {
       if (!isPreparedEditableNoteSource(source)) throw new Error("The note save source was not prepared.");
-      const receipt = validateNoteReceipt(source, result, newContent);
+      const receipt = validateNoteReceipt(
+        source,
+        result && "kind" in result ? undefined : result,
+        newContent,
+      );
       if (receipt.failedFields.length > 0) {
         throw new NoteContextPartialSaveError(receipt);
       }

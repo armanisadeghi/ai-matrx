@@ -199,6 +199,31 @@ export interface GmailMessageDetail extends GmailMessageSummary {
   access_mode: "on_demand_read_only";
 }
 
+export type GmailModifyAction =
+  | "archive"
+  | "mark_read"
+  | "mark_unread"
+  | "star"
+  | "unstar"
+  | "add_label"
+  | "remove_label";
+
+export interface GmailModifyResult {
+  message_id: string;
+  label_ids: string[];
+}
+
+export interface GmailLabelSummary {
+  id: string;
+  name: string;
+  type: "user";
+}
+
+export interface GmailLabelsResult {
+  labels: GmailLabelSummary[];
+  has_more: boolean;
+}
+
 export interface YouTubeVideoPreview {
   video_id: string;
   title: string;

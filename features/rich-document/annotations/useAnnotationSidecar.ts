@@ -27,7 +27,6 @@ import {
   deleteComment,
   deleteHighlight,
   editComment,
-  HighlightLinkError,
   linkRecord,
   listCommentThreads,
   listEdgeItems,
@@ -46,9 +45,17 @@ import type {
 } from "./types";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { organizationRefusalMessage } from "@/lib/organizations/organizationRefusalToast";
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import { createEchoLedger, isOwnEcho } from "./echo";
+import { humanError } from "./errors";
 
-/** An own-author event this soon after THIS tab wrote is its echo. */
-const OWN_ECHO_WINDOW_MS = 5000;
+/** One id per draft, reused by every Retry of it (the idempotency key). */
+export function newRequestId(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) =>
+        (Number(c) ^ (Math.random() * 16) >> (Number(c) / 4)).toString(16));
+}
 
 const commentsChannel = defineChannelNamespace({
   namespace: "annotation-sidecar-comments",
@@ -60,7 +67,7 @@ function message(e: unknown): string {
   // The write path resolves the organization (ensureOrgId); a refusal for want of one is said in
   // words with its remedy, never as the transport's error text.
   if (isOrganizationRequiredError(e)) return organizationRefusalMessage({ act: "saved", subject: "This annotation" });
-  return e instanceof Error ? e.message : String(e);
+  return humanError("saving", e).message;
 }
 
 let draftSeq = 0;
@@ -81,6 +88,10 @@ export interface CommentDraft {
   body: string;
   anchor: TextAnchor | null;
   suggestedText?: string | null;
+  /** A reply: written through (it throws on failure so its composer keeps the text). */
+  parentId?: string | null;
+  /** The reply composer's own stable id, reused when the person presses Reply again after a failure. */
+  clientRequestId?: string;
 }
 
 export function useAnnotationSidecar(source: AnnotationSource | null) {
@@ -156,8 +167,9 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
     };
   }, [versionKey, source?.contentVersion, capturedBodies]);
 
-  // Live comments from everyone who can read the source.
-  const lastLocalWrite = useRef(0);
+  // Live comments from everyone who can read the source. Own echoes are recognised by the
+  // exact writes this tab made (echo.ts), never by a time window.
+  const ledger = useRef(createEchoLedger());
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scheduleReload = useCallback(() => {
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
@@ -177,12 +189,9 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
               table: "comments",
               filter: `entity_id=eq.${source.id}`,
               rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
-              onChange: ({ row }) => {
-                // THIS TAB's own writes already reload after the door answers:
-                // never pay twice. Scoped to this tab's recent writes, so the
-                // same person's OTHER tab still updates live.
-                const by = row && typeof row === "object" ? (row as { updated_by?: unknown }).updated_by : undefined;
-                if (by && by === getUserId() && Date.now() - lastLocalWrite.current < OWN_ECHO_WINDOW_MS) return;
+              onChange: ({ row, payload }) => {
+                // This tab's own writes already reloaded when the door answered.
+                if (isOwnEcho(String(payload?.eventType ?? ""), row, ledger.current)) return;
                 scheduleReload();
               },
             },
@@ -212,17 +221,15 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
   const runDraft = useCallback(
     async (draft: AnnotationItem, write: () => Promise<void>) => {
       setDrafts((d) => [...d.filter((x) => x.key !== draft.key), { ...draft, saveState: "pending", error: undefined }]);
-      lastLocalWrite.current = Date.now();
+      if (draft.clientRequestId) ledger.current.createdRequestIds.add(draft.clientRequestId);
       try {
         await write();
         setDrafts((d) => d.filter((x) => x.key !== draft.key));
         await reload();
         return true;
       } catch (e) {
-        const extra: Partial<AnnotationItem> =
-          e instanceof HighlightLinkError ? { annotationDocumentId: e.documentId } : {};
         setDrafts((d) =>
-          d.map((x) => (x.key === draft.key ? { ...x, ...extra, saveState: "failed", error: message(e) } : x)),
+          d.map((x) => (x.key === draft.key ? { ...x, saveState: "failed", error: message(e) } : x)),
         );
         return false;
       }
@@ -234,14 +241,19 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
   const now = () => new Date().toISOString();
 
   const postComment = useCallback(
-    async (input: CommentDraft & { parentId?: string | null }): Promise<MentionNoticeResult | null> => {
+    async (input: CommentDraft): Promise<MentionNoticeResult | null> => {
       const src = sourceRef.current;
       if (!src) return null;
       let notice: MentionNoticeResult | null = null;
       if (input.parentId) {
-        // Replies are written straight through (no passage, nothing to paint).
-        lastLocalWrite.current = Date.now();
-        const id = await addComment({ source: src, body: input.body, parentId: input.parentId });
+        // A reply is written straight through and THROWS on failure, so the reply composer
+        // keeps the text on screen with its error and the same request id for the next try.
+        const requestId = input.clientRequestId ?? newRequestId();
+        ledger.current.createdRequestIds.add(requestId);
+        const id = await addComment({
+          source: src, body: input.body, parentId: input.parentId,
+          clientRequestId: requestId, doors, firstAttemptAt: now(),
+        });
         await reload();
         const mentions = mentionedUserIds(input.body);
         return mentions.length && doors ? notifyMentions(id, mentions, src.href) : null;
@@ -257,14 +269,11 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
         body: input.body,
         suggestedText: input.suggestedText ?? null,
         replies: [],
+        clientRequestId: newRequestId(),
+        firstAttemptAt: now(),
       };
       await runDraft(draft, async () => {
-        const id = await addComment({
-          source: src,
-          body: input.body,
-          anchor: input.anchor,
-          suggestedText: input.suggestedText ?? null,
-        });
+        const id = await writeComment(src, draft);
         const mentions = mentionedUserIds(input.body);
         if (mentions.length && doors) notice = await notifyMentions(id, mentions, src.href);
       });
@@ -272,6 +281,17 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
     },
     [doors, reload, runDraft],
   );
+
+  const writeComment = (src: AnnotationSource, item: AnnotationItem) =>
+    addComment({
+      source: src,
+      body: item.body,
+      anchor: item.anchor,
+      suggestedText: item.suggestedText ?? null,
+      clientRequestId: item.clientRequestId ?? newRequestId(),
+      firstAttemptAt: item.firstAttemptAt ?? now(),
+      doors,
+    });
 
   const addHighlight = useCallback(
     async (anchor: TextAnchor | null, color: HighlightColor = DEFAULT_HIGHLIGHT_COLOR, note = "", retryOf?: AnnotationItem) => {
@@ -288,6 +308,8 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
         body: note,
         color,
         replies: [],
+        clientRequestId: newRequestId(),
+        firstAttemptAt: now(),
       };
       return runDraft(draft, async () => {
         await createHighlight({
@@ -295,7 +317,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
           anchor: draft.anchor,
           color: draft.color ?? color,
           note: draft.body,
-          existingDocumentId: draft.annotationDocumentId ?? null,
+          clientRequestId: draft.clientRequestId ?? newRequestId(),
         });
       });
     },
@@ -314,11 +336,12 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
       }
       const src = sourceRef.current;
       if (!src) return false;
+      // Same draft, same request id: the door (or the read-back) finds a write that already landed.
       return runDraft(item, async () => {
-        await addComment({ source: src, body: item.body, anchor: item.anchor, suggestedText: item.suggestedText ?? null });
+        await writeComment(src, item);
       });
     },
-    [addHighlight, runDraft],
+    [addHighlight, runDraft, doors],
   );
 
   const discardDraft = useCallback((key: string) => {
@@ -350,7 +373,6 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
 
   const act = useCallback(
     async (fn: () => Promise<void>) => {
-      lastLocalWrite.current = Date.now();
       try {
         await fn();
         await reload();
@@ -381,9 +403,26 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
     [reload],
   );
 
+  /**
+   * Edit my comment or reply as a compare-and-swap against the text the editor opened with.
+   * THROWS (EditConflictError with the current text, or a plain SidecarError) so the editor
+   * stays open with the person's words; `force` overwrites after they chose to.
+   */
+  const editMine = useCallback(
+    async (commentId: string, body: string, base: { body: string; version: number | null }, force = false) => {
+      const src = sourceRef.current;
+      if (!src) return;
+      const version = await editComment(src, commentId, body, base, doors, force);
+      if (version != null) ledger.current.writtenVersions.set(commentId, version);
+      await reload();
+    },
+    [doors, reload],
+  );
+
   const capabilities: SidecarCapabilities = {
     anchoredWrites: ANCHOR_WRITES_ENABLED,
     collaborationDoors: doors,
+    links: !!(source && tryGetEntityInfo(source.token)),
     paint: typeof CSS !== "undefined" && "highlights" in CSS,
   };
 
@@ -397,8 +436,12 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
     discardDraft,
     acceptSuggestion,
     rejectSuggestion: (commentId: string) => act(() => deleteComment(commentId)),
-    editComment: (commentId: string, body: string) => act(() => editComment(commentId, body)),
-    deleteComment: (commentId: string) => act(() => deleteComment(commentId)),
+    editComment: editMine,
+    deleteComment: (commentId: string) =>
+      act(async () => {
+        ledger.current.deletedIds.add(commentId);
+        await deleteComment(commentId);
+      }),
     resolveComment: (commentId: string, resolved: boolean) => act(() => resolveComment(commentId, resolved)),
     saveNote: (documentId: string, note: string) => act(() => saveHighlightNote(documentId, note)),
     removeHighlight: (documentId: string) => act(() => deleteHighlight(documentId)),

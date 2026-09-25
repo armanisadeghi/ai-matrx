@@ -744,8 +744,8 @@ export function EditSetView({ setId }: { setId: string }) {
         title="Delete this card"
         description={
           <>
-            Permanently delete &ldquo;{deleteTarget?.front}&rdquo;. This cannot
-            be undone.
+            Remove &ldquo;{deleteTarget?.front}&rdquo; from this set. The card
+            is archived, not erased.
           </>
         }
         confirmLabel="Delete"

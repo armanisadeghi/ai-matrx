@@ -131,7 +131,7 @@ begin
       raise exception 'RED 1 INCONCLUSIVE: % did not land with custom._field_type_parity_guard gone', v_case.what;
     end if;
     -- and it reads back through the door, which is how a broken definition reaches a consumer
-    if custom.read_record(v_org, v_id, true) ->> 'parity_type' is null then
+    if custom.read_record(v_org, v_id, false) ->> 'parity_type' is null then
       raise exception 'RED 1: % landed and does not read back', v_case.what;
     end if;
     v_n := v_n + 1;
@@ -155,7 +155,7 @@ begin
   -- Two statements, deliberately: `custom.read_record` is STABLE, so nesting the declaration
   -- inside the read would hand the read the statement snapshot taken BEFORE the write.
   v_id := custom.field_declare(v_org, v_tbl, '{"key":"cedar_vendor_website","label":"Still a url","parity_type":"url"}'::jsonb);
-  v_doc := custom.read_record(v_org, v_id, true);
+  v_doc := custom.read_record(v_org, v_id, false);
   if not exists (select 1 from jsonb_array_elements(coalesce(v_doc -> 'rules','[]'::jsonb)) r where r ->> 'kind' = 'pattern') then
     raise exception 'RED 1: the door stopped writing a url its pattern Rule';
   end if;
@@ -424,7 +424,7 @@ begin
 
   -- AS test@test.com, who was shared nothing.
   perform set_config('request.jwt.claims', c_dana_j, true);
-  v_doc := custom.read_record(v_org, v_rec, true);
+  v_doc := custom.read_record(v_org, v_rec, false);
   if v_doc is null or (v_doc ->> 'title') is null then
     raise exception 'RED 5 INCONCLUSIVE: the read was still refused, so clause K is held by something other than custom.assert_client_may_open';
   end if;

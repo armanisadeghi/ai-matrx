@@ -270,7 +270,7 @@ begin
   v_a := custom.record_write(v_org, v_tbl, jsonb_build_object('pname','Chen','phone','111'));
   v_b := custom.record_write(v_org, v_tbl, jsonb_build_object('pname','Chen','phone','222'));
   v_res := custom.migrate_merge(v_org, v_a, v_b, 'green 2a');
-  v_doc := custom.read_record(v_org, v_a, true);
+  v_doc := custom.read_record(v_org, v_a, false);
   -- THE DOOR'S OWN SHAPE, which is what a person is shown: `custom.read_record` resolves the
   -- interned `_sources` pointer and hands back `_alternates -> <key>` as a ranked list, each
   -- entry naming the record the other value came from. The old suite read `custom.record.data`
@@ -324,7 +324,7 @@ begin
   perform custom.record_update(v_org, v_a, jsonb_build_object('nickname','Chenny'));
   perform custom.record_update(v_org, v_b, jsonb_build_object('nickname','Chen-Chen'));
   v_res := custom.migrate_merge(v_org, v_a, v_b, 'green 2b');
-  v_doc := custom.read_record(v_org, v_a, true);
+  v_doc := custom.read_record(v_org, v_a, false);
   if not exists (select 1 from jsonb_array_elements(coalesce(v_doc -> '_retired','[]'::jsonb)) x
                   where x ->> 'key' = 'nickname' and x -> 'value' = '"Chen-Chen"'::jsonb
                     and x ->> 'reason' ilike '%not a declared field%') then
@@ -355,13 +355,13 @@ begin
   -- Same clauses, same records, same assertions — asked through the door a person has.
   -- 3a. text -> number: "12" CONVERTS to the number 12.
   perform custom.field_update(v_org, v_f_phone, jsonb_build_object('plain','number'));
-  v_doc := custom.read_record(v_org, v_a, true) -> 'phone';
+  v_doc := custom.read_record(v_org, v_a, false) -> 'phone';
   if v_doc is distinct from '12'::jsonb then
     raise exception '3a: text -> number did not convert "12"; the value is now %', coalesce(v_doc::text,'absent');
   end if;
 
   -- 3b. And "abc" is RETIRED with a sentence naming the field and the value.
-  v_doc := custom.read_record(v_org, v_ann, true);
+  v_doc := custom.read_record(v_org, v_ann, false);
   if v_doc ? 'phone' then
     raise exception '3b: "abc" is still sitting in the document after the field became a number';
   end if;
@@ -374,13 +374,13 @@ begin
   -- 3c. AND THE RECORD IS WRITABLE AGAIN — the whole point of T12. A rename of a field the
   --     write never touched used to be refused, naming Phone.
   perform custom.record_update(v_org, v_ann, jsonb_build_object('pname','Ann Lee'));
-  if (custom.read_record(v_org, v_ann, true) ->> 'pname') <> 'Ann Lee' then
+  if (custom.read_record(v_org, v_ann, false) ->> 'pname') <> 'Ann Lee' then
     raise exception '3c: the rename did not land';
   end if;
 
   -- 3d. number -> text, and text -> date, both ways round, on real records.
   perform custom.field_update(v_org, v_f_phone, jsonb_build_object('plain','text'));
-  v_doc := custom.read_record(v_org, v_a, true) -> 'phone';
+  v_doc := custom.read_record(v_org, v_a, false) -> 'phone';
   if v_doc is distinct from '"12"'::jsonb then
     raise exception '3d: number -> text did not convert 12 back to "12"; it is now %', coalesce(v_doc::text,'absent');
   end if;
@@ -392,7 +392,7 @@ begin
   -- door builds, not in the patch. Sending it was always a no-op; now it is an honest refusal,
   -- which is the fix working. The parity type alone is what changes the column's shape.
   perform custom.field_update(v_org, v_f_phone, jsonb_build_object('parity_type','datetime'));
-  v_doc := custom.read_record(v_org, v_a, true) -> 'phone';
+  v_doc := custom.read_record(v_org, v_a, false) -> 'phone';
   if v_doc is distinct from '"2026-03-01"'::jsonb then
     raise exception '3d: text -> date did not keep the date; it is now %', coalesce(v_doc::text,'absent');
   end if;
@@ -507,7 +507,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform custom.share_grant(v_org, v_ann, 'user', c_dana, 'viewer'::public.permission_level);
   perform set_config('request.jwt.claims', c_dana_j, true);
-  if (custom.read_record(v_org, v_ann, true) ->> 'pname') <> 'Ann Lee' then
+  if (custom.read_record(v_org, v_ann, false) ->> 'pname') <> 'Ann Lee' then
     raise exception '5c: the record shared with test@test.com at viewer does not read back for her';
   end if;
   perform set_config('request.jwt.claims', c_admin_j, true);

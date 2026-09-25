@@ -273,7 +273,7 @@ export interface ContentSourceAdapter {
     previousContent?: string;
     source: ContentSource;
     dispatch: AppDispatch;
-  }) => Promise<void | NoteSaveReceipt>;
+  }) => Promise<void | NoteSaveReceipt | ChatAnswerSaveReceipt>;
 
   /**
    * Resolves an action's editable snapshot before an overlay or callback group
@@ -346,6 +346,14 @@ export interface RichDocumentActionContextCallbacks {
     actionId: "cleanup" | "help" | "customAgent",
     ctx: RichDocumentActionContext,
   ) => void;
+}
+
+/** What a chat-answer save actually wrote (RC-B5) — the source of any "saved" sentence. */
+export interface ChatAnswerSaveReceipt {
+  kind: "chat-answer";
+  written: boolean;
+  /** Separate spans of the stored answer that changed; everything else is byte-identical. */
+  changedSpans: number;
 }
 
 export interface RichDocumentActionContext {

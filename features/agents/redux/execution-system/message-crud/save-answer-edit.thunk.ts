@@ -70,6 +70,11 @@ export interface SaveAnswerEditResult {
   written: boolean;
   /** The answer text as the row now holds it. */
   storedText: string;
+  /**
+   * How many separate spans of the stored answer this save changed (a
+   * display edit: one per mapped hunk; a whole-text edit: 1). 0 = nothing.
+   */
+  changedSpans: number;
 }
 
 interface ThunkApi {
@@ -98,10 +103,12 @@ export const saveAnswerEdit = createAsyncThunk<SaveAnswerEditResult, SaveAnswerE
       });
     }
     let newText = givenText;
+    let changedSpans = 1;
     if (displayEdit) {
       const mapped = spliceDisplayEdit(stored.text, displayEdit.previous, displayEdit.next);
       if ("error" in mapped) return rejectWithValue({ message: mapped.error });
       newText = mapped.text;
+      changedSpans = mapped.changedSpans;
     }
     if (newText === undefined) {
       return rejectWithValue({ message: "Nothing to save: no edited text was given." });
@@ -109,7 +116,7 @@ export const saveAnswerEdit = createAsyncThunk<SaveAnswerEditResult, SaveAnswerE
     const plan = spliceAnswerText(stored.content, newText);
     if ("error" in plan) return rejectWithValue({ message: plan.error });
     if (!plan.changed) {
-      return { written: false, storedText: stored.text };
+      return { written: false, storedText: stored.text, changedSpans: 0 };
     }
     try {
       await dispatch(
@@ -123,7 +130,7 @@ export const saveAnswerEdit = createAsyncThunk<SaveAnswerEditResult, SaveAnswerE
       return rejectWithValue({ message });
     }
     const after = getState().messages.byConversationId[conversationId]?.byId?.[messageId];
-    return { written: true, storedText: projectAnswerText(after?.content).text };
+    return { written: true, storedText: projectAnswerText(after?.content).text, changedSpans };
   },
 );
 

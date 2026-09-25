@@ -167,7 +167,7 @@ begin
     raise notice '1b: custom.my_level answers admin for the owner — the halving still climbs.';
   else
     -- THE CONTROL SHE CAN DO.
-    if custom.read_record(v_org, v_shared, true) is null then
+    if custom.read_record(v_org, v_shared, false) is null then
       raise exception '1c: the record shared with her at viewer did not read back';
     end if;
     raise notice '1c: the one record shared with her at viewer reads back through custom.read_record.';
@@ -180,7 +180,7 @@ begin
 
     -- THE NEGATIVE.
     begin
-      perform custom.read_record(v_org, v_private, true);
+      perform custom.read_record(v_org, v_private, false);
       raise exception '1e: she read a record nobody shared with her';
     exception when insufficient_privilege then
       get stacked diagnostics v_msg = message_text;

@@ -252,7 +252,7 @@ begin
     raise exception 'RED 2 DID NOT LAND: the by-name formula was still refused, so the inverse did not put the defect back';
   end if;
   -- AND THIS IS WHAT THE DISPATCHER THEN SEES, FOREVER, WITH NO WORD ANYWHERE.
-  select custom.read_record(v_org, v_rec, true) ->> 'shouty' into v_seen;
+  select custom.read_record(v_org, v_rec, false) ->> 'shouty' into v_seen;
   if v_seen is not null then
     raise exception 'RED 2: the by-name column answered "%" — it was supposed to be empty on every read', v_seen;
   end if;
@@ -266,7 +266,7 @@ begin
   if v_bad is null then
     raise exception 'RED 3 DID NOT LAND: the absent-column formula was still refused';
   end if;
-  select custom.read_record(v_org, v_rec, true) ->> 'doubled' into v_seen;
+  select custom.read_record(v_org, v_rec, false) ->> 'doubled' into v_seen;
   if v_seen is not null then
     raise exception 'RED 3: the absent-column formula answered "%"', v_seen;
   end if;
@@ -284,7 +284,7 @@ begin
 
   -- ══════════════════════════════ AND THE CONTROL CLAUSES STAY GREEN, which is how this file
   -- proves it put back ONE behaviour rather than breaking the function.
-  if custom.read_record(v_org, v_rec, true) ->> 'title' is distinct from 'RPC-T1-7000' then
+  if custom.read_record(v_org, v_rec, false) ->> 'title' is distinct from 'RPC-T1-7000' then
     raise exception 'RED CONTROL: the inverse body broke an ordinary column, so nothing above is about this defect';
   end if;
   raise notice 'RED CONTROL — ordinary columns are untouched by the inverse body';

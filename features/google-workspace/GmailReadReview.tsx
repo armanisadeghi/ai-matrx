@@ -12,9 +12,13 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   readGmailMessage,
   searchGmail,
+  modifyGmailMessage,
+  listGmailLabels,
 } from "@/features/marketing/google/service";
 import type {
+  GmailLabelSummary,
   GmailMessageDetail,
+  GmailModifyAction,
   GmailSearchResult,
 } from "@/features/marketing/google/types";
 import { GOOGLE_SCOPE } from "@/lib/googleScopes";
@@ -41,11 +45,19 @@ export function GmailReadReview() {
   const connectionId = accounts.some((row) => row.id === selectedConnectionId)
     ? selectedConnectionId
     : (accounts[0]?.id ?? "");
+  const canModify = accounts.some(
+    (row) =>
+      row.id === connectionId && row.scopes.includes(GOOGLE_SCOPE.gmailModify),
+  );
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<GmailSearchResult | null>(null);
   const [message, setMessage] = useState<GmailMessageDetail | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [mutationStatus, setMutationStatus] = useState("");
+  const [labelId, setLabelId] = useState("");
+  const [labels, setLabels] = useState<GmailLabelSummary[] | null>(null);
+  const [labelsHaveMore, setLabelsHaveMore] = useState(false);
 
   async function onSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -54,6 +66,7 @@ export function GmailReadReview() {
     setError("");
     setResult(null);
     setMessage(null);
+    setMutationStatus("");
     try {
       setResult(await searchGmail(connectionId, query.trim()));
     } catch (cause) {
@@ -68,6 +81,7 @@ export function GmailReadReview() {
     setBusy(true);
     setError("");
     setMessage(null);
+    setMutationStatus("");
     try {
       setMessage(await readGmailMessage(connectionId, messageId));
     } catch (cause) {
@@ -79,14 +93,78 @@ export function GmailReadReview() {
     }
   }
 
+  async function onModify(action: GmailModifyAction) {
+    if (!connectionId || !message || !canModify || busy) return;
+    const requestedLabelId = labelId.trim();
+    if (
+      (action === "add_label" || action === "remove_label") &&
+      !requestedLabelId
+    ) {
+      setError("Enter a Gmail label ID first.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    setMutationStatus("");
+    try {
+      const updated = await modifyGmailMessage({
+        connectionId,
+        messageId: message.id,
+        action,
+        ...(action === "add_label" || action === "remove_label"
+          ? { labelId: requestedLabelId }
+          : {}),
+      });
+      if (updated.message_id !== message.id || !Array.isArray(updated.label_ids)) {
+        throw new Error("Gmail did not confirm the changed message. Try again.");
+      }
+      const description: Record<GmailModifyAction, string> = {
+        archive: "Archived",
+        mark_read: "Marked as read",
+        mark_unread: "Marked as unread",
+        star: "Starred",
+        unstar: "Removed star",
+        add_label: "Added label",
+        remove_label: "Removed label",
+      };
+      setMutationStatus(`${description[action]} in Gmail.`);
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "This message could not be changed.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onLoadLabels() {
+    if (!connectionId || !canModify || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const result = await listGmailLabels(connectionId);
+      if (!Array.isArray(result.labels)) {
+        throw new Error("Gmail did not return a label list. Try again.");
+      }
+      setLabels(result.labels);
+      setLabelsHaveMore(result.has_more);
+      setLabelId("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Gmail labels could not load.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4 sm:p-6">
       <div>
         <h1 className="text-xl font-semibold">Gmail reading</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Search and open messages from the Google account you choose. This
-          reads only when you ask; it does not sync your whole mailbox, change
-          messages, or send email.
+          Search and open messages from the Google account you choose. Search
+          reads only when you ask. If this account has Gmail change access,
+          you can change an opened message with an explicit action. This screen
+          does not sync your whole mailbox or send email.
         </p>
       </div>
       {!userId || inventory.isLoading ? (
@@ -122,10 +200,16 @@ export function GmailReadReview() {
             id="gmail-read-account"
             className="h-10 rounded-md border bg-background px-2 text-sm"
             value={connectionId}
+            disabled={busy}
             onChange={(event) => {
               setSelectedConnectionId(event.target.value);
               setResult(null);
               setMessage(null);
+              setMutationStatus("");
+              setError("");
+              setLabels(null);
+              setLabelsHaveMore(false);
+              setLabelId("");
             }}
           >
             {accounts.map((account) => (
@@ -161,6 +245,11 @@ export function GmailReadReview() {
       {error || inventory.isError ? (
         <p role="alert" className="text-sm text-destructive">
           {error || "Google accounts could not load. Try again shortly."}
+        </p>
+      ) : null}
+      {mutationStatus ? (
+        <p role="status" className="text-sm text-foreground">
+          {mutationStatus}
         </p>
       ) : null}
       {result ? (
@@ -219,6 +308,74 @@ export function GmailReadReview() {
               Only the first 64 KB of this message is shown.
             </p>
           ) : null}
+          {canModify ? (
+            <section aria-label="Gmail message actions" className="mt-4 border-t pt-4">
+              <p className="mb-2 text-sm font-medium">Change this message in Gmail</p>
+              <div className="flex flex-wrap gap-2">
+                {([
+                  ["archive", "Archive"],
+                  ["mark_read", "Mark read"],
+                  ["mark_unread", "Mark unread"],
+                  ["star", "Star"],
+                  ["unstar", "Remove star"],
+                ] as const).map(([action, label]) => (
+                  <Button
+                    key={action}
+                    type="button"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => void onModify(action)}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+              <div className="mt-4">
+                {labels === null ? (
+                  <Button type="button" variant="outline" disabled={busy} onClick={() => void onLoadLabels()}>
+                    Load Gmail labels
+                  </Button>
+                ) : labels.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No Gmail labels are available for this account.</p>
+                ) : (
+                  <>
+                    <label htmlFor="gmail-label-picker" className="block text-sm font-medium">
+                      Gmail label
+                    </label>
+                    <select
+                      id="gmail-label-picker"
+                      className="mt-1 h-10 w-full rounded-md border bg-background px-2 text-sm"
+                      value={labelId}
+                      onChange={(event) => setLabelId(event.target.value)}
+                      disabled={busy}
+                    >
+                      <option value="">Choose a label</option>
+                      {labels.map((label) => (
+                        <option key={label.id} value={label.id}>{label.name}</option>
+                      ))}
+                    </select>
+                    {labelsHaveMore ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Showing the first 100 labels from this account.
+                      </p>
+                    ) : null}
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Button type="button" variant="outline" disabled={busy || !labelId} onClick={() => void onModify("add_label")}>
+                        Add label
+                      </Button>
+                      <Button type="button" variant="outline" disabled={busy || !labelId} onClick={() => void onModify("remove_label")}>
+                        Remove label
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </section>
+          ) : (
+            <p className="mt-4 border-t pt-4 text-sm text-muted-foreground">
+              This account has Gmail reading access. Message changes require a separate Gmail change grant.
+            </p>
+          )}
         </article>
       ) : null}
     </main>

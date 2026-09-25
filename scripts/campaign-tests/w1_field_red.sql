@@ -121,7 +121,7 @@ begin
   v_id := custom.field_declare(v_org, v_tbl, jsonb_build_object(
     'key','score','label','Score','plain','number','config','{"kind":"number","min":0,"max":100}'::jsonb));
   if v_id is null then raise exception 'RED 1: the constraint-in-behaviour write did not land'; end if;
-  v_doc := custom.read_record(v_org, v_id, true);
+  v_doc := custom.read_record(v_org, v_id, false);
   if not (v_doc -> 'config' ? 'min') then
     raise exception 'RED 1: the constraint smuggled into config did not survive: %', v_doc;
   end if;
@@ -131,7 +131,7 @@ begin
   v_id := custom.field_declare(v_org, v_tbl, jsonb_build_object(
     'key','note','label','Note','plain','text','source','typed_by_a_person'));
   if v_id is null then raise exception 'RED 1: the invented-source write did not land'; end if;
-  v_doc := custom.read_record(v_org, v_id, true);
+  v_doc := custom.read_record(v_org, v_id, false);
   if (v_doc ->> 'source') <> 'typed_by_a_person' then
     raise exception 'RED 1: the invented source did not survive — it reads %', v_doc ->> 'source';
   end if;
@@ -296,7 +296,7 @@ begin
       "source":["record","tool"],"semantic_type":"everything","modifiers":["urgent"],
       "override_policy":"whenever"}'::jsonb);
   if v_id is null then raise exception 'RED 3: the write did not land'; end if;
-  v_doc := custom.read_record(v_org, v_id, true);
+  v_doc := custom.read_record(v_org, v_id, false);
   if not (v_doc ? 'type') then raise exception 'RED 3: the fused type did not survive'; end if;
   if jsonb_typeof(v_doc -> 'source') <> 'array' then raise exception 'RED 3: the two sources did not survive'; end if;
   if (v_doc ->> 'semantic_type') <> 'everything' then raise exception 'RED 3: the invented semantic type did not survive'; end if;
@@ -456,7 +456,7 @@ begin
   if v_id is null then
     raise exception 'RED 5 INCONCLUSIVE: the shape change was still refused, so §K is held by something other than custom.assert_client_may_change';
   end if;
-  raise notice 'RED 5 CONFIRMED — with custom.assert_client_may_change neutered, test@test.com adds a column to a table she is not an admin of: %', custom.read_record(v_org, v_id, true) ->> 'label';
+  raise notice 'RED 5 CONFIRMED — with custom.assert_client_may_change neutered, test@test.com adds a column to a table she is not an admin of: %', custom.read_record(v_org, v_id, false) ->> 'label';
 end;
 $r5$;
 

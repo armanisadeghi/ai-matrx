@@ -140,7 +140,7 @@ begin
 
   -- RED 1 — a choice written as a word is stored as the OPTION RECORD'S ID again.
   v_new := custom.record_write(v_org, v_t, jsonb_build_object('class_name','Noon Spin','kind','Spin','parent_id',v_home::text));
-  v_doc := custom.read_record(v_org, v_new, true);
+  v_doc := custom.read_record(v_org, v_new, false);
   if (v_doc ->> 'kind') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-' then
     raise exception 'RED 1 IS NOT RED: the read door still answers % rather than a uuid', v_doc ->> 'kind';
   end if;

@@ -28,8 +28,8 @@ export function PageCaptureButton({
   size?: "xs" | "icon" | "sm" | "toolbar";
   className?: string;
 }) {
-  usePageCaptureVersion();
-  const capture = getActivePageCapture();
+  const version = usePageCaptureVersion();
+  const capture = getActivePageCapture(version);
   if (!capture) return null;
   const loadable = loadableSections(capture);
   const live = () => {

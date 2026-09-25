@@ -154,7 +154,7 @@ begin
   v_wo := custom.record_write(v_org, v_wos, jsonb_build_object(
     'order_number', 'WO-4480',
     'equipment_serviced', jsonb_build_array(v_f::text, v_c::text, v_f::text)));
-  v_val := custom.read_record(v_org, v_wo, true) -> 'equipment_serviced';
+  v_val := custom.read_record(v_org, v_wo, false) -> 'equipment_serviced';
   if v_val is distinct from jsonb_build_array(v_f::text, v_c::text) then
     raise exception 'CLAUSE 1 FAILED: the cell reads %, not [furnace, condenser]', v_val;
   end if;
@@ -167,7 +167,7 @@ begin
   -- 2
   perform custom.record_update(v_org, v_wo, jsonb_build_object(
     'equipment_serviced', jsonb_build_array(v_c::text, v_k::text, v_c::text, v_f::text)));
-  v_val := custom.read_record(v_org, v_wo, true) -> 'equipment_serviced';
+  v_val := custom.read_record(v_org, v_wo, false) -> 'equipment_serviced';
   if v_val is distinct from jsonb_build_array(v_c::text, v_k::text, v_f::text) then
     raise exception 'CLAUSE 2 FAILED: the cell reads %, not [condenser, coil, furnace]', v_val;
   end if;
@@ -180,10 +180,10 @@ begin
   -- 3
   perform custom.record_update(v_org, v_wo, jsonb_build_object(
     'technicians_on_site', jsonb_build_array(v_dana::text)));
-  v_person := (custom.read_record(v_org, v_wo, true) -> 'technicians_on_site' ->> 0)::uuid;
+  v_person := (custom.read_record(v_org, v_wo, false) -> 'technicians_on_site' ->> 0)::uuid;
   perform custom.record_update(v_org, v_wo, jsonb_build_object(
     'technicians_on_site', jsonb_build_array(v_person::text, v_dana::text)));
-  v_val := custom.read_record(v_org, v_wo, true) -> 'technicians_on_site';
+  v_val := custom.read_record(v_org, v_wo, false) -> 'technicians_on_site';
   if v_val is distinct from jsonb_build_array(v_person::text) then
     raise exception 'CLAUSE 3 FAILED: Dana by Person record and by user id reads %', v_val;
   end if;

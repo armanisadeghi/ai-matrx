@@ -309,6 +309,82 @@ describe("Vault and Authenticator organization transport", () => {
     });
   });
 
+  test("a frozen import keeps its command retryable when a successful receipt cannot be read", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => {
+        throw new SyntaxError("truncated receipt");
+      },
+    } as Response);
+    await expect(
+      createVaultItem(
+        { display_name: "Imported", source: "system_import" },
+        {
+          idempotencyKey: "00000000-0000-4000-8000-000000000001",
+          expectedActor: { userId: "user-1", organizationId: ORGANIZATION_ID },
+        },
+      ),
+    ).rejects.toMatchObject({ code: "retryable" });
+  });
+
+  test.each([
+    [
+      409,
+      "idempotency_key_conflict",
+      "This import retry key conflicts with a different request.",
+    ],
+    [
+      410,
+      "idempotency_result_removed",
+      "The import result is no longer available to confirm.",
+    ],
+  ])(
+    "frozen import response %i preserves its honest terminal recovery reason",
+    async (status, code, message) => {
+      fetchMock.mockResolvedValueOnce(errorResponse(status));
+      await expect(
+        createVaultItem(
+          { display_name: "Imported", source: "system_import" },
+          {
+            idempotencyKey: "00000000-0000-4000-8000-000000000001",
+            expectedActor: {
+              userId: "user-1",
+              organizationId: ORGANIZATION_ID,
+            },
+          },
+        ),
+      ).rejects.toMatchObject({ code, message });
+    },
+  );
+
+  test("refuses incomplete frozen-import options before network I/O", async () => {
+    const missingKey = {
+      expectedActor: { userId: "user-1", organizationId: ORGANIZATION_ID },
+    };
+    // @ts-expect-error a frozen import always carries its original idempotency key.
+    const missingKeyCall = createVaultItem(
+      { display_name: "Imported", source: "system_import" },
+      missingKey,
+    );
+    await expect(missingKeyCall).rejects.toMatchObject({
+      code: "request_rejected",
+    });
+    await expect(
+      createVaultItem(
+        { display_name: "Imported", source: "system_import" },
+        {
+          idempotencyKey: "   ",
+          expectedActor: {
+            userId: "user-1",
+            organizationId: ORGANIZATION_ID,
+          },
+        },
+      ),
+    ).rejects.toMatchObject({ code: "request_rejected" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   test.each([408, 429, 500, 502, 503, 504])(
     "ambiguous import response %i keeps the frozen idempotency command retryable",
     async (status) => {

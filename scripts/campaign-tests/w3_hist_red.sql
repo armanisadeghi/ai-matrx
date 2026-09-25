@@ -607,7 +607,7 @@ begin
 
   perform custom.record_update(v_org, v_mf, jsonb_build_object(
     'temporal', jsonb_build_object('mode','whenever')));
-  v_txt := custom.read_record(v_org, v_mf, true) -> 'temporal' ->> 'mode';
+  v_txt := custom.read_record(v_org, v_mf, false) -> 'temporal' ->> 'mode';
   if v_txt is distinct from 'whenever' then
     raise exception 'RED 8 did not go red: the mode a person reads back off custom.read_record is "%"', coalesce(v_txt, 'nothing');
   end if;

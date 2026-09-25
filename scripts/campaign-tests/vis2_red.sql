@@ -823,7 +823,7 @@ begin
   -- a record organization B never agreed to, and can read both ends of it.
   if not (custom.record_resolve(v_a, v_edge) ->> 'live')::boolean then
     raise exception 'R2 NOT RED — the edge did not survive, so "one organization''s flag opened the wall" is not what is being shown.'; end if;
-  if (custom.read_record(v_a, v_edge, true) ->> 'to') <> v_recb::text then
+  if (custom.read_record(v_a, v_edge, false) ->> 'to') <> v_recb::text then
     raise exception 'R2 NOT RED — the read door in organization A does not hand back a link naming organization B''s record.'; end if;
   if not exists (select 1 from custom.relation_targets(v_a, v_edge, 'to') t where t = v_recb) then
     raise exception 'R2 NOT RED — the relation door in organization A does not name organization B''s record as the target.'; end if;
@@ -857,7 +857,7 @@ begin
    where m.verb = 'retype' and m.target_kind = 'field';
   if v_n <> 0 then
     raise exception 'R4 NOT RED — the old conversion already wrote % migration row(s) a person can see.', v_n; end if;
-  if (custom.read_record(v_a, v_rec, true) -> 'severity') is null then
+  if (custom.read_record(v_a, v_rec, false) -> 'severity') is null then
     raise exception 'R4 NOT RED — nothing was actually converted, so "rewrote the values and logged nothing" is not what is being shown.'; end if;
   v_red := v_red + 1;
   raise notice 'R4 RED — a field type change through the ordinary write door rewrote the table''s values and left no Migration row for anyone to find.';

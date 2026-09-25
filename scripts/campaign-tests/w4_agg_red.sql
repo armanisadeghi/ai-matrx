@@ -180,7 +180,7 @@ begin
   if n <> 1 then
     raise exception 'N1: test@test.com is counted over % records of a Table she holds exactly one of.', n;
   end if;
-  if (custom.read_record(v_org, v_shared, true) ->> 'title') <> 'D7 hers' then
+  if (custom.read_record(v_org, v_shared, false) ->> 'title') <> 'D7 hers' then
     raise exception 'N2: the one record shared with test@test.com at viewer does not read back for her.';
   end if;
   raise notice 'NEGATIVE PASSED — test@test.com is counted over exactly the one record she holds, and reads it.';

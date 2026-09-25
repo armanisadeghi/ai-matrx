@@ -184,13 +184,22 @@ export class VaultLoginExportTransportError extends Error {
 
 export class VaultImportTransportError extends Error {
   constructor(
-    public readonly code: "context_changed" | "request_rejected" | "retryable",
+    public readonly code:
+      | "context_changed"
+      | "idempotency_key_conflict"
+      | "idempotency_result_removed"
+      | "request_rejected"
+      | "retryable",
   ) {
     super(
       code === "context_changed"
         ? "Your account or request organization changed. Review the import again before continuing."
         : code === "retryable"
           ? "The import could not be confirmed. Retry this row with the same import session."
+          : code === "idempotency_key_conflict"
+            ? "This import retry key conflicts with a different request."
+            : code === "idempotency_result_removed"
+              ? "The import result is no longer available to confirm."
           : "This import row was rejected. Review the row without exposing its values.",
     );
   }
@@ -596,13 +605,18 @@ export async function restoreVaultItem(
   };
 }
 
+type FrozenVaultImport = {
+  idempotencyKey: string;
+  expectedActor: VaultExpectedActor;
+};
+
 async function vaultFetch<T>(
   path: string,
   init?: RequestInit,
-  expectedActor?: VaultExpectedActor,
+  frozenImport?: FrozenVaultImport,
 ): Promise<T> {
   const { organizationId, headers: auth } = await authHeaders(
-    expectedActor,
+    frozenImport?.expectedActor,
     undefined,
     init?.method ?? "GET",
   );
@@ -620,23 +634,22 @@ async function vaultFetch<T>(
       headers,
     });
   } catch {
-    if (expectedActor) throw new VaultImportTransportError("retryable");
+    if (frozenImport) throw new VaultImportTransportError("retryable");
     throw new Error(
       "Vault service unreachable — value operations need the backend online",
     );
   }
   if (!resp.ok) {
-    if (expectedActor) {
+    if (frozenImport) {
       if ([408, 429, 500, 502, 503, 504].includes(resp.status))
         throw new VaultImportTransportError("retryable");
-      if (
-        resp.status === 401 ||
-        resp.status === 403 ||
-        resp.status === 409 ||
-        resp.status === 410
-      ) {
+      if (resp.status === 401 || resp.status === 403) {
         throw new VaultImportTransportError("context_changed");
       }
+      if (resp.status === 409)
+        throw new VaultImportTransportError("idempotency_key_conflict");
+      if (resp.status === 410)
+        throw new VaultImportTransportError("idempotency_result_removed");
       throw new VaultImportTransportError("request_rejected");
     }
     if (resp.status === 401 && path.endsWith("/reveal")) {
@@ -666,7 +679,12 @@ async function vaultFetch<T>(
     throw new Error(`Vault request failed (${resp.status})`);
   }
   if (resp.status === 204) return undefined as T;
-  return (await resp.json()) as T;
+  try {
+    return (await resp.json()) as T;
+  } catch (cause) {
+    if (frozenImport) throw new VaultImportTransportError("retryable");
+    throw cause;
+  }
 }
 
 /** Advisory destination validation. It never reads a response body and callers
@@ -680,20 +698,36 @@ export function checkVaultDestination(
   });
 }
 
+type VaultItemCreateOptions =
+  | FrozenVaultImport
+  | { idempotencyKey?: never; expectedActor?: never };
+
+function isFrozenVaultImport(
+  options: VaultItemCreateOptions,
+): options is FrozenVaultImport {
+  return (
+    typeof options.idempotencyKey === "string" &&
+    options.idempotencyKey.trim().length > 0 &&
+    Boolean(options.expectedActor)
+  );
+}
+
 export function createVaultItem(
   body: VaultItemCreateRequest,
-  options?: { idempotencyKey?: string; expectedActor?: VaultExpectedActor },
+  options?: VaultItemCreateOptions,
 ): Promise<VaultItem> {
+  if (options && !isFrozenVaultImport(options))
+    return Promise.reject(new VaultImportTransportError("request_rejected"));
   return vaultFetch<VaultItemWire>(
     "/items",
     {
       method: "POST",
       body: JSON.stringify(body),
-      headers: options?.idempotencyKey
+      headers: options
         ? { "Idempotency-Key": options.idempotencyKey }
         : undefined,
     },
-    options?.expectedActor,
+    options,
   ).then(normalizeWireItem);
 }
 

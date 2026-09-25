@@ -1,4 +1,4 @@
-import { act, useLayoutEffect } from "react";
+import { act, useEffect, useLayoutEffect, useRef } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 const getBulk = jest.fn();
@@ -19,11 +19,18 @@ function deferred<T>() {
 
 let activeState: ReturnType<typeof useVaultItemState>;
 
-function Harness({ actorId = "user", organizationId = "org", scopeKey = "mine", itemIds = ["a"] }: {
-  actorId?: string | null; organizationId?: string | null; scopeKey?: string; itemIds?: string[];
+function Harness({ actorId = "user", organizationId = "org", scopeKey = "mine", itemIds = ["a"], routedTouch = false }: {
+  actorId?: string | null; organizationId?: string | null; scopeKey?: string; itemIds?: string[]; routedTouch?: boolean;
 }) {
   const state = useVaultItemState({ actorId, organizationId, scopeKey, itemIds });
+  const routedTouchRecorded = useRef(false);
   useLayoutEffect(() => { activeState = state; }, [state]);
+  useEffect(() => {
+    if (!routedTouch || state.status !== "ready" || routedTouchRecorded.current) return;
+    void state.touch("a").then((touched) => {
+      if (touched) routedTouchRecorded.current = true;
+    });
+  }, [routedTouch, state]);
   return <div data-status={state.status} data-favorite={state.stateById.get("a")?.isFavorite ? "yes" : "no"}>
     <button type="button" onClick={() => void state.toggleFavorite("a")}>favorite</button>
     <button type="button" onClick={() => void state.touch("a")}>touch</button>
@@ -179,6 +186,17 @@ describe("useVaultItemState", () => {
     await act(async () => activeState.retry());
     expect(touch).toHaveBeenCalledTimes(2);
     expect(activeState.status).toBe("ready");
+  });
+
+  it("does not queue a second routed touch while retry drains the failed open", async () => {
+    getBulk.mockResolvedValue(ok(row("a")));
+    touch.mockResolvedValueOnce({ ok: false, error: {} }).mockResolvedValue({ ok: true, data: {} });
+    await act(async () => root.render(<Harness />));
+    await act(async () => { expect(await activeState.touch("a")).toBe(false); });
+    expect(activeState.status).toBe("error");
+    await act(async () => root.render(<Harness routedTouch />));
+    await act(async () => activeState.retry());
+    expect(touch).toHaveBeenCalledTimes(2);
   });
 
 });

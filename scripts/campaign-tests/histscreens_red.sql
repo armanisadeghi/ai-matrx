@@ -125,7 +125,7 @@ begin
   raise notice '1 RED — the old preview says price goes from % to %, and the record says %.',
     (select c -> 'before' from jsonb_array_elements(v_prev -> 'changes') c where c ->> 'key' = 'price'),
     (select c -> 'after'  from jsonb_array_elements(v_prev -> 'changes') c where c ->> 'key' = 'price'),
-    custom.read_record(v_org, v_job, true) -> 'price';
+    custom.read_record(v_org, v_job, false) -> 'price';
 
   -- BLOCK 2 — it calls a key changed that did not move. `title` has been "Roof repair" since
   -- version 1 and is in the old preview's list because the restore body carries no envelope.
@@ -144,12 +144,12 @@ begin
   if v_ret is not null then
     raise exception '3: the old custom.io_restore returned % — the inverse did not take', v_ret;
   end if;
-  if (custom.read_record(v_org, v_job, true) -> 'price')::text <> '1200' then
+  if (custom.read_record(v_org, v_job, false) -> 'price')::text <> '1200' then
     raise exception '3: the restore did not actually happen, so "it returned null" proves nothing';
   end if;
   v_red := v_red + 1;
   raise notice '3 RED — the restore worked (the price is now %) and custom.io_restore answered NULL.',
-    custom.read_record(v_org, v_job, true) -> 'price';
+    custom.read_record(v_org, v_job, false) -> 'price';
 
   insert into hs_red(k, v) values ('red', v_red::text);
 end;
@@ -269,7 +269,7 @@ begin
   -- version 2 must remove it, and the old merge-only body leaves it exactly where it is.
   perform custom.record_update(v_org, v_job, jsonb_build_object('price', 1100, 'notes','added after v2'));
   perform custom.io_restore(v_org, v_job, 2);
-  v_notes := custom.read_record(v_org, v_job, true) ->> 'notes';
+  v_notes := custom.read_record(v_org, v_job, false) ->> 'notes';
   if v_notes is null then
     raise exception '4: the old restore cleared the later key — the inverse did not take';
   end if;

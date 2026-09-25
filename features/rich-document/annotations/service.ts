@@ -23,9 +23,6 @@ import { associationsService } from "@/features/scopes/service/associationsServi
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { getUserId } from "@/utils/auth/getUserId";
 import { guardedUpdate } from "@ai-matrx/data/db";
-import type { Database } from "@/types/database.types";
-
-type ContentDocumentInsert = Database["content"]["Tables"]["document"]["Insert"];
 import {
   ANCHOR_WRITES_ENABLED,
   ANCHOR_WRITES_OFF_SENTENCE,
@@ -37,6 +34,8 @@ import {
   type HighlightColor,
 } from "./constants";
 import { textAnchorProblem, type TextAnchor } from "./anchor";
+import { EditConflictError, humanError, isTransportFailure } from "./errors";
+import { readAllRows } from "@ai-matrx/data/db";
 import type {
   AnnotationAuthor,
   AnnotationItem,
@@ -59,13 +58,8 @@ export function assertAnchorWritable(anchor: TextAnchor | null | undefined): voi
   if (problem) throw new Error(`That passage could not be pinned: ${problem}.`);
 }
 
-function sentence(action: string, error: unknown): Error {
-  const msg =
-    error && typeof error === "object" && "message" in error
-      ? String((error as { message: unknown }).message)
-      : String(error);
-  return new Error(`${action} failed: ${msg}`);
-}
+/** Every failure leaves here as a plain sentence (errors.ts); the raw error is logged once. */
+const sentence = humanError;
 
 /**
  * Every cmt_* call crosses the ONE comment seam (associationsDataSource.rpc —
@@ -104,6 +98,8 @@ interface CommentRow {
   anchor?: unknown;
   resolved_at?: string | null;
   suggested_text?: string | null;
+  version?: number | null;
+  client_request_id?: string | null;
 }
 
 function isCommentRow(v: unknown): v is CommentRow {
@@ -136,7 +132,7 @@ export async function listCommentThreads(source: AnnotationSource): Promise<Comm
   const data = await rpc<unknown>(
     "cmt_list",
     { p_entity_type: source.token, p_entity_id: source.id },
-    "Loading comments",
+    "loading the comments",
   );
   const rows = Array.isArray(data) ? data.filter(isCommentRow) : [];
   const me = getUserId();
@@ -161,11 +157,13 @@ export async function listCommentThreads(source: AnnotationSource): Promise<Comm
       resolvedAt: row.resolved_at ?? null,
       replies: [],
       commentId: row.id,
+      version: typeof row.version === "number" ? row.version : null,
     });
   }
   for (const row of replies) {
     const parent = row.parent_id ? roots.get(row.parent_id) : undefined;
     const reply: CommentReply = {
+      version: typeof row.version === "number" ? row.version : null,
       id: row.id,
       body: row.body ?? "",
       author: authorOf(row),
@@ -199,6 +197,12 @@ export interface AddCommentInput {
   parentId?: string | null;
   anchor?: TextAnchor | null;
   suggestedText?: string | null;
+  /** Minted once per draft and reused by every Retry — the door answers a repeat with the first row. */
+  clientRequestId: string;
+  /** The RC-B11 doors are live (cmt_add takes p_client_request_id). */
+  doors: boolean;
+  /** When the FIRST attempt of this draft started — bounds the lost-response read-back. */
+  firstAttemptAt: string;
 }
 
 export async function addComment(input: AddCommentInput): Promise<string> {
@@ -216,21 +220,78 @@ export async function addComment(input: AddCommentInput): Promise<string> {
   // resolves on either the old or the new door identity.
   if (input.anchor) args.p_anchor = input.anchor;
   if (input.suggestedText != null) args.p_suggested_text = input.suggestedText;
-  const id = await rpc<unknown>("cmt_add", args, "Posting the comment");
-  if (typeof id !== "string") throw new Error("Posting the comment failed: the server returned no id.");
-  return id;
+  if (input.doors) {
+    // The door dedupes on (author, request id): a Retry after a lost response is the first row.
+    args.p_client_request_id = input.clientRequestId;
+  } else {
+    // Until the door dedupes, a Retry first asks whether the lost attempt landed.
+    const landed = await findLandedComment(input);
+    if (landed) return landed;
+  }
+  const { data, error } = await commentSeam("cmt_add", args);
+  if (error) throw sentence("posting your comment", error);
+  if (typeof data !== "string") throw sentence("posting your comment", new Error("the server returned no id"));
+  return data;
 }
 
-export async function editComment(id: string, body: string): Promise<void> {
-  await rpc("cmt_edit", { p_id: id, p_body: body }, "Saving the edit");
+/**
+ * The read-back half of an idempotent create, for the door that cannot dedupe yet: my own
+ * comment on this source with exactly this text (and parent), created since the first attempt.
+ */
+async function findLandedComment(input: AddCommentInput): Promise<string | null> {
+  const me = getUserId();
+  const { data, error } = await commentSeam("cmt_list", { p_entity_type: input.source.token, p_entity_id: input.source.id });
+  if (error || !Array.isArray(data)) return null;
+  const since = Date.parse(input.firstAttemptAt) - 2000;
+  const hit = data.filter(isCommentRow).find((r) =>
+    r.created_by === me && (r.body ?? "") === input.body && (r.parent_id ?? null) === (input.parentId ?? null)
+    && Date.parse(r.created_at) >= since);
+  return hit?.id ?? null;
+}
+
+/**
+ * Edit my comment as a compare-and-swap. With the RC-B11 door, the database refuses a moved
+ * version (40001) and hands back the current text; until then the thread is re-read and the
+ * base compared, so an edit never silently overwrites somebody else's. Returns the new version
+ * when the door reports it (the realtime echo of exactly this write is then recognised by it).
+ */
+export async function editComment(
+  source: AnnotationSource,
+  id: string,
+  body: string,
+  base: { body: string; version: number | null },
+  doors: boolean,
+  force = false,
+): Promise<number | null> {
+  if (doors && base.version != null) {
+    const { data, error } = await commentSeam("cmt_edit", { p_id: id, p_body: body, p_expected_version: force ? null : base.version });
+    if (error) {
+      if ((error as { code?: string }).code === "40001") {
+        let current: { body?: string; version?: number } = {};
+        try { current = JSON.parse((error as { details?: string }).details ?? "{}"); } catch { /* the thread re-read below still answers */ }
+        throw new EditConflictError(current.body ?? "", current.version ?? null);
+      }
+      throw sentence("saving your edit", error);
+    }
+    return typeof data === "number" ? data : null;
+  }
+  if (!force) {
+    const { data, error } = await commentSeam("cmt_list", { p_entity_type: source.token, p_entity_id: source.id });
+    if (!error && Array.isArray(data)) {
+      const row = data.filter(isCommentRow).find((r) => r.id === id);
+      if (row && (row.body ?? "") !== base.body) throw new EditConflictError(row.body ?? "", null);
+    }
+  }
+  await rpc("cmt_edit", { p_id: id, p_body: body }, "saving your edit");
+  return null;
 }
 
 export async function deleteComment(id: string): Promise<void> {
-  await rpc("cmt_delete", { p_id: id }, "Deleting the comment");
+  await rpc("cmt_delete", { p_id: id }, "deleting the comment");
 }
 
 export async function resolveComment(id: string, resolved: boolean): Promise<void> {
-  await rpc("cmt_resolve", { p_id: id, p_resolved: resolved }, resolved ? "Resolving" : "Reopening");
+  await rpc("cmt_resolve", { p_id: id, p_resolved: resolved }, resolved ? "resolving the thread" : "reopening the thread");
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -251,7 +312,7 @@ export async function mentionCandidates(
   const data = await rpc<unknown>(
     "cmt_mention_candidates",
     { p_entity_type: source.token, p_entity_id: source.id, p_search: search, p_limit: 8 },
-    "Finding people",
+    "finding people to mention",
   );
   if (!Array.isArray(data)) return [];
   return data
@@ -274,7 +335,7 @@ export async function notifyMentions(
   const data = await rpc<unknown>(
     "cmt_mention_notify",
     { p_comment_id: commentId, p_recipients: userIds, p_deep_link: deepLink ?? null },
-    "Telling the people you mentioned",
+    "telling the people you mentioned",
   );
   const r = (data ?? {}) as Partial<MentionNoticeResult>;
   return { told: Array.isArray(r.told) ? r.told : [], skipped: Array.isArray(r.skipped) ? r.skipped : [] };
@@ -283,28 +344,6 @@ export async function notifyMentions(
 // ─────────────────────────────────────────────────────────────────────────────
 // Private highlights: annotation document + `annotates` edge
 // ─────────────────────────────────────────────────────────────────────────────
-
-let annotationTypeId: Promise<string> | null = null;
-
-function resolveAnnotationTypeId(): Promise<string> {
-  annotationTypeId ??= (async () => {
-    const { data, error } = await supabase
-      .schema("platform")
-      .from("categories")
-      .select("id")
-      .eq("dimension", "document_type")
-      .eq("slug", ANNOTATION_DOCUMENT_TYPE)
-      .is("deleted_at", null)
-      .limit(1)
-      .maybeSingle();
-    if (error || !data) {
-      annotationTypeId = null;
-      throw sentence("Finding the annotation document type", error ?? "no such type is registered");
-    }
-    return data.id as string;
-  })();
-  return annotationTypeId;
-}
 
 function colorOf(metadata: unknown): HighlightColor {
   const c = metadata && typeof metadata === "object" ? (metadata as { color?: unknown }).color : undefined;
@@ -317,55 +356,35 @@ export interface CreateHighlightInput {
   anchor: TextAnchor | null;
   color: HighlightColor;
   note: string;
-  /** A document already created by an earlier attempt whose edge failed — retried, never duplicated. */
-  existingDocumentId?: string | null;
+  /** Minted once per draft; it IS the annotation document's id, so a Retry finds the first write. */
+  clientRequestId: string;
 }
 
-export class HighlightLinkError extends Error {
-  constructor(readonly documentId: string, cause: string) {
-    super(`Your highlight was saved but could not be pinned to this passage yet (${cause}). Retry pins the same highlight — nothing is duplicated.`);
-    this.name = "HighlightLinkError";
-  }
-}
-
+/**
+ * A private highlight or note as ONE transaction (content.annotation_create): the personal
+ * annotation document and its `annotates` edge both exist or neither does — a refused edge can
+ * never strand an invisible record (verify-RC-B11 F4). Filed in the person's own organization.
+ */
 export async function createHighlight(input: CreateHighlightInput): Promise<{ documentId: string; edgeId: string }> {
   assertAnchorWritable(input.anchor);
   const orgId = await ensureOrgId(null);
-  let documentId = input.existingDocumentId ?? null;
-  if (!documentId) {
-    const typeId = await resolveAnnotationTypeId();
-    const { data, error } = await supabase
-      .schema("content")
-      .from("document")
-      // content_hash / data_class are DERIVED by the database (the
-      // _a_refuse_client_derived trigger refuses a client value; data_class
-      // takes the type's floor), so the generated Insert type — which marks
-      // them required because the columns are NOT NULL — is narrower than
-      // the door. Only the person-authored columns are sent.
-      .insert({
-        organization_id: orgId,
-        document_type_id: typeId,
-        title: input.anchor ? `Highlight: ${input.anchor.exact.slice(0, 80)}` : `Note on ${input.source.title || "a document"}`.slice(0, 120),
-        body: input.note,
-        visibility: "personal",
-      } as unknown as ContentDocumentInsert)
-      .select("id")
-      .single();
-    if (error || !data) throw sentence("Saving the highlight", error ?? "no row came back");
-    documentId = data.id as string;
-  }
-  const res = await associationsService.add({
-    sourceType: "document",
-    sourceId: documentId,
-    targetType: input.source.token as never,
-    targetId: input.source.id,
-    orgId,
-    role: ANNOTATES_ROLE,
-    metadata: { color: input.color },
-    ...(input.anchor ? { payloadKind: "text_anchor", payload: input.anchor } : {}),
+  const call = supabase.schema("content").rpc as unknown as (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => PromiseLike<{ data: unknown; error: { message: string; code?: string } | null }>;
+  const { data, error } = await call("annotation_create", {
+    p_id: input.clientRequestId,
+    p_organization_id: orgId,
+    p_source_type: input.source.token,
+    p_source_id: input.source.id,
+    p_body: input.note,
+    p_color: input.color,
+    p_anchor: input.anchor,
   });
-  if (!res.ok) throw new HighlightLinkError(documentId, res.error.message);
-  return { documentId, edgeId: res.data.id };
+  if (error) throw sentence(input.anchor ? "saving your highlight" : "saving your note", error);
+  const row = (Array.isArray(data) ? data[0] : data) as { document_id?: string; edge_id?: string } | null;
+  if (!row?.document_id) throw sentence("saving your note", new Error("the server returned no record"));
+  return { documentId: row.document_id, edgeId: row.edge_id ?? "" };
 }
 
 /**
@@ -392,7 +411,7 @@ export async function rewriteHighlightEdge(
       ? { payloadKind: "text_anchor_set", payload: { __kind: "text_anchor_set", anchors } }
       : {}),
   });
-  if (!res.ok) throw sentence("Updating the highlight", res.error);
+  if (!res.ok) throw sentence("updating your highlight", res.error);
 }
 
 export async function saveHighlightNote(documentId: string, note: string): Promise<void> {
@@ -407,12 +426,12 @@ export async function saveHighlightNote(documentId: string, note: string): Promi
       supabase.schema("content").from("document").select("id, version").eq("id", documentId).maybeSingle(),
     rebase: { isPhantom: () => true },
   });
-  if (result.status !== "saved") throw new Error("Saving your note failed: the highlight was changed or removed elsewhere. Reload to see it.");
+  if (result.status !== "saved") throw humanError("saving your note", new Error("it was changed or removed elsewhere — reload to see it"));
 }
 
 async function currentVersion(documentId: string): Promise<number> {
   const { data, error } = await supabase.schema("content").from("document").select("version").eq("id", documentId).maybeSingle();
-  if (error || !data) throw sentence("Reading the highlight", error ?? "it no longer exists");
+  if (error || !data) throw sentence("reading your highlight", error ?? "it no longer exists");
   return data.version as number;
 }
 
@@ -423,12 +442,21 @@ export async function deleteHighlight(documentId: string): Promise<void> {
     .from("document")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", documentId);
-  if (error) throw sentence("Removing the highlight", error);
+  if (error) throw sentence("removing your highlight", error);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Reading highlights and links (edges INTO the source)
 // ─────────────────────────────────────────────────────────────────────────────
+
+interface IncomingEdgeRow {
+  id: string;
+  source_type: string;
+  source_id: string;
+  role: string | null;
+  metadata: unknown;
+  created_at: string;
+}
 
 interface EdgePayloadRow {
   id: string;
@@ -447,7 +475,7 @@ async function edgePayloads(ids: string[]): Promise<Map<string, EdgePayloadRow>>
       .select("id, payload, payload_kind, created_by")
       .in("id", ids.slice(i, i + 200))
       .is("deleted_at", null);
-    if (error) throw sentence("Reading passages", error);
+    if (error) throw sentence("loading the highlighted passages", error);
     for (const row of (data ?? []) as EdgePayloadRow[]) out.set(row.id, row);
   }
   return out;
@@ -480,19 +508,21 @@ export async function listEdgeItems(
   source: AnnotationSource,
   titleFor: (token: string, ids: string[]) => Promise<Map<string, string>>,
 ): Promise<EdgeItems> {
-  const res = await associationsService.listForEntity(source.token, source.id);
-  if (!res.ok) {
-    // The installed @ai-matrx/associations vocabulary lags the live registry
-    // (a token added after its last publish): say what it means, not the guard's words.
-    if (/not a registered entity type/.test(res.error.message)) {
-      console.error("[annotations] association vocabulary lacks this source type", res.error);
-      throw new Error(
-        `Highlights and links cannot load for this kind of record in this version of the app yet (it does not recognise "${source.token}"). Comments still work; this clears with the next app update.`,
-      );
-    }
-    throw sentence("Loading highlights and links", res.error);
-  }
-  const incoming = res.data.edges.filter((e) => e.direction === "incoming");
+  // A direct, live-only read of the edges INTO this source (RLS is the ceiling; tombstones
+  // excluded). It does not go through the package's token guard, so a source type the installed
+  // vocabulary does not list yet still shows its highlights and links.
+  const rows = await readAllRows<IncomingEdgeRow>(
+    ({ from, to }) => supabase.schema("platform").from("associations")
+      .select("id, source_type, source_id, role, metadata, created_at", { count: "exact" })
+      .eq("target_type", source.token).eq("target_id", source.id)
+      .in("role", [ANNOTATES_ROLE, ANCHORED_TO_ROLE]).is("deleted_at", null)
+      .order("created_at").order("id").range(from, to),
+    { label: "platform.associations into an annotated source" },
+  ).catch((e: unknown) => { throw sentence("loading highlights and links", e); });
+  const incoming = rows.map((r) => ({
+    id: r.id, otherType: r.source_type, otherId: r.source_id, role: r.role,
+    metadata: r.metadata, createdAt: r.created_at,
+  }));
   const annotates = incoming.filter((e) => e.role === ANNOTATES_ROLE && e.otherType === "document");
   const links = incoming.filter((e) => e.role === ANCHORED_TO_ROLE);
   const payloads = await edgePayloads([...annotates, ...links].map((e) => e.id));
@@ -506,7 +536,7 @@ export async function listEdgeItems(
       .select("id, body, created_at, created_by")
       .in("id", annotates.map((e) => e.otherId))
       .is("deleted_at", null);
-    if (error) throw sentence("Loading highlights", error);
+    if (error) throw sentence("loading your highlights", error);
     const docs = new Map((data ?? []).map((d) => [d.id as string, d]));
     for (const edge of annotates) {
       const doc = docs.get(edge.otherId);
@@ -581,7 +611,7 @@ export async function linkRecord(input: LinkInput): Promise<string> {
     role: ANCHORED_TO_ROLE,
     ...(input.anchor ? { payloadKind: "text_anchor", payload: input.anchor } : {}),
   });
-  if (!res.ok) throw sentence("Linking", res.error);
+  if (!res.ok) throw sentence("linking the record", res.error);
   return res.data.id;
 }
 
@@ -594,5 +624,5 @@ export async function unlinkRecord(source: AnnotationSource, token: string, id: 
     targetId: source.id,
     role: ANCHORED_TO_ROLE,
   });
-  if (!res.ok) throw sentence("Detaching", res.error);
+  if (!res.ok) throw sentence("detaching the record", res.error);
 }

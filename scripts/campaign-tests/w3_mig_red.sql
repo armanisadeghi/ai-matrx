@@ -523,7 +523,7 @@ begin
   if v_n <> 0 then
     raise exception 'RED 7 did not go red: % rename(s) were still logged', v_n;
   end if;
-  v_txt := custom.read_record(v_org, v_rec, true) ->> 'client_name';
+  v_txt := custom.read_record(v_org, v_rec, false) ->> 'client_name';
   if v_txt <> 'Renamed with no way back' then
     raise exception 'RED 7: the weakened rename did not even write — the record reads "%"', coalesce(v_txt, 'nothing');
   end if;

@@ -445,7 +445,7 @@ begin
   --    The four USES are read from the seat, through `custom.read_record` — the door that
   --    hands a person the Rule document. The two ENGINE answers step out.
   -- ══════════════════════════════════════════════════════════════════════════
-  v_doc := custom.read_record(v_org, v_r_all, true);
+  v_doc := custom.read_record(v_org, v_r_all, false);
   select count(distinct u) into v_n from jsonb_array_elements_text(v_doc -> 'uses') u;
   if v_n <> 4 then
     raise exception 'F FAILED: the row a person is handed declares % uses: %', v_n, v_doc -> 'uses';

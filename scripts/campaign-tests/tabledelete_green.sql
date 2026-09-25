@@ -422,7 +422,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform custom.share_grant(v_org, v_r2a, 'user', c_dana, 'viewer'::public.permission_level);
   perform set_config('request.jwt.claims', c_dana_j, true);
-  if (custom.read_record(v_org, v_r2a, true) ->> 'title') <> 'Hearthline Cloud Backups, March' then
+  if (custom.read_record(v_org, v_r2a, false) ->> 'title') <> 'Hearthline Cloud Backups, March' then
     raise exception '2c: the record shared with test@test.com at viewer does not read back for her';
   end if;
   if not custom.query_can_see(v_org, v_r2a, 'viewer') then

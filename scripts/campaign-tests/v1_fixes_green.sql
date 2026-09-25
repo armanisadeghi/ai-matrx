@@ -208,7 +208,7 @@ begin
     raise exception 'GREEN 1c FAILED: the switch door said it turned the store on and it reads off: %', v_res;
   end if;
   v_rec := custom.record_write(v_org, v_table, jsonb_build_object('nm', 'the person writes'));
-  if (custom.read_record(v_org, v_rec, true) ->> 'nm') is distinct from 'the person writes' then
+  if (custom.read_record(v_org, v_rec, false) ->> 'nm') is distinct from 'the person writes' then
     raise exception 'GREEN 1c FAILED: the door refuses the person with the store ON too, so it is a wall and not a door.';
   end if;
   raise notice '1c. control — the same person writes through the same door once the store is on (record %).', v_rec;
@@ -276,7 +276,7 @@ begin
 
   v_rec := custom.record_write(v_org, v_table, jsonb_build_object('nm', repeat('y', 99000)));
   -- Read back THROUGH THE DOOR, which is what a person is shown.
-  v_bytes := octet_length(custom.read_record(v_org, v_rec, true) ->> 'nm');
+  v_bytes := octet_length(custom.read_record(v_org, v_rec, false) ->> 'nm');
   if v_bytes < 99000 then
     raise exception 'GREEN 4b FAILED: a 99,000-byte value under the 100,000 ceiling did not land whole (% bytes).', v_bytes;
   end if;
@@ -336,7 +336,7 @@ begin
   perform custom.share_grant(v_org, v_rec, 'user', c_dana, 'editor'::public.permission_level);
   perform set_config('request.jwt.claims', c_dana_j, true);
   perform custom.record_update(v_org, v_rec, jsonb_build_object('nm', 'Dana was here'));
-  if (custom.read_record(v_org, v_rec, true) ->> 'nm') <> 'Dana was here' then
+  if (custom.read_record(v_org, v_rec, false) ->> 'nm') <> 'Dana was here' then
     raise exception 'GREEN 5d FAILED: the record shared with test@test.com at editor did not take her change';
   end if;
   raise notice '5d. control — the same record, shared with her at editor, takes her change.';

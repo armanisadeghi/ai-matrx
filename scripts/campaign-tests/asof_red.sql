@@ -217,7 +217,7 @@ begin
   end if;
   -- THE CONTROL, so N1-N3 are not a door that refuses her everything: the ONE record she was
   -- given reads back for her, through the same doors, including the as-of door.
-  if (custom.read_record(v_org, v_shared, true) ->> 'name') <> 'The shared one' then
+  if (custom.read_record(v_org, v_shared, false) ->> 'name') <> 'The shared one' then
     raise exception 'N4: the record shared with test@test.com at viewer does not read back for her.';
   end if;
   if (custom.query_record_as_of(v_org, v_shared, null, null) ->> 'name') <> 'The shared one' then

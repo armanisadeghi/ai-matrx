@@ -163,7 +163,7 @@ begin
   --     a format or a unit — those are the store's answer to the kind a person picked.
   v_f_sign := custom.field_declare(v_org, v_crews, jsonb_build_object(
     'label','Lead technician sign-off', 'type','signature', 'sort', 40));
-  v_doc := custom.read_record(v_org, v_f_sign, true);
+  v_doc := custom.read_record(v_org, v_f_sign, false);
   if (v_doc ->> 'type') <> 'text' then
     raise exception '2a: the signature column reads back as %, and custom.doc_sign accepts text', v_doc ->> 'type';
   end if;
@@ -182,9 +182,9 @@ begin
   --     did something and the door did not simply start marking every text column.
   v_f_note := custom.field_declare(v_org, v_crews, jsonb_build_object(
     'label','Dispatch note', 'plain','text', 'sort', 50));
-  if nullif(custom.read_record(v_org, v_f_note, true) ->> 'format', '') is not null then
+  if nullif(custom.read_record(v_org, v_f_note, false) ->> 'format', '') is not null then
     raise exception '2b: a plain text column came back wearing format %, so the word did nothing and every text box is a signature line',
-      custom.read_record(v_org, v_f_note, true) ->> 'format';
+      custom.read_record(v_org, v_f_note, false) ->> 'format';
   end if;
   raise notice 'PART 2 PASSED — `type: signature` makes the one shape custom.doc_sign accepts, and plain text is still plain text.';
 
@@ -233,9 +233,9 @@ begin
   end if;
 
   -- 3d. And the value a person reads on the record is the name that was signed.
-  if (custom.read_record(v_org, v_truck, true) ->> 'lead_technician_sign_off') <> 'Miguel Alvarado' then
+  if (custom.read_record(v_org, v_truck, false) ->> 'lead_technician_sign_off') <> 'Miguel Alvarado' then
     raise exception '3d: the record reads back sign-off %, and Miguel Alvarado signed it',
-      coalesce(custom.read_record(v_org, v_truck, true) ->> 'lead_technician_sign_off', 'nothing');
+      coalesce(custom.read_record(v_org, v_truck, false) ->> 'lead_technician_sign_off', 'nothing');
   end if;
   raise notice 'PART 3 PASSED — the sheet renders, the lead technician signs it, the seal holds (%), and a plain column is refused: %',
     v_intact ->> 'intact', left(v_caught, 80);

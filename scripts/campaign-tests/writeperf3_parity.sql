@@ -207,7 +207,7 @@ begin
 
     -- ============ 2. THE PROJECTION — everything anybody can read ============
     insert into wp3_shot
-    select p_half, 'envelope', i.ord, pg_temp.canon(custom.read_record(v_org, i.id, true))
+    select p_half, 'envelope', i.ord, pg_temp.canon(custom.read_record(v_org, i.id, false))
       from unnest(v_ids) with ordinality i(id, ord);
 
     -- OUT OF THE SEAT FOR THE THREE CATALOGUE PROJECTIONS, AND SAYING SO (SEAT-RECIPE step 4).

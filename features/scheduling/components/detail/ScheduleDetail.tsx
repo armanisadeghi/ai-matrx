@@ -320,7 +320,7 @@ function ScheduleDetailBody({ taskId }: Props) {
   const handleDelete = async () => {
     const ok = await confirm({
       title: "Delete schedule",
-      description: `Delete "${task.title}". It will stop firing and disappear from your schedules. Past runs stay in your history. This cannot be undone.`,
+      description: `Delete "${task.title}". This archives the schedule. It stops running and leaves your list; an admin can restore it.`,
       confirmLabel: "Delete",
       variant: "destructive",
     });

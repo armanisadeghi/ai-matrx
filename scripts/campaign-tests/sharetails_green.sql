@@ -108,7 +108,7 @@ set local role authenticated;
 do $t$
 declare n int;
 begin
-  perform custom.read_record('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v from st_probe where k = 'tbl'), true);
+  perform custom.read_record('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v from st_probe where k = 'tbl'), false);
   select count(*) into n from custom.read_records('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v from st_probe where k = 'tbl'), true, 50, 0);
   if n <> 1 then raise exception 'B1 FAILED — Dana should read the one bid by the member default, read %', n; end if;
 end $t$;
@@ -146,7 +146,7 @@ do $t$
 declare n int; v_state text; v_msg text;
 begin
   begin
-    perform custom.read_record('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v from st_probe where k = 'tbl'), true);
+    perform custom.read_record('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v from st_probe where k = 'tbl'), false);
     raise exception 'B2 FAILED — a member of the organization read a Table its owner set to "mine".';
   exception when others then
     get stacked diagnostics v_state = returned_sqlstate, v_msg = message_text;
@@ -211,7 +211,7 @@ set local role authenticated;
 do $t$
 declare n int;
 begin
-  perform custom.read_record('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v from st_probe where k = 'tbl'), true);
+  perform custom.read_record('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v from st_probe where k = 'tbl'), false);
   select count(*) into n from custom.read_records('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v from st_probe where k = 'tbl'), true, 50, 0);
   if n <> 1 then raise exception 'B5 FAILED — Dana, named on the Table, reads % bid(s).', n; end if;
 end $t$;

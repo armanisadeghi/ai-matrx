@@ -156,10 +156,10 @@ begin
   -- ══════════════════════════════════════════════════════════════════════════
   -- REC-27's kernel is nine, asserted BY NAME through the read door rather than by a count,
   -- so a missing kernel row is named instead of arithmetic.
-  v_txt := (custom.read_record(v_org, v_mf_kern, true) ->> 'name');
+  v_txt := (custom.read_record(v_org, v_mf_kern, false) ->> 'name');
   if v_txt <> 'Merge Field' then raise exception 'DYN-1: the ninth kernel row is named "%"', v_txt; end if;
   -- THE SECOND INPUT: a different id must answer a DIFFERENT name.
-  v_txt := (custom.read_record(v_org, v_fld_kern, true) ->> 'name');
+  v_txt := (custom.read_record(v_org, v_fld_kern, false) ->> 'name');
   if v_txt <> 'Field' then raise exception 'DYN-1 second input: the Field kernel row is named "%"', v_txt; end if;
 
   -- FLD-13: this lane's seven Fields read back off the ONE definitions door a person has.
@@ -178,7 +178,7 @@ begin
   end if;
 
   -- FLD-5: a category is a Record of a Table with display: list and only a title field.
-  v_j := custom.read_record(v_org, v_src_tbl, true);
+  v_j := custom.read_record(v_org, v_src_tbl, false);
   if (v_j ->> 'display') <> 'list' or jsonb_array_length(v_j -> 'fields') <> 1
      or (v_j ->> 'title_field') <> 'name' then
     raise exception 'FLD-5: the Merge Field Source table is not a display:list table with one title field: %', v_j;
@@ -241,7 +241,7 @@ begin
   -- every door resolves it to the label. What T4 is ABOUT is unchanged and is what is asserted:
   -- the same option, not a migrated copy - checked through the read door's `_choices` block,
   -- which names the option id behind the word.
-  v_j := custom.read_record(v_org, v_p1, true);
+  v_j := custom.read_record(v_org, v_p1, false);
   if (v_j -> '_choices' -> 'shade' ->> 'id') is distinct from v_red::text then
     raise exception 'T4: the barn door now points at % and Red is %',
       coalesce(v_j -> '_choices' -> 'shade' ->> 'id', v_j ->> 'shade'), v_red;
@@ -249,14 +249,14 @@ begin
   if (v_j ->> 'shade') is distinct from 'Red' then
     raise exception 'T4: the barn door''s shade reads "%" and a person picked Red', v_j ->> 'shade';
   end if;
-  v_j := custom.read_record(v_org, v_p2, true);
+  v_j := custom.read_record(v_org, v_p2, false);
   if (v_j -> '_choices' -> 'shade' ->> 'id') is distinct from v_blue::text then
     raise exception 'T4 second input: the sky panel now points at %, and Blue is %',
       coalesce(v_j -> '_choices' -> 'shade' ->> 'id', v_j ->> 'shade'), v_blue;
   end if;
-  v_txt := (custom.read_record(v_org, v_color, true) ->> 'display');
+  v_txt := (custom.read_record(v_org, v_color, false) ->> 'display');
   if v_txt <> 'page' then raise exception 'T4: Color still shows as a %', v_txt; end if;
-  v_txt := (custom.read_record(v_org, v_red, true) ->> 'hex');
+  v_txt := (custom.read_record(v_org, v_red, false) ->> 'hex');
   if v_txt <> '#ff0000' then raise exception 'T4: Red''s new hex reads "%"', v_txt; end if;
   select count(*) into v_n from custom.read_records(v_org, v_color, true, 200, 0);
   if v_n <> 2 then raise exception 'T4: Color holds % records after growing up', v_n; end if;
@@ -377,7 +377,7 @@ begin
   perform custom.record_update(v_org, v_circle, '{"kind":"rectangle","width":4,"height":9}'::jsonb);
 
   -- THE DOOR'S OWN ANSWER, which is what a person is shown.
-  v_j := custom.read_record(v_org, v_circle, true);
+  v_j := custom.read_record(v_org, v_circle, false);
   if v_j ? 'radius' then raise exception 'T8: Radius is still on the record after the retype'; end if;
   if not exists (select 1 from jsonb_array_elements(coalesce(v_j -> '_retired','[]'::jsonb)) x
                   where x ->> 'key' = 'radius' and (x ->> 'value') = '12'
@@ -498,7 +498,7 @@ begin
     'name','K1','note','hello','score', 42, 'when','2026-06-01',
     'tags', jsonb_build_array(v_o_record::text, v_o_tool::text),
     'likes', jsonb_build_array(v_p1::text)));
-  v_j := custom.read_record(v_org, v_k1, true);
+  v_j := custom.read_record(v_org, v_k1, false);
   if (v_j ->> 'score') <> '42' then raise exception 'FLD-1 range: score read back as %', v_j ->> 'score'; end if;
   if jsonb_array_length(v_j -> 'tags') <> 2 then raise exception 'FLD-2 multi: tags read back as %', v_j -> 'tags'; end if;
   if (v_j ->> 'when') <> '2026-06-01' then raise exception 'FLD-2 dated: when read back as %', v_j ->> 'when'; end if;
@@ -629,7 +629,7 @@ begin
     'key','total2','label','Total two','parity_type','formula',
     'expr', jsonb_build_object('op','mul','args', jsonb_build_array(
               jsonb_build_object('field', v_f_score::text), jsonb_build_object('const', 3)))));
-  v_j := custom.read_record(v_org, v_id, true);
+  v_j := custom.read_record(v_org, v_id, false);
   if (v_j ->> 'compute_on') <> 'read' then
     raise exception 'FLD-9: a formula that named no occasion landed as "%"', v_j ->> 'compute_on';
   end if;
@@ -642,7 +642,7 @@ begin
   v_id := custom.field_declare(v_org, v_kitchen, jsonb_build_object(
     'key','score3','label','Score three','plain','number','unit','points',
     'presentation','{"unit":"points","color":"blue"}'::jsonb));
-  v_j := custom.read_record(v_org, v_id, true);
+  v_j := custom.read_record(v_org, v_id, false);
   if v_j ? 'presentation' then raise exception 'FLD-N-1: the door wrote a presentation block: %', v_j; end if;
   if (v_j ->> 'unit') <> 'points' then raise exception 'FLD-N-1: the unit did not reach the Field: %', v_j; end if;
 
@@ -667,12 +667,12 @@ begin
   v_mf2 := custom.record_write(v_org, v_mf_kern, jsonb_build_object(
     'key','zz.weather.now','label','Weather','source','tool','semantic_type','reference',
     'modifiers', jsonb_build_array('live'),'override_policy','server_fixed'));
-  v_j := custom.read_record(v_org, v_mf1, true);
+  v_j := custom.read_record(v_org, v_mf1, false);
   v_txt := (v_j ->> 'source') || '/' || (v_j ->> 'semantic_type') || '/' || (v_j ->> 'modifiers') || '/' || (v_j ->> 'override_policy');
   if v_txt <> 'record/value/["scoped", "formatted"]/shown_locked' then
     raise exception 'DYN-2: the balance merge field reads "%"', v_txt;
   end if;
-  v_j := custom.read_record(v_org, v_mf2, true);
+  v_j := custom.read_record(v_org, v_mf2, false);
   v_txt := (v_j ->> 'source') || '/' || (v_j ->> 'semantic_type') || '/' || (v_j ->> 'modifiers') || '/' || (v_j ->> 'override_policy');
   if v_txt <> 'tool/reference/["live"]/server_fixed' then
     raise exception 'DYN-2 second input: the weather merge field reads "%"', v_txt;
@@ -850,7 +850,7 @@ begin
   end;
   -- the positive control: a name it does NOT have lands, and the Table now declares it.
   perform custom.field_declare(v_org, v_kitchen, jsonb_build_object('key','note4','label','Note four','plain','text'));
-  if not exists (select 1 from jsonb_array_elements(custom.read_record(v_org, v_kitchen, true) -> 'fields') f
+  if not exists (select 1 from jsonb_array_elements(custom.read_record(v_org, v_kitchen, false) -> 'fields') f
                   where f ->> 'name' = 'note4') then
     raise exception 'I: the field landed and the Table does not declare it, so the two disagree';
   end if;
@@ -916,7 +916,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform custom.share_grant(v_org, v_k1, 'user', c_dana, 'viewer'::public.permission_level);
   perform set_config('request.jwt.claims', c_dana_j, true);
-  if (custom.read_record(v_org, v_k1, true) ->> 'note') <> 'hello' then
+  if (custom.read_record(v_org, v_k1, false) ->> 'note') <> 'hello' then
     raise exception 'K FAILED: the record shared with test@test.com at viewer does not read back for her';
   end if;
   perform set_config('request.jwt.claims', c_admin_j, true);

@@ -15,6 +15,7 @@ export const GOOGLE_SCOPE = {
   driveFile: "https://www.googleapis.com/auth/drive.file",
   gmailSend: "https://www.googleapis.com/auth/gmail.send",
   gmailReadonly: "https://www.googleapis.com/auth/gmail.readonly",
+  gmailModify: "https://www.googleapis.com/auth/gmail.modify",
   webmastersReadonly: "https://www.googleapis.com/auth/webmasters.readonly",
   analyticsReadonly: "https://www.googleapis.com/auth/analytics.readonly",
   youtubeReadonly: "https://www.googleapis.com/auth/youtube.readonly",

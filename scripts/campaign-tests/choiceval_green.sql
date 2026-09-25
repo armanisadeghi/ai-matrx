@@ -163,7 +163,7 @@ begin
   -- ══════════════════════════════════════════════════════════════════════════════════════
   -- PART 4 — THE READ DOORS SAY THE WORD, AND NAME THE KEY BESIDE IT.
   -- ══════════════════════════════════════════════════════════════════════════════════════
-  v_doc := custom.read_record(v_org, v_s1, true);
+  v_doc := custom.read_record(v_org, v_s1, false);
   if (v_doc ->> 'kind') is distinct from 'Spin' then
     raise exception '4a: custom.read_record answers kind = % where a person would read Spin', coalesce(v_doc ->> 'kind','nothing');
   end if;
@@ -208,13 +208,13 @@ begin
   -- The stored value is `spin`; whoever declared Bikes wrote "Spin". Both name the same
   -- choice, and the seventh independent pass failed exactly here.
   select count(*) into v_n
-    from custom.applicable_fields(v_org, v_sh_t, (custom.read_record(v_org, v_s1, true) -> '_choices' -> 'kind' ->> 'key')) f
+    from custom.applicable_fields(v_org, v_sh_t, (custom.read_record(v_org, v_s1, false) -> '_choices' -> 'kind' ->> 'key')) f
    where f.data ->> 'key' = 'bikes';
   if v_n <> 1 then
     raise exception '5a: asked what columns THIS Spin has, the table did not offer Bikes';
   end if;
   select count(*) into v_n
-    from custom.applicable_fields(v_org, v_sh_t, (custom.read_record(v_org, v_s1, true) -> '_choices' -> 'kind' ->> 'key')) f
+    from custom.applicable_fields(v_org, v_sh_t, (custom.read_record(v_org, v_s1, false) -> '_choices' -> 'kind' ->> 'key')) f
    where f.data ->> 'key' = 'mats';
   if v_n <> 0 then
     raise exception '5a: asked what columns THIS Spin has, the table offered Mats';
@@ -251,7 +251,7 @@ begin
   if (v_doc ->> 'kind') is distinct from 'spin' then
     raise exception '6a: renaming the option rewrote the row: it now holds %', v_doc ->> 'kind';
   end if;
-  v_doc := custom.read_record(v_org, v_s1, true);
+  v_doc := custom.read_record(v_org, v_s1, false);
   if (v_doc ->> 'kind') is distinct from 'Cycling' then
     raise exception '6b: after the rename the record reads % instead of Cycling', coalesce(v_doc ->> 'kind','nothing');
   end if;
@@ -262,7 +262,7 @@ begin
   -- PART 7 — RETIRING AN OPTION DOES NOT MAKE A VALUE VANISH.
   -- ══════════════════════════════════════════════════════════════════════════════════════
   perform custom.record_delete(v_org, v_spin);
-  v_doc := custom.read_record(v_org, v_s1, true);
+  v_doc := custom.read_record(v_org, v_s1, false);
   if (v_doc ->> 'kind') is distinct from 'Spin' then
     raise exception '7a: after the choice was retired the value reads % instead of its label', coalesce(v_doc ->> 'kind','nothing');
   end if;
@@ -356,7 +356,7 @@ begin
   perform set_config('request.jwt.claims', c_dana_j, true);
 
   -- 10a. THE CONTROL: at viewer she reads it, and reads the WORD.
-  v_doc := custom.read_record(v_org, v_s2, true);
+  v_doc := custom.read_record(v_org, v_s2, false);
   if (v_doc ->> 'kind') is distinct from 'Yoga' then
     raise exception '10a: the colleague reads kind = % where a person would read Yoga', coalesce(v_doc ->> 'kind','nothing');
   end if;

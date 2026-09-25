@@ -183,7 +183,7 @@ begin
   end if;
   -- And the read door itself agrees with the visibility door — a screen that says yes and
   -- then hands back nothing is the silent failure this system refuses.
-  if (custom.read_record(v_org, v_r1, true) ->> 'title') <> 'X risk' then
+  if (custom.read_record(v_org, v_r1, false) ->> 'title') <> 'X risk' then
     raise exception 'CLAUSE 1: the visibility door says she may see it and the read door does not hand it over';
   end if;
   perform set_config('request.jwt.claims', c_admin_j, true);
@@ -309,7 +309,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform custom.share_grant(v_org, v_note, 'user', c_dana, 'viewer'::public.permission_level);
   perform set_config('request.jwt.claims', c_dana_j, true);
-  if (custom.read_record(v_org, v_note, true) ->> 'body') <> 'the note' then
+  if (custom.read_record(v_org, v_note, false) ->> 'body') <> 'the note' then
     raise exception 'CLAUSE 3 (access): the note shared with test@test.com at viewer does not read back for her, so the two refusals above are a door that refuses her everything';
   end if;
   perform set_config('request.jwt.claims', c_admin_j, true);

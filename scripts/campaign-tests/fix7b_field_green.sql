@@ -137,7 +137,7 @@ begin
   v_f_link := custom.field_declare(v_org, v_job, jsonb_build_object(
     'label','Customer', 'type','relation', 'relation_target', v_cust::text,
     'on_target_delete','set_null', 'multi', false, 'sort', 20));
-  v_doc := custom.read_record(v_org, v_f_link, true);
+  v_doc := custom.read_record(v_org, v_f_link, false);
   if (v_doc ->> 'type') <> 'relation' then
     raise exception '1a: the column the panel declared reads back as %, not a relation', v_doc ->> 'type';
   end if;
@@ -158,12 +158,12 @@ begin
   v_acme   := custom.record_write(v_org, v_cust, jsonb_build_object('cname','Meridian Property Group'));
   v_globex := custom.record_write(v_org, v_cust, jsonb_build_object('cname','Fairview Estates'));
   v_rec    := custom.record_write(v_org, v_job,  jsonb_build_object('jname','Re-roof', 'customer', v_acme::text));
-  if (custom.read_record(v_org, v_rec, true) ->> 'jname') <> 'Re-roof' then
+  if (custom.read_record(v_org, v_rec, false) ->> 'jname') <> 'Re-roof' then
     raise exception '1b: the job did not read back';
   end if;
-  if not (custom.read_record(v_org, v_rec, true) ->> 'customer') like '%' || substr(v_acme::text,1,8) || '%' then
+  if not (custom.read_record(v_org, v_rec, false) ->> 'customer') like '%' || substr(v_acme::text,1,8) || '%' then
     raise exception '1b: the job reads back customer = %, and it was pointed at %',
-      custom.read_record(v_org, v_rec, true) ->> 'customer', v_acme;
+      custom.read_record(v_org, v_rec, false) ->> 'customer', v_acme;
   end if;
 
   -- 1c. THE OTHER SIDE OF 1a: a target that is not a Table of this organization is REFUSED,
@@ -185,7 +185,7 @@ begin
 
   -- 2a. THE ONE CLAUSE THIS LANE EXISTS FOR. Nothing in this patch but `multi`.
   perform custom.field_update(v_org, v_f_link, jsonb_build_object('multi', true));
-  v_doc := custom.read_record(v_org, v_f_link, true);
+  v_doc := custom.read_record(v_org, v_f_link, false);
   if not coalesce((v_doc ->> 'multi')::boolean, false) then
     raise exception '2a: custom.field_update answered "saved" for {"multi": true} and the column still holds one — the door is silently failing';
   end if;
@@ -211,7 +211,7 @@ begin
   -- 2c. THE SECOND INPUT, WITH THE OTHER ANSWER. Off again, alone again — a door that simply
   --     wrote `true` over everything would pass 2a and fail here.
   perform custom.field_update(v_org, v_f_link, jsonb_build_object('multi', false));
-  v_doc := custom.read_record(v_org, v_f_link, true);
+  v_doc := custom.read_record(v_org, v_f_link, false);
   if coalesce((v_doc ->> 'multi')::boolean, true) then
     raise exception '2c: the column was told to hold one again and reads back multi = %', v_doc ->> 'multi';
   end if;
@@ -246,7 +246,7 @@ begin
   end if;
   -- …and the behaviour word it names DOES work, so 2e is a signpost and not a dead end.
   perform custom.field_update(v_org, v_f_stage, jsonb_build_object('parity_type','multi_select'));
-  if not coalesce((custom.read_record(v_org, v_f_stage, true) ->> 'multi')::boolean, false) then
+  if not coalesce((custom.read_record(v_org, v_f_stage, false) ->> 'multi')::boolean, false) then
     raise exception '2e: the door refused `multi` on a list and named `multi_select`, and `multi_select` did not do it either';
   end if;
   raise notice 'PART 2 PASSED — {"multi": true} alone changes the column (2a), the cap follows it and a record holds two (2b), {"multi": false} alone puts both back and the second link is refused (2c, 2d), and a choice list is refused by name with the word that works (2e): %', left(v_caught, 90);
@@ -282,7 +282,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform custom.share_grant(v_org, v_acme, 'user', c_dana, 'viewer'::public.permission_level);
   perform set_config('request.jwt.claims', c_dana_j, true);
-  if (custom.read_record(v_org, v_acme, true) ->> 'cname') <> 'Meridian Property Group' then
+  if (custom.read_record(v_org, v_acme, false) ->> 'cname') <> 'Meridian Property Group' then
     raise exception '3c: the record shared with test@test.com at viewer does not read back for her';
   end if;
   perform set_config('request.jwt.claims', c_admin_j, true);

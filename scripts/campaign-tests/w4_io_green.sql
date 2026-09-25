@@ -616,7 +616,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform custom.share_grant(v_org, v_rec, 'user', c_dana, 'viewer'::public.permission_level);
   perform set_config('request.jwt.claims', c_dana_j, true);
-  if (custom.read_record(v_org, v_rec, true) ->> 'name') <> 'Ada' then
+  if (custom.read_record(v_org, v_rec, false) ->> 'name') <> 'Ada' then
     raise exception 'DOOR-15 FAIL: the record shared with test@test.com at viewer does not read back for her';
   end if;
   if (select count(*) from custom.io_comments(v_org, v_rec, true)) <> 1 then
@@ -643,7 +643,7 @@ begin
   select min(rv.version) into v_v1 from custom.io_revisions(v_org, v_rec) rv;
 
   perform custom.record_update(v_org, v_rec, '{"notes":"rewritten"}'::jsonb, null);
-  v_now := custom.read_record(v_org, v_rec, true) ->> 'notes';
+  v_now := custom.read_record(v_org, v_rec, false) ->> 'notes';
   if v_now <> 'rewritten' then
     raise exception 'DOOR-16 SETUP FAIL: the update did not take; notes reads "%"', v_now;
   end if;
@@ -662,7 +662,7 @@ begin
   -- THE RESTORE MOVES THE VALUES. The contract's measurement was that restore raised "nothing
   -- to restore (no content columns)" for every document-shaped record; this is that, fixed.
   perform custom.io_restore(v_org, v_rec, v_v1);
-  v_then := custom.read_record(v_org, v_rec, true) ->> 'notes';
+  v_then := custom.read_record(v_org, v_rec, false) ->> 'notes';
   if v_then <> 'original' then
     raise exception 'DOOR-16 FAIL: restoring to version % left notes reading "%" instead of "original" — the restore ran and moved nothing', v_v1, v_then;
   end if;

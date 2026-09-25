@@ -96,15 +96,15 @@ begin
 
   -- ══ PART 3 — THE STORE WORKS IT OUT ON READ, FROM MARISOL'S SEAT. ═════════════════════
   perform set_config('request.jwt.claims', c_dana_j, true);
-  v_rec := custom.read_record(v_org, r1, true);
+  v_rec := custom.read_record(v_org, r1, false);
   if (v_rec ->> 'balance_due')::numeric is distinct from 135 or coalesce(v_rec ->> 'desk_action', '') is distinct from '' then
     raise exception '3a: Biscuit''s balance is not 185 - 50 = 135 on read: %', v_rec;
   end if;
-  v_rec := custom.read_record(v_org, r7, true);
+  v_rec := custom.read_record(v_org, r7, false);
   if v_rec ->> 'desk_action' is distinct from 'Call (541) 912-4470' or (v_rec ->> 'balance_due')::numeric is distinct from 135 then
     raise exception '3b: Rocco''s no-show does not read "Call (541) 912-4470": %', v_rec;
   end if;
-  v_rec := custom.read_record(v_org, r9, true);
+  v_rec := custom.read_record(v_org, r9, false);
   if (v_rec ->> 'balance_due')::numeric is distinct from 0 then
     raise exception '3c: Ziggy has no fee and no deposit; blank is 0 in arithmetic, so the balance is 0: %', v_rec ->> 'balance_due';
   end if;
@@ -124,7 +124,7 @@ begin
   if coalesce(v_doc -> 'config' ->> 'formula_text', '') not like 'ROUND(%' or v_doc -> 'config' -> 'expr' ->> 'op' is distinct from 'fx.round' then
     raise exception '4a: the edited text did not replace the formula: %', v_doc -> 'config';
   end if;
-  v_rec := custom.read_record(v_org, r1, true);
+  v_rec := custom.read_record(v_org, r1, false);
   if (v_rec ->> 'balance_due')::numeric is distinct from 139.05 then
     raise exception '4b: (185 - 50) × 1.03 is 139.05, read %', v_rec ->> 'balance_due';
   end if;
@@ -168,13 +168,13 @@ begin
              'visit_status', 'Scheduled', 'visit_on', '2026-09-23', 'visit_fee', 142.5, 'owner_phone', '(541) 290-5518'));
   v_new2 := custom.record_write(v_org, v_appts, jsonb_build_object('patient', 'Duke (Marchetti)', 'species', 'Dog',
              'visit_status', 'Scheduled', 'visit_on', '2026-09-23', 'visit_fee', 185, 'owner_phone', '(541) 774-0391'));
-  if (custom.read_record(v_org, v_new, true) ->> 'visit_number')::integer is distinct from 1
-     or (custom.read_record(v_org, v_new2, true) ->> 'visit_number')::integer is distinct from 2 then
+  if (custom.read_record(v_org, v_new, false) ->> 'visit_number')::integer is distinct from 1
+     or (custom.read_record(v_org, v_new2, false) ->> 'visit_number')::integer is distinct from 2 then
     raise exception '6a: two new visits were not numbered 1 and 2: % %',
-      custom.read_record(v_org, v_new, true) ->> 'visit_number', custom.read_record(v_org, v_new2, true) ->> 'visit_number';
+      custom.read_record(v_org, v_new, false) ->> 'visit_number', custom.read_record(v_org, v_new2, false) ->> 'visit_number';
   end if;
   perform custom.record_update(v_org, v_new, jsonb_build_object('visit_status', 'Checked in'));
-  if (custom.read_record(v_org, v_new, true) ->> 'visit_number')::integer is distinct from 1 then
+  if (custom.read_record(v_org, v_new, false) ->> 'visit_number')::integer is distinct from 1 then
     raise exception '6b: checking Clementine in renumbered her visit';
   end if;
   begin
@@ -185,8 +185,8 @@ begin
   perform custom.record_delete(v_org, v_new2);
   v_new2 := custom.record_write(v_org, v_appts, jsonb_build_object('patient', 'Winnie (Adeyemi)', 'species', 'Dog',
              'visit_status', 'Scheduled', 'visit_on', '2026-09-24', 'visit_fee', 98, 'owner_phone', '(541) 612-8840'));
-  if (custom.read_record(v_org, v_new2, true) ->> 'visit_number')::integer is distinct from 3 then
-    raise exception '6d: after Duke''s visit was archived, the next visit took number % instead of 3', custom.read_record(v_org, v_new2, true) ->> 'visit_number';
+  if (custom.read_record(v_org, v_new2, false) ->> 'visit_number')::integer is distinct from 3 then
+    raise exception '6d: after Duke''s visit was archived, the next visit took number % instead of 3', custom.read_record(v_org, v_new2, false) ->> 'visit_number';
   end if;
   raise notice '6 PASS — Clementine 1, Duke 2, Clementine still 1 after check-in, typing 7 refused, Duke archived and Winnie gets 3 (never 2 again).';
 
@@ -199,7 +199,7 @@ begin
   select f.data into v_doc from custom.record f where f.id = f_created;
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims', c_dana_j, true);
-  v_rec := custom.read_record(v_org, v_new, true);
+  v_rec := custom.read_record(v_org, v_new, false);
   if (v_rec ->> 'booked_at')::timestamptz is distinct from date_trunc('milliseconds', v_created)
      or (v_rec ->> 'changed_at')::timestamptz is distinct from date_trunc('milliseconds', v_updated)
      or v_doc -> 'display_format' ->> 'id' is distinct from 'created_time' then

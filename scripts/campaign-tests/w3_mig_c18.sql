@@ -433,7 +433,7 @@ begin
   --     holds the description — but a person never sees that: `custom.read_record` resolves it
   --     and hands back `_alternates` as `{value, rank, source:{id, kind}}`. The door's answer
   --     IS the product truth, so that is what this asserts.
-  v_res := custom.read_record(v_org, v_p1, true);
+  v_res := custom.read_record(v_org, v_p1, false);
   if jsonb_array_length(coalesce(v_res -> '_alternates' -> 'phone', '[]'::jsonb)) < 1 then
     raise exception 'T5 (c): the losing Person''s phone number is not an alternate on the winner — the read door answered %',
                     coalesce((v_res -> '_alternates')::text, 'no _alternates at all');
@@ -466,11 +466,11 @@ begin
     raise exception 'REC-22: the old id now resolves to %, and it should still be itself',
                     custom.record_resolve(v_org, v_rec) ->> 'resolves_to';
   end if;
-  v_txt := custom.read_record(v_org, v_rec, true) ->> 'phone';
+  v_txt := custom.read_record(v_org, v_rec, false) ->> 'phone';
   if v_txt is not null then
     raise exception 'REC-22: the moved key is still on the keeper — "%"', v_txt;
   end if;
-  v_txt := custom.read_record(v_org, v_new, true) ->> 'phone';
+  v_txt := custom.read_record(v_org, v_new, false) ->> 'phone';
   if v_txt <> '555-9999' then
     raise exception 'REC-22: the split-off side did not get the moved value — "%"', coalesce(v_txt, 'nothing');
   end if;
@@ -499,7 +499,7 @@ begin
     raise exception 'REC-N-18: the record is still among the rows of the table it was retyped away from';
   end if;
   -- The Value the target Table accepts STAYED.
-  v_txt := custom.read_record(v_org, v_rec, true) ->> 'person_name';
+  v_txt := custom.read_record(v_org, v_rec, false) ->> 'person_name';
   if v_txt <> 'Retype me' then
     raise exception 'REC-N-18: the value the target table accepts did not survive — "%"', coalesce(v_txt, 'nothing');
   end if;
@@ -516,7 +516,7 @@ begin
   -- directly; no person may do that, and "the inverse holds it" is only worth anything if the
   -- undo actually puts it back.
   perform custom.migrate_undo(v_org, v_log);
-  v_txt := custom.read_record(v_org, v_rec, true) ->> 'phone';
+  v_txt := custom.read_record(v_org, v_rec, false) ->> 'phone';
   if v_txt <> '555-1234' then
     raise exception 'REC-N-18: undoing the retype did not bring the misfit value back — "%"', coalesce(v_txt, 'nothing');
   end if;
@@ -536,7 +536,7 @@ begin
   if v_txt <> 'range' then
     raise exception 'FLD-4: the field still behaves as "%"', coalesce(v_txt, 'nothing');
   end if;
-  v_txt := custom.read_record(v_org, v_chen1, true) ->> 'phone';
+  v_txt := custom.read_record(v_org, v_chen1, false) ->> 'phone';
   if v_txt <> '555-0001' then
     raise exception 'FLD-4 / T12: the text value on a record was changed by the behaviour change — "%"', coalesce(v_txt, 'nothing');
   end if;
@@ -591,12 +591,12 @@ begin
 
   -- (d) A rename, undone, and READ BACK.
   v_res := custom.migrate_rename(v_org, v_p1, 'Chen, merged');
-  v_txt := custom.read_record(v_org, v_p1, true) ->> 'person_name';
+  v_txt := custom.read_record(v_org, v_p1, false) ->> 'person_name';
   if v_txt <> 'Chen, merged' then
     raise exception 'REC-20: the rename did not land — "%"', coalesce(v_txt, 'nothing');
   end if;
   perform custom.migrate_undo(v_org, (v_res ->> 'migration_id')::uuid);
-  v_txt := custom.read_record(v_org, v_p1, true) ->> 'person_name';
+  v_txt := custom.read_record(v_org, v_p1, false) ->> 'person_name';
   if v_txt = 'Chen, merged' then
     raise exception 'REC-20: undoing the rename left it renamed';
   end if;
@@ -610,17 +610,17 @@ begin
   --     holds no client grant; the Table is a record, so a person reads its storage off the
   --     read door like any other value.
   perform custom.migrate_promote(v_org, v_person);
-  if coalesce(nullif(custom.read_record(v_org, v_person, true) ->> 'storage', ''), 'light') <> 'heavy' then
+  if coalesce(nullif(custom.read_record(v_org, v_person, false) ->> 'storage', ''), 'light') <> 'heavy' then
     raise exception 'REC-20: promote left the table on "%"',
-                    coalesce(custom.read_record(v_org, v_person, true) ->> 'storage', 'nothing');
+                    coalesce(custom.read_record(v_org, v_person, false) ->> 'storage', 'nothing');
   end if;
   perform custom.migrate_demote(v_org, v_person);
-  if coalesce(nullif(custom.read_record(v_org, v_person, true) ->> 'storage', ''), 'light') <> 'light' then
+  if coalesce(nullif(custom.read_record(v_org, v_person, false) ->> 'storage', ''), 'light') <> 'light' then
     raise exception 'REC-20: demote left the table on "%"',
-                    coalesce(custom.read_record(v_org, v_person, true) ->> 'storage', 'nothing');
+                    coalesce(custom.read_record(v_org, v_person, false) ->> 'storage', 'nothing');
   end if;
   raise notice 'PART 8 — REC-20 / REC-24: the verbs "%" are on the log a person reads, every logged Migration carries an inverse (0 without), the reparent''s containment is in the read door''s answer in the same commit, an undone rename reads back as "%" and is marked undone, and promote/demote moved the table both ways.',
-               v_verbs, custom.read_record(v_org, v_p1, true) ->> 'person_name';
+               v_verbs, custom.read_record(v_org, v_p1, false) ->> 'person_name';
 
   -- ══════════════════════════════════════════════════════════════════════════
   -- PART 9 — REC-23. Soft within retention; the purge only after it.
@@ -716,7 +716,7 @@ begin
     raise exception 'C-18 (10): a plain member deleted a record that was never shared with her';
   end if;
   -- THE CONTROL: the record she WAS shared reads back for her.
-  if (custom.read_record(v_org, v_chen1, true) ->> 'person_name') is null then
+  if (custom.read_record(v_org, v_chen1, false) ->> 'person_name') is null then
     raise exception 'C-18 (10) control: the record shared with test@test.com at viewer does not read back for her';
   end if;
   perform set_config('request.jwt.claims', c_admin_j, true);

@@ -24,11 +24,21 @@ jest.mock("../SmallCodeEditor", () => ({ __esModule: true, default: () => null }
 jest.mock("../CodeBlockHeader", () => ({ __esModule: true, default: () => null }));
 jest.mock("../StickyButtons", () => ({ __esModule: true, default: () => null }));
 jest.mock("@/features/html-pages/services/htmlPageService", () => ({ HTMLPageService: {} }));
-(globalThis as typeof globalThis & { IntersectionObserver?: unknown }).IntersectionObserver = class {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-};
+// jsdom has no IntersectionObserver; CodeBlock's sticky buttons observe its
+// edges. An inert, fully typed stand-in (never reports an intersection).
+class InertIntersectionObserver implements IntersectionObserver {
+  readonly root = null;
+  readonly rootMargin = "0px";
+  readonly scrollMargin = "0px";
+  readonly thresholds: ReadonlyArray<number> = [0];
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+  takeRecords(): IntersectionObserverEntry[] {
+    return [];
+  }
+}
+globalThis.IntersectionObserver = InertIntersectionObserver;
 
 import CodeBlock from "../CodeBlock";
 

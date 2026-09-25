@@ -308,7 +308,7 @@ begin
   --     asserts is that the door ANSWERS her, not what it answers.
   v_caught := null;
   begin
-    perform custom.read_record(v_org, v_stub, true);
+    perform custom.read_record(v_org, v_stub, false);
   exception when others then get stacked diagnostics v_caught = message_text;
   end;
   if v_caught is not null then

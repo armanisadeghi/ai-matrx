@@ -122,20 +122,20 @@ begin
   -- ══ PART 2 — "CHECK IN" ON THREE ARRIVALS: ONE TRANSACTION, ALL THREE. ═══════════════════
   v_res := custom.action_run(v_org, a_checkin, array[r5, r6, r8]);
   if (v_res ->> 'ran')::integer is distinct from 3 then raise exception '2a: three arrivals, % checked in: %', v_res ->> 'ran', v_res; end if;
-  if custom.read_record(v_org, r5, true) ->> 'visit_status' is distinct from 'Checked in'
-     or custom.read_record(v_org, r8, true) ->> 'visit_status' is distinct from 'Checked in'
-     or custom.read_record(v_org, r8, true) ? 'desk_notes' and custom.read_record(v_org, r8, true) ->> 'desk_notes' is not null then
+  if custom.read_record(v_org, r5, false) ->> 'visit_status' is distinct from 'Checked in'
+     or custom.read_record(v_org, r8, false) ->> 'visit_status' is distinct from 'Checked in'
+     or custom.read_record(v_org, r8, false) ? 'desk_notes' and custom.read_record(v_org, r8, false) ->> 'desk_notes' is not null then
     raise exception '2b: Tango and Maple are not checked in with their desk note cleared: % / %',
-      custom.read_record(v_org, r5, true), custom.read_record(v_org, r8, true);
+      custom.read_record(v_org, r5, false), custom.read_record(v_org, r8, false);
   end if;
   raise notice '2 PASS — Tango, Olive and Maple checked in by one call; Maple''s "Post-op check, TPLO" note cleared.';
 
   -- ══ PART 3 — A FORMULA STEP, WORKED OUT BY THE STORE ON EACH RECORD. ═════════════════════
   v_res := custom.action_run(v_org, a_pay, array[r1, (select v from gp where k = 'r4')]);
-  if (custom.read_record(v_org, r1, true) ->> 'deposit')::numeric is distinct from 185
-     or (custom.read_record(v_org, (select v from gp where k = 'r4'), true) ->> 'deposit')::numeric is distinct from 98
-     or (custom.read_record(v_org, r1, true) ->> 'balance_due')::numeric is distinct from 0 then
-    raise exception '3: "Take full payment" did not set each deposit to that visit''s own fee: %', custom.read_record(v_org, r1, true);
+  if (custom.read_record(v_org, r1, false) ->> 'deposit')::numeric is distinct from 185
+     or (custom.read_record(v_org, (select v from gp where k = 'r4'), false) ->> 'deposit')::numeric is distinct from 98
+     or (custom.read_record(v_org, r1, false) ->> 'balance_due')::numeric is distinct from 0 then
+    raise exception '3: "Take full payment" did not set each deposit to that visit''s own fee: %', custom.read_record(v_org, r1, false);
   end if;
   raise notice '3 PASS — Biscuit''s deposit is his $185 and Pepper''s her $98, each worked out on its own record; Balance due reads 0.';
 
@@ -147,7 +147,7 @@ begin
   exception when check_violation then
     get stacked diagnostics v_caught = message_text, v_detail = pg_exception_detail, v_hint = pg_exception_hint;
   end;
-  if (custom.read_record(v_org, (select v from gp where k = 'r2'), true) ->> 'deposit')::numeric is distinct from 50 then
+  if (custom.read_record(v_org, (select v from gp where k = 'r2'), false) ->> 'deposit')::numeric is distinct from 50 then
     raise exception '4b: Juniper''s deposit moved although Moose''s refused — the selection was not one transaction';
   end if;
   if v_caught not like '%Take full payment%changed nothing%1 of the 2%Moose (Delgado)%Deposit taken%'
@@ -168,7 +168,7 @@ begin
      or not exists (select 1 from jsonb_array_elements(v_detail::jsonb) d where d ->> 'record' = 'Biscuit (Hollis)' and d ->> 'field' = 'Patient') then
     raise exception '4e: three refusals (two required patients, one Supplier) were not all named: %', v_detail;
   end if;
-  if custom.read_record(v_org, r1, true) ->> 'patient' is distinct from 'Biscuit (Hollis)' then
+  if custom.read_record(v_org, r1, false) ->> 'patient' is distinct from 'Biscuit (Hollis)' then
     raise exception '4f: Biscuit lost his name although the selection refused';
   end if;
   raise notice '4 PASS — Moose''s $365 refused on Deposit taken and Juniper''s deposit untouched; clearing Patient on two visits and a Supplier names all three and changes none. First: "%".', v_caught;

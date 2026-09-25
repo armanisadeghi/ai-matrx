@@ -192,11 +192,11 @@ begin
   -- the winner's document as `custom.read_record` hands it back — so 1b is not a summary that
   -- names a field nothing happened to.
   if not exists (select 1 from jsonb_array_elements(
-                   coalesce(custom.read_record(v_org, v_ch1, true) -> '_alternates' -> 'phone', '[]'::jsonb)) x
+                   coalesce(custom.read_record(v_org, v_ch1, false) -> '_alternates' -> 'phone', '[]'::jsonb)) x
                   where x -> 'value' = '"555-0202"'::jsonb
                     and (x -> 'source' ->> 'id')::uuid = v_ch2) then
     raise exception '1b (T5): history names phone as changed and the door hands back no alternate from the merged-away record. Document: %',
-      custom.read_record(v_org, v_ch1, true);
+      custom.read_record(v_org, v_ch1, false);
   end if;
 
   -- 1c. THE REVISION POINTS AT THE MIGRATION, so "what else did this operation do" is answerable
@@ -376,7 +376,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform custom.share_grant(v_org, v_ch1, 'user', c_dana, 'viewer'::public.permission_level);
   perform set_config('request.jwt.claims', c_dana_j, true);
-  if (custom.read_record(v_org, v_ch1, true) ->> 'pname') <> 'Chen' then
+  if (custom.read_record(v_org, v_ch1, false) ->> 'pname') <> 'Chen' then
     raise exception '5c: the record shared with test@test.com at viewer does not read back for her';
   end if;
   select count(*) into v_n from custom.io_revisions(v_org, v_ch1);
