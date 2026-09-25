@@ -622,8 +622,8 @@ export default function TopicList() {
         title="Delete topic"
         description={
           <>
-            Permanently delete <b>{deleteTarget?.name}</b> and all its sources,
-            analyses, and documents. This cannot be undone.
+            This archives <b>{deleteTarget?.name}</b> and its sources,
+            analyses, and documents. It leaves your topic list; an admin can restore it.
           </>
         }
         confirmLabel="Delete topic"
