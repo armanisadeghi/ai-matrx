@@ -261,8 +261,12 @@ where c.relkind in ('r','p') and not c.relispartition and c.relrowsecurity
   /*SCOPE*/
   and not exists (select 1 from pg_policies p
                    where p.schemaname = n.nspname and p.tablename = c.relname
-                     and p.cmd in ('SELECT','ALL')
-                     and coalesce(p.qual,'') ~ 'is_platform_admin|is_super_admin')`;
+                     and p.cmd in ('SELECT','ALL') and p.permissive = 'PERMISSIVE'
+                     -- UNCONDITIONAL only (2026-09-25): a visibility-narrowed admin arm hides personal
+                     -- rows from the admin system and does NOT count; it fooled this check on 246 tables.
+                     and regexp_replace(coalesce(p.qual,''),'[\\s()]','','g')
+                         in ('SELECTis_platform_adminASis_platform_admin','is_platform_admin',
+                             'SELECTpublic.is_platform_adminASis_platform_admin'))`;
 
 async function adminReadMissing(env: { url: string; key: string }, scope = ""): Promise<string[]> {
   const res = await door(env, ADMIN_READ_MISSING_SQL.replace("/*SCOPE*/", scope));
