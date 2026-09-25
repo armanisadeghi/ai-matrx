@@ -259,7 +259,7 @@ export function MandateTryPanel({
         {surfaceState.status === "error" ? (
           <p className="text-xs text-destructive">{surfaceState.message}</p>
         ) : null}
-        {surface ? <ServerNotes notes={surface.notes} /> : null}
+        {surface ? <ServerNotes heading="About these inputs" notes={surface.notes} /> : null}
         {fields.map((field) => {
           const label = fieldLabel(field);
           const value = values[field.name] ?? "";
@@ -393,15 +393,15 @@ function TryResult({ result }: { result: MandateTestResponse }) {
         <div className="rounded border border-warning/50 bg-warning/5 p-2 text-xs">
           <p className="font-medium text-foreground">The answer does not match this job&rsquo;s output.</p>
           <ul className="mt-1 list-disc pl-4 text-muted-foreground">
-            {result.structural.errors.map((error) => (
+            {(result.structural.errors ?? []).map((error) => (
               <li key={error}>{error}</li>
             ))}
           </ul>
         </div>
       ) : null}
-      <ServerNotes notes={result.notes ?? []} />
+      <ServerNotes heading="What this run did" notes={result.notes ?? []} />
       <MandateTryResultView
-        output={result.output}
+        output={result.output ?? ""}
         artifact={result.artifact ?? null}
         outputKind={result.structural.output_kind ?? null}
       />
