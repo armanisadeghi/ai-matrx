@@ -205,6 +205,36 @@ describe("callApi organization context", () => {
     expect(String(url)).not.toContain(ORGANIZATION_ID);
   });
 
+  // A POST that is a READ on an organization-free admin route (the mandate
+  // grade reads) opts in with `organizationFreeRead` and is treated like a GET.
+  // Without the flag the same POST is refused (the write test above).
+  it("sends an organizationFreeRead POST with no organization selected, naming none", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      headers: new Headers(),
+      json: async () => ({ verdicts: [] }),
+    } as Response);
+    global.fetch = fetchMock;
+    const state = requestState(null, ORGANIZATION_ID);
+
+    const result = await callApi({
+      path: "/mandates/impact/workflows",
+      method: "POST",
+      body: { workflow_ids: null },
+      organizationFreeRead: true,
+      _testOverrides: { forceBaseUrl: "https://server.test" },
+    })(jest.fn(), () => state, undefined);
+
+    expect(result.error).toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const headers = (init.headers ?? {}) as Record<string, string>;
+    expect(headers["X-Organization-Id"]).toBeUndefined();
+    expect(String(init.body)).not.toContain("organization_id");
+  });
+
   it("CONTROL: a READ with an organization selected still names it", async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,

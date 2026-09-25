@@ -52,6 +52,7 @@ const SOURCE_LABEL: Record<string, string> = {
   catalogue: "Goals",
   serves: "Serves",
   impact: "Grades",
+  workflowImpact: "Workflow grades",
   inputs: "Inputs",
 };
 

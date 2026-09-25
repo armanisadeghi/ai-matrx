@@ -406,6 +406,17 @@ export interface ApiCallConfig<
    */
   scopeOverrides?: Partial<CallScope>;
 
+  /**
+   * This POST is a READ on a route the server declares organization-free
+   * (aidream `Depends(organization_free)`) — e.g. the admin grade reads
+   * `POST /mandates/impact` and `/mandates/impact/workflows`, which carry an
+   * id list too long for a query string. It is treated exactly like a GET:
+   * never refused for a missing organization (a read never waits on one); a
+   * selected organization still rides along. Never set this on a write or a
+   * run — the server refuses those without an organization anyway.
+   */
+  organizationFreeRead?: true;
+
   // ── Test / Demo overrides (placeholder) ──────────────────────────────────
 
   /**
@@ -1425,7 +1436,7 @@ export function callApi<
       const isOrganizationlessRead =
         !isGuestLane &&
         !config.scopeOverrides?.organization_id &&
-        isReadMethod(config.method) &&
+        (isReadMethod(config.method) || config.organizationFreeRead === true) &&
         (await readHasNoOrganization(getState));
 
       const resolvedOrganizationId = isOrganizationlessGuest || isOrganizationlessRead

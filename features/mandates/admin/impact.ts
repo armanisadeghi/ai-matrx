@@ -623,6 +623,11 @@ export async function fetchImpact(
       callApi({
         path: IMPACT_READ_PATH[options.posture ?? "admin"],
         method: "POST",
+        // The admin grade read is organization-free on the server; `/mine` is a
+        // user route that still resolves one, so only the admin posture opts in.
+        ...((options.posture ?? "admin") === "admin"
+          ? { organizationFreeRead: true as const }
+          : {}),
         body: {
           agent_ids: page,
           include_descendants: options.includeDescendants,

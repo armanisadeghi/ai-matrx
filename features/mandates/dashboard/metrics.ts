@@ -24,6 +24,7 @@ import type {
   MandateConsoleData,
 } from "@/features/mandates/admin/service";
 import type { MandateReferenceBoard } from "@/features/mandates/admin/references";
+import type { WorkflowImpactReport } from "@/features/mandates/admin/workflow-impact";
 
 export interface FeatureCount {
   feature: string;
@@ -299,4 +300,35 @@ export function contractMismatchKeys(
     )
     .map((mandate) => mandate.mandate_key)
     .sort();
+}
+
+export interface WorkflowGradeMetrics {
+  rungs: number;
+  workflows: number;
+  contractBroken: number;
+  behindLatest: number;
+  /** Rungs graded red — the newest version would break the mandate's callers. */
+  breaking: number;
+  blocked: number;
+  withheld: number;
+  withheldSentence: string | null;
+}
+
+/** The workflow twin of the agent grades (POST /mandates/impact/workflows). */
+export function workflowGradeMetrics(
+  report: WorkflowImpactReport | null,
+): WorkflowGradeMetrics | null {
+  if (!report) return null;
+  const count = (test: (v: WorkflowImpactReport["verdicts"][number]) => boolean) =>
+    report.verdicts.filter(test).length;
+  return {
+    rungs: report.verdicts.length,
+    workflows: report.workflows_examined,
+    contractBroken: count((v) => v.contract_broken),
+    behindLatest: count((v) => v.behind_latest),
+    breaking: count((v) => v.grade === "red"),
+    blocked: count((v) => v.blocker !== null),
+    withheld: report.withheld.total,
+    withheldSentence: report.withheld.sentence,
+  };
 }

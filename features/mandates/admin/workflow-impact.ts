@@ -86,6 +86,8 @@ export async function fetchWorkflowImpact(
       path: WORKFLOW_IMPACT_PATH,
       method: "POST",
       body: { workflow_ids: workflowIds ? [...workflowIds] : null },
+      // A read on an organization-free admin route: never waits on an organization.
+      organizationFreeRead: true,
     }),
   );
   if (response.error) throw new Error(response.error.message);

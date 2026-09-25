@@ -20,16 +20,14 @@ import {
   Radar,
   RefreshCw,
   Users,
+  Workflow,
 } from "lucide-react";
 import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
 
 import { Button } from "@/components/ui/button";
 import { KpiGrid, KpiTile } from "@/components/official/kpi/KpiTile";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { SYSTEM_HOME } from "@/features/mandates/list-door";
-import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import {
   fetchMandateCodeTruthReport,
   fetchMandateConsoleData,
@@ -45,6 +43,10 @@ import {
   type MandateReferenceBoard,
 } from "@/features/mandates/admin/references";
 import {
+  fetchWorkflowImpact,
+  type WorkflowImpactReport,
+} from "@/features/mandates/admin/workflow-impact";
+import {
   bindingMetrics,
   contractMismatchKeys,
   coverageCounts,
@@ -53,6 +55,7 @@ import {
   driftMetrics,
   scanMetrics,
   systemKeys,
+  workflowGradeMetrics,
 } from "./metrics";
 import {
   MANDATE_LIST_COLUMN as COL,
@@ -138,16 +141,12 @@ const ago = (iso: string | null | undefined) =>
 
 export function MandateDashboard() {
   const dispatch = useAppDispatch();
-  const organizationId = useAppSelector(selectOrganizationId);
-  // The code-scan read is a server request, and every signed-in server request
-  // is filed under an organization. With none selected the section shows the
-  // organization picker in place of its tiles — never a skeleton that waits
-  // for a choice nobody was asked to make. Every other section reads the
-  // database directly and never waits on an organization.
-  // Three states, never a refusal spelled from a nullable id (check:org-three-states): the notice
-  // shows only once boot settled with none; while it resolves the tiles read as loading.
-  const { organizationState } = useOrganizationRequired();
-  const needsOrganization = organizationState === "required";
+  // 🚨 A READ NEVER WAITS ON AN ORGANIZATION (access-belongs-to-the-person §3).
+  // Every read here — the code-scan board (GET /mandates/references/board) and
+  // the workflow grades (POST /mandates/impact/workflows) included — is an
+  // organization-free admin route on the server, so nothing below is gated on
+  // a selection. Until 2026-09-25 the code-scan section waited for one and
+  // showed the organization picker instead of its tiles.
   const [reloads, setReloads] = useState(0);
   const [showAllFeatures, setShowAllFeatures] = useState(false);
 
@@ -155,6 +154,7 @@ export function MandateDashboard() {
   const [coverageSlot, setCoverageSlot] = useState<Slot<MandateCoverageResponse>>(EMPTY);
   const [truthSlot, setTruthSlot] = useState<Slot<MandateCodeTruthReport>>(EMPTY);
   const [boardSlot, setBoardSlot] = useState<Slot<MandateReferenceBoard>>(EMPTY);
+  const [workflowSlot, setWorkflowSlot] = useState<Slot<WorkflowImpactReport>>(EMPTY);
 
   useEffect(() => {
     let cancelled = false;
@@ -162,20 +162,12 @@ export function MandateDashboard() {
     runSlot(() => fetchMandateConsoleData({ home: SYSTEM_HOME }), setConsoleSlot, isCancelled);
     runSlot(() => fetchMandateCoverage(dispatch), setCoverageSlot, isCancelled);
     runSlot(() => fetchMandateCodeTruthReport(dispatch), setTruthSlot, isCancelled);
+    runSlot(() => fetchMandateReferenceBoard(dispatch), setBoardSlot, isCancelled);
+    runSlot(() => fetchWorkflowImpact(dispatch), setWorkflowSlot, isCancelled);
     return () => {
       cancelled = true;
     };
   }, [dispatch, reloads]);
-
-  // The board's request carries the active organization; it waits for one.
-  useEffect(() => {
-    if (!organizationId) return;
-    let cancelled = false;
-    runSlot(() => fetchMandateReferenceBoard(dispatch), setBoardSlot, () => cancelled);
-    return () => {
-      cancelled = true;
-    };
-  }, [dispatch, organizationId, reloads]);
 
   const keys = systemKeys(consoleSlot.data);
   const defs = definitionMetrics(consoleSlot.data, truthSlot.data);
@@ -184,11 +176,16 @@ export function MandateDashboard() {
   const cov = coverageCounts(coverageSlot.data, keys);
   const drift = driftMetrics(truthSlot.data, keys, codeBackedKeys(consoleSlot.data));
   const scan = scanMetrics(boardSlot.data);
-  const boardLoading = (boardSlot.loading || !organizationId) && !needsOrganization;
-  const boardError = needsOrganization ? null : boardSlot.error;
+  const boardLoading = boardSlot.loading;
+  const boardError = boardSlot.error;
+  const wf = workflowGradeMetrics(workflowSlot.data);
 
   const anyLoading =
-    consoleSlot.loading || coverageSlot.loading || truthSlot.loading || boardLoading;
+    consoleSlot.loading ||
+    coverageSlot.loading ||
+    truthSlot.loading ||
+    boardLoading ||
+    workflowSlot.loading;
   const features = defs?.features ?? [];
   const shownFeatures = showAllFeatures
     ? features
@@ -457,14 +454,48 @@ export function MandateDashboard() {
         </KpiGrid>
       </Section>
 
-      <Section icon={Radar} title="Code scan" error={boardError}>
-        {needsOrganization ? (
-          <OrganizationRequiredNotice
-            compact
-            what="The code scan"
-            className="rounded-md border border-border"
+      <Section icon={Workflow} title="Workflow grades" error={workflowSlot.error}>
+        <KpiGrid>
+          <KpiTile
+            label="Workflow rungs"
+            value={n(wf?.rungs)}
+            loading={workflowSlot.loading}
+            hint={wf ? `${formatCount(wf.workflows)} workflows examined` : undefined}
           />
-        ) : (
+          <KpiTile
+            label="Contract broken"
+            value={n(wf?.contractBroken)}
+            tone={wf && wf.contractBroken > 0 ? "bad" : "good"}
+            loading={workflowSlot.loading}
+          />
+          <KpiTile
+            label="Behind latest"
+            value={n(wf?.behindLatest)}
+            tone={wf && wf.behindLatest > 0 ? "warn" : "neutral"}
+            loading={workflowSlot.loading}
+          />
+          <KpiTile
+            label="Breaking change"
+            value={n(wf?.breaking)}
+            tone={wf && wf.breaking > 0 ? "bad" : "good"}
+            loading={workflowSlot.loading}
+          />
+          <KpiTile
+            label="Blocked"
+            value={n(wf?.blocked)}
+            tone={wf && wf.blocked > 0 ? "warn" : "neutral"}
+            loading={workflowSlot.loading}
+          />
+          <KpiTile
+            label="Withheld"
+            value={n(wf?.withheld)}
+            loading={workflowSlot.loading}
+            hint={wf?.withheldSentence ?? undefined}
+          />
+        </KpiGrid>
+      </Section>
+
+      <Section icon={Radar} title="Code scan" error={boardError}>
         <KpiGrid>
           <KpiTile
             label="Last complete scan"
@@ -550,7 +581,6 @@ export function MandateDashboard() {
             }
           />
         </KpiGrid>
-        )}
       </Section>
     </div>
   );
