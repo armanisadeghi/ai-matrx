@@ -28,6 +28,7 @@ import { createVisualExtensions, type RichShellActions } from "./visual-extensio
 import { findHighlightKey } from "./decorations";
 import { BlockHandle } from "./BlockHandle";
 import { SelectionToolbar } from "./SelectionToolbar";
+import { TableToolbar } from "./TableToolbar";
 import { useRichEditorContext } from "../RichEditorContext";
 
 const HEADLESS_SCHEMA = getSchema(createRichEditorExtensions());
@@ -256,6 +257,7 @@ export function VisualEditor({
     >
       <BlockHandle editor={editor} container={container} />
       <EditorContent editor={editor} className="mx-auto max-w-3xl pb-[40dvh]" />
+      {editor && !context.readOnly && <TableToolbar editor={editor} />}
       {editor && (
         <SelectionToolbar
           editor={editor}

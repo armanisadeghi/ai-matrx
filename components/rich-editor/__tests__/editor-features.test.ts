@@ -27,6 +27,7 @@ import {
   moveBlock,
   replaceIslandRaw,
   setCallout,
+  setColumnAlign,
   toggleTaskChecked,
   toggleTaskList,
 } from "../core/commands";
@@ -107,6 +108,24 @@ describe("tables", () => {
       return true;
     });
     expect(save()).toBe(PICKUP_TABLE.replace("|:---------|------:|---------|", "| :--- | ---: | :---: |"));
+  });
+
+  it("aligning a column from inside a body cell rewrites only the delimiter row", () => {
+    const { editor, save } = open(PICKUP_TABLE);
+    const pos = find(editor.state.doc, (node) => node.isText === true && node.text === "Devin");
+    editor.commands.setTextSelection(pos + 1);
+    setColumnAlign(editor, "right");
+    expect(save()).toBe(PICKUP_TABLE.replace("|:---------|------:|---------|", "| :--- | ---: | ---: |"));
+  });
+
+  it("deleting a column rewrites every row, and only the table", () => {
+    const { editor, save } = open(PICKUP_TABLE);
+    const pos = find(editor.state.doc, (node) => node.isText === true && node.text === "Devin");
+    editor.commands.setTextSelection(pos + 1);
+    editor.commands.deleteColumn();
+    expect(save()).toBe(
+      "Weekly tote counts:\n\n| Site | Totes |\n| :--- | ---: |\n| Alton | 6 |\n| Barranca | 2 |\n\nTotals reconcile Friday.",
+    );
   });
 
   it("a pipe typed into a cell is escaped so the row keeps its columns", () => {

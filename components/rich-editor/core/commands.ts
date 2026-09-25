@@ -305,3 +305,38 @@ export function topLevelNodeAt(doc: PMNode, pos: number): { node: PMNode; pos: n
 }
 
 export { topLevelAt };
+
+export type ColumnAlignment = "left" | "center" | "right" | null;
+
+/**
+ * Align the column the cursor is in: every cell of that column gets the
+ * alignment, so the GFM delimiter row (the only place markdown stores it) is
+ * rewritten and nothing else in the table moves.
+ */
+export function setColumnAlign(editor: Editor, align: ColumnAlignment): boolean {
+  const { $from } = editor.state.selection;
+  let cellDepth = -1;
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    const name = $from.node(depth).type.name;
+    if (name === "tableCell" || name === "tableHeader") {
+      cellDepth = depth;
+      break;
+    }
+  }
+  if (cellDepth < 2) return false;
+  const column = $from.index(cellDepth - 1);
+  const table = $from.node(cellDepth - 2);
+  const tablePos = $from.before(cellDepth - 2);
+  return editor.commands.command(({ tr }) => {
+    let rowPos = tablePos + 1;
+    table.forEach((row) => {
+      let cellPos = rowPos + 1;
+      row.forEach((cell, _offset, index) => {
+        if (index === column) tr.setNodeMarkup(cellPos, undefined, { ...cell.attrs, align });
+        cellPos += cell.nodeSize;
+      });
+      rowPos += row.nodeSize;
+    });
+    return true;
+  });
+}
