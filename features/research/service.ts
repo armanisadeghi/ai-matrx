@@ -4,6 +4,7 @@ import { requireUserId } from "@/utils/auth/getUserId";
 import type { Database } from "@/types/database.types";
 import { isJsonObject } from "@/types/json";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
+import { writeOne } from "@/utils/supabase/writeOne";
 import type {
   ResearchTopic,
   ResearchProgress,
@@ -515,12 +516,15 @@ export async function reorderKeywords(
 }
 
 export async function deleteKeyword(keywordId: string): Promise<void> {
-  const { error } = await supabase
-    .schema("research")
-    .from("rs_keyword")
-    .delete()
-    .eq("id", keywordId);
-  if (error) throw error;
+  await writeOne(
+    supabase
+      .schema("research")
+      .from("rs_keyword")
+      .delete()
+      .eq("id", keywordId)
+      .select("id"),
+    { action: "delete", noun: "keyword" },
+  );
 }
 
 /**
@@ -532,12 +536,15 @@ export async function updateKeywordGoal(
   goal: string | null,
 ): Promise<void> {
   const trimmed = goal?.trim();
-  const { error } = await supabase
-    .schema("research")
-    .from("rs_keyword")
-    .update({ goal: trimmed ? trimmed : null })
-    .eq("id", keywordId);
-  if (error) throw error;
+  await writeOne(
+    supabase
+      .schema("research")
+      .from("rs_keyword")
+      .update({ goal: trimmed ? trimmed : null })
+      .eq("id", keywordId)
+      .select("id"),
+    { action: "update", noun: "keyword" },
+  );
 }
 
 export async function updateKeywordText(
@@ -546,12 +553,15 @@ export async function updateKeywordText(
 ): Promise<void> {
   const trimmed = keyword.trim();
   if (!trimmed) throw new Error("Keyword cannot be empty");
-  const { error } = await supabase
-    .schema("research")
-    .from("rs_keyword")
-    .update({ keyword: trimmed })
-    .eq("id", keywordId);
-  if (error) throw error;
+  await writeOne(
+    supabase
+      .schema("research")
+      .from("rs_keyword")
+      .update({ keyword: trimmed })
+      .eq("id", keywordId)
+      .select("id"),
+    { action: "rename", noun: "keyword" },
+  );
 }
 
 // ============================================================================
@@ -573,12 +583,15 @@ export async function updateTopicMeta(
     update.description = trimmed && trimmed.length > 0 ? trimmed : null;
   }
   if (Object.keys(update).length === 0) return;
-  const { error } = await supabase
-    .schema("research")
-    .from("rs_topic")
-    .update(update)
-    .eq("id", topicId);
-  if (error) throw error;
+  await writeOne(
+    supabase
+      .schema("research")
+      .from("rs_topic")
+      .update(update)
+      .eq("id", topicId)
+      .select("id"),
+    { action: "update", noun: "topic" },
+  );
 }
 
 // ============================================================================
@@ -1051,12 +1064,15 @@ export async function updateTag(
 }
 
 export async function deleteTag(tagId: string): Promise<void> {
-  const { error } = await supabase
-    .schema("research")
-    .from("rs_tag")
-    .delete()
-    .eq("id", tagId);
-  if (error) throw error;
+  await writeOne(
+    supabase
+      .schema("research")
+      .from("rs_tag")
+      .delete()
+      .eq("id", tagId)
+      .select("id"),
+    { action: "delete", noun: "tag" },
+  );
 }
 
 export async function assignTagsToSource(
@@ -1379,12 +1395,15 @@ export async function updateContentCurated(
     // back up if the scrape was empty/null.)
     updates.original_content = content.content;
   }
-  const { error } = await supabase
-    .schema("research")
-    .from("rs_content")
-    .update(updates)
-    .eq("id", content.id);
-  if (error) throw error;
+  await writeOne(
+    supabase
+      .schema("research")
+      .from("rs_content")
+      .update(updates)
+      .eq("id", content.id)
+      .select("id"),
+    { action: "save", noun: "research content" },
+  );
 }
 
 /** Restore the backed-up original scrape (undo curation). */
@@ -1392,15 +1411,18 @@ export async function restoreOriginalContent(
   content: ResearchContent,
 ): Promise<void> {
   if (!content.original_content) return;
-  const { error } = await supabase
-    .schema("research")
-    .from("rs_content")
-    .update({
-      content: content.original_content,
-      char_count: content.original_content.length,
-    })
-    .eq("id", content.id);
-  if (error) throw error;
+  await writeOne(
+    supabase
+      .schema("research")
+      .from("rs_content")
+      .update({
+        content: content.original_content,
+        char_count: content.original_content.length,
+      })
+      .eq("id", content.id)
+      .select("id"),
+    { action: "restore", noun: "research content" },
+  );
 }
 
 // ============================================================================

@@ -16,6 +16,7 @@ import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
 import { isJsonObject } from "@/types/json";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { fetchTopicExperts } from "@/features/crm/service";
 import { parseManifest } from "../resources/manifest";
 import type {
@@ -394,10 +395,13 @@ export async function deleteBundle(id: string): Promise<void> {
   const update: BundleUpdate = {
     deleted_at: new Date().toISOString(),
   };
-  const { error } = await supabase
-    .schema("research")
-    .from("rs_context_bundle")
-    .update(update)
-    .eq("id", id);
-  if (error) throw error;
+  await writeOne(
+    supabase
+      .schema("research")
+      .from("rs_context_bundle")
+      .update(update)
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "context bundle" },
+  );
 }
