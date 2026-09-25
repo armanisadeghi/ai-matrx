@@ -669,11 +669,27 @@ async function sendTaskAssignmentNotification(
  */
 export async function deleteTask(taskId: string): Promise<boolean> {
   try {
-    const { error } = await workspaceDb(supabase)
-      .from("tasks")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", taskId)
-      .is("deleted_at", null);
+    const { error } = await tryWriteOne(
+      workspaceDb(supabase)
+        .from("tasks")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", taskId)
+        .is("deleted_at", null)
+        .select("id, deleted_at"),
+      {
+        action: "delete",
+        noun: "task",
+        alreadyDone: {
+          reread: () =>
+            workspaceDb(supabase)
+              .from("tasks")
+              .select("id, deleted_at")
+              .eq("id", taskId)
+              .maybeSingle(),
+          isDone: (row) => row.deleted_at != null,
+        },
+      },
+    );
 
     if (error) {
       console.error("Error deleting task:", error.message);

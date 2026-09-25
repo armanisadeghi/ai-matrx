@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import type { Json } from "@/types/database.types";
 import { asJsonObject, mergeJsonColumn } from "@ai-matrx/data/db";
@@ -171,12 +172,27 @@ export const podcastService = {
   // Soft delete, never a hard one (owner ruling 2026-09-20; db-rules §8):
   // every reader of `podcast.pc_shows` filters `deleted_at`.
   async removeShow(id: string): Promise<void> {
-    const { error } = await supabase
-      .schema("podcast").from("pc_shows")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id)
-      .is("deleted_at", null);
-    if (error) throw error;
+    await writeOne(
+      supabase
+        .schema("podcast").from("pc_shows")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .is("deleted_at", null)
+        .select("id, deleted_at"),
+      {
+        action: "delete",
+        noun: "show",
+        alreadyDone: {
+          reread: () =>
+            supabase
+              .schema("podcast").from("pc_shows")
+              .select("id, deleted_at")
+              .eq("id", id)
+              .maybeSingle(),
+          isDone: (row) => row.deleted_at != null,
+        },
+      },
+    );
   },
 
   // ── Episodes ───────────────────────────────────────────────────────────
@@ -341,12 +357,27 @@ export const podcastService = {
 
   // Soft delete, never a hard one — same rule as removeShow.
   async removeEpisode(id: string): Promise<void> {
-    const { error } = await supabase
-      .schema("podcast").from("pc_episodes")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id)
-      .is("deleted_at", null);
-    if (error) throw error;
+    await writeOne(
+      supabase
+        .schema("podcast").from("pc_episodes")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .is("deleted_at", null)
+        .select("id, deleted_at"),
+      {
+        action: "delete",
+        noun: "episode",
+        alreadyDone: {
+          reread: () =>
+            supabase
+              .schema("podcast").from("pc_episodes")
+              .select("id, deleted_at")
+              .eq("id", id)
+              .maybeSingle(),
+          isDone: (row) => row.deleted_at != null,
+        },
+      },
+    );
   },
 
   // ── Slug resolver (used by public route) ───────────────────────────────

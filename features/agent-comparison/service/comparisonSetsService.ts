@@ -118,12 +118,27 @@ export async function deleteComparisonSet(setId: string): Promise<void> {
   // `listComparisonSets` and `loadComparisonSet` both filter `deleted_at`.
   // The set's ENTRIES stay a hard wipe-and-reinsert on every save — they are
   // never a record a person manages on their own.
-  const { error } = await supabase()
-    .schema("agent").from("cmp_comparison_sets")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", setId)
-    .is("deleted_at", null);
-  if (error) throw error;
+  await writeOne(
+    supabase()
+      .schema("agent").from("cmp_comparison_sets")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", setId)
+      .is("deleted_at", null)
+      .select("id, deleted_at"),
+    {
+      action: "delete",
+      noun: "comparison",
+      alreadyDone: {
+        reread: () =>
+          supabase()
+            .schema("agent").from("cmp_comparison_sets")
+            .select("id, deleted_at")
+            .eq("id", setId)
+            .maybeSingle(),
+        isDone: (row) => row.deleted_at != null,
+      },
+    },
+  );
 }
 
 /**

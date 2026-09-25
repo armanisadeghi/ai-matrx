@@ -10,6 +10,7 @@
 import { requireUserId } from "@/utils/auth/getUserId";
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
@@ -232,11 +233,27 @@ export async function updateProject(
  */
 export async function deleteProject(projectId: string): Promise<boolean> {
   try {
-    const { error } = await workspaceDb(supabase)
-      .from("projects")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", projectId)
-      .is("deleted_at", null);
+    const { error } = await tryWriteOne(
+      workspaceDb(supabase)
+        .from("projects")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", projectId)
+        .is("deleted_at", null)
+        .select("id, deleted_at"),
+      {
+        action: "delete",
+        noun: "project",
+        alreadyDone: {
+          reread: () =>
+            workspaceDb(supabase)
+              .from("projects")
+              .select("id, deleted_at")
+              .eq("id", projectId)
+              .maybeSingle(),
+          isDone: (row) => row.deleted_at != null,
+        },
+      },
+    );
 
     if (error) {
       console.error("Error deleting project:", error);

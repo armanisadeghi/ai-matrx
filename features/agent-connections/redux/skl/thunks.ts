@@ -1,5 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { sklActions } from "./slice";
 import { extractErrorMessage } from "@/utils/errors";
@@ -191,13 +192,27 @@ export const deleteRenderDefinition = createAsyncThunk(
   async (args: { id: string }, { dispatch }) => {
     // Soft delete, never a hard one (owner ruling 2026-09-20; db-rules §8):
     // `fetchRenderDefinitions` already filters `deleted_at`.
-    const { error } = await supabase
-      .schema("skill")
-      .from("render_definition")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", args.id)
-      .is("deleted_at", null);
-    if (error) throw error;
+    await writeOne(
+      supabase
+        .schema("skill").from("render_definition")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", args.id)
+        .is("deleted_at", null)
+        .select("id, deleted_at"),
+      {
+        action: "delete",
+        noun: "render block",
+        alreadyDone: {
+          reread: () =>
+            supabase
+              .schema("skill").from("render_definition")
+              .select("id, deleted_at")
+              .eq("id", args.id)
+              .maybeSingle(),
+          isDone: (row) => row.deleted_at != null,
+        },
+      },
+    );
     dispatch(sklActions.renderDefinitionRemoved(args.id));
     return args.id;
   },

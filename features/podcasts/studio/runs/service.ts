@@ -105,11 +105,26 @@ export const studioRunsService = {
     // Soft delete, never a hard one (owner ruling 2026-09-20; db-rules §8):
     // a studio run is the durable record of one podcast generation and can be
     // reopened, and both of its readers filter `deleted_at`.
-    const { error } = await supabase
-      .schema("podcast").from("pc_studio_runs")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id)
-      .is("deleted_at", null);
-    if (error) throw error;
+    await writeOne(
+      supabase
+        .schema("podcast").from("pc_studio_runs")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .is("deleted_at", null)
+        .select("id, deleted_at"),
+      {
+        action: "delete",
+        noun: "studio run",
+        alreadyDone: {
+          reread: () =>
+            supabase
+              .schema("podcast").from("pc_studio_runs")
+              .select("id, deleted_at")
+              .eq("id", id)
+              .maybeSingle(),
+          isDone: (row) => row.deleted_at != null,
+        },
+      },
+    );
   },
 };

@@ -77,6 +77,7 @@ import {
   CreateContentBlockInput,
 } from "@/types/content-blocks-db";
 import { createClient } from "@/utils/supabase/client";
+import { WriteDidNotLandError, tryWriteOne, writeOne } from "@/utils/supabase/writeOne";
 import { CONTENT_BLOCK_PARAM } from "@/components/admin/content-blocks-route";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
@@ -611,22 +612,26 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
     try {
       const supabase = createClient();
 
-      const { error } = await supabase
-        .schema("skill")
-        .from("render_definition")
-        .update({
-          label: editData.label,
-          description: editData.description,
-          icon_name: editData.icon_name,
-          category_id: editData.category_id, // UUID FK to platform.categories
-          skill_id: editData.skill_id ?? null,
-          block_type: editData.block_type,
-          visibility: editData.visibility,
-          template: editData.template,
-          sort_order: editData.sort_order,
-          is_active: editData.is_active,
-        })
-        .eq("id", editData.id);
+      const { error } = await tryWriteOne(
+        supabase
+          .schema("skill")
+          .from("render_definition")
+          .update({
+            label: editData.label,
+            description: editData.description,
+            icon_name: editData.icon_name,
+            category_id: editData.category_id, // UUID FK to platform.categories
+            skill_id: editData.skill_id ?? null,
+            block_type: editData.block_type,
+            visibility: editData.visibility,
+            template: editData.template,
+            sort_order: editData.sort_order,
+            is_active: editData.is_active,
+          })
+          .eq("id", editData.id)
+          .select("id"),
+        { action: "save", noun: "content block" },
+      );
 
       if (error) {
         console.error("Supabase error:", error);
@@ -739,17 +744,27 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
   const handleToggleActive = async (block: ContentBlockDB) => {
     try {
       const supabase = createClient();
-      const { error } = await supabase
-        .schema("skill")
-        .from("render_definition")
-        .update({ is_active: !block.is_active })
-        .eq("id", block.id);
-
-      if (error) throw error;
+      await writeOne(
+        supabase
+          .schema("skill")
+          .from("render_definition")
+          .update({ is_active: !block.is_active })
+          .eq("id", block.id)
+          .select("id"),
+        { action: "change", noun: "content block" },
+      );
 
       loadData(); // Reload data
     } catch (error) {
       console.error("Error toggling block status:", error);
+      toast({
+        title: "Error",
+        description:
+          error instanceof WriteDidNotLandError
+            ? error.message
+            : "Failed to change this block's status.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -982,14 +997,29 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
         // §8): `skill.render_definition` carries `deleted_at` and both of its
         // readers — `fetchRenderDefinitions` and the kind-content-block
         // service — already filter it.
-        const { error } = await supabase
-          .schema("skill")
-          .from("render_definition")
-          .update({ deleted_at: new Date().toISOString() })
-          .eq("id", item.id)
-          .is("deleted_at", null);
-
-        if (error) throw error;
+        await writeOne(
+          supabase
+            .schema("skill")
+            .from("render_definition")
+            .update({ deleted_at: new Date().toISOString() })
+            .eq("id", item.id)
+            .is("deleted_at", null)
+            .select("id, deleted_at"),
+          {
+            action: "delete",
+            noun: "content block",
+            alreadyDone: {
+              reread: () =>
+                supabase
+                  .schema("skill")
+                  .from("render_definition")
+                  .select("id, deleted_at")
+                  .eq("id", item.id)
+                  .maybeSingle(),
+              isDone: (row) => row.deleted_at != null,
+            },
+          },
+        );
 
         toast({
           title: "Success",
@@ -1034,7 +1064,10 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
       console.error("Error deleting item:", error);
       toast({
         title: "Error",
-        description: `Failed to delete ${type}.`,
+        description:
+          error instanceof WriteDidNotLandError
+            ? error.message
+            : `Failed to delete ${type}.`,
         variant: "destructive",
       });
     }
