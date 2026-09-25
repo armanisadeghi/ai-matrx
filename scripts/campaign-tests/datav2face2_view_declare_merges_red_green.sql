@@ -90,13 +90,15 @@ begin
   v_view := custom.view_declare(v_org, v_tickets, jsonb_build_object(
     'name', 'All records',
     'definition', jsonb_build_object('layout', 'grid', 'is_default', true, 'sorts', '[]'::jsonb)));
-  -- The Calendar press: exactly what `saveViewPatch` sends — no name, only the changed keys.
+  -- The Calendar's date pick: exactly what `saveViewPatch` sends — no name, only the changed keys.
+  -- (VIEW-SWITCH-NOT-DESIGNATION, 2026-09-25: the layout itself is never saved onto the DEFAULT
+  -- view by a press — that is custom.view_designate — so the press here is the date Field alone.)
   perform custom.view_declare(v_org, v_tickets, jsonb_build_object('view_id', v_view,
-    'definition', jsonb_build_object('layout', 'calendar', 'date_field', 'promised_on')));
+    'definition', jsonb_build_object('date_field', 'promised_on')));
   select name, definition into v_name, v_def from platform.saved_view where id = v_view;
   perform set_config('role', 'postgres', true);
   v_kept := v_name = 'All records' and v_def -> 'is_default' = 'true'::jsonb
-            and v_def ->> 'layout' = 'calendar' and v_def ->> 'date_field' = 'promised_on';
+            and coalesce(v_def ->> 'layout', 'grid') = 'grid' and v_def ->> 'date_field' = 'promised_on';
   if expect_merge and not v_kept then
     raise exception 'RED: one press did not keep the view''s name and default: name %, definition %', v_name, v_def;
   end if;
