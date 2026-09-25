@@ -9,7 +9,7 @@
 // carries search, saved views and the column picker. The whole query lives in
 // the URL, so Back restores scope, search, filters and sort.
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { BrainCircuit } from "lucide-react";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import type { EntityBulkAction } from "@/lib/entity-list/selection";
@@ -20,8 +20,6 @@ import {
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { onMandateCacheInvalidated } from "@/features/mandates/service";
 import {
   batchEligibilityOf,
@@ -63,7 +61,14 @@ export function MandateAdminListPage() {
   const accessToken = useAppSelector(selectAccessToken);
   const authReady = useAppSelector(selectAuthReady);
   const organizationId = useAppSelector(selectOrganizationId);
-  const { organizationState } = useOrganizationRequired();
+  // The server reports ride the organization header: when a workspace is
+  // chosen (or changed) after the rows loaded, they are asked again.
+  const reportsOrg = useRef(organizationId);
+  useEffect(() => {
+    if (reportsOrg.current === organizationId) return;
+    reportsOrg.current = organizationId;
+    invalidateMandateAdminList(true);
+  }, [organizationId]);
   const listState = useMandateAdminListState();
 
   // Any mandate write anywhere (the Enabled switch included) re-asks the list.
@@ -177,20 +182,20 @@ export function MandateAdminListPage() {
     },
   ];
 
-  const ready = authReady && Boolean(accessToken) && Boolean(organizationId);
+  // 🚨 READING NEVER WAITS ON AN ORGANIZATION (review 2026-09-25; access is
+  // personal). The list itself is one database read that needs no workspace;
+  // only the server reports ride the organization header, and each of those
+  // that cannot run says so in the notice below — the rows never wait for it.
+  const ready = authReady && Boolean(accessToken);
   const service = createMandateAdminService(dispatch);
 
   if (!ready) {
     return (
       <div className="flex h-full flex-col gap-2 p-3">
-        {organizationState === "required" || organizationState === "unavailable" ? (
-          <OrganizationContextNotice state={organizationState} compact />
-        ) : (
-          <div className="space-y-2" aria-busy="true" aria-label="Loading mandates">
-            <div className="h-8 w-72 animate-pulse rounded-md bg-muted" />
-            <div className="h-64 w-full animate-pulse rounded-md bg-muted/60" />
-          </div>
-        )}
+        <div className="space-y-2" aria-busy="true" aria-label="Loading mandates">
+          <div className="h-8 w-72 animate-pulse rounded-md bg-muted" />
+          <div className="h-64 w-full animate-pulse rounded-md bg-muted/60" />
+        </div>
       </div>
     );
   }
