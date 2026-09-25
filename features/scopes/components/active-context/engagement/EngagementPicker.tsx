@@ -29,8 +29,11 @@ import { invalidateAssignableData } from "@/features/scopes/components/context-a
 import {
   ALL_ENGAGEMENT_RUNGS,
   applyEngagementPick,
+  resolvePickNode,
   useEngagementEngine,
+  useProjectTasks,
   useUniverse,
+  type NodeKind,
   type CreatePayload,
   type EngagementRung,
   type EngagementSelection,
@@ -85,7 +88,17 @@ export function EngagementPicker({
   className,
   columnsClassName,
 }: EngagementPickerProps) {
-  const universe = useUniverse();
+  const base = useUniverse();
+  // The held project's own tasks join the universe, so a held task always
+  // resolves to its name (the person's whole task list is a capped read).
+  const heldProjectTasks = useProjectTasks(
+    rungs.includes("task") ? value.projectId : null,
+  );
+  const extraTasks = heldProjectTasks.tasks.filter(
+    (task) => !base.tasks.some((known) => known.id === task.id),
+  );
+  const universe =
+    extraTasks.length > 0 ? { ...base, tasks: [...base.tasks, ...extraTasks] } : base;
   const engine = useEngagementEngine({ universe, value, onChange, rungs });
   const dispatch = useAppDispatch();
   const createProject = useCreateProject();
@@ -185,10 +198,28 @@ export function EngagementPicker({
 
   const missingProject =
     requireProject && rungs.includes("project") && !value.projectId;
+  // Each held rung by its real name; while the data that names it is still
+  // loading it reads "…", and a held id nobody can resolve says so.
+  const loading =
+    universe.treeStatus === "loading" ||
+    universe.engagementStatus === "loading" ||
+    heldProjectTasks.status === "loading";
+  const nameOf = (
+    rung: EngagementRung,
+    kind: NodeKind,
+    id: string | null,
+    name: string | null,
+  ): string | null => {
+    if (!rungs.includes(rung) || !id) return null;
+    const node = resolvePickNode(universe, kind, id);
+    if (node) return node.label;
+    if (name) return name;
+    return loading ? "…" : `Unavailable ${RUNG_WORD[rung]}`;
+  };
   const chain = [
-    rungs.includes("organization") ? value.organizationName ?? engine.nodes.find((n) => n.kind === "org")?.label : null,
-    rungs.includes("project") ? value.projectName ?? engine.nodes.find((n) => n.kind === "project")?.label : null,
-    rungs.includes("task") ? value.taskName ?? engine.nodes.find((n) => n.kind === "task")?.label : null,
+    nameOf("organization", "org", value.organizationId, value.organizationName),
+    nameOf("project", "project", value.projectId, value.projectName),
+    nameOf("task", "task", value.taskId, value.taskName),
   ].filter((part): part is string => Boolean(part));
   const tagCount = rungs.includes("scope") ? value.scopeIds.length : 0;
   const LeadIcon = value.taskId

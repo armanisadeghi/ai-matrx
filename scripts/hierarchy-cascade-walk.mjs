@@ -3,8 +3,8 @@
 //   1. an agent app's settings (EntityEngagementPicker): pick project → task, tag a scope, reload,
 //      see it persist, undo (admin@admin.com's own app "Smart City Discovery Guide");
 //   2. the research start form (EngagementPicker inline, Surface A): org → project, tag, reload, undo;
-//   3. the tasks header (EngagementPicker field, Surface A): pick a project, undo;
-//   4. a new shortcut's binding target (BindingTargetPicker): one organization, then one project.
+//   3. a surface binding's target (BindingTargetPicker, admin's agent batch editor): one organization,
+//      then one project.
 // Seat: admin@admin.com via the login form (credentials from .env.local, never printed).
 // Usage: node scripts/hierarchy-cascade-walk.mjs <outDir>
 import { chromium } from "playwright";
@@ -34,6 +34,9 @@ let n = 1;
 const page = await (await browser.newContext({ viewport: { width: 1500, height: 1000 } })).newPage();
 page.on("console", (m) => {
   if (m.type() === "error") (report.consoleErrors[where] ??= []).push(m.text().slice(0, 300));
+});
+page.on("response", (r) => {
+  if (r.status() >= 400) (report.failedResponses ??= []).push(`${where} ${r.status()} ${r.request().method()} ${r.url().split("?")[0]}`);
 });
 page.on("pageerror", (e) => (report.consoleErrors[where] ??= []).push(`pageerror: ${String(e).slice(0, 300)}`));
 const shot = async (name) => {
@@ -151,27 +154,9 @@ try {
     await shot("research-missing");
   }
 
-  // ── 3. Tasks header (field, Surface A) ──
-  where = "tasks";
-  await page.goto(`${ORIGIN}/tasks`, { waitUntil: "domcontentloaded", timeout: 240000 });
-  await dismissBanners();
-  const tf = await until("tasks field", async () => (await page.locator('[data-engagement-picker="field"]').count()) > 0, 180000);
-  if (tf.v) {
-    await page.locator('[data-engagement-picker="field"]').first().click();
-    await page.waitForSelector('[data-miller-rungs="engagements"]', { timeout: 60000 });
-    await pick(PROJECT, true);
-    step({ site: "tasks", picked: true, field: await fieldText(), shot: await shot("tasks-picked") });
-    await pick(PROJECT, false);
-    await page.keyboard.press("Escape");
-    step({ site: "tasks", undone: true, field: await fieldText() });
-  } else {
-    step({ site: "tasks", error: "field not found" });
-    await shot("tasks-missing");
-  }
-
-  // ── 4. New shortcut: binding target, one node ──
+  // ── 3. Binding target, one node (the surface-binding batch editor of admin's agent) ──
   where = "shortcut";
-  await page.goto(`${ORIGIN}/agents/shortcuts/new`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${ORIGIN}/agents/92c37a37-7630-4517-b2a2-b6f1d2427208/surfaces/batch`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await dismissBanners();
   const bt = await until("binding target", async () => (await page.locator("[data-binding-target-picker] button[role=combobox]").count()) > 0, 180000);
   if (bt.v) {
@@ -182,10 +167,8 @@ try {
     await sleep(500);
     step({ site: "shortcut", afterOrg: (await trig.textContent())?.trim() });
     await trig.click();
-    await page.locator("button", { hasText: ORG }).filter({ hasNot: page.locator("[aria-label]") }).first().click().catch(async () => {
-      // the row next to the check glyph drills
-      await page.locator(`button:not([aria-label]):has-text("${ORG}")`).first().click();
-    });
+    // the row beside the check glyph drills into the organization
+    await page.locator(`button:not([aria-label]):has-text("${ORG}")`).first().click();
     await page.locator(`button[aria-label="Select ${PROJECT}"]`).first().click();
     await sleep(500);
     step({ site: "shortcut", afterProject: (await trig.textContent())?.trim(), shot: await shot("shortcut-single-node") });
