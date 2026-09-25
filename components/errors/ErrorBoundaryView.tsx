@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import {
   AlertTriangle,
-  Boxes,
   Bug,
   Check,
   ChevronDown,
@@ -25,6 +24,7 @@ import { useRouter } from "next/navigation";
 import { isChunkLoadError } from "@/components/errors/chunk-load-recovery";
 import { captureReactRenderError } from "@/lib/diagnostics/captureReactError";
 import { mirrorCapturedErrorToConsole } from "@/lib/diagnostics/structuredConsoleMirror";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -42,66 +42,6 @@ export interface ErrorBoundaryViewProps {
 // ---------------------------------------------------------------------------
 // Internal utilities
 // ---------------------------------------------------------------------------
-
-/** Strip minified Next.js chunk URLs from a stack trace — noise for AI models. */
-function cleanStackForAI(stack: string): string {
-  return stack
-    .split("\n")
-    .map((line) =>
-      line.replace(
-        /\(https?:\/\/[^\s)]+\/_next\/static\/chunks\/([^:)]+)(?::[0-9]+)*\)/g,
-        "(<chunk:$1>)",
-      ),
-    )
-    .join("\n");
-}
-
-function buildAIContext(
-  error: Error & { digest?: string },
-  user: ReturnType<typeof selectUser>,
-  timestamp: string,
-  url: string,
-  userAgent: string,
-): string {
-  const cleanStack = error.stack ? cleanStackForAI(error.stack) : null;
-  const uaShort = userAgent
-    .replace(/Mozilla\/\S+\s*/, "")
-    .replace(/\(.*?\)\s*/g, "")
-    .trim()
-    .slice(0, 120);
-
-  const lines: (string | null)[] = [
-    "## Runtime Error Report",
-    "",
-    "### Error",
-    `- **Type:** \`${error.name}\``,
-    `- **Message:** ${error.message}`,
-    error.digest ? `- **Digest:** \`${error.digest}\`` : null,
-    "",
-    "### Context",
-    `- **Timestamp:** ${timestamp}`,
-    `- **URL:** \`${url}\``,
-    `- **Browser:** ${uaShort || userAgent.slice(0, 120)}`,
-    "",
-    "### User",
-    `- **ID:** \`${user.id ?? "unauthenticated"}\``,
-    `- **Email:** ${user.email ?? "—"}`,
-    `- **Role:** ${user.isAdmin ? "admin" : "user"}`,
-    `- **Auth provider:** ${user.appMetadata?.provider ?? "unknown"}`,
-    "",
-  ];
-
-  if (cleanStack) {
-    lines.push("### Stack Trace", "```", cleanStack, "```", "");
-  }
-
-  lines.push(
-    "---",
-    "_Copied from the AI Matrx Admin error boundary. Please help diagnose and fix this error._",
-  );
-
-  return lines.filter((l) => l !== null).join("\n");
-}
 
 // ---------------------------------------------------------------------------
 // Primitive sub-components
@@ -164,45 +104,6 @@ function InfoRow({
   );
 }
 
-function CopyForAIButton({
-  error,
-  user,
-  timestamp,
-  url,
-  userAgent,
-}: {
-  error: Error & { digest?: string };
-  user: ReturnType<typeof selectUser>;
-  timestamp: string;
-  url: string;
-  userAgent: string;
-}) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    const text = buildAIContext(error, user, timestamp, url, userAgent);
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  };
-
-  return (
-    <button
-      onClick={handleCopy}
-      className={cn(
-        "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all border",
-        copied
-          ? "bg-green-500/15 border-green-500/30 text-green-500"
-          : "bg-violet-500/10 border-violet-500/30 text-violet-400 hover:bg-violet-500/20 hover:text-violet-300",
-      )}
-      title="Copy a clean, structured summary for pasting into an AI chat"
-    >
-      {copied ? <Check className="h-3 w-3" /> : <Boxes className="h-3 w-3" />}
-      {copied ? "Copied!" : "Copy for AI"}
-    </button>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Admin debug panel
 // ---------------------------------------------------------------------------
@@ -252,16 +153,6 @@ function AdminPanel({ error }: { error: Error & { digest?: string } }) {
           >
             Only visible to admins
           </Badge>
-          {/* Isolated click — must not toggle the panel */}
-          <span onClick={(e) => e.stopPropagation()}>
-            <CopyForAIButton
-              error={error}
-              user={user}
-              timestamp={timestamp}
-              url={url}
-              userAgent={userAgent}
-            />
-          </span>
           <span className="text-amber-500/60">
             {expanded ? (
               <ChevronUp className="h-3.5 w-3.5" />
@@ -457,9 +348,24 @@ export function ErrorBoundaryView({
 
         {/* Heading + error info */}
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-semibold tracking-tight mb-2">
-            Something went wrong
-          </h2>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <h2 className="text-2xl font-semibold tracking-tight">
+              Something went wrong
+            </h2>
+            <ErrorAlchemyMenu
+              size="icon"
+              input={{
+                title: "Something went wrong",
+                message:
+                  error.message ||
+                  "An unexpected error occurred while loading this page.",
+                error,
+                operation: context ? `Show ${context}` : "Show this page",
+                details: error.digest ? { digest: error.digest } : undefined,
+                source: "route-boundary",
+              }}
+            />
+          </div>
           <p className="text-muted-foreground text-sm max-w-sm mx-auto leading-relaxed">
             {error.message ||
               "An unexpected error occurred while loading this page."}

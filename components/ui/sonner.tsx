@@ -10,6 +10,11 @@ import {
   sweepExpiredToasts,
 } from "@/lib/toast"
 import { useThemeMode } from "@/styles/themes/useThemeMode"
+import { setErrorToastDecorator } from "@/lib/toast"
+import { decorateErrorToast } from "@/components/errors/errorToastAlchemy"
+
+// Every error toast carries the Alchemy Menu (lib/toast.ts § EVERY ERROR TOAST).
+setErrorToastDecorator(decorateErrorToast)
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 

@@ -28,6 +28,7 @@ import {
   Unlink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -166,10 +167,14 @@ export function AnnotationPanel({ className }: { className?: string }) {
         )}
 
         {!loading && error && items.length > 0 && (
-          <div role="alert" className="mb-2 rounded-lg border border-destructive/30 p-2 text-xs">
-            <p>Part of this list could not be loaded: {error}</p>
-            <Button className="mt-1 h-7 text-xs" size="sm" variant="outline" onClick={() => void api.reload()}>Try again</Button>
-          </div>
+          <ErrorNotice
+            size="compact"
+            className="mb-2"
+            message={`Part of this list could not be loaded: ${error}`}
+            operation="Load annotations"
+            records={[{ type: source.token, id: source.id, label: source.title }]}
+            actions={<Button className="h-7 text-xs" size="sm" variant="outline" onClick={() => void api.reload()}>Try again</Button>}
+          />
         )}
 
         {loading ? (
@@ -177,10 +182,12 @@ export function AnnotationPanel({ className }: { className?: string }) {
             {[0, 1, 2].map((n) => <div key={n} className="h-20 animate-pulse rounded-lg border border-border bg-muted" />)}
           </div>
         ) : error && items.length === 0 ? (
-          <div role="alert" className="rounded-lg border border-destructive/30 p-3 text-sm">
-            <p>{error}</p>
-            <Button className="mt-2" size="sm" variant="outline" onClick={() => void api.reload()}>Try again</Button>
-          </div>
+          <ErrorNotice
+            message={error}
+            operation="Load annotations"
+            records={[{ type: source.token, id: source.id, label: source.title }]}
+            actions={<Button size="sm" variant="outline" onClick={() => void api.reload()}>Try again</Button>}
+          />
         ) : visible.length === 0 ? (
           <p className="px-1 py-8 text-center text-sm text-muted-foreground">
             {items.length === 0
@@ -289,10 +296,27 @@ function ItemCard({ item, active }: { item: ResolvedItem; active: boolean }) {
       )}
 
       {item.saveState === "failed" && (
-        <div role="alert" className="mt-1.5 rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-xs">
-          <p className="font-medium text-destructive">Not saved</p>
-          <p className="mt-0.5 text-foreground">{item.error}</p>
-          <div className="mt-1 flex flex-wrap gap-1">
+        <ErrorNotice
+          size="compact"
+          icon={false}
+          className="mt-1.5"
+          title="Not saved"
+          message={item.error}
+          operation={`Save ${label.toLowerCase()}`}
+          records={[
+            { type: source.token, id: source.id, label: source.title },
+            ...(item.commentId ? [{ type: "comment", id: item.commentId }] : []),
+          ]}
+          unsavedInput={{
+            kind: item.kind,
+            ...(item.body ? { text: item.body } : {}),
+            ...(item.suggestedText != null ? { suggested_text: item.suggestedText } : {}),
+            ...(item.anchor ? { passage: item.anchor.exact } : {}),
+            ...(item.link ? { link: { token: item.link.token, id: item.link.id, title: item.link.title } } : {}),
+            client_request_id: item.clientRequestId ?? null,
+          }}
+          actions={
+            <>
             {item.retryable !== false && (
               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); void api.retry(item); }}>
                 <RotateCcw className="mr-1 h-3 w-3" aria-hidden />Retry
@@ -307,8 +331,9 @@ function ItemCard({ item, active }: { item: ResolvedItem; active: boolean }) {
             <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); api.discardDraft(item.key); }}>
               Discard
             </Button>
-          </div>
-        </div>
+            </>
+          }
+        />
       )}
 
       {item.kind === "suggestion" && item.suggestedText != null && (

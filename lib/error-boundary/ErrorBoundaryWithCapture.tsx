@@ -19,6 +19,7 @@
 import * as React from "react";
 import { TriangleAlert } from "lucide-react";
 import { captureReactRenderError } from "@/lib/diagnostics/captureReactError";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ErrorBoundaryWithCaptureProps {
   children: React.ReactNode;
@@ -46,11 +47,32 @@ interface ErrorBoundaryWithCaptureState {
   error: Error | null;
 }
 
-function DefaultFallback() {
+function DefaultFallback({
+  error,
+  boundary,
+  relation,
+}: {
+  error: Error;
+  boundary: string;
+  relation?: string;
+}) {
   return (
-    <div className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-2 text-xs text-muted-foreground">
+    <div
+      role="alert"
+      className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-2 text-xs text-muted-foreground"
+    >
       <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
-      <span>This section could not be displayed.</span>
+      <span className="min-w-0 flex-1">This section could not be displayed.</span>
+      <ErrorAlchemyMenu
+        input={{
+          title: "This section could not be displayed.",
+          message: error.message || "A render error stopped this section.",
+          error,
+          operation: `Render ${boundary}`,
+          details: relation ? { boundary, relation } : { boundary },
+          source: "section-boundary",
+        }}
+      />
     </div>
   );
 }
@@ -91,7 +113,15 @@ export class ErrorBoundaryWithCapture extends React.Component<
     if (this.state.error !== null) {
       const fb = this.props.fallback;
       if (typeof fb === "function") return fb(this.state.error, this.reset);
-      return fb ?? <DefaultFallback />;
+      return (
+        fb ?? (
+          <DefaultFallback
+            error={this.state.error}
+            boundary={this.props.boundary}
+            relation={this.props.relation}
+          />
+        )
+      );
     }
     return this.props.children;
   }

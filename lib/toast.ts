@@ -407,6 +407,50 @@ function onWallClock(emit: Emit | undefined, dropsSilentNotices = false) {
 type MatrxToast = typeof captured.toast;
 
 /**
+ * 🚨 EVERY ERROR TOAST CARRIES THE ALCHEMY MENU. An error toast is an error on
+ * screen, and every error on screen hands an AI the sentence, the operation,
+ * the page's surface and its declared values (`components/errors/`). The menu
+ * is a React component and this module is imported by non-React code, so the
+ * app-wide Toaster registers it here once (`components/ui/sonner.tsx`); until it
+ * does (tests, a server import) error toasts are raised unchanged. A caller's
+ * own `action` / `cancel` is never displaced: the menu takes the first free
+ * slot, and a toast whose two slots are both taken keeps them.
+ */
+export type ErrorToastDecorator = (
+  message: string,
+  options: RecordToastOptions | undefined,
+  record: ToastRecordRef | null,
+) => RecordToastOptions | undefined;
+
+let errorToastDecorator: ErrorToastDecorator | null = null;
+
+export function setErrorToastDecorator(decorator: ErrorToastDecorator | null): void {
+  errorToastDecorator = decorator;
+}
+
+function decorateError(
+  message: unknown,
+  options: RecordToastOptions | undefined,
+  record: ToastRecordRef | null,
+): RecordToastOptions | undefined {
+  if (!errorToastDecorator || typeof message !== "string") return options;
+  try {
+    return errorToastDecorator(message, options, record);
+  } catch {
+    return options;
+  }
+}
+
+/** The error twin of `onWallClock`: silent notices dropped, Alchemy attached. */
+function errorOnWallClock(emit: Emit | undefined) {
+  if (typeof emit !== "function") return undefined;
+  return (message: unknown, options?: RecordToastOptions) =>
+    isSilentNotice(message, options)
+      ? ("" as ToastId)
+      : track(emit, message, decorateError(message, options, null), null);
+}
+
+/**
  * THE `toast` everyone imports. Identical API to sonner's, with three changes
  * that are the whole point of this module: error/warning reach the Error
  * Inspector (the kit wrapper), every timed toast runs on the wall clock (tier
@@ -418,7 +462,7 @@ export const toast: MatrxToast = Object.assign(
   captured.toast,
   {
     success: onWallClock(captured.toast.success as unknown as Emit),
-    error: onWallClock(captured.toast.error as unknown as Emit, true),
+    error: errorOnWallClock(captured.toast.error as unknown as Emit),
     info: onWallClock(captured.toast.info as unknown as Emit),
     warning: onWallClock(captured.toast.warning as unknown as Emit, true),
     message: onWallClock(captured.toast.message as unknown as Emit),
@@ -444,7 +488,7 @@ export const toastErrorAlreadyCaptured: typeof captured.toastErrorAlreadyCapture
     : track(
     captured.toastErrorAlreadyCaptured as unknown as Emit,
     message,
-    options as RecordToastOptions | undefined,
+    decorateError(message, options as RecordToastOptions | undefined, null),
     null,
   );
 
@@ -461,7 +505,12 @@ function raise(
   options?: RecordToastOptions,
 ): ToastId {
   const emit = (captured.toast as unknown as Record<RecordToastKind, Emit>)[kind];
-  return track(emit, message, options, record);
+  return track(
+    emit,
+    message,
+    kind === "error" ? decorateError(message, options, record) : options,
+    record,
+  );
 }
 
 /**
