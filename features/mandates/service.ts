@@ -6,8 +6,8 @@
  * POST /agents/{id} directly).
  *
  * Cross-repo system-of-record:
- * /Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md
- * Ruling: /common-docs/projects/workflow-mandate-program/DESIGN-one-resolution.md
+ * /Users/armanisadeghi/code/common-docs/systems/intelligence/mandates/STATE.md
+ * Ruling: /common-docs/systems/intelligence/mandates/STATE.md
  *
  * 🚨 THE CLIENT NEVER RESOLVES (D-R2, Arman 2026-09-01). There is ONE ladder —
  * user → the ACTIVE org → system — and it is walked in exactly one place. This

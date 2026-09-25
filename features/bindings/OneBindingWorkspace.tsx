@@ -22,9 +22,9 @@
 // cells of the binding-UI standard, and which did not render at all when a
 // mandate had no code provision. Both are gone, not deprecated.
 //
-// Standard: common-docs/projects/workflow-mandate-program/UI-STANDARD.md
-// Plan:     common-docs/projects/workflow-mandate-program/PLAN-ONE-BINDING-UI.md
-// Rulings:  common-docs/systems/mandates/DECISIONS.md D18
+// Standard: common-docs/systems/intelligence/mandates/UI-REGISTER.md
+// Plan:     common-docs/systems/intelligence/mandates/REGISTER.md
+// Rulings:  common-docs/systems/intelligence/mandates/DECISIONS.md D18
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CircleCheck, Settings2, Trash2 } from "lucide-react";
