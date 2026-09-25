@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { Copy } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -92,7 +93,7 @@ export function TasksListContextMenu({
       ).unwrap();
     } catch (error) {
       console.error("Error deleting task:", error);
-      toast.error("Could not delete task");
+      toastWriteFailure(error, { action: "delete this task" });
     }
   };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import Link from "next/link";
 import {
   X,
@@ -203,7 +204,7 @@ export default function TaskDetailsPanel({
       onClose();
     } catch (error) {
       console.error("Error deleting task:", error);
-      toast.error("Could not delete task");
+      toastWriteFailure(error, { action: "delete this task" });
     } finally {
       setIsDeleting(false);
     }

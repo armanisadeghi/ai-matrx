@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import {
   ChevronLeft,
   Calendar,
@@ -226,7 +227,7 @@ export default function MobileTaskDetails({
       onBack();
     } catch (error) {
       console.error("Error deleting task:", error);
-      toast.error("Could not delete task");
+      toastWriteFailure(error, { action: "delete this task" });
     } finally {
       setIsDeleting(false);
     }

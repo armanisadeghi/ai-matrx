@@ -668,6 +668,15 @@ async function sendTaskAssignmentNotification(
  * brings back exactly the ones this removal took (db-rules §8a).
  */
 export async function deleteTask(taskId: string): Promise<boolean> {
+  return (await deleteTaskExplained(taskId)) === null;
+}
+
+/**
+ * Soft-delete a task and say why when it did not land: `null` on success,
+ * otherwise the error whose message is a sentence for the person (a
+ * `WriteDidNotLandError` when nothing was written).
+ */
+export async function deleteTaskExplained(taskId: string): Promise<Error | null> {
   try {
     const { error } = await tryWriteOne(
       workspaceDb(supabase)
@@ -693,13 +702,13 @@ export async function deleteTask(taskId: string): Promise<boolean> {
 
     if (error) {
       console.error("Error deleting task:", error.message);
-      return false;
+      return error;
     }
 
-    return true;
+    return null;
   } catch (error) {
     console.error("Exception deleting task:", error);
-    return false;
+    return error instanceof Error ? error : new Error("The task could not be moved to the trash.");
   }
 }
 

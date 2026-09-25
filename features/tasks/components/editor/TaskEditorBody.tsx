@@ -17,6 +17,7 @@
 // change for the ~9 existing consumers).
 
 import { useEffect, useRef, useState } from "react";
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import {
   Calendar,
   Flag,
@@ -327,7 +328,7 @@ export function TaskEditorBody({
       ).unwrap();
     } catch (error) {
       console.error("Error deleting subtask:", error);
-      toast.error("Could not delete subtask");
+      toastWriteFailure(error, { action: "delete this subtask" });
     }
   };
 

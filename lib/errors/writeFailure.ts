@@ -60,6 +60,17 @@ function isPostgrestShaped(err: unknown): err is { code: string; message?: strin
   return typeof code === "string" && /^(PGRST\d{3}|[0-9A-Z]{5})$/.test(code) && !("status" in err && typeof (err as { status?: unknown }).status === "number");
 }
 
+/** A `WriteRefusedError` (or subclass) after Redux Toolkit serialized it. */
+function isSerializedRefusal(err: unknown): err is { name: string; message: string } {
+  if (!err || typeof err !== "object" || err instanceof Error) return false;
+  const e = err as { name?: unknown; message?: unknown };
+  return (
+    (e.name === "WriteRefusedError" || e.name === "WriteDidNotLandError") &&
+    typeof e.message === "string" &&
+    e.message.trim() !== ""
+  );
+}
+
 function postgrestSentence(code: string): string {
   if (code === "42501" || code === "PGRST301" || code === "PGRST302") return "You do not have permission to do this.";
   if (code === "PGRST303" || code === "PGRST300") return "Your sign-in has expired. Sign in again, then try again.";
@@ -119,6 +130,10 @@ export function describeWriteFailure(
   const title = `Could not ${action}.`;
   let why: string;
   if (err instanceof WriteRefusedError) {
+    why = err.message;
+  } else if (isSerializedRefusal(err)) {
+    // A refusal that crossed a Redux thunk: `.unwrap()` rejects with a plain
+    // `{ name, message }`, and its words are already a sentence for a person.
     why = err.message;
   } else if (isPostgrestShaped(err)) {
     why = postgrestSentence(err.code);

@@ -1,5 +1,6 @@
 // Task Item Component
 import React from "react";
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import {
   CheckCircle,
   Circle,
@@ -78,7 +79,7 @@ export default function TaskItem({
       ).unwrap();
     } catch (error) {
       console.error("Error deleting task:", error);
-      toast.error("Could not delete task");
+      toastWriteFailure(error, { action: "delete this task" });
     }
   };
 
@@ -349,7 +350,7 @@ function SubtaskItem({
       ).unwrap();
     } catch (error) {
       console.error("Error deleting subtask:", error);
-      toast.error("Could not delete subtask");
+      toastWriteFailure(error, { action: "delete this subtask" });
     }
   };
 

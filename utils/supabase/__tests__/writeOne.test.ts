@@ -232,3 +232,17 @@ describe("writeOne — compare-and-set mode", () => {
     );
   });
 });
+
+describe("the refusal survives a Redux thunk", () => {
+  it("describeWriteFailure keeps the words after RTK serializes the error to { name, message }", async () => {
+    const { client } = clientAnswering({ status: 200, body: [] });
+    const err = await writeOne(client.from("tasks").update({ deleted_at: "now" }).eq("id", "t1").select("id"), {
+      action: "delete",
+      noun: "task",
+    }).catch((e: Error) => e);
+    const serialized = { name: err.name, message: err.message }; // what `.unwrap()` rejects with
+    expect(describeWriteFailure(serialized, { action: "delete this task" }).description).toContain(
+      "Nothing was deleted: this task no longer exists",
+    );
+  });
+});

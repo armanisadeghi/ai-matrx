@@ -135,7 +135,10 @@ export const deleteProjectThunk = createAsyncThunk<
   dispatch(setOperatingProjectId(projectId));
   try {
     const result = await deleteProjectSvc(projectId);
-    if (result.success) await dispatch(invalidateAndRefetchFullContext());
+    // A refused delete used to end here in silence — the project stayed and
+    // nothing said so. It now rejects with the service's words.
+    if (!result.success) throw new Error(result.error ?? "The project could not be moved to the trash.");
+    await dispatch(invalidateAndRefetchFullContext());
   } finally {
     dispatch(setOperatingProjectId(null));
   }
@@ -628,8 +631,8 @@ export const deleteTaskThunk = createAsyncThunk<
     }
 
     try {
-      const ok = await taskService.deleteTask(taskId);
-      if (!ok) {
+      const failure = await taskService.deleteTaskExplained(taskId);
+      if (failure) {
         // Rollback — the task and every subtask that went with it.
         dispatch(
           upsertTaskWithLevel({
@@ -654,7 +657,9 @@ export const deleteTaskThunk = createAsyncThunk<
             }),
           );
         }
-        throw new Error(`Task ${taskId} could not be deleted.`);
+        // The service's error carries the words (e.g. "Nothing was deleted:
+        // this task no longer exists, or your access does not allow deleting it.").
+        throw failure;
       }
     } finally {
       dispatch(removeOperatingTaskId(taskId));

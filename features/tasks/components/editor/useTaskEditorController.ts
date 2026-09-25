@@ -16,6 +16,7 @@
 // `read-by-id` surface (the notes leaf-unit pattern).
 
 import { useState } from "react";
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   selectTaskEdit,
@@ -172,7 +173,7 @@ export function useTaskEditorController(taskId: string) {
       ).unwrap();
     } catch (error) {
       console.error("Error deleting task:", error);
-      toast.error("Could not move the task to the trash");
+      toastWriteFailure(error, { action: "move the task to the trash" });
     } finally {
       setIsDeleting(false);
     }
