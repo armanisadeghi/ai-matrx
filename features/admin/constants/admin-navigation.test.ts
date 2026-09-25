@@ -53,8 +53,7 @@ describe("admin navigation registry", () => {
       "/administration/mandates/new",
       "/administration/mandates/advanced",
       "/administration/mandates/references",
-      "/administration/mandates/list-preview",
-      "/administration/mandates/record-preview/some.key",
+      "/administration/mandates/some.key",
     ]) {
       expect(findAdminNavigationLocation(path)?.domain.slug).toBe("mandates");
       expect(adminMenuPathname(path)).toBe("/administration/intelligence/mandates");

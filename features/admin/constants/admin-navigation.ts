@@ -241,9 +241,9 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
     ],
   },
   {
-    // The owner's ORIGINAL mandate pages (and the first preview addresses),
-    // kept working untouched beside Intelligence → Mandates until he validates
-    // the new suite — no redirects until then. Not a menu row: every page here
+    // The owner's ORIGINAL mandate pages, kept working untouched beside
+    // Intelligence → Mandates until he validates the new suite — no redirects
+    // until then. Not a menu row: every page here
     // is reached from the new list's header (Classic view, References, Raw
     // tables, New mandate).
     name: "Mandates (original pages)",
@@ -268,13 +268,6 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/mandates/advanced"),
           destination("/administration/mandates", [
             "/administration/mandates/[mandateKey]",
-            "/administration/mandates/dashboard-preview",
-            "/administration/mandates/health-preview",
-            "/administration/mandates/list-preview",
-            "/administration/mandates/overrides-preview/[mandateKey]",
-            "/administration/mandates/record-preview/[mandateKey]",
-            "/administration/mandates/unconverted-preview",
-            "/administration/mandates/window-preview",
           ]),
         ],
       },

@@ -1,6 +1,6 @@
 // scripts/mandate-list-first-paint.mjs — headless timing of the admin mandate list's first load.
 //
-// Signs in as admin@admin.com, opens /administration/mandates/list-preview cold, and prints:
+// Signs in as admin@admin.com, opens /administration/intelligence/mandates cold, and prints:
 //   * when the first real row painted (a mandate key shows under the grid header),
 //   * when the Grade cells stopped reading "Grading",
 //   * every aidream report request and every mnd_admin_list / console read, start → end.
@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs";
 import { signIn } from "./lib/seat-browser.mjs";
 
 const ORIGIN = process.env.ORIGIN ?? "http://localhost:3001";
-const ROUTE = process.env.ROUTE ?? "/administration/mandates/list-preview";
+const ROUTE = process.env.ROUTE ?? "/administration/intelligence/mandates";
 const env = Object.fromEntries(
   readFileSync(new URL("../.env.local", import.meta.url), "utf8")
     .split("\n")
