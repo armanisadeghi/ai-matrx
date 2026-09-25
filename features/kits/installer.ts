@@ -664,7 +664,15 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
         await writeAgent(newId, "rename the copied agent", (cur) => ({
           name: agent.name,
           description: agent.description,
-          tags: Array.from(new Set([...(cur.tags ?? []), `kit:${manifest.key}`, `kit-install:${install!.id}`])),
+          // The source's own kit labels (it may itself be a kit copy) never ride along:
+          // a copy carries exactly ONE install's label, or removal could not tell them apart.
+          tags: Array.from(
+            new Set([
+              ...(cur.tags ?? []).filter((t) => !t.startsWith("kit:") && !t.startsWith("kit-install:")),
+              `kit:${manifest.key}`,
+              `kit-install:${install!.id}`,
+            ]),
+          ),
         }));
         done(agentStep, { links: [{ label: "Open agent", href: KIT_ROUTES.agent(newId) }] });
       }

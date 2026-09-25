@@ -202,6 +202,10 @@ export function KitDetail({
               </header>
             </div>
 
+            <aside className="lg:sticky lg:top-[calc(var(--shell-header-h)+1.25rem)] lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start">
+              <InstallPanel manifest={m} api={api} />
+            </aside>
+
             <div className="min-w-0 space-y-10 lg:col-start-1 lg:row-start-2">
               <Section icon={<Link2 className="h-3.5 w-3.5" />} title="How it works">
                 <HowItWorks manifest={m} />
@@ -284,9 +288,6 @@ export function KitDetail({
               )}
             </div>
 
-            <aside className="lg:sticky lg:top-[calc(var(--shell-header-h)+1.25rem)] lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start">
-              <InstallPanel manifest={m} api={api} />
-            </aside>
           </div>
         </div>
       </div>
