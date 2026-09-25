@@ -44,10 +44,16 @@ begin
   select v into v_org from gp where k = 'org'; select v into v_appts from gp where k = 'appts';
   select v into v_sup from gp where k = 'other_table';
 
-  -- Marisol is the OUTSIDE bookkeeper: not on the clinic's staff. Sharing outside starts off.
+  -- Marisol is the OUTSIDE bookkeeper: not on the clinic's staff. The clinic turns outside
+  -- sharing OFF for this half. The platform default is ON since
+  -- migrations/campaign/sharegate_naming_a_person_is_the_only_act.sql (Store-ON-by-default,
+  -- Arman 2026-09-23), so "off" is the organization's own explicit override, never the default.
   delete from iam.memberships where organization_id = v_org and user_id = c_dana;
   delete from platform.knob_override where feature = 'custom' and key = 'external_principal_enabled'
      and scope_kind = 'organization' and scope_id = v_org;
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+  values ('custom', 'external_principal_enabled', 'organization', v_org, v_org, 'false'::jsonb,
+          'Cedar Ridge keeps its appointments inside the clinic until the bookkeeper is engaged');
 
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims', c_dana_j, true);
@@ -65,6 +71,8 @@ begin
   exception when insufficient_privilege then null;
   end;
   perform set_config('role', 'postgres', true);
+  delete from platform.knob_override where feature = 'custom' and key = 'external_principal_enabled'
+     and scope_kind = 'organization' and scope_id = v_org;
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
   values ('custom', 'external_principal_enabled', 'organization', v_org, v_org, 'true'::jsonb,
           'Cedar Ridge shares its appointments with its outside bookkeeper');
