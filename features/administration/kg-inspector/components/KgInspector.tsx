@@ -16,7 +16,7 @@
  * the graph fills, before committing to the full cytoscape view (Phase G).
  * Pure reads through the typed kgInspectorService → Python backend.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
 import AppLink from "@/components/navigation/AppLink";
@@ -224,7 +224,9 @@ function EntitiesTab({
   const [orgNames, setOrgNames] = useState<Record<string, string>>({});
   const [orgNamesLoading, setOrgNamesLoading] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ queryKey: string; message: string } | null>(null);
+  const [sourceIssue, setSourceIssue] = useState<{ queryKey: string; message: string } | null>(null);
+  const [reloadNonce, setReloadNonce] = useState(0);
   const tableQuery = useTableUrlState({
     tableId: "kg-inspector-entities",
     defaultSort: { id: "mention_count", direction: "desc" },
@@ -232,22 +234,38 @@ function EntitiesTab({
   });
   const kind = selectedFilterValue(tableQuery.queryState.columnFilters.kind);
   const q = tableQuery.queryState.search.trim();
+  // A refresh is a new source generation, not just another request for the
+  // same Kind/Name. Including it fences any earlier append before replacement.
+  const sourceQueryKey = `${kind ?? "all"}\u0000${q}\u0000${reloadNonce}`;
+  const sourceQueryKeyRef = useRef(sourceQueryKey);
+  const [loadedQueryKey, setLoadedQueryKey] = useState(sourceQueryKey);
+  const [nextSourceOffset, setNextSourceOffset] = useState(0);
+
+  useEffect(() => {
+    sourceQueryKeyRef.current = sourceQueryKey;
+  }, [sourceQueryKey]);
+
+  const hasCurrentSource = loadedQueryKey === sourceQueryKey;
+  const currentRows = hasCurrentSource ? rawRows : [];
+  const currentTotal = hasCurrentSource ? serverTotal : 0;
+  const currentOffset = hasCurrentSource ? nextSourceOffset : 0;
+  const currentSourceIssue = sourceIssue?.queryKey === sourceQueryKey ? sourceIssue.message : null;
+  const currentError = error?.queryKey === sourceQueryKey ? error.message : currentSourceIssue;
 
   const organizationIds = useMemo(
     () => [
       ...new Set(
-        rawRows
+        currentRows
           .map((row) => row.organization_id)
           .filter((id): id is string => Boolean(id)),
       ),
     ],
-    [rawRows],
+    [currentRows],
   );
 
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
-    setError(null);
     listKgEntities(
       {
         kind,
@@ -258,18 +276,69 @@ function EntitiesTab({
       { signal: controller.signal },
     )
       .then((pageResult) => {
+        if (controller.signal.aborted || sourceQueryKeyRef.current !== sourceQueryKey) return;
+        setLoadedQueryKey(sourceQueryKey);
         setRawRows(pageResult.items);
         setServerTotal(pageResult.total);
+        setNextSourceOffset(pageResult.items.length);
+        setError(null);
+        setSourceIssue(null);
       })
       .catch((e: unknown) => {
-        if (controller.signal.aborted) return;
-        setError(e instanceof Error ? e.message : "Failed to load entities");
+        if (controller.signal.aborted || sourceQueryKeyRef.current !== sourceQueryKey) return;
+        setError({
+          queryKey: sourceQueryKey,
+          message: e instanceof Error ? e.message : "Failed to load entities",
+        });
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [kind, q]);
+  }, [kind, q, reloadNonce, sourceQueryKey]);
+
+  const loadNextPage = useCallback(async () => {
+    if (!hasCurrentSource || loading || currentSourceIssue || currentOffset >= currentTotal) return;
+
+    setLoading(true);
+    setError(null);
+    const requestQueryKey = sourceQueryKey;
+    try {
+      const pageResult = await listKgEntities({
+        kind,
+        q: q || null,
+        limit: FETCH_MAX,
+        offset: currentOffset,
+      });
+      if (sourceQueryKeyRef.current !== requestQueryKey) return;
+      const knownIds = new Set(currentRows.map((row) => row.id));
+      const uniqueItems = pageResult.items.filter((row) => !knownIds.has(row.id));
+      const nextOffset = currentOffset + pageResult.items.length;
+      const nextUniqueCount = currentRows.length + uniqueItems.length;
+      setRawRows((current) => [...current, ...uniqueItems]);
+      setServerTotal(pageResult.total);
+      setNextSourceOffset(nextOffset);
+      if (pageResult.items.length === 0 || uniqueItems.length === 0) {
+        setSourceIssue({
+          queryKey: requestQueryKey,
+          message: "The KG changed while this result was being paged. Retry from the first page to continue.",
+        });
+      } else if (nextOffset >= pageResult.total && nextUniqueCount !== pageResult.total) {
+        setSourceIssue({
+          queryKey: requestQueryKey,
+          message: "The live KG changed while pages were loading, so this result cannot prove complete. Retry from the first page.",
+        });
+      }
+    } catch (e: unknown) {
+      if (sourceQueryKeyRef.current !== requestQueryKey) return;
+      setError({
+        queryKey: requestQueryKey,
+        message: e instanceof Error ? e.message : "Failed to load more entities",
+      });
+    } finally {
+      if (sourceQueryKeyRef.current === requestQueryKey) setLoading(false);
+    }
+  }, [currentOffset, currentRows, currentSourceIssue, currentTotal, hasCurrentSource, kind, loading, q, sourceQueryKey]);
 
   useEffect(() => {
     if (organizationIds.length === 0) {
@@ -409,49 +478,58 @@ function EntitiesTab({
   ];
 
   return (
-    <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: "kg_inspector", kg_inspector_tab: "entities", kg_entities_filter: { kind, q, tableQuery: tableQuery.state }, kg_entities: rawRows })}>
+    <SurfaceRuntimeProvider surfaceName={ADMIN_KNOWLEDGE_SURFACE_NAME} getScope={() => createAdminKnowledgeScope({ knowledge_section: "kg_inspector", kg_inspector_tab: "entities", kg_entities_filter: { kind, q, tableQuery: tableQuery.state }, kg_entities: currentRows })}>
     <div className="flex flex-col gap-3">
-      {error ? (
+      {currentError ? (
         <div className="rounded-md border border-border bg-card p-4 text-sm text-destructive">
-          {error}
+          {currentError}
         </div>
       ) : null}
 
       <MatrxDataTable<KgEntityRow>
         tableId="kg-inspector-entities"
         viewTabs={false}
-        data={rawRows}
+        data={currentRows}
         columns={entityColumns}
         getRowId={(row) => row.id}
-        isLoading={loading && rawRows.length === 0}
-        isFetching={loading && rawRows.length > 0}
+        isLoading={loading && currentRows.length === 0}
+        isFetching={loading && currentRows.length > 0}
         query={{
-          mode: "controlled-local",
+          mode: "controlled-append",
           state: tableQuery.state,
           onStateChange: tableQuery.onStateChange,
-          // Only Name and Kind narrow the source. Organization, counts,
-          // confidence, created date, and sort operate on the loaded window.
-          sourceProcessing: { search: "source", sourceTotal: serverTotal },
-        }}
-        coverage={{
-          loaded: rawRows.length,
-          matched: serverTotal,
-          cap: FETCH_MAX,
-          answeredBy: "client",
-          noun: "entity",
+          // Name and Kind reload the source. All remaining filters and sorting
+          // apply to rows explicitly loaded through the canonical footer.
+          sourceProcessing: {
+            search: "source",
+            columnFilters: "local",
+            sort: "local",
+            sourceTotal: currentTotal,
+          },
+          pagination: {
+            queryKey: sourceQueryKey,
+            rows: currentRows,
+            loading: loading && currentRows.length === 0,
+            isFetchingNextPage: loading && currentRows.length > 0,
+            error: currentError ? new Error(currentError) : null,
+            hasNextPage: !currentSourceIssue && currentOffset < currentTotal,
+            loadNextPage,
+            refresh: () => setReloadNonce((current) => current + 1),
+            retrySource: () => setReloadNonce((current) => current + 1),
+            totalItems: currentTotal,
+          },
+          scroll: {
+            mode: "suspended",
+            reason: "Pages are loaded on request. The KG has no snapshot cursor, so concurrent writes can shift offset pages; the footer warns and offers a retry if that prevents a complete result.",
+          },
         }}
         pageSize={PAGE_SIZE}
-        localPagination={{
-          mode: "numbered",
-          reason: "Preserves the existing 50-entity forensic scan pages.",
-          approvedBy: "KG inspector canonical-table request",
-        }}
         stickyHeader
         detail={{ enabled: false }}
         copy={false}
         toolbar={{
           title: "Entities",
-          titleCount: { value: serverTotal, label: "server matches" },
+          titleCount: { value: currentTotal, label: "server matches" },
           search: true,
           searchPlaceholder: "Search canonical names…",
         }}
@@ -488,7 +566,22 @@ function EntitiesTab({
               </AppLink>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
-              <div><span className="text-muted-foreground">Organization</span><div>{!row.organization_id ? "—" : organizationDisplayName(row.organization_id, orgNames) ?? row.organization_id}</div></div>
+              <div>
+                <span className="text-muted-foreground">Organization</span>
+                <div>
+                  {!row.organization_id ? (
+                    "—"
+                  ) : orgNamesLoading && !(row.organization_id in orgNames) ? (
+                    <Skeleton className="h-4 w-28" />
+                  ) : (
+                    <EntityRef
+                      token="organization"
+                      id={row.organization_id}
+                      name={organizationDisplayName(row.organization_id, orgNames) ?? null}
+                    />
+                  )}
+                </div>
+              </div>
               <div><span className="text-muted-foreground">Mentions</span><div className="tabular-nums">{row.mention_count}</div></div>
               <div><span className="text-muted-foreground">Sources</span><div className="tabular-nums">{row.source_count}</div></div>
               <div><span className="text-muted-foreground">Confidence</span><div>{row.confidence_avg === null ? "—" : row.confidence_avg.toFixed(2)}</div></div>
