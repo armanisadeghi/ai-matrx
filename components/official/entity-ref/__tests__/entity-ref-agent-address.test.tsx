@@ -4,10 +4,13 @@
  * for a builtin agent too — a link into a shell that agent does not live in.
  *
  * RED before `useEntityHref` existed: a builtin agent rendered
- * `href="/agents/<id>"`. GREEN now: the administration href FOR AN ADMIN, the
- * ordinary agent page for everyone else (a non-admin sent into the admin tree
- * was bounced to Welcome — Arman, 2026-09-23), and an id that cannot be placed
- * renders NO link and says why.
+ * `href="/agents/<id>"`. GREEN now: the administration href for an admin WHILE
+ * IN THE ADMIN SECTION, the ordinary agent page everywhere else (a non-admin
+ * sent into the admin tree was bounced to Welcome — Arman, 2026-09-23; and
+ * "admin privileges cannot ever extend beyond the admin sections" — Arman,
+ * 2026-09-25, so on a user page an admin reads like everyone else: admin power
+ * = `userAuth.isAdmin` AND `userAuth.adminLaneOpen`), and an id that cannot be
+ * placed renders NO link and says why.
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -72,15 +75,18 @@ afterEach(() => {
 });
 
 /** The viewer is part of the address: render inside a store that says who. */
-function renderRef(el: React.ReactElement, { isAdmin = true } = {}) {
+function renderRef(
+  el: React.ReactElement,
+  { isAdmin = true, adminLaneOpen = true } = {},
+) {
   const store = configureStore({
-    reducer: { userAuth: () => ({ isAdmin }) },
+    reducer: { userAuth: () => ({ isAdmin, adminLaneOpen }) },
   });
   act(() => root.render(<Provider store={store}>{el}</Provider>));
 }
 
 describe("EntityRef sends each agent to the shell its kind lives in", () => {
-  it("a builtin agent opens in the System Agents admin shell", () => {
+  it("a builtin agent opens in the System Agents admin shell for an admin in the admin section", () => {
     seedAgentAddress({
       agentId: BUILTIN,
       agentType: "builtin",
@@ -105,6 +111,17 @@ describe("EntityRef sends each agent to the shell its kind lives in", () => {
     seedAgentAddress({ agentId: BUILTIN, agentType: "builtin", agentName: "Slides" });
     renderRef(<EntityRef token="agent" id={BUILTIN} name="Slides" />, {
       isAdmin: false,
+    });
+    expect(
+      container.querySelector('a[title="Open Slides"]')?.getAttribute("href"),
+    ).toBe(`/agents/${BUILTIN}`);
+  });
+
+  it("an admin on a USER page gets the ordinary agent page, like everyone else", () => {
+    seedAgentAddress({ agentId: BUILTIN, agentType: "builtin", agentName: "Slides" });
+    renderRef(<EntityRef token="agent" id={BUILTIN} name="Slides" />, {
+      isAdmin: true,
+      adminLaneOpen: false,
     });
     expect(
       container.querySelector('a[title="Open Slides"]')?.getAttribute("href"),
