@@ -317,7 +317,8 @@ export async function getResourceVisibility(
       p_resource_type: resourceType,
       p_resource_id: resourceId,
     });
-    if (error) throw operationFailed("check this item's public visibility", error);
+    if (error)
+      throw operationFailed("check this item's public visibility", error);
     const row = (data ?? {}) as Record<string, unknown>;
     if (row.found !== true) {
       throw operationFailed(
@@ -326,9 +327,7 @@ export async function getResourceVisibility(
       );
     }
     const orgDefault = row.organization_default as
-      | { level?: unknown; organization_name?: unknown }
-      | null
-      | undefined;
+      { level?: unknown; organization_name?: unknown } | null | undefined;
     const organizationDefault =
       orgDefault && typeof orgDefault.level === "string"
         ? {
@@ -337,8 +336,12 @@ export async function getResourceVisibility(
               typeof orgDefault.organization_name === "string"
                 ? orgDefault.organization_name
                 : "this organization",
-            ...(typeof (orgDefault as { organization_id?: unknown }).organization_id === "string"
-              ? { organizationId: (orgDefault as { organization_id: string }).organization_id }
+            ...(typeof (orgDefault as { organization_id?: unknown })
+              .organization_id === "string"
+              ? {
+                  organizationId: (orgDefault as { organization_id: string })
+                    .organization_id,
+                }
               : {}),
           }
         : null;
@@ -354,7 +357,9 @@ export async function getResourceVisibility(
           source: "store",
           choice,
           organizationId:
-            typeof row.organization_id === "string" ? row.organization_id : null,
+            typeof row.organization_id === "string"
+              ? row.organization_id
+              : null,
           organizationName:
             typeof row.organization_name === "string"
               ? row.organization_name
@@ -399,23 +404,27 @@ export async function getResourceVisibility(
     // column says who sees the public card, not who may open the thing (measured 2026-09-25: 516
     // agents are internal with a public card), so a lane control on it would lie.
     const choice =
-      capabilities.publicState.column === "visibility" ? laneOfVisibility(enumValue) : null;
+      capabilities.publicState.column === "visibility"
+        ? laneOfVisibility(enumValue)
+        : null;
     return {
       isPublic: value === "public",
       visibility: enumValue,
-      whoCanSee: choice
+      ...(choice
         ? {
-            source: "visibility",
-            choice,
-            organizationId: null,
-            organizationName: null,
-            memberDefaultLevel: null,
-            membersReachNow: choice === "organization",
-            // "Anyone with the link" is the world lane's own act (iam.publish_to_world), which
-            // only the record store has; for these kinds "Anyone" lives on the Public tab.
-            worldOffered: false,
+            whoCanSee: {
+              source: "visibility" as const,
+              choice,
+              organizationId: null,
+              organizationName: null,
+              memberDefaultLevel: null,
+              membersReachNow: choice === "organization",
+              // "Anyone with the link" is the world lane's own act (iam.publish_to_world), which
+              // only the record store has; for these kinds "Anyone" lives on the Public tab.
+              worldOffered: false,
+            },
           }
-        : null,
+        : {}),
     };
   }
   return { isPublic: value === true, visibility: null };
@@ -621,14 +630,12 @@ export async function grantOrgAvailability(
       return {
         success: false,
         error:
-          parsed.error ||
-          "Could not make this available to the organization",
+          parsed.error || "Could not make this available to the organization",
       };
 
     return {
       success: true,
-      message:
-        parsed.message || "Available to everyone in the organization",
+      message: parsed.message || "Available to everyone in the organization",
     };
   } catch (error: unknown) {
     console.error("grantOrgAvailability error:", error);

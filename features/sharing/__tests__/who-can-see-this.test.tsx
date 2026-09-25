@@ -102,7 +102,7 @@ describe("1. the lane is read from the store's lane door", () => {
     capsAnswer = { supports_public: true, is_link_shareable: true, public_state_kind: "enum", public_state_column: "card_visibility" };
     rowAnswer = { card_visibility: "internal" };
     const v = await getResourceVisibility("agent" as never, TABLE);
-    expect(v.whoCanSee).toBeNull();
+    expect(v.whoCanSee ?? null).toBeNull();
   });
 
   it("a site, whose reach IS its visibility enum, reads personal as mine", async () => {

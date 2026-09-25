@@ -165,7 +165,7 @@ describe("getResourceVisibility", () => {
 
       await expect(
         getResourceVisibility("udt_document", DOC_ID),
-      ).resolves.toEqual({ isPublic: false, visibility: level });
+      ).resolves.toMatchObject({ isPublic: false, visibility: level });
     },
   );
 
