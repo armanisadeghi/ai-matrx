@@ -62,12 +62,11 @@
 # branch and a foreign push landing mid-release must still end with the tag on
 # origin and the uncommitted file untouched. `pnpm test:release-ship-path`.
 #
-# 🚨 THE RELEASE-COMMIT CONTENT LAW (scripts/release-stage.sh) still holds: the
-# release commit carries package.json only, and --ship commits EXACTLY the
-# paths the invoker named — never `git add -A`, never "whatever is staged".
-# Release v0.4.1575 (2026-08-31) shipped another lane's mid-edit import that
-# way. Building the commit with plumbing makes the law structural: it is
-# built on origin/main, where nobody's half-written file exists.
+# The release commit itself carries package.json only, and --ship commits EXACTLY
+# the paths the invoker named (scripts/release-stage.sh). Everything else in the
+# checkout was already committed and pushed by ./ship.sh's sync step
+# (scripts/sync-main.py) — every saved file goes live, by design (Arman,
+# 2026-09-24; common-docs policies/shared-checkout.md).
 set -euo pipefail
 
 RELEASE_LOCK_HELD=false

@@ -108,7 +108,7 @@ const claims: Claim[] = [
   {
     id: "release-commit-content-law",
     claim:
-      "a release never ships content no one committed — release.sh/ship.sh commit by pathspec through scripts/release-stage.sh, never git add -A, and the primitive self-tests",
+      "release.sh's own commit is exact — version file plus named paths through scripts/release-stage.sh, and the primitive self-tests; ./ship.sh's sync step (scripts/sync-main.py) commits and pushes everything else, by design",
     where: "CLAUDE.md § Release",
     check: () => {
       const problems: string[] = [];
@@ -141,7 +141,7 @@ const claims: Claim[] = [
       }
       return problems.length > 0 ? problems.join("; ") : null;
     },
-    fix: "Keep every release commit pathspec-scoped through scripts/release-stage.sh (release v0.4.1575 shipped another lane's mid-edit broken import because --ship did git add -A). Never reintroduce a tree-wide stage; update CLAUDE.md § Release in the same commit as any change here.",
+    fix: "Keep release.sh's own commit pathspec-scoped through scripts/release-stage.sh; committing everything uncommitted is the sync step's job (scripts/sync-main.py), not release.sh's. Update CLAUDE.md § Release in the same commit as any change here.",
   },
   {
     id: "unwired-detector-wiring",

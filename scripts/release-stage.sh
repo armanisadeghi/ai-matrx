@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
 # release-stage.sh — THE RELEASE-COMMIT CONTENT LAW for a shared checkout.
 #
-# A release must never ship content no one committed. On this checkout Arman
-# plus dozens of agents edit at once, so at any moment the working tree holds
-# other lanes' half-written files. Release v0.4.1575 (2026-08-31, b2f1bd7c4e)
-# was made by `./ship.sh`, whose `--ship` mode did `git add -A`: it swept
-# `features/mandates/authoring/AutomationButton.tsx` mid-edit, while its import
-# still pointed at a module that did not exist, and Vercel built that commit —
-# a broken production build, repaired only in 6d07c466b2. The staging step was
-# the whole defect: nothing else in the release could have excluded the file.
+# Scope: this governs ONLY the commit release.sh itself makes. `./ship.sh` runs
+# scripts/sync-main.py first, which commits EVERY uncommitted file in the checkout
+# and pushes it live — by design (Arman, 2026-09-24; common-docs
+# policies/shared-checkout.md). Everything saved goes live; that is never a risk
+# to report. release.sh's own commit just stays exact so its message is true.
 #
 # The rule this file enforces, and that `scripts/release.sh --ship` obeys:
 #
@@ -16,7 +13,7 @@
 #   invoker NAMED. Nothing is discovered from the working tree, and nothing is
 #   taken from the index — the index is shared too (another lane's `git add`
 #   sits there beside yours), so "whatever is staged" is not "yours" either.
-#   Every other dirty path stays exactly as it was, uncommitted, for its owner.
+#   Every other dirty path is left to the sync step, which commits and ships it.
 #
 # Mechanism: `git add -- <named paths>` (so new files become known), then
 # `git commit -m <msg> -- <version files> <named paths>`. A pathspec commit
