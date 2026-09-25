@@ -7,7 +7,7 @@ const TABLE_IMPACT_ROUTE = "/api/admin/canonicalization/table-impact";
 type TableImpactFetch = (
   input: string,
   init: RequestInit,
-) => Promise<Response>;
+) => Promise<Pick<Response, "ok" | "statusText" | "json">>;
 
 function isTableImpactRow(value: unknown): value is TableImpactRow {
   if (!isJsonObject(value)) return false;
@@ -39,6 +39,9 @@ function parsePage(value: JsonObject): TableImpactPage {
   ) {
     throw new Error("Preflight returned an invalid dependency count");
   }
+  if (typeof value.fingerprint !== "string" || !/^[a-f0-9]{32}$/.test(value.fingerprint)) {
+    throw new Error("Preflight returned an invalid snapshot fingerprint");
+  }
   if (
     value.nextOffset !== null &&
     (typeof value.nextOffset !== "number" ||
@@ -47,7 +50,7 @@ function parsePage(value: JsonObject): TableImpactPage {
   ) {
     throw new Error("Preflight returned an invalid continuation");
   }
-  return { rows, total: value.total, nextOffset: value.nextOffset };
+  return { rows, total: value.total, fingerprint: value.fingerprint, nextOffset: value.nextOffset };
 }
 
 /** Reads every counted, ordered page; an incomplete or changing result is an error, never a partial preflight. */
@@ -60,6 +63,7 @@ export async function fetchAllTableImpactRows(
 ): Promise<{ rows: TableImpactRow[]; total: number }> {
   let offset = 0;
   let expectedTotal: number | null = null;
+  let expectedFingerprint: string | null = null;
   const allRows: TableImpactRow[] = [];
 
   while (true) {
@@ -72,7 +76,13 @@ export async function fetchAllTableImpactRows(
     if (!res.ok) throw new Error(errorMessageFrom(data, res));
     const page = parsePage(data);
     if (expectedTotal === null) expectedTotal = page.total;
+    if (expectedFingerprint === null) expectedFingerprint = page.fingerprint;
     if (page.total !== expectedTotal) {
+      throw new Error(
+        "Preflight changed while its dependency list was being read; retry it",
+      );
+    }
+    if (page.fingerprint !== expectedFingerprint) {
       throw new Error(
         "Preflight changed while its dependency list was being read; retry it",
       );

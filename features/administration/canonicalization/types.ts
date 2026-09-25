@@ -146,6 +146,8 @@ export interface TableImpactPage {
   rows: TableImpactRow[];
   /** Exact count from the same SQL statement as this page. */
   total: number;
+  /** Fingerprint of the entire ordered result, so offset pages cannot mix snapshots. */
+  fingerprint: string;
   /** Offset for the next ordered page, or null when this page finishes the set. */
   nextOffset: number | null;
 }

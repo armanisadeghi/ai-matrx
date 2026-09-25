@@ -165,6 +165,9 @@ function parseTableImpactPage(value: unknown, offset: number): TableImpactPage {
   ) {
     throw new Error("Table impact preflight returned an invalid total");
   }
+  if (typeof value.fingerprint !== "string" || !/^[a-f0-9]{32}$/.test(value.fingerprint)) {
+    throw new Error("Table impact preflight returned an invalid snapshot fingerprint");
+  }
   const rows = value.rows.map((row) => {
     if (!isTableImpactRow(row)) {
       throw new Error("Table impact preflight returned an invalid dependency row");
@@ -178,6 +181,7 @@ function parseTableImpactPage(value: unknown, offset: number): TableImpactPage {
   return {
     rows,
     total: value.total,
+    fingerprint: value.fingerprint,
     nextOffset: nextOffset < value.total ? nextOffset : null,
   };
 }

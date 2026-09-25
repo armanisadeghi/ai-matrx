@@ -85,9 +85,9 @@ export function buildTableImpactPageQuery(
 
   // `execute_admin_query` returns one JSON value, so a bare array has no
   // receipt that it was complete. Keep the count and the page in one statement:
-  // `impact` is materialized once, then both the count and ordered page observe
-  // the same set. The explicit order makes offsets repeatable while the audit
-  // result is unchanged.
+  // `impact` is materialized once per request. Every page also fingerprints
+  // the whole ordered result, so the client rejects a changed snapshot even
+  // when additions and removals leave its count unchanged.
   return `with impact as materialized (
       select function_sig, dependency, currently_broken, referenced_columns
       from audit.table_impact(${sqlLiteral(s)}, ${sqlLiteral(t)})
@@ -99,6 +99,10 @@ export function buildTableImpactPageQuery(
       limit ${TABLE_IMPACT_PAGE_SIZE} offset ${offset}
     )
     select (select count(*) from impact)::integer as total,
+      (select md5(coalesce(jsonb_agg(to_jsonb(impact) order by
+        function_sig asc nulls last, dependency asc nulls last,
+        currently_broken desc nulls last, referenced_columns asc nulls last),
+        '[]'::jsonb)::text) from impact) as fingerprint,
       coalesce(
         (select jsonb_agg(to_jsonb(page) order by function_sig asc nulls last,
           dependency asc nulls last, currently_broken desc nulls last,

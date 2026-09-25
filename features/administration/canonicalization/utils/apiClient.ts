@@ -12,7 +12,9 @@
 import { isJsonObject, type JsonObject } from "@/types/json";
 
 /** Parses a fetch Response body as a JSON object, throwing if it isn't one. */
-export async function readJsonObject(res: Response): Promise<JsonObject> {
+export async function readJsonObject(
+  res: Pick<Response, "json" | "statusText">,
+): Promise<JsonObject> {
   let body: unknown;
   try {
     body = await res.json();
@@ -26,6 +28,9 @@ export async function readJsonObject(res: Response): Promise<JsonObject> {
 }
 
 /** Extracts the `error` string from a route's error payload, falling back to the HTTP status text. */
-export function errorMessageFrom(body: JsonObject, res: Response): string {
+export function errorMessageFrom(
+  body: JsonObject,
+  res: Pick<Response, "statusText">,
+): string {
   return typeof body.error === "string" && body.error ? body.error : res.statusText || "Request failed";
 }
