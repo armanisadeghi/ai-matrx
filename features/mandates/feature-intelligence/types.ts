@@ -33,8 +33,24 @@ export interface MandatePlace {
   urlPattern?: string;
   /** The jobs this place runs. */
   mandateKeys: readonly string[];
-  /** Repo files whose code runs these jobs — what the guard test reads. */
+  /**
+   * Files whose code runs these jobs — what the guard test reads. Paths are in
+   * this repo, or (with `app: "workflow-studio"`) in aidream's
+   * `apps/workflow-studio`.
+   */
   sources: readonly string[];
+  /**
+   * The place is in the Workflow Studio app (aidream `apps/workflow-studio`),
+   * not this repo. Its sources are read from the sibling aidream checkout.
+   */
+  app?: "workflow-studio";
+  /**
+   * Studio places whose code asks the server rather than naming the job: the
+   * endpoint fragment every source calls (`/conductor-context`)…
+   */
+  calls?: string;
+  /** …and the aidream files that route that call and name the job it runs. */
+  server?: readonly string[];
 }
 
 export interface FeaturePlaces {
