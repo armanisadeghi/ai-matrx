@@ -106,12 +106,13 @@ begin
   end if;
 end $t$;
 
--- ── the reassignment, as the practice owner
+-- ── the reassignment, as the practice owner. Scoped to the record kind (p_resource_types) so the
+-- suite rewrites one partition of custom.record, not every registered table on a shared database.
 select set_config('request.jwt.claims', '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}', true);
 create temp table kt_out on commit drop as
 select * from public.org_admin_reassign_member_resources(
   '5ba5aa1e-0000-4a00-8a00-000000000d01', '5ba5aa1e-0000-4a00-8a00-00000000a0d1',
-  '4060701e-706a-4c76-b3ca-0bbc69fa5a14', null);
+  '4060701e-706a-4c76-b3ca-0bbc69fa5a14', array['record']);
 
 do $t$
 declare
@@ -179,7 +180,7 @@ begin
     raise exception 'R5 FAILED — the archived personal Table was handed over silently';
   end if;
   begin
-    perform public.org_admin_reassign_member_resources(v_org, v_jp, '87a6e699-3622-4869-8843-d0867456c0dd', null);
+    perform public.org_admin_reassign_member_resources(v_org, v_jp, '87a6e699-3622-4869-8843-d0867456c0dd', array['record']);
     raise exception 'R5 FAILED — an admin reassigned a member''s work to themselves';
   exception when sqlstate '42501' then null;
   end;

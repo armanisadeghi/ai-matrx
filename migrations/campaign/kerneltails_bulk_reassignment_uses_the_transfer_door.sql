@@ -112,3 +112,17 @@ begin
                                             'personal_tables_transferred', v_tables));
 end;
 $function$;
+
+-- DECLARED (provision_shape_settled refuses a replaced definer without a door row): server_only.
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
+   non_client_lane, signed_in_callers, anonymous_callers)
+select 'public', 'org_admin_reassign_member_resources',
+       pg_get_function_identity_arguments('public.org_admin_reassign_member_resources(uuid, uuid, uuid, text[])'::regprocedure),
+       array['uuid'::regtype, 'uuid'::regtype, 'uuid'::regtype, 'text[]'::regtype]::oid[],
+       'p_org_id: the caller must be an admin of it (public.is_org_admin, the first line). p_from_user: the member whose work moves; p_to_user: must differ from the caller (DD-140) and from p_from_user, and be an active member of p_org_id (23503 otherwise). p_resource_types: null = every registered kind. Each live personal Table moves through custom.table_transfer_owner, which re-decides the caller on the Table''s own organization.',
+       'migrations/campaign/kerneltails_bulk_reassignment_uses_the_transfer_door.sql (lane KERNEL-TAILS)',
+       'server_only: postgres and service_role alone hold EXECUTE; anon and authenticated hold none (DD-140 closed the client RPC). An operator runs it with a signed-in organization admin''s claims for an offboarding; no client path calls it.',
+       false, false
+where not exists (select 1 from platform.client_callable_door d
+                   where d.schema_name = 'public' and d.function_name = 'org_admin_reassign_member_resources');

@@ -1,5 +1,5 @@
 -- INVERSE of migrations/campaign/kerneltails_bulk_reassignment_uses_the_transfer_door.sql (lane KERNEL-TAILS).
--- Restores public.org_admin_reassign_member_resources byte-for-byte.
+-- Restores public.org_admin_reassign_member_resources byte-for-byte. The server_only door row the up file declared is KEPT (it is true of either body, and the shape guard requires it for any replaced definer).
 set local lock_timeout = '30s';
 
 CREATE OR REPLACE FUNCTION public.org_admin_reassign_member_resources(p_org_id uuid, p_from_user uuid, p_to_user uuid, p_resource_types text[] DEFAULT NULL::text[])
