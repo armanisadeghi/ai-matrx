@@ -10,6 +10,8 @@
  *   npx tsx scripts/cutover-census/census.ts --json <file>         write the census as JSON
  *   npx tsx scripts/cutover-census/census.ts --self-test           prove the scanner and the proofs
  *                                                                  can fail (no repos, no database)
+ *   npx tsx scripts/cutover-census/census.ts --plant <repo>:<path>  the guard's own red: one planted
+ *                                                                  direct older call, in memory
  *
  * WHAT IT DOES. Reads `integrations.ts` (the 72 places the plan lists, plus any the census found),
  * runs every row's proofs against the code of matrx-frontend, aidream and matrx-extend (sibling
@@ -292,6 +294,18 @@ async function main(argv: string[]): Promise<number> {
     const t = readRepo(repo);
     if ("missing" in t) missing.push(`${repo}: ${t.missing}`);
     else trees.set(repo, t);
+  }
+  // --plant <repo>:<path> — THE GUARD'S OWN RED: one planted direct older call in a file nobody
+  // claims, added to the scan in memory (never written to disk, never recorded).
+  const plant = argv.includes("--plant") ? argv[argv.indexOf("--plant") + 1] : null;
+  if (plant) {
+    if (record) throw new Error("--plant is the guard's own red; it is never recorded");
+    const [repo, path] = plant.split(/:(.*)/s) as [Repo, string];
+    const tree = trees.get(repo);
+    if (!tree || !path) throw new Error(`--plant needs <repo>:<path> for a checked-out repo (got ${plant})`);
+    tree.files.push(path);
+    tree.code.set(path, codeOnly(path, `await supabase.rpc("append_rows_to_user_table", { p_table_id: tableId, p_rows: rows });\n`));
+    console.log(`PLANTED one direct older call in ${repo} ${path} (in memory only)`);
   }
   let db: pg.Client | null = null;
   try {

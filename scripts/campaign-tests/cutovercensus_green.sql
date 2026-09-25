@@ -85,13 +85,14 @@ declare
   org uuid;
   before jsonb; after jsonb; t uuid; t2 uuid;
 begin
+  perform set_config('app.actor_system', 'campaign-test/cutovercensus', true);
   select d.organization_id into org
     from workbench.udt_datasets d
    where d.deleted_at is null
      and exists (select 1 from custom.record r where r.organization_id = d.organization_id and r.id = d.id and r.data_class = 'table' and r.deleted_at is null)
      and exists (select 1 from custom.record k where k.organization_id = d.organization_id and k.data_class = 'table' and k.deleted_at is null
                    and coalesce((k.data ->> 'kept_by_the_app')::boolean, false))
-   group by 1 having count(*) >= 1 order by count(*) desc limit 1;
+   group by 1 having count(*) >= 2 order by count(*) desc limit 1;
   if org is null then
     raise exception 'RED 2 setup: no organization here holds a copied table beside an option list the app keeps, so the exclusion cannot be shown';
   end if;
@@ -112,8 +113,12 @@ begin
   end if;
 
   select d.id into t2 from workbench.udt_datasets d
-   where d.organization_id = org and d.deleted_at is null and d.id <> t order by d.table_name limit 1;
-  perform set_config('app.actor_system', 'cutovercensus_green suite', true);
+   where d.organization_id = org and d.deleted_at is null and d.id <> t
+     and exists (select 1 from custom.record r where r.organization_id = org and r.id = d.id and r.data_class = 'table' and r.deleted_at is null)
+   order by d.table_name limit 1;
+  if t2 is null then
+    raise exception 'RED 2 setup: the organization holds only one copied table, so an archived older table cannot be shown beside an archived copy';
+  end if;
   perform workbench.udt_dataset_archive(t2, t2, 'cutovercensus_green: an archived older table is not counted (rolled back)');
   after := platform.cutover_tables_copied(org);
   if (after ->> 'older_live')::int <> (before ->> 'older_live')::int - 1 or (after ->> 'archived_older')::int <> (before ->> 'archived_older')::int + 1 then
