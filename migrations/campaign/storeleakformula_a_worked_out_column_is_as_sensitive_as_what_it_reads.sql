@@ -5,7 +5,8 @@
 --   each declared below with the body it was written against: `iam.may_touch_field` (the one field
 --   question every read door, the aggregate, the filter and the export ask) and
 --   `custom.hidden_field_notice` (the notice a withheld column carries). No table, column, policy
---   or grant is added; no row of anybody's data is rewritten by this file — the re-derivation of
+--   or grant is added (four `platform.client_callable_door` rows declare the new SECURITY
+--   DEFINER functions server-only); no row of anybody's data is rewritten by this file — the re-derivation of
 --   existing columns is the separate, audited repair
 --   `storeleakformula_every_worked_out_column_reads_its_inputs_again.sql`.
 --   Inverse: `migrations/inverse/storeleakformula_a_worked_out_column_is_as_sensitive_as_what_it_reads_down.sql`.
@@ -246,6 +247,22 @@ $$;
 comment on function custom.field_sensitivity_floor(uuid, jsonb, uuid) is
   'STORE-LEAK-FORMULA: the strongest sensitivity among every column a worked-out definition reads, and the columns that carry it.';
 
+-- Every SECURITY DEFINER function says, in data, who may call it: no client, ever. Each takes an
+-- organization and a definition and answers about Field rows without asking who is asking, so it
+-- is only ever called by the store's own doors and triggers.
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
+   non_client_lane, signed_in_callers, anonymous_callers)
+select n.nspname, p.proname, pg_get_function_identity_arguments(p.oid), string_to_array(p.proargtypes::text, ' ')::oid[],
+       'STORE-LEAK-FORMULA: what a worked-out column reads, for the store''s own field question; the organization is the caller''s own, already decided by the door that asks.',
+       'STORE-LEAK-FORMULA',
+       'server_only: called only by iam.may_touch_field, custom.hidden_field_notice and the Field-row triggers inside a door that has already decided who is reading; it names Field ids of any table in the organization without asking who is asking.',
+       false, false
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+ where p.oid in ('custom.field_inputs_of(uuid, jsonb)'::regprocedure,
+                 'custom.field_input_closure(uuid, jsonb, uuid)'::regprocedure,
+                 'custom.field_sensitivity_floor(uuid, jsonb, uuid)'::regprocedure);
+
 revoke all on function custom.sensitivity_rank(text) from public;
 revoke all on function custom.field_inputs_of(uuid, jsonb) from public;
 revoke all on function custom.field_input_closure(uuid, jsonb, uuid) from public;
@@ -440,6 +457,16 @@ begin
 end $function$;
 comment on function iam.may_touch_field_itself(uuid, uuid, uuid, permission_level, text) is
   'The field question about ONE column only (sensitivity, per-person grant, portal). Callers ask iam.may_touch_field, which also asks it of every column a worked-out column reads.';
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
+   non_client_lane, signed_in_callers, anonymous_callers)
+select n.nspname, p.proname, pg_get_function_identity_arguments(p.oid), string_to_array(p.proargtypes::text, ' ')::oid[],
+       'STORE-LEAK-FORMULA / VIS-21: field-level security about one column only; iam.may_touch_field asks it of the column and of every column a worked-out column reads.',
+       'STORE-LEAK-FORMULA',
+       'server_only: it takes an arbitrary p_user_id AND an asserted level on the record, exactly as iam.may_touch_field does, so a client holding it could assert a level it does not have.',
+       false, false
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+ where p.oid = 'iam.may_touch_field_itself(uuid, uuid, uuid, permission_level, text)'::regprocedure;
 revoke all on function iam.may_touch_field_itself(uuid, uuid, uuid, permission_level, text) from public;
 
 CREATE OR REPLACE FUNCTION iam.may_touch_field(p_user_id uuid, p_field_id uuid, p_organization_id uuid, p_level_on_record permission_level, p_action text DEFAULT 'read'::text)
