@@ -1,13 +1,4 @@
 {
   "comment": "Pre-existing intelligence-outside-a-mandate sites (matrx-mandate-scan). RATCHET: the count only goes DOWN \u2014 never add an entry by hand; convert the site to a Mandate and regenerate with --write-baseline. D20: no entry here is an approved class; every one is a defect awaiting conversion.",
-  "sites": [
-    {
-      "identity_hash": "6829da979c7fb16a7f26cd05be1185511d59ee9b940348e2a93db52ce5c5e7f1",
-      "repo_slug": "matrx-frontend",
-      "package_path": ".",
-      "file_path": "features/voice-agent/constants.ts",
-      "symbol": "XAI_REALTIME_URL",
-      "line": 9
-    }
-  ]
+  "sites": []
 }
