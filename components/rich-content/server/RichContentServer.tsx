@@ -31,6 +31,7 @@ import "server-only";
 import { guardMarkdownDelimiters } from "@ai-matrx/kit/delimiter-guard";
 import MarkdownCoreServer from "@/components/markdown-core/MarkdownCoreServer";
 import { cn } from "@/lib/utils";
+import type { ReactNode } from "react";
 import { StaticStandard } from "../standard/static-standard";
 import type { DocumentNumbering } from "@/components/markdown-core/syntax/document-numbering";
 import {
@@ -45,7 +46,7 @@ import {
   type InlineLinks,
 } from "../prose/inline-level-elements";
 import {
-  PROSE_BLOCK_ELEMENTS,
+  proseElementsWithNested,
   PROSE_FRAME_CSS,
   proseFrameClass,
 } from "../prose/prose-block-elements";
@@ -78,10 +79,13 @@ function guarded(source: string, renderPath: string) {
 export function ProseServer({
   content,
   numbering,
+  renderNested,
 }: {
   content: string;
   /** The whole document's numbering (from the static root); none for a lone leaf. */
   numbering?: DocumentNumbering | null;
+  /** Block bodies of directive containers, rendered by the static root. */
+  renderNested?: (source: string) => ReactNode;
 }) {
   const direction = detectTextDirection(content);
   const { text, report } = guarded(content, "RichContentServer.prose");
@@ -89,7 +93,11 @@ export function ProseServer({
     <>
       <div className={proseFrameClass(direction)} dir={direction}>
         <style dangerouslySetInnerHTML={{ __html: PROSE_FRAME_CSS }} />
-        <MarkdownCoreServer preset="chat" components={PROSE_BLOCK_ELEMENTS} numbering={numbering}>
+        <MarkdownCoreServer
+          preset="chat"
+          components={proseElementsWithNested(renderNested)}
+          numbering={numbering}
+        >
           {text}
         </MarkdownCoreServer>
       </div>

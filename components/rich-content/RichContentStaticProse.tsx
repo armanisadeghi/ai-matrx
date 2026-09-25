@@ -1,5 +1,7 @@
 "use client";
 
+import type React from "react";
+
 // ─────────────────────────────────────────────────────────────────────────
 // The prose leaf rendered STATICALLY inside a client component — for public
 // client surfaces (share lenses, public resource views) whose text must be in
@@ -25,7 +27,7 @@ import {
   type InlineLinks,
 } from "./prose/inline-level-elements";
 import {
-  PROSE_BLOCK_ELEMENTS,
+  proseElementsWithNested,
   PROSE_FRAME_CSS,
   proseFrameClass,
 } from "./prose/prose-block-elements";
@@ -40,10 +42,13 @@ import { StaticStandard } from "./standard/static-standard";
 /** The prose leaf alone (frame + one prose map), statically. */
 export function StaticProseLeaf({
   content,
+  renderNested,
 }: {
   content: string;
   /** Accepted for the StaticProse contract; the client core reads the numbering from DocumentNumberingProvider. */
   numbering?: unknown;
+  /** Block bodies of directive containers, rendered by the static root. */
+  renderNested?: (source: string) => React.ReactNode;
 }) {
   if (!content.trim()) return null;
   const direction = detectTextDirection(content);
@@ -52,7 +57,7 @@ export function StaticProseLeaf({
     <>
       <div className={proseFrameClass(direction)} dir={direction}>
         <style dangerouslySetInnerHTML={{ __html: PROSE_FRAME_CSS }} />
-        <MarkdownCoreImpl preset="chat" components={PROSE_BLOCK_ELEMENTS}>
+        <MarkdownCoreImpl preset="chat" components={proseElementsWithNested(renderNested)}>
           {text}
         </MarkdownCoreImpl>
       </div>

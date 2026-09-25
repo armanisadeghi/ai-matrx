@@ -472,3 +472,19 @@ export const PROSE_FRAME_CSS = `
 export function proseFrameClass(direction: "rtl" | "ltr"): string {
   return `relative my-2 group ${getDirectionClasses(direction)} math-content-wrapper overflow-x-hidden min-w-0 break-words`;
 }
+
+/**
+ * The prose map for a STATIC root: `matrx-nested` (a directive container's
+ * block body) renders through the root's own routing instead of the
+ * client-only NestedBody, so its text is in the server HTML.
+ */
+export function proseElementsWithNested(
+  renderNested: ((source: string) => React.ReactNode) | undefined,
+): Components {
+  if (!renderNested) return PROSE_BLOCK_ELEMENTS;
+  return {
+    ...PROSE_BLOCK_ELEMENTS,
+    "matrx-nested": (props: { "data-source"?: string }) =>
+      renderNested(String(props["data-source"] ?? "")),
+  } as Components;
+}

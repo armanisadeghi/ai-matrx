@@ -83,3 +83,29 @@ describe.each([
   });
 });
 
+const CALLOUT = [
+  "Before the first pickup:",
+  "",
+  ":::tip[Setup]",
+  "Install **the route tools** first:",
+  "",
+  "```bash",
+  "pnpm install",
+  "```",
+  ":::",
+  "",
+  "Then open the board.",
+].join("\n");
+
+describe.each([
+  ["server level", () => <RichContentServer level="standard" source={CALLOUT} />],
+  ["static leaf (share pages)", () => <RichContentStaticStandard source={CALLOUT} />],
+])("%s: a directive container's block body is in the server HTML", (_name, make) => {
+  it("renders the callout's prose and its fence on the server (no raw-source fallback)", () => {
+    const html = renderToStaticMarkup(make());
+    expect(html).toContain("the route tools</strong>");
+    expect(html).toContain("pnpm install");
+    expect(html).not.toContain("**the route tools**");
+  });
+});
+

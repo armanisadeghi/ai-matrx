@@ -36,6 +36,13 @@ import { DocumentNumberingProvider } from "@/components/markdown-core/syntax/ele
 export type StaticProse = ComponentType<{
   content: string;
   numbering?: DocumentNumbering | null;
+  /**
+   * Renders a directive container's block body (`matrx-nested`, RC-B8) one
+   * level deeper through this same routing, so a fence inside a callout or
+   * tab is in the server HTML. Undefined past the depth cap (the client
+   * NestedBody then shows the app's capped view).
+   */
+  renderNested?: (source: string) => ReactNode;
 }>;
 
 /** XML control sections whose body is prose — the same set StandardBlock nests. */
@@ -78,7 +85,25 @@ function StaticBlock({
 
   if (type === "text" || type === "table") {
     if (!content.trim()) return null;
-    return <Prose content={content} numbering={numbering} />;
+    return (
+      <Prose
+        content={content}
+        numbering={numbering}
+        renderNested={
+          depth + 1 <= cap
+            ? (source: string) => (
+                <StaticStandard
+                  source={source}
+                  depth={depth + 1}
+                  cap={cap}
+                  Prose={Prose}
+                  numbering={numbering}
+                />
+              )
+            : undefined
+        }
+      />
+    );
   }
 
   if (SECTION_TYPES.has(type) && depth + 1 <= cap) {

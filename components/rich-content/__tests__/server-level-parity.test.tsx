@@ -322,5 +322,40 @@ describe("server level renders the same HTML as the client levels", () => {
     expect(server).toBe(client);
     expect(staticSsr).toBe(client);
   });
+
+  it("directive container with a fence: the callout body matches the app", async () => {
+    const callout = [
+      ":::tip[Setup]",
+      "Install **the route tools** first:",
+      "",
+      "```bash",
+      "pnpm install",
+      "```",
+      ":::",
+    ].join("\n");
+    const server = serverHtml(<RichContentServer level="standard" source={callout} />);
+    // The client NestedBody is React.lazy — let it resolve before reading.
+    act(() => root.render(<StandardBlocks source={callout} />));
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    const copy = document.createElement("div");
+    copy.innerHTML = container.innerHTML;
+    const client = canonical(copy);
+    expect(server).toContain("the route tools</strong>");
+    // After the await the client's syntax highlighter has coloured the code
+    // (an async client enhancement the server never runs); compare the code
+    // as its text, everything else byte-for-byte.
+    const plainCode = (html: string) => {
+      const d = document.createElement("div");
+      d.innerHTML = html;
+      d.querySelectorAll("pre").forEach((pre) => {
+        pre.textContent = pre.textContent;
+        pre.removeAttribute("style");
+      });
+      return d.innerHTML;
+    };
+    expect(plainCode(server)).toBe(plainCode(client));
+  });
 });
 
