@@ -19,8 +19,7 @@ import { createVaultItem, VaultImportTransportError } from "../vault-service";
 import { readDashlaneCsvArchive } from "../dashlane-csv-archive";
 
 let mockDeferredKeePassLoadWorker:
-  | StructuredImportSource["loadWorker"]
-  | undefined;
+  StructuredImportSource["loadWorker"] | undefined;
 
 let mockAuthStateListener:
   | ((event: string, session?: { user: { id: string } } | null) => void)
@@ -176,7 +175,9 @@ jest.mock("../structured-import-source-registry", () => {
     ...actual,
     structuredImportSource: (source: string) => {
       const descriptor = actual.structuredImportSource(source);
-      return source === "keepass_xml" && mockDeferredKeePassLoadWorker && descriptor
+      return source === "keepass_xml" &&
+        mockDeferredKeePassLoadWorker &&
+        descriptor
         ? { ...descriptor, loadWorker: mockDeferredKeePassLoadWorker }
         : descriptor;
     },
@@ -208,8 +209,20 @@ jest.mock("../vault-service", () => ({
   })),
   createVaultItem: jest.fn(),
   VaultImportTransportError: class VaultImportTransportError extends Error {
-    code: "context_changed" | "request_rejected" | "retryable";
-    constructor(code: "context_changed" | "request_rejected" | "retryable") {
+    code:
+      | "context_changed"
+      | "idempotency_key_conflict"
+      | "idempotency_result_removed"
+      | "request_rejected"
+      | "retryable";
+    constructor(
+      code:
+        | "context_changed"
+        | "idempotency_key_conflict"
+        | "idempotency_result_removed"
+        | "request_rejected"
+        | "retryable",
+    ) {
       super(code);
       this.code = code;
     }
@@ -329,7 +342,8 @@ async function chooseDashlane(): Promise<HTMLInputElement> {
     throw new Error("Dashlane option missing");
   await act(async () => option.click());
   const input = document.body.querySelector('input[type="file"]');
-  if (!(input instanceof HTMLInputElement)) throw new Error("file input missing");
+  if (!(input instanceof HTMLInputElement))
+    throw new Error("file input missing");
   return input;
 }
 
@@ -773,48 +787,57 @@ describe("VaultCsvImportDialog", () => {
     expect(createVaultItemMock).not.toHaveBeenCalled();
   });
 
-  it("clears a definitive rejection instead of retrying its frozen command", async () => {
-    createVaultItemMock
-      .mockResolvedValueOnce({ id: "first", display_name: "First" } as never)
-      .mockRejectedValueOnce(new Error("validation rejected"));
-    await act(async () => {
-      root.render(
-        <VaultCsvImportDialog
-          open
-          onOpenChange={jest.fn()}
-          principal={{ type: "user" }}
-          existingItems={[]}
-          onCommitted={async () => undefined}
-        />,
+  it.each(["idempotency_key_conflict", "idempotency_result_removed"] as const)(
+    "clears terminal %s instead of retrying its frozen command",
+    async (code) => {
+      createVaultItemMock
+        .mockResolvedValueOnce({ id: "first", display_name: "First" } as never)
+        .mockRejectedValueOnce(new VaultImportTransportError(code));
+      await act(async () => {
+        root.render(
+          <VaultCsvImportDialog
+            open
+            onOpenChange={jest.fn()}
+            principal={{ type: "user" }}
+            existingItems={[]}
+            onCommitted={async () => undefined}
+          />,
+        );
+      });
+      const input = document.body.querySelector('input[type="file"]');
+      if (!(input instanceof HTMLInputElement))
+        throw new Error("file input missing");
+      Object.defineProperty(input, "files", {
+        configurable: true,
+        value: [csvFile("title,password\nFirst,one\nSecond,two")],
+      });
+      await act(async () => {
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+      const button = [...document.querySelectorAll("button")].find(
+        (candidate) =>
+          candidate.textContent?.includes("Import selected records"),
       );
-    });
-    const input = document.body.querySelector('input[type="file"]');
-    if (!(input instanceof HTMLInputElement))
-      throw new Error("file input missing");
-    Object.defineProperty(input, "files", {
-      configurable: true,
-      value: [csvFile("title,password\nFirst,one\nSecond,two")],
-    });
-    await act(async () => {
-      input.dispatchEvent(new Event("change", { bubbles: true }));
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
-    const button = [...document.querySelectorAll("button")].find((candidate) =>
-      candidate.textContent?.includes("Import selected records"),
-    );
-    if (!(button instanceof HTMLButtonElement))
-      throw new Error("import button missing");
-    await act(async () => {
-      button.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
-    expect(createVaultItemMock).toHaveBeenCalledTimes(2);
-    expect(document.body.textContent).toContain(
-      "Imported 1; skipped 0; failed 1.",
-    );
-    expect(document.body.textContent).not.toContain("Retry current row");
-    expect(document.body.textContent).not.toContain("Import selected records");
-  });
+      if (!(button instanceof HTMLButtonElement))
+        throw new Error("import button missing");
+      await act(async () => {
+        button.click();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+      expect(createVaultItemMock).toHaveBeenCalledTimes(2);
+      expect(document.body.textContent).toContain(
+        "Imported 1; skipped 0; failed 1.",
+      );
+      expect(document.body.textContent).not.toContain("Retry current row");
+      expect(document.body.textContent).not.toContain(
+        "Import selected records",
+      );
+      expect(document.body.textContent).not.toContain(
+        "Your account or request organization changed",
+      );
+    },
+  );
 
   it("retries only the unresolved CSV row with its original frozen command identity", async () => {
     createVaultItemMock
@@ -839,7 +862,9 @@ describe("VaultCsvImportDialog", () => {
       configurable: true,
       value: [csvFile("title,password\nFirst,one\nSecond,two")],
     });
-    await act(async () => input.dispatchEvent(new Event("change", { bubbles: true })));
+    await act(async () =>
+      input.dispatchEvent(new Event("change", { bubbles: true })),
+    );
     await waitForCondition(
       () => document.body.textContent?.includes("Row 2: First") ?? false,
       "CSV preview did not appear",
@@ -1522,9 +1547,7 @@ describe("VaultCsvImportDialog", () => {
           ok: true,
           requestId: request.requestId,
           records: [jsonRecord({ sourceState: "active" })],
-          fileNotices: [
-            { code: "unsupported_archive_members", count: 2 },
-          ],
+          fileNotices: [{ code: "unsupported_archive_members", count: 2 }],
         },
       } as MessageEvent),
     );
@@ -1585,9 +1608,7 @@ describe("VaultCsvImportDialog", () => {
           ok: true,
           requestId,
           records: [jsonRecord({ title: "late 1pux", sourceState: "active" })],
-          fileNotices: [
-            { code: "unsupported_archive_members", count: 1 },
-          ],
+          fileNotices: [{ code: "unsupported_archive_members", count: 1 }],
         },
       } as MessageEvent),
     );
