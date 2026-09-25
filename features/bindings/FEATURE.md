@@ -10,8 +10,8 @@ Arman's sentence is the spine:
 > "on one side, they showed you what the mandate (surface) offered and on the other side, they
 > showed you the agent and then you were able to match things directly in the middle."
 
-- **Standard it is built to:** `../../../common-docs/projects/workflow-mandate-program/UI-STANDARD.md`
-- **Plan:** `../../../common-docs/projects/workflow-mandate-program/PLAN-ONE-BINDING-UI.md`
+- **Standard it is built to:** `../../../common-docs/systems/mandates/STATE.md`
+- **Plan:** `../../../common-docs/systems/mandates/STATE.md`
 - **Rulings:** `../../../common-docs/systems/mandates/DECISIONS.md` D18
 - **Storage + server truth:** `features/mandates/FEATURE.md`, aidream
   `aidream/services/mandates/bindings.py` + `provisions.py`

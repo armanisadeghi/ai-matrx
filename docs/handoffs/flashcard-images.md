@@ -84,4 +84,4 @@ lane 1 above, when upload stamps a public URL beside every `image_file_id`.
 - Flashcard generation streams no chunks until run end (aidream agent/provider config) —
   chipped under the Live Run Streaming Sweep handoff, not here.
 - Mandate override surfaces (users/orgs swapping the four card-image mandates' agents):
-  PROPOSED plan awaiting Arman at `common-docs/projects/mandate-binding-surfaces/PLAN.md`.
+  PROPOSED plan awaiting Arman at `common-docs/systems/mandates/REGISTER.md`.

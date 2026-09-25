@@ -10,7 +10,7 @@ timestamp: 2026-09-10T00:00:00Z
 
 1. **Read the call site FIRST.** The Provision declared beside the mandate already names
    the granular offer — that IS your variable list. The census of blob sites lives at
-   `aidream/docs/mandates/INPUT_CHANNEL_VIOLATIONS.md`; update the row when you convert.
+   `/systems/mandates/REGISTER.md`; update the row when you convert.
    (The factory-generated NamedAgent family and its `internal_agents/` spec system were
    DELETED 2026-08-25 — Ruling A executed: mandates + provisions specify agents, the live
    DB row is the sole authority, and it is improved by test-and-tune — exactly this

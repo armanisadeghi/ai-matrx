@@ -59,7 +59,7 @@ with a message — it never falls back to `agent_id`. Two lanes, because
 ladder, a guest takes the system-default columns the public RPC
 `get_aga_public_data` carries. Backfill + parity:
 `aidream/scripts/migrate_apps_to_mandates.py`. Cross-repo design:
-[`/common-docs/projects/workflow-mandate-program/DESIGN-unification.md`](../../../common-docs/projects/workflow-mandate-program/DESIGN-unification.md) §5.2.
+[`/common-docs/systems/mandates/STATE.md`](../../../common-docs/systems/mandates/STATE.md) §5.2.
 
 ---
 

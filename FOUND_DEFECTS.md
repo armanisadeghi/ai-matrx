@@ -1028,7 +1028,7 @@ that the rule's direction, not just its reach, has to change (DB-T02).
 
 ### D302 — `sync-types` silently DELETES the contract for any endpoint aidream has merged but not yet deployed
 
-Found 2026-09-09 building campaign lane L7 (`../common-docs/projects/mandate-declaration-reporting/`).
+Found 2026-09-09 building campaign lane L7 (`../common-docs/systems/mandates/STATE.md`).
 
 `pnpm sync-types` pulls `/schema/all` from the LIVE backend, so `types/python-generated/`
 loses every route and schema that exists in aidream `main` but has not reached
@@ -1080,7 +1080,7 @@ the `features/mandates/FEATURE.md` Change Log line):
 
 The third one is the expensive one: the very next commit was `3066659c91`
 `release-all: v0.4.1806`, so **v0.4.1806 shipped to production with the L7 UI absent**, and
-V-L7 (`../common-docs/projects/mandate-declaration-reporting/verdicts/V-L7.md`) failed the
+V-L7 (`../common-docs/systems/mandates/STATE.md`) failed the
 lane for exactly that. It was restored on 2026-09-09 once the backend went live, after
 `https://server.app.matrxserver.com/health/version` reported `1814438171` — a descendant of
 aidream `ea79e334f`, which carries both routes.

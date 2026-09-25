@@ -1,14 +1,6 @@
 # Education AI lanes — the mandate index
 
-**Agents resolve via MANDATES now.** No education/flashcards code names an agent id: every AI
-lane names a mandate key, and the DATABASE decides which agent fulfils it (system default → org
-binding → user binding). **Inspect or swap the live agent** behind any lane at
-`/mandates` (user bindings) or `/administration/mandates` (system pins). Agent
-definitions, prompts, schemas and variable shapes live on the DB agents themselves, never in
-this repo.
-
-The pre-mandate raw agent-export dump that used to live in this file (2026-06-30, 630 lines of
-UUIDs and prompt text) is deleted per WP2 — it documented ids code no longer contains.
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/mandates/ — read it before touching this feature in ANY repo. Every education AI lane names a mandate key; inspect or rebind its Holder at `/mandates` or `/administration/mandates`.
 
 ## Mandate keys per feature (constants in each feature's `mandates.ts`)
 
