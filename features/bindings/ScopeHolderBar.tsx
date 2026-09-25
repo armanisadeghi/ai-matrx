@@ -41,6 +41,10 @@ import {
   type AgentScope,
 } from "@/features/agent-shortcuts/constants";
 import { HolderAssignment } from "./HolderAssignment";
+import {
+  RequestAccess,
+  type RequestAccessTarget,
+} from "@/features/access-gate/components/RequestAccess";
 import { systemRungHolderIsPersonal } from "./system-rung";
 import {
   DEFAULT_HOLDER_RUNG,
@@ -120,6 +124,11 @@ export interface ScopeHolderBarProps {
    * a walker looking for a save that had actually worked.
    */
   defaultHolderNow?: { set: boolean; name: string | null } | null;
+  /**
+   * When the bottom rung is NOT this viewer's to set: who to ask. Replaces the
+   * old "Read only" token with one way to ask (owner ruling 2026-09-25).
+   */
+  defaultHolderAccess?: RequestAccessTarget | null;
   /**
    * F3 — the standing sentence about what moving the rung costs, printed
    * whenever there IS something to lose. `null` when the draft is clean, so it
@@ -310,6 +319,7 @@ export function ScopeHolderBar({
   fixedRung,
   defaultHolderOffer = null,
   defaultHolderNow = null,
+  defaultHolderAccess = null,
   onRungChange,
   unsavedNote = null,
   appliesIn = null,
@@ -625,6 +635,8 @@ export function ScopeHolderBar({
                   >
                     Edit default
                   </Button>
+                ) : defaultHolderAccess ? (
+                  <RequestAccess variant="icon" target={defaultHolderAccess} />
                 ) : (
                   <StatusToken status="neutral" label="Read only" />
                 )}

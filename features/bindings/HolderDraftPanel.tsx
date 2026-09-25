@@ -31,6 +31,10 @@ import type { OfferedValue } from "@/features/mandates/provision-shapes";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 import { buildHolderDraftBrief } from "./holder-draft-brief";
 import type { HolderDraft } from "./ScopeHolderBar";
+import {
+  RequestAccess,
+  type RequestAccessTarget,
+} from "@/features/access-gate/components/RequestAccess";
 
 export interface HolderDraftPanelProps {
   data: MandateWorkspaceData;
@@ -48,6 +52,8 @@ export interface HolderDraftPanelProps {
    * which was a lie, and never printed it for the case it was written for.
    */
   refusal?: string | null;
+  /** With a permission refusal: who to ask (owner ruling 2026-09-25). */
+  requestAccess?: RequestAccessTarget | null;
 }
 
 export function HolderDraftPanel({
@@ -57,17 +63,23 @@ export function HolderDraftPanel({
   owner,
   onCreated,
   refusal = null,
+  requestAccess = null,
 }: HolderDraftPanelProps) {
   const openEditor = useOpenAgentContentWindow();
 
   if (refusal) {
     return (
-      <p
-        data-testid="holder-draft-refused"
-        className="rounded-md border border-border bg-muted/40 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground"
-      >
-        {refusal}
-      </p>
+      <div className="space-y-2">
+        <p
+          data-testid="holder-draft-refused"
+          className="rounded-md border border-border bg-muted/40 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground"
+        >
+          {refusal}
+        </p>
+        {requestAccess ? (
+          <RequestAccess target={requestAccess} reason="" />
+        ) : null}
+      </div>
     );
   }
   if (!owner) {
