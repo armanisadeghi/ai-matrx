@@ -189,6 +189,7 @@ export function rowToAgendaTask(row: JoinedAgentTaskRow): AgendaTask {
   return {
     id: row.id,
     userId: row.user_id,
+    organizationId: row.organization_id ?? null,
     kind: row.kind,
     metadata: parseTaskMetadata(row.metadata),
     title: row.title,
@@ -239,6 +240,9 @@ export function taskDetailToAgendaTask(detail: TaskDetailResponse): AgendaTask {
   return {
     id: t.id,
     userId: t.user_id,
+    // The HTTP TaskResponse does not carry organization_id; the record read
+    // (getAgentTask → rowToAgendaTask) does, and every write path re-reads it.
+    organizationId: null,
     kind: t.kind === "tool" ? "tool" : "agent",
     // The HTTP TaskResponse carries no metadata column. This reshape is used
     // for a freshly CREATED task only (createScheduledTask); every update path

@@ -171,9 +171,16 @@ export function getTask(
   );
 }
 
+/**
+ * ORG-GATE-AUDIT (VERIFIER-20 #1): every write to ONE schedule takes the
+ * SCHEDULE'S OWN organization (`sch_task.organization_id`) — the object names
+ * it; the active selection and the picker are never consulted. Omitted only by
+ * a caller that has no row yet.
+ */
 export function patchTask(
   taskId: string,
   body: TaskPatchRequest,
+  organizationId?: string,
 ): Promise<TaskResponse> {
   return request<TaskResponse>(
     `/scheduler/tasks/${encodeURIComponent(taskId)}`,
@@ -181,44 +188,60 @@ export function patchTask(
       method: "PATCH",
       body: JSON.stringify(body),
     },
+    organizationId,
   );
 }
 
-export function softDeleteTask(taskId: string): Promise<DeletedResponse> {
+export function softDeleteTask(
+  taskId: string,
+  organizationId?: string,
+): Promise<DeletedResponse> {
   return request<DeletedResponse>(
     `/scheduler/tasks/${encodeURIComponent(taskId)}`,
     { method: "DELETE" },
+    organizationId,
   );
 }
 
-export function runNow(taskId: string): Promise<RunNowResponse> {
+export function runNow(
+  taskId: string,
+  organizationId?: string,
+): Promise<RunNowResponse> {
   return request<RunNowResponse>(
     `/scheduler/tasks/${encodeURIComponent(taskId)}/run-now`,
     { method: "POST" },
+    organizationId,
   );
 }
 
 // ── Triggers ───────────────────────────────────────────────────────────────
 
-export function listTriggers(taskId: string): Promise<TriggerListResponse> {
+export function listTriggers(
+  taskId: string,
+  organizationId?: string,
+): Promise<TriggerListResponse> {
   return request<TriggerListResponse>(
     `/scheduler/triggers${qs({ task_id: taskId })}`,
     { method: "GET" },
+    organizationId,
   );
 }
 
 export function createTrigger(
   body: TriggerCreateRequest,
+  organizationId?: string,
 ): Promise<TriggerResponse> {
-  return request<TriggerResponse>("/scheduler/triggers", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
+  return request<TriggerResponse>(
+    "/scheduler/triggers",
+    { method: "POST", body: JSON.stringify(body) },
+    organizationId,
+  );
 }
 
 export function patchTrigger(
   triggerId: string,
   body: TriggerPatchRequest,
+  organizationId?: string,
 ): Promise<TriggerResponse> {
   return request<TriggerResponse>(
     `/scheduler/triggers/${encodeURIComponent(triggerId)}`,
@@ -226,6 +249,7 @@ export function patchTrigger(
       method: "PATCH",
       body: JSON.stringify(body),
     },
+    organizationId,
   );
 }
 
@@ -309,10 +333,12 @@ export function listSystemTasks(): Promise<SystemTaskListResponse> {
 export function patchSystemTask(
   taskId: string,
   body: SystemTaskPatchRequest,
+  organizationId?: string,
 ): Promise<SystemTaskResponse> {
   return request<SystemTaskResponse>(
     `/scheduling/admin/system-tasks/${encodeURIComponent(taskId)}`,
     { method: "PATCH", body: JSON.stringify(body) },
+    organizationId,
   );
 }
 

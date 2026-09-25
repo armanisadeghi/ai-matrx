@@ -19,6 +19,7 @@ import {
   updateAgentTaskFields,
 } from "../../service/queries";
 import * as scheduler from "../../service/schedulerClient";
+import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 import type {
   AgentTaskCreate,
   TriggerCreate,
@@ -40,6 +41,16 @@ import {
 } from "./slice";
 
 type AppThunk<T = void> = ThunkAction<Promise<T>, RootState, unknown, Action>;
+
+/**
+ * ORG-GATE-AUDIT (VERIFIER-20 #1): the organization a write to ONE schedule is
+ * sent in is the SCHEDULE'S OWN — read from the row, before any optimistic
+ * change, so a control never flips while a question is pending and the picker
+ * is never asked about a record that already names its organization.
+ */
+function taskOrganizationId(getState: () => RootState, id: string): string | undefined {
+  return getState().schedulingTasks?.byId?.[id]?.organizationId ?? undefined;
+}
 
 function errMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
@@ -134,11 +145,12 @@ export const createScheduledTask =
 
 export const updateScheduledTask =
   (id: string, patch: UpdateAgentTaskInput): AppThunk =>
-  async (dispatch) => {
+  async (dispatch, getState) => {
+    const organizationId = taskOrganizationId(getState, id);
     dispatch(setMutationStatus({ id, status: "saving" }));
     try {
       if (patch.taskPatch && Object.keys(patch.taskPatch).length > 0) {
-        await scheduler.patchTask(id, patch.taskPatch);
+        await scheduler.patchTask(id, patch.taskPatch, organizationId);
       }
 
       if (patch.agentPatch && Object.keys(patch.agentPatch).length > 0) {
@@ -148,20 +160,19 @@ export const updateScheduledTask =
       if (patch.trigger !== undefined && patch.trigger !== null) {
         // v0 = at most one trigger per task. Look up the existing one; patch
         // if present, otherwise create.
-        const { triggers } = await scheduler.listTriggers(id);
+        const { triggers } = await scheduler.listTriggers(id, organizationId);
         const existing = triggers[0];
         const triggerBody = {
           type: patch.trigger.type,
           config: triggerToConfig(patch.trigger),
         };
         if (existing) {
-          await scheduler.patchTrigger(existing.id, triggerBody);
+          await scheduler.patchTrigger(existing.id, triggerBody, organizationId);
         } else {
-          await scheduler.createTrigger({
-            task_id: id,
-            ...triggerBody,
-            enabled: true,
-          });
+          await scheduler.createTrigger(
+            { task_id: id, ...triggerBody, enabled: true },
+            organizationId,
+          );
         }
       }
 
@@ -178,10 +189,11 @@ export const updateScheduledTask =
 
 export const deleteScheduledTask =
   (id: string): AppThunk =>
-  async (dispatch) => {
+  async (dispatch, getState) => {
+    const organizationId = taskOrganizationId(getState, id);
     dispatch(setMutationStatus({ id, status: "deleting" }));
     try {
-      await scheduler.softDeleteTask(id);
+      await scheduler.softDeleteTask(id, organizationId);
       dispatch(removeTask(id));
     } catch (err) {
       dispatch(
@@ -193,10 +205,17 @@ export const deleteScheduledTask =
 
 export const toggleTaskEnabled =
   (id: string, enabled: boolean): AppThunk =>
-  async (dispatch) => {
+  async (dispatch, getState) => {
+    // Resolve the organization BEFORE the optimistic flip: the schedule's own,
+    // or — only for a row that has none loaded — the gate's answer. A control
+    // never reads "paused" while a question is still open, and a cancelled
+    // question leaves it exactly as it was (nothing flipped, nothing sent).
+    const organizationId =
+      taskOrganizationId(getState, id) ??
+      (await ensureOrganizationForRequest({ method: "PATCH" }));
     dispatch(patchTask({ id, patch: { enabled } }));
     try {
-      await scheduler.patchTask(id, { enabled });
+      await scheduler.patchTask(id, { enabled }, organizationId);
     } catch (err) {
       dispatch(patchTask({ id, patch: { enabled: !enabled } }));
       dispatch(
@@ -221,10 +240,11 @@ export const toggleTaskEnabled =
  */
 export const setSystemTaskEnabled =
   (id: string, enabled: boolean): AppThunk =>
-  async (dispatch) => {
+  async (dispatch, getState) => {
+    const organizationId = taskOrganizationId(getState, id);
     dispatch(setMutationStatus({ id, status: "saving" }));
     try {
-      await scheduler.patchSystemTask(id, { enabled });
+      await scheduler.patchSystemTask(id, { enabled }, organizationId);
       const task = await getAgentTask(id);
       if (task) dispatch(upsertTask(task));
       dispatch(clearMutationStatus(id));
@@ -238,7 +258,7 @@ export const setSystemTaskEnabled =
 
 export const runTaskNowThunk =
   (id: string): AppThunk<string> =>
-  async () => {
-    const { run_id } = await scheduler.runNow(id);
+  async (_dispatch, getState) => {
+    const { run_id } = await scheduler.runNow(id, taskOrganizationId(getState, id));
     return run_id;
   };

@@ -237,6 +237,12 @@ export type OutputRef = {
 export interface AgendaTask {
   id: string;
   userId: string;
+  /**
+   * The schedule's OWN organization (`sch_task.organization_id`). Every write
+   * to this schedule is sent in it — never the active selection, never the
+   * picker (access is personal; the object names its organization).
+   */
+  organizationId?: string | null;
   kind: SchedulableKind;
   /** Parsed `sch_task.metadata` — suspension record + recorded approval. */
   metadata: SchTaskMetadata;
