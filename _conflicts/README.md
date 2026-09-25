@@ -23,7 +23,7 @@ agent -> Needs Arman) with ` — <question> — <what was checked> — <who>` ad
 Its files stay as they are.
 
 ## Held files
-- _conflicts/2026-09-24-231345/features/admin/spend/explorer/TopRequestsTable.tsx.held — LOCAL latest 2026-09-24 23:08; GITHUB latest 2026-09-24 22:55; LOCAL lacks 1 of GITHUB's 68 new lines; GITHUB lacks 1 of LOCAL's 68 new lines; recover: git show 51c9630433:'features/admin/spend/explorer/TopRequestsTable.tsx' / 02528b5f36:'features/admin/spend/explorer/TopRequestsTable.tsx'
+- _conflicts/2026-09-24-231345/features/admin/spend/explorer/TopRequestsTable.tsx.held — LOCAL latest 2026-09-24 23:08; GITHUB latest 2026-09-24 22:55; LOCAL lacks 1 of GITHUB's 68 new lines; GITHUB lacks 1 of LOCAL's 68 new lines; recover: git show 51c9630433:'features/admin/spend/explorer/TopRequestsTable.tsx' / 02528b5f36:'features/admin/spend/explorer/TopRequestsTable.tsx' — owner: 01a0b11e-1927-7c40-93c1-4fcb6c57bc50, posted to board 2026-09-24 23:15
 
 ## Needs a manager
 
