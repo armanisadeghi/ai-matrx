@@ -5089,10 +5089,10 @@ export type Database = {
           default_currency: string | null
           details_submitted: boolean
           onboarded_at: string | null
+          organization_id: string
           payouts_enabled: boolean
           stripe_account_id: string
           updated_at: string
-          user_id: string
         }
         Insert: {
           charges_enabled?: boolean
@@ -5102,10 +5102,10 @@ export type Database = {
           default_currency?: string | null
           details_submitted?: boolean
           onboarded_at?: string | null
+          organization_id: string
           payouts_enabled?: boolean
           stripe_account_id: string
           updated_at?: string
-          user_id: string
         }
         Update: {
           charges_enabled?: boolean
@@ -5115,10 +5115,10 @@ export type Database = {
           default_currency?: string | null
           details_submitted?: boolean
           onboarded_at?: string | null
+          organization_id?: string
           payouts_enabled?: boolean
           stripe_account_id?: string
           updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }
@@ -5126,20 +5126,20 @@ export type Database = {
         Row: {
           created_at: string
           custom_fields: Json
+          organization_id: string
           stripe_customer_id: string
-          user_id: string
         }
         Insert: {
           created_at?: string
           custom_fields?: Json
+          organization_id: string
           stripe_customer_id: string
-          user_id: string
         }
         Update: {
           created_at?: string
           custom_fields?: Json
+          organization_id?: string
           stripe_customer_id?: string
-          user_id?: string
         }
         Relationships: []
       }
@@ -5558,7 +5558,7 @@ export type Database = {
           id: string
           last_stripe_event_at: string | null
           metadata: Json
-          org_id: string | null
+          organization_id: string
           price_id: string | null
           status: Database["billing"]["Enums"]["subscription_status"]
           stripe_subscription_id: string | null
@@ -5566,7 +5566,6 @@ export type Database = {
           trial_end: string | null
           trial_start: string | null
           updated_at: string
-          user_id: string | null
         }
         Insert: {
           cancel_at_period_end?: boolean
@@ -5578,7 +5577,7 @@ export type Database = {
           id?: string
           last_stripe_event_at?: string | null
           metadata?: Json
-          org_id?: string | null
+          organization_id: string
           price_id?: string | null
           status: Database["billing"]["Enums"]["subscription_status"]
           stripe_subscription_id?: string | null
@@ -5586,7 +5585,6 @@ export type Database = {
           trial_end?: string | null
           trial_start?: string | null
           updated_at?: string
-          user_id?: string | null
         }
         Update: {
           cancel_at_period_end?: boolean
@@ -5598,7 +5596,7 @@ export type Database = {
           id?: string
           last_stripe_event_at?: string | null
           metadata?: Json
-          org_id?: string | null
+          organization_id?: string
           price_id?: string | null
           status?: Database["billing"]["Enums"]["subscription_status"]
           stripe_subscription_id?: string | null
@@ -5606,7 +5604,6 @@ export type Database = {
           trial_end?: string | null
           trial_start?: string | null
           updated_at?: string
-          user_id?: string | null
         }
         Relationships: [
           {
@@ -21569,39 +21566,39 @@ export type Database = {
       }
       templates: {
         Row: {
+          audience: string
           category: string
           created_at: string
           description: string
           icon: string
           id: string
           is_active: boolean
-          is_personal: boolean
           key: string
           name: string
           sort_order: number
           updated_at: string
         }
         Insert: {
+          audience?: string
           category: string
           created_at?: string
           description?: string
           icon?: string
           id?: string
           is_active?: boolean
-          is_personal?: boolean
           key: string
           name: string
           sort_order?: number
           updated_at?: string
         }
         Update: {
+          audience?: string
           category?: string
           created_at?: string
           description?: string
           icon?: string
           id?: string
           is_active?: boolean
-          is_personal?: boolean
           key?: string
           name?: string
           sort_order?: number
@@ -30954,9 +30951,21 @@ export type Database = {
         Args: { p_file_id: string; p_user_id: string }
         Returns: boolean
       }
+      is_recent_activity: {
+        Args: { p_row: Database["files"]["Tables"]["files"]["Row"] }
+        Returns: boolean
+      }
+      is_recent_activity_path: {
+        Args: { p_file_path: string }
+        Returns: boolean
+      }
       is_safe_webhook_url: { Args: { p_url: string }; Returns: boolean }
       is_user_visible: {
         Args: { p_row: Database["files"]["Tables"]["files"]["Row"] }
+        Returns: boolean
+      }
+      is_user_visible_folder_path: {
+        Args: { p_folder_path: string }
         Returns: boolean
       }
       is_user_visible_path: { Args: { p_file_path: string }; Returns: boolean }
@@ -56384,6 +56393,14 @@ export type Database = {
         Args: { p_org_id: string; p_user_id: string }
         Returns: boolean
       }
+      is_personal_dependents: {
+        Args: never
+        Returns: {
+          detail: string
+          identity: string
+          kind: string
+        }[]
+      }
       is_trusted_backend: { Args: never; Returns: boolean }
       lane_of: {
         Args: { p_resource_id: string; p_resource_type: string }
@@ -56414,6 +56431,16 @@ export type Database = {
         Returns: boolean
       }
       may_touch_field: {
+        Args: {
+          p_action?: string
+          p_field_id: string
+          p_level_on_record: Database["public"]["Enums"]["permission_level"]
+          p_organization_id: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      may_touch_field_itself: {
         Args: {
           p_action?: string
           p_field_id: string
@@ -64907,6 +64934,127 @@ export type Database = {
           },
         ]
       }
+      cutover_seam: {
+        Row: {
+          flip_does: string
+          id: string
+          needs_first: string
+          new_side: string
+          old_side: string
+          organization_id: string
+          per_organization: boolean
+          prerequisites: Json
+          press_kind: string
+          registered_at: string
+          retired_at: string | null
+          reverse_does: string
+          seam_key: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          flip_does: string
+          id?: string
+          needs_first: string
+          new_side: string
+          old_side: string
+          organization_id: string
+          per_organization: boolean
+          prerequisites?: Json
+          press_kind: string
+          registered_at?: string
+          retired_at?: string | null
+          reverse_does: string
+          seam_key: string
+          sort_order: number
+          title: string
+        }
+        Update: {
+          flip_does?: string
+          id?: string
+          needs_first?: string
+          new_side?: string
+          old_side?: string
+          organization_id?: string
+          per_organization?: boolean
+          prerequisites?: Json
+          press_kind?: string
+          registered_at?: string
+          retired_at?: string | null
+          reverse_does?: string
+          seam_key?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: []
+      }
+      cutover_seam_press: {
+        Row: {
+          did: Json
+          direction: string
+          id: string
+          note: string | null
+          organization_id: string
+          outcome: string
+          pressed_at: string
+          pressed_by: string | null
+          readiness: Json | null
+          refusal: string | null
+          says: string | null
+          seam_key: string
+        }
+        Insert: {
+          did?: Json
+          direction: string
+          id?: string
+          note?: string | null
+          organization_id: string
+          outcome: string
+          pressed_at?: string
+          pressed_by?: string | null
+          readiness?: Json | null
+          refusal?: string | null
+          says?: string | null
+          seam_key: string
+        }
+        Update: {
+          did?: Json
+          direction?: string
+          id?: string
+          note?: string | null
+          organization_id?: string
+          outcome?: string
+          pressed_at?: string
+          pressed_by?: string | null
+          readiness?: Json | null
+          refusal?: string | null
+          says?: string | null
+          seam_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cutover_seam_press_pressed_by_fkey"
+            columns: ["pressed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cutover_seam_press_pressed_by_fkey"
+            columns: ["pressed_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cutover_seam_press_seam_key_fkey"
+            columns: ["seam_key"]
+            isOneToOne: false
+            referencedRelation: "cutover_seam"
+            referencedColumns: ["seam_key"]
+          },
+        ]
+      }
       ddl_guard_log: {
         Row: {
           ack_reason: string | null
@@ -70515,6 +70663,43 @@ export type Database = {
       _cf_valid_date: { Args: { p_value: string }; Returns: boolean }
       _cf_valid_datetime: { Args: { p_value: string }; Returns: boolean }
       _confirmation_admission: { Args: { p_relid: unknown }; Returns: string }
+      _cutover_seam_apply: {
+        Args: {
+          p_actor: string
+          p_org: string
+          p_press: string
+          p_seam: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      _cutover_seam_last_done: {
+        Args: { p_org: string; p_seam: string }
+        Returns: {
+          did: Json
+          direction: string
+          id: string
+          note: string | null
+          organization_id: string
+          outcome: string
+          pressed_at: string
+          pressed_by: string | null
+          readiness: Json | null
+          refusal: string | null
+          says: string | null
+          seam_key: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cutover_seam_press"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      _cutover_seam_readiness: {
+        Args: { p_org: string; p_seam: string }
+        Returns: Json
+      }
       _door_follows_its_function_impl: {
         Args: { p_schemas: string[] }
         Returns: undefined
@@ -70999,6 +71184,16 @@ export type Database = {
         Args: { p_definitions: Json; p_organization_id: string; p_values: Json }
         Returns: Json
       }
+      cutover_seam_press: {
+        Args: {
+          p_note?: string
+          p_organization_id: string
+          p_seam_key: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      cutover_seams: { Args: { p_organization_id: string }; Returns: Json }
       dd166_table_rung_scope_rows_ok: { Args: never; Returns: Json }
       ddl_guard_ack: {
         Args: {
@@ -71997,6 +72192,18 @@ export type Database = {
       rebuild_static_row_probes: { Args: never; Returns: number }
       refresh_reachability: {
         Args: { p_container_id: string; p_container_type: string }
+        Returns: undefined
+      }
+      refusal_code: {
+        Args: { p_message: string; p_sqlstate: string }
+        Returns: string
+      }
+      refusal_message: {
+        Args: { p_message: string; p_sqlstate: string }
+        Returns: string
+      }
+      refuse_not_found: {
+        Args: { p_detail?: string; p_hint?: string; p_message: string }
         Returns: undefined
       }
       relation_bindings: { Args: never; Returns: string[] }
@@ -73381,6 +73588,13 @@ export type Database = {
       _schema_migrations: {
         Row: {
           applied_at: string
+          applied_by_host: string | null
+          applied_by_lane: string | null
+          applied_by_os_user: string | null
+          applied_by_process: string | null
+          applied_by_session: string | null
+          applied_from_git_head: string | null
+          applied_in_window: boolean | null
           chair_step: string | null
           checksum: string
           duration_ms: number
@@ -73390,6 +73604,13 @@ export type Database = {
         }
         Insert: {
           applied_at?: string
+          applied_by_host?: string | null
+          applied_by_lane?: string | null
+          applied_by_os_user?: string | null
+          applied_by_process?: string | null
+          applied_by_session?: string | null
+          applied_from_git_head?: string | null
+          applied_in_window?: boolean | null
           chair_step?: string | null
           checksum: string
           duration_ms: number
@@ -73399,6 +73620,13 @@ export type Database = {
         }
         Update: {
           applied_at?: string
+          applied_by_host?: string | null
+          applied_by_lane?: string | null
+          applied_by_os_user?: string | null
+          applied_by_process?: string | null
+          applied_by_session?: string | null
+          applied_from_git_head?: string | null
+          applied_in_window?: boolean | null
           chair_step?: string | null
           checksum?: string
           duration_ms?: number
@@ -77229,7 +77457,7 @@ export type Database = {
         }
         Returns: Json
       }
-      creator_connect_status: { Args: never; Returns: Json }
+      creator_connect_status: { Args: { p_org: string }; Returns: Json }
       creator_get_mine: { Args: never; Returns: Json }
       creator_handle_available: { Args: { p_handle: string }; Returns: boolean }
       creator_normalize_handle: { Args: { p_handle: string }; Returns: string }
@@ -105190,6 +105418,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      credential_item_holdings: {
+        Args: { p_item_ids: string[] }
+        Returns: {
+          credential_item_id: string
+          field_count: number
+          file_count: number
+        }[]
+      }
       heal_user_preferences_drift: { Args: never; Returns: number }
       normalize_preferences_jsonb: { Args: { p: Json }; Returns: Json }
       user_preferences_drift_report: {
