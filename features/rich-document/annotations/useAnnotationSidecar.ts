@@ -75,6 +75,31 @@ function failure(e: unknown): { error: string; retryable: boolean } {
   return { error: h.message, retryable: h.retryable };
 }
 
+/**
+ * THE DELETE/RESTORE NOTICE (RC-A2g, DB half live 2026-09-26 03:17:56Z). A soft delete or a
+ * restore stops being visible to postgres_changes (RLS no longer shows the row), so the
+ * database broadcasts a notice on one private topic per RECORD: `comments:<entity_type>:<id>`,
+ * admitted by `platform.comments_topic_admits` — viewer on the record, exactly who may see its
+ * thread. The payload is ids only (id, comment_id, entity_type, entity_id, op, at); this tab
+ * re-reads through cmt_list. The topic is the database's contract, hence `foreignTopic`.
+ */
+const commentNoticeChannel = defineChannelNamespace({
+  namespace: "record-comment-notices",
+  foreignTopic: "comments",
+  parts: ["entityType", "entityId"],
+  description: "Private per-record notice that a comment was deleted or restored (ids only); the thread is re-read through cmt_list.",
+});
+
+interface CommentNotice {
+  /** The notice's own id (dedup key). */
+  id?: string;
+  comment_id?: string;
+  entity_type?: string;
+  entity_id?: string;
+  op?: "deleted" | "restored";
+  at?: string;
+}
+
 let draftSeq = 0;
 function draftKey(): string {
   draftSeq += 1;
@@ -200,6 +225,37 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
                 scheduleReload();
               },
             },
+          ],
+          onBackfill: async () => {
+            await reload();
+          },
+        }
+      : null,
+  );
+  const onCommentNotice = useCallback(
+    (message: { data?: unknown }) => {
+      const notice = (message.data ?? {}) as CommentNotice;
+      // This tab's own delete already reloaded when the door answered.
+      if (notice.op === "deleted" && notice.comment_id && ledger.current.deletedIds.has(notice.comment_id)) return;
+      scheduleReload();
+    },
+    [scheduleReload],
+  );
+  useChannel(
+    source
+      ? {
+          topic: commentNoticeChannel.topic({ entityType: source.token, entityId: source.id }),
+          // Authorized by RLS on realtime.messages; the package awaits setAuth() before joining.
+          // realtime-admission: comments
+          private: true,
+          // The sender is Postgres: no Matrx envelope, so echo suppression is done above, by
+          // the ids this tab deleted (echo.ts ledger).
+          wire: { mode: "raw" },
+          // Every notice carries its own id (gen_random_uuid() in platform._comments_announce_delete).
+          eventKey: (_source, payload) => ((payload ?? {}) as CommentNotice).id,
+          broadcast: [
+            { event: "comment.deleted", onMessage: onCommentNotice },
+            { event: "comment.restored", onMessage: onCommentNotice },
           ],
           onBackfill: async () => {
             await reload();

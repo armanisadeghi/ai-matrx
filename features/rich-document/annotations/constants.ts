@@ -1,7 +1,7 @@
 // features/rich-document/annotations/constants.ts
 
 /**
- * 🚨 PASSAGE WRITES ARE OFF until the association-visibility fix is applied.
+ * PASSAGE WRITES — ON since 2026-09-26 (the gate below records why it existed).
  *
  * Every anchored write — a highlight's `annotates` edge, a passage link's
  * `anchored_to` edge, a passage comment, a suggestion — carries a copy of the

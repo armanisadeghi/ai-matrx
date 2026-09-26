@@ -114,7 +114,7 @@ it("a realtime reload while the editor is open does not move the edit's base ver
 
   // Someone else saves: realtime delivers, the thread reloads at version 4 with their text.
   service.listCommentThreads.mockResolvedValue({ items: [thread("Size shows magnitude.", 4)], collaborationDoors: true });
-  const cfg = (useChannel as jest.Mock).mock.calls.at(-1)![0];
+  const cfg = (useChannel as jest.Mock).mock.calls.map((c) => c[0]).filter((s) => s?.postgresChanges).at(-1);
   await act(async () => cfg.postgresChanges[0].onChange({ row: { id: "c1", version: 4 }, payload: { eventType: "UPDATE" } }));
   await flush();
 
