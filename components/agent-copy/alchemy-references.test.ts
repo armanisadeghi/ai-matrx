@@ -3,7 +3,7 @@ import {
   DIRECTIVE_VERBS,
   type DirectiveCatalog,
 } from "@/features/directive-catalog/types";
-import { kindValidator } from "@/features/content-ir/registry/kind-schema-source";
+import { validateAgainstKind } from "@/features/content-ir/registry/validate-against-kind";
 import { alchemyReferencePort } from "./alchemy-references";
 
 jest.mock("@/features/directive-catalog/service", () => ({
@@ -15,12 +15,12 @@ jest.mock("@/lib/redux/store-singleton", () => ({
 jest.mock("@/lib/redux/slices/apiConfigSlice", () => ({
   selectResolvedBaseUrl: () => "https://server.example.test",
 }));
-jest.mock("@/features/content-ir/registry/kind-schema-source", () => ({
-  kindValidator: { validate: jest.fn(), cachedSchema: jest.fn(), invalidate: jest.fn() },
+jest.mock("@/features/content-ir/registry/validate-against-kind", () => ({
+  validateAgainstKind: jest.fn(),
 }));
 
 const fetchCatalog = jest.mocked(fetchDirectiveCatalog);
-const legacyKindValidation = jest.mocked(kindValidator.validate);
+const legacyKindValidation = jest.mocked(validateAgainstKind);
 
 /** Reduced verbatim from the live /directives/catalog capture. Reference uses identity_fields, never schemas. */
 const LIVE_REFERENCE_NOUNS = {

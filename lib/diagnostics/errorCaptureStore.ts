@@ -207,7 +207,7 @@ export type CapturedErrorSource =
   | "surface-registration"
   /**
    * A Matrx Alchemy contract break reported through the host's `diagnostics`
-   * port (`components/agent-copy/alchemy-host-ports.ts`): a declaration, write,
+   * port (bound where `AlchemyHost` is mounted): a declaration, write,
    * operation, action or menu the package could not honour.
    */
   | "alchemy"

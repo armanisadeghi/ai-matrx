@@ -62,7 +62,7 @@ import {
   listAgentWritableTargets,
   SURFACE_WRITE_TOOL_NAME,
 } from "@/features/surfaces/runtime/surface-writeback";
-import { kindValidator } from "@/features/content-ir/registry/kind-schema-source";
+import { getCachedKindSchema } from "@/features/content-ir/registry/validate-against-kind";
 import {
   announceWithheldSurfaceWriteTools,
   resolveRunOutputContract,
@@ -168,7 +168,7 @@ function summarizeKindSchema(schema: unknown): string | null {
  *  - aidream does NOT block on the declared schema for a client-delegated tool
  *    (`executor.py` skips the pydantic gate; the content-IR check logs drift
  *    and never blocks), so the enforcing validator is the seam —
- *    `applySurfaceWrite` → `kindValidator.validate` — on every origin.
+ *    `applySurfaceWrite` → `validateAgainstKind` — on every origin.
  *
  * So: the wire TEACHES the contract, the seam ENFORCES it.
  *
@@ -192,7 +192,7 @@ async function buildSurfaceWriteInlineSpec(
           .filter((kind): kind is string => Boolean(kind)),
       ),
     ].map(async (kind) => {
-      const summary = summarizeKindSchema(await kindValidator.cachedSchema(kind));
+      const summary = summarizeKindSchema(await getCachedKindSchema(kind));
       if (summary) contracts.set(kind, summary);
     }),
   );

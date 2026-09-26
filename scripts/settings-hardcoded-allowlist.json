@@ -4977,6 +4977,10 @@
       "name": "MISS_TTL_MS"
     },
     {
+      "file": "matrx-frontend/features/content-ir/registry/validate-against-kind.ts",
+      "name": "CONTRACT_TTL_MS"
+    },
+    {
       "file": "matrx-frontend/features/content-ir/studio/components/ShapeStreamTab.tsx",
       "name": "TICK_MS"
     },
