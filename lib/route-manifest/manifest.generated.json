@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1234,
+  "routeCount": 1232,
   "routes": [
     {
       "pattern": "/",
@@ -4161,11 +4161,6 @@
       "source": "app/(core)/marketing/ai-visibility/runs/[runId]/page.tsx"
     },
     {
-      "pattern": "/marketing/analytics",
-      "status": "live",
-      "source": "app/(core)/marketing/analytics/page.tsx"
-    },
-    {
       "pattern": "/marketing/approvals",
       "status": "live",
       "source": "app/(core)/marketing/approvals/page.tsx"
@@ -4234,11 +4229,6 @@
       "pattern": "/marketing/connections/bing/callback",
       "status": "live",
       "source": "app/(core)/marketing/connections/bing/callback/page.tsx"
-    },
-    {
-      "pattern": "/marketing/connections/google",
-      "status": "live",
-      "source": "app/(core)/marketing/connections/google/page.tsx"
     },
     {
       "pattern": "/marketing/connections/google/read-only",

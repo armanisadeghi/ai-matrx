@@ -19,7 +19,6 @@ const INTENTIONALLY_INTERNAL_TOP_LEVEL_ROUTES = new Set([
 const LEGACY_SHIM_TOP_LEVEL = new Set([
   "ads",
   "ai-visibility",
-  "analytics",
   "approvals",
   "audience",
   "automations",

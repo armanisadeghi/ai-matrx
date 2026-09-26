@@ -108,7 +108,7 @@ export function GoogleAnalyticsYouTubeReviewRoot() {
                   </SelectContent>
                 </Select>
                 <Button asChild size="sm" variant="outline">
-                  <Link href="/marketing/connections/google">
+                  <Link href={marketingRoutes.connectionsGoogle()}>
                     Manage or disconnect
                     <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
                   </Link>

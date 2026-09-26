@@ -27,6 +27,7 @@ import {
   useYouTubeAnalyticsPreview,
 } from "@/features/marketing/google/hooks";
 import type { GoogleConnectionSummary } from "@/features/marketing/google/types";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { isGoogleConnectionReachableByUser } from "@/features/marketing/google/service";
 import { resolveGoogleActionOrganizationId } from "@/features/marketing/google/action-organization";
 import type { TaskItemType } from "@/components/mardown-display/blocks/tasks/TaskChecklist";
@@ -332,7 +333,7 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
             Tag Manager configuration through these connections.
           </p>
           <Button asChild size="sm" variant="outline" className="min-h-11">
-            <Link href="/marketing/connections/google">
+            <Link href={marketingRoutes.connectionsGoogle()}>
               Manage or disconnect Google accounts
               <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
             </Link>

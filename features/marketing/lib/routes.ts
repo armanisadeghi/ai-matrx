@@ -427,7 +427,6 @@ export const marketingRoutes = {
   outreach: () => "/marketing/outreach",
   competitors: () => "/marketing/competitors",
   monitoring: () => "/marketing/monitoring",
-  analytics: () => "/marketing/analytics",
   initiatives: () => "/marketing/initiatives",
   calendar: () => "/marketing/calendar",
   audience: () => "/marketing/audience",

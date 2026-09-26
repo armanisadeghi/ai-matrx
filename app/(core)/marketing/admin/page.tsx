@@ -1234,14 +1234,6 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Deprecated",
     },
     {
-      url: "/marketing/analytics",
-      label: "Legacy analytics",
-      description:
-        "308s to the client roster; Analytics is a reserved brand section.",
-      filePath: "app/(core)/marketing/analytics/page.tsx",
-      status: "Deprecated",
-    },
-    {
       url: "/marketing/calendar",
       label: "Legacy calendar",
       description:

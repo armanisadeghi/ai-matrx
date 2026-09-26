@@ -19,7 +19,7 @@
  *    and the repair page was undiscoverable. `classifyGscAccessFailure`
  *    turns those error strings into a plain sentence, and every surface that
  *    shows it must also show the door (site Integrations settings or
- *    /marketing/connections/google) — never a cause without its fix.
+ *    /marketing/operations/connections/google) — never a cause without its fix.
  */
 
 import type { GoogleConnectionResource } from "@/features/marketing/google/types";

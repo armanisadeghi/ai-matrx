@@ -23,9 +23,9 @@ describe("surfaceFromPathname — marketing tree", () => {
     expect(surfaceFromPathname("/marketing/sites/new")).toBe(
       "matrx-user/marketing",
     );
-    expect(surfaceFromPathname("/marketing/connections/google")).toBe(
-      "matrx-user/marketing",
-    );
+    expect(
+      surfaceFromPathname("/marketing/operations/connections/google"),
+    ).toBe("matrx-user/marketing");
     expect(surfaceFromPathname("/marketing/cost")).toBe("matrx-user/marketing");
     expect(surfaceFromPathname("/marketing/operations/approvals")).toBe(
       "matrx-user/marketing",

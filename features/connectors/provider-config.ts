@@ -45,6 +45,7 @@ import {
 } from "@/lib/googleScopes";
 import type { OverlayId } from "@/features/overlays/catalogue";
 import type { ConnectorId } from "./types";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 /**
  * THE FIRST USEFUL THING A CONNECTED ROW OFFERS (PLAN §2's promise: "every
@@ -422,7 +423,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       firstAction: {
         kind: "route",
         label: "Bind a site",
-        href: "/marketing/connections/google",
+        href: marketingRoutes.connectionsGoogle(),
       },
     },
     {
@@ -438,7 +439,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       firstAction: {
         kind: "route",
         label: "Bind a property",
-        href: "/marketing/connections/google",
+        href: marketingRoutes.connectionsGoogle(),
       },
     },
     {

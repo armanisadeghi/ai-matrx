@@ -11,7 +11,7 @@ import { classifyGscAccessFailure } from "@/features/marketing/google/gsc-proper
 describe("classifyGscAccessFailure", () => {
   it.each([
     "connection d33d88c0 has no live discovered search_console_property resource 'sc-domain:example.com' — it was never discovered under this connection, was removed, or the connection needs re-authentication",
-    "Google connection 608fe2e7 does not exist or was disconnected, and no other live connection for the same Google account is available — reconnect the Google account at /marketing/connections/google",
+    "Google connection 608fe2e7 does not exist or was disconnected, and no other live connection for the same Google account is available — reconnect the Google account at /marketing/operations/connections/google",
     "GSC Search Analytics retries exhausted: GSC token refresh failed: HTTP 400 invalid_grant",
   ])("names a reconnect for %s", (text) => {
     expect(classifyGscAccessFailure(text)).not.toBeNull();
