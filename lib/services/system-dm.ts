@@ -68,9 +68,8 @@ export async function findOrCreateDirectConversation(
   if (convError || !conv) {
     throw operationFailed("start this conversation", convError ?? undefined);
   }
-  // The RPC currently finds a direct conversation by participant pair before
-  // considering p_organization_id. Never write an organization's task title
-  // into a different organization's existing conversation.
+  // Guard the tenant boundary even if a future RPC revision regresses its
+  // pair-and-organization lookup. A task title belongs only in its own org.
   if (conv.organization_id !== organizationId) {
     throw new Error(
       `Direct conversation ${conversationId} belongs to a different organization; ` +

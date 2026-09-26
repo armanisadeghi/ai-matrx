@@ -249,9 +249,9 @@ export async function POST(request: NextRequest) {
     const { type, participant_ids, group_name } = validation.data;
 
     // For direct chats, resolve atomically via the ONE canonical get-or-create
-    // RPC (advisory-locked — no duplicate conversation under concurrency). The
-    // cheap find pre-check only sets the `existing` flag / status for the
-    // response; it is now race-harmless because the RPC create is atomic.
+    // RPC (advisory-locked — no duplicate conversation under concurrency).
+    // A separate pair-only lookup cannot say whether this organization's
+    // conversation existed, so the response says only what the RPC proved.
     // THE ORGANIZATION THE REQUEST NAMED, for BOTH branches. The group branch below has
     // read this header since 2026-09-17; the direct branch omitted it and let the RPC's
     // DEFAULT apply, which meant a conversation between two colleagues was filed in the
@@ -274,11 +274,6 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const { data: preExistingId } = await supabase.rpc(
-        "find_dm_direct_conversation",
-        { p_user1_id: userId, p_user2_id: otherUserId },
-      );
-
       const { data: convId, error: convError } = await supabase.rpc(
         "dm_get_or_create_direct_conversation",
         {
@@ -298,22 +293,13 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // `existing` iff the pre-check found the SAME live conversation the RPC
-      // returned. find_dm has no deleted_at filter but the RPC skips soft-deleted
-      // and creates fresh — so comparing ids (not just Boolean(preExistingId))
-      // avoids falsely reporting a freshly-created conversation as "existing".
-      const existed = Boolean(preExistingId) && preExistingId === convId;
-
       return NextResponse.json(
         {
           success: true,
           data: { ConversationID: convId },
-          existing: existed,
-          msg: existed
-            ? "Existing conversation found"
-            : "Conversation created successfully",
+          msg: "Conversation ready",
         },
-        { status: existed ? 200 : 201 },
+        { status: 200 },
       );
     }
 
