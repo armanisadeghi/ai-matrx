@@ -1,4 +1,4 @@
--- chair-step: lane SWITCH-BACK-CARRIES (chair brief 2026-09-26, from VERIFIER-26 item 6): "Switch back carries every write made on the copies since the press back into the older tables (a reverse of the mover: rows edited, rows created, rows archived, colours/formats/checks/shares changed), names what it will carry in the confirm dialog before the press, logs it like the forward re-sync log, and tables born in the new system stay visible in /data after Switch back. Where a reverse carry is impossible for a value kind, the dialog says so by name and the press is withheld until the person confirms the loss explicitly." ADDS platform.cutover_carried_back (the log), platform._carried_back_value, platform._decorations_in_older_words, platform._cutover_carry_back (the reverse mover, plan or apply), platform.data_tables_born_in_the_new_system_for_me (the /data home's read). REPLACES platform._cutover_seam_reverse_readiness (the plan instead of a refusal) and platform.cutover_seam_press (one more argument, p_accept_not_carried; the carry runs inside the press after the older tables come back). No existing row is written by this file.
+-- chair-step: lane SWITCH-BACK-CARRIES (chair brief 2026-09-26, from VERIFIER-26 item 6): "Switch back carries every write made on the copies since the press back into the older tables (a reverse of the mover: rows edited, rows created, rows archived, colours/formats/checks/shares changed), names what it will carry in the confirm dialog before the press, logs it like the forward re-sync log, and tables born in the new system stay visible in /data after Switch back. Where a reverse carry is impossible for a value kind, the dialog says so by name and the press is withheld until the person confirms the loss explicitly." ADDS platform._carried_back_value, platform._decorations_in_older_words, platform._cutover_carry_back (the reverse mover, plan or apply), platform.data_tables_born_in_the_new_system_for_me (the /data home's read). REPLACES platform._cutover_seam_reverse_readiness (the plan instead of a refusal) and platform.cutover_seam_press (one more argument, p_accept_not_carried; the carry runs inside the press after the older tables come back). Writes only its own door rows (the press's door row moves to the new signature; one new door row).
 -- based-on: platform._cutover_seam_reverse_readiness(text, uuid) 2834b696f0b0a8c2ef58144e52b846804287afd10fddc849824da7ea0f3b4988
 -- based-on: platform.cutover_seam_press(text, uuid, text, text) c5d2ccab70e68d62e54003470943d0aaa1df8df3d17fb80709f47e6ad903dc06
 -- lane: SWITCH-BACK-CARRIES
@@ -26,63 +26,22 @@
 -- "leave these behind": a column added in the new system (the older table has no column for its
 -- values; they stay in the new table), a column's checks or kind changed there (the older table
 -- keeps its own). Tables made in the new system stay there and the /data home keeps listing them.
--- Every carry writes one platform.cutover_carried_back row per table with the counts, what was left
--- behind, and each touched older row's image before the carry (its exact inverse).
+-- Every carry writes one history.migration_log row per table (history.migration_record) with the
+-- counts, what was left behind, and each touched older row's image before the carry (its inverse).
 --
 -- WHY updated_at IS KEPT (app.relabel_keeps_updated_at, transaction-local, for the carry only): a
 -- carried older row holds exactly its copy's value as of the copy's own last write. Stamping it
 -- "now" would make readiness count it as "edited in the older table after it was copied" and hold
 -- the next switch for a difference that does not exist. Each row still gets its row version.
 
-set lock_timeout = '30s';
 
--- ── 1. THE LOG — one row per older table a Switch back carried into ────────────────────────────
-create table if not exists platform.cutover_carried_back (
-  id                  uuid primary key default gen_random_uuid(),
-  press_id            uuid not null,
-  undid_press         uuid not null,
-  organization_id     uuid not null references iam.organizations(id),
-  table_id            uuid not null,
-  table_name          text not null,
-  carried_at          timestamptz not null default now(),
-  carried_by          uuid,
-  rows_updated        integer not null default 0,
-  rows_created        integer not null default 0,
-  rows_archived       integer not null default 0,
-  rows_restored       integer not null default 0,
-  columns_changed     integer not null default 0,
-  colours_changed     boolean not null default false,
-  shares_changed      integer not null default 0,
-  renamed             boolean not null default false,
-  not_carried         text[] not null default '{}',
-  not_carried_accepted boolean not null default false,
-  before_image        jsonb not null default '{}'::jsonb,
-  says                text not null
-);
-
-comment on table platform.cutover_carried_back is
-  'SWITCH-BACK-CARRIES: what each Switch back of the Data tables switch carried from the new tables into the older ones, per table — counts, what it left behind (named, and accepted by the person before the press), and before_image: each touched older row, column, table and share as it was before the carry (writing those back undoes it). Append-only. The mirror of platform.cutover_evaluation_replaced (the forward re-sync log).';
-
-create index if not exists cutover_carried_back_org_idx on platform.cutover_carried_back (organization_id, carried_at desc);
-
-alter table platform.cutover_carried_back enable row level security;
-revoke all on platform.cutover_carried_back from public, anon, authenticated;
-grant select on platform.cutover_carried_back to service_role;
-
-create or replace function platform._cutover_carried_back_is_append_only()
-returns trigger
-language plpgsql
-set search_path to 'pg_catalog'
-as $$
-begin
-  raise exception 'platform.cutover_carried_back is a log: a carry is recorded once and never changed or removed'
-    using errcode = '42501';
-end;
-$$;
-
-create or replace trigger cutover_carried_back_is_append_only
-  before update or delete on platform.cutover_carried_back
-  for each row execute function platform._cutover_carried_back_is_append_only();
+-- ── 1. THE LOG ─────────────────────────────────────────────────────────────────────────────────
+-- No new table: every carry is ONE history.migration_log row per older table, through
+-- history.migration_record — the mover's own log, the row its copy-back (movers/reverse.py) wrote —
+-- under the verb "carried back from the new tables at Switch back", with the sentence as its note
+-- and, as its inverse, each touched older row, column, table and share as it was before, the counts,
+-- and what was left behind (and whether the person confirmed it). The press row
+-- (platform.cutover_seam_press.did -> carried_back) holds the same plan for the organization.
 
 -- ── 2. A VALUE IN THE NEW TABLE, IN THE OLDER TABLE'S WORDS ─────────────────────────────────────
 -- The mover's conversions, the other way (aidream movers/reverse.py said the same in Python): a
@@ -501,16 +460,20 @@ begin
       'renamed', b_renamed, 'shares_changed', n_share, 'says', v_sentence, 'not_carried', to_jsonb(v_tnot));
 
     if p_apply then
-      insert into platform.cutover_carried_back
-        (press_id, undid_press, organization_id, table_id, table_name, carried_by,
-         rows_updated, rows_created, rows_archived, rows_restored, columns_changed, colours_changed,
-         shares_changed, renamed, not_carried, not_carried_accepted, before_image, says)
-      values
-        (p_press, p_last.id, p_org, v_t.id, v_name, p_actor,
-         n_upd, n_new, n_arch, n_rest, n_col, b_colour, n_share, b_renamed, v_tnot,
-         cardinality(v_tnot) > 0 and coalesce(p_accepted, false),
-         jsonb_build_object('rows', v_rows, 'fields', v_fields, 'table', v_table_before, 'shares', v_perms),
-         concat_ws(' ', v_sentence, array_to_string(v_tnot, ' ')));
+      perform history.migration_record(
+        p_org, 'carried back from the new tables at Switch back', 'udt_dataset', v_t.id,
+        jsonb_build_object(
+          'kind', 'none',
+          'why', 'the older table''s rows are not store records, so the store''s own undo cannot write them; '
+                 || 'before holds each carried older row, column, table and share exactly as it was — writing those back undoes this carry',
+          'before', jsonb_build_object('rows', v_rows, 'fields', v_fields, 'table', v_table_before, 'shares', v_perms),
+          'press', p_press, 'undid_press', p_last.id,
+          'counts', jsonb_build_object('rows_updated', n_upd, 'rows_created', n_new, 'rows_archived', n_arch,
+                                       'rows_restored', n_rest, 'columns_changed', n_col, 'colours_changed', b_colour,
+                                       'renamed', b_renamed, 'shares_changed', n_share),
+          'not_carried', to_jsonb(v_tnot),
+          'not_carried_accepted', cardinality(v_tnot) > 0 and coalesce(p_accepted, false)),
+        concat_ws(' ', v_sentence, array_to_string(v_tnot, ' ')));
     end if;
   end loop;
 
@@ -544,7 +507,7 @@ end;
 $function$;
 
 comment on function platform._cutover_carry_back(uuid, platform.cutover_seam_press, boolean, uuid, uuid, boolean) is
-  'SWITCH-BACK-CARRIES: the reverse of the mover for the Data tables switch. Compares every copy the switch p_last archived against the same copy as it stood at that switch (custom.record_state_as_of) and carries the difference into the older table: row values, new/archived/restored rows, column name/format/required/archive, table name/description/colours, shares. Names what it cannot carry (columns added in the new system, changed checks or kinds) and the tables born there. p_apply false = the plan (read by the Switch back dialog); true = done inside the press, logged in platform.cutover_carried_back. Server-only.';
+  'SWITCH-BACK-CARRIES: the reverse of the mover for the Data tables switch. Compares every copy the switch p_last archived against the same copy as it stood at that switch (custom.record_state_as_of) and carries the difference into the older table: row values, new/archived/restored rows, column name/format/required/archive, table name/description/colours, shares. Names what it cannot carry (columns added in the new system, changed checks or kinds) and the tables born there. p_apply false = the plan (read by the Switch back dialog); true = done inside the press, logged per table in history.migration_log (verb "carried back from the new tables at Switch back"). Server-only.';
 revoke all on function platform._cutover_carry_back(uuid, platform.cutover_seam_press, boolean, uuid, uuid, boolean) from public, anon, authenticated;
 
 -- ── 5. WHAT MUST BE TRUE BEFORE A SWITCH GOES BACK — now: nothing; here is what it will carry ───
@@ -744,7 +707,19 @@ begin
 end;
 $function$;
 
-revoke all on function platform.cutover_seam_press(text, uuid, text, text, boolean) from public, anon;
+-- A DOOR FOLLOWS ITS FUNCTION: the press's door row moves to the new signature, before the grant.
+update platform.client_callable_door d
+   set identity_args = iam.door_identity_args(p.oid),
+       identity_argtypes = platform.door_argtypes(p.proargtypes),
+       reason = d.reason || ' SWITCH-BACK-CARRIES: a switch back carries into the older tables everything the new tables gained since the switch, inside the press; p_accept_not_carried (boolean, default false, null = false) is read only on a switch back and confirms leaving behind what cannot be carried — without it such a press is refused as confirm_not_carried, naming each thing.',
+       argument_rules = jsonb_set(coalesce(d.argument_rules, '{"version": 1, "arguments": {}}'::jsonb), '{arguments,p_accept_not_carried}',
+         '{"type": "boolean", "check": "true confirms what Switch back leaves in the new system; null or false refuses with confirm_not_carried when anything would be left. Ignored on a switch to new.", "position": 5}'::jsonb),
+       declared_by = 'migrations/campaign/switchbackcarries_switch_back_carries_what_the_new_system_wrote.sql (lane SWITCH-BACK-CARRIES)'
+  from pg_proc p
+ where p.oid = 'platform.cutover_seam_press(text, uuid, text, text, boolean)'::regprocedure
+   and d.schema_name = 'platform' and d.function_name = 'cutover_seam_press'
+   and d.identity_args = 'p_seam_key text, p_organization_id uuid, p_to text, p_note text';
+
 grant execute on function platform.cutover_seam_press(text, uuid, text, text, boolean) to authenticated;
 
 -- ── 7. THE /data HOME'S READ: tables made in the new system in organizations that switched back ─
@@ -776,5 +751,13 @@ as $$
    order by o.name, t.id;
 $$;
 
-revoke all on function platform.data_tables_born_in_the_new_system_for_me() from public, anon;
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, declared_by, reason, signed_in_callers)
+select 'platform', 'data_tables_born_in_the_new_system_for_me', iam.door_identity_args(p.oid), platform.door_argtypes(p.proargtypes),
+       'migrations/campaign/switchbackcarries_switch_back_carries_what_the_new_system_wrote.sql (lane SWITCH-BACK-CARRIES)',
+       'Takes no argument. Answers only the caller''s own organizations (iam.organization_member for auth.uid()) that switched their Data tables and switched back, with the ids of the tables made in the new system while switched — ids the caller''s /data home then reads through custom.table_list_everywhere, which decides what the caller may see. Nothing about any row.',
+       true
+  from pg_proc p where p.oid = 'platform.data_tables_born_in_the_new_system_for_me()'::regprocedure
+on conflict (schema_name, function_name, identity_argtypes) do nothing;
+
 grant execute on function platform.data_tables_born_in_the_new_system_for_me() to authenticated;
