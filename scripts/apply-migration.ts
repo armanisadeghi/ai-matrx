@@ -2265,12 +2265,18 @@ async function selfTest(statementTimeout: string, argv: readonly string[]): Prom
     );
     return 2;
   }
-  const path = resolve(MIGRATIONS_DIR, SELFTEST_FILE);
-  const fnPath = resolve(MIGRATIONS_DIR, SELFTEST_FN_FILE);
-  const replacePath = resolve(MIGRATIONS_DIR, SELFTEST_REPLACE_FILE);
-  const dynamicPath = resolve(MIGRATIONS_DIR, SELFTEST_DYNAMIC_FILE);
-  const dropRecreatePath = resolve(MIGRATIONS_DIR, SELFTEST_DROP_FILE);
-  const retiredPath = resolve(MIGRATIONS_DIR, SELFTEST_RETIRED_FILE);
+  // The scratch files live in a per-run mkdtemp directory, NEVER in this checkout's
+  // migrations/: a file there is seen by every check scripts/checks/run.mjs runs in parallel
+  // (check:migrations, the SQL guards, the release sweep) and a concurrent `git add` of this
+  // shared checkout could commit it. applyFile admits them by the fixed basenames in
+  // TARGET_SELFTEST_SCRATCH_RE and ledgers them by basename — the same names as before.
+  const scratchDir = mkdtempSync(join(tmpdir(), "db-apply-selftest-"));
+  const path = resolve(scratchDir, SELFTEST_FILE);
+  const fnPath = resolve(scratchDir, SELFTEST_FN_FILE);
+  const replacePath = resolve(scratchDir, SELFTEST_REPLACE_FILE);
+  const dynamicPath = resolve(scratchDir, SELFTEST_DYNAMIC_FILE);
+  const dropRecreatePath = resolve(scratchDir, SELFTEST_DROP_FILE);
+  const retiredPath = resolve(scratchDir, SELFTEST_RETIRED_FILE);
   const body =
     `create schema if not exists ${SELFTEST_SCHEMA};\n` +
     // Deliberately inside the file executed through applyFile, after its
@@ -2619,8 +2625,7 @@ async function selfTest(statementTimeout: string, argv: readonly string[]): Prom
         ),
       );
     await client.end().catch(() => undefined);
-    for (const p of [path, fnPath, replacePath, dynamicPath, dropRecreatePath, retiredPath])
-      if (existsSync(p)) unlinkSync(p);
+    rmSync(scratchDir, { recursive: true, force: true });
   }
 
   if (failures) {
@@ -2669,8 +2674,10 @@ async function selfTest(statementTimeout: string, argv: readonly string[]): Prom
 // the checkout, the filename and the schema both carry a per-run suffix, cleanup
 // runs on EVERY path, and cleanup is ASSERTED against the branch the way aidream's
 // half already asserted its own.
+// `--self-test`'s own six fixed names ride the same carve-out since 2026-09-26: they used to be
+// written into migrations/ too, where every parallel release check saw them.
 const TARGET_SELFTEST_SCRATCH_RE =
-  /^zz_db_apply_(?:target|clone)_selftest_[0-9a-f]{12}\.sql$/;
+  /^zz_db_apply_(?:(?:target|clone)_selftest_[0-9a-f]{12}|selftest(?:_dd220_(?:fn|replace|dynamic|drop)|_retired)?)\.sql$/;
 
 /**
  * `pnpm db:apply --policy-only-self-test` — the RED-then-GREEN proof for the POLICY-LOCK rule.
