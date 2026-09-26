@@ -194,7 +194,7 @@ function DomainSection({
       >
         <span>{domain.label}</span>
         <span className="text-[12px] font-normal tabular-nums text-muted-foreground">
-          {plural(items.length, "feature")}, {plural(jobs, "job")}
+          {plural(items.length, domain.domain === "unassigned" ? "group" : "feature")}, {plural(jobs, "job")}
         </span>
       </h2>
       <ul className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-3">
