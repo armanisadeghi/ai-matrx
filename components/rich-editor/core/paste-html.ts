@@ -183,7 +183,8 @@ function escapeLiteralMarkdown(root: DocumentFragment | HTMLElement): void {
       }
       parent = parent.parentElement;
     }
-    if (!skip && /[*`\\_~<]/.test(node.data)) texts.push(node as Text);
+    const textNode = node as Text;
+    if (!skip && /[*`\\_~<]/.test(textNode.data)) texts.push(textNode);
   }
   for (const node of texts) {
     const data = node.data;

@@ -31,6 +31,9 @@
  *                      · exactly one line of the document changes (the edited row)
  *                      · in that row only the edited cell's segment changes, and it is the old
  *                        cell plus " X" — every neighbour keeps its bytes, escapes and padding
+ *   answer_tables    the in-body answer table editors' path (parseMarkdownTable → edit →
+ *                    rewriteTableSource, THE table writer): for every table in a prose block,
+ *                    no edit returns its bytes, and the same " X" cell edits change only that cell
  *
  * Rows come from the shared corpus reader (scripts/lib/rich-content-corpus.ts) — the same rows
  * the tokenizer gate (check-source-roundtrip-corpus.ts) judges. READ ONLY. Nothing a person
@@ -64,6 +67,8 @@ import {
   type VisualPlan,
 } from "../components/rich-editor/core/visual-document";
 import { planSave } from "../components/rich-editor/core/save-plan";
+import { rewriteTableSource } from "../components/rich-editor/core/table-source";
+import { parseMarkdownTable } from "../components/mardown-display/blocks/table/parseMarkdownTable";
 
 const args = process.argv.slice(2);
 const argValue = (flag: string): string | undefined => {
@@ -85,6 +90,7 @@ interface SourceStats {
   editedRows: number;
   movedRows: number;
   cellEdits: number;
+  answerCellEdits: number;
   proseBlocks: number;
   lockedBlocks: number;
   lockedChildren: number;
@@ -241,6 +247,51 @@ function judgeTableCells(editor: Editor, baseline: ReturnType<typeof captureBase
   return null;
 }
 
+const TABLE_DELIM = /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/;
+
+/** The in-body answer table path on every table in the text's prose blocks. Returns a reason or null. */
+function judgeAnswerTables(text: string, stats: SourceStats): string | null {
+  let edits = 0;
+  for (const block of tokenizeSource(text)) {
+    if (block.kind !== "prose") continue;
+    const lines = block.raw.split("\n");
+    for (let i = 0; i + 1 < lines.length; i += 1) {
+      if (!(lines[i] ?? "").includes("|") || !TABLE_DELIM.test(lines[i + 1] ?? "")) continue;
+      let end = i + 2;
+      while (end < lines.length && (lines[end] ?? "").trim() && (lines[end] ?? "").includes("|")) end += 1;
+      const table = lines.slice(i, end).join("\n");
+      i = end - 1;
+      const grid = parseMarkdownTable(table);
+      if (!grid) continue;
+      if (rewriteTableSource(table, grid) !== table) return "answer_table_noop_changed_bytes";
+      const tableLines = table.split("\n");
+      const targets: Array<[number, number]> = [];
+      grid.rows.forEach((row, r) => {
+        if (r === 0 || row.some((cell) => STRUCTURAL.test(cell))) row.forEach((_cell, c) => targets.push([r, c]));
+      });
+      for (const [r, c] of targets) {
+        if (edits >= MAX_CELL_EDITS) return null;
+        edits += 1;
+        stats.answerCellEdits += 1;
+        const rows = grid.rows.map((row) => [...row]);
+        (rows[r] as string[])[c] = `${(rows[r] as string[])[c] ?? ""} X`;
+        const out = rewriteTableSource(table, { headers: grid.headers, rows }).split("\n");
+        if (out.length !== tableLines.length) return "answer_table_edit_changed_line_count";
+        const changed = out.map((line, index) => (line === tableLines[index] ? -1 : index)).filter((index) => index >= 0);
+        if (changed.length !== 1) return "answer_table_edit_changed_other_lines";
+        const before = rowSegments(tableLines[changed[0] as number] ?? "");
+        const after = rowSegments(out[changed[0] as number] ?? "");
+        if (before.length !== after.length) return "answer_table_edit_changed_cell_count";
+        const diff = before.map((seg, index) => (seg === after[index] ? -1 : index)).filter((index) => index >= 0);
+        if (diff.length !== 1) return "answer_table_edit_changed_neighbour_cell";
+        const k = diff[0] as number;
+        if ((after[k] ?? "").trim() !== `${(before[k] ?? "").trim()} X`.trim()) return "answer_table_edit_wrong_cell_bytes";
+      }
+    }
+  }
+  return null;
+}
+
 function tally(json: JSONContent): void {
   const visit = (node: JSONContent) => {
     if (node.type === "sourceLocked") {
@@ -283,6 +334,8 @@ function judge(text: string, stats: SourceStats): string | null {
 
     const tableReason = judgeTableCells(editor, baseline, text, stats);
     if (tableReason) return tableReason;
+    const answerReason = judgeAnswerTables(text, stats);
+    if (answerReason) return answerReason;
 
     if (editor.state.doc.childCount >= 3) {
       stats.movedRows += 1;
@@ -349,6 +402,7 @@ async function main(): Promise<number> {
         editedRows: 0,
         movedRows: 0,
         cellEdits: 0,
+        answerCellEdits: 0,
         proseBlocks: 0,
         lockedBlocks: 0,
         lockedChildren: 0,
@@ -390,8 +444,9 @@ async function main(): Promise<number> {
       edited: acc.edited + s.editedRows,
       moved: acc.moved + s.movedRows,
       cells: acc.cells + s.cellEdits,
+      answerCells: acc.answerCells + s.answerCellEdits,
     }),
-    { rows: 0, passed: 0, edited: 0, moved: 0, cells: 0 },
+    { rows: 0, passed: 0, edited: 0, moved: 0, cells: 0, answerCells: 0 },
   );
   const byReason = new Map<string, number>();
   for (const stats of Object.values(report)) {
@@ -400,7 +455,7 @@ async function main(): Promise<number> {
     }
   }
   console.log(
-    `\nTOTAL rows ${totals.rows}, passed ${totals.passed}, failing ${totals.rows - totals.passed}, edit-checked ${totals.edited}, move-checked ${totals.moved}, table-cell edits ${totals.cells}  (${Math.round((Date.now() - started) / 1000)}s)`,
+    `\nTOTAL rows ${totals.rows}, passed ${totals.passed}, failing ${totals.rows - totals.passed}, edit-checked ${totals.edited}, move-checked ${totals.moved}, table-cell edits ${totals.cells}, answer-table cell edits ${totals.answerCells}  (${Math.round((Date.now() - started) / 1000)}s)`,
   );
   for (const [reason, count] of [...byReason].sort((a, b) => b[1] - a[1])) {
     console.log(`  ${reason}: ${count}`);

@@ -1,4 +1,5 @@
 "use client";
+import { rewriteTableSource } from "@/components/rich-editor/core/table-source";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -85,25 +86,12 @@ const TableControls: React.FC<TableControlsProps> = ({
   const debouncedTableData = useDebounce(tableData, 500);
   const isUpdating = tableData !== debouncedTableData;
 
-  const generateMarkdownTable = useCallback(() => {
-    const maxLengths = Array(tableData.headers.length).fill(0);
-    [tableData.headers, ...tableData.rows].forEach((row) => {
-      row.forEach((cell, i) => {
-        maxLengths[i] = Math.max(maxLengths[i], cell.length);
-      });
-    });
-    const formatRow = (row: string[]) =>
-      "| " +
-      row.map((cell, i) => cell.padEnd(maxLengths[i])).join(" | ") +
-      " |";
-    const separator =
-      "|-" + maxLengths.map((len) => "-".repeat(len)).join("-|-") + "-|";
-    return [
-      formatRow(tableData.headers),
-      separator,
-      ...tableData.rows.map((row) => formatRow(row)),
-    ].join("\n");
-  }, [tableData.headers, tableData.rows]);
+  // THE table writer: the stored table with only the edited cells changed
+  // (components/rich-editor/core/table-source.ts) — never a re-padded rewrite.
+  const generateMarkdownTable = useCallback(
+    () => rewriteTableSource(content, { headers: tableData.headers, rows: tableData.rows }),
+    [content, tableData.headers, tableData.rows],
+  );
 
   const notifyContentChange = useCallback(() => {
     if (onContentChange && content) {

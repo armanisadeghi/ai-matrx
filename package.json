@@ -357,6 +357,8 @@
     "check:signout-scope:self-test": "tsx scripts/check-signout-scope.ts --self-test",
     "check:canonical-pickers:self-test": "tsx scripts/check-canonical-pickers.ts --self-test",
     "check:rich-content-legacy": "tsx scripts/rich-content-inventory/inventory.ts --check",
+    "check:table-writers": "tsx scripts/check-table-writers.ts",
+    "check:table-writers:self-test": "tsx scripts/check-table-writers.ts --self-test",
     "check:rich-content-legacy:self-test": "tsx scripts/rich-content-inventory/inventory.ts --self-test",
     "rich-content:inventory": "tsx scripts/rich-content-inventory/inventory.ts",
     "check:run-is-over": "tsx scripts/check-run-is-over.ts",

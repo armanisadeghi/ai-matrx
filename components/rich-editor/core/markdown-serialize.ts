@@ -22,7 +22,7 @@
 // this serializer reproduces its stored bytes exactly, so contract 2 is
 // measured, not hoped for.
 
-import { freshCell, respliceRow } from "./table-source";
+import { freshRow, respliceRow } from "./table-source";
 import type { Mark, Node as PMNode } from "@tiptap/pm/model";
 
 export interface Adjacency {
@@ -337,13 +337,13 @@ function serializeTable(table: PMNode): string {
     } else {
       line =
         respliceRow(parseJsonArray(attr<string>(row, "mdSegs")), stored, texts) ??
-        `${lead ? "| " : ""}${texts.map(freshCell).join(" | ")}${trail ? " |" : ""}`;
+        freshRow(texts, lead, trail);
     }
     lines.push(line);
     if (index === 0) {
       const storedAligns = attr<string>(table, "mdAligns");
       const delim = attr<string>(table, "mdDelim");
-      const fresh = () => `${lead ? "| " : ""}${aligns.map((align) => delimiterFor(align)).join(" | ")}${trail ? " |" : ""}`;
+      const fresh = () => freshRow(aligns.map((align) => delimiterFor(align)), lead, trail);
       lines.push(
         delim === null
           ? fresh()

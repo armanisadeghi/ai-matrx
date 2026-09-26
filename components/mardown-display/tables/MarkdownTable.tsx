@@ -1,4 +1,5 @@
 "use client";
+import { rewriteTableSource } from "@/components/rich-editor/core/table-source";
 import React, {
   useState,
   useEffect,
@@ -308,25 +309,10 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
     }
   }, [data]);
 
-  const generateMarkdownTable = () => {
-    const maxLengths = Array(internalTableData.headers.length).fill(0);
-    [internalTableData.headers, ...internalTableData.rows].forEach((row) => {
-      row.forEach((cell, i) => {
-        maxLengths[i] = Math.max(maxLengths[i], cell.length);
-      });
-    });
-    const formatRow = (row: string[]) =>
-      "| " +
-      row.map((cell, i) => cell.padEnd(maxLengths[i])).join(" | ") +
-      " |";
-    const separator =
-      "|-" + maxLengths.map((len) => "-".repeat(len)).join("-|-") + "-|";
-    return [
-      formatRow(internalTableData.headers),
-      separator,
-      ...internalTableData.rows.map((row) => formatRow(row)),
-    ].join("\n");
-  };
+  // THE table writer: the stored table with only the edited cells changed
+  // (components/rich-editor/core/table-source.ts) — never a re-padded rewrite.
+  const generateMarkdownTable = () =>
+    rewriteTableSource(content, { headers: internalTableData.headers, rows: internalTableData.rows });
 
   const notifyContentChange = () => {
     if (onContentChange && content) {
