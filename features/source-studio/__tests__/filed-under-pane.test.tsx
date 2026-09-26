@@ -60,6 +60,7 @@ function props(): SourceSidePanesProps {
     entitiesLoading: false,
     entitiesError: null,
     entitiesTruncated: false,
+    entitiesState: { kind: "done" },
     onEntityGo: () => undefined,
     attachments: [],
     onAttach: () => undefined,
@@ -84,5 +85,28 @@ it("renders the grid anchored on the Source, filed-under", () => {
     label: "A Source",
     direction: "outgoing",
   });
+  act(() => root.unmount());
+});
+
+it("an empty Entities pane says extraction is unavailable — never 'none found' — when it failed", () => {
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  act(() =>
+    root.render(
+      <SourceSidePanes
+        {...props()}
+        tab="entities"
+        chunkTotal={3}
+        entitiesState={{ kind: "failed", sentence: "the provider refused the key" }}
+      />,
+    ),
+  );
+  const text = host.textContent ?? "";
+  expect(text).toContain("Entity extraction is unavailable: the provider refused the key.");
+  expect(text).not.toMatch(/were found/);
+  act(() =>
+    root.render(<SourceSidePanes {...props()} tab="entities" chunkTotal={3} entitiesState={{ kind: "not_run" }} />),
+  );
+  expect(host.textContent).toContain("Not yet extracted");
   act(() => root.unmount());
 });

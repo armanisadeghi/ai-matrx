@@ -431,3 +431,48 @@ export function useSourcePortions(documentId: string | null): {
     reload,
   };
 }
+
+// ── Entity extraction coverage ────────────────────────────────────────────
+
+/**
+ * How many of the version's chunks entity extraction has run on
+ * (`rag.kg_chunks.ner_extracted_at` set) — the fallback for "did extraction
+ * run?" until `source_list_facts.entities_state` ships. Two head counts,
+ * indexed by document; null while reading or when the read failed.
+ */
+export function useExtractionCoverage(
+  documentId: string | null,
+): { total: number; extracted: number } | null {
+  const [state, setState] = useState<{
+    forId: string | null;
+    value: { total: number; extracted: number } | null;
+  }>({ forId: null, value: null });
+  useEffect(() => {
+    if (!documentId) return undefined;
+    let cancelled = false;
+    void (async () => {
+      const base = () =>
+        ragDb(supabase)
+          .from("kg_chunks")
+          .select("id", { count: "exact", head: true })
+          .eq("processed_document_id", documentId)
+          .is("deleted_at", null);
+      const [all, done] = await Promise.all([
+        base(),
+        base().not("ner_extracted_at", "is", null),
+      ]);
+      if (cancelled) return;
+      setState({
+        forId: documentId,
+        value:
+          all.error || done.error
+            ? null
+            : { total: all.count ?? 0, extracted: done.count ?? 0 },
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [documentId]);
+  return state.forId === documentId ? state.value : null;
+}

@@ -110,6 +110,7 @@ function facts(over: Partial<SourceFacts>): SourceFacts {
     staleChunkCount: 0,
     indexing: false,
     headDocumentId: "id",
+    entitiesState: null,
     ...over,
   };
 }

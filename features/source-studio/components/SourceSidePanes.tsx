@@ -40,6 +40,28 @@ import type {
   SourceChunk,
   SourceEntity,
 } from "@/features/source-studio/hooks/useSourceData";
+import {
+  displayableLabel,
+  type EntitiesState,
+} from "@/features/source-studio/sourceStudioModel";
+
+/** What an empty Entities pane says — never "none found" unless extraction ran. */
+function entitiesEmptySentence(state: EntitiesState, notSearchable: boolean): string {
+  if (notSearchable)
+    return "People, places and things are found once this Source is searchable.";
+  switch (state.kind) {
+    case "failed":
+      return `Entity extraction is unavailable: ${state.sentence}.`;
+    case "running":
+      return "Finding people, places and things…";
+    case "not_run":
+      return "Not yet extracted: people, places and things have not been looked for in this Source.";
+    case "unknown":
+      return "Whether people, places and things were looked for could not be read.";
+    case "done":
+      return "No people, places or things were found in this Source.";
+  }
+}
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type SideTab = "chunks" | "entities" | "associations";
@@ -70,6 +92,8 @@ export interface SourceSidePanesProps {
   entitiesLoading: boolean;
   entitiesError: string | null;
   entitiesTruncated: boolean;
+  /** Whether extraction ran — "none found" is only said after it did. */
+  entitiesState: EntitiesState;
   onEntityGo: (entity: SourceEntity) => void;
   /**
    * What the Source is attached to (`source_list_facts.attachments`, the same
@@ -263,6 +287,7 @@ function EntitiesTab({
   chunkTotal,
   chunksLoading,
   chunks,
+  entitiesState,
 }: SourceSidePanesProps) {
   const chunkCountShown = chunks.length;
   return (
@@ -275,10 +300,14 @@ function EntitiesTab({
           <p className="text-sm text-destructive">{entitiesError} <ErrorAlchemyMenu error={entitiesError} /></p>
         )}
         {!entitiesLoading && !entitiesError && entities.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            {!chunksLoading && chunkTotal === 0
-              ? "People, places and things are found once this Source is searchable."
-              : "No people, places or things were found in this Source."}
+          <p className="text-sm text-muted-foreground" data-testid="entities-empty">
+            {entitiesEmptySentence(entitiesState, !chunksLoading && chunkTotal === 0)}
+          </p>
+        )}
+        {entities.length > 0 && entitiesState.kind === "failed" && (
+          <p className="text-xs text-warning">
+            Entity extraction is unavailable: {entitiesState.sentence}. The ones
+            below were found earlier.
           </p>
         )}
         <div className="flex flex-wrap gap-1.5">
@@ -360,7 +389,8 @@ function AttachmentsListFallback({ attachments, onAttach }: SourceSidePanesProps
               const info = tryGetEntityInfo(a.target_type);
               const href = info?.hrefFor?.(a.target_id) ?? null;
               const Icon = info?.Icon;
-              const label = a.label || attachmentTypeWords(a.target_type);
+              const label =
+                displayableLabel(a.label) ?? attachmentTypeWords(a.target_type);
               const body = (
                 <span className="flex min-w-0 items-center gap-2">
                   {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}

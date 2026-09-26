@@ -432,3 +432,48 @@ export function studioLayout(
     sideInline: widthPx >= 1280,
   };
 }
+
+// ── Entity extraction state ───────────────────────────────────────────────
+
+export type EntitiesState =
+  | { kind: "done" }
+  | { kind: "running" }
+  | { kind: "not_run" }
+  | { kind: "failed"; sentence: string }
+  | { kind: "unknown" };
+
+/**
+ * Whether entity extraction RAN — never inferred from an empty entity list
+ * ("none found" is only true after extraction ran). The server's
+ * `source_list_facts.entities_state` (`not_run` / `running` / `done` /
+ * `failed:<sentence>`) wins when present; until it ships, a Source whose
+ * chunks all have `ner_extracted_at` NULL has not been extracted.
+ */
+export function entitiesState(
+  serverState: string | null | undefined,
+  chunks: { total: number; extracted: number } | null,
+): EntitiesState {
+  const s = serverState?.trim();
+  if (s) {
+    if (s === "done") return { kind: "done" };
+    if (s === "running") return { kind: "running" };
+    if (s === "not_run") return { kind: "not_run" };
+    if (s.startsWith("failed")) {
+      const sentence = s.slice("failed".length).replace(/^:\s*/, "").trim();
+      return {
+        kind: "failed",
+        sentence: sentence || "the server did not say why",
+      };
+    }
+  }
+  if (!chunks) return { kind: "unknown" };
+  if (chunks.total === 0 || chunks.extracted === 0) return { kind: "not_run" };
+  return { kind: "done" };
+}
+
+/** A stored label that is a code (`catalogued_source`) is never shown as a name. */
+export function displayableLabel(label: string | null | undefined): string | null {
+  const l = label?.trim();
+  if (!l) return null;
+  return /^[a-z0-9]+(_[a-z0-9]+)+$/.test(l) ? null : l;
+}

@@ -97,6 +97,7 @@ import {
   useSourceChunks,
   useSourceDoc,
   useSourceEntities,
+  useExtractionCoverage,
   useSourceMedia,
   useSourcePortions,
   type SourceChunk,
@@ -104,6 +105,7 @@ import {
 } from "@/features/source-studio/hooks/useSourceData";
 import {
   buildEditPortions,
+  entitiesState,
   originalSeeks,
   portionIndexForChunk,
   portionIndexForPage,
@@ -163,6 +165,7 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
     chunksRead.total,
   );
   const libraryDoc = useLibraryDoc(viewedId);
+  const coverage = useExtractionCoverage(viewedId);
   const search = useDocumentSearch(viewedId ?? documentId);
   const view = doc ? resolveOriginalView(doc, media.media) : null;
 
@@ -493,6 +496,10 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
                 entitiesLoading={entitiesRead.loading}
                 entitiesError={entitiesRead.error}
                 entitiesTruncated={entitiesRead.truncated}
+                entitiesState={entitiesState(
+                  viewingCurrent ? (facts?.entitiesState ?? null) : null,
+                  coverage,
+                )}
                 onEntityGo={goToEntity}
                 attachments={facts ? facts.attachments : version.loading ? [] : null}
                 onAttach={doc ? () => setSaveOpen(true) : null}

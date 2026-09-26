@@ -99,6 +99,11 @@ export interface SourceFacts {
   indexing: boolean;
   /** The Source's newest capture (the head of the recapture chain). */
   headDocumentId: string;
+  /**
+   * Whether entity extraction ran on the current version (`not_run` /
+   * `running` / `done` / `failed:<sentence>`), when the server reports it.
+   */
+  entitiesState: string | null;
 }
 
 export interface SourceFactsRow {
@@ -112,6 +117,7 @@ export interface SourceFactsRow {
   stale_chunk_count?: number | null;
   indexing?: boolean | null;
   head_document_id?: string | null;
+  entities_state?: string | null;
 }
 
 function asAttachments(value: unknown): SourceAttachment[] {
@@ -157,6 +163,7 @@ export function sourceFactsFromRow(r: SourceFactsRow): SourceFacts | null {
     staleChunkCount: r.stale_chunk_count,
     indexing: r.indexing,
     headDocumentId: r.head_document_id,
+    entitiesState: typeof r.entities_state === "string" ? r.entities_state : null,
   };
 }
 
