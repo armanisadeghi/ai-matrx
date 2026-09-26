@@ -78,3 +78,35 @@ export function toEntityListFailure(
     error instanceof Error && error.message.trim() ? error.message : fallback;
   return { message, retryable: !isEntityListRefusal(error) };
 }
+
+/**
+ * WHY A SECONDARY SOURCE FAILED, IN WORDS A PERSON READS — never the raw
+ * database string. A list's side reads (a report, a column's facts) fail
+ * without emptying the list; the reader needs to know WHICH columns are
+ * missing and WHETHER trying again could help, not
+ * `readAllRows(mandate.v_reference_latest): query failed — canceling statement
+ * due to statement timeout` (printed on the admin mandate list, 2026-09-26).
+ * The raw message still reaches the AI payload of the notice that shows this.
+ */
+export function plainFailureReason(error: unknown): string {
+  const text =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : "";
+  const code =
+    typeof error === "object" && error !== null && "code" in error
+      ? String((error as { code?: unknown }).code ?? "")
+      : "";
+  if (code === "57014" || /statement timeout|canceling statement|timed out|timeout/i.test(text)) {
+    return "took too long to answer";
+  }
+  if (isEntityListRefusal(error) || /42501|permission denied|not allowed/i.test(text)) {
+    return "is not available to your account";
+  }
+  if (/failed to fetch|networkerror|network request failed|load failed/i.test(text)) {
+    return "could not be reached";
+  }
+  return "could not be loaded";
+}
