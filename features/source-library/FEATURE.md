@@ -88,8 +88,8 @@ Transcript text is a genuine direct Supabase read (`transcriptService.ts`).
 ## 🚨 Two live-measured rules every reader here obeys
 
 **THE ACTIVE ORGANIZATION IS PART OF WHAT A READ WAS BUILT FROM.** It resolves
-*after* the first render (cookie → default preference → personal org, see
-`lib/organizations/resolveActiveOrgContext.ts`), and `callApi` refuses every
+*after* the first render (this device's remembered selection → sole
+membership, see `lib/organizations/resolveActiveOrgContext.ts`), and `callApi` refuses every
 request until it does with *"Select an organization before sending this
 request."* A read fired once on mount therefore fails and never retries —
 measured on the live page on 2026-09-17, on the Libraries list, the Library

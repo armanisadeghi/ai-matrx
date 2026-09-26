@@ -169,10 +169,10 @@ mandates (definition sections, org Binding tab).
   `RecordUnavailableError`, so one stale/deleted/denied route visit produces
   one capture for AccessGate to reconcile. The visible Retry action remains
   available for the user to request a fresh read.
-- **Recipients (owner ruling, 2026-08-11):** the owner **and** the org's
-  owners/admins when the org is shared. First to act wins, so a request never
-  dies with one person. A personal workspace routes to the owner only — no
-  duplicate message.
+- **Recipients:** the owner **and** the organization's owners/admins. First to
+  act wins, so a request never dies with one person. (`iam.access_request_recipients`
+  still routes an `is_personal` organization to the owner only — a live defect
+  against the law, `common-docs/policies/access-ladder.md`; it goes with the flag.)
 - **A link the viewer cannot open is worse than no link.** The owner is a door
   only when they have a public creator profile (`/c/{handle}`); the organization
   is a door only when the viewer is a member. Otherwise: identity, no link.

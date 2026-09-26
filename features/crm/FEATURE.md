@@ -165,9 +165,7 @@ DDL: [`migrations/crm_01_schema.sql`](../../migrations/crm_01_schema.sql),
 - **Setting a primary goes through `public.crm_set_primary_contact_point(id)`.**
   Partial unique indexes cannot be `DEFERRABLE`, so a naive "set new, clear old" 23505s.
 - **Components inherit org from their parent** via `crm._inherit_parent_org()`
-  (trigger `_a_org_from_parent`, named to sort before `_stamp_*`). Without it
-  `_stamp_org_default` derives org from the _creator's personal org_ and silently lands
-  a contact point in a different org than its party.
+  (trigger `_a_org_from_parent`), so a contact point always lands in its party's org.
 - **Merge never destroys anything.** `public.crm_merge_parties` repoints children whose
   move would not collide, records every moved id in `crm.party_merge.moved`, and sets
   `canonical_id` on the loser — which stays live. `crm_unmerge_parties` replays that
@@ -1417,7 +1415,7 @@ module in the folder + the two deleted filenames).
 - 2026-08-31 — **CRM category creation now carries the record's organization.**
   The lifecycle-stage and rating `CategorySelect` callers pass
   `party.organization_id` explicitly, so inline `Create “…”` cannot borrow the
-  currently active or personal organization when the open record belongs to a
+  currently active organization when the open record belongs to a
   different tenant. The shared package still owns create-and-select behavior;
   a focused caller guard pins the explicit boundary for both vocabularies.
 - 2026-08-30 — **Contact imports commit only selected preview rows.** The

@@ -227,8 +227,7 @@ Realtime moved onto `@ai-matrx/realtime` (2026-09-07). `useInterviewRoom` lost ~
 
 - **2026-09-17** — **A new interview is filed in the organization the person
   selected.** `createSession` inserted `interview.session` with no
-  `organization_id`, and `public._stamp_org_default` then stamped the
-  CREATOR'S PERSONAL organization: all 53 live rows sit in a private workspace
+  `organization_id`, and a database trigger then stamped an organization
   nobody chose, invisible to the people the vision is for. It now carries
   `ensureOrgId(undefined)` — the selected organization, which joins store
   hydration before answering — and refuses with

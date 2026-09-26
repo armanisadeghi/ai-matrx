@@ -276,8 +276,7 @@ wrapper added in another lane's file.
   renderer) + `hr-page-state-states-the-substitution.test.tsx` (it renders, once,
   and stays silent when nothing was substituted).
 - **2026-08-29 (single enabled employer default)** — HR context now resolves to the
-  person's sole module-enabled employer when their global organization is a module-off
-  personal workspace. The live `hr_my_context` contract and the client fallback agree:
+  person's sole module-enabled employer when their global organization has the HR module off. The live `hr_my_context` contract and the client fallback agree:
   zero or multiple enabled employers remain unresolved for the employer picker, while
   one enabled employer restores the person's actual capability set.
 - **2026-08-28 (HR SMS contact graph)** — `work_phone` and `personal_phone` now feed the
