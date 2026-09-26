@@ -1,6 +1,12 @@
 -- P1: a task assignment is a saved transition, never a second browser request.
 -- This migration is applied by the database release lane. The task write and its
 -- email intent commit together; the dispatcher owns delivery and retries.
+-- allows: revoke communication
+--
+-- The two helper functions are intentionally private. The bounded revoke declaration proves
+-- that their default PUBLIC execution is withdrawn only within the communication schema.
+-- This migration was unledgered and the live census confirmed task_assignment_outbox is absent,
+-- so creating it directly avoids a non-additive drop-and-recreate cycle.
 set local lock_timeout = '2s';
 set local statement_timeout = '120s';
 
@@ -49,7 +55,6 @@ $guard$;
 
 revoke all on function communication._guard_task_assignment_notice_key()
   from public, anon, authenticated;
-drop trigger if exists guard_task_assignment_notice_key on communication.notification;
 create trigger guard_task_assignment_notice_key
   before insert or update on communication.notification
   for each row execute function communication._guard_task_assignment_notice_key();
@@ -143,7 +148,6 @@ $function$;
 
 revoke all on function communication._task_assignment_outbox() from public, anon, authenticated;
 
-drop trigger if exists task_assignment_outbox on workspace.tasks;
 create trigger task_assignment_outbox
   after insert or update on workspace.tasks
   for each row execute function communication._task_assignment_outbox();
