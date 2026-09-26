@@ -120,6 +120,8 @@ export function toContextMenuExtraSections(
       label: section.title,
       anchor: "after-clipboard" as const,
       ...(section.primary ? { primary: true } : {}),
+      // The table's own sections first and flat; the site-wide rows under ONE "More…" (lane C).
+      foldSiteMenu: true,
       items: section.items.map(toExtraItem),
     }));
 }

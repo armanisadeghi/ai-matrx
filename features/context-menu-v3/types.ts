@@ -170,6 +170,14 @@ export interface ContextMenuExtraSection {
    * surface with a single identity never needs it.
    */
   primary?: boolean;
+  /**
+   * THE SURFACE'S OWN MENU COMES FIRST; THE SITE-WIDE ROWS WAIT UNDER ONE "More…" (merged-grid
+   * review 2026-09-26: a grid cell's menu ran to ~40 rows — its own sections, then Compare, Read
+   * aloud and every other universal row appended). When any section of an open says so, the
+   * surface sections stay flat and in order, and every other row of the menu moves into ONE
+   * "More…" submenu at the end. Airtable's and Sheets' cell menus are 8–15 rows.
+   */
+  foldSiteMenu?: boolean;
   items: ContextMenuExtraItem[];
 }
 

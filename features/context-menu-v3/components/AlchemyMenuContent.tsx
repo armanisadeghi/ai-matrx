@@ -26,7 +26,7 @@ import {
   richDocumentTargetHost,
 } from "@/features/rich-document/actions/provider";
 import { useContextMenuActions } from "../hooks/useContextMenuActions";
-import { buildMenuModel } from "../model/menu-model";
+import { buildMenuModel, foldSiteMenuIntoMore } from "../model/menu-model";
 import { contextMenuActionsFromModel, modelRevision } from "../alchemy-provider";
 import type { MenuContentProps } from "../types";
 
@@ -43,7 +43,12 @@ export interface AlchemyMenuContentProps extends Omit<MenuContentProps, "variant
 export default function AlchemyMenuContent(props: AlchemyMenuContentProps): React.ReactElement {
   const { mode, point, open, onOpenChange, ...menuProps } = props;
   const m = useContextMenuActions(menuProps);
-  const model = buildMenuModel(m, menuProps);
+  const built = buildMenuModel(m, menuProps);
+  // A surface that asks for it (a grid's cell / row / column / table): its own sections flat, the
+  // site-wide rows under ONE "More…" at the end (merged-grid review 2026-09-26).
+  const model = menuProps.extraSections?.some((section) => section.foldSiteMenu)
+    ? foldSiteMenuIntoMore(built)
+    : built;
   const { registry } = useAlchemyActions();
   ensureRichDocumentProvider(registry);
 

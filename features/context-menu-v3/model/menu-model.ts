@@ -326,6 +326,38 @@ function fromExtraItem(item: ContextMenuExtraItem): MenuNode {
   }
 }
 
+/**
+ * ONE "More…" FOR THE SITE-WIDE ROWS (`ContextMenuExtraSection.foldSiteMenu`). Pure. The surface's
+ * sections stay flat, in order; every other section's rows go, section by section with a separator
+ * between, into ONE submenu at the end. The rich-document registry section keeps its own place (its
+ * rows are another provider's, drawn from the same click target).
+ */
+export function foldSiteMenuIntoMore(model: MenuModel): MenuModel {
+  const surface = model.sections.filter((s) => s.group === "surface");
+  if (surface.length === 0) return model;
+  const kept = model.sections.filter((s) => s.group === "surface" || s.id === "registry");
+  const rest = model.sections.filter((s) => s.group !== "surface" && s.id !== "registry");
+  const children: MenuNode[] = [];
+  for (const section of rest) {
+    const rows = section.nodes.filter((n) => n.kind !== "separator");
+    if (rows.length === 0) continue;
+    if (children.length > 0) children.push({ kind: "separator", id: `site-more:sep:${section.id}` });
+    children.push(...rows);
+  }
+  if (children.length === 0) return { ...model, sections: kept };
+  return {
+    ...model,
+    sections: [
+      ...kept,
+      {
+        id: "site-more",
+        group: "tools",
+        nodes: [{ kind: "submenu", id: "site-more", label: "More…", width: "w-64", children }],
+      },
+    ],
+  };
+}
+
 function extrasByAnchor(
   extraSections: ContextMenuExtraSection[] | undefined,
 ): Record<ExtraSectionAnchor, MenuSection[]> {
