@@ -3,8 +3,8 @@
 **Ruling (Arman, 2026-09-19).** A "default organization" is at most a per-client
 DISPLAY preference. Nothing but the org picker and pure UI display may read it.
 No data read, write, API route, server action, transport or boot ladder may pick
-an organization for the user from a cookie, a saved preference, or the personal
-org. A request that needs an organization and has none is HELD, the person is
+an organization for the user from a cookie, a saved preference, or the
+organization created at signup. A request that needs an organization and has none is HELD, the person is
 shown their memberships and SETS one, then the request proceeds normally.
 Sole-membership auto-select is fine — there is nothing to choose.
 
@@ -91,7 +91,7 @@ a default wearing a disguise.
 `migrations/w1_org_nothing_substitutes_an_organization_dm_default_org.sql`
 (+ `.inverse.sql`) — drops `trg_default_org` on `communication.dm_conversations`
 and `public.dm_default_org()`, the trigger that silently filed an org-less DM in
-the starter's personal workspace. Applied through `pnpm db:apply` as a named
+the starter's signup organization. Applied through `pnpm db:apply` as a named
 chair step. Verified live first: that trigger was the only user of the function.
 
 **The inverse is a rollback, and it now lives where rollbacks live (2026-09-20).**
@@ -104,8 +104,7 @@ directory `apply_migrations.py` names for exactly this ("not in the swept
 migrations directory"), where both non-recursive globs stop seeing it. The
 ledger keys on the basename, so nothing the database recorded changed.
 Applying it is never the campaign finishing — it would re-install the
-personal-org stamp on DM inserts, and 460 of the 523 live organizations are
-personal.
+signup-organization stamp on DM inserts.
 
 ---
 
@@ -121,7 +120,7 @@ is that the class was still fully alive in SQL, where the guard could not look.
 `organization_id` with `public.ensure_personal_organization(auth.uid())`. The
 frontend called it with three arguments and no organization, so **every metered
 action taken in the browser — by a person working inside a team organization
-they had explicitly selected — was billed to a personal workspace nobody
+they had explicitly selected — was billed to an organization nobody
 chose.** Not in the census, not in the handoff, and invisible to
 `check:no-default-organization`, because the frontend call site is an innocent
 RPC call and the substitution is in the function body.
@@ -162,7 +161,7 @@ SQL guard (below).
   identities in frozen history, which cannot be edited (applied files) and is
   now prevented going forward, not retroactively rewritten.
 * **Item 2's allowlist entry was a wrong reason in the wrong place.** It said an
-  inbound SMS "cannot be expressed org-less, so the personal org stands". The
+  inbound SMS "cannot be expressed org-less", so the signup org stood. The
   organization never had to come from a person: a phone number is REGISTERED,
   and `sms_phone_numbers.organization_id` / `sms_notification_preferences.organization_id`
   are both NOT NULL. The answer was in the database the whole time.
@@ -241,7 +240,7 @@ lane confirmed still stands and is why the drop was safe to land: **all 328
 carrying tables already declare `organization_id NOT NULL`** (verified live: 0
 nullable, 0 missing the column), so an org-less insert now raises 23502 —
 loudly, at the caller — instead of being silently stamped with somebody's
-personal workspace. The refusing constraint the ruling asks to be "left behind"
+signup organization. The refusing constraint the ruling asks to be "left behind"
 was already in place on every one of them; no new constraint work was needed.
 
 ## STILL OPEN
