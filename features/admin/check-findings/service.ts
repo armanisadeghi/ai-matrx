@@ -17,6 +17,7 @@
 import { readAllRows } from "@ai-matrx/data/db";
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
+import { parsePendingAccept, type PendingAccept } from "./model";
 
 type OpsTables = Database["ops"]["Tables"];
 type CheckCatalogRow = OpsTables["proof_check"]["Row"];
@@ -66,7 +67,7 @@ export type CheckItemTally = Pick<
   "check_id" | "state" | "item_key" | "title" | "created_at" | "updated_at"
 >;
 
-export type CheckItem = Pick<
+type CheckItemColumns = Pick<
   CheckItemRow,
   | "id"
   | "check_id"
@@ -87,6 +88,9 @@ export type CheckItem = Pick<
   | "review_after"
   | "db_accept_reason"
 >;
+
+/** One item, plus the one-click Mark OK marker (`metadata.pending_accept`, model.ts). */
+export type CheckItem = CheckItemColumns & { pending_accept: PendingAccept | null };
 
 /** Every `ops.check_item.state` value (CHECK constraint, design §3). */
 export const CHECK_ITEM_STATES = [
@@ -169,13 +173,13 @@ async function loadItems(
   states: readonly CheckItemState[],
 ): Promise<CheckItem[]> {
   const client = createClient();
-  return readAllRows(
+  const rows = await readAllRows(
     ({ from, to }) =>
       client
         .schema("ops")
         .from("check_item")
         .select(
-          "id, check_id, item_key, unit_key, state, accept_basis, title, file, line, rule, created_at, updated_at, updated_by, handed_off_at, handed_off_to, fixed_at, review_after, db_accept_reason",
+          "id, check_id, item_key, unit_key, state, accept_basis, title, file, line, rule, created_at, updated_at, updated_by, handed_off_at, handed_off_to, fixed_at, review_after, db_accept_reason, metadata",
           { count: "exact" },
         )
         .eq("check_id", checkId)
@@ -184,6 +188,12 @@ async function loadItems(
         .range(from, to),
     { label: `ops.check_item (check ${checkId})` },
   );
+  return rows.map(({ metadata, ...item }) => ({
+    ...item,
+    pending_accept: parsePendingAccept(
+      metadata != null && typeof metadata === "object" && !Array.isArray(metadata) ? metadata.pending_accept : null,
+    ),
+  }));
 }
 
 export const liveCheckFindingsSource: CheckFindingsSource = { loadSnapshot, loadItems };

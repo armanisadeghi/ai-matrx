@@ -111,6 +111,7 @@ function CodeRunOutput({ state, onClose }: { state: CodeRunState; onClose: () =>
           {state.status === "error" && "The sandbox could not run this"}
           {state.status === "done" &&
             `Exit ${state.result.exitCode} · ${state.result.durationMs} ms · ${state.result.command}`}
+          <ErrorAlchemyMenu />
         </span>
         {state.status !== "running" && (
           <button

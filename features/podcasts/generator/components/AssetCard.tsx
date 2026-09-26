@@ -39,6 +39,7 @@ import {
   confirmAssetRegenerate,
   type AssetRegenerateOpts,
 } from "./AssetActionsMenu";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AssetCardProps {
   slot: MediaSlot;
@@ -192,6 +193,7 @@ export function AssetCard({
                   <ImageOff className="h-3.5 w-3.5 text-muted-foreground/70" />
                   <span className="text-muted-foreground/70">
                     Couldn&apos;t render
+                    <ErrorAlchemyMenu />
                   </span>
                   {onRegenerate && (
                     <button

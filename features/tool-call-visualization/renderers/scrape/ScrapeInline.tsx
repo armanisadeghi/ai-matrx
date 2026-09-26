@@ -50,6 +50,7 @@ import { collectMessages, isTerminal, isSuccess } from "../_shared";
 import { getDomain, getFaviconUrl } from "../search/parseSearch";
 import { parseScrape, type ScrapePage } from "./parseScrape";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Small building blocks
@@ -318,6 +319,7 @@ export const ScrapeInline: React.FC<ToolRendererProps> = ({
                     Couldn&apos;t read{" "}
                     {first ? getDomain(first) : "the requested page"}.
                 </span>
+              <ErrorAlchemyMenu />
             </div>
         );
     }

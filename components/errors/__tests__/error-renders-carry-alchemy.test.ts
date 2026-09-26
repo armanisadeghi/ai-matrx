@@ -293,6 +293,20 @@ describe("round-7 probes (RC-B12 verify): lists of reasons are errors", () => {
   });
 });
 
+describe("round-8 probes (RC-B12 verify): JSX entities are decoded before matching", () => {
+  it("'Couldn&apos;t load' counts exactly like 'could not load'", () => {
+    expect(count("<p>Could not load this map.</p>")).toBe(1);
+    expect(count("<p>Couldn&apos;t load this map.</p>")).toBe(1);
+    expect(count("<p>Couldn&rsquo;t load this map.</p>")).toBe(1);
+    expect(count("<p>Couldn&#39;t save the deal.</p>")).toBe(1);
+    expect(count("<p>Couldn&#x27;t open this page</p>")).toBe(1);
+    expect(count("<p>We couldn&apos;t find anything &mdash; try another search.</p>")).toBe(1);
+    expect(count('<PageHeader title="Couldn&apos;t open this page" />')).toBe(1);
+    expect(count("<span>This deal couldn&apos;t be refreshed just now.</span>")).toBe(1);
+    expect(count("<p>This mind map couldn&apos;t be rendered — try regenerating it.</p>")).toBe(1);
+  });
+});
+
 describe("one error box carries one menu", () => {
   const doubles = (jsx: string) =>
     findDoubleMenus(`export function C({ error, ok }: any) { return (<>${jsx}</>); }`).length;

@@ -33,6 +33,7 @@ import { supabase } from "@/utils/supabase/client";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Fields worth showing under the title, in the order a reader wants them. */
 const DETAIL_FIELDS = [
@@ -122,6 +123,7 @@ export function RegistryPeek({
         <p className="text-sm text-muted-foreground">
           Couldn&apos;t read this {info?.label?.toLowerCase() ?? "record"} — it
           may not be readable from the browser, or you may not have access.
+          <ErrorAlchemyMenu />
         </p>
       ) : row ? (
         <>

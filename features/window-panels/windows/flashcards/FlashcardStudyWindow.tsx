@@ -196,7 +196,7 @@ export function FlashcardStudyWindow({
       return (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 p-4 text-center">
           <AlertCircle className="h-6 w-6 text-muted-foreground" />
-          <p className="text-sm font-medium">Couldn&apos;t load this set</p>
+          <p className="text-sm font-medium">Couldn&apos;t load this set <ErrorAlchemyMenu /></p>
           <p className="max-w-sm text-xs text-muted-foreground">
             {study.error}
             <ErrorAlchemyMenu error={study.error} />

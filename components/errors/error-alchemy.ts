@@ -308,18 +308,40 @@ function hasInput(value: unknown): boolean {
 }
 
 /** The sentence the person saw, as plain text (the Copy action). */
-export function buildErrorHumanText(input: ErrorAlchemyInput): string {
+/**
+ * A sentence as the copy should read it: a render that writes `{error}.` after
+ * a message that already ends in a full stop shows "try again.." — every text
+ * the payload carries says it once. A real ellipsis ("...") stays.
+ */
+export function tidySentence(text: string): string {
+  return text.replace(/(?<!\.)([.!?])\.(?!\.)/g, "$1");
+}
+
+/** Every sentence the copy joins goes through here — one rule for all paths. */
+function tidyInput(input: ErrorAlchemyInput): ErrorAlchemyInput {
+  return {
+    ...input,
+    message: tidySentence(input.message),
+    ...(input.title ? { title: tidySentence(input.title) } : {}),
+  };
+}
+
+export function buildErrorHumanText(raw: ErrorAlchemyInput): string {
+  const input = tidyInput(raw);
   const repeats =
     input.title && input.message.trim().toLowerCase().startsWith(input.title.trim().toLowerCase());
-  const head = input.title && !repeats ? `${input.title}: ${input.message}` : input.message;
+  // A title that is already a sentence ("Could not save.") is not followed by ": ".
+  const joiner = input.title && /[.!?…]$/.test(input.title.trim()) ? " " : ": ";
+  const head = input.title && !repeats ? `${input.title}${joiner}${input.message}` : input.message;
   return input.operation ? `${head}\nWhile: ${input.operation}` : head;
 }
 
 /** THE Copy-for-AI payload for an error on screen. */
 export function buildErrorAlchemyPayload(
-  input: ErrorAlchemyInput,
+  raw: ErrorAlchemyInput,
   surface: ErrorSurfaceSnapshot,
 ): AgentPayloadInput {
+  const input = tidyInput(raw);
   const described = describeError(input.error);
   const own = (input.captured ?? []).filter((c) => isOwnCall(c, input.calls));
   const others = (input.captured ?? []).filter((c) => !isOwnCall(c, input.calls));

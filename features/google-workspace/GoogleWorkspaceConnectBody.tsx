@@ -830,6 +830,7 @@ function GoogleWorkspaceConnectBodyContent({
                             {file.display_name} is picked and usable, but its
                             record could not be created:{" "}
                             {fresh.record_absent_reason}
+                            <ErrorAlchemyMenu />
                           </span>
                         </p>
                       ) : null}

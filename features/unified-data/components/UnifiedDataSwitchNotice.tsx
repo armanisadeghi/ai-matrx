@@ -23,6 +23,7 @@ import { AlertTriangle, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { UnifiedDataCampaignGate } from "@/lib/knobs/useUnifiedDataCampaignGate";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface UnifiedDataSwitchNoticeProps {
   /** The gate exactly as `useUnifiedDataCampaign` returned it. */
@@ -73,6 +74,7 @@ export function UnifiedDataSwitchNotice({ gate, what }: UnifiedDataSwitchNoticeP
         <Button size="sm" variant="outline" className="mt-2" onClick={gate.retry}>
           Try again
         </Button>
+        <ErrorAlchemyMenu />
       </div>
     );
   }

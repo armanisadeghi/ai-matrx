@@ -8,6 +8,7 @@ import { Lightbulb } from "lucide-react";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { OwnerSuggestionInbox } from "@/features/education/library/components/OwnerSuggestionInbox";
 import { eduHref } from "@/features/education/constants";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const metadata: Metadata = {
   title: "Suggestions · Community Library · AI Matrx Education",
@@ -27,6 +28,7 @@ export default async function SuggestionInboxPage() {
         <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 py-8 text-sm text-muted-foreground">
           We could not verify who you are on this request, so your suggestion
           inbox is not loading. You have not been signed out — reload in a moment.
+          <ErrorAlchemyMenu />
         </div>
       );
     }

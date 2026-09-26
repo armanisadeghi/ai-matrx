@@ -541,8 +541,8 @@ function TopByViews({
                                 key={index}
                                 className="flex h-11 items-center px-1 text-xs text-muted-foreground"
                             >
-                                These could not be read from the server.
-                              <ErrorAlchemyMenu />
+                                <span>These could not be read from the server.
+                              <ErrorAlchemyMenu /></span>
                             </li>
                         ) : (
                             <li key={index} className="h-11" aria-hidden="true" />
@@ -931,6 +931,7 @@ function SyncStrip({
                     <p className="text-sm text-foreground">
                         We could not check whether this Library has been brought up to
                         date, so the last-synced line below cannot be trusted right now.
+                      <ErrorAlchemyMenu />
                     </p>
                 </div>
                 <div className="flex h-8 items-center pl-6">

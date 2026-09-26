@@ -41,6 +41,7 @@ import {
   KEYWORD_RESEARCH_WINDOW_SURFACE_NAME,
 } from "@/features/surfaces/manifests/keyword-research-window.manifest";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * KeywordResearchWindow — the canonical keyword research runner in a
@@ -366,6 +367,7 @@ function KeywordResearchWindowInner({
                         >
                           Try again
                         </button>
+                        <ErrorAlchemyMenu />
                       </span>
                     ) : null}
                   </div>
@@ -471,6 +473,7 @@ function KeywordResearchWindowInner({
                           <div className="flex flex-col items-center gap-2 px-3 py-6 text-center text-xs text-muted-foreground">
                             <span>
                               We couldn&apos;t load the keyword library.
+                              <ErrorAlchemyMenu />
                             </span>
                             <button
                               type="button"

@@ -288,6 +288,7 @@ export function GmailReadReview() {
               </button>
             </>
           ) : null}
+          <ErrorAlchemyMenu />
         </p>
       ) : (
         <form

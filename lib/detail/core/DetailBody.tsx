@@ -33,6 +33,7 @@ import {
   ShieldCheckIcon,
 } from "./icons";
 import type { DetailCore } from "./useDetailCore";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * 🚨 D5 — THE SKELETON HAS A BOUNDED WAIT. A load that never answers used to
@@ -252,6 +253,7 @@ function FieldsSection({ core }: { core: DetailCore }) {
     return (
       <Notice tone="warn">
         {`This ${label} couldn't be found — it may have been moved, deleted, or isn't shared with you.`}
+        <ErrorAlchemyMenu />
       </Notice>
     );
   }

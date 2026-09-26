@@ -20,6 +20,8 @@
  *                              matches the checkout (including environment-gated routes)
  *   pnpm sync-types:local    → all 3 steps against the LOCAL backend (http://localhost:8000)
  *   pnpm sync-types:fast     → ONLY step 2 against the LOCAL backend (no db-types, no typecheck)
+ *   pnpm sync-types --api-only → ONLY step 2 (+ drop guard + typecheck) from the CHECKOUT — for when
+ *                              step 1 is blocked by something unrelated (a package vocabulary drift)
  *
  * Steps:
  *   1. Update Supabase database types          → `pnpm db-types`
@@ -61,6 +63,7 @@ function getArg(name, fallback) {
 }
 
 const fastMode = args.includes('--fast');
+const apiOnly = args.includes('--api-only');
 const preflightOnly = args.includes('--preflight-only');
 const contractPinPath = getArg('--contract-pin-path', null);
 if (contractPinPath && !preflightOnly) {
@@ -231,8 +234,8 @@ if (preflightOnly) {
 
 // ── Step 1: Supabase database types ────────────────────────────────────────
 
-if (fastMode) {
-    console.log('  ⊘ Step 1: Skipping Supabase db-types (--fast)\n');
+if (fastMode || apiOnly) {
+    console.log(`  ⊘ Step 1: Skipping Supabase db-types (${fastMode ? '--fast' : '--api-only'})\n`);
 } else {
     console.log('  Step 1: Updating Supabase database types (pnpm db-types)...\n');
     try {

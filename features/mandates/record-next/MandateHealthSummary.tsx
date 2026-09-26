@@ -83,8 +83,8 @@ export function MandateHealthSummary({ mandateKey }: { mandateKey: string }) {
   if (state.status === "error") {
     return (
       <div role="alert" className="flex items-center gap-2 text-sm text-destructive">
-        Open problems could not be checked: the check {state.message}. Reload the page to try again.
-        <ErrorAlchemyMenu className="ml-auto" />
+        <span>Open problems could not be checked: the check {state.message}. Reload the page to try again.
+        <ErrorAlchemyMenu className="ml-auto" /></span>
       </div>
     );
   }
@@ -97,6 +97,7 @@ export function MandateHealthSummary({ mandateKey }: { mandateKey: string }) {
           {state.failed.length > 0 ? (
             <span className="text-xs text-muted-foreground">
               Some checks could not run: {state.failed.join("; ")}.
+              <ErrorAlchemyMenu />
             </span>
           ) : null}
         </div>

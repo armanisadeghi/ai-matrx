@@ -125,7 +125,7 @@ export function StudyAnalyticsView({
         ) : error ? (
           <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card px-6 py-14 text-center">
             <AlertCircle className="h-6 w-6 text-muted-foreground" />
-            <p className="text-sm text-foreground">Couldn&apos;t load progress</p>
+            <p className="text-sm text-foreground">Couldn&apos;t load progress <ErrorAlchemyMenu /></p>
             <p className="max-w-md text-xs text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
           </div>
         ) : !analytics || !analytics.hasData ? (

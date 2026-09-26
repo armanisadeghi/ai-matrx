@@ -33,6 +33,7 @@ import {
   captureAuthDestination,
   loginHref,
 } from "@/utils/auth/auth-destination";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default async function AuthenticatedLayout({
   children,
@@ -65,6 +66,7 @@ export default async function AuthenticatedLayout({
         <div className="p-4 text-sm text-muted-foreground">
           We could not verify who you are on this request, so this page is not
           loading. You have not been signed out — reload in a moment.
+          <ErrorAlchemyMenu />
         </div>
       );
     }

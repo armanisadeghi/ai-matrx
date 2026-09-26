@@ -171,3 +171,86 @@ export function acceptBasisLabel(basis: string | null): string {
       return "—";
   }
 }
+
+// ── One-click Mark OK: the in-between state (ops.check_item.metadata.pending_accept) ──────────
+
+/**
+ * What the server recorded while committing an accept (aidream
+ * `aidream/services/platform_checks/accept.py`, written only by `ops.check_item_accept_begin`
+ * / `_finish`). The item stays `open` until the next ingested run reads the allowlist.
+ */
+export interface PendingAccept {
+  status: "committing" | "landed" | "failed";
+  at: string | null;
+  byName: string | null;
+  reason: string | null;
+  commitSha: string | null;
+  commitUrl: string | null;
+  error: string | null;
+  remedy: string | null;
+  finishedAt: string | null;
+}
+
+const PENDING_STATUSES = ["committing", "landed", "failed"] as const;
+
+function str(value: unknown): string | null {
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value != null && typeof value === "object" && !Array.isArray(value);
+}
+
+/** The marker as stored (jsonb), read defensively: anything malformed is no marker. */
+export function parsePendingAccept(value: unknown): PendingAccept | null {
+  if (!isRecord(value)) return null;
+  const v = value;
+  const status = PENDING_STATUSES.find((s) => s === v.status);
+  if (!status) return null;
+  const by = isRecord(v.by) ? v.by : {};
+  return {
+    status,
+    at: str(v.at),
+    byName: str(by.name),
+    reason: str(v.reason),
+    commitSha: str(v.commit_sha),
+    commitUrl: str(v.commit_url),
+    error: str(v.error),
+    remedy: str(v.remedy),
+    finishedAt: str(v.finished_at),
+  };
+}
+
+/** How long a `committing` marker is trusted before it reads as interrupted (the DB reclaims at 5 min). */
+export const COMMITTING_STALE_MS = 5 * 60_000;
+
+export type PendingAcceptView =
+  | { kind: "none" }
+  | { kind: "committing" }
+  | { kind: "interrupted" }
+  | { kind: "landing"; pending: PendingAccept }
+  | { kind: "still_reported"; pending: PendingAccept }
+  | { kind: "failed"; pending: PendingAccept };
+
+/**
+ * The one honest sentence for an open item carrying a marker. `still_reported`: the commit landed,
+ * yet a run that STARTED after it still reports the item — the accept did not take, and the page
+ * must say so instead of "landing" forever.
+ */
+export function pendingAcceptView(
+  state: string,
+  pending: PendingAccept | null,
+  latestRunStartedAt: string | null,
+  now: number,
+): PendingAcceptView {
+  if (!pending || state === "accepted" || state === "fixed") return { kind: "none" };
+  if (pending.status === "failed") return { kind: "failed", pending };
+  if (pending.status === "committing") {
+    const at = pending.at ? Date.parse(pending.at) : NaN;
+    return Number.isFinite(at) && now - at > COMMITTING_STALE_MS ? { kind: "interrupted" } : { kind: "committing" };
+  }
+  const landedAt = pending.finishedAt ? Date.parse(pending.finishedAt) : NaN;
+  const runAt = latestRunStartedAt ? Date.parse(latestRunStartedAt) : NaN;
+  if (Number.isFinite(landedAt) && Number.isFinite(runAt) && runAt > landedAt) return { kind: "still_reported", pending };
+  return { kind: "landing", pending };
+}

@@ -3430,6 +3430,7 @@ const UserTableViewer = ({
         <p className="font-medium">No table found</p>
         <p className="text-muted-foreground mt-2">
           The requested table could not be found or accessed.
+          <ErrorAlchemyMenu />
         </p>
       </div>
     );

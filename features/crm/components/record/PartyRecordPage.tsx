@@ -58,6 +58,7 @@ import { EntityCustomFields } from "@/features/unified-data/components/EntityCus
 import { PartyOutputsSection } from "./PartyOutputsSection";
 import { PartyDealsCard } from "../deals/PartyDealsCard";
 import type { CrmRecordCopyParent } from "./record-copy";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   partyId: string;
@@ -249,7 +250,7 @@ export function PartyRecordPage({ partyId }: Props) {
             with a retry, instead of silently showing stale data. */}
         {party && error && (
           <div className="mx-auto mb-3 flex max-w-3xl items-center justify-between gap-2 rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
-            <span>This record couldn&apos;t be refreshed just now.</span>
+            <span>This record couldn&apos;t be refreshed just now. <ErrorAlchemyMenu /></span>
             <Button variant="outline" size="sm" onClick={() => void refresh()}>
               Retry
             </Button>

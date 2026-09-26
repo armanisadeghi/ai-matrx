@@ -143,99 +143,62 @@ export function parseTextSegments(text: string): TextSegment[] {
   return segments;
 }
 
-/**
- * Finds rendered block elements and returns their offset and height
- * relative to the scroll container. Skips nested elements to avoid
- * double-counting (e.g. a <pre> inside a <div data-block-type>).
- */
-export function getRenderedBlocks(
-  scrollContainer: HTMLElement,
-): Array<{ top: number; height: number }> {
-  const blockSelectors =
-    "p, h1, h2, h3, h4, h5, h6, pre, ul, ol, table, hr, blockquote, [data-block-type]";
-  const allBlocks = scrollContainer.querySelectorAll(blockSelectors);
-  const containerRect = scrollContainer.getBoundingClientRect();
-  const scrollY = scrollContainer.scrollTop;
-
-  const seen = new Set<Element>();
-  const result: Array<{ top: number; height: number }> = [];
-
-  allBlocks.forEach((el) => {
-    // Skip if this element is nested inside another matched element
-    let parent = el.parentElement;
-    let isNested = false;
-    while (parent && parent !== scrollContainer) {
-      if (seen.has(parent)) {
-        isNested = true;
-        break;
-      }
-      parent = parent.parentElement;
-    }
-    if (isNested) return;
-
-    seen.add(el);
-    const rect = el.getBoundingClientRect();
-    result.push({
-      top: rect.top - containerRect.top + scrollY,
-      height: rect.height,
-    });
-  });
-
-  return result;
+/** Heading text as a reader sees it: no markup, no `{#id}`, lower-case, one space. */
+function normalizeHeading(text: string): string {
+  return text
+    .replace(/\{#[^}]*\}\s*$/, "")
+    .replace(/[*_`~[\]]/g, "")
+    .replace(/\(([^)]*)\)/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
 }
 
 /**
  * Builds paired checkpoints between raw text and rendered preview.
  *
- * Strategy: parse the raw text into N non-blank segments, find N rendered
- * blocks, and create (segment-line-offset → rendered-pixel-offset) pairs.
- * If counts don't match, falls back to proportional scroll mapping.
+ * Strategy (2026-09-26, verifier round 1 row 20): HEADINGS are the anchors. The
+ * k-th source heading is paired with the rendered heading of the same text, in
+ * order, and scroll positions interpolate between those pairs. The previous
+ * pairing matched the i-th source segment with the i-th rendered element —
+ * but a table, code block or list renders many matched elements, so the pairs
+ * drifted and half-way down the preview mapped to the first screen of the
+ * source. Heading text is the same on both sides, so a pair is never wrong;
+ * without headings the caller falls back to proportional mapping.
  */
 export function buildPairedCheckpoints(
   text: string,
   lineTop: (lineIndex: number) => number,
   scrollContainer: HTMLElement,
 ): { textPx: number[]; renderPx: number[] } | null {
-  const segments = parseTextSegments(text).filter((s) => s.type !== "blank");
-  const renderedBlocks = getRenderedBlocks(scrollContainer);
+  const lines = text.split("\n");
+  const sourceHeadings = parseTextSegments(text)
+    .filter((s) => s.type === "heading")
+    .map((s) => ({ line: s.startLine, key: normalizeHeading((lines[s.startLine] ?? "").replace(/^\s*#{1,6}\s+/, "")) }));
+  const containerRect = scrollContainer.getBoundingClientRect();
+  const scrollY = scrollContainer.scrollTop;
+  const renderedHeadings = Array.from(scrollContainer.querySelectorAll("h1, h2, h3, h4, h5, h6"))
+    .filter((el) => !el.closest("pre, code, table"))
+    .map((el) => ({ top: el.getBoundingClientRect().top - containerRect.top + scrollY, key: normalizeHeading(el.textContent ?? "") }));
+  if (sourceHeadings.length === 0 || renderedHeadings.length === 0) return null;
 
-  if (segments.length === 0 || renderedBlocks.length === 0) return null;
-
-  // Build pairs: for each segment, map start line → rendered block top
-  const count = Math.min(segments.length, renderedBlocks.length);
   const textPx: number[] = [0];
   const renderPx: number[] = [0];
-
-  for (let i = 0; i < count; i++) {
-    const textOffset = lineTop(segments[i].startLine);
-    const renderOffset = renderedBlocks[i].top;
-
-    if (textOffset > 0) textPx.push(textOffset);
-    if (renderOffset > 0) renderPx.push(renderOffset);
-
-    // Also add end-of-segment checkpoints for large blocks (code, tables)
-    if (
-      segments[i].type === "code" ||
-      segments[i].type === "table" ||
-      segments[i].type === "list"
-    ) {
-      const textEnd = lineTop(segments[i].endLine);
-      const renderEnd = renderedBlocks[i].top + renderedBlocks[i].height;
-      textPx.push(textEnd);
-      renderPx.push(renderEnd);
+  let r = 0;
+  for (const h of sourceHeadings) {
+    let j = r;
+    while (j < renderedHeadings.length && renderedHeadings[j]!.key !== h.key) j++;
+    if (j >= renderedHeadings.length) continue; // not rendered (yet) — skip, keep order
+    const t = lineTop(h.line);
+    const px = renderedHeadings[j]!.top;
+    // Keep the pairs strictly increasing on both sides.
+    if (t > textPx[textPx.length - 1]! && px > renderPx[renderPx.length - 1]!) {
+      textPx.push(t);
+      renderPx.push(px);
     }
+    r = j + 1;
   }
-
-  // Deduplicate and sort
-  const uniqueText = [...new Set(textPx)].sort((a, b) => a - b);
-  const uniqueRender = [...new Set(renderPx)].sort((a, b) => a - b);
-
-  // Ensure same length by trimming to shorter
-  const len = Math.min(uniqueText.length, uniqueRender.length);
-  return {
-    textPx: uniqueText.slice(0, len),
-    renderPx: uniqueRender.slice(0, len),
-  };
+  return textPx.length >= 2 ? { textPx, renderPx } : null;
 }
 
 /**

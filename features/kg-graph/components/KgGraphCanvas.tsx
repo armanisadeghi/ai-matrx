@@ -605,6 +605,7 @@ export function KgGraphCanvas({
                   <div className="space-y-1">
                     <div className="text-sm font-medium">
                       Couldn&apos;t load the graph
+                      <ErrorAlchemyMenu />
                     </div>
                     <div className="text-xs text-muted-foreground">{error} <ErrorAlchemyMenu /></div>
                     <button

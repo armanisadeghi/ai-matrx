@@ -877,6 +877,7 @@ function ProviderTranscriptMessage({
             {message.contentValid
               ? "This message has no displayable text."
               : "This stored message could not be rendered."}
+            <ErrorAlchemyMenu />
           </p>
         )}
         {message.display.activityCount > 0 ? (

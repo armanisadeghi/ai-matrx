@@ -9,6 +9,7 @@ import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import type { UserListWithItems } from "@/features/user-lists/types";
 import { ListDetailClient } from "@/features/user-lists/components/ListDetailClient";
 import { StoreListPage } from "./StoreListPage";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Per-list detail/editor route — the canonical deep link for a picklist
@@ -96,6 +97,7 @@ export default async function ListDetailPage({ params }: PageProps) {
       <div className="p-4 text-sm text-muted-foreground">
         We could not verify who you are on this request, so this picklist is not
         loading. You have not been signed out — reload in a moment.
+        <ErrorAlchemyMenu />
       </div>
     );
   }

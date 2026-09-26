@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 
 import { getServerAuth } from '@/utils/supabase/getServerAuth'
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default async function PrivatePage() {
   const { user, authUnavailable } = await getServerAuth()
@@ -10,7 +11,7 @@ export default async function PrivatePage() {
     // signed-in person to /login over a network blink.
     if (authUnavailable) {
       console.warn('[/private] identity could not be verified — showing the retry notice, not redirecting.')
-      return <p>We could not verify who you are right now. You have not been signed out — reload in a moment.</p>
+      return <p>We could not verify who you are right now. You have not been signed out — reload in a moment. <ErrorAlchemyMenu /></p>
     }
     redirect('/login?redirectTo=%2Fprivate')
   }

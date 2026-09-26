@@ -34,6 +34,7 @@ import {
   type PlanStatus,
 } from "../plan-service";
 import { CAPABILITY_REGISTRY, isCapability } from "../registry";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Bytes get human units; everything else is a plain count. */
 function formatValue(capability: string, value: number): string {
@@ -239,6 +240,7 @@ export function PlanUsagePanel({
       >
         <p className="text-sm text-foreground">
           We couldn&apos;t load your plan just now.
+          <ErrorAlchemyMenu />
         </p>
         <Button
           size="sm"

@@ -114,6 +114,7 @@ export function SetVersionHistoryDialog({
                   <AlertCircle className="h-5 w-5 text-muted-foreground" />
                   <p className="text-sm text-foreground">
                     Couldn&apos;t load version history
+                    <ErrorAlchemyMenu />
                   </p>
                   <p className="max-w-sm text-xs text-muted-foreground">{error} <ErrorAlchemyMenu /></p>
                 </div>

@@ -363,6 +363,7 @@ function SharpOffer({
         {recent === null ? (
           <p className="mt-8 text-[11px] text-muted-foreground">
             Couldn&apos;t check past runs just now.
+            <ErrorAlchemyMenu />
           </p>
         ) : recent && recent.length > 0 ? (
           <section className="mt-8">

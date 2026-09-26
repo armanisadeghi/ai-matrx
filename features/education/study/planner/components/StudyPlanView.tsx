@@ -302,7 +302,7 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
     return (
       <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card px-6 py-14 text-center">
         <AlertCircle className="h-6 w-6 text-muted-foreground" />
-        <p className="text-sm text-foreground">Couldn&apos;t load your plan</p>
+        <p className="text-sm text-foreground">Couldn&apos;t load your plan <ErrorAlchemyMenu /></p>
         <p className="max-w-md text-xs text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
         <Button size="sm" variant="outline" onClick={() => void load()}>
           Try again

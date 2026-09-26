@@ -544,11 +544,11 @@ export function CatalogKindTable({
               {activationPayloadCheck?.status === "invalid" ? (
                 <p className="flex items-start gap-1 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 font-medium text-destructive">
                   <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  Payload fails the {kindLabel(
+                  <span>Payload fails the {kindLabel(
                     pendingToggle.row.kind,
                   )} schema: {activationPayloadCheck.issues.join("; ")} — open
                   the entry and fix it before activating.
-                  <ErrorAlchemyMenu />
+                  <ErrorAlchemyMenu /></span>
                 </p>
               ) : null}
               {pendingToggle.row.artifact_url ? (
@@ -567,17 +567,18 @@ export function CatalogKindTable({
                   ) : null}
                   {probe.status === "fail" ? (
                     <p className="flex items-center gap-1 font-medium text-destructive">
-                      <AlertTriangle className="h-3.5 w-3.5" /> ARTIFACT
+                      <AlertTriangle className="h-3.5 w-3.5" /> <span>ARTIFACT
                       UNREACHABLE — {probe.detail}. Activating anyway ships a
                       broken download to every client. Override only if you know
                       the URL works outside the browser.
-                      <ErrorAlchemyMenu />
+                      <ErrorAlchemyMenu /></span>
                     </p>
                   ) : null}
                   {probe.status === "cors" ? (
                     <p className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                      <ShieldQuestion className="h-3.5 w-3.5" /> Artifact probe
+                      <ShieldQuestion className="h-3.5 w-3.5" /> <span>Artifact probe
                       blocked by CORS — could not verify from the browser.
+                      <ErrorAlchemyMenu /></span>
                     </p>
                   ) : null}
                 </div>

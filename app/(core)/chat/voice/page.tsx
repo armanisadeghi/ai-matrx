@@ -17,6 +17,7 @@ import { AlertTriangle } from "lucide-react";
 import { VoiceAgentSurface } from "@/features/voice-agent/components/VoiceAgentSurface";
 import { resolveMandateSeed } from "@/features/mandates/seed.server";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default async function VoiceIntroPage() {
   // BOUNDED: `resolveMandateSeed` screams, never throws, and gives up at its
@@ -35,6 +36,7 @@ export default async function VoiceIntroPage() {
             <p className="text-sm text-muted-foreground">
               Its mandate could not be resolved, so we did not start a
               session. Please try again shortly.
+              <ErrorAlchemyMenu />
             </p>
             <p className="text-xs text-muted-foreground">{seed.unavailable}</p>
           </div>

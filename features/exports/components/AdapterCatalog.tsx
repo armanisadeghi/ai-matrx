@@ -95,7 +95,7 @@ export function AdapterCatalog({ className }: { className?: string }) {
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
             The list of formats could not be read, so this page cannot say what
-            it accepts right now: {error}. Dropping a file still works — the
+            it accepts right now: {error.replace(/[.!?\s]+$/, "")}. Dropping a file still works — the
             server decides what it is from the bytes.
           </span>
         </p>

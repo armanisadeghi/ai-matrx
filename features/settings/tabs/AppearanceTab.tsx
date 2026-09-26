@@ -48,6 +48,7 @@ function TableDensitySettings() {
         <SettingsCallout tone="error" title="Table density is missing from the register">
           The canonical tables.density.mode setting could not be resolved, so no
           preference control is shown.
+          <ErrorAlchemyMenu />
         </SettingsCallout>
       )}
       {density && (

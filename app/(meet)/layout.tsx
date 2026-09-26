@@ -39,6 +39,7 @@ import { mapUserData } from "@/utils/userDataMapper";
 import { getAdminStatus, type AdminLevel } from "@/utils/supabase/userSessionData";
 import type { BaseReduxState } from "@/types/reduxTypes";
 import { Providers } from "@/app/Providers";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default async function MeetLayout({
   children,
@@ -72,8 +73,9 @@ export default async function MeetLayout({
     return (
       <Providers initialReduxState={{ user: mapUserData(null, undefined, false) }}>
         <div className="flex h-dvh items-center justify-center p-6 text-center text-sm text-muted-foreground">
-          We could not verify who you are on this request, so this meeting is
+          <span>We could not verify who you are on this request, so this meeting is
           not opening yet. You have not been signed out — reload in a moment.
+          <ErrorAlchemyMenu /></span>
         </div>
       </Providers>
     );

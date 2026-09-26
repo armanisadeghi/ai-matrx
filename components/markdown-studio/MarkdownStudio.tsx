@@ -395,22 +395,29 @@ export function MarkdownStudio() {
 
   // Scroll sync between the source editor and preview — block-paired, both directions,
   // behind a per-person on/off setting.
-  const isSyncingRef = useRef(false);
+  // The pane WE just scrolled answers with its own scroll event a frame later;
+  // for a short window that echo is ignored, or the two panes snap each other
+  // back (verifier round 1: a source scroll to 20% snapped back to 224 px).
+  // Only the echo from the pane we moved is ignored — the person's own pane
+  // keeps syncing on every event.
+  const echoRef = useRef<{ from: "text-to-preview" | "preview-to-text"; until: number } | null>(null);
   const syncScroll = (direction: "text-to-preview" | "preview-to-text") => {
-    if (!scrollSync || isSyncingRef.current) return;
+    if (!scrollSync) return;
+    const echo = echoRef.current;
+    if (echo && echo.from === direction && performance.now() < echo.until) return;
     const editor = editorRef.current;
     const el = editor?.scroller?.();
     const pv = previewScrollRef.current;
     if (!editor || !el || !pv || !editor.lineTop) return;
-    isSyncingRef.current = true;
+    echoRef.current = {
+      from: direction === "text-to-preview" ? "preview-to-text" : "text-to-preview",
+      until: performance.now() + 150,
+    };
     syncPaneScroll({
       text: previewContent,
       source: { el, lineTop: editor.lineTop },
       preview: pv,
       direction,
-    });
-    requestAnimationFrame(() => {
-      isSyncingRef.current = false;
     });
   };
 
@@ -778,8 +785,11 @@ export function MarkdownStudio() {
       className={cn(
         "matrx-touch-targets flex h-full w-full flex-col bg-textured",
         // Full screen: the studio takes the whole window under the app
-        // header (which keeps the studio's own actions reachable); Esc exits.
-        fullScreen && "fixed inset-x-0 bottom-0 top-[var(--shell-header-h)] z-30",
+        // header (which keeps the studio's own actions reachable) and beside
+        // the nav rail, whose fixed account block would otherwise sit on top
+        // of the studio's bottom-left corner (the Block Atlas); Esc exits.
+        fullScreen &&
+          "fixed inset-x-0 bottom-0 top-[var(--shell-header-h)] z-30 lg:left-[var(--shell-sidebar-w)]",
       )}
     >
       <PageHeader>

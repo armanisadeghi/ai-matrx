@@ -34,6 +34,7 @@ import {
 } from "../../served-form/useServedRunForm";
 import { listRecentRuns, type RecentRunSummary } from "../../surface/service";
 import type { RunStepPresentation } from "../../components/run/node-presentation";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function IntakePanel({
   definitionId,
@@ -181,6 +182,7 @@ export function IntakePanel({
           {recentFailed ? (
             <p className="text-xs text-muted-foreground">
               Couldn't check earlier runs right now.
+              <ErrorAlchemyMenu />
             </p>
           ) : recent === null ? (
             <p className="text-xs text-muted-foreground">Checking…</p>

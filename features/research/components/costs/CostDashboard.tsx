@@ -473,6 +473,7 @@ export default function CostDashboard() {
         <div>
           <p className="text-xs font-medium text-foreground/70">
             Couldn&apos;t load costs
+            <ErrorAlchemyMenu />
           </p>
           <p className="text-[10px] text-muted-foreground mt-1 max-w-[280px]">
             {error}

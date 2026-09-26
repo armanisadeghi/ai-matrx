@@ -34,6 +34,7 @@ import type {
   DiagramData,
   DiagramNode,
 } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const InteractiveDiagramBlock = dynamic(
   () =>
@@ -184,7 +185,10 @@ export function MindMapView({
     return (
       <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
         <AlertCircle className="h-4 w-4 shrink-0" />
-        This mind map couldn&apos;t be rendered — try regenerating it.
+        <span>
+          This mind map couldn&apos;t be rendered — try regenerating it.
+          <ErrorAlchemyMenu />
+        </span>
       </div>
     );
   }

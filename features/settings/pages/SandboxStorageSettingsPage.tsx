@@ -127,7 +127,7 @@ export default function SandboxStoragePage() {
         <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
           <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
           <div>
-            <div className="font-medium">Couldn&apos;t load every tier</div>
+            <div className="font-medium">Couldn&apos;t load every tier <ErrorAlchemyMenu /></div>
             <div className="text-xs mt-0.5 opacity-80">{persistence.error} <ErrorAlchemyMenu error={persistence.error} /></div>
           </div>
         </div>

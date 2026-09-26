@@ -373,6 +373,7 @@ export function ImpactLegend() {
             <span className="leading-snug">
               The settings check could not run. Never read as clean, and never
               auto-advanced.
+              <ErrorAlchemyMenu />
             </span>
           </li>
         </ul>

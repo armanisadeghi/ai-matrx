@@ -312,6 +312,7 @@ export function AgentComparisonPage({
         <div className="flex-1 flex flex-col items-center justify-center gap-1 px-6 text-center text-sm text-muted-foreground">
           <span className="font-medium text-foreground">
             This comparison could not be opened.
+            <ErrorAlchemyMenu />
           </span>
           {left.loadError && <span>{left.loadError} <ErrorAlchemyMenu error={left.loadError} /></span>}
           {right.loadError && <span>{right.loadError} <ErrorAlchemyMenu error={right.loadError} /></span>}

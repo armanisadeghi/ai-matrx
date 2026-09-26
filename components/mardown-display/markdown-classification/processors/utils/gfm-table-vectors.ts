@@ -7,7 +7,7 @@ import { unescapeCellPipes } from "@/components/markdown-core/syntax/gfm-cell-pi
 import { parseMarkdownTable } from "@/components/mardown-display/blocks/table/parseMarkdownTable";
 import { splitContentIntoBlocksV2 } from "./content-splitter-v2";
 import { findTableEnd, tableStartsAt } from "./gfm-table-lines";
-import { CELL_INPUTS, DOCUMENT_INPUTS, ROW_INPUTS, TABLE_END_INPUTS, TABLE_INPUTS, TABLE_START_INPUTS } from "./gfm-table-vector-inputs";
+import { CELL_INPUTS, DOCUMENT_INPUTS, ROW_INPUTS, TABLE_END_INPUTS, TABLE_INPUTS, TABLE_OPEN_INPUTS, TABLE_START_INPUTS } from "./gfm-table-vector-inputs";
 
 export interface GfmTableVectors {
   rows: Array<{ line: string; cells: string[] }>;
@@ -36,6 +36,9 @@ export function computeGfmTableVectors(): GfmTableVectors {
         .map((block) => [block.type, block.content.trim()] as [string, string]),
     })),
     tableEnds: TABLE_END_INPUTS.map(({ lines, start }) => ({ lines: [...lines], start, end: findTableEnd(lines, start) })),
-    tableStarts: TABLE_START_INPUTS.map((lines) => ({ lines: [...lines], index: lines.length - 3, opens: tableStartsAt(lines, lines.length - 3) })),
+    tableStarts: [
+      ...TABLE_START_INPUTS.map((lines) => ({ lines: [...lines], index: lines.length - 3, opens: tableStartsAt(lines, lines.length - 3) })),
+      ...TABLE_OPEN_INPUTS.map((lines) => ({ lines: [...lines], index: 0, opens: tableStartsAt(lines, 0) })),
+    ],
   };
 }

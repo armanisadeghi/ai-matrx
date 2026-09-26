@@ -75,6 +75,7 @@ import { DeliveredSection } from "./DeliveredSection";
 import { IntakeCard } from "./IntakeCard";
 import { pickFollowTarget, planSummary } from "./plan-model";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Resolution =
   | { phase: "loading" }
@@ -228,6 +229,7 @@ export function RefineRunPage({ id }: { id: string }) {
     <Shell name={resolution.name}>
       {badRunId ? (
         <EdgeCard
+          failed
           title="That run couldn't be opened"
           detail="The run link is broken or points at a run you can't see. You can start a fresh run below."
           action={
@@ -313,15 +315,21 @@ function EdgeCard({
   title,
   detail,
   action,
+  failed,
 }: {
   title: string;
   detail: string;
   action?: React.ReactNode;
+  /** This state is a failure: its title line carries the Alchemy Menu. */
+  failed?: boolean;
 }) {
   return (
     <div className="mx-auto mt-10 flex max-w-md flex-col items-center gap-3 rounded-xl border border-border bg-card p-8 text-center">
       <SearchX className="h-8 w-8 text-muted-foreground" aria-hidden />
-      <h1 className="text-base font-semibold text-foreground">{title}</h1>
+      <h1 className="text-base font-semibold text-foreground">
+        {title}
+        {failed ? <ErrorAlchemyMenu error={`${title}. ${detail}`} /> : null}
+      </h1>
       <p className="text-sm text-muted-foreground">{detail}</p>
       {action}
     </div>

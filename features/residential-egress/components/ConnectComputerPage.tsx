@@ -149,6 +149,7 @@ function Downloads() {
           to offer here yet. Reload the page to try again. If you already have
           the AI Matrx desktop app, you do not need this download at all — turn
           it on there instead, as described below.
+          <ErrorAlchemyMenu />
         </span>
       </div>
     );

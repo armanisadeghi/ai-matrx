@@ -61,7 +61,7 @@ const RED =
 const NOTICE =
   /(?<!(?:hover|focus|focus-visible|focus-within|active|group-hover|peer-hover|disabled|placeholder|visited):)\b(?:text|bg|border)-(?:amber-\d{2,3}|orange-\d{2,3}|warning|yellow-\d{2,3})\b/;
 const FAILURE_WORDS =
-  /something went wrong|\boops\b|(?:page|app|screen) crashed|server refused|did(?:n['’]t| not) work|could(?:n['’]t| not) (?:load|save|read|open|find|update|create|delete|connect|send|start|reach|be (?:loaded|saved|read))|failed to (?:load|save|read|fetch|create|update|delete|send|start|connect|open)|unable to (?:load|save|read|fetch|open|find|create|update|delete|send|start|connect|reach|play|process|generate)|error (?:loading|saving|fetching|reading|creating|updating|deleting|sending|connecting|processing)|\b(?:save|load|upload|download|delete|update|sync|send|fetch|import|export|connection|request|generation) failed\b|\bnot saved\b|unexpected error|an error occurred|failed to compile|\btemplate error\b|permission denied|access denied|\btimed out\b|\bnot authori[sz]ed\b/i;
+  /something went wrong|\boops\b|(?:page|app|screen) crashed|server refused|did(?:n['’]t| not) work|could(?:n['’]t| not) (?:load|save|read|open|find|update|create|delete|connect|send|start|reach|refresh|render|show|generate|fetch|sync|apply|run|import|export|parse|verify|complete|process|play|check|resolve|reach|be (?:loaded|saved|read|refreshed|rendered|opened|found|reached|shown|created|updated|deleted|sent|started|processed|generated|played|fetched|synced|applied|verified|completed|checked|resolved|parsed|imported|exported))|failed to (?:load|save|read|fetch|create|update|delete|send|start|connect|open)|unable to (?:load|save|read|fetch|open|find|create|update|delete|send|start|connect|reach|play|process|generate)|error (?:loading|saving|fetching|reading|creating|updating|deleting|sending|connecting|processing)|\b(?:save|load|upload|download|delete|update|sync|send|fetch|import|export|connection|request|generation) failed\b|\bnot saved\b|unexpected error|an error occurred|failed to compile|\btemplate error\b|permission denied|access denied|\btimed out\b|\bnot authori[sz]ed\b/i;
 /** Words that only mean an error when the text is painted red ("Error: {detail}"). */
 const RED_ONLY_WORDS = /\berror\b\s*:?|\bdenied\b|\binvalid\b/i;
 /** A list whose entries are errors: `brokenReasons`, `issues`, `failures`, `validationErrors`, `problems`. */
@@ -358,7 +358,7 @@ function errorFedByProp(node: JsxLike): boolean {
     if (prop.name.getText() === "title" && titleIsTooltip) continue;
     const init = prop.initializer;
     if (ts.isStringLiteral(init)) {
-      if (FAILURE_WORDS.test(init.text)) return true;
+      if (FAILURE_WORDS.test(decodeJsxEntities(init.text))) return true;
       continue;
     }
     if (!ts.isJsxExpression(init) || !init.expression) continue;
@@ -374,6 +374,23 @@ function errorFedByProp(node: JsxLike): boolean {
   return false;
 }
 
+const NAMED_ENTITIES: Record<string, string> = {
+  apos: "'", quot: '"', amp: "&", lt: "<", gt: ">", nbsp: " ",
+  rsquo: "’", lsquo: "‘", rdquo: "”", ldquo: "“", sbquo: "‚", bdquo: "„",
+  mdash: "—", ndash: "–", hellip: "…", middot: "·", bull: "•", prime: "′",
+};
+
+/** Decode the entities JSX text may be written with (named, decimal, hex). */
+export function decodeJsxEntities(text: string): string {
+  return text.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z]+);/g, (whole, code: string) => {
+    if (code[0] === "#") {
+      const n = code[1] === "x" || code[1] === "X" ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10);
+      return Number.isFinite(n) ? String.fromCodePoint(n) : whole;
+    }
+    return NAMED_ENTITIES[code] ?? whole;
+  });
+}
+
 /** Words and error values that are this element's OWN children (not nested elements'). */
 function ownChildren(node: JsxLike): {
   words: string;
@@ -387,7 +404,9 @@ function ownChildren(node: JsxLike): {
   let renderedAny = false;
   if (!ts.isJsxElement(node)) return { words: "", errorLeaves, messageLeaves, renderedAny };
   for (const child of node.children) {
-    if (ts.isJsxText(child)) texts.push(child.getText());
+    // JSX text is written with entities ("Couldn&apos;t load") — decode it,
+    // or a sentence written that way escapes every phrase rule (RC-B12 round 8).
+    if (ts.isJsxText(child)) texts.push(decodeJsxEntities(child.getText()));
     else if (ts.isJsxExpression(child) && child.expression) {
       const leaves: ts.Expression[] = [];
       renderedLeaves(child.expression, leaves);
@@ -760,7 +779,7 @@ export function findOrphanMenus(source: string, fileName = "file.tsx"): number[]
           return null;
         })();
         const handedError = errorInit !== null && isErrorLeaf(errorInit, ERROR_NAME_NO_E);
-        const inFailureComponent = enclosingComponentName(n) !== null && /Error|Failure|Refus|Unavailable/.test(enclosingComponentName(n)!);
+        const inFailureComponent = enclosingComponentName(n) !== null && /Error|Failure|Refus|Unavailable|NotFound/.test(enclosingComponentName(n)!);
         if (!inDisplay && !inErrorBranch(n) && !handedError && !inFailureComponent) {
           lines.push(sf.getLineAndCharacterOfPosition(n.getStart()).line + 1);
         }

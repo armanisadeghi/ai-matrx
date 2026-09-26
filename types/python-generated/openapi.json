@@ -41489,6 +41489,90 @@
         }
       }
     },
+    "/google-sync/drive/browse": {
+      "post": {
+        "tags": [
+          "Google Sync"
+        ],
+        "summary": "Drive Browse",
+        "description": "Browse or name-search one metadata-only page of the selected Drive account.",
+        "operationId": "drive_browse_google_sync_drive_browse_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveBrowseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DriveBrowsePage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-sync/drive/file": {
+      "post": {
+        "tags": [
+          "Google Sync"
+        ],
+        "summary": "Drive File Metadata",
+        "description": "Check one selected or pasted Drive file's metadata and current access only.",
+        "operationId": "drive_file_metadata_google_sync_drive_file_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriveFileMetadataRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DriveFileMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/google-sync/sheets/import": {
       "post": {
         "tags": [
@@ -93575,6 +93659,48 @@
         }
       }
     },
+    "/admin/checks/accept": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin Checks"
+        ],
+        "summary": "Accept Finding",
+        "operationId": "accept_finding_admin_checks_accept_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptFindingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptFindingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/agent-context/organizations": {
       "get": {
         "tags": [
@@ -97462,6 +97588,82 @@
           "brief"
         ],
         "title": "AcceptBriefResult"
+      },
+      "AcceptFindingRequest": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "title": "Item Id",
+            "description": "ops.check_item id of the finding to mark OK"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason",
+            "description": "Why this finding is fine (kept in the allowlist and the commit)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_id",
+          "reason"
+        ],
+        "title": "AcceptFindingRequest"
+      },
+      "AcceptFindingResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "already_accepted",
+              "already_landed",
+              "already_on_main",
+              "in_flight",
+              "landed"
+            ],
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "commit_sha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commit Sha"
+          },
+          "commit_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commit Url"
+          },
+          "files": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Files"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "message"
+        ],
+        "title": "AcceptFindingResponse"
       },
       "AcceptsInjectedScope": {
         "properties": {
@@ -108576,6 +108778,11 @@
               }
             ],
             "title": "Label"
+          },
+          "signal": {
+            "type": "boolean",
+            "title": "Signal",
+            "default": true
           }
         },
         "additionalProperties": false,
@@ -157932,6 +158139,17 @@
             "title": "Version",
             "default": 1
           },
+          "capture_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capture Version"
+          },
           "is_current": {
             "type": "boolean",
             "title": "Is Current",
@@ -158980,6 +159198,275 @@
         ],
         "title": "DripServiceStatus",
         "description": "Safe aggregate status projection for Drip's fixed status page."
+      },
+      "DriveBrowseFile": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type"
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At"
+          },
+          "web_view_link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Web View Link"
+          },
+          "owners": {
+            "items": {
+              "$ref": "#/components/schemas/DriveFileOwner"
+            },
+            "type": "array",
+            "title": "Owners"
+          },
+          "shared_drive": {
+            "type": "boolean",
+            "title": "Shared Drive"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "mime_type",
+          "modified_at",
+          "web_view_link",
+          "owners",
+          "shared_drive"
+        ],
+        "title": "DriveBrowseFile"
+      },
+      "DriveBrowsePage": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "title": "Connection Id"
+          },
+          "source_account": {
+            "type": "string",
+            "title": "Source Account"
+          },
+          "source_owner_type": {
+            "type": "string",
+            "title": "Source Owner Type"
+          },
+          "source_owner_id": {
+            "type": "string",
+            "title": "Source Owner Id"
+          },
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/DriveBrowseFile"
+            },
+            "type": "array",
+            "title": "Files"
+          },
+          "next_page_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Page Token"
+          },
+          "incomplete_search": {
+            "type": "boolean",
+            "title": "Incomplete Search"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "source_account",
+          "source_owner_type",
+          "source_owner_id",
+          "files",
+          "next_page_token",
+          "incomplete_search"
+        ],
+        "title": "DriveBrowsePage"
+      },
+      "DriveBrowseRequest": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Organization Id",
+            "description": "The organization this Record belongs to. Required: nothing on the server chooses one for you."
+          },
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "search": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Search"
+          },
+          "folder_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Id"
+          },
+          "page_token": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "organization_id",
+          "connection_id"
+        ],
+        "title": "DriveBrowseRequest",
+        "description": "One bounded, metadata-only Drive search or folder browse page."
+      },
+      "DriveFileMetadata": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "title": "Connection Id"
+          },
+          "source_account": {
+            "type": "string",
+            "title": "Source Account"
+          },
+          "source_owner_type": {
+            "type": "string",
+            "title": "Source Owner Type"
+          },
+          "source_owner_id": {
+            "type": "string",
+            "title": "Source Owner Id"
+          },
+          "file": {
+            "$ref": "#/components/schemas/DriveBrowseFile"
+          },
+          "accessible": {
+            "type": "boolean",
+            "title": "Accessible"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "source_account",
+          "source_owner_type",
+          "source_owner_id",
+          "file",
+          "accessible"
+        ],
+        "title": "DriveFileMetadata"
+      },
+      "DriveFileMetadataRequest": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Organization Id",
+            "description": "The organization this Record belongs to. Required: nothing on the server chooses one for you."
+          },
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "file_id": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "File Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "organization_id",
+          "connection_id",
+          "file_id"
+        ],
+        "title": "DriveFileMetadataRequest"
+      },
+      "DriveFileOwner": {
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "display_name",
+          "email"
+        ],
+        "title": "DriveFileOwner"
       },
       "DropboxSelectedFileMetadata": {
         "properties": {
@@ -176566,8 +177053,10 @@
               "analytics",
               "calendar",
               "calendar_shared",
+              "calendar_write",
               "contacts",
               "docs",
+              "drive_browse",
               "drive_files",
               "gmail_modify",
               "gmail_read",
@@ -176852,8 +177341,10 @@
                     "analytics",
                     "calendar",
                     "calendar_shared",
+                    "calendar_write",
                     "contacts",
                     "docs",
+                    "drive_browse",
                     "drive_files",
                     "gmail_modify",
                     "gmail_read",
@@ -176898,8 +177389,10 @@
                 "analytics",
                 "calendar",
                 "calendar_shared",
+                "calendar_write",
                 "contacts",
                 "docs",
+                "drive_browse",
                 "drive_files",
                 "gmail_modify",
                 "gmail_read",
@@ -177214,8 +177707,10 @@
               "analytics",
               "calendar",
               "calendar_shared",
+              "calendar_write",
               "contacts",
               "docs",
+              "drive_browse",
               "drive_files",
               "gmail_modify",
               "gmail_read",
@@ -266737,6 +267232,28 @@
             "title": "Version",
             "default": 1
           },
+          "capture_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capture Version"
+          },
+          "processed_document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed Document Id"
+          },
           "extracted_links": {
             "items": {
               "additionalProperties": true,
@@ -266956,7 +267473,7 @@
               "personal"
             ],
             "title": "Visibility",
-            "default": "personal"
+            "default": "internal"
           },
           "organization_id": {
             "type": "string",
@@ -274732,6 +275249,17 @@
             "type": "integer",
             "title": "Version",
             "default": 1
+          },
+          "capture_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capture Version"
           },
           "iteration_mode": {
             "type": "string",

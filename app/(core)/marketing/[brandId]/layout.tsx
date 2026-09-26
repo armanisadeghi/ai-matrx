@@ -20,6 +20,7 @@ import { MarketingBrandCrumb } from "@/features/marketing/components/brand/Marke
 import { MarketingBrandProvider } from "@/features/marketing/lib/brand-context";
 import { marketingSeg } from "@/features/marketing/lib/keys";
 import { resolveBrandParam } from "@/features/marketing/lib/keys-server";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default async function MarketingBrandLayout({
   children,
@@ -42,6 +43,7 @@ export default async function MarketingBrandLayout({
       <div className="p-4 text-sm text-muted-foreground">
         We could not verify who you are on this request, so this page is not
         loading. You have not been signed out — reload in a moment.
+        <ErrorAlchemyMenu />
       </div>
     );
   }

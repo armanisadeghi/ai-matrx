@@ -13,6 +13,7 @@ import {
   type RulebookListRow,
 } from "../types";
 import { formatSourceSummary } from "./sourceSummary";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 void SEVERITY_LABELS;
 
@@ -61,6 +62,7 @@ function SourceCell({ row }: { row: RulebookListRow }) {
         title="We couldn't read what this Rulebook was built from. The Rulebook itself is fine — reload the list to ask again."
       >
         Couldn&apos;t read this
+        <ErrorAlchemyMenu />
       </span>
     );
   }

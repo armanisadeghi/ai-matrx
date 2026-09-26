@@ -190,7 +190,7 @@ export function EduNotesHome() {
           ) : error ? (
             <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card px-6 py-14 text-center">
               <AlertCircle className="h-6 w-6 text-muted-foreground" />
-              <p className="text-sm font-medium text-foreground">Couldn&apos;t load your notes</p>
+              <p className="text-sm font-medium text-foreground">Couldn&apos;t load your notes <ErrorAlchemyMenu /></p>
               <p className="max-w-md text-xs text-muted-foreground">{error} <ErrorAlchemyMenu /></p>
             </div>
           ) : rows.length === 0 ? (

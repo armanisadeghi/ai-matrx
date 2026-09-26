@@ -24,6 +24,7 @@ import { formatCompactDate } from "@/features/marketing/components/shared/Market
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const EVENT_COPY: Record<string, string> = {
   loop_started: "Loop started",
@@ -208,6 +209,7 @@ function TerminalMeasurementCard({
             <p className="text-xs font-medium text-destructive">
               The health ledger could not be updated; this recovery may need an
               operator.
+              <ErrorAlchemyMenu />
             </p>
           ) : null}
         </div>

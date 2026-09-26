@@ -26,6 +26,7 @@ import { readSidebarExpandedCookie } from "@/features/shell/utils/server-cookies
 import DeferredIslands from "@/features/shell/islands/DeferredIslands";
 import type { UserData } from "@/utils/userDataMapper";
 import type { Metadata } from "next";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const metadata: Metadata = {
   title: {
@@ -73,6 +74,7 @@ export default async function AppLayout({
         <div className="p-4 text-sm text-muted-foreground">
           We could not verify who you are on this request, so this page is not
           loading its data. You have not been signed out — reload in a moment.
+          <ErrorAlchemyMenu />
         </div>
       </Providers>
     );

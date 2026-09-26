@@ -192,6 +192,7 @@ import { BuildInFlightNotice } from "../../build/BuildInFlightNotice";
 import { useOpenMasterworkYourWordsWindow } from "@/features/overlays/openers/masterworkYourWordsWindow";
 import { RulePassageLink } from "../../kept-sources/RulePassageLink";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The Expert surface: read your Rulebook, correct it, grow it. Rules are
@@ -2533,6 +2534,7 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                     <span>
                       Couldn&apos;t read the signatures on this Rulebook&apos;s
                       results just now — reload to try again.
+                      <ErrorAlchemyMenu />
                     </span>
                   ) : (
                     <>

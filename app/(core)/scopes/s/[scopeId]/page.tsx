@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { contextDb } from "@/utils/supabase/contextDb";
 import { scopeHref, scopeSeg } from "@/features/scopes/lib/scopeRoutes";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Short-link resolver for a scope: /scopes/s/[scopeId] → the canonical
@@ -43,6 +44,7 @@ export default async function ScopeShortLink({
       <div className="p-4 text-sm text-muted-foreground">
         We could not verify who you are on this request, so this page is not
         loading. You have not been signed out — reload in a moment.
+        <ErrorAlchemyMenu />
       </div>
     );
   }

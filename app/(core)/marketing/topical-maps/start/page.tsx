@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 
 import { TopicalMapStartDoor } from "@/features/marketing/seo/topical-map/door/TopicalMapStartDoor";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default async function TopicalMapStartPage({
   searchParams,
@@ -26,6 +27,7 @@ export default async function TopicalMapStartPage({
       <div className="p-4 text-sm text-muted-foreground">
         We could not verify who you are on this request, so this page is not
         loading. You have not been signed out — reload in a moment.
+        <ErrorAlchemyMenu />
       </div>
     );
   }

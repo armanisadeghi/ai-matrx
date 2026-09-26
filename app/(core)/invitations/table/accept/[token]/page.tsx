@@ -204,6 +204,7 @@ export default function AcceptTableSharePage() {
         </div>
         <h2 className="mb-2 text-xl font-semibold">
           We could not check this invitation
+          <ErrorAlchemyMenu />
         </h2>
         <p className="mb-2 text-sm text-muted-foreground">
           This does not mean the link is dead — we simply could not look. Try

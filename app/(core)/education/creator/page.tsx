@@ -7,6 +7,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { CreatorDashboard } from "@/features/education/creators/components/CreatorDashboard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const metadata: Metadata = {
   title: "Creator page · AI Matrx Education",
@@ -26,6 +27,7 @@ export default async function CreatorManagePage() {
         <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 py-8 text-sm text-muted-foreground">
           We could not verify who you are on this request, so your creator page
           is not loading. You have not been signed out — reload in a moment.
+          <ErrorAlchemyMenu />
         </div>
       );
     }

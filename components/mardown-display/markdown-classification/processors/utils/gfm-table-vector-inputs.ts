@@ -145,3 +145,15 @@ export const TABLE_START_INPUTS: ReadonlyArray<string[]> = [
   under("- Dock B", "", "  closed until six"),
   under("-"),
 ];
+
+/** Where a table can open at the FIRST line (header + delimiter as GFM pairs them). */
+export const TABLE_OPEN_INPUTS: ReadonlyArray<string[]> = [
+  ["Notes", "|---|", "Dock B closed"], // no pipe in the header: a one-column table
+  ["| Notes", "| -", "| Dock B closed"], // one pipe
+  ["| Bay | Status |", "|---|", "| B3 | re-scan |"], // header wider than its delimiter
+  ["| Bay |", "|---|---|", "| B3 |"], // header narrower than its delimiter
+  ["| Bay | Status |", "- | -", "| B3 | re-scan |"], // a list item is no delimiter
+  ["Bay | Status", "- | -", "B3 | re-scan"],
+  ["Bay | Status", "-|-", "B3 | re-scan"], // no space after the dash: a delimiter
+  ["    | Bay | Status |", "    |---|---|", "    | B3 | re-scan |"], // indented code
+];

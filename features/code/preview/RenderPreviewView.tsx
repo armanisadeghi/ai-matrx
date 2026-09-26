@@ -11,6 +11,7 @@ import {
   getRenderPreviewerForTabId,
   type RenderPreviewer,
 } from "./renderPreviewRegistry";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface RenderPreviewViewProps {
   tab: EditorFile;
@@ -74,6 +75,7 @@ export const RenderPreviewView: React.FC<RenderPreviewViewProps> = ({
     return (
       <PreviewEmpty
         icon={<AlertTriangle size={36} strokeWidth={1.2} />}
+        failed
         title="Could not resolve source row"
         body={`The library adapter could not parse "${sourceTab.id}".`}
       />
@@ -159,14 +161,17 @@ interface PreviewEmptyProps {
   icon: React.ReactNode;
   title: string;
   body: string;
+  /** This state is a failure: its title line carries the Alchemy Menu. */
+  failed?: boolean;
 }
 
-const PreviewEmpty: React.FC<PreviewEmptyProps> = ({ icon, title, body }) => (
+const PreviewEmpty: React.FC<PreviewEmptyProps> = ({ icon, title, body, failed }) => (
   <div className="flex h-full w-full items-center justify-center p-6">
     <div className="flex max-w-sm flex-col items-center gap-3 text-center text-neutral-500 dark:text-neutral-400">
       {icon}
       <div className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
         {title}
+        {failed ? <ErrorAlchemyMenu error={`${title}. ${body}`} /> : null}
       </div>
       <p className="text-xs leading-relaxed">{body}</p>
     </div>

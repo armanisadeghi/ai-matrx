@@ -50,6 +50,7 @@ import { StartHereBlock } from "./blocks/StartHereBlock";
 import { StudyTodayBlock } from "./blocks/StudyTodayBlock";
 import { loadEducationSnapshot } from "./snapshot";
 import type { EducationSnapshot, HomeBlock } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The blocks, with the signal that earns each one its place.
@@ -249,6 +250,7 @@ function AvailabilityNotice({
       <p className="text-muted-foreground">
         {unavailable.join(", ")} data couldn&apos;t load. Counts and empty
         states are hidden until it is available.
+        <ErrorAlchemyMenu />
       </p>
       <Button type="button" size="sm" variant="outline" onClick={onRetry}>
         <RefreshCw className="h-3.5 w-3.5" />

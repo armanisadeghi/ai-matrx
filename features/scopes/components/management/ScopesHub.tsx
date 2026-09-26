@@ -161,7 +161,7 @@ export function ScopesHub() {
       <Card className="p-6 flex items-start gap-3">
         <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
         <div className="space-y-2">
-          <div className="font-medium">Couldn&apos;t load your scopes</div>
+          <div className="font-medium">Couldn&apos;t load your scopes <ErrorAlchemyMenu /></div>
           <div className="text-sm text-muted-foreground">
             {error ?? "Unknown error"}
             <ErrorAlchemyMenu />

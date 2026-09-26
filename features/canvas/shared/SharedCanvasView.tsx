@@ -31,6 +31,7 @@ import { PublicCanvasRenderer } from "./PublicCanvasRenderer";
 // second and printed "AM"; a whitespace-only name now also reads "?"
 // (this copy previously rendered a blank fallback for that case).
 import { getInitials } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SharedCanvasViewProps {
   shareToken: string;
@@ -68,6 +69,7 @@ export function SharedCanvasView({
           </div>
           <h1 className="mb-2 text-2xl font-semibold text-foreground">
             We couldn&apos;t open this canvas
+            <ErrorAlchemyMenu />
           </h1>
           <p className="mb-6 text-sm text-muted-foreground">
             This link may be incorrect, expired, or no longer shared.

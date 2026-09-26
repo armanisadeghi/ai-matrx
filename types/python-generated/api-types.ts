@@ -21049,6 +21049,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/google-sync/drive/browse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Drive Browse
+         * @description Browse or name-search one metadata-only page of the selected Drive account.
+         */
+        post: operations["drive_browse_google_sync_drive_browse_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-sync/drive/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Drive File Metadata
+         * @description Check one selected or pasted Drive file's metadata and current access only.
+         */
+        post: operations["drive_file_metadata_google_sync_drive_file_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/google-sync/sheets/import": {
         parameters: {
             query?: never;
@@ -41200,6 +41240,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/checks/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept Finding */
+        post: operations["accept_finding_admin_checks_accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/agent-context/organizations": {
         parameters: {
             query?: never;
@@ -42712,6 +42769,35 @@ export interface components {
             node_id: string;
             /** Brief */
             brief: string[];
+        };
+        /** AcceptFindingRequest */
+        AcceptFindingRequest: {
+            /**
+             * Item Id
+             * @description ops.check_item id of the finding to mark OK
+             */
+            item_id: string;
+            /**
+             * Reason
+             * @description Why this finding is fine (kept in the allowlist and the commit)
+             */
+            reason: string;
+        };
+        /** AcceptFindingResponse */
+        AcceptFindingResponse: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "already_accepted" | "already_landed" | "already_on_main" | "in_flight" | "landed";
+            /** Message */
+            message: string;
+            /** Commit Sha */
+            commit_sha?: string | null;
+            /** Commit Url */
+            commit_url?: string | null;
+            /** Files */
+            files?: string[];
         };
         /**
          * AcceptsInjectedScope
@@ -47632,6 +47718,11 @@ export interface components {
             entity_id: string;
             /** Label */
             label?: string | null;
+            /**
+             * Signal
+             * @default true
+             */
+            signal?: boolean;
         };
         /**
          * AttachableKindInfo
@@ -68473,6 +68564,8 @@ export interface components {
              * @default 1
              */
             version?: number;
+            /** Capture Version */
+            capture_version?: number | null;
             /**
              * Is Current
              * @default true
@@ -68965,6 +69058,92 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.drip.com";
+        };
+        /** DriveBrowseFile */
+        DriveBrowseFile: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Mime Type */
+            mime_type: string;
+            /** Modified At */
+            modified_at: string | null;
+            /** Web View Link */
+            web_view_link: string | null;
+            /** Owners */
+            owners: components["schemas"]["DriveFileOwner"][];
+            /** Shared Drive */
+            shared_drive: boolean;
+        };
+        /** DriveBrowsePage */
+        DriveBrowsePage: {
+            /** Connection Id */
+            connection_id: string;
+            /** Source Account */
+            source_account: string;
+            /** Source Owner Type */
+            source_owner_type: string;
+            /** Source Owner Id */
+            source_owner_id: string;
+            /** Files */
+            files: components["schemas"]["DriveBrowseFile"][];
+            /** Next Page Token */
+            next_page_token: string | null;
+            /** Incomplete Search */
+            incomplete_search: boolean;
+        };
+        /**
+         * DriveBrowseRequest
+         * @description One bounded, metadata-only Drive search or folder browse page.
+         */
+        DriveBrowseRequest: {
+            /**
+             * Organization Id
+             * @description The organization this Record belongs to. Required: nothing on the server chooses one for you.
+             */
+            organization_id: string;
+            /** Connection Id */
+            connection_id: string;
+            /** Search */
+            search?: string | null;
+            /** Folder Id */
+            folder_id?: string | null;
+            /** Page Token */
+            page_token?: string | null;
+        };
+        /** DriveFileMetadata */
+        DriveFileMetadata: {
+            /** Connection Id */
+            connection_id: string;
+            /** Source Account */
+            source_account: string;
+            /** Source Owner Type */
+            source_owner_type: string;
+            /** Source Owner Id */
+            source_owner_id: string;
+            file: components["schemas"]["DriveBrowseFile"];
+            /** Accessible */
+            accessible: boolean;
+        };
+        /** DriveFileMetadataRequest */
+        DriveFileMetadataRequest: {
+            /**
+             * Organization Id
+             * @description The organization this Record belongs to. Required: nothing on the server chooses one for you.
+             */
+            organization_id: string;
+            /** Connection Id */
+            connection_id: string;
+            /** File Id */
+            file_id: string;
+        };
+        /** DriveFileOwner */
+        DriveFileOwner: {
+            /** Display Name */
+            display_name: string | null;
+            /** Email */
+            email: string | null;
         };
         /**
          * DropboxSelectedFileMetadata
@@ -76793,7 +76972,7 @@ export interface components {
              * Key
              * @enum {string}
              */
-            key: "analytics" | "calendar" | "calendar_shared" | "contacts" | "docs" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
+            key: "analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
             /** Title */
             title: string;
             /** User Outcome */
@@ -76887,14 +77066,14 @@ export interface components {
             /** Capability Key */
             capability_key?: ("calendar" | "contacts" | "tag_manager" | "tasks" | "youtube_analytics") | null;
             /** Capability Keys */
-            capability_keys?: ("analytics" | "calendar" | "calendar_shared" | "contacts" | "docs" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[] | null;
+            capability_keys?: ("analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[] | null;
         };
         /** GoogleExchangeResponse */
         GoogleExchangeResponse: {
             /** Connection Id */
             connection_id: string;
             /** Connected Capability Keys */
-            connected_capability_keys?: ("analytics" | "calendar" | "calendar_shared" | "contacts" | "docs" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[];
+            connected_capability_keys?: ("analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[];
             /** Refused Capability Keys */
             refused_capability_keys?: components["schemas"]["GoogleProductRefusal"][];
         };
@@ -76981,7 +77160,7 @@ export interface components {
              * Key
              * @enum {string}
              */
-            key: "analytics" | "calendar" | "calendar_shared" | "contacts" | "docs" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
+            key: "analytics" | "calendar" | "calendar_shared" | "calendar_write" | "contacts" | "docs" | "drive_browse" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
             /** Error */
             error: string;
             /** Message */
@@ -117321,6 +117500,10 @@ export interface components {
              * @default 1
              */
             version?: number;
+            /** Capture Version */
+            capture_version?: number | null;
+            /** Processed Document Id */
+            processed_document_id?: string | null;
             /** Extracted Links */
             extracted_links?: {
                 [key: string]: unknown;
@@ -117390,7 +117573,7 @@ export interface components {
             keep?: boolean;
             /**
              * Visibility
-             * @default personal
+             * @default internal
              * @enum {string}
              */
             visibility?: "internal" | "personal";
@@ -121126,6 +121309,8 @@ export interface components {
              * @default 1
              */
             version?: number;
+            /** Capture Version */
+            capture_version?: number | null;
             /**
              * Iteration Mode
              * @enum {string}
@@ -168055,6 +168240,72 @@ export interface operations {
             };
         };
     };
+    drive_browse_google_sync_drive_browse_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DriveBrowseRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriveBrowsePage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    drive_file_metadata_google_sync_drive_file_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DriveFileMetadataRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriveFileMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     sheets_import_google_sync_sheets_import_post: {
         parameters: {
             query?: never;
@@ -201503,6 +201754,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["YieldCheckOut"];
+                };
+            };
+        };
+    };
+    accept_finding_admin_checks_accept_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptFindingRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptFindingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

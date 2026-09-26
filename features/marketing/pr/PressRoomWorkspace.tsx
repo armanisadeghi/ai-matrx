@@ -720,6 +720,7 @@ export default function PressRoomWorkspace({
                     ? ` (${analysis.result.bundle_stats.pages_failed} could not be fetched)`
                     : ""}
                   .
+                  <ErrorAlchemyMenu />
                 </span>
                 {analysis.result.kept > 0 ? (
                   <span className="mt-1 block text-[11px]">

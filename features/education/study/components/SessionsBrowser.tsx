@@ -213,6 +213,7 @@ export function SessionsBrowser({
             <AlertCircle className="h-6 w-6 text-muted-foreground" />
             <p className="text-sm text-foreground">
               Couldn&apos;t load sessions
+              <ErrorAlchemyMenu />
             </p>
             <p className="max-w-md text-xs text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
           </div>

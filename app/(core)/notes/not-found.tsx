@@ -1,5 +1,6 @@
 import { FileQuestion } from "lucide-react";
 import Link from "next/link";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function NotesV2NotFound() {
   return (
@@ -8,6 +9,7 @@ export default function NotesV2NotFound() {
         <FileQuestion className="h-12 w-12 mx-auto mb-4 text-muted-foreground/40" />
         <h2 className="text-lg font-semibold text-foreground mb-2">
           We couldn&apos;t find this page
+          <ErrorAlchemyMenu />
         </h2>
         <p className="text-sm text-muted-foreground mb-4">
           The link may be wrong, or point somewhere that has moved.

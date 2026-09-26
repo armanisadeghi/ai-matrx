@@ -465,6 +465,7 @@ function ItemDetailWindowInner({
                   <AlertCircle className="h-6 w-6 text-amber-500" />
                   <p className="text-sm text-muted-foreground">
                     {`This ${config.label.toLowerCase()} couldn't be found — it may have been moved, deleted, or isn't shared with you.`}
+                    <ErrorAlchemyMenu />
                   </p>
                 </div>
               )}

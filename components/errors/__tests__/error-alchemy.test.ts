@@ -263,3 +263,18 @@ describe("a box's declared call is always retained (RC-B12 round 3)", () => {
     expect(data.recent_unmatched_errors.length).toBeLessThanOrEqual(5);
   });
 });
+
+describe("sentences joined into the copy never double a full stop (RC-B12 round 8)", () => {
+  it("'{error}. Dropping…' where the error already ends in a period copies one period", () => {
+    const payload = buildErrorAlchemyPayload(
+      { message: "The list of formats could not be read: Network failed, try again.. Dropping a file still works.", title: "Formats unavailable.", source: "alert" },
+      surface,
+    );
+    const text = JSON.stringify(payload);
+    expect(text).not.toMatch(/again\.\./);
+    expect(text).toContain("try again. Dropping");
+    expect(buildErrorHumanText({ title: "Could not save.", message: "The server said no.. Try later...", source: "alert" })).toBe(
+      "Could not save. The server said no. Try later...",
+    );
+  });
+});

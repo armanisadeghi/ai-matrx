@@ -91,6 +91,7 @@ export function InterviewStartScreen({
         <p className="text-foreground">
           We can&apos;t start an interview yet, because we couldn&apos;t read your
           interview settings — so we don&apos;t know which interviewer you asked for.
+          <ErrorAlchemyMenu />
         </p>
         <p className="text-xs text-muted-foreground">{failure.reason} <ErrorAlchemyMenu error={failure.reason} /></p>
         <Button size="sm" variant="outline" onClick={failure.retry}>

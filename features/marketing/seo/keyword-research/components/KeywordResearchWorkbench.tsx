@@ -1075,6 +1075,7 @@ export default function KeywordResearchWorkbench() {
               >
                 Try again
               </button>
+              <ErrorAlchemyMenu />
             </span>
           ) : null}
           {isSuperAdmin ? (

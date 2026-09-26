@@ -492,6 +492,7 @@ export default function RefineContextLabPage() {
             <div className="min-w-0 flex-1">
               <div className="text-sm font-medium">
                 Couldn&apos;t load your scope tree
+                <ErrorAlchemyMenu />
               </div>
               <div className="truncate text-xs text-muted-foreground">
                 {data.treeError ?? "Unknown error"}
@@ -514,9 +515,9 @@ export default function RefineContextLabPage() {
               <Card className="flex items-center gap-3 border-warning/50 p-3">
                 <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
                 <span className="min-w-0 flex-1 text-xs text-muted-foreground">
-                  Projects and tasks failed to load — scope selection still
+                  <span>Projects and tasks failed to load — scope selection still
                   works; the bottom sections are empty until retry succeeds.
-                  <ErrorAlchemyMenu />
+                  <ErrorAlchemyMenu /></span>
                 </span>
                 <Button size="sm" variant="outline" onClick={data.retryEngagement}>
                   Retry

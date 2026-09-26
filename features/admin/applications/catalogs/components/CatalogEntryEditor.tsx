@@ -943,18 +943,19 @@ export function CatalogEntryEditor({
                   ) : null}
                   {artifactProbe.status === "fail" ? (
                     <p className="flex items-center gap-1 font-medium text-destructive">
-                      <AlertTriangle className="h-3.5 w-3.5" /> ARTIFACT
+                      <AlertTriangle className="h-3.5 w-3.5" /> <span>ARTIFACT
                       UNREACHABLE — {artifactProbe.detail}. Activating anyway
                       ships a broken download to every client. Override only if
                       you know the URL works outside the browser.
-                      <ErrorAlchemyMenu />
+                      <ErrorAlchemyMenu /></span>
                     </p>
                   ) : null}
                   {artifactProbe.status === "cors" ? (
                     <p className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                      <ShieldQuestion className="h-3.5 w-3.5" /> Artifact probe
+                      <ShieldQuestion className="h-3.5 w-3.5" /> <span>Artifact probe
                       blocked by CORS — could not verify from the browser.
                       Verify reachability another way before relying on it.
+                      <ErrorAlchemyMenu /></span>
                     </p>
                   ) : null}
                 </div>

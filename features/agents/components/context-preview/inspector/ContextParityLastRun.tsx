@@ -117,6 +117,7 @@ export function ContextParityLine({ state }: { state: State }) {
         {last.complete
           ? `Last parity: ${formatWhen(last.ran_at)}, ${last.defects} defect${last.defects === 1 ? "" : "s"}`
           : `Last parity: ${formatWhen(last.ran_at)}: did not finish (${last.refused} part${last.refused === 1 ? "" : "s"} could not run)`}
+        <ErrorAlchemyMenu />
       </span>
       <span className="text-muted-foreground">
         (seat {last.seat_defects ?? "—"}, raw copy {last.raw_defects ?? "—"} · {last.organizations} organizations,{" "}

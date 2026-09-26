@@ -35,7 +35,7 @@ import {
   DirectiveContainerTracker,
 } from "@/components/markdown-core/directive-container";
 import { TITLED_IMAGE_LINE } from "@/components/markdown-core/image-figure";
-import { continuesTable, isGfmDelimiterRow, opensTable, tableContainerIndent } from "./gfm-table-lines";
+import { continuesTable, isGfmDelimiterRow, opensTable, tableContainerIndent, tableStartsAt } from "./gfm-table-lines";
 import type {
   TypedRenderBlock,
   ServerOnlyBlockType,
@@ -1493,8 +1493,11 @@ function extractTable(startIndex: number, lines: string[]): ExtractionResult {
     i++;
   }
 
-  // Validate table structure (must have header + separator)
-  if (tableLines.length < 2 || !isTableSeparator(tableLines[1])) {
+  // THE rule decides (gfm-table-lines tableStartsAt: a same-width delimiter that is
+  // no list item, a header that is no indented code); only a delimiter row still
+  // arriving as the last line is taken on trust.
+  const stillArriving = startIndex + 2 >= lines.length && tableLines.length >= 2 && isTableSeparator(tableLines[1]);
+  if (tableLines.length < 2 || !(tableStartsAt(lines, startIndex) || stillArriving)) {
     return {
       content: "",
       nextIndex: startIndex + 1,

@@ -12,7 +12,10 @@
  * "Mark OK": every item the store can hold today has a REPO HOME — `proof_check` refuses a
  * static check without a `repo` (constraint `proof_check_static_identity`), and items only
  * exist for static checks. So an accept is always a commit to that check's own allowlist
- * (plan C1), and the control shows the exact one-line command with the reason filled in.
+ * (plan C1). The dialog's button asks the server (aidream POST /admin/checks/accept) to make
+ * that commit on main with the CLI's own adapter; the item then reads "Marked OK — landing"
+ * (`metadata.pending_accept`) until the next ingested run marks it accepted. The one-line
+ * command stays as the secondary path.
  * `ops.check_item_db_accept` (the database accept for an item with no repo home) is
  * server-only and has no reachable item; this page offers no control for it (FEATURE.md).
  */
@@ -76,7 +79,9 @@ import {
   isCheckRepo,
   isReservedKey,
   isStateFilter,
+  pendingAcceptView,
   summarizeChecks,
+  type PendingAcceptView,
   type CheckRepo,
   type CheckSummaryRow,
   type StateFilter,
@@ -87,6 +92,7 @@ import {
   type CheckFindingsSource,
   type CheckItem,
 } from "./service";
+import { markFindingOk } from "./acceptApi";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** What the server page knows about matrx-frontend's accept adapters (scripts/findings/registry.mjs). */
@@ -274,7 +280,11 @@ function ConsoleBody({ frontendAccept, source = liveCheckFindingsSource, banner 
           item={accepting}
           row={accepting ? rows.find((r) => r.check.id === accepting.check_id) ?? null : null}
           frontendAccept={frontendAccept}
+          latestRunStartedAt={
+            accepting ? (rows.find((r) => r.check.id === accepting.check_id)?.run?.started_at ?? null) : null
+          }
           onClose={() => setAccepting(null)}
+          onAccepted={() => setReloadKey((k) => k + 1)}
         />
       </div>
     </SurfaceRuntimeProvider>
@@ -606,9 +616,12 @@ function CheckDetail({
       filter: "select",
       width: 100,
       cell: (item) => (
-        <Badge variant="outline" className="text-[11px]">
-          {item.state.replace("_", " ")}
-        </Badge>
+        <div className="flex flex-col items-start gap-0.5">
+          <Badge variant="outline" className="text-[11px]">
+            {item.state.replace("_", " ")}
+          </Badge>
+          <PendingAcceptBadge view={pendingAcceptView(item.state, item.pending_accept, run?.started_at ?? null, now)} />
+        </div>
       ),
     },
     {
@@ -921,6 +934,11 @@ function CheckDetail({
                   <span className="px-2 text-[11px] text-muted-foreground" title="A record about the check itself — fix the check; it closes on the next whole run.">
                     fix the check
                   </span>
+                ) : acceptable &&
+                  ["landing", "committing"].includes(
+                    pendingAcceptView(item.state, item.pending_accept, run?.started_at ?? null, now).kind,
+                  ) ? (
+                  <span className="px-2 text-[11px] text-muted-foreground">Marked OK — landing</span>
                 ) : acceptable ? (
                   <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={() => onAccept(item)}>
                     <CheckCircle2 className="h-3.5 w-3.5" />
@@ -964,25 +982,76 @@ function unitLabel(unitKey: string): string {
 
 // ── Mark OK ───────────────────────────────────────────────────────────────────────────────────
 
+/** The one honest line for an item carrying a Mark OK marker (model.ts pendingAcceptView). */
+function PendingAcceptBadge({ view }: { view: PendingAcceptView }) {
+  switch (view.kind) {
+    case "none":
+      return null;
+    case "committing":
+      return <span className="text-[10px] text-muted-foreground">Marking OK…</span>;
+    case "landing":
+      return (
+        <span className="text-[10px] text-success" title={view.pending.reason ?? undefined}>
+          Marked OK — landing
+          {view.pending.commitUrl ? (
+            <>
+              {" · "}
+              <a href={view.pending.commitUrl} target="_blank" rel="noreferrer" className="underline">
+                {view.pending.commitSha?.slice(0, 7) ?? "commit"}
+              </a>
+            </>
+          ) : null}
+        </span>
+      );
+    case "still_reported":
+      return (
+        <span className="text-[10px] text-destructive" title="A run that started after the accept landed still reports this finding.">
+          Accept landed, still reported
+        </span>
+      );
+    case "failed":
+      return (
+        <span className="text-[10px] text-destructive" title={view.pending.error ?? undefined}>
+          Mark OK failed
+        </span>
+      );
+    case "interrupted":
+      return <span className="text-[10px] text-warning">Mark OK interrupted — try again</span>;
+  }
+}
+
+type AcceptResult =
+  | { kind: "idle" }
+  | { kind: "working" }
+  | { kind: "error"; title: string; message: string; remedy: string | null };
+
 function AcceptDialog({
   item,
   row,
   frontendAccept,
+  latestRunStartedAt,
   onClose,
+  onAccepted,
 }: {
   item: CheckItem | null;
   row: CheckSummaryRow | null;
   frontendAccept: Record<string, FrontendAcceptInfo>;
+  latestRunStartedAt: string | null;
   onClose: () => void;
+  onAccepted: () => void;
 }) {
   const isMobile = useIsMobile();
+  const now = useNow();
   const [reason, setReason] = useState("");
+  const [result, setResult] = useState<AcceptResult>({ kind: "idle" });
+  const [showCommand, setShowCommand] = useState(false);
   const open = item != null;
   const repo: CheckRepo | null = row && isCheckRepo(row.check.repo) ? row.check.repo : null;
   const checkId = row?.check.stable_id ?? null;
   const fe = repo === "matrx-frontend" && checkId ? frontendAccept[checkId] : undefined;
   const noAdapter = fe != null && fe.files == null;
   const command = item && repo && checkId ? acceptCommand(repo, checkId, item.item_key, reason) : null;
+  const pending = item ? pendingAcceptView(item.state, item.pending_accept, latestRunStartedAt, now || Date.now()) : null;
 
   const title = noAdapter ? "This check has no accept command" : "Mark this finding OK";
   const subtitle = noAdapter
@@ -991,7 +1060,28 @@ function AcceptDialog({
 
   const close = () => {
     setReason("");
+    setResult({ kind: "idle" });
+    setShowCommand(false);
     onClose();
+  };
+
+  const markOk = async () => {
+    if (!item || !reason.trim()) return;
+    setResult({ kind: "working" });
+    const outcome = await markFindingOk(item.id, reason.trim());
+    if (outcome.ok) {
+      toast.success(outcome.message || "Marked OK");
+      onAccepted();
+      close();
+      return;
+    }
+    const titleFor = {
+      refused: "Not marked OK — nothing was written",
+      failed: "Mark OK failed — nothing reached main",
+      unreachable: "Could not reach the server",
+    } as const;
+    setResult({ kind: "error", title: titleFor[outcome.kind], message: outcome.message, remedy: outcome.remedy });
+    toast.error(titleFor[outcome.kind]);
   };
 
   const body = (
@@ -1000,6 +1090,22 @@ function AcceptDialog({
         <div className="rounded-md border border-border bg-muted/40 p-2">
           <div className="font-medium">{item.title ?? item.item_key}</div>
           <div className="font-mono text-[11px] text-muted-foreground">{item.item_key}</div>
+        </div>
+      ) : null}
+      {pending?.kind === "failed" ? (
+        <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2">
+          <p className="font-medium text-destructive">The last Mark OK for this finding failed.</p>
+          <p className="break-words text-muted-foreground">{pending.pending.error}</p>
+          {pending.pending.remedy ? <p className="text-muted-foreground">{pending.pending.remedy}</p> : null}
+        </div>
+      ) : null}
+      {pending?.kind === "still_reported" ? (
+        <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2">
+          <p className="font-medium text-destructive">The accept landed, but the check still reports this finding.</p>
+          <p className="text-muted-foreground">
+            A run that started after the commit ({pending.pending.commitSha?.slice(0, 7)}) still lists it, so the allowlist
+            entry did not cover it. Run the command below in a checkout — it re-runs the check and says why.
+          </p>
         </div>
       ) : null}
       {!repo || !checkId ? (
@@ -1025,39 +1131,50 @@ function AcceptDialog({
               placeholder="e.g. intentional: the admin page reads every row by design"
               onChange={(event) => setReason(event.target.value)}
             />
-            {reason.trim() ? null : (
-              <span className="block text-muted-foreground">
-                The command appears ready to copy once the reason is written — the reason is stored in the allowlist entry.
-              </span>
-            )}
           </label>
-          <div className="space-y-1">
-            <span className="font-medium">Run this in {repo}:</span>
-            <pre className="whitespace-pre-wrap break-all rounded-md border border-border bg-muted/40 p-2 font-mono text-[11px]">
-              {command}
-            </pre>
-          </div>
           <p className="text-muted-foreground">
-            Why a command and not a button: this check lives in {repo}, and its accepts live in the
-            check&apos;s own allowlist{fe?.files ? ` (${fe.files.join(", ")})` : ""}. The command writes
-            the entry with your reason, name and date, re-runs the check to prove only this finding moved,
-            and commits just that file — so CI, hand runs and this page all agree. This page shows the
-            finding as accepted after the next ingested run. A database-only accept would leave CI, hand
-            runs and the release checks still reporting it, because they read only the allowlist.
+            Mark OK writes this finding into the check&apos;s own allowlist in {repo}
+            {fe?.files ? ` (${fe.files.join(", ")})` : ""} with your reason, name and date, and commits it to main — so CI,
+            hand runs and this page all agree. The finding reads &ldquo;Marked OK — landing&rdquo; until the next checks run
+            confirms it, then moves to Accepted.
           </p>
+          {result.kind === "error" ? (
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2">
+              <p className="font-medium text-destructive">{result.title}</p>
+              <p className="break-words text-muted-foreground">{result.message}</p>
+              {result.remedy ? <p className="text-muted-foreground">{result.remedy}</p> : null}
+            </div>
+          ) : null}
+          <div className="space-y-1">
+            <button
+              type="button"
+              className="text-[11px] text-primary hover:underline"
+              onClick={() => setShowCommand((v) => !v)}
+            >
+              {showCommand ? "Hide the command" : "Prefer a terminal? Show the command"}
+            </button>
+            {showCommand ? (
+              <pre className="whitespace-pre-wrap break-all rounded-md border border-border bg-muted/40 p-2 font-mono text-[11px]">
+                {command}
+              </pre>
+            ) : null}
+          </div>
         </>
       )}
     </div>
   );
 
-  const canCopy = command != null && !noAdapter && reason.trim().length > 0;
+  const hasReason = reason.trim().length > 0;
+  const canCopy = command != null && !noAdapter && hasReason;
+  const working = result.kind === "working";
   const footer = (
     <>
       <Button variant="ghost" size="sm" onClick={close}>
         Close
       </Button>
-      {command && !noAdapter ? (
+      {command && !noAdapter && showCommand ? (
         <Button
+          variant="outline"
           size="sm"
           className="gap-1"
           disabled={!canCopy}
@@ -1066,6 +1183,18 @@ function AcceptDialog({
         >
           <Copy className="h-3.5 w-3.5" />
           Copy command
+        </Button>
+      ) : null}
+      {command && !noAdapter ? (
+        <Button
+          size="sm"
+          className="gap-1"
+          disabled={!hasReason || working}
+          title={hasReason ? undefined : "Write the reason first — it goes into the allowlist entry."}
+          onClick={() => void markOk()}
+        >
+          {working ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+          {working ? "Committing to main…" : "Mark OK"}
         </Button>
       ) : null}
     </>

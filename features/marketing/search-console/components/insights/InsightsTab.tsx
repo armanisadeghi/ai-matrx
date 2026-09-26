@@ -80,6 +80,7 @@ import {
   formatPosition,
 } from "@/features/marketing/search-console/types";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const DEFAULT_MIN_IMPRESSIONS = 100;
 const DEFAULT_MIN_CLICKS = 20;
@@ -332,8 +333,9 @@ export function InsightsTab({
             />
           ) : (
             <div className="flex h-full items-center justify-center rounded-md border border-dashed border-border bg-card/60 p-8 text-center text-xs text-muted-foreground">
-              This site could not be resolved — pick it again from the site
+              <span>This site could not be resolved — pick it again from the site
               list.
+              <ErrorAlchemyMenu /></span>
             </div>
           )
         ) : trendTooShort ? (

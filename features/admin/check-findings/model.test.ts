@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { acceptCommand, shellQuote, summarizeChecks } from "./model";
+import { acceptCommand, parsePendingAccept, pendingAcceptView, shellQuote, summarizeChecks } from "./model";
 import type { CheckCatalogEntry, CheckItemTally, CheckRunSummary } from "./service";
 
 const NOW = Date.parse("2026-09-26T12:00:00Z");
@@ -96,5 +96,42 @@ describe("acceptCommand", () => {
     const key = `detector|path with spaces/it's "quoted" $HOME \`tick\`|*`;
     const out = execFileSync("bash", ["-c", `printf %s ${shellQuote(key)}`], { encoding: "utf8" });
     expect(out).toBe(key);
+  });
+});
+
+describe("pendingAcceptView (one-click Mark OK)", () => {
+  const landed = parsePendingAccept({
+    status: "landed",
+    at: "2026-09-26T12:00:00Z",
+    finished_at: "2026-09-26T12:00:05Z",
+    by: { name: "Ada" },
+    reason: "fine",
+    commit_sha: "abc",
+    commit_url: "https://github.com/x/y/commit/abc",
+  });
+  const now = Date.parse("2026-09-26T12:10:00Z");
+
+  it("reads the stored marker and refuses malformed ones", () => {
+    expect(landed?.status).toBe("landed");
+    expect(landed?.byName).toBe("Ada");
+    expect(parsePendingAccept({ status: "weird" })).toBeNull();
+    expect(parsePendingAccept("landed")).toBeNull();
+    expect(parsePendingAccept(null)).toBeNull();
+  });
+
+  it("says landing until a run that started after the commit still reports the item — then says the accept did not take", () => {
+    expect(pendingAcceptView("open", landed, "2026-09-26T11:00:00Z", now).kind).toBe("landing");
+    expect(pendingAcceptView("open", landed, null, now).kind).toBe("landing");
+    expect(pendingAcceptView("open", landed, "2026-09-26T12:05:00Z", now).kind).toBe("still_reported");
+    expect(pendingAcceptView("accepted", landed, "2026-09-26T12:05:00Z", now).kind).toBe("none");
+  });
+
+  it("shows a failed commit loudly and an abandoned one as interrupted", () => {
+    const failed = parsePendingAccept({ status: "failed", error: "GitHub refused", remedy: "try again" });
+    expect(pendingAcceptView("open", failed, null, now)).toMatchObject({ kind: "failed" });
+    const committing = parsePendingAccept({ status: "committing", at: "2026-09-26T12:09:00Z" });
+    expect(pendingAcceptView("open", committing, null, now).kind).toBe("committing");
+    const stale = parsePendingAccept({ status: "committing", at: "2026-09-26T11:00:00Z" });
+    expect(pendingAcceptView("open", stale, null, now).kind).toBe("interrupted");
   });
 });

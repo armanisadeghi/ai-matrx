@@ -131,6 +131,7 @@ function HtmlPageEditBody() {
             />
             <h1 className="ml-2 text-sm font-medium text-foreground truncate">
               Couldn&apos;t open this page
+              <ErrorAlchemyMenu />
             </h1>
           </div>
         </PageHeader>

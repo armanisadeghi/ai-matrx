@@ -41,6 +41,7 @@ import type { ReviewResult } from "../../types";
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 import { useFlashcardMandates } from "../../data/mandate-disclosure";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -166,6 +167,7 @@ export function WriteSurface({ setId }: { setId: string }) {
                         <AlertCircle className="h-6 w-6 text-muted-foreground" />
                         <p className="text-sm font-medium text-foreground">
                           Couldn&apos;t load this set
+                          <ErrorAlchemyMenu />
                         </p>
                         <p className="max-w-md text-xs text-muted-foreground">
                           {String(fault)}

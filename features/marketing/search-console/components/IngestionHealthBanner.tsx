@@ -24,6 +24,7 @@ import {
   humanLines,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function IngestionHealthBanner({
   siteId,
@@ -62,6 +63,7 @@ export function IngestionHealthBanner({
         <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
         <p className="text-xs text-foreground">
           Could not check ingestion health for this site.
+          <ErrorAlchemyMenu />
         </p>
       </div>
     );

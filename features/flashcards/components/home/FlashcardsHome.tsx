@@ -768,6 +768,7 @@ export function FlashcardsHome({
                 <AlertCircle className="h-6 w-6 text-muted-foreground" />
                 <p className="text-sm font-medium text-foreground">
                   Couldn&apos;t load your flashcard sets
+                  <ErrorAlchemyMenu />
                 </p>
                 <p className="max-w-md text-xs text-muted-foreground">
                   {error}

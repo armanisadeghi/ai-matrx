@@ -19,6 +19,7 @@ import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { createWarRoomSession } from "@/features/war-room/redux/thunks";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function WarRoomNew() {
   const router = useRouter();
@@ -47,6 +48,7 @@ export function WarRoomNew() {
           <AlertCircle className="h-6 w-6 text-muted-foreground" />
           <p className="text-sm font-medium text-foreground">
             Couldn&apos;t create the war room
+            <ErrorAlchemyMenu />
           </p>
           <Button onClick={() => router.push("/war-room")}>
             Back to war rooms

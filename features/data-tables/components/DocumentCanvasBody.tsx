@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { canActOn } from "@/features/access-gate/service/canActOn";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 // Univer hard-depends on `window` / `document`, and it is a heavy chunk — keep
 // it out of the canvas base bundle until a document pane actually opens.
 const DocumentEditor = dynamic(
@@ -64,6 +65,7 @@ function DocumentUnavailable({
         <div>
           <p className="text-sm font-medium text-foreground">
             This document couldn&apos;t be opened here
+            <ErrorAlchemyMenu />
           </p>
           <p className="mt-1 text-xs">{reason}</p>
         </div>

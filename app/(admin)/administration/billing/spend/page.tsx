@@ -18,6 +18,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { SpendDashboard } from "@/features/admin/spend/SpendDashboard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,7 @@ export default async function PlatformSpendPage() {
         <div className="flex max-w-xl items-start gap-3 rounded-md border border-amber-500/50 bg-amber-500/10 p-4">
           <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden />
           <div className="text-sm text-amber-700 dark:text-amber-400">
-            <div className="font-medium">We could not verify who you are.</div>
+            <div className="font-medium">We could not verify who you are. <ErrorAlchemyMenu /></div>
             <p className="mt-1 text-xs">
               The sign-in authority did not answer this request, so this page
               cannot check your admin level. You have not been signed out —

@@ -33,6 +33,7 @@ import { ArrowLeft, Compass, Home, SearchX } from "lucide-react";
 import { Grid, CardProps } from "@/components/official/card-and-grid";
 import { Button } from "@/components/ui/button";
 import { allNavigationLinks } from "@/features/shell/navigation/navigationLinks";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface NotFoundContentProps {
   /** Optional custom navigation items to display instead of defaults */
@@ -100,6 +101,8 @@ export function NotFoundContent({
           <div className="min-w-0 flex-1">
             <h1 className="text-xl font-semibold tracking-tight text-foreground">
               {message}
+              {/* A broken link is worth reporting: the 404 carries the menu on its line. */}
+              <ErrorAlchemyMenu error={`${message} (${pathname ?? "this address"})`} operation="Open this address" />
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
               Nothing lives at this address. It may have moved, or the link may

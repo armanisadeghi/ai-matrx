@@ -122,6 +122,7 @@ function UseOnSite({ packId }: { packId: string }) {
         <span>
           We couldn&apos;t load your websites, so there is nothing to choose
           from yet.
+          <ErrorAlchemyMenu />
         </span>
         <button
           type="button"

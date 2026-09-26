@@ -239,7 +239,7 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground p-8">
         <AlertTriangle className="w-7 h-7 text-yellow-500" />
-        <p className="text-sm">Couldn&apos;t load bundles.</p>
+        <p className="text-sm">Couldn&apos;t load bundles. <ErrorAlchemyMenu /></p>
         {error && <p className="text-[11px] text-center max-w-xs">{error} <ErrorAlchemyMenu error={error} /></p>}
       </div>
     );

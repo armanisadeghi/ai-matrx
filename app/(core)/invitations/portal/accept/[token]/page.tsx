@@ -186,7 +186,7 @@ export default function AcceptPortalInvitationPage() {
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
           <AlertCircle className="h-6 w-6 text-destructive" />
         </div>
-        <h2 className="mb-2 text-xl font-semibold">We could not check this invitation</h2>
+        <h2 className="mb-2 text-xl font-semibold">We could not check this invitation <ErrorAlchemyMenu /></h2>
         <p className="mb-2 text-sm text-muted-foreground">
           This does not mean the link is dead — we simply could not look. Try again, and if it
           keeps happening ask whoever sent it to resend it.

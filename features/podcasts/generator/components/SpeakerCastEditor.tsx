@@ -62,6 +62,7 @@ import {
   useVoiceSamplePlayer,
   type VoiceSamplePlayer,
 } from "../useVoiceSamplePlayer";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SpeakerCastEditorProps {
   hostCount: number;
@@ -375,8 +376,9 @@ export function SpeakerCastEditor({
         <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
-            Couldn&apos;t load the server&apos;s cast. Generation will still use server
+            <span>Couldn&apos;t load the server&apos;s cast. Generation will still use server
             defaults; retry to customize hosts.
+            <ErrorAlchemyMenu /></span>
           </span>
           <button
             type="button"

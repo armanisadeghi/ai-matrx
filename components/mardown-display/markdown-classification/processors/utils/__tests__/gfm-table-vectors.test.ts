@@ -49,7 +49,7 @@ it.each((stored.tableEnds as Array<{ lines: string[]; start: number; end: number
 );
 
 it.each((stored.tableStarts as Array<{ lines: string[]; index: number; opens: boolean }>).map((v) => [JSON.stringify(v.lines.slice(0, v.index)), v] as const))(
-  "a table opens (or not) where GFM opens it, under %s",
+  "a table opens (or not) where GFM opens it, under %s (index 0: the header itself)",
   (_label, v) => {
     expect(oracleTableGrid(v.lines.join("\n")) !== null).toBe(v.opens);
   },

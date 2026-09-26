@@ -312,6 +312,7 @@ export function AssessmentHome({ kind }: { kind: AssessmentKind }) {
               <AlertCircle className="h-6 w-6 text-muted-foreground" />
               <p className="text-sm font-medium text-foreground">
                 Couldn&apos;t load your {config.pluralLabel.toLowerCase()}
+                <ErrorAlchemyMenu />
               </p>
               <p className="max-w-md text-xs text-muted-foreground">{error} <ErrorAlchemyMenu /></p>
             </div>

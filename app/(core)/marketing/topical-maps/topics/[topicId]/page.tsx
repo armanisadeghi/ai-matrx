@@ -14,6 +14,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { createClient } from "@/utils/supabase/server";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -36,6 +37,7 @@ export default async function TopicalMapTopicDoor({
       <div className="p-4 text-sm text-muted-foreground">
         We could not verify who you are on this request, so this page is not
         loading. You have not been signed out — reload in a moment.
+        <ErrorAlchemyMenu />
       </div>
     );
   }

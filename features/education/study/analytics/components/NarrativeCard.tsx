@@ -25,6 +25,7 @@ import { blockHref } from "../../planner/blockLinks";
 import type { PlanBlockKind } from "../../planner/types";
 import type { NarrativeReport } from "../narrative";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const STUDY_ANALYTICS_NARRATIVE_KIND = "study_analytics_narrative" as const;
 
@@ -157,6 +158,7 @@ export function NarrativeCard({
         <p className="py-2 text-xs text-muted-foreground">
           Couldn&apos;t generate insights right now — your numbers below are
           still live.
+          <ErrorAlchemyMenu />
         </p>
       ) : report ? (
         <>

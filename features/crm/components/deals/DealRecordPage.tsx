@@ -45,6 +45,7 @@ import {
 } from "../../deals/types";
 import { dealStatusBadge } from "./columns";
 import { DealStageFlow } from "./DealStageFlow";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   dealId: string;
@@ -215,7 +216,7 @@ export function DealRecordPage({ dealId }: Props) {
 
         {deal && error && (
           <div className="mx-auto mb-3 flex max-w-3xl items-center justify-between gap-2 rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
-            <span>This deal couldn&apos;t be refreshed just now.</span>
+            <span>This deal couldn&apos;t be refreshed just now. <ErrorAlchemyMenu /></span>
             <Button variant="outline" size="sm" onClick={() => void refresh()}>
               Retry
             </Button>

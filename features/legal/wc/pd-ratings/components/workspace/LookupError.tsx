@@ -4,6 +4,7 @@ import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { WcRatingsError } from "../../api/hooks";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface LookupErrorProps {
   error: unknown;
@@ -77,6 +78,7 @@ export function LookupError({
           )}
         </div>
       </div>
+      <ErrorAlchemyMenu />
     </div>
   );
 }

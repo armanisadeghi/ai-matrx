@@ -110,7 +110,7 @@ export function PrinterCertificationNotice({
       {gate.listError && (
         <Alert variant="warning">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Could not check printer certifications</AlertTitle>
+          <AlertTitle>Could not check printer certifications <ErrorAlchemyMenu /></AlertTitle>
           <AlertDescription>
             {gate.listError}. Printing is still available — nothing is blocked
             — but this organization&apos;s record of which printers work with{" "}

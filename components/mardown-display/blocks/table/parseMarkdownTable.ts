@@ -36,8 +36,9 @@ export function parseMarkdownTable(content: string): ParsedTable | null {
     // Allow 2 lines (header + separator) so an empty table renders mid-stream.
     if (lines.length < 2) return null;
 
+    // The header needs no pipe of its own: `Notes` over `|---|` is a one-column
+    // table (GFM); the delimiter row below decides.
     const headerLine = lines[0];
-    if (!headerLine.includes("|")) return null;
 
     // Second line must be a delimiter row — GFM's rule: every cell is `:?-+:?`,
     // edge pipes optional (`--- | ---` is as valid as `|---|---|`).

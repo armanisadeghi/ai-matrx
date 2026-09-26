@@ -17,6 +17,7 @@
 import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import { UnsubscribeForm } from "./UnsubscribeForm";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +69,7 @@ export default async function UnsubscribePage({
           <div className="space-y-3">
             <h1 className="text-lg font-semibold text-foreground">
               We couldn&apos;t find that link
+              <ErrorAlchemyMenu />
             </h1>
             <p className="text-sm text-muted-foreground">
               The unsubscribe link may have been shortened or altered by your email

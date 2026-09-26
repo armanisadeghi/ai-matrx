@@ -10,6 +10,7 @@ import {
   SECONDARY_QUICK_ACTIONS,
 } from "./chat-quick-actions.config";
 import { useMandate } from "@/features/mandates/useMandate";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * `/chat/new` — landing surface.
@@ -64,6 +65,7 @@ export function ChatMandateUnavailable({ error }: { error?: string | null }) {
             The default chat agent could not be resolved
             {error ? ` — ${error}` : ""}. Check your chat settings, or try
             again shortly.
+            <ErrorAlchemyMenu />
           </p>
         </div>
       </div>

@@ -10,6 +10,7 @@
 import { ImageIcon, Clapperboard, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MediaSlot } from "@/features/podcasts/generator/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function AssetGallery({
   images,
@@ -108,7 +109,8 @@ function Slot({ slot, isVideo }: { slot: MediaSlot; isVideo: boolean }) {
       ) : failed ? (
         <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-center text-[11px] text-muted-foreground">
           <ImageIcon className="h-4 w-4" />
-          Couldn&apos;t render
+          <span>Couldn&apos;t render
+          <ErrorAlchemyMenu /></span>
         </div>
       ) : (
         // Pending / running — shimmering placeholder.
