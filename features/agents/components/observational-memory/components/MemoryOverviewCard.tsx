@@ -89,6 +89,7 @@ export function MemoryOverviewCard({
           >
             <AlertTriangle className="w-3 h-3" />
             Degraded
+            <ErrorAlchemyMenu error={lastError?.error} />
           </div>
         )}
       </div>

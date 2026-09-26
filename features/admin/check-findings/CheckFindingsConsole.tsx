@@ -87,6 +87,7 @@ import {
   type CheckFindingsSource,
   type CheckItem,
 } from "./service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** What the server page knows about matrx-frontend's accept adapters (scripts/findings/registry.mjs). */
 export interface FrontendAcceptInfo {
@@ -286,7 +287,10 @@ function LoadError({ what, message, onRetry }: { what: string; message: string; 
       <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden />
       <div className="min-w-0 flex-1 space-y-1">
         <p className="font-medium text-destructive">Could not read {what}.</p>
-        <p className="break-words text-muted-foreground">{message}</p>
+        <p className="break-words text-muted-foreground">
+          {message}
+          <ErrorAlchemyMenu error={message} operation={`Read ${what}`} />
+        </p>
         <p className="text-muted-foreground">
           These tables are readable only by a platform admin on an /administration page. If you are one,
           retry; a permission error here means the admin lane did not reach the database.

@@ -35,6 +35,8 @@ export const DOCUMENT_INPUTS: ReadonlyArray<{ name: string; text: string }> = [
   // GFM spec example 202 (verify-RC-B4 R7-2): a line without a pipe is a row; a quote line ends the table.
   { name: "a line without a pipe continues the table (GFM 202)", text: `${INTRO}\n\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\nB4 clear\n\n${OUTRO}` },
   { name: "a quote line ends a pipe-less table", text: `${INTRO}\n\nZone | Temp\n--- | ---\nA | 4C\n> 8C | alarm\n\n${OUTRO}` },
+  // verify-RC-B4 round 8: a backtick run whose info string holds a backtick is a code span, not a fence (CommonMark 4.5).
+  { name: "a four-backtick code span row continues the table", text: `${INTRO}\n\nStep | Task\n--- | ---\n1 | Drain the queue\n${"````"} code ${"````"} | b\n\n${OUTRO}` },
 ];
 
 export const ROW_INPUTS: readonly string[] = [

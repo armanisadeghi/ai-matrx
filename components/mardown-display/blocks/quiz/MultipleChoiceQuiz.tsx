@@ -640,6 +640,7 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
                       title={saveError}
                     >
                       <CloudOff className="h-4 w-4" />
+                      <ErrorAlchemyMenu error={saveError} />
                     </div>
                   )}
                 </div>
@@ -979,6 +980,7 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
           {saveError && (
             <div title={saveError} className="text-red-600 dark:text-red-400">
               <CloudOff className="h-3.5 w-3.5" />
+              <ErrorAlchemyMenu error={saveError} />
             </div>
           )}
         </div>

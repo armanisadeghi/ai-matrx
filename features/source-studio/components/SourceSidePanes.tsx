@@ -287,6 +287,7 @@ function EntitiesTab({
           <p className="text-xs text-warning">
             Entity extraction is unavailable: {entitiesState.sentence}. The ones
             below were found earlier.
+            <ErrorAlchemyMenu error={entitiesState.sentence} />
           </p>
         )}
         <div className="flex flex-wrap gap-1.5">

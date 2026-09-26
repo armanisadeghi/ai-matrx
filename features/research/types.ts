@@ -1034,7 +1034,8 @@ export interface ResearchSynthesis {
   input_analysis_ids: Json | null;
   token_usage: Json | null;
   is_current: boolean | null;
-  version: number | null;
+  /** Which run of this synthesis this is (v1, v2…), per topic/scope/keyword-or-tag. */
+  capture_version: number | null;
   iteration_mode: string | null;
   previous_synthesis_id: string | null;
   created_at: string | null;

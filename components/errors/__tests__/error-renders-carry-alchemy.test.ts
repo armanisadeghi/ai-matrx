@@ -24,6 +24,8 @@ import { buildCarryingResolver } from "./error-census-carriers";
 import {
   findDoubleMenus,
   findOrphanMenus,
+  componentsThatCarry,
+  isCensusScannable,
   setCarryingComponentsResolver,
   uncarriedErrorDisplays,
 } from "./error-display-census";
@@ -41,33 +43,8 @@ const BASELINE_FILE = path.join(__dirname, "error-render-census.baseline.json");
  */
 const MAX_BASELINE_TOTAL = 0;
 
-/** The primitives themselves — they ARE the one place an error box is drawn. */
-const PRIMITIVES = new Set([
-  "components/errors/ErrorNotice.tsx",
-  "components/errors/ErrorAlchemyMenu.tsx",
-  // The package error slot and the toast decorator render only for an error.
-  "components/errors/PackageErrorActions.tsx",
-  "components/errors/errorToastAlchemy.tsx",
-  "components/errors/ErrorBoundaryView.tsx",
-  "lib/error-boundary/ErrorBoundaryWithCapture.tsx",
-]);
-
-/**
- * Bundles that cannot import host code: the kind sandbox runtime runs inside
- * an isolated iframe and relays its render error to the host, whose boundary
- * carries the menu.
- */
-const ISOLATED_BUNDLES = [/^features\/content-ir\/sandbox\/runtime\//];
-
-function isScannable(rel: string): boolean {
-  if (!/\.tsx$/.test(rel)) return false;
-  if (PRIMITIVES.has(rel)) return false;
-  if (ISOLATED_BUNDLES.some((pattern) => pattern.test(rel))) return false;
-  return (
-    !/(^|\/)(__tests__|__mocks__)(\/|$)/.test(rel) &&
-    !/\.(test|spec)\.tsx$/.test(rel)
-  );
-}
+/** Which files the census reads: one definition, shared with the lint rule. */
+const isScannable = isCensusScannable;
 
 function walk(dir: string, out: string[]): void {
   if (!fs.existsSync(dir)) return;
@@ -83,7 +60,7 @@ export function censusTheTree(): Record<string, number> {
   const files: string[] = [];
   for (const dir of SCANNED_DIRS) walk(path.join(REPO_ROOT, dir), files);
   const rels = files.map((file) => path.relative(REPO_ROOT, file).split(path.sep).join("/"));
-  setCarryingComponentsResolver(buildCarryingResolver(REPO_ROOT, rels.filter((rel) => /\.tsx$/.test(rel))));
+  setCarryingComponentsResolver(buildCarryingResolver(REPO_ROOT, rels.filter((rel) => /\.tsx$/.test(rel)), componentsThatCarry));
   const found: Record<string, number> = {};
   for (const file of files) {
     const rel = path.relative(REPO_ROOT, file).split(path.sep).join("/");
@@ -265,7 +242,42 @@ describe("facts about errors are not errors (UI audit C)", () => {
     expect(count('{r.error_count > 0 ? <span className="text-red-500">{r.error_count}</span> : null}')).toBe(0);
     expect(count('<Badge variant="destructive">{r.error_type}</Badge>')).toBe(0);
     expect(count('<Badge variant="outline">{kept ? "Saved" : "Not saved"}</Badge>')).toBe(0);
+    expect(count('{run.verdict === "fail" ? <Badge className="text-destructive">fail</Badge> : null}')).toBe(0);
+    expect(count('{error ? <Badge className="text-destructive">{error}</Badge> : null}')).toBe(1);
     expect(count('<span className="text-red-500">{r.error}</span>')).toBe(1);
+  });
+});
+
+describe("round-6 probes (RC-B12 verify), red then green", () => {
+  const file = (body: string) =>
+    uncarriedErrorDisplays(`import { FormMessage } from "@/components/ui/form";\n${body}`).length;
+  it("a form-message component rendered anywhere is a field-error display unless it draws the menu", () => {
+    expect(count("<FormItem><FormControl><Input /></FormControl><FormMessage /></FormItem>")).toBe(1);
+    expect(count("<FieldError>{errors.name?.message}</FieldError>")).toBe(1);
+    expect(count("<FormMessage><ErrorAlchemyMenu /></FormMessage>")).toBe(0);
+  });
+  it("red text rendering a local derived from an error counts (FormMessage's own body)", () => {
+    expect(
+      file(`export function M({ error, children }: any) { const body = error ? String(error.message) : children; return <p className="text-destructive">{body}</p>; }`),
+    ).toBe(1);
+  });
+  it("a menu inside a hidden parent, {0 && menu} and {true ? null : menu} are absent", () => {
+    expect(count('<p role="alert">{error}<span className="hidden"><ErrorAlchemyMenu /></span></p>')).toBe(1);
+    expect(count('<div role="alert">{error}<div className="hidden"><span><ErrorAlchemyMenu /></span></div></div>')).toBe(1);
+    expect(count('<p role="alert">{error}{0 && <ErrorAlchemyMenu />}</p>')).toBe(1);
+    expect(count('<p role="alert">{error}{true ? null : <ErrorAlchemyMenu />}</p>')).toBe(1);
+    expect(count('<p role="alert">{error}{false ? null : <ErrorAlchemyMenu />}</p>')).toBe(0);
+  });
+  it("an error passed through a props spread into a neutral component counts", () => {
+    expect(count("<EmptyState {...{ title: \"Could not load\", description: error }} />")).toBe(1);
+    expect(count("<EmptyState {...{ description: error.message }} />")).toBe(1);
+    expect(count("<EmptyState {...rest} />")).toBe(0);
+  });
+  it("a tooltip-only error (title={error}) counts: an error you can only hover is not shown", () => {
+    expect(count('<span className="text-muted-foreground" title={error}>Failed</span>')).toBe(1);
+    expect(count('<Pill title={failureReason}>{status}</Pill>')).toBe(1);
+    expect(count('<span title={error}>Failed <ErrorAlchemyMenu error={error} /></span>')).toBe(0);
+    expect(count('<span className="text-muted-foreground" title={why}>Skipped</span>')).toBe(0);
   });
 });
 

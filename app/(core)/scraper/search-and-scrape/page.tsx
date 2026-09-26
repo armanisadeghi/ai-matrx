@@ -21,6 +21,7 @@ import {
   PAGE_LIMIT_MAX,
   PAGE_LIMIT_MIN,
 } from "@/features/scraper/scrape-command";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function ScraperSearchAndScrapePage() {
   const [keyword, setKeyword] = useState("");
@@ -308,6 +309,7 @@ export default function ScraperSearchAndScrapePage() {
                 {landedReport?.notSaved.map((p) => (
                   <p key={p.url} className="text-amber-700 dark:text-amber-400">
                     Not saved: {p.url} — {p.reason}
+                    <ErrorAlchemyMenu error={p.reason} />
                   </p>
                 ))}
               </div>

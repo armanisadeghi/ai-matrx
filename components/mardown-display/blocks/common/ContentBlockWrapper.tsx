@@ -22,6 +22,7 @@ import { selectCanvasIsAvailable, type CanvasContent, type CanvasContentType } f
 import IconButton from "@/components/official/IconButton";
 import { toast } from "@/lib/toast";
 import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ContentBlockAction {
     icon: LucideIcon;
@@ -319,6 +320,7 @@ const ContentBlockWrapper: React.FC<ContentBlockWrapperProps> = ({
                                             {saveError && (
                                                 <div className="flex items-center gap-1 text-red-600 dark:text-red-400 text-xs" title={saveError}>
                                                     <CloudOff className="h-4 w-4" />
+                                                  <ErrorAlchemyMenu error={saveError} />
                                                 </div>
                                             )}
                                         </div>

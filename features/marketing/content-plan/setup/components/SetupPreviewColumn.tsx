@@ -195,6 +195,7 @@ export function SetupPreviewColumn({
                     >
                       {STATE_BADGE[row.state].label}
                     </span>
+                    <ErrorAlchemyMenu error={row.error} />
                   </li>
                 ))}
               </ul>

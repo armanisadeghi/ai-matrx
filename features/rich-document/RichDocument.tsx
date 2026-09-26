@@ -41,6 +41,7 @@ import {
 import { ActionBar } from "./variants/ActionBar";
 import { MiniActionBar } from "./variants/MiniActionBar";
 import { MenuVariant } from "./variants/MenuVariant";
+import { contextMenuFor } from "./runtime/contextMenuFor";
 import {
   SpecimenProvider,
   SpecimenBanner,
@@ -358,9 +359,9 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
   // forwarded. `suppressed` keeps the native browser menu during streaming
   // without unmounting the content.
   let engine: React.ReactNode = engineInner;
-  if (enableContextMenu && !specimenMode) {
-    const cmOptions =
-      typeof enableContextMenu === "object" ? enableContextMenu : {};
+  const contextMenu = contextMenuFor(enableContextMenu, effectiveActionsVariant);
+  if (contextMenu && !specimenMode) {
+    const cmOptions = typeof contextMenu === "object" ? contextMenu : {};
     // THE SAME registry as the bar and the ⋯ menu (RegistryContextMenu).
     engine = (
       <RegistryContextMenu

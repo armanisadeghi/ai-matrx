@@ -243,6 +243,7 @@ export default function ScrapedPageBlock({ serverData, className }: Props) {
             {status !== null && status > 0 && (
               <Pill tone={tone} title={failureReason ?? undefined}>
                 {status}
+                <ErrorAlchemyMenu error={failureReason} />
               </Pill>
             )}
             {failureReason && <Pill tone="error">{failureReason} <ErrorAlchemyMenu error={failureReason} /></Pill>}

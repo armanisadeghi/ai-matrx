@@ -27,6 +27,7 @@ import { apiGet } from "@/lib/api/typed-client";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { components } from "@/types/python-generated/api-types";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type SystemErrorRow = components["schemas"]["SystemErrorRecord"];
 type RecentResponse =
@@ -267,6 +268,7 @@ export default function SystemErrorsPanel() {
             title={value(row.error_text)}
           >
             {value(row.error_text)}
+            <ErrorAlchemyMenu error={value(row.error_text)} />
           </span>
         ),
       },

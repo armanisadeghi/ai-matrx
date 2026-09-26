@@ -8,7 +8,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import ts from "typescript";
-import { componentsThatCarry } from "./error-display-census";
+
+/** The census's per-file carrier finder, passed in so this file imports nothing
+ * relative (the lint rule loads both through Node's own TypeScript support). */
+type CarriersOf = (source: string, fileName: string, known: ReadonlySet<string>) => Set<string>;
 
 const EXT = [".tsx", ".ts", "/index.tsx", "/index.ts"];
 
@@ -51,7 +54,11 @@ function defaultExportName(source: string): string | null {
 }
 
 /** Build a resolver: (source, rel) → names that carry the menu in that file. */
-export function buildCarryingResolver(root: string, rels: string[]): (source: string, rel: string) => ReadonlySet<string> {
+export function buildCarryingResolver(
+  root: string,
+  rels: string[],
+  componentsThatCarry: CarriersOf,
+): (source: string, rel: string) => ReadonlySet<string> {
   const sources = new Map<string, string>();
   for (const rel of rels) {
     if (!/\.tsx?$/.test(rel)) continue;
@@ -100,7 +107,7 @@ export function buildCarryingResolver(root: string, rels: string[]): (source: st
     if (!changed) break;
   }
   return (source, rel) => {
-    const local = carrying.get(rel) ?? componentsThatCarry(source, rel);
+    const local = carrying.get(rel) ?? componentsThatCarry(source, rel, new Set());
     const set = new Set(local);
     for (const name of importedCarriers(rel)) set.add(name);
     return set;

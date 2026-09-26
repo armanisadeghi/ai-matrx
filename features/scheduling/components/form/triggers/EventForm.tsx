@@ -222,7 +222,7 @@ export function EventForm({ value, onChange, error }: Props) {
           </SelectContent>
         </Select>
         {tablesError && <p className="text-xs text-destructive">Could not load your tables: {tablesError} <ErrorAlchemyMenu error={tablesError} /></p>}
-        {cannotFire && <p className="text-xs text-destructive">{cannotFire}</p>}
+        {cannotFire && <p className="text-xs text-destructive">{cannotFire} <ErrorAlchemyMenu error={cannotFire} /></p>}
         {tables && tables.length === 0 && (
           <p className="text-xs text-muted-foreground">You have no data tables yet; the schedule will fire for any table you create.</p>
         )}

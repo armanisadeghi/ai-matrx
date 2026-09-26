@@ -16,6 +16,7 @@ import noBarrelFiles from "eslint-plugin-no-barrel-files";
 import tseslint from "typescript-eslint";
 
 import { noNavigationForQueryState } from "./scripts/lint-rules/no-navigation-for-query-state.mjs";
+import { errorRenderCarriesAlchemy } from "./scripts/lint-rules/error-render-carries-alchemy.mjs";
 
 // eslint-plugin-react's `version: "detect"` (what eslint-config-next sets) calls
 // the `context.getFilename()` method that ESLint 10 removed, which made EVERY
@@ -191,6 +192,9 @@ const matrxLintPlugin = {
     // lane URL-STATE (2026-09-24): the address changes without a navigation
     // only through lib/url-state/addressWithoutNavigating.ts.
     "no-navigation-for-query-state": noNavigationForQueryState,
+    // RC-B12 (2026-09-26): every error render carries the Alchemy Menu — the
+    // census in the editor, so a new render is flagged as it is written.
+    "error-render-carries-alchemy": errorRenderCarriesAlchemy,
     "no-raw-storage-media": {
       meta: {
         type: "problem",
@@ -1665,6 +1669,7 @@ export default [
       // Query state never costs a navigation, and no raw history write
       // bypasses the one door (lane URL-STATE, 2026-09-24).
       "matrx/no-navigation-for-query-state": "error",
+      "matrx/error-render-carries-alchemy": "error",
       // Single-path JSON extraction — no parallel raw-stream scanners.
       // Loud but non-blocking, matching the other doctrine bans here.
       "matrx/no-parallel-stream-json-scan": "warn",

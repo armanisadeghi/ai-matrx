@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { AlertCircle, Image as ImageIcon, Loader2, X } from "lucide-react";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import type { MediaRef } from "@/features/files/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const FILE_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -112,6 +113,7 @@ export function MediaAttachmentThumbnail({
       >
         <X className="h-3 w-3" />
       </button>
+      <ErrorAlchemyMenu error={errorMessage} />
     </motion.div>
   );
 }

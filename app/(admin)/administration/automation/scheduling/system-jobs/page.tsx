@@ -94,6 +94,7 @@ import {
 } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // The trigger types humanizeTrigger knows. A system trigger's `type` arrives
 // as a plain string on this wire (defensive contract), so an unknown value
@@ -504,7 +505,10 @@ export default function SystemJobsPage() {
               {when ? humanizeRelative(when) : ""}
             </span>
             {run.error_message && (
-              <AlertTriangle className="h-3 w-3 shrink-0 text-destructive" />
+              <>
+                <AlertTriangle className="h-3 w-3 shrink-0 text-destructive" />
+                <ErrorAlchemyMenu error={run.error_message} />
+              </>
             )}
           </span>
         );

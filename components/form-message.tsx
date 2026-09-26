@@ -1,6 +1,7 @@
 // Updated components/form-message.tsx
 import { cva } from "class-variance-authority";
 import { CheckCircle, AlertTriangle, Info } from "lucide-react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const messageVariants = cva(
   "flex items-center gap-3 p-4 rounded-lg text-sm font-medium",
@@ -80,7 +81,11 @@ export function FormMessage({
       })}
     >
       {getIcon()}
-      <span>{messageText}</span>
+      <span>
+        {messageText}
+        {/* An auth error carries the Alchemy Menu on its own line (RC-B12). */}
+        {messageType === "error" && <ErrorAlchemyMenu error={messageText} />}
+      </span>
     </div>
   );
 }

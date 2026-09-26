@@ -37,6 +37,7 @@ import {
 } from "./data";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useAgentAddressViewer } from "@/features/agents/addressing/useAgentHref";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const MODES: Array<{ value: AutonomyMode; label: string; hint: string }> = [
   {
@@ -248,6 +249,7 @@ export function AutonomyModesEditor({
                                 }
                               >
                                 Assignment unavailable
+                                <ErrorAlchemyMenu error={assignments.error.message} />
                               </span>
                             )}
                           </span>

@@ -175,7 +175,7 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
                                   actions={{ metadata: {
                                         consolidationId: consolidation.id,
                                         tagId,
-                                        version: consolidation.version ?? undefined,
+                                        version: consolidation.capture_version ?? undefined,
                                         model_id: consolidation.model_id ?? undefined,
                                     } }}
                                 />

@@ -131,6 +131,7 @@ import { createSittingStore, type SittingBase } from "../../sitting/sitting";
 import { useDialogSitting } from "../../sitting/useDialogSitting";
 import { SittingResumed } from "../../sitting/SittingResumed";
 import { RunStages } from "../RunStages";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface BodyOfWorkSitting extends SittingBase {
   urlsText: string;
@@ -601,6 +602,7 @@ export function BodyOfWorkDialog({
                       title={piece.errorMessage ?? piece.rawValue}
                     >
                       {name}
+                      <ErrorAlchemyMenu error={piece.errorMessage} />
                     </p>
                     <p className={cn("shrink-0", status.className)}>
                       {piece.status === "succeeded" && piece.rulesAdded

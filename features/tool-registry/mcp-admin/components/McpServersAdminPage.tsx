@@ -1590,6 +1590,7 @@ function TestFreshnessBadge({ testFresh }: { testFresh: TestFreshness }) {
     >
       <XCircle className="h-3 w-3" />
       unreachable
+      <ErrorAlchemyMenu error={`${formatRelativeAge(testFresh.ageSec)}: ${testFresh.error}`} />
     </span>
   );
 }

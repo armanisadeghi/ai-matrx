@@ -92,7 +92,7 @@ export function SynthesisVersionHistory({
               >
                 <summary className="cursor-pointer px-2.5 py-1.5 text-[11px] text-muted-foreground">
                   <span className="font-medium text-foreground/80">
-                    v{v.version}
+                    v{v.capture_version ?? "—"}
                   </span>
                   {v.created_at
                     ? ` · ${new Date(v.created_at).toLocaleString()}`

@@ -17,6 +17,7 @@ import { ensureRichDocumentProvider } from "../actions/provider";
 import { cn } from "@/lib/utils";
 import { AlchemyDocumentMenu } from "./shared/AlchemyDocumentMenu";
 import { OpenOneMenuButton, useOneMenuFor } from "./shared/OpenOneMenuButton";
+import { StandaloneOneMenu } from "./shared/StandaloneOneMenu";
 import type { RichDocumentAction, RichDocumentActionContext } from "../types";
 
 export interface ActionBarProps {
@@ -55,9 +56,15 @@ export function ActionBar(props: ActionBarProps): React.ReactElement {
         target={target}
         mini={mini}
         restrict={BAR_RESTRICT}
-        hideOverflow={hideOverflow || oneMenu}
+        // ⋯ is ALWAYS the one context-menu engine — the content's own menu when
+        // one encloses it, else a shell of the same content (StandaloneOneMenu).
+        hideOverflow
       />
-      {oneMenu && !hideOverflow ? <OpenOneMenuButton source={getCtx().source} /> : null}
+      {hideOverflow ? null : oneMenu ? (
+        <OpenOneMenuButton source={getCtx().source} />
+      ) : (
+        <StandaloneOneMenu getCtx={getCtx} target={target} />
+      )}
     </div>
   );
 }

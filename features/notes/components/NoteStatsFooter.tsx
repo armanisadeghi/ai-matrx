@@ -25,6 +25,7 @@ import {
 } from "../utils/noteLiveContent";
 import { PlainTextMetricsBar } from "@/components/text/PlainTextMetricsBar";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface NoteStatsFooterProps {
   noteId: string;
@@ -87,6 +88,7 @@ export function NoteStatsFooter({
         title={saveError ?? undefined}
       >
         {saveStatus}
+        <ErrorAlchemyMenu error={saveError} />
       </span>
       <PlainTextMetricsBar
         text={content}

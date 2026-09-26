@@ -25,6 +25,7 @@ import {
   useFileRagStatus,
 } from "@/features/rag/hooks/useFileRagStatus";
 import type { FileRagState } from "@/features/rag/api/rag-jobs";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface FileRagStatusChipProps {
   fileId: string | null;
@@ -85,6 +86,7 @@ function StateChip({
           title={errorMessage ?? "Knowledge processing failed"}
         >
           Failed
+          <ErrorAlchemyMenu error={errorMessage} />
         </span>
       );
     case "cancelled":

@@ -244,7 +244,7 @@ export function synthesisSummary(s: ResearchSynthesis): string {
     ["Status", s.status],
     ["Agent", s.agent_type],
     ["Model", s.model_id],
-    ["Version", s.version],
+    ["Version", s.capture_version],
     ["Current", s.is_current ? "yes" : "no"],
     ["Created", s.created_at],
     // Errors first — the highest-value content when a synthesis failed.
@@ -268,7 +268,7 @@ export function synthesisBrief(s: ResearchSynthesis, resultChars = 800) {
     status: s.status,
     agent_type: s.agent_type,
     model_id: s.model_id,
-    version: s.version,
+    version: s.capture_version,
     is_current: s.is_current,
     keyword_id: s.keyword_id,
     tag_id: s.tag_id,
@@ -286,7 +286,7 @@ export function synthesesListSummary(syntheses: ResearchSynthesis[]): string {
   return syntheses
     .map(
       (s) =>
-        `${s.scope} v${s.version ?? 1} · ${s.status}${s.is_current ? " · current" : ""} · ${
+        `${s.scope}${s.capture_version != null ? ` v${s.capture_version}` : ""} · ${s.status}${s.is_current ? " · current" : ""} · ${
           s.result?.length ?? 0
         } chars${s.error ? ` · ERROR: ${s.error}` : ""}`,
     )

@@ -39,6 +39,7 @@ import { hasPeek } from "@/features/organizations/peek/kinds-list";
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { allowNativeNewTab } from "@/utils/navigation/should-open-in-new-tab";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface EntityRefProps {
   /** Canonical entity token (`agent`, `note`, `task`, …). */
@@ -307,6 +308,7 @@ export function EntityRef({
           data-agent-link-resolving={hrefResolving ? "true" : undefined}
         >
           {labelBody}
+          <ErrorAlchemyMenu error={refusal} />
         </span>
       )}
 

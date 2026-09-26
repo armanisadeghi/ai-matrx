@@ -68,7 +68,7 @@ const ERROR_NAME = /(?:[eE]rror|Err$|^err$|^e$|[fF]ailure|[rR]efusal|^why$|Why$|
 /** Message-like names count only in red text: an amber `{message}` is usually a warning. */
 const MESSAGE_NAME = /(?:^msg$|Msg$|^message$|Message$|^reason$|Reason$|^detail$|Detail$)/;
 /** A branch condition that means "we are in the error state". */
-const ERROR_CONDITION = /[eE]rror|[fF]ail|[pP]roblem|[rR]efus|===?\s*["'`](?:error|failed)["'`]/;
+const ERROR_CONDITION = /[eE]rror|[fF]ail|[pP]roblem|[rR]efus|===?\s*["'`](?:error|failed|bad|danger|destructive)["'`]/;
 /** An inline style that paints text red. */
 const STYLE_RED = /color\s*:\s*["'`]?(?:red\b|#(?:f|e|d)[0-9a-f]{2,5}\b|rgb\(\s*2[0-5]\d|hsl\(\s*0\b|var\(--(?:destructive|red))/i;
 const CARRIER_NAMES = new Set(["ErrorAlchemyMenu", "ErrorNotice", "ErrorBox", "ErrorActions"]);
@@ -191,10 +191,45 @@ function isErrorLeaf(leaf: ts.Expression, names: RegExp = ERROR_NAME): boolean {
   }
   if (ts.isIdentifier(leaf)) {
     if (/(?:_count|Count|_total|Total|_type|Type|_kind|Kind)$/.test(leaf.text)) return false;
-    return names.test(leaf.text) || ERROR_CONSTANT.test(leaf.text);
+    return names.test(leaf.text) || ERROR_CONSTANT.test(leaf.text) || derivedFromError(leaf, names);
   }
   return false;
 }
+
+/**
+ * A local whose value comes from an error — FormMessage's
+ * `const body = error ? String(error.message) : children` rendered as `{body}`.
+ * One hop only (the declaration in an enclosing block of this function).
+ */
+function derivedFromError(id: ts.Identifier, names: RegExp): boolean {
+  if (derivedDepth > 0) return false;
+  let scope: ts.Node | undefined = id.parent;
+  while (scope && !ts.isSourceFile(scope)) {
+    if (ts.isBlock(scope)) {
+      for (const st of scope.statements) {
+        if (!ts.isVariableStatement(st)) continue;
+        for (const d of st.declarationList.declarations) {
+          if (!ts.isIdentifier(d.name) || d.name.text !== id.text || !d.initializer) continue;
+          if (d.initializer.getStart() > id.getStart()) continue;
+          const leaves: ts.Expression[] = [];
+          renderedLeaves(d.initializer, leaves);
+          derivedDepth += 1;
+          try {
+            return leaves.some((leaf) => isErrorLeaf(leaf, names));
+          } finally {
+            derivedDepth -= 1;
+          }
+        }
+      }
+    }
+    if (ts.isFunctionLike(scope) && !ts.isArrowFunction(scope.parent ?? scope)) {
+      // keep climbing to the component's own body only
+    }
+    scope = scope.parent;
+  }
+  return false;
+}
+let derivedDepth = 0;
 
 /** A module constant holding an error sentence (`ORGANIZATION_UNAVAILABLE_TITLE`, `LOAD_ERROR_TITLE`). */
 const ERROR_NAME_NO_E = /(?:[eE]rror|Err$|^err$|[fF]ailure|[rR]efusal|^why$|Why$|[pP]roblem(?!_?[sS]tatement))/;
@@ -274,6 +309,23 @@ function errorFedByProp(node: JsxLike): boolean {
   const titleIsTooltip =
     (ts.isJsxElement(node) && node.children.some((c) => !ts.isJsxText(c) || c.getText().trim())) ||
     props.some((p) => ts.isJsxAttribute(p) && /^(label|value)$/.test(p.name.getText()));
+  // `{...{ description: error }}` — words passed through an object spread.
+  for (const prop of props) {
+    if (!ts.isJsxSpreadAttribute(prop)) continue;
+    const obj = ts.isParenthesizedExpression(prop.expression) ? prop.expression.expression : prop.expression;
+    if (!ts.isObjectLiteralExpression(obj)) continue;
+    for (const p of obj.properties) {
+      if (!ts.isPropertyAssignment(p) && !ts.isShorthandPropertyAssignment(p)) continue;
+      const key = p.name.getText().replace(/^["']|["']$/g, "");
+      if (!WORD_PROPS.test(key)) continue;
+      const value = ts.isPropertyAssignment(p) ? p.initializer : p.name;
+      const leaves: ts.Expression[] = [];
+      renderedLeaves(value as ts.Expression, leaves);
+      if (leaves.some((leaf) => isErrorLeaf(leaf, ERROR_NAME_NO_E) || ((ts.isStringLiteral(leaf) || ts.isNoSubstitutionTemplateLiteral(leaf)) && FAILURE_WORDS.test(leaf.text)))) {
+        return true;
+      }
+    }
+  }
   for (const prop of props) {
     if (!ts.isJsxAttribute(prop) || !WORD_PROPS.test(prop.name.getText()) || !prop.initializer) continue;
     if (prop.name.getText() === "title" && titleIsTooltip) continue;
@@ -367,9 +419,51 @@ function inErrorBranch(node: ts.Node): boolean {
   return false;
 }
 
+/** A field-error component: wherever it is rendered, it shows a validation error. */
+const FORM_MESSAGE = /^(FormMessage|FieldError|FormError|FieldErrorMessage|ErrorMessage|ValidationMessage|FieldMessage)$/;
+
+/** `title={error}` — an error you can only hover is still an error shown. */
+function tooltipError(node: JsxLike): boolean {
+  const name = tagName(node);
+  if (/^[A-Z]/.test(name)) {
+    // On a component, `title` is a tooltip only beside children or a label;
+    // otherwise it is the heading the component draws (errorFedByProp's case).
+    if (carryingHere.has(name) || CARRIER_NAMES.has(name) || WRAPPER_NAMES.has(name)) return false;
+    const props = attributes(node).properties;
+    const tooltip =
+      (ts.isJsxElement(node) && node.children.some((c) => !ts.isJsxText(c) || c.getText().trim())) ||
+      props.some((p) => ts.isJsxAttribute(p) && /^(label|value)$/.test(p.name.getText()));
+    if (!tooltip) return false;
+  }
+  for (const prop of attributes(node).properties) {
+    if (!ts.isJsxAttribute(prop) || prop.name.getText() !== "title" || !prop.initializer) continue;
+    if (!ts.isJsxExpression(prop.initializer) || !prop.initializer.expression) continue;
+    const leaves: ts.Expression[] = [];
+    renderedLeaves(prop.initializer.expression, leaves);
+    // `why` explains a state in a tooltip; only an error value is an error.
+    if (leaves.some((leaf) => isErrorLeaf(leaf, TOOLTIP_ERROR_NAME))) return true;
+  }
+  return false;
+}
+/** The expression a tooltip-only error hides in (`title={row.error}`), for the menu's `error`. */
+function tooltipErrorExpression(node: JsxLike): string | null {
+  for (const prop of attributes(node).properties) {
+    if (!ts.isJsxAttribute(prop) || prop.name.getText() !== "title" || !prop.initializer) continue;
+    if (!ts.isJsxExpression(prop.initializer) || !prop.initializer.expression) continue;
+    const leaves: ts.Expression[] = [];
+    renderedLeaves(prop.initializer.expression, leaves);
+    const leaf = leaves.find((l) => isErrorLeaf(l, TOOLTIP_ERROR_NAME));
+    if (leaf) return leaf.getText().trim();
+  }
+  return null;
+}
+const TOOLTIP_ERROR_NAME = /(?:[eE]rror|Err$|^err$|[fF]ailure|[rR]efusal|[pP]roblem(?!_?[sS]tatement))/;
+
 function classify(node: JsxLike): ErrorDisplayHit["reason"] | null {
   if (CONTROLS.test(tagName(node))) return null;
   if (hasAlertRole(node)) return "alert";
+  if (FORM_MESSAGE.test(tagName(node)) && !carryingHere.has(tagName(node))) return "red-error";
+  if (tooltipError(node)) return "red-error";
   const { words, errorLeaves, messageLeaves, renderedAny } = ownChildren(node);
   const className = alwaysClasses(node);
   // A destructive Badge / Button variant is red — but a status chip ("Error",
@@ -388,7 +482,10 @@ function classify(node: JsxLike): ErrorDisplayHit["reason"] | null {
   if ((errorLeaves.length > 0 || messageLeaves.length > 0) && inErrorBranch(node)) return "red-error";
   // Anything painted red, rose or amber inside an error branch is the error
   // shown (`{load.status === "error" ? <p className="text-destructive">{load.detail}</p> : …}`).
-  if ((red || NOTICE.test(className)) && (renderedAny || words.trim()) && inErrorBranch(node)) return "red-error";
+  // A status chip ("fail", "Not saved") in a failure branch is a label; it
+  // counts only when it renders the error itself.
+  const chip = /^(Badge|StatusBadge|Chip)$/.test(tagName(node));
+  if ((red || NOTICE.test(className)) && (renderedAny || words.trim()) && inErrorBranch(node) && !chip) return "red-error";
   // A status chip ("Saved" / "Not saved") is a label, not an error to copy.
   if (FAILURE_WORDS.test(words) && !/^(Badge|StatusBadge|Chip)$/.test(tagName(node))) return "failure-words";
   if (errorFedByProp(node)) return "failure-words";
@@ -407,6 +504,9 @@ function classify(node: JsxLike): ErrorDisplayHit["reason"] | null {
 /** Hidden by class or by an inline `display: none`. */
 function isHiddenStyled(node: JsxLike): boolean {
   if (isHiddenElement(attrText(node, "className") ?? "")) return true;
+  // The `hidden` attribute (`<span hidden>`), unless bound to a value.
+  const hiddenAttr = attrText(node, "hidden");
+  if (hiddenAttr !== null && (hiddenAttr === "true" || /^\{\s*true\s*\}$/.test(hiddenAttr))) return true;
   return /display\s*:\s*["'`]none["'`]/.test(attrText(node, "style") ?? "");
 }
 
@@ -425,18 +525,43 @@ function isHiddenElement(cls: string): boolean {
   return !/(?:^|\s)[\w-]+:(?:block|inline|inline-block|inline-flex|flex|grid|visible|not-sr-only)\b/.test(cls);
 }
 
+function isFalsyLiteral(n: ts.Node): boolean {
+  const e = ts.isParenthesizedExpression(n) ? n.expression : n;
+  return (
+    e.kind === ts.SyntaxKind.FalseKeyword ||
+    e.kind === ts.SyntaxKind.NullKeyword ||
+    (ts.isNumericLiteral(e) && Number(e.text) === 0) ||
+    ((ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e)) && e.text === "") ||
+    (ts.isIdentifier(e) && e.text === "undefined")
+  );
+}
+
+function isTruthyLiteral(n: ts.Node): boolean {
+  const e = ts.isParenthesizedExpression(n) ? n.expression : n;
+  return (
+    e.kind === ts.SyntaxKind.TrueKeyword ||
+    (ts.isNumericLiteral(e) && Number(e.text) !== 0) ||
+    ((ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e)) && e.text !== "")
+  );
+}
+
 function containsCarrier(node: ts.Node): boolean {
   let found = false;
   node.forEachChild(function visit(n) {
     if (found) return;
     // A menu inside a hidden element of the box is never seen.
     if ((ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n)) && isHiddenStyled(n)) return;
-    // `{false && <Menu/>}` never renders.
+    // `{false && <Menu/>}` / `{0 && …}` / `{"" && …}` / `{null && …}` never render.
     if (
       ts.isBinaryExpression(n) &&
       n.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken &&
-      n.left.kind === ts.SyntaxKind.FalseKeyword
+      isFalsyLiteral(n.left)
     ) {
+      return;
+    }
+    // `{true ? null : <Menu/>}` renders only its live arm.
+    if (ts.isConditionalExpression(n) && (isFalsyLiteral(n.condition) || isTruthyLiteral(n.condition))) {
+      visit(isTruthyLiteral(n.condition) ? n.whenTrue : n.whenFalse);
       return;
     }
     if ((ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n)) && CARRIER_NAMES.has(tagName(n))) {
@@ -505,7 +630,11 @@ export function findErrorDisplays(source: string, fileName = "file.tsx"): ErrorD
       const reason = CARRIER_NAMES.has(name) || isDestructiveAlert(n) ? null : classify(n);
       if (reason) {
         const ancestors = jsxAncestors(n);
-        const wrapped = ancestors.some((a) => WRAPPER_NAMES.has(tagName(a)) || isDestructiveAlert(a));
+        // Inside a primitive, a destructive Alert, or a component whose own
+        // render draws the menu (its children are inside its box).
+        const wrapped = ancestors.some(
+          (a) => WRAPPER_NAMES.has(tagName(a)) || isDestructiveAlert(a) || carryingHere.has(tagName(a)),
+        );
         // The box: climb while the ancestor is itself error-styled or a display.
         // Plain layout wrappers between two error-styled elements belong to the
         // same box (a destructive card > plain column > red title + red text).
@@ -534,7 +663,9 @@ export function findErrorDisplays(source: string, fileName = "file.tsx"): ErrorD
             errorExpression:
               [...ownChildren(n).errorLeaves, ...ownChildren(n).messageLeaves].find((text) =>
                 /^[\w$.?!]+$/.test(text),
-              ) ?? null,
+              ) ??
+              tooltipErrorExpression(n) ??
+              null,
             insertAt: ts.isJsxElement(box) ? box.closingElement.getStart() : null,
           });
         }
@@ -652,3 +783,34 @@ export function findDoubleMenus(source: string, fileName = "file.tsx"): number[]
   visit(sf);
   return [...lines].sort((a, b) => a - b);
 }
+
+/**
+ * The files the census (and the lint rule matrx/error-render-carries-alchemy)
+ * reads. The primitives themselves — they ARE the one place an error box is drawn. */
+export const CENSUS_PRIMITIVES = new Set([
+  "components/errors/ErrorNotice.tsx",
+  "components/errors/ErrorAlchemyMenu.tsx",
+  // The package error slot and the toast decorator render only for an error.
+  "components/errors/PackageErrorActions.tsx",
+  "components/errors/errorToastAlchemy.tsx",
+  "components/errors/ErrorBoundaryView.tsx",
+  "lib/error-boundary/ErrorBoundaryWithCapture.tsx",
+]);
+
+/**
+ * Bundles that cannot import host code: the kind sandbox runtime runs inside
+ * an isolated iframe and relays its render error to the host, whose boundary
+ * carries the menu.
+ */
+const ISOLATED_BUNDLES = [/^features\/content-ir\/sandbox\/runtime\//];
+
+export function isCensusScannable(rel: string): boolean {
+  if (!/\.tsx$/.test(rel)) return false;
+  if (CENSUS_PRIMITIVES.has(rel)) return false;
+  if (ISOLATED_BUNDLES.some((pattern) => pattern.test(rel))) return false;
+  return (
+    !/(^|\/)(__tests__|__mocks__)(\/|$)/.test(rel) &&
+    !/\.(test|spec)\.tsx$/.test(rel)
+  );
+}
+

@@ -37,6 +37,7 @@ import {
   type HealthFinding,
   type HealthLoad,
 } from "./health";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Spec = EntityColumnSpec<HealthFinding>;
 
@@ -118,6 +119,7 @@ const COLUMNS: Spec[] = [
         <span className="block truncate" title={row.detail ? `${row.problem} — ${row.detail}` : row.problem}>
           {row.problem}
           {row.detail ? <span className="text-muted-foreground"> · {row.detail}</span> : null}
+          <ErrorAlchemyMenu error={row.problem} />
         </span>
       ),
     },

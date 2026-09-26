@@ -14,6 +14,7 @@ import {
 
 import { cn } from "@/styles/themes/utils"
 import { Label } from "@/components/ui/label"
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu"
 
 const Form = FormProvider
 
@@ -146,7 +147,7 @@ const FormMessage = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, children, ...props }, ref) => {
-  const { error, formMessageId } = useFormField()
+  const { error, formMessageId, name } = useFormField()
   const body = error ? String(error?.message) : children
 
   if (!body) {
@@ -161,6 +162,14 @@ const FormMessage = React.forwardRef<
       {...props}
     >
       {body}
+      {/* A field error carries the Alchemy Menu (RC-B12): on its own line,
+          one line tall and one line wide, so the message never grows. */}
+      {error ? (
+        <ErrorAlchemyMenu
+          error={error}
+          input={{ message: String(error.message ?? body), source: "alert", details: { field: name } }}
+        />
+      ) : null}
     </p>
   )
 })

@@ -42,6 +42,7 @@ import {
   QueryError,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const STATUS_OPTIONS = [
   { value: "queued", label: "Queued" },
@@ -237,6 +238,7 @@ export function CrawlsTable() {
             className="block max-w-56 truncate text-xs text-destructive"
           >
             {readable}
+            <ErrorAlchemyMenu error={readable} />
           </span>
         );
       },

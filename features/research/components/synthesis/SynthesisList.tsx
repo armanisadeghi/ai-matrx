@@ -153,8 +153,10 @@ function SynthesisCard({
           <p className="text-[10px] text-muted-foreground mt-0.5">
             {synthesis.created_at
               ? new Date(synthesis.created_at).toLocaleDateString()
-              : "Unknown date"}{" "}
-            · v{synthesis.version}
+              : "Unknown date"}
+            {synthesis.capture_version != null
+              ? ` · v${synthesis.capture_version}`
+              : null}
             {synthesis.model_id ? (
               <span className="ml-1 inline-flex align-middle">
                 ·
@@ -193,7 +195,7 @@ function SynthesisCard({
               synthesis_id: synthesis.id,
               scope: synthesis.scope,
               status: synthesis.status,
-              version: synthesis.version,
+              version: synthesis.capture_version,
               result_chars: synthesis.result?.length ?? 0,
             },
           })}
@@ -226,7 +228,7 @@ function SynthesisCard({
                   actions={{ metadata: {
                     synthesisId: synthesis.id,
                     scope: synthesis.scope,
-                    version: synthesis.version,
+                    version: synthesis.capture_version,
                     model_id: synthesis.model_id ?? undefined,
                     keyword_id: synthesis.keyword_id ?? undefined,
                   } }}

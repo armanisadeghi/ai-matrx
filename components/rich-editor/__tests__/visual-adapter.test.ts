@@ -366,3 +366,22 @@ describe("an in-cell <br> is a line break, not protected HTML (verify-RC-B4 R6-3
     expect(plan.needsConsent.length).toBeGreaterThan(0);
   });
 });
+
+describe("a line opening with a four-backtick code span is prose, not a protected fence (GFM, CommonMark 4.5)", () => {
+  const STORED = "Run this first:\n\n```` code ```` then restart the shipper.\n\nThen log it.";
+
+  it("the tokenizer makes no fence island of it — it is editable prose", () => {
+    const islands = listIslands(tokenizeSource(STORED)).filter((island) => island.islandType === "fence");
+    expect(islands).toEqual([]);
+  });
+
+  it("typing in that line saves as a plain edit, with no protected-content consent", () => {
+    const session = track(open(STORED));
+    insertText(session, endOfTextblock(session.editor.state.doc, "then restart the shipper."), " Now.");
+    const text = session.save();
+    expect(text).toBe(STORED.replace("then restart the shipper.", "then restart the shipper. Now."));
+    const plan = planSave(STORED, text);
+    expect(plan.needsConsent).toEqual([]);
+    expect(plan.error).toBeNull();
+  });
+});

@@ -90,6 +90,7 @@ import {
   type ResolvedContextMenuContext,
 } from "@/features/context-menu-v3/types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * One honest empty line per lens — a lens finding nothing is usually GOOD
@@ -403,6 +404,7 @@ export function BacklinkObservationTable({
               value={row.enrichment_status}
               label={backlinkReviewStatusLabel(row.enrichment_status)}
             />
+            <ErrorAlchemyMenu error={error} />
           </span>
         );
       },

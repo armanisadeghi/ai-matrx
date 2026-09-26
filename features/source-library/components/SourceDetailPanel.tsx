@@ -190,7 +190,11 @@ function TranscriptState({
                 <Icon className="h-5 w-5" aria-hidden="true" />
             </span>
             <p className="text-sm font-medium text-foreground">{headline}</p>
-            <p className="max-w-md text-sm text-muted-foreground">{body}</p>
+            <p className="max-w-md text-sm text-muted-foreground">
+                {body}
+                {/* A failed read carries the Alchemy Menu on its sentence (RC-B12). */}
+                {tone === "bad" && <ErrorAlchemyMenu error={body} />}
+            </p>
             {children}
         </div>
     );
@@ -445,7 +449,6 @@ export function SourceDetailPanel({
                     headline="This transcript could not be read"
                     body={loadError.message}
                 >
-                    <ErrorAlchemyMenu error={loadError} operation="Read this transcript" />
                     <div className="flex flex-col items-center gap-2">
                         {remedy ? (
                             <p className="max-w-md text-xs text-muted-foreground">{remedy}</p>

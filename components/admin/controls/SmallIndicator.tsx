@@ -12,6 +12,7 @@ import {
   toggleDebugMode,
   selectIsDebugMode,
 } from "@/lib/redux/preferences/adminDebugSlice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SmallIndicatorProps {
   onDragStart: (e: React.MouseEvent) => void;
@@ -93,6 +94,7 @@ const SmallIndicator: React.FC<SmallIndicatorProps> = ({
       {isUnhealthy && health.error && (
         <div title={health.error}>
           <AlertCircle size={14} className="text-red-400" />
+          <ErrorAlchemyMenu error={health.error} />
         </div>
       )}
 

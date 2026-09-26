@@ -25868,6 +25868,7 @@ export type Database = {
           current_chunk_count: number
           current_document_id: string
           current_has_entities: boolean
+          entities_state: string
           has_entities: boolean
           head_document_id: string
           indexing: boolean
@@ -89540,6 +89541,7 @@ export type Database = {
         Row: {
           agent_id: string | null
           agent_type: string
+          capture_version: number | null
           created_at: string | null
           created_by: string | null
           custom_fields: Json
@@ -89570,6 +89572,7 @@ export type Database = {
         Insert: {
           agent_id?: string | null
           agent_type: string
+          capture_version?: number | null
           created_at?: string | null
           created_by?: string | null
           custom_fields?: Json
@@ -89600,6 +89603,7 @@ export type Database = {
         Update: {
           agent_id?: string | null
           agent_type?: string
+          capture_version?: number | null
           created_at?: string | null
           created_by?: string | null
           custom_fields?: Json

@@ -1002,7 +1002,11 @@ export async function getSynthesis(
   }
   if (params?.keyword_id) query = query.eq("keyword_id", params.keyword_id);
 
-  query = query.order("created_at", { ascending: false });
+  // Newest capture first (`capture_version`, numbered per topic/scope/
+  // keyword-or-tag); `version` is the platform's row-edit counter.
+  query = query
+    .order("capture_version", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false });
 
   const { data, error } = await query;
   if (error) throw error;
@@ -1041,7 +1045,9 @@ export async function getSynthesisVersions(
   }
   if (params.keyword_id) query = query.eq("keyword_id", params.keyword_id);
 
-  const { data, error } = await query.order("created_at", { ascending: false });
+  const { data, error } = await query
+    .order("capture_version", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
 }

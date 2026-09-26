@@ -483,13 +483,19 @@ export function FacetCoverage({ siteId }: { siteId: string }) {
           />
         ) : null}
         {row.queue_failed > 0 ? (
-          <Stat
-            icon={AlertTriangle}
-            value={formatCount(row.queue_failed)}
-            label="quarantined"
-            tone="warning"
-            title={row.last_error ?? "Quarantined after repeated failures"}
-          />
+          <>
+            <Stat
+              icon={AlertTriangle}
+              value={formatCount(row.queue_failed)}
+              label="quarantined"
+              tone="warning"
+              title={row.last_error ?? "Quarantined after repeated failures"}
+            />
+            <ErrorAlchemyMenu
+              error={row.last_error ?? "Quarantined after repeated failures"}
+              operation="Classify these keywords"
+            />
+          </>
         ) : null}
         {row.next_phrase && !complete ? (
           <p className="min-w-0 text-[11px] text-muted-foreground">
