@@ -387,9 +387,13 @@ function runCommand(cmd, timeoutSeconds) {
   });
 }
 
-async function runRow(row, timeoutOverride, scans) {
+async function runRow(row, timeoutOverride, scans, metrics) {
   const timeout = timeoutOverride || row.timeoutSeconds;
+  const startedAt = new Date().toISOString();
   const { code, output, ms } = await runCommand(row.cmd, timeout);
+  // The run's own measurement, recorded per run by the checks store (P2-STORAGE-VERIFY V4). Peak
+  // RSS is not measured: node's child_process does not expose a child's rusage.
+  if (metrics) metrics[row.id] = { started_at: startedAt, duration_ms: ms, exit: code, timed_out: code === null && output.endsWith(`timed out after ${timeout}s`) };
   const detail = writeLog(row.id, `# ${row.id}  ${formatDurationMs(ms, { style: "compact" })}\n$ ${row.cmd}\n${output}`);
   if (code === null) {
     const last = output.trim().split("\n").at(-1) ?? "no output";
@@ -482,7 +486,7 @@ class Gate {
  * `scans` (optional, an object) is filled with `{ <check>: <item lines> }` for every row whose run
  * printed exactly one end-of-scan marker matching the item lines it printed.
  */
-export async function runRows(rows, { workers = DEFAULT_WORKERS, dbWorkers = DEFAULT_DB_WORKERS, timeout, scans } = {}) {
+export async function runRows(rows, { workers = DEFAULT_WORKERS, dbWorkers = DEFAULT_DB_WORKERS, timeout, scans, metrics } = {}) {
   const pool = new Gate(Math.max(1, workers));
   const db = new Gate(Math.max(1, dbWorkers));
   const findings = [];
@@ -491,7 +495,7 @@ export async function runRows(rows, { workers = DEFAULT_WORKERS, dbWorkers = DEF
       await pool.acquire();
       if (row.needsDb) await db.acquire();
       try {
-        findings.push(...(await runRow(row, timeout, scans)));
+        findings.push(...(await runRow(row, timeout, scans, metrics)));
       } catch (error) {
         findings.push({
           check: row.id,
@@ -619,7 +623,9 @@ export async function main(argv = process.argv.slice(2)) {
   }
   const started = Date.now();
   const scans = {};
-  const findings = await runRows(rows, { workers: args.workers, dbWorkers: args.dbWorkers, timeout: args.timeout, scans });
+  const metrics = {};
+  const runStartedAt = new Date(started).toISOString();
+  const findings = await runRows(rows, { workers: args.workers, dbWorkers: args.dbWorkers, timeout: args.timeout, scans, metrics });
   const elapsed = formatDurationMs(Date.now() - started, { style: "compact" });
   const shown = displayFindings(findings, Object.fromEntries(rows.map((r) => [r.id, r.label])));
   if (shown.length) process.stdout.write(`${renderTable(shown)}\n`);
@@ -631,7 +637,10 @@ export async function main(argv = process.argv.slice(2)) {
       check, category, level, title, count, fingerprint: fp, remedy, detail,
       ...(item_key ? { item_key, ratchet, ...(basis ? { basis } : {}), unit, ...(file ? { file } : {}), ...(line != null ? { line } : {}) } : {}),
     }));
-    const header = { ran: rows.map((r) => r.id) };
+    // The run's own commit and start (P2-STORAGE-VERIFY V5): the store orders runs by these, never
+    // by when the file was copied or ingested. `checks` is each real run's measurement.
+    const sha = spawnSync("git", ["-C", REPO_ROOT, "rev-parse", "HEAD"], { encoding: "utf8" }).stdout?.trim() || null;
+    const header = { ran: rows.map((r) => r.id), git_sha: sha, started_at: runStartedAt, checks: metrics };
     if (skipped.length) header.skipped_live_db = skipped.map((r) => r.id);
     const tally = itemTally(findings);
     if (Object.keys(tally).length) header.items = tally;

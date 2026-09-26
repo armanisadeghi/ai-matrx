@@ -50,7 +50,17 @@ test("a clean run is one line and an empty findings file behind the ran header",
   const { out, header, findings } = runWithManifest(["Clean gate|true", "Another clean gate|echo all good"]);
   assert.equal(out.trim().split("\n").length, 1);
   assert.match(out, /^checks: 2 run, 0 findings \([^)]+\)$/m);
-  assert.deepEqual(header, { ran: ["clean-gate", "another-clean-gate"] });
+  // The run's own commit and start, and each real run's measurement (P2-STORAGE-VERIFY V4/V5).
+  const { git_sha, started_at, checks, ...rest } = header;
+  assert.match(git_sha, /^[0-9a-f]{40}$/);
+  assert.ok(!Number.isNaN(Date.parse(started_at)));
+  assert.deepEqual(Object.keys(checks).sort(), ["another-clean-gate", "clean-gate"]);
+  for (const m of Object.values(checks)) {
+    assert.equal(m.exit, 0);
+    assert.equal(m.timed_out, false);
+    assert.ok(Number.isInteger(m.duration_ms) && !Number.isNaN(Date.parse(m.started_at)));
+  }
+  assert.deepEqual(rest, { ran: ["clean-gate", "another-clean-gate"] });
   assert.equal(findings.length, 0);
 });
 
@@ -189,7 +199,8 @@ test("--skip-live-db runs no live-db or unclassified row and says so in one line
   assert.equal(existsSync(marker("repo")), true);
   assert.equal(existsSync(marker("clone")), true);
   assert.match(out, /^checks: skipped 2 live-db rows \(1 unclassified \S+ run pnpm checks:classify\); they live in .*REGISTER\.md/m);
-  assert.deepEqual(header, { ran: ["repo-gate", "clone-gate"], skipped_live_db: ["live-gate", "unknown-gate"] });
+  const { git_sha: _sha, started_at: _at, checks: _m, ...rest } = header;
+  assert.deepEqual(rest, { ran: ["repo-gate", "clone-gate"], skipped_live_db: ["live-gate", "unknown-gate"] });
   assert.equal(findings.length, 0);
 });
 
