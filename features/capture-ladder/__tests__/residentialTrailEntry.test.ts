@@ -94,7 +94,7 @@ const LIVE_RESIDENTIAL_ROW: unknown = {
   captured_chars: null,
   organization_id: "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
   captured_by_rung: null,
-  captured_item_id: null,
+  captured_processed_document_id: null,
   claim_expires_at: null,
   estimated_seconds: null,
 };

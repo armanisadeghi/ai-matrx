@@ -525,7 +525,13 @@ export interface CaptureHandoff {
   claimed_at: string | null;
   claim_expires_at: string | null;
   attempt_count: number;
-  captured_item_id: string | null;
+  /**
+   * The Source this handoff was captured as (SOURCE-CONVERGENCE §2.4, §4.3):
+   * the capture ladder lands through the door, so a captured row names its
+   * `docproc.processed_documents` row. Replaces the retired
+   * `captured_item_id` (a `media.library_item` pointer, no longer written).
+   */
+  captured_processed_document_id: string | null;
   captured_chars: number | null;
   captured_at: string | null;
   /**

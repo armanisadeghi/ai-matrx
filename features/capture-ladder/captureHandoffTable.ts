@@ -143,7 +143,7 @@ const captureHandoffSchema = z.object({
   claimed_at: z.string().nullable().default(null),
   claim_expires_at: z.string().nullable().default(null),
   attempt_count: z.number().default(0),
-  captured_item_id: z.string().nullable().default(null),
+  captured_processed_document_id: z.string().nullable().default(null),
   captured_chars: z.number().nullable().default(null),
   captured_at: z.string().nullable().default(null),
   captured_by_rung: z

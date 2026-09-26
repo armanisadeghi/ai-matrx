@@ -67,7 +67,7 @@ function handoff(id: string, url: string): CaptureHandoff {
     claimed_at: null,
     claim_expires_at: null,
     attempt_count: 0,
-    captured_item_id: null,
+    captured_processed_document_id: null,
     captured_chars: null,
     captured_at: null,
     captured_by_rung: null,
