@@ -772,7 +772,8 @@ interface ApplyOpts {
 /** Apply ONE file. The whole of db:apply lives here so --self-test exercises
  *  exactly the code an agent runs, not a paraphrase of it. */
 async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
-  const { dryRun, reapply, statementTimeout, target, campaignSource, lane } = opts;
+  const { dryRun, reapply, target, campaignSource, lane } = opts;
+  let statementTimeout = opts.statementTimeout;
   const branchRefPath = opts.branchRefPath;
   const cloneRefPath = opts.cloneRefPath;
   const outsideMigrations = relative(MIGRATIONS_DIR, path).startsWith("..");
@@ -1048,6 +1049,20 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   }
 
   const stripped = stripForDetection(sql);
+  // 🚨 A PROVISION RUNS UNDER THE 60 s CAP (1161, 2026-09-26). platform.provision_preflight refuses
+  // a statement ceiling over 60 s — that ceiling is the only bound on how long a provision HOLDS
+  // SHARE ROW EXCLUSIVE on iam.organizations and auth.users — so a file that calls the builder
+  // runs at 60 s here exactly as aidream's runner and the lane-B service run it.
+  if (/\bplatform\s*\.\s*provision(?:_batch)?\s*\(/i.test(stripped)) {
+    const ms = parseDurationMs(statementTimeout);
+    if (!ms || ms > 60_000) {
+      console.log(
+        `${TAG.info}this file calls platform.provision — statement_timeout ${statementTimeout} lowered to 60s ` +
+          `${C.dim}(provision_preflight refuses a longer ceiling; 1161)${C.reset}`,
+      );
+      statementTimeout = "60s";
+    }
+  }
   const facts = statementFacts(sql);
   if (facts.selfLedger) {
     console.error(
