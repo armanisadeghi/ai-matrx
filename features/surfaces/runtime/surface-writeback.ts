@@ -34,7 +34,7 @@
  *    catalog unreachable) FAILS naming the reason; a skip is never a pass.
  */
 
-import { validateAgainstKind } from "@/features/content-ir/registry/validate-against-kind";
+import { kindValidator } from "@/features/content-ir/registry/kind-schema-source";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import {
   isSurfaceWritePatch,
@@ -399,7 +399,8 @@ async function agentWriteAllowed(
  * kind-component action button emitting the wrong shape is the same defect as
  * an agent doing it.
  *
- * A SKIP IS NEVER A PASS. `validateAgainstKind` reports `checked:false` when
+ * A SKIP IS NEVER A PASS. `kindValidator.validate` (`@ai-matrx/content-ir`'s
+ * `createKindValidator` over the app's `SchemaSourcePort`) reports `checked:false` when
  * the kind is not registered, has no schema, has an uncompilable schema, or
  * the catalog is unreachable. None of those mean "fine" — they mean the
  * platform cannot tell, which for a write into the user's page is a failure
@@ -413,7 +414,7 @@ async function valueContractHolds(
   const kind = target.valueKind;
   if (!kind) return true;
 
-  const verdict = await validateAgainstKind(value, kind);
+  const verdict = await kindValidator.validate(value, kind);
 
   if (!verdict.checked) {
     return fail(

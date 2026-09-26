@@ -478,6 +478,15 @@ export function draftMarker(sql: string): { owner: string; reason: string } | nu
   return null;
 }
 
+/** No ledger-only path may write a row for draft bytes (D351). Null = not a draft. */
+function draftLedgerRefusal(path: string): string | null {
+  const d = existsSync(path) ? draftMarker(readFileSync(path, "utf8")) : null;
+  return d
+    ? `${basename(path)} is a DRAFT by ${d.owner} — no path may ledger it (a row for draft bytes ` +
+        `hides the finished file from every apply); ${DRAFT_REMEDY}.`
+    : null;
+}
+
 /** The `-- retired:` reason, or null. Same 25-line header window as `-- migrate: skip`. */
 function retiredReason(sql: string): string | null {
   for (const line of sql.split("\n", 25)) {
@@ -622,10 +631,10 @@ async function beginClean(client: pg.Client): Promise<void> {
 async function ledgerRow(
   client: pg.Client,
   filename: string,
-): Promise<{ checksum: string; applied_at: string; chair_step: string | null } | null> {
-  const out = await client.query<{ checksum: string; applied_at: string; chair_step: string | null }>(
+): Promise<{ checksum: string; applied_at: string; chair_step: string | null; duration_ms: number | null } | null> {
+  const out = await client.query<{ checksum: string; applied_at: string; chair_step: string | null; duration_ms: number | null }>(
     `select checksum, applied_at::text as applied_at,
-            (to_jsonb(m) ->> 'chair_step') as chair_step
+            (to_jsonb(m) ->> 'chair_step') as chair_step, duration_ms
        from public._schema_migrations m
        where source = $1 and filename = $2`,
     [SOURCE, filename],
@@ -1579,6 +1588,26 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
         const known = SHA256_RE.test(existing.checksum)
           ? `a DIFFERENT SHA-256 (${existing.checksum})`
           : `${JSON.stringify(existing.checksum)}, which is not a SHA-256 at all — what ran was never recorded`;
+        // 🚨 A ROW FOR DRAFT BYTES IS NOT A RECORD OF A RUN (D351, 2026-09-26). aidream's
+        // detect_applied ledgered rca5d_j's DRAFT at 22:44 PT without executing it (its function
+        // names already existed); once the draft line came off, this refusal told the lane
+        // "the file on disk is not the bytes that ran" — as if the finished fix had been
+        // superseded — and the fix would silently never have run. Say what the row really is.
+        const was = ledgeredBytesFromGit(relative(ROOT, path), existing.checksum);
+        const wasDraft = was ? draftMarker(was.bytes) : null;
+        if (wasDraft || existing.duration_ms === 0) {
+          console.error(
+            `${TAG.fail}${filename} is ledgered (${existing.applied_at}) for ` +
+              (wasDraft
+                ? `a DRAFT of this file by ${wasDraft.owner} (commit ${was!.commit.slice(0, 10)})`
+                : `other bytes, by a LEDGER-ONLY path (duration 0 ms: detect_applied / --mark-applied)`) +
+              ` — that row records nothing that executed.\n` +
+              `  These finished bytes have NEVER run on this database. Execute them:\n` +
+              `    pnpm db:apply ${relative(ROOT, path)} --target ${target} --reapply\n` +
+              `  (--reapply runs the whole file in one transaction and re-points the row at what ran.)`,
+          );
+          return 1;
+        }
         console.error(
           `${TAG.fail}${filename} is already ledgered with ${known}, applied ${existing.applied_at}.\n` +
             `  The file on disk is not the bytes that ran. Refusing.\n` +
@@ -2645,6 +2674,11 @@ function draftSelfTest(): number {
       `RED named production apply of a draft exits 1 with the remedy (exit ${red.status})`,
       red.status === 1 && red.out.includes("is a DRAFT by self-test") && red.out.includes(DRAFT_REMEDY),
     );
+    // No ledger-only path may write a row for draft bytes (rca5d_j, 22:44 PT 2026-09-26).
+    for (const mode of ["--ledger-rebase", "--amend-idempotent"]) {
+      const r = spawnSyncNode([resolve(ROOT, "scripts", "apply-migration.ts"), mode, file, "--target", "clone"]);
+      ok(`RED ${mode} of a draft is refused before it reads any database (exit ${r.status})`, r.status === 1 && r.out.includes("no path may ledger it"));
+    }
     writeFileSync(file, body);
     const green = run();
     ok(
@@ -4129,7 +4163,9 @@ function ledgeredBytesFromGit(path: string, wantChecksum: string): { bytes: stri
     } catch {
       continue;
     }
-    if (sha256(bytes) === wantChecksum) return { bytes, commit: sha };
+    if (sha256(bytes) === wantChecksum || sha256(bytes.replace(/\s+$/, "")) === wantChecksum) {
+      return { bytes, commit: sha };
+    }
   }
   return null;
 }
@@ -4291,6 +4327,13 @@ function amendSelfTest(): number {
  * a comment, so the correct file IS the applied file, and there is nothing to amend forward to.
  */
 async function restoreLedger(path: string, target: Target): Promise<number> {
+  {
+    const draftRefusal = draftLedgerRefusal(path);
+    if (draftRefusal) {
+      console.error(`${TAG.fail}${draftRefusal}`);
+      return 1;
+    }
+  }
   const filename = basename(path);
   if (!existsSync(path)) {
     console.error(`${TAG.fail}${path} does not exist.`);
@@ -4354,6 +4397,13 @@ async function restoreLedger(path: string, target: Target): Promise<number> {
 }
 
 async function amendIdempotent(path: string, target: Target, statementTimeout: string): Promise<number> {
+  {
+    const draftRefusal = draftLedgerRefusal(path);
+    if (draftRefusal) {
+      console.error(`${TAG.fail}${draftRefusal}`);
+      return 1;
+    }
+  }
   void statementTimeout;
   const filename = basename(path);
   if (!existsSync(path)) {
@@ -4663,6 +4713,13 @@ function upFileFor(inverseRel: string, argv: readonly string[], valueOf: (f: str
 }
 
 async function ledgerRebase(path: string, argv: readonly string[]): Promise<number> {
+  {
+    const draftRefusal = draftLedgerRefusal(path);
+    if (draftRefusal) {
+      console.error(`${TAG.fail}${draftRefusal}`);
+      return 1;
+    }
+  }
   const valueOf = (flag: string): string | null => {
     const eq = argv.find((a) => a.startsWith(`${flag}=`));
     if (eq) return eq.slice(flag.length + 1).trim() || null;

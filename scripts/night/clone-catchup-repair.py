@@ -74,7 +74,77 @@ def functions_written(path: Path) -> list[str]:
     return sorted({m.group(1).replace('"', "") for m in FN_RE.finditer(text)})
 
 
+def resolve_any(source: str, filename: str) -> bytes | None:
+    """The bytes of a ledgered file, for NAMING its owner only (never replayed from here):
+    the working tree first (a peer's rehearsal may be uncommitted, and a disk read is what keeps
+    a scan of thousands of ledger rows under a second), origin/main second."""
+    if filename in _BYTES:
+        return _BYTES[filename]
+    found = None
+    labels = (source, "matrx-frontend", "aidream", "campaign")
+    for label in labels:
+        for _repo, directory, _runner, _sel in _plan.SOURCE_DIRS.get(label, []):
+            cand = directory / filename
+            if cand.is_file():
+                found = cand.read_bytes()
+                break
+        if found is not None:
+            break
+    if found is None:
+        for label in labels:
+            for repo, directory, _runner, _sel in _plan.SOURCE_DIRS.get(label, []):
+                found = _plan.git_bytes(repo, str((directory / filename).relative_to(repo)))
+                if found is not None:
+                    break
+            if found is not None:
+                break
+    _BYTES[filename] = found
+    return found
+
+
+_BYTES: dict[str, bytes | None] = {}
+
+
+def later_owners(prod_tsv: str, clone_tsv: str, qualified: str, after: str, exclude: str) -> list[str]:
+    """Files that ran ON THE CLONE after `after` (the file's own place in production's history)
+    and write `qualified` — the owners of the body the clone holds now.
+
+    🚨 lane CLONE-LEDGER-VERDICTS, 2026-09-26 (coordinator's class). At 05:42:56Z the catch-up
+    replayed copywritable_people_test_the_copy_until_the_switch.sql on the clone and put
+    platform._cutover_seam_readiness back to its pre-CUTOVER-READINESS body, undoing
+    cutoverready_the_switch_waits_until_each_copy_matches_its_older_table.sql, which the clone had
+    run seven minutes earlier. A replay of an older file must never overwrite a body a later
+    ledgered file replaced. A clone row's place in history is PRODUCTION's applied_at when
+    production ledgered it (a catch-up carries old files late), and the clone's own applied_at
+    only for a row production does not hold (a peer's rehearsal ahead of production).
+    """
+    prod = {(r["source"], r["filename"]): r for r in _plan.read_tsv(prod_tsv)}
+    clone = _plan.read_tsv(clone_tsv)
+    base = exclude[:-len(".sql")] if exclude.endswith(".sql") else exclude
+    skip = {exclude, f"{base}_down.sql", f"{base}.inverse.sql", f"inv_{exclude}"}
+    seen: set[str] = set()
+    out: list[str] = []
+    for r in clone:
+        if r["filename"] in skip or r["source"] == "parity" or _plan.inverse_base(r["filename"]):
+            continue
+        p = prod.get((r["source"], r["filename"]))
+        when = p["applied_at"] if p else r["applied_at"]
+        if when <= after or r["filename"] in seen:
+            continue
+        b = resolve_any(r["source"], r["filename"])
+        if b is None or not writes_function(b, qualified):
+            continue
+        seen.add(r["filename"])
+        out.append(_plan.SEP.join(["OWNER", r["source"], r["filename"], when,
+                                   "production" if p else "clone only (a rehearsal ahead of production)"]))
+    return sorted(out, key=lambda l: l.split(_plan.SEP)[3])
+
+
 def main() -> int:
+    if len(sys.argv) == 7 and sys.argv[1] == "--later-owners":
+        out = later_owners(*sys.argv[2:7])
+        sys.stdout.write("\n".join(out) + ("\n" if out else ""))
+        return 0
     if len(sys.argv) == 3 and sys.argv[1] == "--functions-written":
         for n in functions_written(Path(sys.argv[2])):
             print(n)

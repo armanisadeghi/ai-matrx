@@ -458,6 +458,8 @@ function markDelimiters(mark: Mark, runText: string): [string, string] {
 interface OpenMark {
   mark: Mark;
   close: string;
+  /** Index of the first item past this mark's run. */
+  end: number;
 }
 
 const EDGE_SENSITIVE_MARKS = new Set(["bold", "italic", "strike"]);
@@ -505,9 +507,25 @@ export function serializeInline(parent: PMNode): string {
   const children: PMNode[] = [];
   parent.forEach((child) => children.push(child));
   const items = hoistEdgeWhitespace(children);
+  // A code span is literal: nothing inside its backticks is syntax, so it can
+  // never wrap another mark's delimiters. Its run therefore ends wherever the
+  // OTHER marks change — `the `[`x`](u), never `the [x](u)` — which also makes it
+  // the innermost mark of every run it shares.
+  const others = (node: PMNode | undefined): readonly Mark[] => (node?.marks ?? []).filter((m) => m.type.name !== "code");
+  const sameOthers = (a: PMNode | undefined, b: PMNode | undefined): boolean => {
+    const x = others(a);
+    const y = others(b);
+    return x.length === y.length && x.every((mark) => mark.isInSet(y));
+  };
   const runEnd = (from: number, mark: Mark): number => {
     let end = from;
-    while (end < items.length && mark.isInSet(items[end]?.marks ?? [])) end += 1;
+    while (
+      end < items.length &&
+      mark.isInSet(items[end]?.marks ?? []) &&
+      (mark.type.name !== "code" || sameOthers(items[from], items[end]))
+    ) {
+      end += 1;
+    }
     return end;
   };
   const runText = (from: number, to: number): string =>
@@ -521,7 +539,7 @@ export function serializeInline(parent: PMNode): string {
   items.forEach((node, index) => {
     const marks = node.marks;
     let keep = 0;
-    while (keep < stack.length && stack[keep]?.mark.isInSet(marks)) keep += 1;
+    while (keep < stack.length && stack[keep]?.mark.isInSet(marks) && (stack[keep]?.end ?? 0) > index) keep += 1;
     for (let k = stack.length - 1; k >= keep; k -= 1) out += stack[k]?.close ?? "";
     stack.length = keep;
 
@@ -538,7 +556,7 @@ export function serializeInline(parent: PMNode): string {
     for (const { mark, end } of toOpen) {
       const [open, close] = markDelimiters(mark, runText(index, end));
       out += open;
-      stack.push({ mark, close });
+      stack.push({ mark, close, end });
     }
     out += literalText(node, index < items.length - 1 || node.marks.some((mark) => mark.type.name !== "mdEscape"));
   });

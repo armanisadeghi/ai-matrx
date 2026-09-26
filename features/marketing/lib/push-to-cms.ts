@@ -186,9 +186,10 @@ export interface PushResult {
 }
 
 /**
- * Execute the push. Markdown → HTML happens here, client-side, via `marked`
- * (already in the dependency graph — `lib/email/exportService.ts` uses it);
- * imported lazily so the converter stays out of the route chunk.
+ * Execute the push. Markdown → HTML happens here, client-side, through the
+ * sanitizing converter (`lib/markdown/safe-html.ts`) — this HTML becomes a
+ * public page, so raw HTML in AI-authored markdown is allow-listed, never
+ * passed through. Imported lazily so the converter stays out of the route chunk.
  */
 export async function executeCmsPush(args: {
   cmsSiteId: string;
@@ -213,8 +214,8 @@ export async function executeCmsPush(args: {
   const warnings: string[] = [];
   let html: string | undefined;
   if (payload.contentMarkdown) {
-    const { marked } = await import("marked");
-    html = marked.parse(payload.contentMarkdown, { async: false });
+    const { markdownToSafeHtml } = await import("@/lib/markdown/safe-html");
+    html = markdownToSafeHtml(payload.contentMarkdown);
   }
 
   const provenance = {

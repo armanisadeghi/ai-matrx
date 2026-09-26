@@ -274,7 +274,7 @@ export interface SurfaceWriteTarget {
    * `emitted_json_schema` IS the contract, and it is the SAME contract
    * everywhere the value travels — on the wire (the `apply_surface_write`
    * inline spec), at the seam (`applySurfaceWrite` validates through
-   * `validateAgainstKind` before approval and before the handler), and in
+   * `kindValidator.validate` before approval and before the handler), and in
    * the DB mirror (`ui.ui_surface_write_target.kind_key`, which aidream's
    * resolver prints as `kind=<slug>`).
    *

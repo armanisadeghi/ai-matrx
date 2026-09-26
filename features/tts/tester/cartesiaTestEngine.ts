@@ -31,6 +31,7 @@ import {
   TTS_MODEL_ID,
 } from "@/lib/cartesia/config";
 import { availableVoices } from "@/lib/cartesia/voices";
+import { VOICE_EMOTION_OPTIONS } from "@/features/settings/agent-writable-settings";
 
 export const TEST_MODEL_OPTIONS: ReadonlyArray<{ value: string; label: string }> =
   [
@@ -49,22 +50,16 @@ export const TEST_VOICE_OPTIONS: ReadonlyArray<{ id: string; label: string }> = 
     .map((v) => ({ id: v.id, label: v.name })),
 ];
 
-/** A curated subset of the (large) emotion list; "" = none (the normal case). */
-export const EMOTION_OPTIONS: ReadonlyArray<string> = [
-  "",
-  "Neutral",
-  "Happy",
-  "Excited",
-  "Enthusiastic",
-  "Calm",
-  "Serene",
-  "Curious",
-  "Confident",
-  "Determined",
-  "Sad",
-  "Angry",
-  "Sarcastic",
-];
+/**
+ * `generation_config.emotion`'s accepted values; "" = none (the normal case).
+ * The one declaration is `VOICE_EMOTION_OPTIONS` in
+ * `features/settings/agent-writable-settings.ts` (also read by the Voice
+ * input settings tab and the agent-writable contract) — this list must never
+ * drift from it.
+ */
+export const EMOTION_OPTIONS: ReadonlyArray<string> = VOICE_EMOTION_OPTIONS.map(
+  (o) => o.value,
+);
 
 export interface TtsTestConfig {
   modelId: string;

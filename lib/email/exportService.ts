@@ -1,5 +1,5 @@
 import { sendEmail, emailTemplates } from './client';
-import { marked } from 'marked';
+import { markdownToSafeHtml } from '@/lib/markdown/safe-html';
 import { extractErrorMessage } from '@/utils/errors';
 import { escapeHtml } from "@ai-matrx/kit/html-escape";
 
@@ -39,10 +39,12 @@ function tableExportFilename(
 }
 
 /**
- * Convert markdown content to formatted HTML for email
+ * Convert markdown content to formatted HTML for email. Raw HTML in the
+ * markdown is sanitized (allow-list) — AI/user-authored content never sends
+ * live script, handlers, frames or forms from our domain.
  */
 export function markdownToEmailHtml(markdown: string): string {
-  const htmlContent = marked(markdown, { async: false }) as string;
+  const htmlContent = markdownToSafeHtml(markdown);
   
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; color: #1f2937;">

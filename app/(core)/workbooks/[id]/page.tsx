@@ -22,6 +22,7 @@ import {
   updateWorkbookDescription,
 } from "@/features/data-tables/workbook-service";
 import { isServiceFailure, type Workbook } from "@/features/data-tables/types";
+import { canActOn } from "@/features/access-gate/service/canActOn";
 
 // Univer hard-depends on `window` / `document`. Mount client-only.
 const WorkbookEditor = dynamic(
@@ -72,18 +73,13 @@ export default function WorkbookPage({
       const userId = userData?.user?.id ?? null;
       setCurrentUserId(userId);
 
-      // Editor gate: owner ALWAYS edits; non-owner edits when has_permission
-      // returns true for level=editor. has_permission is the source of truth
+      // Editor gate: owner ALWAYS edits; non-owner edits when the access kernel
+      // (canActOn → iam.has_access) allows editor — the same question the write doors ask. has_permission is the source of truth
       // for sharing, so the UI matches what the RLS-protected RPCs will accept.
       if (userId && userId === res.data.user_id) {
         setCanEdit(true);
       } else {
-        const { data: perm } = await supabase.rpc("has_permission", {
-          p_resource_type: "workbook",
-          p_resource_id: id,
-          p_required_permission: "editor",
-        });
-        setCanEdit(perm === true);
+        setCanEdit(await canActOn("workbook", id, "editor"));
       }
       setPermsResolved(true);
     })();

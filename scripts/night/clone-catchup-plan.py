@@ -115,9 +115,85 @@ def read_tsv(path: str) -> list[dict[str, str]]:
                     "filename": parts[1],
                     "checksum": parts[2],
                     "applied_at": parts[3],
+                    # Optional (lane CLONE-LEDGER-VERDICTS): duration_ms, whether a runner wrote the
+                    # row (applied_by_process present), and the lane that did. A 4-column dump still
+                    # reads, and then no row is judged hand-ledgered.
+                    "duration_ms": parts[4] if len(parts) > 4 else "",
+                    "by_runner": parts[5] if len(parts) > 5 else "t",
+                    "lane": parts[6] if len(parts) > 6 else "",
                 }
             )
     return rows
+
+
+# ── THE RULES IN FORCE WHEN PRODUCTION RAN A FILE (lane CLONE-LEDGER-VERDICTS, 2026-09-26) ──
+# 🚨 CHAIR RULING, rule 2. A file production ran is judged by the rules in force at ITS production
+# applied_at, not today's (grandfathering). The runners' own dated rules live beside the rules
+# (scripts/lib/migration-rule-dates.ts for db:apply). This table holds the one this job owns:
+# how a file reached production at all. From the owner's direct-apply ruling on, lanes ran files
+# through the Supabase MCP / psql and wrote the ledger row BY HAND (duration 0, no runner
+# provenance), so no runner judged those bytes on production — aidream/1040, 1043, 1044 and 1067
+# on 2026-09-25/26 were refused on the clone by DD-224 and the `-- target:` header rule, rules
+# production never applied to them. Such a row is carried the way production took it: runner
+# `direct` (the committed bytes in one transaction, lock_timeout 30s, then the same ledger row).
+RULES_INTRODUCED: list[tuple[str, str, str]] = [
+    ("direct-apply regime", "2026-09-25 00:30:00+00",
+     "owner ruling 2026-09-24 ~17:30 PT: all database changes applied directly via the Supabase MCP, "
+     "the ledger row written by hand"),
+]
+DIRECT_REGIME_AT = RULES_INTRODUCED[0][1]
+
+
+def hand_ledgered(r: dict[str, str]) -> bool:
+    """A production row no runner wrote: duration 0, no process provenance, after the ruling."""
+    return (r.get("duration_ms") == "0" and r.get("by_runner") in ("f", "false")
+            and r["applied_at"] >= DIRECT_REGIME_AT)
+
+
+_OWNER: dict[tuple[str, str], str] = {}
+_OWNER_LOADED: set[str] = set()
+OWNER_HISTORY_SINCE = "2026-09-01"
+
+
+def owner_of(repo: Path | None, relpath: str, prod_row: dict[str, str]) -> str:
+    """Who to ask about a file: the lane production's row names, else the last commit on
+    origin/main that touched the path (its subject carries the lane), else the name itself."""
+    if prod_row.get("lane"):
+        return f"lane {prod_row['lane']} (production's ledger row)"
+    if repo is None or not relpath:
+        return "no lane on production's row and no committed file — ask whoever holds " + prod_row["filename"]
+    if str(repo) not in _OWNER_LOADED:
+        # ONE history read per repo, newest first: a `git log -- <path>` per file walks the whole
+        # history for an old file (the first self-test run took minutes on four of them).
+        _OWNER_LOADED.add(str(repo))
+        out = subprocess.run(
+            ["git", "-C", str(repo), "log", "origin/main", f"--since={OWNER_HISTORY_SINCE}",
+             "--name-only", "--format=%x1e%h %s"],
+            capture_output=True, check=False,
+        )
+        for block in out.stdout.decode("utf-8", "replace").split("\x1e"):
+            head, _, names = block.partition("\n")
+            for name in names.splitlines():
+                if name.strip():
+                    _OWNER.setdefault((str(repo), name.strip()), head.strip())
+    line = _OWNER.get((str(repo), relpath))
+    return f"last commit {line[:110]}" if line else f"no commit on origin/main since {OWNER_HISTORY_SINCE} touches it"
+
+
+def inverse_of(repo: Path, relpath: str) -> str:
+    """The committed inverse of an up-file, as a repo-relative path, or `MISSING: <why>`."""
+    up = Path(relpath)
+    base = up.name[: -len(".sql")] if up.name.endswith(".sql") else up.name
+    parent = up.parent if up.parent.name != "campaign" else up.parent.parent
+    for cand in (parent / "inverse" / f"{base}_down.sql", parent / "inverse" / f"{base}.inverse.sql"):
+        committed = git_bytes(repo, str(cand))
+        if committed is None:
+            continue
+        disk = repo / cand
+        if not disk.is_file() or disk.read_bytes() != committed:
+            return f"MISSING: {cand} differs on disk from origin/main (another lane's uncommitted edit)"
+        return str(cand)
+    return f"MISSING: no {parent}/inverse/{base}_down.sql (or .inverse.sql) is committed on origin/main"
 
 
 def inverse_base(filename: str) -> str | None:
@@ -232,7 +308,9 @@ def self_test() -> int:
     # ran under the runner's label is RECORDED, never executed again.
     import subprocess as _sp
     camp = sorted((FRONTEND / "migrations" / "campaign").glob("*.sql"))
-    tracked = [p for p in camp if git_bytes(FRONTEND, os.path.relpath(p, FRONTEND)) == p.read_bytes()]
+    # The FIRST committed, unedited file is all the fixture needs (a `git show` per file over
+    # the whole directory cost this self-test over a minute).
+    tracked = next(([p] for p in camp if git_bytes(FRONTEND, os.path.relpath(p, FRONTEND)) == p.read_bytes()), [])
     if tracked:
         f = tracked[0]
         ck = hashlib.sha256(f.read_bytes()).hexdigest()
@@ -245,6 +323,7 @@ def self_test() -> int:
         ok = len(got) == 1 and got[0][6] == "record"
         print(("  ok   " if ok else "  FAIL ") + "GREEN-4 the clone already ran those bytes under matrx-frontend -> RECORD only")
         fails += 0 if ok else 1
+    fails += verdict_self_test(run)
     for label, prod_rows, clone_rows, want in cases:
         got = [r for r in run(list(prod_rows), list(clone_rows)) if r[2] == "zzselftest_up.sql"]
         ok = len(got) == want
@@ -254,6 +333,76 @@ def self_test() -> int:
             print(f"        expected {want} row(s), got {len(got)}: {got}")
     print("clone-catchup-plan self-test: " + ("PASS" if not fails else f"{fails} FAILED"))
     return 0 if not fails else 1
+
+
+def _first_committed(repo: Path, directory: Path, pred=lambda p: True) -> Path | None:
+    for p in sorted(directory.glob("*.sql"), reverse=True):
+        if pred(p) and git_bytes(repo, os.path.relpath(p, repo)) == p.read_bytes():
+            return p
+    return None
+
+
+def verdict_self_test(run) -> int:
+    """lane CLONE-LEDGER-VERDICTS, 2026-09-26: the parity verdict, the direct-apply regime, the
+    rule-4 inverse and the owner — each a pair that differs in ONE fact."""
+    fails = 0
+
+    def check(label: str, ok: bool, detail: object = "") -> None:
+        nonlocal fails
+        print(("  ok   " if ok else "  FAIL ") + label)
+        if not ok:
+            fails += 1
+            print(f"        {detail}")
+
+    camp = _first_committed(FRONTEND, FRONTEND / "migrations" / "campaign")
+    if camp is not None:
+        ck = hashlib.sha256(camp.read_bytes()).hexdigest()
+        prow = ("campaign", camp.name, ck, "2026-09-25 10:00:00+00")
+        got = run([prow], [("parity", camp.name, ck, "2026-09-26 06:00:00+00")])
+        check("RED-5 a parity verdict about THESE bytes -> PARITY, not in the delta",
+              [g[0] for g in got] == ["PARITY"], got)
+        got = run([prow], [("parity", camp.name, "ee" * 32, "2026-09-26 06:00:00+00")])
+        check("GREEN-5 a parity verdict about OTHER bytes holds nothing -> APPLY",
+              [g[0] for g in got] == ["APPLY"], got)
+
+    aid = _first_committed(AIDREAM, AIDREAM / "db" / "migrations", lambda p: p.name[:4].isdigit())
+    if aid is not None:
+        ck = hashlib.sha256(aid.read_bytes()).hexdigest()
+        hand = ("aidream", aid.name, ck, "2026-09-25 13:46:41+00", "0", "f", "")
+        got = run([hand], [])
+        check("RED-6 a row production ledgered BY HAND after the direct-apply ruling -> runner direct, 'ran under older rules'",
+              len(got) == 1 and got[0][6] == "direct" and "ran under older rules" in got[0][9], got)
+        got = run([hand[:5] + ("t", "")], [])
+        check("GREEN-6 the same row written by a runner -> its own runner judges it",
+              len(got) == 1 and got[0][6] == "aidream", got)
+        got = run([("aidream", aid.name, ck, "2026-09-20 13:46:41+00", "0", "f", "")], [])
+        check("GREEN-6b a hand-written row from BEFORE the ruling -> its own runner (the rule is dated)",
+              len(got) == 1 and got[0][6] == "aidream", got)
+
+    def has_inverse(p: Path) -> bool:
+        return (FRONTEND / "migrations" / "inverse" / f"{p.stem}_down.sql").is_file()
+
+    up = _first_committed(FRONTEND, FRONTEND / "migrations", has_inverse)
+    if up is not None:
+        ck = hashlib.sha256(up.read_bytes()).hexdigest()
+        prow = ("matrx-frontend", up.name, ck, "2026-09-25 10:00:00+00", "900", "t", "SOME-LANE")
+        got = run([prow], [("matrx-frontend", up.name, "dd" * 32, "2026-09-24 10:00:00+00")])
+        check("RED-7 the clone holds an EARLIER checksum of this file -> its committed inverse runs first",
+              len(got) == 1 and got[0][11] == f"migrations/inverse/{up.stem}_down.sql", got)
+        got = run([prow], [])
+        check("GREEN-7 absent from the clone -> no inverse leg", len(got) == 1 and got[0][11] == "", got)
+        check("GREEN-8 every row names who to ask (production's lane first)",
+              len(got) == 1 and got[0][12] == "lane SOME-LANE (production's ledger row)", got)
+    noinv = _first_committed(FRONTEND, FRONTEND / "migrations", lambda p: not has_inverse(p))
+    if noinv is not None:
+        ck = hashlib.sha256(noinv.read_bytes()).hexdigest()
+        got = run([("matrx-frontend", noinv.name, ck, "2026-09-25 10:00:00+00")],
+                  [("matrx-frontend", noinv.name, "dd" * 32, "2026-09-24 10:00:00+00")])
+        check("RED-7b an earlier checksum and NO committed inverse -> the inverse is named MISSING",
+              len(got) == 1 and got[0][11].startswith("MISSING:"), got)
+    got = run([("matrx-frontend", "zzselftest_not_committed_anywhere.sql", "aa" * 32, "2026-09-25 10:00:00+00", "5", "t", "ORDERFIX")], [])
+    check("GREEN-9 a named refusal carries its owner", len(got) == 1 and got[0][0] == "REFUSE" and "ORDERFIX" in got[0][12], got)
+    return fails
 
 
 def main() -> int:
@@ -266,6 +415,11 @@ def main() -> int:
     clone = read_tsv(sys.argv[2])
 
     clone_by_key = {(r["source"], r["filename"]): r for r in clone}
+    # 🚨 A PARITY VERDICT (chair ruling 2026-09-26, rule 1). The catch-up writes a clone row with
+    # source `parity` when it COMPARED every object a file writes and found the clone identical to
+    # production — a verdict that the file need not run here, never a claim that it ran. It holds
+    # only while production's ledger still carries the same bytes the verdict was about.
+    parity = {r["filename"]: r["checksum"] for r in clone if r["source"] == "parity"}
 
     # An inverse applied on the clone AFTER its up row withdraws that row's claim.
     undone: dict[tuple[str, str], str] = {}
@@ -304,6 +458,11 @@ def main() -> int:
             continue
         here = clone_by_key.get(key)
         reapply = "no"
+        if (here is None or here["checksum"] != r["checksum"] or key in undone) and parity.get(r["filename"]) == r["checksum"]:
+            lines.append(SEP.join(["PARITY", r["source"], r["filename"], r["checksum"], "", "", "", "", "",
+                                   "held by a parity verdict on the clone (level by inspection; not run here)",
+                                   r["applied_at"], "", ""]))
+            continue
         if here is None:
             reason = "absent from the clone"
         elif here["checksum"] != r["checksum"]:
@@ -330,6 +489,7 @@ def main() -> int:
                         "REFUSE", r["source"], r["filename"], r["checksum"], "", "", "", "", "",
                         f"ledger source {r['source']!r} is not a source this step knows how to "
                         f"resolve to a file; add it to SOURCE_DIRS beside the two runners' maps",
+                        r["applied_at"], "", owner_of(None, "", r),
                     ]
                 )
             )
@@ -354,6 +514,7 @@ def main() -> int:
                         f"source {r['source']!r} uses ("
                         + ", ".join(str(d) for _, d, _, _ in entries)
                         + ")",
+                        r["applied_at"], "", owner_of(None, "", r),
                     ]
                 )
             )
@@ -380,6 +541,7 @@ def main() -> int:
                         f"the bytes on origin/main hash to "
                         f"{hashlib.sha256(committed).hexdigest()[:12]} and production ledgered "
                         f"{r['checksum'][:12]} — this is not the file that ran on production",
+                        r["applied_at"], "", owner_of(repo, relpath, r),
                     ]
                 )
             )
@@ -393,6 +555,7 @@ def main() -> int:
                         runner, selector, "",
                         "the file is committed on origin/main but missing from the working "
                         "checkout, and the runners apply a path on disk",
+                        r["applied_at"], "", owner_of(repo, relpath, r),
                     ]
                 )
             )
@@ -408,15 +571,30 @@ def main() -> int:
                         "the working checkout's copy differs from origin/main (another lane's "
                         "uncommitted edit) and the runners apply the path on disk — refusing "
                         "rather than applying bytes production never ran",
+                        r["applied_at"], "", owner_of(repo, relpath, r),
                     ]
                 )
             )
             continue
 
+        if runner in ("aidream", "frontend") and hand_ledgered(r) and not relpath.startswith("migrations/inverse"):
+            runner = "direct"
+            reason += (
+                f" — ran under older rules: production ledgered it by hand at {r['applied_at']} under the "
+                f"{RULES_INTRODUCED[0][0]} (from {DIRECT_REGIME_AT}); no runner judged these bytes there, so "
+                f"none judges them here — carried direct, as production took it"
+            )
+        # 🚨 RULE 4 (chair ruling 2026-09-26). The clone holds an EARLIER version of this same file
+        # (a peer rehearsed it before the bytes production ran), and a re-run over that state is not
+        # idempotent (42710 already exists, a policy that exists, an anchor already patched). So the
+        # file's inverse runs first, then the up. An inverse that is missing is named, never guessed.
+        inverse = ""
+        if here is not None and here["checksum"] != r["checksum"] and key not in undone:
+            inverse = inverse_of(repo, relpath)
         lines.append(
             SEP.join(
                 ["APPLY", r["source"], r["filename"], r["checksum"], str(repo), relpath,
-                 runner, selector, reapply, reason, r["applied_at"]]
+                 runner, selector, reapply, reason, r["applied_at"], inverse, owner_of(repo, relpath, r)]
             )
         )
 

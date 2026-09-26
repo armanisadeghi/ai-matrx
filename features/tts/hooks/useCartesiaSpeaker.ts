@@ -14,6 +14,7 @@ import { SinkAwarePlayer } from '@/features/audio/sinkAwarePlayer';
 import { connectCartesiaTts } from '@/lib/cartesia/connection';
 import { useAppSelector } from '@/lib/redux/hooks';
 import {
+  selectListeningEmotion,
   selectListeningLanguage,
   selectListeningSpeed,
   useListeningVoice,
@@ -71,6 +72,7 @@ export function useCartesiaSpeaker({
   const voiceId = resolveVoiceId(rawVoice, purpose);
   const language = useAppSelector(selectListeningLanguage);
   const speed = useAppSelector(selectListeningSpeed);
+  const emotion = useAppSelector(selectListeningEmotion);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -137,7 +139,7 @@ export function useCartesiaSpeaker({
         voice: { mode: 'id' as const, id: voiceId },
         language,
         transcript: processed,
-        generationConfig: buildGenerationConfig({ speed }),
+        generationConfig: buildGenerationConfig({ speed, emotion }),
       });
 
       if (!playerRef.current) {

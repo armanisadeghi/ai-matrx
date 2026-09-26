@@ -35,6 +35,7 @@ import {
 } from "@/features/data-tables/agent-context/documentWriteValidation";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { captureDomSelection } from "@/features/context-menu-v3/utils/selection-tracking";
+import { canActOn } from "@/features/access-gate/service/canActOn";
 
 // Univer hard-depends on `window` / `document`. Mount client-only.
 const DocumentEditor = dynamic(
@@ -110,17 +111,12 @@ export default function DocumentPage({
       const userId = userData?.user?.id ?? null;
       setCurrentUserId(userId);
 
-      // Editor gate: owner ALWAYS edits; non-owner edits when has_permission
-      // returns true for level=editor. Matches the workbook permission flow.
+      // Editor gate: owner ALWAYS edits; non-owner edits when the access kernel
+      // (canActOn → iam.has_access) allows editor — the same question the write doors ask. Matches the workbook permission flow.
       if (userId && userId === res.data.user_id) {
         applyCanEdit(true);
       } else {
-        const { data: perm } = await supabase.rpc("has_permission", {
-          p_resource_type: "udt_document",
-          p_resource_id: id,
-          p_required_permission: "editor",
-        });
-        applyCanEdit(perm === true);
+        applyCanEdit(await canActOn("udt_document", id, "editor"));
       }
       setPermsResolved(true);
     })();

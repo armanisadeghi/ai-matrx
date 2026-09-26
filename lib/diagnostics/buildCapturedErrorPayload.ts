@@ -98,6 +98,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "content-ir": "Content IR parse/parity failure",
   "surface-writeback": "Surface writeback contract break",
   "surface-registration": "Surface database registration missing",
+  alchemy: "Alchemy contract break",
   "markdown-delimiters": "Runaway delimiter in rendered markdown",
   assists: "Assist chip action failure",
   "layout-scroll-chain": "Content clipped — scroll chain broken",

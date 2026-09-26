@@ -266,3 +266,31 @@ describe("the strict splice contract (content-ir 0.13: islands change only throu
     expect(mapSavePosition(plan, STORED.indexOf("politely")).pos).toBe(current.indexOf("politely"));
   });
 });
+
+describe("a code span never swallows another mark (verify-RC-B4 R5 corpus: linked code)", () => {
+  // What ProseMirror does when a person types at the very start of a linked code
+  // span: the typed text inherits the span's own code mark (the link is not inclusive).
+  const typeCode = (session: Session, pos: number, text: string) =>
+    session.editor.commands.command(({ tr }) => {
+      const code = tr.doc.nodeAt(pos)?.marks.find((mark) => mark.type.name === "code");
+      if (!code) throw new Error("no code span at the position");
+      tr.insert(pos, session.editor.schema.text(text, [code]));
+      return true;
+    });
+
+  it("code typed before a linked code span stays its own span — the link is never written inside backticks", () => {
+    const stored = "[`evaluator.py`](https://github.com/acme/qa) runs the checks.";
+    const session = track(open(stored));
+    typeCode(session, positionOf(session.editor.state.doc, "evaluator.py"), "the ");
+    expect(session.save()).toBe("`the `[`evaluator.py`](https://github.com/acme/qa) runs the checks.");
+  });
+
+  it("the same edit in a table cell keeps the link and the code", () => {
+    const stored = "| File | Role |\n| --- | --- |\n| [`evaluator.py`](https://github.com/acme/qa) | runs the checks |";
+    const session = track(open(stored));
+    typeCode(session, positionOf(session.editor.state.doc, "evaluator.py"), "- ");
+    expect(session.save()).toBe(
+      "| File | Role |\n| --- | --- |\n| `- `[`evaluator.py`](https://github.com/acme/qa) | runs the checks |",
+    );
+  });
+});

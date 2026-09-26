@@ -206,6 +206,12 @@ export type CapturedErrorSource =
   /** Code names a surface absent from the database catalog. */
   | "surface-registration"
   /**
+   * A Matrx Alchemy contract break reported through the host's `diagnostics`
+   * port (`components/agent-copy/alchemy-host-ports.ts`): a declaration, write,
+   * operation, action or menu the package could not honour.
+   */
+  | "alchemy"
+  /**
    * A runaway markdown delimiter reached a renderer: a stray/unpaired `$$`
    * that would have made remark-math swallow prose into a math node (KaTeX
    * then dumps it as red `.katex-error` text), or an unclosed `[` that would

@@ -82,6 +82,16 @@ swept directory, so a commit there IS a release request unless the file says oth
   refused, exit 1, `--dry-run` included, with the one remedy: *remove the -- draft: line when
   it's ready*.
 - `--target clone`: allowed — rehearsing work in progress is what the clone is for.
+- 🚨 **A draft is never LEDGERED either, by any path** — `--mark-applied`, `--accept-drift`,
+  aidream `db/detect_applied.py` (which runs before every aidream release sweep), and both
+  runners' `--ledger-rebase` / `--amend-idempotent`. A row holding draft bytes makes the finished
+  file look already applied, so its fix silently never runs (rca5d_j, 2026-09-26 22:44 PT: the
+  scanner saw its function NAMES live and ledgered the draft). Likewise `detect_applied` no longer
+  calls an untracked `CREATE OR REPLACE FUNCTION` file applied because the name exists: every body
+  it writes must be the live body, or it stays pending for the applier.
+- A ledger row that holds a DRAFT of the file, or was written by a ledger-only path
+  (`duration_ms = 0`), makes `pnpm db:apply` say so and give the one action —
+  `--reapply`, because those finished bytes never ran.
 - A bare `-- draft:` (no owner) is still a draft. Read in the same 25-line header window as
   `-- retired:`; a later line is body text.
 

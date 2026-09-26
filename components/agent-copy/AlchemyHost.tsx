@@ -35,6 +35,8 @@ import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWind
 import { toast } from "@/lib/toast";
 import { createMatrxTransferActions } from "@ai-matrx/agents/content-transfer";
 import { createAlchemyDestinationPorts } from "./alchemy-destinations";
+import { ErrorActionsProvider } from "@ai-matrx/design-system";
+import { renderPackageErrorActions } from "@/components/errors/PackageErrorActions";
 
 const PREPARE_PATH = `/ai/mandates/${encodeURIComponent(
   MANDATE_KEYS.alchemy__prepare_content,
@@ -115,7 +117,11 @@ export function AlchemyHost({ children }: { children: ReactNode }) {
 
   return (
     <AlchemyHostSession store={store} userId={userId} orgId={orgId}>
-      {children}
+      {/* Every error a package draws (ErrorBox / destructive Alert) carries the
+          same Alchemy Menu the frontend's own errors carry (RC-B12). */}
+      <ErrorActionsProvider render={renderPackageErrorActions}>
+        {children}
+      </ErrorActionsProvider>
     </AlchemyHostSession>
   );
 }

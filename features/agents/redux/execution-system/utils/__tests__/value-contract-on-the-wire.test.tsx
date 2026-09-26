@@ -4,7 +4,7 @@
  * A structured write target that names a registered kind (`valueKind`) must
  * TEACH that contract in the `apply_surface_write` spec the model is handed —
  * `[kind=<slug> { field: type, … }]` — because the seam ENFORCES it
- * (`applySurfaceWrite` → `validateAgainstKind`) before the user is ever asked
+ * (`applySurfaceWrite` → `kindValidator.validate`) before the user is ever asked
  * to approve. A target that enforces a contract it never advertises refuses
  * correct-looking values for reasons the model cannot see, which is exactly
  * the wall W49 class: a refusal the model cannot act on.
@@ -54,7 +54,7 @@ jest.mock("@/utils/supabase/client", () => ({
 
 import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
 import { buildToolInjection } from "../build-tool-injection";
-import { invalidateKindContractCache } from "@/features/content-ir/registry/validate-against-kind";
+import { kindValidator } from "@/features/content-ir/registry/kind-schema-source";
 import { masterworkRulebookManifest } from "@/features/surfaces/manifests/masterwork-rulebook.manifest";
 import {
   masterworkRuleDraftKindSchema,
@@ -135,7 +135,7 @@ describe("the Rulebook's rule_draft target advertises its registered value contr
     jest.clearAllMocks();
     invalidateOutputSchemaCache();
     resetMandateCatalogueCache();
-    invalidateKindContractCache();
+    kindValidator.invalidate();
     mockGetKindInputContractBySlug.mockImplementation(async (slug: string) =>
       slug === MASTERWORK_RULE_DRAFT_KIND
         ? { schema: masterworkRuleDraftKindSchema, emittedJsonSchema: emittedJsonSchema() }

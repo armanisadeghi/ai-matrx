@@ -991,6 +991,14 @@ export function SourcesPage() {
                 <ErrorAlchemyMenu className="ml-auto" />
               </p>
             ) : null}
+            <p
+              className="text-right text-xs text-muted-foreground"
+              aria-live="polite"
+            >
+              {!urlInput.trim()
+                ? "Paste a web address to read the page."
+                : null}
+            </p>
             <div className="flex justify-end gap-2">
               <Button
                 type="button"
@@ -1043,6 +1051,12 @@ export function SourcesPage() {
                 <ErrorAlchemyMenu className="ml-auto" />
               </p>
             ) : null}
+            <p
+              className="text-right text-xs text-muted-foreground"
+              aria-live="polite"
+            >
+              {!textInput.trim() ? "Paste or type some text to add it." : null}
+            </p>
             <div className="flex justify-end gap-2">
               <Button
                 variant="ghost"

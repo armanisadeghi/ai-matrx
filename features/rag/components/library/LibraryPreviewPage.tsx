@@ -633,7 +633,10 @@ function PageContent({
   query,
   onActivePageLoaded,
   locator = null,
+  docLoading = false,
 }: {
+  /** True until the document itself has been read — never report "no pages" before that. */
+  docLoading?: boolean;
   documentId: string;
   pageIndex: number;
   totalPages: number;
@@ -761,6 +764,15 @@ function PageContent({
     },
     [matches.length],
   );
+
+  if (totalPages === 0 && docLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center text-center p-8 text-muted-foreground">
+        <Loader2 className="h-6 w-6 mb-2 animate-spin" />
+        <p className="text-sm">Loading this document…</p>
+      </div>
+    );
+  }
 
   if (totalPages === 0) {
     return (

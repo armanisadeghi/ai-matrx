@@ -32,6 +32,7 @@ import {
   DirectiveContainerTracker,
 } from "@/components/markdown-core/directive-container";
 import { TITLED_IMAGE_LINE } from "@/components/markdown-core/image-figure";
+import { continuesTable, startsPipelessTable } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 import {
   classifyLine,
   isPlainText,
@@ -939,6 +940,25 @@ export class StreamBlockAccumulator {
 
     const flags = classifyLine(rawLine, trimmed);
 
+    // Pipe-less GFM table (verify-RC-B4 R5-3): nothing marks its header line as
+    // a table until the delimiter row arrives, so the header went into the text
+    // block — the delimiter takes that line back and opens the table. The same
+    // rule the static splitter uses (gfm-table-lines).
+    if (this.currentBlockType === "text" && this.currentBlockLineCount > 0) {
+      const cut = this.currentBlockContent.lastIndexOf("\n");
+      const header = this.currentBlockContent.slice(cut + 1);
+      if (startsPipelessTable(header, rawLine)) {
+        this.currentBlockContent = cut >= 0 ? this.currentBlockContent.slice(0, cut) : "";
+        this.currentBlockLineCount -= 1;
+        this.closeCurrentBlock(dispatch);
+        this.openBlock("table", dispatch);
+        this.subState = { kind: "table" };
+        this.appendToCurrentBlock(header);
+        this.appendToCurrentBlock(rawLine);
+        return;
+      }
+    }
+
     if (isPlainText(flags)) {
       this.appendToCurrentBlock(rawLine);
       return;
@@ -1414,7 +1434,7 @@ export class StreamBlockAccumulator {
         // non-table-row. Eating the blank line here was adding a trailing
         // newline to the table and stealing the leading newline from the
         // following text block (V2/Redux table drift).
-        if (hasCandidate(flags, Candidate.TABLE)) {
+        if (hasCandidate(flags, Candidate.TABLE) || continuesTable(rawLine)) {
           this.appendToCurrentBlock(rawLine);
         } else {
           this.closeCurrentBlock(dispatch);

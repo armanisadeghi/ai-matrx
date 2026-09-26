@@ -43,6 +43,7 @@ import type {
   AnnotationSource,
   CommentReply,
 } from "./types";
+import { canActOn } from "@/features/access-gate/service/canActOn";
 
 /** The passage-write gate: a sentence with its remedy, never retryable (Retry cannot switch it on). */
 export class AnchorWritesOffError extends SidecarError {
@@ -656,16 +657,6 @@ export async function linkableKinds(targetToken: string): Promise<string[]> {
  * "no" — a control that might refuse is worse than none.
  */
 export async function canEditSource(source: AnnotationSource): Promise<boolean> {
-  // iam.has_access is THE access question (owner, grants, membership, containers). The legacy
-  // public.has_permission reads direct grants only — the owner of a note got "no" (walk 2026-09-26).
-  const iam = supabase.schema("iam" as never) as unknown as {
-    rpc: (fn: "has_access", args: { p_type: string; p_id: string; p_required: "editor" }) => PromiseLike<{ data: unknown; error: unknown }>;
-  };
-  const { data, error } = await iam.rpc("has_access", { p_type: source.token, p_id: source.id, p_required: "editor" });
-  if (error) {
-    console.error("[annotations] could not ask whether this record can be edited", error);
-    return false;
-  }
-  return data === true;
+  return canActOn(source.token, source.id, "editor");
 }
 

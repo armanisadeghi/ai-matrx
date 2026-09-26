@@ -66,6 +66,7 @@ import type {
   TableProfile,
   ValidationMode,
 } from "./types";
+import { canActOn } from "@/features/access-gate/service/canActOn";
 
 
 /**
@@ -1126,18 +1127,13 @@ function envelopeFailure(data: unknown, fallback: string): ServiceErr | null {
 /**
  * May the signed-in person EDIT this table? The owner never asks (the viewer
  * knows ownership from the table row); a shared editor is answered by the
- * store: `has_permission` for an older table, `custom.my_levels` for a
+ * store: the access kernel (`canActOn` → iam.has_access) for an older table, `custom.my_levels` for a
  * record-store table.
  */
 export async function hasEditorAccess(args: { tableId: string }): Promise<boolean> {
   const home = recordStoreHomeOf(args.tableId);
   if (home) return recordStore.hasEditorAccess(home, args);
-  const { data } = await supabase.rpc("has_permission", {
-    p_resource_type: "dataset",
-    p_resource_id: args.tableId,
-    p_required_permission: "editor",
-  });
-  return data === true;
+  return canActOn("dataset", args.tableId, "editor");
 }
 
 /** Turn manual row ordering on with this order, or off (`enabled: false`, empty order). */

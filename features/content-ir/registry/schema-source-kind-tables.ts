@@ -588,6 +588,8 @@ export interface KindInputContract {
   schema: KindSchema | null;
   /** The materialized `kind_definition.emitted_json_schema` — the structural-leg authority. */
   emittedJsonSchema: Json | null;
+  /** `kind_definition.version` — bumped on every definition edit. */
+  version: number;
 }
 
 /** The generated machine-contract families (mirrors aidream ContractFamily). */
@@ -650,7 +652,7 @@ export async function getKindInputContractBySlug(
   const { data: def, error: defErr } = await supabase
     .schema("content_ir")
     .from("kind_definition")
-    .select("id, emitted_json_schema, metadata")
+    .select("id, emitted_json_schema, metadata, version")
     .eq("kind", kind)
     .is("deleted_at", null)
     .maybeSingle();
@@ -665,6 +667,7 @@ export async function getKindInputContractBySlug(
   return {
     schema,
     emittedJsonSchema: def.emitted_json_schema,
+    version: def.version,
   };
 }
 

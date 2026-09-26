@@ -61,6 +61,16 @@ export interface ListeningSettings {
   voice: string;
   speed: number;
   language: string;
+  /**
+   * Cartesia `generation_config.emotion` — "" means no explicit choice (the
+   * voice's natural delivery). Not yet promoted to a platform knob, so it
+   * still reads `userPreferences.voice.emotion` directly (the Voice input
+   * settings tab writes it via `useSetting`). Chosen from the curated,
+   * API-valid vocabulary in `features/tts/tester/cartesiaTestEngine.ts`
+   * (`EMOTION_OPTIONS`) — never free text, which used to let a person type
+   * an unsupported word (e.g. "cheerful") that Cartesia silently ignored.
+   */
+  emotion: string;
 }
 
 function mergedNamespace(state: RootState): ListeningConfig | null {
@@ -70,9 +80,10 @@ function mergedNamespace(state: RootState): ListeningConfig | null {
 }
 
 /**
- * Speed + language from Redux state. Per-field fallback: merged namespace
- * tiers → legacy `userPreferences.voice` (boot window only — the namespace
- * rows are authoritative once fetched) → code default.
+ * Speed + language + emotion from Redux state. Per-field fallback: merged
+ * namespace tiers → legacy `userPreferences.voice` (boot window only for
+ * speed/language — the namespace rows are authoritative once fetched; the
+ * only source for emotion, which has no namespace yet) → code default.
  */
 export function selectListeningCadence(state: RootState): Omit<ListeningSettings, "voice"> {
   const ns = mergedNamespace(state);
@@ -80,6 +91,7 @@ export function selectListeningCadence(state: RootState): Omit<ListeningSettings
   return {
     speed: ns?.speed ?? legacy?.speed ?? TTS_DEFAULT_SPEED,
     language: ns?.language ?? legacy?.language ?? "en",
+    emotion: legacy?.emotion ?? "",
   };
 }
 
@@ -88,6 +100,8 @@ export const selectListeningSpeed = (state: RootState): number =>
   selectListeningCadence(state).speed;
 export const selectListeningLanguage = (state: RootState): string =>
   selectListeningCadence(state).language;
+export const selectListeningEmotion = (state: RootState): string =>
+  selectListeningCadence(state).emotion;
 
 /**
  * React face of the voice: the ladder-resolved raw preference ("" until the
@@ -113,7 +127,7 @@ export function getListeningSettings(): ListeningSettings {
   const voice = knobVoice(getSessionKnob(LISTENING_VOICE_KNOB));
   const store = getStoreSingleton();
   if (!store) {
-    return { voice, speed: TTS_DEFAULT_SPEED, language: "en" };
+    return { voice, speed: TTS_DEFAULT_SPEED, language: "en", emotion: "" };
   }
   const state = store.getState() as RootState;
   if (!selectSurfaceConfigEntry(state, LISTENING_HOME_SURFACE)?.resolved) {
@@ -139,6 +153,6 @@ export async function resolveListeningSettings(): Promise<ListeningSettings> {
     console.error(`[listening] ${LISTENING_VOICE_KNOB} could not be resolved — the purpose default speaks:`, error);
   }
   const store = getStoreSingleton();
-  if (!store) return { voice, speed: TTS_DEFAULT_SPEED, language: "en" };
+  if (!store) return { voice, speed: TTS_DEFAULT_SPEED, language: "en", emotion: "" };
   return { voice, ...selectListeningCadence(store.getState() as RootState) };
 }

@@ -16,6 +16,7 @@
 // Guard: scripts/check-table-writers.ts (no table writer outside this module).
 
 import { marked, type Tokens } from "marked";
+import { unescapeCellPipes } from "@/components/markdown-core/syntax/gfm-cell-pipes";
 
 /**
  * THE table-row splitter — GFM's rule, exactly: a `|` is a cell boundary unless
@@ -92,37 +93,64 @@ export class TableWriteRefused extends Error {
   }
 }
 
+/** The GFM table `marked` reads at the start of `text` (blank edges trimmed), with every block token. */
+function readTable(text: string): { tokens: string[]; table: Tokens.Table | null } {
+  const tokens = marked.lexer(text, { gfm: true }).filter((token) => token.type !== "space");
+  const first = tokens[0];
+  return { tokens: tokens.map((token) => token.type), table: first?.type === "table" ? (first as Tokens.Table) : null };
+}
+
+/** How many of a stored table's data lines GFM never read as rows (they follow its real end). */
+function strayLines(original: string): number {
+  const text = original.replace(/^\n+|\n+$/g, "");
+  const data = text.split("\n").filter((line) => line.trim()).length - 2;
+  return Math.max(0, data - (readTable(text).table?.rows.length ?? 0));
+}
+
 /**
  * The WHOLE written table must read back as one table — judged by `marked`
- * (a GFM parser that does not use this module's splitter): exactly one table
- * and nothing else, one row per written data line, and every cell equal to
- * what the line stores. A row can split correctly and still END the table — a
- * pipe-less row starting `- ` is a list item, not a row (verify-RC-B4 R5-1) —
- * so a per-row check is not enough.
+ * (a GFM parser that does not use this module's splitter): one table, one row
+ * per written data line, and every cell equal to what the line stores. A row
+ * can split correctly and still END the table — a pipe-less row starting `- `
+ * is a list item, not a row (verify-RC-B4 R5-1) — so a per-row check is not
+ * enough.
+ *
+ * With `original`, the stored table sets the floor instead: lines the stored
+ * table itself never read as rows (a stray `- | x` line after it, an indented
+ * line read as code) may stay outside the written table, but the write must
+ * never end the table EARLIER than the stored one did, and every row it does
+ * read must hold exactly the stored cells.
  */
-export function assertTableReadsBack(tableText: string): void {
+export function assertTableReadsBack(tableText: string, original?: string): void {
   const text = tableText.replace(/^\n+|\n+$/g, "");
-  const tokens = marked.lexer(text, { gfm: true }).filter((token) => token.type !== "space");
-  const table = tokens[0];
-  if (tokens.length !== 1 || !table || table.type !== "table") {
-    throw new TableWriteRefused(text, `it would read as ${tokens.map((token) => token.type).join(" + ") || "nothing"}, not one table`);
-  }
+  // A stored "table" GFM never read as one (a header wider or narrower than its
+  // delimiter row — lenient answer renderers still draw it) cannot be ended by
+  // the write; its rows are held to the per-row read-back only.
+  if (original !== undefined && !readTable(original.replace(/^\n+|\n+$/g, "")).table) return;
+  const { tokens, table: parsed } = readTable(text);
   const lines = text.split("\n").filter((line) => line.trim());
   const dataLines = lines.slice(2);
-  const parsed = table as Tokens.Table;
-  if (parsed.rows.length !== dataLines.length) {
-    throw new TableWriteRefused(text, `${dataLines.length} rows written, ${parsed.rows.length} would read back`);
+  const floor = dataLines.length - (original === undefined ? 0 : strayLines(original));
+  if (!parsed || (tokens.length !== 1 && parsed.rows.length >= dataLines.length)) {
+    throw new TableWriteRefused(text, `it would read as ${tokens.join(" + ") || "nothing"}, not one table`);
+  }
+  if (parsed.rows.length < floor) {
+    throw new TableWriteRefused(
+      text,
+      `it would read as ${tokens.join(" + ")} — ${parsed.rows.length} of ${dataLines.length} rows would stay in the table`,
+    );
   }
   const width = parsed.header.length;
   const same = (line: string, cells: Tokens.TableCell[]) => {
     const written = rowCells(line);
-    return cells.every((cell, i) => cell.text === (written[i] ?? "").replace(/\\\|/g, "|"));
+    return cells.every((cell, i) => cell.text === unescapeCellPipes(written[i] ?? ""));
   };
   if (rowCells(lines[0] ?? "").length !== width || !same(lines[0] ?? "", parsed.header)) {
     throw new TableWriteRefused(text, "the header would read back differently");
   }
-  dataLines.forEach((line, r) => {
-    if (!same(line, parsed.rows[r] ?? [])) throw new TableWriteRefused(line, `row ${r + 1} would read back differently`);
+  parsed.rows.forEach((cells, r) => {
+    const line = dataLines[r] ?? "";
+    if (!same(line, cells)) throw new TableWriteRefused(line, `row ${r + 1} would read back differently`);
   });
 }
 
@@ -177,11 +205,13 @@ export function respliceRow(segs: unknown[] | null, stored: unknown[] | null, te
   });
   if (!edited.size) return parts.join("|");
   const lastIndex = cells.length - 1;
-  // A rewritten row without a leading pipe gets one: GFM reads a row's first
-  // cell as block syntax when it starts like one (`- x`, `> 90%`, `# 3`, `1.`),
-  // which ENDS the table (verify-RC-B4 R5-1) — and an empty first cell would
-  // be read as the edge. A leading pipe removes both doors at once.
-  const needLead = !first;
+  // A row without a leading pipe gets one when its FIRST cell is rewritten: GFM
+  // reads a row's first cell as block syntax when it starts like one (`- x`,
+  // `> 90%`, `# 3`, `1.`), which ENDS the table (verify-RC-B4 R5-1) — and an
+  // empty first cell would be read as the edge. A leading pipe removes both
+  // doors at once. An untouched first cell keeps the line start that already
+  // read as this table's row, so its bytes stay the author's.
+  const needLead = !first && (edited.has(0) || (cells[0] ?? "").trim() === "");
   const needTrail = !closed && lastIndex >= 0 && (cells[lastIndex] ?? "").trim() === "";
   // The added pipe is followed by one space of padding (`| - x`, never `|- x`).
   if (needLead && !/^\s/.test(cells[0] ?? "")) cells[0] = ` ${cells[0] ?? ""}`;
@@ -256,7 +286,7 @@ export function rewriteTableSource(original: string, grid: TableGrid): string {
       out[at] = rewriteLine(lines[at] ?? "", row, lead, trail);
     });
     const written = out.join("\n");
-    if (written !== original) assertTableReadsBack(written);
+    if (written !== original) assertTableReadsBack(written, original);
     return written;
   }
 
@@ -279,6 +309,6 @@ export function rewriteTableSource(original: string, grid: TableGrid): string {
   const firstData = dataAt[0] ?? delimAt + 1;
   const lastData = dataAt.length ? (dataAt[dataAt.length - 1] as number) : delimAt;
   const written = [...out.slice(0, firstData), ...rebuilt, ...out.slice(lastData + 1)].join("\n");
-  assertTableReadsBack(written);
+  assertTableReadsBack(written, original);
   return written;
 }

@@ -4561,6 +4561,9 @@ const UserTableViewer = ({
         tabIndex={0}
         role="grid"
         onKeyDown={grid.onKeyDown}
+        // Tab into the grid lands on the container; focus moves on to the
+        // type catcher so typed text has somewhere to go.
+        onFocus={grid.onGridFocus}
         // The Edit-menu / browser-native door for copy, cut and paste on the
         // selected cell (`useGridSelection` — THE CLIPBOARD HAS TWO DOORS).
         {...grid.clipboardHandlers}
@@ -4573,6 +4576,10 @@ const UserTableViewer = ({
           grid.dragging && "select-none",
         )}
       >
+        {/* TYPING HAS TWO DOORS (`useGridSelection`): the hidden field that
+            holds grid focus, so text with no keydown of its own — IME,
+            Option / AltGr characters, dictation — still starts an edit. */}
+        <textarea {...grid.typeCatcherProps} />
         <Table
           data-surface-value="visible_data_csv"
           // A fixed layout divides the width evenly, which is right for a

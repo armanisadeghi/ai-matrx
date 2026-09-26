@@ -44,6 +44,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ensureSurfaceConfig } from "@/features/surfaces/redux/surfaceConfigSlice";
 import {
   LISTENING_HOME_SURFACE,
+  selectListeningEmotion,
   selectListeningLanguage,
   selectListeningSpeed,
   useListeningVoice,
@@ -221,6 +222,7 @@ export function useCartesiaStreamingSpeaker({
   const voiceId = resolveVoiceId(rawVoice, "assistant");
   const language = useAppSelector(selectListeningLanguage);
   const speed = useAppSelector(selectListeningSpeed);
+  const emotion = useAppSelector(selectListeningEmotion);
 
   // Replay a finished utterance through the unified playback QUEUE (not this
   // hook instance) so replay works even after the button unmounts. No voice
@@ -420,7 +422,7 @@ export function useCartesiaStreamingSpeaker({
           voice: { mode: "id" as const, id: voiceId },
           language,
           contextId,
-          generationConfig: buildGenerationConfig({ speed }),
+          generationConfig: buildGenerationConfig({ speed, emotion }),
         };
 
         const ws = websocketRef.current!;
@@ -561,7 +563,7 @@ export function useCartesiaStreamingSpeaker({
           voice: { mode: "id", id: voiceId },
           language,
           contextId,
-          generationConfig: buildGenerationConfig({ speed }),
+          generationConfig: buildGenerationConfig({ speed, emotion }),
         },
         sentLen: 0,
         started: false,

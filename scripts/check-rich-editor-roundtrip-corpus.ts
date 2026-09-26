@@ -280,6 +280,7 @@ function judgeTableCells(editor: Editor, baseline: ReturnType<typeof captureBase
     if (changed.length !== 1) return "table_cell_edit_changed_other_lines";
     const before = rowSegments(lines[changed[0] as number] ?? "");
     const after = rowSegments(out[changed[0] as number] ?? "");
+    addedLeadPipe(before, after);
     if (before.length !== after.length) return "table_cell_edit_changed_cell_count";
     const diff = before.map((seg, index) => (seg === after[index] ? -1 : index)).filter((index) => index >= 0);
     if (diff.length !== 1) return "table_cell_edit_changed_neighbour_cell";
@@ -347,6 +348,14 @@ function judgeBlockSyntaxFirstCells(editor: Editor, baseline: ReturnType<typeof 
   return null;
 }
 
+/**
+ * A pipe-less row whose first cell was rewritten gains a leading pipe (R5-1): drop
+ * that one added edge segment so the cells line up for the byte comparison.
+ */
+function addedLeadPipe(before: string[], after: string[]): void {
+  if (after.length === before.length + 1 && (after[0] ?? "").trim() === "" && (before[0] ?? "").trim() !== "") after.shift();
+}
+
 const TABLE_DELIM = /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/;
 
 /** The in-body answer table path on every table in the text's prose blocks. Returns a reason or null. */
@@ -381,6 +390,7 @@ function judgeAnswerTables(text: string, stats: SourceStats): string | null {
         if (changed.length !== 1) return "answer_table_edit_changed_other_lines";
         const before = rowSegments(tableLines[changed[0] as number] ?? "");
         const after = rowSegments(out[changed[0] as number] ?? "");
+        addedLeadPipe(before, after);
         if (before.length !== after.length) return "answer_table_edit_changed_cell_count";
         const diff = before.map((seg, index) => (seg === after[index] ? -1 : index)).filter((index) => index >= 0);
         if (diff.length !== 1) return "answer_table_edit_changed_neighbour_cell";
@@ -542,10 +552,12 @@ async function main(): Promise<number> {
         try {
           reason = judge(row.text, stats);
         } catch (error) {
+          (globalThis as { __lastErr?: string }).__lastErr = error instanceof Error ? error.stack : "";
           reason = `threw:${error instanceof Error ? error.message.slice(0, 80) : "unknown"}`;
         }
         const ms = Date.now() - t0;
         if (ms > SLOW_MS) stats.slow.push({ id: row.id, ms });
+        if (reason && process.env.TMP_DUMP) require("node:fs").appendFileSync(process.env.TMP_DUMP, JSON.stringify({ id: row.id, reason, text: row.text, stack: (globalThis as { __lastErr?: string }).__lastErr }) + "\n");
         if (reason) stats.failures.push({ id: row.id, reason });
         else stats.passed += 1;
         if (stats.rows % 20000 === 0) console.log(`  ${source}: ${stats.rows} rows…`);

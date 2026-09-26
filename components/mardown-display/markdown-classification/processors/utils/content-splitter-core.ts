@@ -35,6 +35,7 @@ import {
   DirectiveContainerTracker,
 } from "@/components/markdown-core/directive-container";
 import { TITLED_IMAGE_LINE } from "@/components/markdown-core/image-figure";
+import { continuesTable, isGfmDelimiterRow, startsPipelessTable } from "./gfm-table-lines";
 import type {
   TypedRenderBlock,
   ServerOnlyBlockType,
@@ -1478,15 +1479,21 @@ function detectTableRow(line: string): boolean {
 
 function isTableSeparator(line: string): boolean {
   const trimmed = normalizeLine(line).trim();
-  return /^\|[:\s|\-]+\|?$/.test(trimmed);
+  return /^\|[:\s|\-]+\|?$/.test(trimmed) || isGfmDelimiterRow(trimmed);
+}
+
+/** A table opens here: a pipe-led row, or a GFM header without edge pipes over its delimiter row (R5-3). */
+function detectTableStart(lines: string[], index: number): boolean {
+  const line = lines[index] ?? "";
+  return detectTableRow(line) || startsPipelessTable(normalizeLine(line), lines[index + 1]);
 }
 
 function extractTable(startIndex: number, lines: string[]): ExtractionResult {
   const tableLines: string[] = [lines[startIndex]];
   let i = startIndex + 1;
 
-  // Collect all consecutive table rows
-  while (i < lines.length && detectTableRow(lines[i])) {
+  // Collect all consecutive table rows (the delimiter row, then GFM continuation rows)
+  while (i < lines.length && (continuesTable(normalizeLine(lines[i])) || (i === startIndex + 1 && isTableSeparator(lines[i])))) {
     tableLines.push(lines[i]);
     i++;
   }
@@ -1592,7 +1599,7 @@ function analyzeTableCompletion(
     const line = dataLines[i];
     const trimmedLine = normalizeLine(line).trim();
 
-    if (trimmedLine.startsWith("|") && trimmedLine.includes("|", 1)) {
+    if (continuesTable(trimmedLine)) {
       // If table has ended (hit non-table line), all rows are complete
       // Otherwise, only rows before the last are complete (last is still streaming)
       const isCompleteRow = tableHasEnded || i < dataLines.length - 1;
@@ -2453,7 +2460,7 @@ export const splitContentIntoBlocksWith = (
     }
 
     // 5. Check for table rows
-    if (detectTableRow(line)) {
+    if (detectTableStart(lines, i)) {
       if (currentText.trim()) {
         blocks.push({ type: "text", content: currentText.trimEnd() });
         currentText = "";

@@ -83,6 +83,7 @@ export const cartesiaAdapter: PlaybackAdapter = {
         resolveVoiceId(settings.voice, overrides.purpose ?? "assistant"),
       language: overrides.language ?? settings.language,
       speed: overrides.speed ?? settings.speed,
+      emotion: settings.emotion,
     };
 
     const processed = (await resolveText(item)).trim();
@@ -111,7 +112,7 @@ export const cartesiaAdapter: PlaybackAdapter = {
       voice: { mode: "id" as const, id: voice.voiceId },
       language: voice.language || "en",
       transcript: processed,
-      generationConfig: buildGenerationConfig({ speed: voice.speed }),
+      generationConfig: buildGenerationConfig({ speed: voice.speed, emotion: voice.emotion }),
     });
 
     if (stopped) {

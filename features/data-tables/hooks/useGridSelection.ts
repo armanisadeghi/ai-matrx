@@ -32,6 +32,19 @@
  * The pending flag is what stops a browser that fires both from copying twice.
  * A chord is never intercepted while the user has real text highlighted inside
  * the grid: the browser's own copy of that range must win.
+ *
+ * TYPING HAS TWO DOORS TOO (2026-09-25). Spreadsheet law: select a cell, type,
+ * and what you typed replaces it. `keydown` catches the plain case, but a lot
+ * of real typing never produces a one-character keydown: an IME composition
+ * (key "Process"), an Option / AltGr character (refused by `isTypingKey` as a
+ * possible shortcut), a dead-key accent, dictation, the browser's own
+ * insertText. A focused <div> cannot take text, so all of that went nowhere
+ * and the next Enter opened the OLD value and saved nothing. So grid focus now
+ * lives on a hidden TYPE CATCHER — a textarea inside the container
+ * (`typeCatcherProps`, `inputMode="none"` so a phone never raises its keyboard
+ * for a tap). Keys the grid knows still arrive by bubbling to `onKeyDown`
+ * and are prevented there exactly as before; any TEXT that lands in the catcher
+ * instead opens the selected cell's editor seeded with it.
  */
 "use client";
 
@@ -115,6 +128,52 @@ export type GridSelectionApi = {
   /** The selection as spreadsheet TSV — what Copy puts on the clipboard. */
   selectionText: () => string;
   refocusGrid: () => void;
+  /**
+   * The hidden text target that holds grid focus. Render ONE
+   * `<textarea {...typeCatcherProps} />` inside the container.
+   */
+  typeCatcherProps: TypeCatcherProps;
+  /** Focus landing on the container itself (Tab into the grid) moves on to the catcher. */
+  onGridFocus: (e: React.FocusEvent<HTMLDivElement>) => void;
+};
+
+export type TypeCatcherProps = {
+  ref: React.RefObject<HTMLTextAreaElement | null>;
+  tabIndex: -1;
+  "aria-label": string;
+  inputMode: "none";
+  autoComplete: "off";
+  autoCorrect: "off";
+  autoCapitalize: "off";
+  spellCheck: false;
+  rows: 1;
+  "data-grid-type-catcher": "";
+  style: React.CSSProperties;
+  onInput: (e: React.FormEvent<HTMLTextAreaElement>) => void;
+  onCompositionStart: () => void;
+  onCompositionEnd: (e: React.CompositionEvent<HTMLTextAreaElement>) => void;
+};
+
+/**
+ * Invisible and out of the layout, but still focusable (never `display: none`,
+ * never `visibility: hidden` — either would make it unfocusable). `fixed` so it
+ * is always inside the viewport: a browser scrolls a focused text field into
+ * view when text lands in it, and this one must never move the page.
+ */
+const TYPE_CATCHER_STYLE: React.CSSProperties = {
+  position: "fixed",
+  top: 0,
+  left: 0,
+  width: 1,
+  height: 1,
+  padding: 0,
+  border: 0,
+  margin: 0,
+  opacity: 0,
+  overflow: "hidden",
+  resize: "none",
+  pointerEvents: "none",
+  caretColor: "transparent",
 };
 
 /**
@@ -172,6 +231,8 @@ export function useGridSelection(args: {
   const [editSeed, setEditSeed] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const typeCatcherRef = useRef<HTMLTextAreaElement | null>(null);
+  const composingRef = useRef(false);
 
   // ─── derived range ──────────────────────────────────────────────────────
   const range: CellRange | null =
@@ -185,8 +246,16 @@ export function useGridSelection(args: {
       ? [selected]
       : [];
 
+  // Grid focus goes to the type catcher when it is mounted, so typed TEXT has
+  // somewhere to land; the bare container is the fallback.
   const refocusGrid = useCallback(() => {
-    containerRef.current?.focus({ preventScroll: true });
+    (typeCatcherRef.current ?? containerRef.current)?.focus({ preventScroll: true });
+  }, []);
+
+  const onGridFocus = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget && typeCatcherRef.current) {
+      typeCatcherRef.current.focus({ preventScroll: true });
+    }
   }, []);
 
   const select = useCallback((address: CellAddress) => {
@@ -657,6 +726,49 @@ export function useGridSelection(args: {
     ],
   );
 
+  // ─── the type catcher ──────────────────────────────────────────────────
+  //
+  // Text in the catcher is text the keydown path did not claim. It opens the
+  // selected cell's editor seeded with that text, and the catcher is emptied
+  // every time so nothing ever accumulates in it. A space alone does not open
+  // an editor (the keydown path refuses it too), and a read-only grid or a
+  // vetoed cell takes nothing — `beginEdit` enforces both.
+  const takeTypedText = useCallback(
+    (text: string) => {
+      if (typeCatcherRef.current) typeCatcherRef.current.value = "";
+      if (!selected || editing || text.trim() === "") return;
+      beginEdit(selected, text);
+    },
+    [beginEdit, editing, selected],
+  );
+
+  const typeCatcherProps: TypeCatcherProps = {
+    ref: typeCatcherRef,
+    tabIndex: -1,
+    "aria-label": "Type to edit the selected cell",
+    inputMode: "none",
+    autoComplete: "off",
+    autoCorrect: "off",
+    autoCapitalize: "off",
+    spellCheck: false,
+    rows: 1,
+    "data-grid-type-catcher": "",
+    style: TYPE_CATCHER_STYLE,
+    onInput: (e) => {
+      // Mid-composition the IME owns the text; the composed result arrives
+      // once, on compositionend.
+      if (composingRef.current) return;
+      takeTypedText(e.currentTarget.value);
+    },
+    onCompositionStart: () => {
+      composingRef.current = true;
+    },
+    onCompositionEnd: (e) => {
+      composingRef.current = false;
+      takeTypedText(e.data || e.currentTarget.value);
+    },
+  };
+
   const isSelected = useCallback(
     (rowId: string, fieldName: string) =>
       selected?.rowId === rowId && selected.fieldName === fieldName,
@@ -708,5 +820,7 @@ export function useGridSelection(args: {
     pasteIntoCell,
     selectionText,
     refocusGrid,
+    typeCatcherProps,
+    onGridFocus,
   };
 }

@@ -192,3 +192,32 @@ describe("round 5: a first cell that starts like a block never ends a pipe-less 
     });
   }
 });
+
+describe("the whole-table check is relative to what was stored (verify-RC-B4 R5 corpus)", () => {
+  it("a stray list line after a stored table does not block an edit elsewhere, and the write never ends the table earlier", () => {
+    const stored = "Step | Task | Who\n--- | --- | ---\n1 | Drain the print queue | Tom\n- | Re-scan bay B3 | Omar";
+    const grid = parseMarkdownTable(stored)!;
+    const rows = grid.rows.map((row) => [...row]);
+    rows[0]![2] = "Tomás";
+    const written = rewriteTableSource(stored, { headers: grid.headers, rows });
+    expect(written).toBe(stored.replace("| Tom\n", "| Tomás\n"));
+  });
+
+  it("editing the stray line's first cell pulls it into the table with a leading pipe", () => {
+    const stored = "Step | Task | Who\n--- | --- | ---\n1 | Drain the print queue | Tom\n- | Re-scan bay B3 | Omar";
+    const grid = parseMarkdownTable(stored)!;
+    const rows = grid.rows.map((row) => [...row]);
+    rows[1]![0] = "- 2";
+    const written = rewriteTableSource(stored, { headers: grid.headers, rows });
+    expect(oracleTableGrid(written)).toEqual([["Step", "Task", "Who"], ["1", "Drain the print queue", "Tom"], ["- 2", "Re-scan bay B3", "Omar"]]);
+  });
+
+  it("a stored 'table' GFM never read as one (header narrower than its delimiter) is judged per row, never refused whole", () => {
+    const stored = "Weighting | Timing |\n|---|---|---|\n| I | Multiple choice | 60 |";
+    const grid = parseMarkdownTable(stored)!;
+    expect(grid.headers).toEqual(["Weighting", "Timing"]);
+    const rows = grid.rows.map((row) => [...row]);
+    rows[0]![1] = "Multiple-choice questions";
+    expect(() => rewriteTableSource(stored, { headers: grid.headers, rows })).not.toThrow();
+  });
+});

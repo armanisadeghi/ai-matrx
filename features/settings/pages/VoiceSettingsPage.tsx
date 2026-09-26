@@ -60,7 +60,7 @@ export default function VoiceSettingsPage() {
               <li className="flex gap-2">
                 <span>•</span>
                 <span>
-                  Prompt Generator - Add voice descriptions for AI prompts
+                  Live voice conversation - talk instead of type in voice chat
                 </span>
               </li>
               <li className="flex gap-2">

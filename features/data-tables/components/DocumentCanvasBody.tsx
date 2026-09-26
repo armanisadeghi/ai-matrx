@@ -30,6 +30,7 @@ import { isServiceFailure, type DocumentRow } from "@/features/data-tables/types
 import { cn } from "@/lib/utils";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { canActOn } from "@/features/access-gate/service/canActOn";
 // Univer hard-depends on `window` / `document`, and it is a heavy chunk — keep
 // it out of the canvas base bundle until a document pane actually opens.
 const DocumentEditor = dynamic(
@@ -113,12 +114,7 @@ export function DocumentCanvasBody({
     if (userId && userId === res.data.user_id) {
       setCanEdit(true);
     } else {
-      const { data: perm } = await supabase.rpc("has_permission", {
-        p_resource_type: "udt_document",
-        p_resource_id: documentId,
-        p_required_permission: "editor",
-      });
-      setCanEdit(perm === true);
+      setCanEdit(await canActOn("udt_document", documentId, "editor"));
     }
     setPermsResolved(true);
   }, [documentId]);

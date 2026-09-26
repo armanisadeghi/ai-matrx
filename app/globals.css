@@ -2506,3 +2506,19 @@
     page-break-after: always;
   }
 }
+
+/* ── A destructive Alert's Alchemy Menu sits in its top-right corner (RC-B12).
+   The package's error slot (ErrorActionsProvider → components/errors/
+   PackageErrorActions.tsx) appends the menu as the Alert's last child; placed
+   here so the title and description keep their full lines, with room reserved
+   so text never runs under it. Unlayered on purpose: it must out-rank the
+   Alert's own `[&>svg~*]:pl-7` utility. */
+[data-slot="alert"][data-variant="destructive"]:has(> [data-error-alchemy-menu]) {
+  padding-right: 2.5rem;
+}
+[data-slot="alert"] > [data-error-alchemy-menu] {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding-left: 0;
+}
