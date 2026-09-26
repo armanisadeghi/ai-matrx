@@ -29,7 +29,7 @@
 import { buildChatMessageActions } from "@/features/rich-document/chat/chatMessageActions";
 import { useDocumentDialogsHost } from "@/features/rich-document/hosts/DocumentDialogsHost";
 import React, { useState, lazy, Suspense, useCallback } from "react";
-import { Copy, Check, Edit, Send, MoreHorizontal, Pin, Loader2 } from "lucide-react";
+import { Copy, Check, Edit, Send, MoreHorizontal, Pin, PinOff, Loader2 } from "lucide-react";
 import {
   togglePinnedMessage,
   usePendingPinMessageIds,
@@ -345,14 +345,10 @@ export function UserActionBar({
           icon={
             pinPending ? (
               <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            ) : isPinned ? (
+              <PinOff className="w-4 h-4 text-amber-500 dark:text-amber-400" />
             ) : (
-              <Pin
-                className={
-                  isPinned
-                    ? "w-4 h-4 fill-current text-amber-500 dark:text-amber-400"
-                    : "w-4 h-4 text-muted-foreground"
-                }
-              />
+              <Pin className="w-4 h-4 text-muted-foreground" />
             )
           }
         />

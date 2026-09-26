@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-26T12:22:14.302Z",
+  "generated_at": "2026-09-26T12:58:06.673Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4483,6 +4483,12 @@
       "filename": "stagerules_a_gate_says_what_it_does_when_it_says_no.sql",
       "checksum": "19429f6bc0c42f864629d57106f109d0e01218799d608ea28b3b9717430be326",
       "applied_at": "2026-09-21 01:38:56.51551+00"
+    },
+    "migrations/campaign/storedoorsdecidered_record_comment_doors_and_the_knob_reader_decide_in_their_own_body.sql": {
+      "source": "matrx-frontend",
+      "filename": "storedoorsdecidered_record_comment_doors_and_the_knob_reader_decide_in_their_own_body.sql",
+      "checksum": "40dd3bed00ad8de9e9cb1a8310117bd5c3993f26799136eb20932268793655ea",
+      "applied_at": "2026-09-26 12:58:05.406381+00"
     },
     "migrations/campaign/storeleakformula_a_worked_out_column_is_as_sensitive_as_what_it_reads.sql": {
       "source": "campaign",

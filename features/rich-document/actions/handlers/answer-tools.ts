@@ -24,6 +24,7 @@ import {
   Globe,
   Loader2,
   Pin,
+  PinOff,
   Play,
   RefreshCw,
   BarChart3,
@@ -74,7 +75,10 @@ registerAction({
   },
   stateIcon: (ctx) => {
     const { messageId } = chatIds(ctx);
-    return messageId && isMessagePinPending(messageId) ? { icon: Loader2, spin: true } : null;
+    if (!messageId) return null;
+    if (isMessagePinPending(messageId)) return { icon: Loader2, spin: true };
+    // Pinned reads as its undo (the bar tints icons by tone, not by state).
+    return isMessagePinned(messageId) ? { icon: PinOff } : null;
   },
   subscribe: (onChange) => subscribePinnedMessages(onChange),
   run: async (ctx) => {

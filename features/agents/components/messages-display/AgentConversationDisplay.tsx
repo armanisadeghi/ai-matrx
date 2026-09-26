@@ -68,11 +68,15 @@ import { ExampleTurnsGroup } from "@/features/agents/message-flags/ExampleTurnsG
 import { Pin } from "lucide-react";
 import {
   hydratePinnedMessages,
-  togglePinnedMessage,
   usePendingPinMessageIds,
   usePinnedMessageIds,
 } from "@/features/agents/message-pins/pinned-messages-store";
-import { ConversationToolbar } from "./conversation-tools/ConversationToolbar";
+import { ConversationFindBar } from "./conversation-tools/ConversationFindBar";
+import {
+  setConversationFindOpen,
+  setConversationPinnedOnly,
+  useConversationViewState,
+} from "./conversation-tools/conversation-view-state";
 import { FollowUpSuggestions } from "./conversation-tools/FollowUpSuggestions";
 import { groupMessageIds, groupsToRender } from "./conversation-tools/pinned-filter";
 import type { FindHistoryState } from "./conversation-tools/find-in-conversation";
@@ -121,8 +125,11 @@ export function AgentConversationDisplay({
   // RC-B9 answer tools: in-thread find, the pinned filter, keyboard + touch
   // access to every message.
   const transcriptRef = useRef<HTMLDivElement>(null);
-  const [findOpen, setFindOpen] = useState(false);
-  const [pinnedOnly, setPinnedOnly] = useState(false);
+  // Find / Pinned-only are VIEW state shared with the host's own chrome (the
+  // /chat header's conversation menu) — no toolbar row on the transcript.
+  const { findOpen, pinnedOnly } = useConversationViewState(conversationId);
+  const setFindOpen = (open: boolean) => setConversationFindOpen(conversationId, open);
+  const setPinnedOnly = (on: boolean) => setConversationPinnedOnly(conversationId, on);
   const pinnedIds = usePinnedMessageIds();
   // A pin write in flight reads "Pinning…"/"Unpinning…" — pending, never optimistic (GATES-TAIL-2).
   const pendingPinIds = usePendingPinMessageIds();
@@ -165,7 +172,6 @@ export function AgentConversationDisplay({
   useEffect(() => {
     void hydratePinnedMessages(messages.map((m) => m.id));
   }, [messages]);
-  const pinnedCount = messages.filter((m) => pinnedIds.has(m.id)).length;
   // Find searches EVERY message: opening it pages in all older history and
   // renders every group; the pinned view reads every group too.
   const [findHistory, setFindHistory] = useState<FindHistoryState>({
@@ -470,23 +476,19 @@ export function AgentConversationDisplay({
         aria-label={`${who}${pinned ? ", pinned" : ""}`}
         className="relative rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
-        {(pinned || pinPending) && primaryId && (
-          <button
-            type="button"
+        {/* Pinned marker: a glyph on the message's top-right corner — no
+            row, no margin, never moves content. Pin / unpin itself lives in
+            the message's action bar and its ⋯ menu ("p" on a focused
+            message). */}
+        {(pinned || pinPending) && (
+          <span
             data-find-ignore=""
-            disabled={pinPending}
-            aria-busy={pinPending || undefined}
-            onClick={() => {
-              const pinnedId = ids.find((id) => pinnedIds.has(id));
-              if (pinnedId) void togglePinnedMessage(pinnedId);
-            }}
-            aria-label={pinPending ? (pinned ? "Unpinning" : "Pinning") : "Pinned — click to unpin"}
-            title={pinPending ? (pinned ? "Unpinning…" : "Pinning…") : "Pinned — click to unpin"}
-            className={`mb-1 inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700 hover:bg-amber-500/20 dark:text-amber-300 ${group.kind === "user" ? "float-right" : ""}`}
+            aria-hidden="true"
+            title={pinPending ? (pinned ? "Unpinning…" : "Pinning…") : "Pinned"}
+            className={`pointer-events-none absolute -right-1.5 -top-1.5 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-amber-500/40 ${pinPending ? "animate-pulse" : ""}`}
           >
-            <Pin className="h-3 w-3" aria-hidden="true" />
-            {pinPending ? (pinned ? "Unpinning…" : "Pinning…") : "Pinned"}
-          </button>
+            <Pin className="h-2.5 w-2.5 fill-current text-amber-500 dark:text-amber-400" />
+          </span>
         )}
         {body}
         {showFollowUps && (
@@ -510,17 +512,20 @@ export function AgentConversationDisplay({
       contextData={{ conversationId }}
       resolveContextOnOpen={resolveMenuContext}
     >
-      {!compact && (
-        <ConversationToolbar
-          conversationId={conversationId}
-          rootRef={transcriptRef}
-          findOpen={findOpen}
-          setFindOpen={setFindOpen}
-          findHistory={findHistory}
-          pinnedOnly={pinnedOnly}
-          setPinnedOnly={setPinnedOnly}
-          pinnedCount={pinnedCount}
-        />
+      {/* Find floats over the top-right of the transcript ONLY while open
+          (Cmd/Ctrl+F in the transcript, or Find in the conversation menu),
+          like a browser's find bar: a zero-height anchor, so opening it never
+          pushes a message down and closing it leaves nothing behind. */}
+      {!compact && findOpen && (
+        <div className="sticky top-0 z-30 h-0" data-find-ignore="">
+          <div className="absolute right-2 top-1 w-[min(28rem,calc(100%-1rem))]">
+            <ConversationFindBar
+              rootRef={transcriptRef}
+              history={findHistory}
+              onClose={() => setFindOpen(false)}
+            />
+          </div>
+        </div>
       )}
       <div
         ref={transcriptRef}

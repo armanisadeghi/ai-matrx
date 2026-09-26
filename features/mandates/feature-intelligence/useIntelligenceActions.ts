@@ -56,8 +56,14 @@ export function rungFor(level: IntelligenceLevel): "user" | "org" {
   return level === "organization" ? "org" : "user";
 }
 
-function reportToast(report: BindingWriteReport, fallback: string): void {
-  toast.success(report.appliesIn ?? fallback);
+/**
+ * One short line for the person (Arman, 2026-09-26: no novels). The server's
+ * `appliesIn` paragraph explains binding scope in bookkeeping terms; the card's
+ * ladder already shows where the choice now sits, so the toast says the
+ * outcome only. Server notes are warnings and still show.
+ */
+function reportToast(report: BindingWriteReport, message: string): void {
+  toast.success(message);
   for (const note of report.notes) toast.info(note);
 }
 

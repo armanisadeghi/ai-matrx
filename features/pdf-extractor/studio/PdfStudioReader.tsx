@@ -1981,7 +1981,7 @@ function paneStatsSubtitle(
   return `${words.toLocaleString()} words${conf}`;
 }
 
-function PaneHeader({
+export function PaneHeader({
   title,
   subtitle,
   icon,

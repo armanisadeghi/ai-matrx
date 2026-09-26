@@ -16,6 +16,7 @@ import { useMediaLoadRecovery } from "@ai-matrx/media/core";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useSeekRequest, type SeekRequest } from "@/lib/media/seek-request";
 
 export interface VideoPreviewProps {
   url: string | null;
@@ -23,6 +24,8 @@ export interface VideoPreviewProps {
   /** Human name for the Media panel row (file name). */
   label?: string;
   className?: string;
+  /** Move to a time (a transcript segment / chunk click). New nonce = seek again. */
+  seek?: SeekRequest | null;
 }
 
 export function VideoPreview({
@@ -30,6 +33,7 @@ export function VideoPreview({
   mimeType,
   label,
   className,
+  seek = null,
 }: VideoPreviewProps) {
   const elementRef = useRef<HTMLVideoElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -49,6 +53,7 @@ export function VideoPreview({
   });
   // A healed (bearer-lane) object URL replaces a dead element src.
   const renderUrl = healedSrc ?? url ?? undefined;
+  useSeekRequest(elementRef, seek, { mountKey: `${renderUrl}|${retryKey}` });
   if (!url) {
     return (
       <div

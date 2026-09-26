@@ -106,7 +106,7 @@ function fetchPagesCacheKey(
   return `${userId ?? "<none>"}:${processedDocumentId}`;
 }
 
-async function fetchProcessedDocumentPages(
+export async function fetchProcessedDocumentPages(
   processedDocumentId: string,
   userId: string | null,
 ): Promise<PdfPageRow[]> {

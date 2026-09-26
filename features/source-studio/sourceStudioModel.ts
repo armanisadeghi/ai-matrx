@@ -111,11 +111,8 @@ export function portionStartMs(
   return typeof t0 === "number" && Number.isFinite(t0) && t0 >= 0 ? t0 : null;
 }
 
-/** A request to move a player: `nonce` makes a second click on the same time seek again. */
-export interface SeekRequest {
-  seconds: number;
-  nonce: number;
-}
+/** A request to move a player (the one shape every seekable player takes). */
+export type { SeekRequest } from "@/lib/media/seek-request";
 
 // ── Original pane ─────────────────────────────────────────────────────────
 
@@ -286,4 +283,88 @@ export function snapshotHtml(text: string): string | null {
     return null;
   }
   return null;
+}
+
+// ── Edit and export ───────────────────────────────────────────────────────
+
+/** One portion as the screen holds it (pages hook + locator row). */
+export interface StudioPortion {
+  pageIndex: number;
+  pageNumber: number;
+  rawText: string;
+  cleanedText: string;
+  /** `portion_kind` + `locator` from `processed_document_pages`, when read. */
+  locator: PortionLocatorRow | null;
+}
+
+const PORTION_KINDS = [
+  "message",
+  "page",
+  "section",
+  "segment",
+  "sheet",
+  "slide",
+] as const;
+type EditPortionKind = (typeof PORTION_KINDS)[number];
+
+export interface EditPortion {
+  ordinal: number;
+  kind: EditPortionKind;
+  text: string;
+  locator: Record<string, unknown>;
+  method: string;
+}
+
+/** The text a person reads for a portion: cleaned when there is any, else raw. */
+export function readableText(p: Pick<StudioPortion, "rawText" | "cleanedText">): string {
+  return p.cleanedText.trim() ? p.cleanedText : p.rawText;
+}
+
+/**
+ * The WHOLE body for `POST /sources/{id}/edit` with one portion changed. The
+ * door stores exactly what it is given, so every portion goes, in order, with
+ * its OWN kind and locator — a transcript segment keeps its times, a web
+ * section its heading path (never re-labelled "page").
+ */
+export function buildEditPortions(
+  portions: ReadonlyArray<StudioPortion>,
+  editedPageIndex: number,
+  text: string,
+): EditPortion[] {
+  return [...portions]
+    .sort((a, b) => a.pageIndex - b.pageIndex)
+    .map((p, i) => {
+      const rawKind = p.locator?.portion_kind;
+      const kind: EditPortionKind = (PORTION_KINDS as readonly string[]).includes(
+        rawKind ?? "",
+      )
+        ? (rawKind as EditPortionKind)
+        : "page";
+      const locator = obj(p.locator?.locator);
+      return {
+        ordinal: i + 1,
+        kind,
+        text: p.pageIndex === editedPageIndex ? text : readableText(p),
+        locator:
+          Object.keys(locator).length > 0
+            ? locator
+            : kind === "page"
+              ? { page: p.pageNumber }
+              : {},
+        method: "manual",
+      };
+    });
+}
+
+/** The Source as one markdown file: each portion under its own name. */
+export function sourceAsMarkdown(
+  name: string,
+  portions: ReadonlyArray<StudioPortion>,
+  label: (p: StudioPortion) => string,
+): string {
+  const body = [...portions]
+    .sort((a, b) => a.pageIndex - b.pageIndex)
+    .map((p) => `## ${label(p)}\n\n${readableText(p).trim()}`)
+    .join("\n\n");
+  return `# ${name}\n\n${body}\n`;
 }

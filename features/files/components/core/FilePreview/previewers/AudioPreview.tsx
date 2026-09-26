@@ -39,12 +39,15 @@ import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { useSeekRequest, type SeekRequest } from "@/lib/media/seek-request";
 
 export interface AudioPreviewProps {
   url: string | null;
   fileName: string;
   mimeType: string | null;
   className?: string;
+  /** Move to a time (a transcript segment / chunk click). New nonce = seek again. */
+  seek?: SeekRequest | null;
 }
 
 const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
@@ -54,6 +57,7 @@ export function AudioPreview({
   fileName,
   mimeType,
   className,
+  seek = null,
 }: AudioPreviewProps) {
   // Media durability: on a load failure the file-session cookie is refreshed
   // and the SAME durable URL retried once instead of dead-ending — a user's
@@ -82,6 +86,7 @@ export function AudioPreview({
       fileName={fileName}
       mimeType={mimeType}
       className={className}
+      seek={seek}
       retryKey={retryKey}
       remintOnError={remintOnError}
       remintFailed={remintFailed}
@@ -107,10 +112,12 @@ function AudioPreviewSession({
   remintOnError,
   remintFailed,
   healedSrc,
+  seek = null,
 }: AudioPreviewSessionProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const src = healedSrc ?? url ?? "";
+  useSeekRequest(audioRef, seek, { mountKey: `${src}|${retryKey}` });
 
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);

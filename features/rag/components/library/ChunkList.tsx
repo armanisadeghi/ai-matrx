@@ -61,6 +61,8 @@ export interface ChunkLike {
   token_count: number | null;
   content_text: string;
   has_oai_embedding: boolean;
+  /** Sources embed with Voyage; a chunk with either embedding is searchable. */
+  has_voyage_embedding?: boolean;
   section_kind: string | null;
 }
 
@@ -84,8 +86,14 @@ export function ChunkCard({
   chunk,
   highlighted = false,
   scope,
+  onSelect,
+  selectLabel,
 }: {
   chunk: ChunkLike;
+  /** Go to where this chunk sits (a portion, a timestamp). Renders a labelled button. */
+  onSelect?: () => void;
+  /** The button's words, e.g. "Play from 01:05" or "Go to Section 3". */
+  selectLabel?: string;
   /** Mark this as the chunk a citation matched — a primary ring + a "Matched"
    *  badge so the user can tell the retrieved segment from its page siblings. */
   highlighted?: boolean;
@@ -139,7 +147,7 @@ export function ChunkCard({
             {chunk.section_kind}
           </Badge>
         )}
-        {chunk.has_oai_embedding ? (
+        {chunk.has_oai_embedding || chunk.has_voyage_embedding ? (
           <Badge variant="success" className="text-[10px] px-1 py-0">
             embedded
           </Badge>
@@ -174,6 +182,18 @@ export function ChunkCard({
             })}
             json={() => chunk}
           />
+        )}
+        {onSelect && (
+          <button
+            type="button"
+            onClick={onSelect}
+            className={cn(
+              "rounded px-1.5 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/10",
+              !scope && "ml-auto",
+            )}
+          >
+            {selectLabel ?? "Go to it"}
+          </button>
         )}
       </div>
       <pre className="whitespace-pre-wrap break-words text-xs leading-relaxed font-sans overflow-x-auto">
