@@ -333,7 +333,7 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
             Tag Manager configuration through these connections.
           </p>
           <Button asChild size="sm" variant="outline" className="min-h-11">
-            <Link href={marketingRoutes.connectionsGoogle()}>
+            <Link href={marketingRoutes.connectionsGoogle()} target="_blank" rel="noopener noreferrer">
               Manage or disconnect Google accounts
               <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
             </Link>

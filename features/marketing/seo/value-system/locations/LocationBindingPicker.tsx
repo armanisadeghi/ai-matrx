@@ -202,7 +202,9 @@ export function LocationBindingPicker({
             <Link
               href={marketingRoutes.brandLocal(brandId)}
               className="inline-flex items-center gap-1 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
-            >
+               target="_blank"
+               rel="noopener noreferrer"
+             >
               <ExternalLink className="h-2.5 w-2.5" aria-hidden />
               Manage every location
             </Link>

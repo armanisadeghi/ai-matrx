@@ -322,7 +322,9 @@ function NodePanel({
           <Link
             href={marketingRoutes.sitePage(brandId, siteId, node.pageId)}
             className="inline-flex items-center gap-1 text-xs font-medium text-primary"
-          >
+             target="_blank"
+             rel="noopener noreferrer"
+           >
             Open page workspace
             <ExternalLink className="h-3 w-3" />
           </Link>

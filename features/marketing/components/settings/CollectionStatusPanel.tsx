@@ -345,7 +345,9 @@ export function CollectionStatusPanel({
                     href={row.data.href}
                     onClick={(event) => event.stopPropagation()}
                     aria-label={`${row.data.label} for ${row.label}`}
-                  >
+                     target="_blank"
+                     rel="noopener noreferrer"
+                   >
                     <ExternalLink className="h-3 w-3" />
                   </Link>
                 </Button>

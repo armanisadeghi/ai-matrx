@@ -30,7 +30,7 @@
  */
 
 import { useState } from "react";
-import { ExternalLink, History, RotateCcw } from "lucide-react";
+import { History, RotateCcw, AppWindow } from "lucide-react";
 
 import { Button } from "@ai-matrx/design-system";
 
@@ -144,7 +144,7 @@ export function HistoryView({ mapId, siteId, host, readOnly }: MapViewProps) {
             onClick={() => openWindow({ mapId, screen: "history", siteId })}
             title="Float this map over any screen"
           >
-            <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+            <AppWindow className="h-3.5 w-3.5" aria-hidden />
             Open as window
           </Button>
         </div>

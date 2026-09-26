@@ -9,7 +9,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ExternalLink, Loader2 } from "lucide-react";
+import { Search, ExternalLink, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataRowWindow } from "@/components/official/MatrxDataTableHost";
@@ -452,7 +452,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
             {pageGapRunning ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <ExternalLink className="h-3.5 w-3.5" />
+              <Search className="h-3.5 w-3.5" />
             )}
             {pageGapMatches.length > 0 ? "Refresh comparison" : "Find link prospects"}
           </Button>

@@ -119,7 +119,9 @@ export function PlanNodeTopicField({
               : `${marketingRoutes.topicalMapDoor(link.mapId)}?topic=${encodeURIComponent(current.slug)}`
           }
           className="inline-flex items-center gap-1 text-[11px] text-muted-foreground underline"
-        >
+           target="_blank"
+           rel="noopener noreferrer"
+         >
           <ExternalLink className="h-3 w-3" aria-hidden />
           Open {current.name} in the map
         </Link>

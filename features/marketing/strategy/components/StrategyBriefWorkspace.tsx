@@ -270,7 +270,7 @@ export function StrategyBriefWorkspace({
               : "This brand has no strategy yet — the site brief will have to infer the business facts itself. Write the brand strategy first for a better brief."}
           </span>
           <Button asChild size="sm" variant="ghost" className="h-7 text-xs">
-            <Link href={brandStrategyHref}>
+            <Link href={brandStrategyHref} target="_blank" rel="noopener noreferrer">
               Brand strategy
               <ExternalLink className="size-3" aria-hidden />
             </Link>
@@ -392,7 +392,7 @@ export function StrategyBriefWorkspace({
               <li key={site.id} className="flex items-center justify-between py-2">
                 <span className="text-sm text-foreground">{site.domain ?? site.name}</span>
                 <Button asChild size="sm" variant="ghost" className="h-7 text-xs">
-                  <Link href={marketingRoutes.brandContentPlanSite(brandSeg, marketingSeg(site), "brief")}>
+                  <Link href={marketingRoutes.brandContentPlanSite(brandSeg, marketingSeg(site), "brief")} target="_blank" rel="noopener noreferrer">
                     Site brief
                     <ExternalLink className="size-3" aria-hidden />
                   </Link>

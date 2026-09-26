@@ -422,7 +422,9 @@ export function SiteKeywordPerformanceWorkspace() {
           <Link
             href={marketingRoutes.sitePage(brandId, site.id, row.top_page_id)}
             className="inline-flex max-w-64 items-center gap-1 text-primary hover:underline"
-          >
+             target="_blank"
+             rel="noopener noreferrer"
+           >
             <span className="truncate">
               {row.top_page_path ?? row.top_page_url ?? "Open page"}
             </span>

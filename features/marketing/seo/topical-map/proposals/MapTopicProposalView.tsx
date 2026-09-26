@@ -29,10 +29,10 @@ import { useState } from "react";
 import {
   Check,
   CircleSlash,
-  ExternalLink,
   Info,
   PanelRightOpen,
   Rows3,
+  AppWindow,
 } from "lucide-react";
 
 import { Button } from "@ai-matrx/design-system";
@@ -323,7 +323,7 @@ function ProposalDoors({
           onClick={() => openWindow({ mapId, screen: "outline" })}
           title="Open this map as a floating window"
         >
-          <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+          <AppWindow className="h-3.5 w-3.5" aria-hidden />
           Open as window
         </Button>
         <Button

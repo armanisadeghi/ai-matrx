@@ -136,7 +136,7 @@ export function StartMapResult({
         {mapHref ? (
           <div className="mt-3">
             <Button asChild size="sm">
-              <Link href={mapHref}>
+              <Link href={mapHref} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-4 w-4" aria-hidden />
                 Open the map
               </Link>

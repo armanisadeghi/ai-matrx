@@ -244,7 +244,9 @@ export function FindingFixCard({
                 <a
                   className="inline-flex items-center gap-1 text-primary "
                   href={pageWorkspaceHref}
-                >
+                   target="_blank"
+                   rel="noopener noreferrer"
+                 >
                   Open the page workspace
                   <ExternalLink className="h-3 w-3" />
                 </a>

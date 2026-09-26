@@ -472,7 +472,9 @@ export function BacklinkDimensionTable({
                   onClick={(event) => event.stopPropagation()}
                   className="inline-flex items-center gap-1 text-xs font-medium text-primary"
                   title={`Open the actual pages on ${label} that link to you`}
-                >
+                   target="_blank"
+                   rel="noopener noreferrer"
+                 >
                   View {formatCount(count)} {count === 1 ? "page" : "pages"}
                   <ExternalLink className="h-3 w-3 shrink-0" />
                 </Link>

@@ -18,7 +18,6 @@
 
 import { useState } from "react";
 import {
-  ExternalLink,
   FileText,
   Files,
   History,
@@ -26,6 +25,7 @@ import {
   type LucideIcon,
   Network,
   Table2,
+  AppWindow,
 } from "lucide-react";
 
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
@@ -129,7 +129,7 @@ export function TopicalMapCanvasBody({
           className="inline-flex h-6 items-center gap-1 rounded-sm px-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
           onClick={() => openWindow({ mapId, screen, siteId })}
         >
-          <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+          <AppWindow className="h-3.5 w-3.5" aria-hidden />
           Window
         </button>
       </div>

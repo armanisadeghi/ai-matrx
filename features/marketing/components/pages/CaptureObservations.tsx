@@ -20,11 +20,11 @@ import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ExternalLink,
   ListTodo,
   MessageSquareText,
   StickyNote,
   TriangleAlert,
+  AppWindow,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import {
@@ -272,7 +272,7 @@ function CaptureObservationsDialog({
               onClick={() => openFilePreview({ fileId: screenshot.file_id })}
               className="inline-flex items-center gap-1.5 self-start text-[11px] text-muted-foreground transition-colors hover:text-primary"
             >
-              <ExternalLink className="h-3 w-3" />
+              <AppWindow className="h-3 w-3" />
               Open in file viewer
             </button>
           </div>
@@ -378,7 +378,7 @@ function CaptureObservationsDialog({
                               }
                               className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-foreground"
                             >
-                              <ExternalLink className="h-3 w-3" />
+                              <AppWindow className="h-3 w-3" />
                             </button>
                           </span>
                         </div>

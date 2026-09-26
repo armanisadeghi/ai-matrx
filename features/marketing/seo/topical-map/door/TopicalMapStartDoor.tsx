@@ -75,7 +75,7 @@ export function TopicalMapStartDoor() {
             <BrandPicker organizationId={organizationId ?? null} value={brandId} onChange={setBrandId} />
             {brandValue ? (
               <Button asChild variant="outline" size="sm">
-                <Link href={marketingRoutes.brandTopicalMapHome(brandValue.seg)}>
+                <Link href={marketingRoutes.brandTopicalMapHome(brandValue.seg)} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4" aria-hidden />
                   Open {brandValue.name}&apos;s Content home
                 </Link>

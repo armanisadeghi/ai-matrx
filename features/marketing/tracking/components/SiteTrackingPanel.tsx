@@ -319,7 +319,7 @@ export function SiteTrackingPanel({
             grade what is firing, and check that the container is really on the page.
           </p>
           <Button asChild size="sm" variant="outline">
-            <Link href={integrationsHref}>
+            <Link href={integrationsHref} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
               Bind a container
             </Link>
