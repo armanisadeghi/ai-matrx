@@ -108,6 +108,7 @@ import { noteIdentityContentSource } from "../richDocumentSource";
 import { usePreparedNoteContentSource } from "../usePreparedNoteContentSource";
 import { useNoteConflictChoreography } from "../hooks/useNoteConflictChoreography";
 import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 interface NoteContentEditorProps {
   noteId: string;
@@ -761,7 +762,7 @@ export function NoteContentEditor({
       isEditable={!readOnly}
       getWriteHandlers={getSurfaceWriteHandlers}
     >
-      {conflictError && !conflictDecision && <div role="alert" className="shrink-0 border-b border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{conflictError}</div>}
+      {conflictError && !conflictDecision && <ErrorNotice size="inline" className="shrink-0 border-b border-destructive/30 bg-destructive/10 px-3 py-2 text-sm" message={conflictError} />}
       {conflict.reviewOutcomes.map((outcome) => (
         <div key={outcome.requestId} className="shrink-0 flex items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-100">
           <span>Reviewed save outcome: {outcome.result.status}. The original reviewed package remains available for inspection.</span>

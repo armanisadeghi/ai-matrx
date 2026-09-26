@@ -65,6 +65,7 @@ import { clearSandboxBindingCache } from "@/lib/sandbox/active-binding";
 import { resolveBindingScope } from "@/lib/sandbox/binding-scope";
 import type { SandboxInstance } from "@/types/sandbox";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 interface SandboxPanelProps {
   conversationId: string | null;
@@ -513,12 +514,7 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
                         />
                       </div>
                       {nameError && (
-                        <p
-                          role="alert"
-                          className="mt-1 text-xs text-destructive"
-                        >
-                          {sandboxError || nameError}
-                        </p>
+                        <ErrorNotice size="inline" className="mt-1 text-xs" message={sandboxError || nameError} />
                       )}
                     </form>
                   ) : (

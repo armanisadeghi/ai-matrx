@@ -14,6 +14,7 @@ import {
 } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
 import type { AssistActionTextEditorDefinition } from "../runtime/action-editing";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export function AssistActionTextEditor({
   definition,
@@ -132,9 +133,7 @@ export function AssistActionTextEditor({
       />
       <div className="mt-1 flex min-h-10 items-center justify-end gap-2 md:min-h-0">
         {validationMessage ? (
-          <p className="flex-1 text-[11px] text-destructive" role="alert">
-            {validationMessage}
-          </p>
+          <ErrorNotice size="inline" className="flex-1 text-[11px]" message={validationMessage} />
         ) : null}
         <Button
           type="button"

@@ -18,6 +18,7 @@ import {
   mcpConnectionActionLabel,
   mcpConnectionRouteFor,
 } from "../../mcp-connection-route";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 type McpStatusTone = "stopped" | "running" | "error";
 
@@ -261,9 +262,7 @@ function McpDetail({
           <p className="text-sm text-foreground/90">{entry.description}</p>
         )}
         {actionError && (
-          <p role="alert" className="text-xs text-destructive">
-            {actionError}
-          </p>
+          <ErrorNotice size="inline" className="text-xs" message={actionError} />
         )}
         <div className="pt-2">
           <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
@@ -292,9 +291,7 @@ function McpDetail({
               Connect this server to check its tools.
             </p>
           ) : discovery?.status === "failed" ? (
-            <p role="alert" className="text-xs text-destructive">
-              {discovery.error ?? "Tool discovery failed"}
-            </p>
+            <ErrorNotice size="inline" className="text-xs" message={discovery.error ?? "Tool discovery failed"} />
           ) : discovery?.status === "loading" ? (
             <p className="text-xs text-muted-foreground">
               Checking available tools…

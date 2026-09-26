@@ -30,6 +30,7 @@ import type { AssociationGroup } from "../associationGroups";
 import { itemLabel } from "../associationGroups";
 import { attachToTopic, detachFromTopic } from "../associationWrites";
 import { PanelEmptyLine, PanelSection } from "../PanelSection";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export interface AssociationsSectionProps {
   topicName: string;
@@ -150,9 +151,7 @@ export function AssociationsSection({
         </div>
       )}
       {refusal ? (
-        <p role="alert" className="mt-1 whitespace-pre-wrap text-xs text-destructive">
-          {refusal}
-        </p>
+        <ErrorNotice size="inline" className="mt-1 whitespace-pre-wrap text-xs" message={refusal} />
       ) : null}
 
       {canWrite ? (

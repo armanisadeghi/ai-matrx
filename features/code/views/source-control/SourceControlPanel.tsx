@@ -69,6 +69,7 @@ import {
   buildRepositoryContextSnapshot,
   GIT_REPOSITORY_CONTEXT_KEY,
 } from "./gitContext";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 const GIT_CONTEXT_KNOB_FEATURE = "code.source_control";
 const GIT_CONTEXT_KNOB_KEYS = [
@@ -904,12 +905,7 @@ function RepositoryPanel({
           </div>
         )}
         {error && (
-          <div
-            role="alert"
-            className="m-2 break-words rounded border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive"
-          >
-            {error}
-          </div>
+          <ErrorNotice size="inline" className="m-2 break-words rounded border border-destructive/30 bg-destructive/5 p-2 text-xs" message={error} />
         )}
         {notice && (
           <p

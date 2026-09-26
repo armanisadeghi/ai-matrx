@@ -79,6 +79,7 @@ import { resolveMandate } from "@/features/mandates/service";
 import { sampleInputsForMandate } from "./sample-inputs";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 interface CompletedRun {
   result: MandateTestResponse;
@@ -460,9 +461,7 @@ export function TryItNowPanel({
         </Button>
       </div>
       {sampleError ? (
-        <div role="alert" className="text-sm text-destructive">
-          {sampleError}
-        </div>
+        <ErrorNotice size="inline" className="text-sm" message={sampleError} />
       ) : null}
       {sampleSource ? (
         <section

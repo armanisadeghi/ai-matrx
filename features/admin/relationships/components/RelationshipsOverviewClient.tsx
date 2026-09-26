@@ -32,6 +32,7 @@ import type {
   RelationshipProblem,
   RelationshipSystemStatus,
 } from "../types";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 
 interface Props {
   status: RelationshipSystemStatus | null;
@@ -77,7 +78,7 @@ export function RelationshipsOverviewClient({ status, problems }: Props) {
       refresh();
     } catch (e) {
       toast.error(
-        `Couldn't register: ${e instanceof Error ? e.message : String(e)}`,
+        `Couldn't register: ${extractErrorMessage(e)}`,
       );
     } finally {
       setBusy(false);
@@ -93,7 +94,7 @@ export function RelationshipsOverviewClient({ status, problems }: Props) {
       refresh();
     } catch (e) {
       toast.error(
-        `Rebuild failed: ${e instanceof Error ? e.message : String(e)}`,
+        `Rebuild failed: ${extractErrorMessage(e)}`,
       );
     } finally {
       setBusy(false);
@@ -117,7 +118,7 @@ export function RelationshipsOverviewClient({ status, problems }: Props) {
       refresh();
     } catch (e) {
       toast.error(
-        `Couldn't toggle enforcement: ${e instanceof Error ? e.message : String(e)}`,
+        `Couldn't toggle enforcement: ${extractErrorMessage(e)}`,
       );
     } finally {
       setBusy(false);

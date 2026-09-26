@@ -45,9 +45,10 @@
 // already LANDED as a Source at the scrape route's result boundary — the
 // server's page payload carries its `processed_document_id` and any notices
 // the door raised. So the bulk action is no longer "copy into Notes" (the old
-// stopgap, deleted): it is Keep — `POST /sources/{id}/keep`, the signal
-// that starts the Source's AI processing, optionally filing it against attach
-// targets. Screen copy says "Save" until "Keep" has a vocabulary row (plan §8).
+// stopgap, deleted): it is Save — the ONE Save panel
+// (`features/sources/SaveSourcePanel.tsx`, §8.3), where the person picks where
+// each Source is filed; the panel sends `POST /sources/{id}/keep`, the signal
+// that starts the Source's AI processing. Screen copy says "Save" (plan §8).
 // Each row shows its Source and opens it. A row that did not land
 // says why (the door's own sentence), never a silent gap.
 
@@ -60,11 +61,16 @@ import {
   isOrganizationSelectionCancelled,
 } from "@/lib/organization/organization-gate";
 import {
-  keepSource,
   sourceHref,
-  type SourceAttachTarget,
+  type LandedSource,
 } from "@/features/sources/api/sourcesApi";
-import { BackendApiError } from "@/lib/api/errors";
+import { SaveSourcePanel } from "@/features/sources/SaveSourcePanel";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -194,7 +200,8 @@ export default function BatchScrapePage() {
   const [hasRun, setHasRun] = useState(false);
   const [retrying, setRetrying] = useState<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [saving, setSaving] = useState(false);
+  /** The rows the Save panel is open for; null when it is closed. */
+  const [saveRows, setSaveRows] = useState<BatchRow[] | null>(null);
   const [sendingToBrowser, setSendingToBrowser] = useState(false);
 
   // Guards a retry's callback against landing after a NEW full run started —
@@ -255,82 +262,53 @@ export default function BatchScrapePage() {
   );
 
   /**
-   * Keep the selected Sources (and file them against `attachTo` when given).
-   * Keep is a server write — it is the signal that starts AI processing — so it
-   * goes through `POST /sources/{id}/keep`, one Source per call, and every
-   * refusal reaches the toast in the server's own words.
+   * Save the selected Sources through the ONE Save panel (SOURCE-CONVERGENCE
+   * §8.3): the person chooses where each is filed (project, task, scope,
+   * research topic, Library…) and the panel sends `POST /sources/{id}/keep`
+   * per Source, rendering every refusal and notice. Rows that did not become
+   * a Source are said out loud, never silently skipped.
    */
-  const handleKeepSelected = useCallback(
-    async (selectedRows: BatchRow[], attachTo: SourceAttachTarget[] = []) => {
-      const readRows = selectedRows.filter((r) => r.status === "success");
-      if (readRows.length === 0) {
-        toast.error("Select at least one successfully read page first");
-        return;
+  const openSaveForSelected = useCallback((selectedRows: BatchRow[]) => {
+    const readRows = selectedRows.filter((r) => r.status === "success");
+    if (readRows.length === 0) {
+      toast.error("Select at least one successfully read page first");
+      return;
+    }
+    const notLanded = readRows.filter((r) => !r.processedDocumentId);
+    const keepable = readRows.filter((r) => r.processedDocumentId);
+    if (keepable.length === 0) {
+      toast.error(
+        notLanded[0]?.sourceNotices[0]?.message ??
+          "None of the selected pages became a Source, so there is nothing to save. Scrape them again.",
+      );
+      return;
+    }
+    if (notLanded.length > 0) {
+      toast.warning(
+        `${notLanded.length} ${notLanded.length === 1 ? "page did" : "pages did"} not become a Source and ${notLanded.length === 1 ? "is" : "are"} left out.`,
+      );
+    }
+    setSaveRows(keepable);
+  }, []);
+
+  const handleSaved = useCallback(
+    (results: LandedSource[]) => {
+      const byId = new Map(results.map((r) => [r.processed_document_id, r]));
+      for (const row of saveRows ?? []) {
+        const landed = row.processedDocumentId
+          ? byId.get(row.processedDocumentId)
+          : undefined;
+        if (landed)
+          updateRow({
+            ...row,
+            kept: landed.kept,
+            sourceNotices: landed.notices ?? row.sourceNotices,
+          });
       }
-      const notLanded = readRows.filter((r) => !r.processedDocumentId);
-      const keepable = readRows.filter((r) => r.processedDocumentId);
-      if (keepable.length === 0) {
-        toast.error(
-          notLanded[0]?.sourceNotices[0]?.message ??
-            "None of the selected pages became a Source, so there is nothing to save. Scrape them again.",
-        );
-        return;
-      }
-      setSaving(true);
-      try {
-        const capturedOrganizationId = await ensureOrganizationContext({
-          organizationId,
-        });
-        let ok = 0;
-        const refusals: string[] = [];
-        for (const row of keepable) {
-          try {
-            const landed = await keepSource(row.processedDocumentId as string, {
-              attachTo,
-              organizationId: capturedOrganizationId,
-            });
-            ok += 1;
-            updateRow({
-              ...row,
-              kept: landed.kept,
-              sourceNotices: landed.notices ?? row.sourceNotices,
-            });
-          } catch (error) {
-            refusals.push(
-              error instanceof BackendApiError
-                ? error.userMessage
-                : error instanceof Error && error.message
-                  ? error.message
-                  : "The server did not say why.",
-            );
-          }
-        }
-        const skipped =
-          notLanded.length > 0
-            ? ` ${notLanded.length} ${notLanded.length === 1 ? "page did" : "pages did"} not become a Source, so ${notLanded.length === 1 ? "it was" : "they were"} skipped.`
-            : "";
-        if (refusals.length === 0) {
-          toast.success(
-            (ok === 1 ? "Saved 1 Source." : `Saved ${ok} Sources.`) + skipped,
-          );
-          setSelectedIds([]);
-        } else {
-          toast.error(
-            `Saved ${ok} of ${keepable.length}. ${refusals[0]}${refusals.length > 1 ? ` (and ${refusals.length - 1} more)` : ""}${skipped}`,
-          );
-        }
-      } catch (error) {
-        if (isOrganizationSelectionCancelled(error)) return;
-        toast.error(
-          error instanceof BackendApiError
-            ? error.userMessage
-            : "Could not save these Sources and we could not say why.",
-        );
-      } finally {
-        setSaving(false);
-      }
+      setSaveRows(null);
+      setSelectedIds([]);
     },
-    [organizationId, updateRow],
+    [saveRows, updateRow],
   );
 
   // Every row the SERVER sent to rung 3. Not "every failure" — a 404 is a 404
@@ -466,7 +444,8 @@ export default function BatchScrapePage() {
         if (!row.processedDocumentId) {
           return (
             <span className="text-xs text-amber-700 dark:text-amber-400">
-              {row.sourceNotices[0]?.message ?? "This page did not become a Source."}
+              {row.sourceNotices[0]?.message ??
+                "This page did not become a Source."}
             </span>
           );
         }
@@ -496,7 +475,10 @@ export default function BatchScrapePage() {
               {row.processedDocumentId.slice(0, 8)}
             </span>
             {row.sourceNotices.map((n) => (
-              <span key={n.code + n.message} className="text-[10px] text-muted-foreground">
+              <span
+                key={n.code + n.message}
+                className="text-[10px] text-muted-foreground"
+              >
                 {n.message}
               </span>
             ))}
@@ -675,15 +657,10 @@ export default function BatchScrapePage() {
                     <Button
                       size="sm"
                       className="h-7 gap-1.5 text-xs"
-                      disabled={saving}
-                      onClick={() => void handleKeepSelected(selected)}
+                      onClick={() => openSaveForSelected(selected)}
                     >
-                      {saving ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Bookmark className="h-3.5 w-3.5" />
-                      )}
-                      Save selected
+                      <Bookmark className="h-3.5 w-3.5" />
+                      Save selected…
                     </Button>
                   ),
                 }}
@@ -696,6 +673,35 @@ export default function BatchScrapePage() {
           )}
         </div>
       </div>
+      <Dialog open={!!saveRows} onOpenChange={(o) => !o && setSaveRows(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              Save{" "}
+              {saveRows?.length === 1
+                ? "1 page"
+                : `${saveRows?.length ?? 0} pages`}
+            </DialogTitle>
+          </DialogHeader>
+          {saveRows ? (
+            <SaveSourcePanel
+              embedded
+              sources={saveRows.map((r) => ({
+                processedDocumentId: r.processedDocumentId as string,
+                name: r.result?.overview?.page_title || r.url,
+              }))}
+              landingNotices={saveRows
+                .flatMap((r) => r.sourceNotices)
+                .filter(
+                  (n, i, all) =>
+                    all.findIndex((m) => m.message === n.message) === i,
+                )}
+              onCancel={() => setSaveRows(null)}
+              onSaved={handleSaved}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

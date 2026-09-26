@@ -36,6 +36,7 @@ import type { MapTopicAssociationResolved } from "../../types";
 import { itemLabel } from "../associationGroups";
 import { makePlannedPage } from "../plannedPage";
 import { PanelEmptyLine, PanelSection } from "../PanelSection";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export interface PlannedPagesSectionProps {
   mapId: string;
@@ -131,9 +132,7 @@ export function PlannedPagesSection({
         </ul>
       )}
       {refusal ? (
-        <p role="alert" className="mt-1 whitespace-pre-wrap text-xs text-destructive">
-          {refusal}
-        </p>
+        <ErrorNotice size="inline" className="mt-1 whitespace-pre-wrap text-xs" message={refusal} />
       ) : null}
 
       {canWrite ? (

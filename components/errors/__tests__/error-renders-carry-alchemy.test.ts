@@ -12,7 +12,7 @@
  *   - error toasts             (lib/toast.ts decorator, components/ui/toaster.tsx)
  *
  * A file that hand-renders its own error — its own `role="alert"` box, its own
- * "Something went wrong" / "Not saved" sentence — bypasses the menu. This guard
+ * "Something went wrong" sentence — bypasses the menu. This guard
  * counts those bespoke renders per file across app/, components/, features/ and
  * lib/. The BASELINE is a census, not an exemption: a file may not gain a
  * bespoke render, a new file may not introduce one, and a file whose count
@@ -38,8 +38,10 @@ const PRIMITIVES = new Set([
 const BESPOKE_SHAPES: ReadonlyArray<{ kind: string; pattern: RegExp }> = [
   { kind: 'its own role="alert" box', pattern: /role=(?:"alert"|\{\s*["']alert["']\s*\})/g },
   { kind: 'a hand-written "Something went wrong"', pattern: /Something went wrong/g },
-  // `title="Not saved"` handed to ErrorNotice is the primitive, not a bespoke render.
-  { kind: 'a hand-written "Not saved"', pattern: /(?<!title=)[>"'`]\s*Not saved\b/g },
+  // "Not saved" is NOT counted: it is also an ordinary status value (a
+  // Sources "Saved / Not saved" column), so a text match cannot tell an error
+  // from a label. A real Not-saved error box carries role="alert" and is
+  // counted by the first shape.
 ];
 
 export function countBespokeErrorRenders(source: string): number {
@@ -85,7 +87,7 @@ describe("the bespoke-error detector (self-test)", () => {
     expect(countBespokeErrorRenders('<div role="alert">x</div>')).toBe(1);
     expect(countBespokeErrorRenders("<div role={'alert'}>x</div>")).toBe(1);
     expect(countBespokeErrorRenders("<h2>Something went wrong</h2>")).toBe(1);
-    expect(countBespokeErrorRenders('<p className="x">Not saved</p>')).toBe(1);
+    expect(countBespokeErrorRenders('<Badge>Not saved</Badge>')).toBe(0);
   });
   it("does not count a render that uses the primitive", () => {
     expect(

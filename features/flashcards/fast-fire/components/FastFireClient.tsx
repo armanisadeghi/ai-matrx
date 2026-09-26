@@ -16,6 +16,7 @@ import {
   FASTFIRE_SURFACE_LOAD_TIMEOUT_MESSAGE,
   loadFastFireSurface,
 } from "./fastfire-initial-load";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 type FastFireSurfaceComponent = ComponentType<{ setId?: string | null }>;
 
@@ -58,9 +59,7 @@ export function FastFireClient({ setId }: { setId?: string | null }) {
   if (loadError) {
     return (
       <div className="flex min-h-[60dvh] flex-col items-center justify-center gap-3 bg-textured p-6 text-center">
-        <p role="alert" className="max-w-sm text-sm text-muted-foreground">
-          {loadError}
-        </p>
+        <ErrorNotice size="inline" className="max-w-sm text-sm text-muted-foreground" message={loadError} />
         <Button type="button" variant="outline" onClick={retry}>
           Retry loading FastFire
         </Button>

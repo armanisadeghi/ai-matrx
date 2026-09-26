@@ -61,6 +61,7 @@ import {
   CONTEXT_MENU_ENTITY_KEY,
   type ContextMenuExtraSection,
 } from "@/features/context-menu-v3/types";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 /** The three switches, with the sentence that keeps them from being flipped together. */
 const INCLUSION_SWITCHES = [
@@ -617,9 +618,7 @@ function EarningCodeEditor({
       ) : null}
 
       {why ? (
-        <p role="alert" className="text-sm text-destructive">
-          {why}
-        </p>
+        <ErrorNotice size="inline" className="text-sm" message={why} />
       ) : null}
 
       <Button
@@ -873,9 +872,7 @@ function DeductionCodeEditor({
       </div>
 
       {why ? (
-        <p role="alert" className="text-sm text-destructive">
-          {why}
-        </p>
+        <ErrorNotice size="inline" className="text-sm" message={why} />
       ) : null}
 
       <Button

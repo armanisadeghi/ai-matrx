@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { GitHubInstallation } from "./types";
 import { useGitHubConnection } from "./useGitHubConnection";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 function coverageLabel(installation: GitHubInstallation): string {
   if (installation.suspended) return "Suspended on GitHub";
@@ -250,15 +251,11 @@ export function GitHubConnectionCard({
                 </p>
               )}
               {github.error && (
-                <p className="mt-2 text-xs text-destructive" role="alert">
-                  {github.error}
-                </p>
+                <ErrorNotice size="inline" className="mt-2 text-xs" message={github.error} />
               )}
               {!github.error && connection?.status === "needs_attention" && (
-                <p className="mt-2 text-xs text-destructive" role="alert">
-                  {connection.last_error ??
-                    "GitHub is authorized, but no approved GitHub App installation is available yet."}
-                </p>
+                <ErrorNotice size="inline" className="mt-2 text-xs" message={connection.last_error ??
+                    "GitHub is authorized, but no approved GitHub App installation is available yet."} />
               )}
             </div>
           </div>

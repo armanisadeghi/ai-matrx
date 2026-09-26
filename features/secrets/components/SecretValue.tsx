@@ -63,6 +63,7 @@ import {
   type VaultField,
   type VaultItem,
 } from "../types";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 /**
  * Whether a human may see this field's value at all. `sealed` is false for
@@ -706,9 +707,7 @@ export function VaultRevealReauthDialog({
             </>
           )}
           {error && (
-            <p className="text-sm text-destructive" role="alert">
-              {error}
-            </p>
+            <ErrorNotice size="inline" className="text-sm" message={error} />
           )}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={close}>

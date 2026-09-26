@@ -111,9 +111,13 @@ export function useCopyMandateAgent(): {
       // overload).
       // "Copy & Update" makes the person's OWN copy — homed in their own
       // workspace, never a question about which organization it is for.
+      // org-fallback-deliberate: every caller copies "into your account"; only
+      // an organization seat names its own org, otherwise the copy is homed by
+      // name in the person's own workspace (308e1badb7).
+      const home = source.organizationId || (await resolvePersonalOrgId());
       const newId = await duplicateMandateAgent(dispatch, {
         ...source,
-        organizationId: source.organizationId ?? (await resolvePersonalOrgId()),
+        organizationId: home,
       });
       // The copy is the critical step — once it exists, open it for editing
       // no matter what. Connecting it is best-effort.

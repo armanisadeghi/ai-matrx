@@ -38,6 +38,7 @@ import {
   type VaultVerifiedExportActor,
 } from "../vault-service";
 import { WEBSITE_LOGIN_DEFINITION_KEY, type VaultItem } from "../types";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 const DEFAULT_CSV_PROFILE = "matrx_login_csv_v1" as const;
 const EXPORT_FILENAME = "matrx-login-export.csv";
@@ -433,7 +434,7 @@ export function VaultLoginExportDialog({
                 />
               </div>
               <p className="text-xs text-muted-foreground">This export currently requires a Matrx password. Your connected-provider sign-in needs a separate confirmation method.</p>
-              {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+              {error && <ErrorNotice size="inline" className="text-sm" message={error} />}
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={close}>Cancel</Button>
                 <Button type="button" onClick={() => void confirmIdentity()} disabled={running}>
@@ -501,7 +502,7 @@ export function VaultLoginExportDialog({
                 </section>
               )}
 
-              {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+              {error && <ErrorNotice size="inline" className="text-sm" message={error} />}
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={close}>Cancel</Button>
                 {preview ? (

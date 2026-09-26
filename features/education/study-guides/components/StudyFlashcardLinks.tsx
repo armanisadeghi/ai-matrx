@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { Note } from "@/features/notes/types";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export function StudyFlashcardLinks({ guide, onChanged }: { guide: Note; onChanged: () => void }) {
   const [open, setOpen] = useState(false);
@@ -17,7 +18,7 @@ export function StudyFlashcardLinks({ guide, onChanged }: { guide: Note; onChang
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent className="flex w-full flex-col sm:max-w-md">
         <SheetHeader><SheetTitle>Link flashcards</SheetTitle><SheetDescription>Choose decks to show their cards as key terms in this guide.</SheetDescription></SheetHeader>
-        {links.error && <p role="alert" className="text-sm text-destructive">{links.error}</p>}
+        {links.error && <ErrorNotice size="inline" className="text-sm" message={links.error} />}
         <UniversalAssociationPicker tokens={["fc_set"]} ownerId={userId} orgId={guide.organization_id}
           attachedKeys={new Set([...links.attachedIdsFor("fc_set")].map((id) => `fc_set:${id}`))}
           onAttach={async (token, id, title) => {

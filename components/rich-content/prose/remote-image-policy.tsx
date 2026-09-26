@@ -35,6 +35,7 @@ import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import { sessionKnobPrincipals } from "@/lib/scoped-config/sessionKnob";
 import { setUserKnobMapEntry } from "@/lib/scoped-config/service";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 /** Who wrote the text being rendered: the viewer, someone else, or an AI model. */
 export type ImagePolicy = "self" | "other" | "ai";
@@ -198,7 +199,7 @@ export function RemoteImageGate({
         Open
       </a>
       {trusting !== "idle" && trusting !== "saving" ? (
-        <span role="alert" className="basis-full text-destructive">{trusting}</span>
+        <ErrorNotice size="inline" className="basis-full" message={trusting} />
       ) : null}
     </span>
   );

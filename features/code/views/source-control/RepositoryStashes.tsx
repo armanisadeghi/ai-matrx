@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { ProcessAdapter } from "../../adapters/ProcessAdapter";
 import { executeRepositoryGit } from "./repositoryService";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 const MANUAL_STASH_MESSAGE = "Matrx saved changes";
 
@@ -161,7 +162,7 @@ export function RepositoryStashes({
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading saved changes…
         </p>
       )}
-      {error && <p role="alert" className="mt-2 text-xs text-destructive">{error}</p>}
+      {error && <ErrorNotice size="inline" className="mt-2 text-xs" message={error} />}
       {!loading && !error && stashes.length === 0 && (
         <p className="mt-2 text-xs text-muted-foreground">No saved changes.</p>
       )}

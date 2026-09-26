@@ -101,6 +101,7 @@ import type {
 } from "../types";
 import { checkEin, formatEinInput } from "./ein";
 import { useHrActivationState } from "./useHrActivationState";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 // A short, honest list. IANA carries hundreds; a US-first employer needs these, and
 // anything else is typed. The field accepts any IANA name — this is a shortcut, not
@@ -410,9 +411,7 @@ export function HrActivationWizard({
                 className="max-w-[12rem]"
               />
               {draft.ein.length > 0 && !einCheck.ok ? (
-                <p role="alert" className="text-sm text-destructive">
-                  {einCheck.why}
-                </p>
+                <ErrorNotice size="inline" className="text-sm" message={einCheck.why} />
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Nine digits, written NN-NNNNNNN. Once saved, this number is

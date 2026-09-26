@@ -47,6 +47,7 @@ import {
   stringUrlCodec,
   useUrlState,
 } from "@ai-matrx/kit/url-state";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 
 type RuleFilter = "all" | "conveying" | "known" | "inactive";
 
@@ -411,7 +412,7 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
       refresh();
     } catch (e) {
       toast.error(
-        `Couldn't save the rule: ${e instanceof Error ? e.message : String(e)}`,
+        `Couldn't save the rule: ${extractErrorMessage(e)}`,
       );
     } finally {
       setSaving(false);
@@ -444,7 +445,7 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
       refresh();
     } catch (e) {
       toast.error(
-        `Couldn't delete the rule: ${e instanceof Error ? e.message : String(e)}`,
+        `Couldn't delete the rule: ${extractErrorMessage(e)}`,
       );
     } finally {
       setSaving(false);

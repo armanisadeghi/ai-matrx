@@ -38,6 +38,7 @@ import { useMediaLoadRecovery } from "@ai-matrx/media/core";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export interface AudioPreviewProps {
   url: string | null;
@@ -459,9 +460,7 @@ function AudioPreviewSession({
       </div>
 
       {displayError ? (
-        <p className="text-xs text-destructive" role="alert">
-          {displayError}
-        </p>
+        <ErrorNotice size="inline" className="text-xs" message={displayError} />
       ) : null}
     </div>
   );

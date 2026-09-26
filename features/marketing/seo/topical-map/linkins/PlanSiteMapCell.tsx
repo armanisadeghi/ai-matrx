@@ -16,6 +16,7 @@ import { useMarketingBrandOptional } from "@/features/marketing/lib/brand-contex
 import { topicalMapErrorText } from "../errors";
 import { useTopicalMap } from "../hooks";
 import { useSiteTopicalMapLink } from "./useSiteTopicalMapLink";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export function PlanSiteMapCell({ siteId }: { siteId: string }) {
   const brand = useMarketingBrandOptional();
@@ -34,9 +35,7 @@ export function PlanSiteMapCell({ siteId }: { siteId: string }) {
     return <span className="text-xs text-muted-foreground">No map</span>;
   if (map.isError)
     return (
-      <span role="alert" className="text-xs text-destructive">
-        {topicalMapErrorText(map.error)}
-      </span>
+      <ErrorNotice size="inline" className="text-xs" message={topicalMapErrorText(map.error)} />
     );
   return (
     <Link

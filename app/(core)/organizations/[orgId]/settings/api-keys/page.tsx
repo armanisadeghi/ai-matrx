@@ -49,6 +49,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 function formatDate(value: string | null): string {
   if (!value) return "—";
@@ -192,14 +193,10 @@ export default function OrgApiKeysPage() {
           </div>
 
           {listError && (
-            <p className="text-sm text-destructive" role="alert">
-              {listError}
-            </p>
+            <ErrorNotice size="inline" className="text-sm" message={listError} />
           )}
           {actionError && (
-            <p className="text-sm text-destructive" role="alert">
-              {actionError}
-            </p>
+            <ErrorNotice size="inline" className="text-sm" message={actionError} />
           )}
 
           {keys === null ? (

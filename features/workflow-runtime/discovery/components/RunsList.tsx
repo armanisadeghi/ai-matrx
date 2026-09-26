@@ -42,6 +42,7 @@ import {
 import { runDurationMs, runHref, type RunListRow } from "../runs";
 import { useRunsList } from "../useRunsList";
 import { useWorkflowFacts } from "../useWorkflowFacts";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 /** A row plus the workflow facts resolved for it. */
 interface RunRowView extends RunListRow {
@@ -196,9 +197,7 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       {error && (
-        <p className="px-3 pb-2 text-xs text-destructive" role="alert">
-          {error}
-        </p>
+        <ErrorNotice size="inline" className="px-3 pb-2 text-xs" message={error} />
       )}
       <NonEditableContextMenu
         sourceFeature="workflow_run"

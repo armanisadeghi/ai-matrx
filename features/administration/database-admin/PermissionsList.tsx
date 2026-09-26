@@ -7,6 +7,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Search } from "lucide-react";
 import type { DatabasePermission } from "./types";
 import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 interface PermissionsListProps {
   permissions?: DatabasePermission[];
@@ -103,12 +104,7 @@ const PermissionsList = ({
   return (
     <div className="min-w-0" data-surface-value="database_permissions">
       {error && (
-        <div
-          role="alert"
-          className="mb-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {error}
-        </div>
+        <ErrorNotice size="inline" className="mb-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm" message={error} />
       )}
       <MatrxDataTable
         tableId="database-admin-permissions"

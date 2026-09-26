@@ -32,6 +32,7 @@ import { hrMeTimeOffPolicyHref } from "../hrefs";
 import { LeaveBalanceBlock } from "./LeaveBalanceBlock";
 import { LeaveRequestForm } from "./LeaveRequestForm";
 import { LeaveRequestList } from "./LeaveRequestList";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export function MyTimeOffSurface() {
   return (
@@ -176,12 +177,7 @@ function TimeOffBody({ employmentId }: { employmentId: string }) {
           {data.canRequest ? (
             <>
             {detachedRefusal ? (
-              <p
-                role="alert"
-                className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive"
-              >
-                {detachedRefusal}
-              </p>
+              <ErrorNotice size="inline" className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm" message={detachedRefusal} />
             ) : null}
 
             <LeaveRequestForm

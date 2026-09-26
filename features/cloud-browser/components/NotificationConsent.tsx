@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import { Bell, Mail, MessageSquare, Inbox, Check } from "lucide-react";
 import type { NotificationChannel, NotificationConsent as Consent } from "../types";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 const ROWS: {
   key: NotificationChannel;
@@ -131,9 +132,7 @@ export function NotificationConsent({
       </ul>
 
       {error ? (
-        <p className="text-xs text-destructive" role="alert">
-          {error}
-        </p>
+        <ErrorNotice size="inline" className="text-xs" message={error} />
       ) : null}
 
       {variant === "prompt" ? (

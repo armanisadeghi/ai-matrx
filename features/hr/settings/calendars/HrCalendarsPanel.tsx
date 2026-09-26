@@ -46,6 +46,7 @@ import { useHrSettingsStructure } from "../hooks/useHrSettingsStructure";
 import { HrSettingsShell } from "../HrSettingsShell";
 import type { HrHoliday, HrHolidayCalendar, HrJurisdiction } from "../types";
 import { federalHolidays, shiftYearForward } from "./federal-holidays";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export function HrCalendarsPanel() {
   const { active } = useHrContext();
@@ -384,9 +385,7 @@ function CalendarEditor({
       </div>
 
       {why ? (
-        <p role="alert" className="text-sm text-destructive">
-          {why}
-        </p>
+        <ErrorNotice size="inline" className="text-sm" message={why} />
       ) : null}
 
       <Button

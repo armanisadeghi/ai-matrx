@@ -19,6 +19,7 @@ import { DiffViewer } from "@ai-matrx/diff/react";
 import { DiffReview } from "@ai-matrx/diff/react";
 import type { ReviewSession, ReviewSessionAction } from "@ai-matrx/diff";
 import type { DiffAnalysis } from "@/features/notes/utils/diffAnalysis";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -149,7 +150,7 @@ export function NoteConflictWindow({
             A newer remote change arrived. Refresh this comparison before choosing a version.
           </div>
         )}
-        {decisionError && <div role="alert" className="px-4 py-2 text-xs border-b border-destructive/30 bg-destructive/10 text-destructive">{decisionError}</div>}
+        {decisionError && <ErrorNotice size="inline" className="px-4 py-2 text-xs border-b border-destructive/30 bg-destructive/10" message={decisionError} />}
 
         {sourceChoiceRequired && <div className="space-y-2 border-b px-4 py-3 text-sm">
           <p>The saved note changed. Choose which retained text to compare with it. Your earlier review remains available.</p>
@@ -271,7 +272,7 @@ export function NoteConflictWindow({
           >
             Accept Changes
           </button>
-          {refreshError && <p role="alert" className="text-xs text-destructive">{refreshError}</p>}
+          {refreshError && <ErrorNotice size="inline" className="text-xs" message={refreshError} />}
           <button
             onClick={requestClose}
             disabled={locked}

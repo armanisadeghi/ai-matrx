@@ -19,6 +19,7 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useTopicalMaps } from "../hooks";
 import { topicalMapErrorText } from "../errors";
 import { startMapHref } from "./TopicalMapHome";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export function BrandTopicalMapCard({
   brandId,
@@ -46,9 +47,7 @@ export function BrandTopicalMapCard({
           Loading this brand&apos;s topical maps…
         </p>
       ) : maps.isError ? (
-        <p role="alert" className="p-4 text-xs text-destructive">
-          {topicalMapErrorText(maps.error)}
-        </p>
+        <ErrorNotice size="inline" className="p-4 text-xs" message={topicalMapErrorText(maps.error)} />
       ) : maps.data.length === 0 ? (
         <div className="grid gap-2 p-4">
           <p className="text-xs text-muted-foreground">

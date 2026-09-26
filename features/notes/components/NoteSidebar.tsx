@@ -146,6 +146,7 @@ const NOTE_AGE_CUTOFF_MS = 7 * 24 * 60 * 60 * 1000;
 import { noteFolderIdentityKey, noteFolderReference, type NoteSortField, type NoteSortOrder, type NoteGroupBy } from "../types";
 import { requireOrganizationContext } from "@/lib/api/organization-context";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 // ── Sort field labels ───────────────────────────────────────────────────────
 const SORT_FIELDS: { field: NoteSortField; label: string }[] = [
@@ -929,7 +930,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
         </div>
       )}
       {draftControl.error && !draftControl.organizationRequired && (
-        <p role="alert" className="px-2 text-xs text-destructive">{draftControl.error}</p>
+        <ErrorNotice size="inline" className="px-2 text-xs" message={draftControl.error} />
       )}
       {/* Search */}
       <div className="shrink-0 px-2 py-1.5 border-b border-border/30">

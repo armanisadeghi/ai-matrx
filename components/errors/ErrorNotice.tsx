@@ -33,7 +33,7 @@ export type ErrorNoticeProps = {
   /** Short heading ("Not saved"). */
   title?: string;
   /** The sentence shown. Falls back to the error's own message. */
-  message?: string;
+  message?: string | null;
   /** The raw error — code/status/stack go to the AI payload, never the screen. */
   error?: unknown;
   operation?: string;
@@ -46,8 +46,13 @@ export type ErrorNoticeProps = {
   actions?: ReactNode;
   /** Extra content under the sentence. */
   children?: ReactNode;
-  /** `compact` = the dense card used inside lists and side panels. */
-  size?: "compact" | "default";
+  /**
+   * `default` = the card. `compact` = the dense card used inside lists and
+   * side panels. `inline` = a one-line field/form error (no card chrome): the
+   * sentence in the destructive colour with the menu at its end — the shape
+   * every `<p role="alert" className="text-destructive">` render moves onto.
+   */
+  size?: "inline" | "compact" | "default";
   icon?: boolean;
   className?: string;
 };
@@ -84,6 +89,27 @@ export function ErrorNotice({
     status,
     source: "inline",
   };
+  if (size === "inline") {
+    return (
+      <div
+        role="alert"
+        data-error-notice=""
+        className={cn("flex items-start gap-1 text-destructive", className)}
+      >
+        <span className="min-w-0 flex-1 break-words">
+          {title ? (
+            <span data-error-title="" className="font-medium">
+              {title}:{" "}
+            </span>
+          ) : null}
+          {sentence}
+        </span>
+        {children}
+        {actions}
+        <ErrorAlchemyMenu input={input} size="xs" />
+      </div>
+    );
+  }
   const compact = size === "compact";
   return (
     <div

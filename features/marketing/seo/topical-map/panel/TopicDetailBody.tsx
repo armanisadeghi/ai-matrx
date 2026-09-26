@@ -68,6 +68,7 @@ import { TopicAgentControls } from "./sections/TopicAgentControls";
 import { TopicChanges, type TopicChangeKind } from "./sections/TopicChanges";
 import { TOPICAL_MAP_SURFACE_NAME } from "./topicCuration";
 import { useTopicPanelData } from "./useTopicPanelData";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export interface TopicDetailBodyProps {
   mapId: string;
@@ -270,9 +271,7 @@ function TopicDetailBodyInner({
                 regenerationMode={knobs.description_regeneration_mode}
               />
             ) : data.knobs.error ? (
-              <p role="alert" className="text-xs text-destructive">
-                {topicalMapErrorText(data.knobs.error)}
-              </p>
+              <ErrorNotice size="inline" className="text-xs" message={topicalMapErrorText(data.knobs.error)} />
             ) : (
               <SuspenseLoader centered={false} message="Loading this organization's map settings…" />
             )}

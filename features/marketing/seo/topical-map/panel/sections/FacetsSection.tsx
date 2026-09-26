@@ -40,6 +40,7 @@ import { selectMapTopic, selectMapTopicFacetsWithInheritance } from "../../redux
 import type { MapFacet, MapFacetValue } from "../../types";
 import { FacetChip } from "../../ui/FacetChip";
 import { PanelEmptyLine, PanelSection } from "../PanelSection";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export interface FacetsSectionProps {
   mapId: string;
@@ -80,9 +81,7 @@ export function FacetsSection({ mapId, slug, organizationId, brandId, readOnly }
       {facets.isPending ? (
         <SuspenseLoader centered={false} message="Loading this topic's facets…" />
       ) : facets.isError ? (
-        <p role="alert" className="whitespace-pre-wrap text-xs text-destructive">
-          {topicalMapErrorText(facets.error)}
-        </p>
+        <ErrorNotice size="inline" className="whitespace-pre-wrap text-xs" message={topicalMapErrorText(facets.error)} />
       ) : (
         <ul className="flex flex-col gap-1.5">
           {setKeys.length === 0 && unset.length === 0 ? (
@@ -142,14 +141,10 @@ export function FacetsSection({ mapId, slug, organizationId, brandId, readOnly }
         </ul>
       )}
       {catalogue.isError ? (
-        <p role="alert" className="mt-1 whitespace-pre-wrap text-xs text-destructive">
-          {topicalMapErrorText(catalogue.error)}
-        </p>
+        <ErrorNotice size="inline" className="mt-1 whitespace-pre-wrap text-xs" message={topicalMapErrorText(catalogue.error)} />
       ) : null}
       {refusal ? (
-        <p role="alert" className="mt-1 whitespace-pre-wrap text-xs text-destructive">
-          {refusal}
-        </p>
+        <ErrorNotice size="inline" className="mt-1 whitespace-pre-wrap text-xs" message={refusal} />
       ) : null}
     </PanelSection>
   );
@@ -216,9 +211,7 @@ function FacetValuePicker({
             <SuspenseLoader centered={false} message={`Loading ${facet.label} values…`} />
           </div>
         ) : values.isError ? (
-          <p role="alert" className="max-w-64 whitespace-pre-wrap p-2 text-xs text-destructive">
-            {topicalMapErrorText(values.error)}
-          </p>
+          <ErrorNotice size="inline" className="max-w-64 whitespace-pre-wrap p-2 text-xs" message={topicalMapErrorText(values.error)} />
         ) : rows.length === 0 ? (
           <p className="p-2 text-xs text-muted-foreground">
             No values for {facet.label} yet.

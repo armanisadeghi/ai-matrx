@@ -93,6 +93,7 @@ import {
   OrganizationRequiredNotice,
 } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 // The trigger types humanizeTrigger knows. A system trigger's `type` arrives
 // as a plain string on this wire (defensive contract), so an unknown value
@@ -1282,9 +1283,7 @@ function SystemJobEditDialog({
           </div>
 
           {formError && (
-            <p className="text-xs text-destructive" role="alert">
-              {formError}
-            </p>
+            <ErrorNotice size="inline" className="text-xs" message={formError} />
           )}
         </div>
 
@@ -1407,9 +1406,7 @@ function DbJobEditDialog({
           </div>
 
           {formError && (
-            <p className="text-xs text-destructive" role="alert">
-              {formError}
-            </p>
+            <ErrorNotice size="inline" className="text-xs" message={formError} />
           )}
         </div>
 

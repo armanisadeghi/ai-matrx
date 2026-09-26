@@ -50,6 +50,7 @@ import {
   type VaultBackupRestorePreview,
   type VaultBackupRestoreResult,
 } from "../vault-backup-service";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 const BACKUP_FILENAME = "matrx-vault-backup.matrxvault";
 
@@ -869,12 +870,7 @@ export function VaultBackupDialog({
             </section>
           )}
           {error && (
-            <p
-              role="alert"
-              className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-            >
-              {error}
-            </p>
+            <ErrorNotice size="inline" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm" message={error} />
           )}
         </CredenzaBody>
       </CredenzaContent>

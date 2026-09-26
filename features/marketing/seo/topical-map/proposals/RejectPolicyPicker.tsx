@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 
 import { useMapTopicSearch } from "../hooks";
 import type { MapTopicRejectionPolicy } from "../types";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export type RejectPolicyBase = "error" | "reject" | "parent" | "merge_into";
 
@@ -161,9 +162,7 @@ export function RejectPolicyPicker({
               />
             </label>
             {search.isError ? (
-              <p role="alert" className="text-destructive">
-                {search.error instanceof Error ? search.error.message : "The search failed."}
-              </p>
+              <ErrorNotice size="inline" message={search.error instanceof Error ? search.error.message : "The search failed."} />
             ) : query.trim() && !search.isPending && hits.length === 0 ? (
               <p className="text-muted-foreground">
                 No live topic matches. Retired and rejected topics cannot receive attachments.

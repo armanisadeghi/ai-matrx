@@ -56,6 +56,7 @@ import { useAuthorTopicalMap } from "../useAuthorTopicalMap";
 import { TopicalMapFailed } from "../components/TopicalMapStates";
 import { START_MAP_SOURCES, startMapSource } from "./startMapSources";
 import { StartMapResult } from "./StartMapResult";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 const EVERY_SITE = "__every_site__";
 const ROOT = "__root__";
@@ -275,9 +276,7 @@ export function StartMapScreen({
           <div className="grid gap-1.5">
             <Label htmlFor="start-map-site">Site to read</Label>
             {sites.isError ? (
-              <p role="alert" className="text-xs text-destructive">
-                {extractErrorMessage(sites.error)}
-              </p>
+              <ErrorNotice size="inline" className="text-xs" message={extractErrorMessage(sites.error)} />
             ) : (
               <Select
                 value={siteId ?? EVERY_SITE}
@@ -360,9 +359,7 @@ export function StartMapScreen({
               </Button>
             </div>
             {webError ? (
-              <p role="alert" className="text-xs text-destructive">
-                {webError}
-              </p>
+              <ErrorNotice size="inline" className="text-xs" message={webError} />
             ) : null}
             <ProTextarea
               aria-label="Cleaned page text"

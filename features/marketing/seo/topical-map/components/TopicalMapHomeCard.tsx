@@ -43,6 +43,7 @@ import { useDeleteTopicalMap, useMapDiagnostics, useSetSiteMap } from "../hooks"
 import { useMapLinks } from "../links";
 import type { TopicalMap } from "../types";
 import { TopicStatusMark } from "../ui/TopicStatusMark";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 const PICK_SITE = "__pick__";
 
@@ -162,9 +163,7 @@ export function TopicalMapHomeCard({
 
       {/* Counts — each a door. */}
       {diagnostics.isError ? (
-        <p role="alert" className="border-t border-border px-4 py-3 text-sm text-destructive">
-          {topicalMapErrorText(diagnostics.error)}
-        </p>
+        <ErrorNotice size="inline" className="border-t border-border px-4 py-3 text-sm" message={topicalMapErrorText(diagnostics.error)} />
       ) : (
         <dl className="grid grid-cols-2 gap-px border-t border-border bg-border sm:grid-cols-4">
           <Count label="Topics" value={d?.topics_total} href={outline} loading={diagnostics.isPending} />
@@ -267,9 +266,7 @@ export function TopicalMapHomeCard({
           </div>
         ) : null}
         {bind.isError ? (
-          <p role="alert" className="mt-2 text-xs text-destructive">
-            {topicalMapErrorText(bind.error)}
-          </p>
+          <ErrorNotice size="inline" className="mt-2 text-xs" message={topicalMapErrorText(bind.error)} />
         ) : null}
       </section>
     </article>
@@ -385,9 +382,7 @@ function SiteRow({
       </span>
       <span className="flex flex-wrap items-center gap-2 text-xs">
         {diagnostics.isError ? (
-          <span role="alert" className="text-destructive">
-            {topicalMapErrorText(diagnostics.error)}
-          </span>
+          <ErrorNotice size="inline" message={topicalMapErrorText(diagnostics.error)} />
         ) : (
           <Link href={pagesHref} className="rounded border border-border px-2 py-0.5 hover:bg-muted">
             {onNoTopic === undefined

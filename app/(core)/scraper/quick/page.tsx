@@ -10,6 +10,7 @@ import PageContent from "@/features/scraper/parts/core/PageContent";
 // `error` string and never the Diagnostics JSON as the body (2026-09-17).
 import { ScrapeFailureNotice } from "@/features/scraper/parts/ScrapeFailureNotice";
 import { ScrapeProvenance } from "@/features/scraper/parts/ScrapeProvenance";
+import { SaveSourceButton } from "@/features/sources/SaveSourceButton";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { Button } from "@/components/ui/button";
@@ -301,6 +302,14 @@ export default function QuickScrapePage() {
               className="flex-shrink-0 px-4 pt-2"
             />
           ) : null}
+          {fullScrapeApi.data ? (
+            <SaveSourceButton
+              processedDocumentId={fullScrapeApi.data.processedDocumentId}
+              name={fullScrapeApi.data.overview?.page_title || fullScrapeApi.data.url}
+              notices={fullScrapeApi.data.sourceNotices}
+              className="flex-shrink-0 px-4 pt-2"
+            />
+          ) : null}
           <div className="flex-1 min-h-0 overflow-hidden">
             <PageContent
               pageData={fullResult}
@@ -386,6 +395,12 @@ export default function QuickScrapePage() {
                           engine={data.engine}
                           escalated={data.escalated}
                           escalationReason={data.escalationReason}
+                          className="mt-2"
+                        />
+                        <SaveSourceButton
+                          processedDocumentId={data.processedDocumentId}
+                          name={data.overview?.page_title || data.url}
+                          notices={data.sourceNotices}
                           className="mt-2"
                         />
                       </div>

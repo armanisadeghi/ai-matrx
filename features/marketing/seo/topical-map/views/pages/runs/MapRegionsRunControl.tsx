@@ -31,6 +31,7 @@ import { KnobChips } from "./knobChips";
 import { RunControlShell } from "./RunControlShell";
 import { NumberField, SwitchField, numberFieldValue } from "./runFields";
 import { SiteChooser } from "./SiteChooser";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export interface MapRegionsRunControlProps {
   context: PagesWorkspaceContext;
@@ -435,9 +436,7 @@ function MapRegionsResultSummary({ result }: { result: MapRegionsRunResult }) {
         </p>
       ))}
       {result.error ? (
-        <p role="alert" className="whitespace-pre-wrap text-destructive">
-          {result.error}
-        </p>
+        <ErrorNotice size="inline" className="whitespace-pre-wrap" message={result.error} />
       ) : null}
     </div>
   );

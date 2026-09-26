@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-26T02:40:05.110Z",
+  "generated_at": "2026-09-26T04:35:10.711Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -271,6 +271,18 @@
       "filename": "bigvaluesreaders_an_agent_and_a_grid_get_the_whole_text_of_a_value_kept_as_a_file.sql",
       "checksum": "bbd5105aebb8d6fe181d76477d68f0759b40db26e8e2e3592d87fc6942caf5d7",
       "applied_at": "2026-09-25 09:46:58.101279+00"
+    },
+    "migrations/campaign/bigvalueswrite_a_text_of_any_size_simply_saves.sql": {
+      "source": "campaign",
+      "filename": "bigvalueswrite_a_text_of_any_size_simply_saves.sql",
+      "checksum": "223b0d7960f4c11777f9bde9706a1ab2cc41657355c063eceecebe19a9423d91",
+      "applied_at": "2026-09-26 04:15:15.400393+00"
+    },
+    "migrations/campaign/bigvalueswrite_the_two_doors_can_be_reached.sql": {
+      "source": "campaign",
+      "filename": "bigvalueswrite_the_two_doors_can_be_reached.sql",
+      "checksum": "54e996dc1701feeea07cd78f3a491a2c573c2a3ef71d825ab63320c808905542",
+      "applied_at": "2026-09-26 04:15:15.400393+00"
     },
     "migrations/campaign/booking_a_booking_is_a_record_with_a_held_slot.sql": {
       "source": "matrx-frontend",
@@ -3169,6 +3181,12 @@
       "filename": "portalbind_the_portal_accept_doors_are_reachable.sql",
       "checksum": "fd7963e8fd91aaf8c7b0597260b24e68f07fa7fb7c3206130d8a7690244f4b36",
       "applied_at": "2026-09-21 22:29:57.273243+00"
+    },
+    "migrations/campaign/provbatch_a_batch_owes_its_base_contract_like_one_table.sql": {
+      "source": "campaign",
+      "filename": "provbatch_a_batch_owes_its_base_contract_like_one_table.sql",
+      "checksum": "2a3bccf0a6228a6012ae42da21ad1980a69884f13f8fe778702289199c1442bd",
+      "applied_at": "2026-09-26 03:15:21.633234+00"
     },
     "migrations/campaign/rcb6_output_feedback_doors_decide_as_the_person.sql": {
       "source": "matrx-frontend",

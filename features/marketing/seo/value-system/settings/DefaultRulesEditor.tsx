@@ -34,6 +34,7 @@ import {
 } from "./default-rules-data";
 import { defaultRuleValidationMessage } from "./default-rules-validation";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 const RULES_KEY = ["marketing", "seo", "platform-default-rules"] as const;
 
@@ -393,9 +394,7 @@ export function DefaultRulesEditor() {
             </Button>
           </div>
           {validationMessage ? (
-            <p role="alert" className="text-xs font-medium text-destructive">
-              {validationMessage}
-            </p>
+            <ErrorNotice size="inline" className="text-xs font-medium" message={validationMessage} />
           ) : null}
         </div>
       ) : null}

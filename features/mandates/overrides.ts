@@ -58,6 +58,9 @@ async function bindingScope(
   if (peekSelectedOrganizationId()) return {};
   await waitForOrganizationAdmission();
   if (peekSelectedOrganizationId()) return {};
+  // org-fallback-deliberate: a user-rung binding is the person's OWN row (it
+  // applies in every organization), so with no workspace selected it is filed
+  // by name in their own workspace — never an organization chosen for them.
   return { scopeOverrides: { organization_id: await resolvePersonalOrgId() } };
 }
 import type { ConsumptionMap } from "./provision-shapes";

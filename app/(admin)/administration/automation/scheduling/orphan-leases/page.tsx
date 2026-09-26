@@ -28,6 +28,7 @@ import { scheduleHref } from "@/features/scheduling/constants/routes";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
 import { useScheduledRunMenuSection } from "@/features/scheduling/components/shared/scheduling-menu-sections";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export default function OrphanLeasesPage() {
   const [rows, setRows] = useState<AdminRunRow[]>([]);
@@ -200,7 +201,7 @@ export default function OrphanLeasesPage() {
           few minutes, something's wrong upstream.
         </span>
       </p>
-      {loadError && <p role="alert" className="text-sm text-destructive">{loadError}</p>}
+      {loadError && <ErrorNotice size="inline" className="text-sm" message={loadError} />}
       <div
         className="min-h-0 flex-1"
         data-surface-value="orphan_lease_row_count"

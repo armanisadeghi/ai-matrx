@@ -178,19 +178,32 @@ set search_path to 'pg_catalog'
 as $$
 declare
   v_name text;
+  v_org  uuid;
 begin
   if p_table_id is null or platform.table_lives_in(p_table_id) is distinct from 'older' then
     return null;
   end if;
-  select case when auth.uid() is null or iam.has_org_access(d.organization_id)
-              then coalesce(nullif(d.table_name, ''), 'this table') else 'this table' end
-    into v_name
+  select d.organization_id, coalesce(nullif(d.table_name, ''), 'this table')
+    into v_org, v_name
     from workbench.udt_datasets d where d.id = p_table_id and d.deleted_at is null;
   if not found then
     return null;
   end if;
   if platform.write_is_a_persons_own() then
     return 'person';
+  end if;
+  -- THE NAME ONLY TO WHO MAY OPEN THE COPY (the SUITE-HEALTH-3 rule, carried from
+  -- the body of custom._older_table_copy_refusal this file replaces). The same may-open ladder every
+  -- door asks, about the copy by its id. A caller it refuses is still refused the write; the
+  -- sentence just names nothing. A copy that is not in the record store is not named either.
+  if exists (select 1 from custom.record r where r.id = p_table_id) then
+    begin
+      perform custom.assert_client_may_open(v_org, p_table_id, 'custom._older_table_copy_verdict', 'viewer', 'table');
+    exception when insufficient_privilege or null_value_not_allowed then
+      v_name := 'this table';
+    end;
+  else
+    v_name := 'this table';
   end if;
   return format('This is the new system''s test copy of %s; the older table is still the one in use for agents, automations and integrations until an owner switches Data tables on the organization''s settings page. Write it at /data/%s.',
                 v_name, p_table_id);
@@ -206,7 +219,7 @@ insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, declared_by, reason, signed_in_callers)
 select 'custom', '_older_table_copy_verdict', iam.door_identity_args(p.oid), platform.door_argtypes(p.proargtypes),
        'migrations/campaign/copywritable_people_test_the_copy_until_the_switch.sql (lane COPY-WRITABLE)',
-       'The copy fence''s verdict, asked by custom._context_copy_fence() as the writer (so every writer role executes it). p_table_id is only looked up; NULL answers NULL. It answers NULL, the word ''person'' or a refusal sentence; the sentence names the table only to a member of the table''s organization (iam.has_org_access), else says "this table".',
+       'The copy fence''s verdict, asked by custom._context_copy_fence() as the writer (so every writer role executes it). p_table_id is only looked up; NULL answers NULL. It answers NULL, the word ''person'' or a refusal sentence; the sentence names the table only to a caller custom.assert_client_may_open lets open the copy, else says "this table".',
        true
   from pg_proc p where p.oid = 'custom._older_table_copy_verdict(uuid)'::regprocedure
 on conflict (schema_name, function_name, identity_argtypes) do nothing;
@@ -254,6 +267,9 @@ begin
   if custom._older_table_copy_verdict(p_table) is distinct from 'person' then
     return;
   end if;
+  -- The organization wall, the first rung of the store. The calling door has already asked it in this
+  -- transaction, so this is the memoised answer; a writer that somehow had not is refused here too.
+  perform custom.assert_client_may_reach(p_org, 'custom._copy_evaluation_note');
   -- BEFORE the write: the stored row is still the one the mover left (or a person's earlier test).
   select * into v_row from custom.record r where r.organization_id = p_org and r.id = p_id;
   insert into platform.cutover_evaluation_write
@@ -277,7 +293,7 @@ insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, declared_by, reason, signed_in_callers)
 select 'custom', '_copy_evaluation_note', iam.door_identity_args(p.oid), platform.door_argtypes(p.proargtypes),
        'migrations/campaign/copywritable_people_test_the_copy_until_the_switch.sql (lane COPY-WRITABLE)',
-       'The copy fence''s own step, run as the writer inside the BEFORE trigger on custom.record (so every writer role executes it). It refuses when pg_trigger_depth() < 1 (a direct call), does nothing unless custom._older_table_copy_verdict answers ''person'' for the table, and records only the stored row''s own image (read by primary key), never data from its arguments. It returns nothing.',
+       'The copy fence''s own step, run as the writer inside the BEFORE trigger on custom.record (so every writer role executes it). It refuses when pg_trigger_depth() < 1 (a direct call), does nothing unless custom._older_table_copy_verdict answers ''person'' for the table, asks custom.assert_client_may_reach for the organization (the memoised yes of the calling door), and records only the stored row''s own image (read by primary key), never data from its arguments. It returns nothing.',
        true
   from pg_proc p where p.oid = 'custom._copy_evaluation_note(uuid, uuid, uuid, text)'::regprocedure
 on conflict (schema_name, function_name, identity_argtypes) do nothing;

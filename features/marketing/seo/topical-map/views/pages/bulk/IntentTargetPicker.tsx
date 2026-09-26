@@ -46,6 +46,7 @@ import { topicalMapErrorText } from "../../../errors";
 import { useMapTopicRows, useMapTopicSearch, usePageIntents } from "../../../hooks";
 import type { PagesWorkspaceContext } from "../seams";
 import type { BulkIntentDraft } from "./useBulkIntentFlow";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 /** A page search says nothing useful under two characters; it says so instead. */
 const PAGE_SEARCH_MIN_CHARS = 2;
@@ -175,9 +176,7 @@ function TopicSegment({
             />
           </div>
           {hits.isError ? (
-            <p role="alert" className="text-xs text-destructive">
-              {topicalMapErrorText(hits.error)}
-            </p>
+            <ErrorNotice size="inline" className="text-xs" message={topicalMapErrorText(hits.error)} />
           ) : hits.isPending ? (
             <CannotOffer>Looking for topics…</CannotOffer>
           ) : (
@@ -284,9 +283,7 @@ function LivePageSegment({
           {!ready ? (
             <CannotOffer>Type at least {PAGE_SEARCH_MIN_CHARS} characters.</CannotOffer>
           ) : pages.isError ? (
-            <p role="alert" className="text-xs text-destructive">
-              {topicalMapErrorText(pages.error)}
-            </p>
+            <ErrorNotice size="inline" className="text-xs" message={topicalMapErrorText(pages.error)} />
           ) : pages.isPending ? (
             <CannotOffer>Looking through this map's pages…</CannotOffer>
           ) : (
@@ -451,9 +448,7 @@ function PlannedPageSegment({
               : ""}
           </p>
           {failure ? (
-            <p role="alert" className="text-xs text-destructive">
-              {topicalMapErrorText(failure)}
-            </p>
+            <ErrorNotice size="inline" className="text-xs" message={topicalMapErrorText(failure)} />
           ) : null}
           {label.trim() ? (
             <Button

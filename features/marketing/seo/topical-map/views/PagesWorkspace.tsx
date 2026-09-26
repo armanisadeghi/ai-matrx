@@ -65,6 +65,7 @@ import { usePagesQuery } from "./pages/usePagesQuery";
 import { IntentReviewDeck } from "./pages/review/IntentReviewDeck";
 import { MapRunControls } from "./pages/runs/MapRunControls";
 import type { PagesWorkspaceContext } from "./pages/seams";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export function PagesWorkspace({ mapId, siteId, host, readOnly }: MapViewProps) {
   const { knobs, loading, error } = useTopicalMapKnobs();
@@ -179,9 +180,7 @@ function PagesWorkspaceBody({
       </div>
 
       {ignoredParams.length > 0 ? (
-        <p role="alert" className="shrink-0 text-xs text-destructive">
-          {ignoredParamsSentence(ignoredParams)}
-        </p>
+        <ErrorNotice size="inline" className="shrink-0 text-xs" message={ignoredParamsSentence(ignoredParams)} />
       ) : null}
 
       <PagesFilterBar

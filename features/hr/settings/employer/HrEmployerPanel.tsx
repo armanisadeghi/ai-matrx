@@ -73,6 +73,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 // ── Applicability derivation ────────────────────────────────────────────────
 
@@ -407,9 +408,7 @@ function IdentitySection({
             className="max-w-[16rem]"
           />
           {einCheck && !einCheck.ok ? (
-            <p role="alert" className="text-sm text-destructive">
-              {einCheck.why}
-            </p>
+            <ErrorNotice size="inline" className="text-sm" message={einCheck.why} />
           ) : (
             <p className="text-sm text-muted-foreground">
               Nine digits, written NN-NNNNNNN. Leave blank to keep the current number.
@@ -442,9 +441,7 @@ function IdentitySection({
         </div>
 
         {why ? (
-          <p role="alert" className="text-sm text-destructive">
-            {why}
-          </p>
+          <ErrorNotice size="inline" className="text-sm" message={why} />
         ) : null}
 
         <Button
@@ -604,9 +601,7 @@ function ApplicabilityRow({
             placeholder="Counsel advised us we are covered from 1 January."
           />
           {why ? (
-            <p role="alert" className="text-sm text-destructive">
-              {why}
-            </p>
+            <ErrorNotice size="inline" className="text-sm" message={why} />
           ) : null}
           <div className="flex flex-wrap gap-2">
             <Button

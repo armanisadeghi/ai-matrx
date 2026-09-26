@@ -48,6 +48,7 @@ import { NoteHistoryPane } from "@/features/notes/components/NoteHistoryPane";
 import { NotesWindowView } from "@/features/notes/components/NotesWindowView";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { Plus } from "lucide-react";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export interface NotesWindowProps extends Omit<
   WindowPanelProps,
@@ -207,7 +208,7 @@ export function NotesWindow({
           ]}
         >
           <div className="flex min-h-0 flex-1 flex-col">
-            {draftControl.error && <p role="alert" className="px-2 text-xs text-destructive">{draftControl.error}</p>}
+            {draftControl.error && <ErrorNotice size="inline" className="px-2 text-xs" message={draftControl.error} />}
             {draftControl.pending && <p aria-live="polite" className="px-2 text-xs text-muted-foreground">Starting new note…</p>}
             <NotesWindowView instanceId={notesInstanceId} />
           </div>

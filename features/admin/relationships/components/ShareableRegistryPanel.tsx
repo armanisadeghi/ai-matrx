@@ -43,6 +43,7 @@ import {
 } from "./SharePolicyColumnEditor";
 import type { SharePolicyRow, ShareableRegistryRow } from "../types";
 import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 
 function label(token: string): string {
   return tryGetEntityInfo(token)?.label ?? token;
@@ -199,7 +200,7 @@ export function ShareableRegistryPanel({
       });
     } catch (e) {
       toast.error(
-        `Couldn't load defaults for ${label(token)}: ${e instanceof Error ? e.message : String(e)}`,
+        `Couldn't load defaults for ${label(token)}: ${extractErrorMessage(e)}`,
       );
       setEditor({
         ...EMPTY_EDITOR,
@@ -289,7 +290,7 @@ export function ShareableRegistryPanel({
       onMutated();
     } catch (e) {
       toast.error(
-        `Couldn't save: ${e instanceof Error ? e.message : String(e)}`,
+        `Couldn't save: ${extractErrorMessage(e)}`,
       );
     } finally {
       setSaving(false);

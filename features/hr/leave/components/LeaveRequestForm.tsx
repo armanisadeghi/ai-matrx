@@ -46,6 +46,7 @@ import type {
 } from "../api/types";
 import { LeaveBalanceBlock, formatHours } from "./LeaveBalanceBlock";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 /** How long after the last keystroke the preview re-reads. */
 const PREVIEW_DEBOUNCE_MS = 350;
@@ -686,9 +687,7 @@ export function LeaveRequestForm({
       ) : null}
 
       {submitRefusal ? (
-        <p role="alert" className="text-sm text-destructive">
-          {submitRefusal}
-        </p>
+        <ErrorNotice size="inline" className="text-sm" message={submitRefusal} />
       ) : null}
 
       <div className="flex justify-end">

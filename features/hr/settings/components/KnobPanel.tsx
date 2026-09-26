@@ -55,6 +55,7 @@ import { HrKnobExceptions } from "./HrKnobExceptions";
 import { isHrDenied } from "../../types";
 import type { HrPresentedKnob } from "../types";
 import { Textarea } from "@/components/ui/textarea";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 // ── Value rendering ─────────────────────────────────────────────────────────
 
@@ -398,9 +399,7 @@ export function KnobRow({
       <HrKnobExceptions fullKey={knob.full_key} />
 
       {why ? (
-        <p role="alert" className="text-sm text-destructive">
-          {why}
-        </p>
+        <ErrorNotice size="inline" className="text-sm" message={why} />
       ) : null}
     </div>
   );

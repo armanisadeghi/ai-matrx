@@ -10,6 +10,7 @@ import {
   PopoverContent,
 } from "@ai-matrx/design-system";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export interface DeleteConfirmationAnchorPoint {
   x: number;
@@ -122,9 +123,7 @@ export function DeleteConfirmationPopover({
           </div>
 
           {error ? (
-            <p role="alert" className="text-xs leading-5 text-destructive">
-              {error}
-            </p>
+            <ErrorNotice size="inline" className="text-xs leading-5" message={error} />
           ) : null}
 
           <div className="flex gap-2">

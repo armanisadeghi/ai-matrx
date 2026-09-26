@@ -26,6 +26,7 @@ import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 import { ScrapeFailureNotice } from "@/features/scraper/parts/ScrapeFailureNotice";
 import { WebpageSnapshotView } from "@/features/resource-manager/webpage/WebpageSnapshotView";
+import { SaveSourceButton } from "@/features/sources/SaveSourceButton";
 import { formatCount } from "@ai-matrx/kit/format";
 import type { PreFetchedUrl } from "@/types/python-generated/stream-events";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -557,6 +558,14 @@ export function WebpageResourcePickerCore({
 
           {data && (
             <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+              {/* The page already landed as a Source (SOURCE-CONVERGENCE §4.1):
+                  offer to Save it and file it somewhere, beside using it here. */}
+              <SaveSourceButton
+                processedDocumentId={data.processedDocumentId}
+                name={pageTitle || url}
+                notices={data.sourceNotices}
+                className="shrink-0 px-3 py-1.5"
+              />
               <div className="flex-1 flex flex-col overflow-hidden min-h-0 border-t border-border">
                 <Tabs
                   value={previewTab}

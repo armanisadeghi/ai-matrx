@@ -83,6 +83,7 @@ import {
   buildManualMcpCredentials,
   type ManualHeaderInput,
 } from "./manual-mcp-credentials";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -1080,9 +1081,7 @@ function ServerCard({
               through this connection.
             </p>
             {supabaseError && (
-              <p className="text-[11px] text-destructive" role="alert">
-                {supabaseError}
-              </p>
+              <ErrorNotice size="inline" className="text-[11px]" message={supabaseError} />
             )}
           </div>
         )}
@@ -1379,9 +1378,7 @@ function ManualCredentialsForm({
         </Button>
       </div>
       {error && (
-        <p className="text-[11px] text-destructive" role="alert">
-          {error}
-        </p>
+        <ErrorNotice size="inline" className="text-[11px]" message={error} />
       )}
     </div>
   );

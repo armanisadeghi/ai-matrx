@@ -27,6 +27,7 @@ import { SandboxGitAdapter } from "../../adapters/SandboxGitAdapter";
 import { useGitHubConnection } from "@/features/github-integration/useGitHubConnection";
 import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnectionCard";
 import { GitHubRepositoryPicker } from "@/features/github-integration/GitHubRepositoryPicker";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 interface CloneRepoDialogProps {
   /** sandbox_instances.id to clone into. */
@@ -182,7 +183,7 @@ export function CloneRepoDialog({
             <GitHubConnectionCard compact />
           )}
           {github.error && <p role="alert" className="text-xs text-destructive">GitHub: {github.error}</p>}
-          {cloneError && <p role="alert" className="text-xs text-destructive">{cloneError}</p>}
+          {cloneError && <ErrorNotice size="inline" className="text-xs" message={cloneError} />}
           <div className="space-y-1">
             <label htmlFor="clone-repository-url" className="text-xs font-medium text-muted-foreground">
               Repository URL {github.inventory.connection ? "(or paste another)" : ""}

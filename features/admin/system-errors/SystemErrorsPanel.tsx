@@ -26,6 +26,7 @@ import type {
 import { apiGet } from "@/lib/api/typed-client";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { components } from "@/types/python-generated/api-types";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 type SystemErrorRow = components["schemas"]["SystemErrorRecord"];
 type RecentResponse =
@@ -471,12 +472,7 @@ export default function SystemErrorsPanel() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       {errorMessage ? (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
-        >
-          {errorMessage}
-        </p>
+        <ErrorNotice size="inline" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm" message={errorMessage} />
       ) : null}
       <div className="min-h-0 flex-1">
         <MatrxDataTable<SystemErrorRow>

@@ -18,6 +18,7 @@ import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { dateMention, parseDateQuery, personMention, recordMention } from "./mentions";
 import { mentionCandidates } from "./service";
 import type { AnnotationSource } from "./types";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 type Option =
   | { kind: "person"; key: string; label: string; detail: string | null; insert: string }
@@ -245,7 +246,7 @@ export function MentionComposer({
           className="w-full rounded-md border border-input bg-background px-2 py-1 text-base md:text-sm"
         />
       )}
-      {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
+      {error && <ErrorNotice size="inline" className="text-xs" message={error} />}
       <div className="flex justify-end gap-1">
         {onCancel && (
           <Button size="sm" variant="ghost" onClick={onCancel} disabled={posting}>

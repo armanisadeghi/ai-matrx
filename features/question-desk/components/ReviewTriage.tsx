@@ -51,6 +51,7 @@ import {
   type DecisionQuestionRow,
   isAnswered,
 } from "../types";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 const WEIGHT_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
@@ -524,9 +525,7 @@ export function ReviewTriage({
                       <kbd className="ml-1.5 font-mono text-[10px] opacity-65">Esc</kbd>
                     </Button>
                     {wordsError ? (
-                      <span role="alert" className="font-mono text-[10.5px] text-warning">
-                        {wordsError}
-                      </span>
+                      <ErrorNotice size="inline" className="font-mono text-[10.5px] text-warning" message={wordsError} />
                     ) : null}
                   </div>
                 </div>

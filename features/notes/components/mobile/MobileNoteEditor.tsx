@@ -35,6 +35,7 @@ import { NoteSaveFailureBanner } from "../NoteSaveFailureBanner";
 import { NoteDraftRecoveryBanner } from "../NoteDraftRecoveryBanner";
 import { useNoteConflictChoreography } from "../../hooks/useNoteConflictChoreography";
 import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export type MobileEditorMode = "plain" | "wysiwyg" | "preview";
 
@@ -421,9 +422,7 @@ export default function MobileNoteEditor({
       {/* Desktop parity: a reviewed save refused AFTER the decision cleared (e.g. the
           editor changed before phase two) is said out loud, never swallowed. */}
       {conflict.conflictError && !conflict.conflictDecision && (
-        <div role="alert" className="shrink-0 border-b border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {conflict.conflictError}
-        </div>
+        <ErrorNotice size="inline" className="shrink-0 border-b border-destructive/30 bg-destructive/10 px-3 py-2 text-sm" message={conflict.conflictError} />
       )}
       {conflict.conflictWindowProps != null && (
         <NoteConflictWindow {...conflict.conflictWindowProps} />

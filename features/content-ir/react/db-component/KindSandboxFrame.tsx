@@ -57,6 +57,7 @@ import type {
 } from "./dbKindComponentCache";
 import { reportKindComponentIncident } from "./kindComponentIncident";
 import type { KindSandboxCeilings } from "./useKindSandboxKnob";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 /** The sandbox document. Same origin; the `sandbox` attribute opaques it. */
 export const KIND_SANDBOX_ROUTE = "/kind-sandbox";
@@ -635,12 +636,7 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
                 </div>
             ) : null}
             {oversize ? (
-                <div
-                    role="alert"
-                    className="mt-2 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-muted-foreground"
-                >
-                    {oversize}
-                </div>
+                <ErrorNotice size="inline" className="mt-2 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-muted-foreground" message={oversize} />
             ) : null}
         </>
     );

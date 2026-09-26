@@ -22,6 +22,7 @@ import type {
   GmailSearchResult,
 } from "@/features/marketing/google/types";
 import { GOOGLE_SCOPE } from "@/lib/googleScopes";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 /** Reviewer-sized mailbox read. Nothing is fetched until the user searches. */
 export function GmailReadReview() {
@@ -356,9 +357,7 @@ export function GmailReadReview() {
         </form>
       )}
       {activeError || inventory.isError ? (
-        <p role="alert" className="text-sm text-destructive">
-          {activeError || "Google accounts could not load. Try again shortly."}
-        </p>
+        <ErrorNotice size="inline" className="text-sm" message={activeError || "Google accounts could not load. Try again shortly."} />
       ) : null}
       {activeMutationStatus ? (
         <div className="flex items-center gap-2 text-sm" role="status">

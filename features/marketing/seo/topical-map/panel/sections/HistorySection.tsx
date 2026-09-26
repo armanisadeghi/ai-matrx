@@ -19,6 +19,7 @@ import { useMapHistory } from "../../hooks";
 import type { MapTopicStatus } from "../../types";
 import { TopicStatusMark } from "../../ui/TopicStatusMark";
 import { PanelEmptyLine, PanelSection } from "../PanelSection";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 const EVERY_STATUS: MapTopicStatus[] = ["proposed", "active", "retired", "rejected"];
 
@@ -36,9 +37,7 @@ export function HistorySection({ mapId, slug }: HistorySectionProps) {
       {history.isPending ? (
         <SuspenseLoader centered={false} message="Loading this topic's history…" />
       ) : history.isError ? (
-        <p role="alert" className="whitespace-pre-wrap text-xs text-destructive">
-          {topicalMapErrorText(history.error)}
-        </p>
+        <ErrorNotice size="inline" className="whitespace-pre-wrap text-xs" message={topicalMapErrorText(history.error)} />
       ) : entries.length === 0 ? (
         <PanelEmptyLine>No recorded change for this topic.</PanelEmptyLine>
       ) : (

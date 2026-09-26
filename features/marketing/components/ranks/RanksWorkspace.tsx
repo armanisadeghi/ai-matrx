@@ -94,6 +94,7 @@ import type {
   SerpLandscape,
   SerpLandscapeResult,
 } from "./types";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 /** Wire value for one `track_keywords` entry (see the manifest's contract). */
 interface TrackKeywordsEntry {
@@ -1088,12 +1089,7 @@ export function RanksWorkspace() {
                         {state.stage ?? "Checking live rank…"}
                       </p>
                     ) : state?.status === "error" ? (
-                      <p
-                        className="text-right text-[11px] text-destructive"
-                        role="alert"
-                      >
-                        {state.error ?? "The rank check failed. Try again."}
-                      </p>
+                      <ErrorNotice size="inline" className="text-right text-[11px]" message={state.error ?? "The rank check failed. Try again."} />
                     ) : state?.status === "done" ? (
                       <p
                         className="text-right text-[11px] text-emerald-700 dark:text-emerald-400"

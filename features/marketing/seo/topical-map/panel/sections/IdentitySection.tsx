@@ -33,6 +33,7 @@ import { TopicCounts } from "../../ui/TopicCounts";
 import { TopicLabelEditor } from "../../ui/TopicLabelEditor";
 import { TopicPath } from "../../ui/TopicPath";
 import { TopicStatusMark } from "../../ui/TopicStatusMark";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 /**
  * The statuses a person may SET from the panel. `rejected` is never one —
@@ -177,9 +178,7 @@ export function IdentitySection({
       )}
 
       {refusal ? (
-        <p role="alert" className="whitespace-pre-wrap text-xs text-destructive">
-          {refusal}
-        </p>
+        <ErrorNotice size="inline" className="whitespace-pre-wrap text-xs" message={refusal} />
       ) : null}
     </div>
   );

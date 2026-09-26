@@ -58,6 +58,7 @@ import {
   type HrSeparationInitiator,
   type HrSeparationReasonCategory,
 } from "./types";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -220,12 +221,7 @@ export function OffboardEmployeeDialog({
 
         <div className="space-y-4">
           {refusal && !refusal.ok ? (
-            <p
-              role="alert"
-              className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-foreground"
-            >
-              {hrErrorSentence(refusal, "Recording this separation")}
-            </p>
+            <ErrorNotice size="inline" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-foreground" message={hrErrorSentence(refusal, "Recording this separation")} />
           ) : null}
 
           <div className="space-y-1.5">

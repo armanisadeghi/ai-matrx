@@ -60,6 +60,7 @@ import type {
   MapTopicsRejectResult,
   MapTopicsRetireResult,
 } from "../../types";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export type TopicChangeKind = "retire" | "reject" | "move" | "merge" | "split";
 
@@ -242,9 +243,7 @@ function ChangeShell({
         <div className="flex flex-col gap-2">
           {form}
           {refusal ? (
-            <p role="alert" className="whitespace-pre-wrap text-xs text-destructive">
-              {refusal}
-            </p>
+            <ErrorNotice size="inline" className="whitespace-pre-wrap text-xs" message={refusal} />
           ) : null}
           {preview !== null ? (
             <pre className="max-h-40 overflow-auto rounded-md border border-border bg-muted/40 p-2 text-[11px]">

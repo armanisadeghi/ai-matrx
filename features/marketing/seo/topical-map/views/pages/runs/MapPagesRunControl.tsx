@@ -40,6 +40,7 @@ import { RunControlShell } from "./RunControlShell";
 import { NumberField, SwitchField, numberFieldValue } from "./runFields";
 import { SiteChooser } from "./SiteChooser";
 import { WantedTopicsPanel } from "./WantedTopicsPanel";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export interface MapPagesRunControlProps {
   context: PagesWorkspaceContext;
@@ -264,9 +265,7 @@ function MapPagesConsequence({
       </p>
       {/* The newest failure still standing, in the ledger's own words. */}
       {row.last_error ? (
-        <p role="alert" className="whitespace-pre-wrap text-destructive">
-          {row.last_error}
-        </p>
+        <ErrorNotice size="inline" className="whitespace-pre-wrap" message={row.last_error} />
       ) : null}
     </div>
   );
@@ -314,9 +313,7 @@ function MapPagesResultSummary({ result }: { result: MapPagesRunResult }) {
         </p>
       ))}
       {result.error ? (
-        <p role="alert" className="whitespace-pre-wrap text-destructive">
-          {result.error}
-        </p>
+        <ErrorNotice size="inline" className="whitespace-pre-wrap" message={result.error} />
       ) : null}
     </div>
   );

@@ -26,6 +26,7 @@ import {
   type VaultVerifiedExportActor,
 } from "@/features/secrets/vault-service";
 import type { TrashItem, VaultRecoveryPreview } from "./service";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 function sameActor(
   left: VaultVerifiedExportActor,
@@ -299,9 +300,7 @@ export function VaultTrashRestoreDialog({
                 />
               </div>
               {error && (
-                <p className="text-sm text-destructive" role="alert">
-                  {error}
-                </p>
+                <ErrorNotice size="inline" className="text-sm" message={error} />
               )}
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={close}>
@@ -353,9 +352,7 @@ export function VaultTrashRestoreDialog({
                 </p>
               )}
               {error && (
-                <p className="text-sm text-destructive" role="alert">
-                  {error}
-                </p>
+                <ErrorNotice size="inline" className="text-sm" message={error} />
               )}
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={close}>

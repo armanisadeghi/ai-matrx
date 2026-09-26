@@ -59,6 +59,7 @@ import {
   type LeaveBalanceRow,
 } from "./api/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 const NOTE_MIN = 20;
 const NOTE_MIN_OTHER = 60;
@@ -306,9 +307,7 @@ export function LeaveAdjustDialog({
           ) : null}
 
           {failure ? (
-            <p role="alert" className="text-sm text-destructive">
-              {failure}
-            </p>
+            <ErrorNotice size="inline" className="text-sm" message={failure} />
           ) : null}
 
           {statutory ? (

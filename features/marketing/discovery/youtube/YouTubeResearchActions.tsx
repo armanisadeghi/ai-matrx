@@ -20,6 +20,7 @@ import {
   streamYouTubeVideoAnalysis,
 } from "./service";
 import type { YouTubeVideoLibraryRecord } from "./types";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 const ANALYSIS_PHASE_LABELS: Record<string, string> = {
   connected: "Connected. Preparing the video…",
@@ -326,9 +327,7 @@ export function YouTubeResearchActions({
         </div>
       )}
       {actionError && (
-        <p role="alert" className="text-xs text-red-600 dark:text-red-300">
-          {actionError}
-        </p>
+        <ErrorNotice size="inline" className="text-xs text-red-600 dark:text-red-300" message={actionError} />
       )}
       {showAnalysis && record && <YouTubeAnalysis record={record} />}
     </div>

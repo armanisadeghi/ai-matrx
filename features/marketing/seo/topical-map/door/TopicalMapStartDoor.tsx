@@ -29,6 +29,7 @@ import { TopicalMapLoading } from "../components/TopicalMapStates";
 import { MapLinkProvider } from "../links";
 import { MAP_AUTHOR_SOURCE_KINDS, type MapAuthorSourceKind } from "../map-author";
 import { StartMapScreen } from "../start/StartMapScreen";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export function TopicalMapStartDoor() {
   const search = useSearchParams();
@@ -81,9 +82,7 @@ export function TopicalMapStartDoor() {
             ) : null}
           </div>
           {brandId && brand.isError ? (
-            <p role="alert" className="mt-2 text-sm text-destructive">
-              {extractErrorMessage(brand.error)}
-            </p>
+            <ErrorNotice size="inline" className="mt-2 text-sm" message={extractErrorMessage(brand.error)} />
           ) : null}
         </section>
 

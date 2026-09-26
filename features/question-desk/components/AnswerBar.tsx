@@ -41,6 +41,7 @@ import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvide
 import { cn } from "@/lib/utils";
 import type { DictationAudio } from "../hooks/useDictationAudio";
 import { questionRecordingOrigin } from "../hooks/useDictationAudio";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export interface SaveLine {
   tone: "ok" | "warn";
@@ -152,12 +153,7 @@ export function AnswerBar(props: AnswerBarProps) {
       />
       <div className="bg-background pb-2">
         {actionError ? (
-          <p
-            role="alert"
-            className="mb-2.5 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
-          >
-            {actionError}
-          </p>
+          <ErrorNotice size="inline" className="mb-2.5 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[13px]" message={actionError} />
         ) : null}
         <div className="mb-2.5 flex flex-wrap gap-2">
           {hasRecommendation ? (

@@ -42,6 +42,7 @@ import { toast } from "@/lib/toast";
 import { acknowledgeHrCorrectiveAction } from "@/features/hr/service";
 import { hrErrorSentence } from "@/features/hr/shared/HrStates";
 import type { HrDenied, HrFailed } from "@/features/hr/types";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export function HrCorrectiveAckPanel({
   correctiveActionId,
@@ -131,12 +132,7 @@ export function HrCorrectiveAckPanel({
       ) : null}
 
       {refusal ? (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-foreground"
-        >
-          {hrErrorSentence(refusal, "Recording your acknowledgment")}
-        </p>
+        <ErrorNotice size="inline" className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-foreground" message={hrErrorSentence(refusal, "Recording your acknowledgment")} />
       ) : null}
 
       <div className="flex flex-wrap gap-2">

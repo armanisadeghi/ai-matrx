@@ -42,6 +42,7 @@ import {
   stringUrlCodec,
   useUrlState,
 } from "@ai-matrx/kit/url-state";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 
 type EntityTypeFacet = "all" | "active" | "inactive";
 
@@ -545,7 +546,7 @@ export function EntityTypesClient({ entityTypes }: Props) {
       refresh();
     } catch (e) {
       toast.error(
-        `Couldn't save: ${e instanceof Error ? e.message : String(e)}`,
+        `Couldn't save: ${extractErrorMessage(e)}`,
       );
     } finally {
       setSaving(false);
@@ -571,7 +572,7 @@ export function EntityTypesClient({ entityTypes }: Props) {
       refresh();
     } catch (e) {
       toast.error(
-        `Couldn't update: ${e instanceof Error ? e.message : String(e)}`,
+        `Couldn't update: ${extractErrorMessage(e)}`,
       );
     } finally {
       setSaving(false);
@@ -588,7 +589,7 @@ export function EntityTypesClient({ entityTypes }: Props) {
       refresh();
     } catch (e) {
       toast.error(
-        `Couldn't update: ${e instanceof Error ? e.message : String(e)}`,
+        `Couldn't update: ${extractErrorMessage(e)}`,
       );
     } finally {
       setWritablePending(null);

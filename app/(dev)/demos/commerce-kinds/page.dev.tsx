@@ -5,6 +5,7 @@ import {
   COMMERCE_KIND_SLUGS,
   loadCommerceExamples,
 } from "./load-commerce-examples";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export const metadata: Metadata = {
   title: "Commerce Kinds — Live Examples",
@@ -48,12 +49,7 @@ export default async function CommerceKindsDemoPage() {
           </span>
         </div>
         {error && (
-          <p
-            role="alert"
-            className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
-          >
-            {error}
-          </p>
+          <ErrorNotice size="inline" className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm" message={error} />
         )}
       </header>
 

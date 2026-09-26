@@ -30,6 +30,7 @@ import { topicalMapErrorText } from "../errors";
 import { useMapTopicRows } from "../hooks";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useSiteTopicalMapLink } from "./useSiteTopicalMapLink";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 const NONE = "__none__";
 
@@ -61,9 +62,7 @@ export function PlanNodeTopicField({
   }
   if (link.status === "error") {
     return (
-      <p role="alert" className="text-xs text-destructive">
-        {link.error}
-      </p>
+      <ErrorNotice size="inline" className="text-xs" message={link.error} />
     );
   }
   if (link.status === "none") {
@@ -80,9 +79,7 @@ export function PlanNodeTopicField({
   }
   if (topics.isError) {
     return (
-      <p role="alert" className="text-xs text-destructive">
-        {topicalMapErrorText(topics.error)}
-      </p>
+      <ErrorNotice size="inline" className="text-xs" message={topicalMapErrorText(topics.error)} />
     );
   }
 

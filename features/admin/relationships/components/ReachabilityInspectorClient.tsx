@@ -48,6 +48,7 @@ import {
   stringUrlCodec,
   useUrlState,
 } from "@ai-matrx/kit/url-state";
+import { extractErrorMessage } from "@ai-matrx/data/net";
 
 export type ReachabilityMode = "contents" | "containers";
 
@@ -223,7 +224,7 @@ export function ReachabilityInspectorClient({
     } catch (e) {
       if (isStale()) return;
       toast.error(
-        `Lookup failed: ${e instanceof Error ? e.message : String(e)}`,
+        `Lookup failed: ${extractErrorMessage(e)}`,
       );
     } finally {
       if (!isStale()) setLoading(false);

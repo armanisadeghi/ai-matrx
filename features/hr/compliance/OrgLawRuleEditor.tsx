@@ -41,6 +41,7 @@ import { readHrLawValidation, saveHrOrgLawRule } from "../service";
 import { isHrDenied, type HrDenied, type HrLawRuleClass, type HrLawValidationFinding, type HrOrgLawRule } from "../types";
 import { LawCitationLine } from "./LawRuleRow";
 import { flatParameterFields, type LawParamField } from "./law-parameters";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export type LawJurisdictionOption = { key: string; name: string };
 
@@ -444,9 +445,7 @@ export function OrgLawRuleEditor({
       </div>
 
       {problem ? (
-        <p className="text-sm text-destructive" role="alert">
-          {problem}
-        </p>
+        <ErrorNotice size="inline" className="text-sm" message={problem} />
       ) : null}
 
       {refusal ? (

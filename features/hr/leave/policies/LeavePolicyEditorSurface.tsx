@@ -127,6 +127,7 @@ import {
   type LeavePolicyForm,
 } from "./policy-form";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 /** The schedule classes `hr.leave_policy.schedule_class_scope` is filtered against. */
 const SCHEDULE_CLASSES = ["full_time", "part_time", "variable", "per_diem"] as const;
@@ -175,9 +176,7 @@ function FieldShell({
       {children}
       {help ? <p className="text-[11px] leading-snug text-muted-foreground">{help}</p> : null}
       {problem ? (
-        <p role="alert" className="text-[11px] leading-snug text-destructive">
-          {problem}
-        </p>
+        <ErrorNotice size="inline" className="text-[11px] leading-snug" message={problem} />
       ) : null}
     </div>
   );
