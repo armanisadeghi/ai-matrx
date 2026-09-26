@@ -18,5 +18,5 @@ do $$ begin
 end $$;
 
 update platform.entity_types
-   set is_active = true, schema_name = 'iam'
+   set is_active = true, type = 'system', schema_name = 'iam'
  where token = 'system_personal_org_failure';

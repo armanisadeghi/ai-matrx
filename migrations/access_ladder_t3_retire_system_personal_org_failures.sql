@@ -16,7 +16,7 @@
 -- 1. The registration goes inactive first (platform._enforce_entity_is_table refuses an active
 --    entity pointing at graveyard).
 update platform.entity_types
-   set is_active = false
+   set is_active = false, type = 'deprecated'
  where token = 'system_personal_org_failure';
 
 -- 2. The outbound FK to a live table goes before the move (graveyard -> live FKs break
@@ -33,7 +33,7 @@ end $$;
 
 -- 4. Clean cut: the old name is registered dead.
 insert into platform.deprecated_relations (old_ref, new_ref, archived_as, reason)
-select 'iam.system_personal_org_failures', null, 'graveyard.system_personal_org_failures',
+select 'iam.system_personal_org_failures', 'iam.provision_signup_organization', 'graveyard.system_personal_org_failures',
        'access-ladder T-3 (2026-09-26): the personal-organization concept is gone; signup provisions via iam.provision_signup_organization and never recorded failures here. 0 rows.'
 where not exists (select 1 from platform.deprecated_relations where old_ref = 'iam.system_personal_org_failures');
 

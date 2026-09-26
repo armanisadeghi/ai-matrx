@@ -1286,6 +1286,14 @@
       "new": "agent.exemplar",
       "since": "2026-08-25",
       "reason": "generalized to the agent-level sample/test-case store (agent_id is the subject, mandate_id optional context). Use .schema('agent').from('exemplar'). A TEMPORARY alias view exists until the FE release + aidream deploy; drop it after."
+    },
+    {
+      "relation": "system_personal_org_failures",
+      "old": "iam.system_personal_org_failures",
+      "newSchema": "graveyard",
+      "new": "graveyard.system_personal_org_failures",
+      "since": "2026-09-26",
+      "reason": "access-ladder T-3: the personal-organization concept is gone; signup provisions via iam.provision_signup_organization and never recorded failures here. Moved to graveyard (0 rows)."
     }
   ]
 }
