@@ -1,4 +1,4 @@
--- draft: alchemy-chair ALC-14 re-key STEP 3 — apply ONLY when the emitter census is clean (no deployed code upserts on (surface_name, name)); 1–4 AM PT
+-- chair-step: re-key step 3 — drops only the two twin unique indexes on (surface_name, name); no row or column is removed; the emitter census is clean (only comments mention the old key); rehearsed up/inverse/up on the dev clone; applied while Arman is present (he authorized daytime DB changes 2026-09-26).
 -- Matrx Alchemy ALC-14 — re-key STEP 3 of 3: drop the old-key twin (CONTRACT §2.7, ruling N4, R24).
 --
 -- Precondition (the emitter census, R24): no deployed code upserts ON CONFLICT (surface_name, name)
