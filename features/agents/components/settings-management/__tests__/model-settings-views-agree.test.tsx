@@ -59,6 +59,7 @@ import agentDefinitionReducer, {
   mergePartialAgent,
 } from "@/features/agents/redux/agent-definition/slice";
 import modelRegistryReducer from "@/features/ai-models/redux/modelRegistrySlice";
+import { normalizeModel } from "@/features/ai-models/utils/model-normalizer";
 import { AgentSettingsCore } from "../AgentSettingsCore";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 
@@ -146,7 +147,11 @@ function makeStore(agent: {
     preloadedState: {
       modelRegistry: {
         ...registryInit,
-        entities: MODELS as unknown as typeof registryInit.entities,
+        // Through the SAME boundary normalizer fetchModelById applies, so the
+        // form sees exactly what the live registry holds.
+        entities: Object.fromEntries(
+          Object.entries(MODELS).map(([id, m]) => [id, normalizeModel(m)]),
+        ) as unknown as typeof registryInit.entities,
         activeIds: Object.keys(MODELS),
       },
     },

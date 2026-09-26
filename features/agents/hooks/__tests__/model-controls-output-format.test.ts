@@ -48,3 +48,37 @@ test("model defaults never turn an image file format into a response format", ()
   expect(getModelDefaults(gptImage2).output_format).toBe("png");
   expect(getModelDefaults(legacyTextModel)).not.toHaveProperty("output_format");
 });
+
+// The same rule holds at the Redux boundary (fetchModelById → normalizeModel)
+// and in the agent-settings parser — the live registry never sees a renamed
+// image output_format.
+import { normalizeModel, normalizePromptSettings } from "@/features/ai-models/utils/model-normalizer";
+import { parseModelControls } from "@/lib/redux/slices/agent-settings/internal-utils";
+
+test("the registry boundary keeps an image model's output_format", () => {
+  const normalized = normalizeModel(gptImage2) as unknown as {
+    controls: Record<string, unknown>;
+  };
+  expect(normalized.controls).toHaveProperty("output_format");
+  expect(normalized.controls).not.toHaveProperty("response_format");
+  const legacy = normalizeModel(legacyTextModel) as unknown as {
+    controls: Record<string, unknown>;
+  };
+  expect(legacy.controls).toHaveProperty("response_format");
+  expect(legacy.controls).not.toHaveProperty("output_format");
+});
+
+test("the agent-settings parser keeps an image model's output_format", () => {
+  const parsed = parseModelControls(
+    (gptImage2 as unknown as { controls: Record<string, unknown> }).controls,
+  ) as unknown as Record<string, unknown>;
+  expect(parsed).toHaveProperty("output_format");
+  expect(parsed).not.toHaveProperty("response_format");
+});
+
+test("a stored file format stays output_format; a stored text format is a response format", () => {
+  expect(normalizePromptSettings({ output_format: "png" })).toEqual({ output_format: "png" });
+  expect(normalizePromptSettings({ output_format: "json_object" })).toEqual({
+    response_format: { type: "json_object" },
+  });
+});

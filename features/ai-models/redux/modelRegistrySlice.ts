@@ -336,9 +336,9 @@ export const fetchModelById = createAsyncThunk(
           `ai.model_config returned a row without id/name for model ${modelId}`,
         );
       }
-      // normalizeModel keeps the legacy-alias mapping (output_format →
-      // response_format for image models) — the resolver emits the
-      // provider-canonical key names.
+      // normalizeModel keeps the legacy-alias mapping (a TEXT model's
+      // output_format → response_format; an image model's output_format is its
+      // file format and keeps its key — see outputFormatControlKey).
       return normalizeModel({
         id: data.id,
         name: data.name,

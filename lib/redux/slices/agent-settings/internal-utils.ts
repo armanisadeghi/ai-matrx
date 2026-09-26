@@ -12,6 +12,7 @@
  */
 
 import { LLM_PARAMS_KEYS } from "@/types/python-generated/llm-enums";
+import { outputFormatControlKey } from "@/features/ai-models/utils/model-normalizer";
 import type {
   AgentSettings,
   AgentVariable,
@@ -88,7 +89,8 @@ const ALL_KNOWN_KEYS = new Set<string>([
  *   { type?, min?, max?, default?, enum?, required?, allowed? }
  *
  * Special cases:
- *   - `output_format` → remapped to `response_format`
+ *   - `output_format` → `response_format` only for text response formats
+ *     (outputFormatControlKey); an image file format keeps its own key
  *   - `allowed: true/false` → boolean feature flag
  *   - enum values that are `{ type: "json_object" }` objects → flattened to string
  */
@@ -119,7 +121,7 @@ export function parseModelControls(
     }
 
     // Remap output_format → response_format
-    const normalizedKey = key === "output_format" ? "response_format" : key;
+    const normalizedKey = outputFormatControlKey(key, value);
 
     // Guard: control definitions must be plain objects
     if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -223,7 +225,7 @@ export function extractModelDefaults(
     }
 
     const rawControl = value as Record<string, unknown>;
-    const normalizedKey = key === "output_format" ? "response_format" : key;
+    const normalizedKey = outputFormatControlKey(key, value);
 
     // Model-gated UI flags — `tools` gets special handling. These now live in
     // agent.uiGates, but a model's controls still declare them, so we keep

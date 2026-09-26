@@ -9,6 +9,7 @@ import { LLM_PARAMS_KEYS } from "@/types/python-generated/llm-enums";
 import { UI_GATE_KEYS } from "@/lib/redux/slices/agent-settings/ui-gates";
 import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
 import { isJsonObject } from "@/types/json";
+import { outputFormatControlKey } from "@/features/ai-models/utils/model-normalizer";
 
 export interface ControlDefinition {
   type:
@@ -226,34 +227,6 @@ export function supportsTools(
     rawToolsControl?.allowed !== false &&
     rawToolsControl?.default !== false
   );
-}
-
-/** The text response formats a legacy `output_format` control carries. */
-const TEXT_RESPONSE_FORMATS = new Set(["text", "json_object", "json_schema"]);
-
-/**
- * The key a catalog control is read under. `output_format` is ambiguous in the
- * catalog: on a legacy text model its values are text response formats and it
- * means `response_format`; on an image model (GPT Image 2: png / jpeg / webp)
- * it is the image file format — its own LLMParams field. Only the first is
- * remapped; remapping the second showed an image model a "Response Format"
- * row whose choices stored nothing.
- */
-function outputFormatControlKey(key: string, control: unknown): string {
-  if (key !== "output_format") return key;
-  const options =
-    control && typeof control === "object" && "enum" in control
-      ? (control as { enum?: unknown }).enum
-      : undefined;
-  if (!Array.isArray(options) || options.length === 0) return "response_format";
-  const values = options.map((o) =>
-    o && typeof o === "object" && "type" in (o as Record<string, unknown>)
-      ? String((o as Record<string, unknown>).type)
-      : String(o),
-  );
-  return values.every((v) => TEXT_RESPONSE_FORMATS.has(v))
-    ? "response_format"
-    : "output_format";
 }
 
 /**
