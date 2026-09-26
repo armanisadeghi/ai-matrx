@@ -116,6 +116,12 @@ function loadEnv(): pg.ClientConfig {
 }
 
 type Observed = { level: string; visible: number };
+const LANES = ["user page", "admin section"] as const;
+type Lane = (typeof LANES)[number];
+/** On a user page a platform admin is an ordinary person: no admin arm is live, so nothing here is theirs. */
+const levelOn = (lane: Lane, c: (typeof CASES)[number]): string =>
+  lane === "user page" ? "none" : c.level;
+const SEATS = LANES.flatMap((lane) => CASES.map((c) => ({ lane, ...c, expected: levelOn(lane, c) })));
 const observed = new Map<string, Observed>();
 
 beforeAll(async () => {
@@ -156,17 +162,28 @@ beforeAll(async () => {
       JSON.stringify({ sub: ADMIN, role: "authenticated" }),
     ]);
     await client.query("set local role authenticated");
-    for (const c of CASES) {
-      const id = ids.get(c.name)!;
-      const ctx = await client.query<{ level: string }>(
-        "select public.access_denied_context($1, $2::uuid) ->> 'level' as level",
-        [c.token, id],
-      );
-      const rls = await client.query<{ n: string }>(
-        `select count(*)::text as n from ${c.table} where id = $1::uuid`,
-        [id],
-      );
-      observed.set(c.name, { level: ctx.rows[0]!.level, visible: Number(rls.rows[0]!.n) });
+    // THE ADMIN LANE (utils/supabase/adminLane.ts, 2026-09-25): every platform-admin arm in RLS
+    // is live only on a request carrying `x-matrx-admin-lane: 1` — the admin section. Measured
+    // on both seats: a user page (no header) and the admin section (the header PostgREST forwards).
+    for (const lane of LANES) {
+      await client.query("select set_config('request.headers', $1, true)", [
+        lane === "admin section" ? JSON.stringify({ "x-matrx-admin-lane": "1" }) : "",
+      ]);
+      for (const c of CASES) {
+        const id = ids.get(c.name)!;
+        const ctx = await client.query<{ level: string }>(
+          "select public.access_denied_context($1, $2::uuid) ->> 'level' as level",
+          [c.token, id],
+        );
+        const rls = await client.query<{ n: string }>(
+          `select count(*)::text as n from ${c.table} where id = $1::uuid`,
+          [id],
+        );
+        observed.set(`${lane}: ${c.name}`, {
+          level: ctx.rows[0]!.level,
+          visible: Number(rls.rows[0]!.n),
+        });
+      }
     }
   } finally {
     await client.query("rollback").catch(() => undefined);
@@ -175,19 +192,19 @@ beforeAll(async () => {
 }, 120_000);
 
 describe("access_denied_context reports the level the row's real RLS ceiling allows", () => {
-  it.each(CASES)("reports level '$level' to a platform admin for $name", (c) => {
-    expect(observed.get(c.name)?.level).toBe(c.level);
+  it.each(SEATS)("on a $lane, reports level '$expected' to a platform admin for $name", (c) => {
+    expect(observed.get(`${c.lane}: ${c.name}`)?.level).toBe(c.expected);
   });
 
-  it.each(CASES)(
-    "never claims access the admin's own RLS read of the row refuses: $name",
+  it.each(SEATS)(
+    "on a $lane, never claims access the admin's own RLS read of the row refuses: $name",
     (c) => {
-      const o = observed.get(c.name);
+      const o = observed.get(`${c.lane}: ${c.name}`);
       expect(o).toBeDefined();
       // The two answers must agree: a level above 'none' iff the row is readable.
       expect({ claimsAccess: o!.level !== "none", rowReadable: o!.visible === 1 }).toEqual({
-        claimsAccess: c.level !== "none",
-        rowReadable: c.level !== "none",
+        claimsAccess: c.expected !== "none",
+        rowReadable: c.expected !== "none",
       });
     },
   );
