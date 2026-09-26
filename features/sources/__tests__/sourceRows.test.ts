@@ -231,3 +231,25 @@ describe("a row's status cell", () => {
     ).toBe("checking");
   });
 });
+
+describe("entities_state from source_list_facts (migration 1301)", () => {
+  it("carries the server's extraction state, failure sentence included", () => {
+    const row = {
+      processed_document_id: "h",
+      chunk_count: 2,
+      has_entities: false,
+      attachments: [],
+      current_document_id: "h",
+      current_chunk_count: 2,
+      current_has_entities: false,
+      stale_chunk_count: 0,
+      indexing: false,
+      head_document_id: "h",
+      entities_state: "failed:The entity provider refused the API key",
+    };
+    expect(sourceFactsFromRow(row)?.entitiesState).toBe(
+      "failed:The entity provider refused the API key",
+    );
+    expect(sourceFactsFromRow({ ...row, entities_state: undefined })?.entitiesState).toBeNull();
+  });
+});
