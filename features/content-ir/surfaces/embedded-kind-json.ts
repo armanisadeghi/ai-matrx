@@ -317,7 +317,9 @@ export function findEmbeddedKindJsonRegions(
         start = ownerEnd - 1;
         continue;
       }
-      jsonStrings.push(...jsonStringRanges(source, start, end));
+      // A loop, never a spread: a JSON value with ~100k strings overflowed the
+      // call stack (RangeError on a stored chat row — the splitter crashed).
+      for (const range of jsonStringRanges(source, start, end)) jsonStrings.push(range);
       continue;
     }
 
