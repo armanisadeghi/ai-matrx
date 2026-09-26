@@ -10,6 +10,9 @@ import { cn } from "@/lib/utils";
 import { calcCols } from "./useContainerColumns";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { afterCurrentLayerCloses } from "@/components/dialogs/confirm/after-current-layer-closes";
+import { AspectRatioSelect } from "@/components/official/aspect-ratio/AspectRatioSelect";
+import { OptionCombobox } from "@/components/official/option-combobox/OptionCombobox";
+import { choiceControlFor } from "@/features/agents/utils/choice-rule";
 
 /** Overrides base SelectTrigger nowrap/line-clamp so long values wrap in-panel. */
 const dropdownTriggerClassName = (compact: boolean) =>
@@ -162,6 +165,45 @@ export function SelectInput({
   }
 
   // ── Dropdown mode (default) ──────────────────────────────────────────────
+  // THE CHOICE RULE (features/agents/utils/choice-rule.ts): ratio lists get the
+  // aspect-ratio picker, lists over twelve get a searchable select.
+  const choice = choiceControlFor(options);
+  const otherEditor = selectedOption === "Other" && (
+    <ProTextarea
+      value={customText}
+      onChange={(e) => handleCustomTextChange(e.target.value)}
+      placeholder="Enter any text, markdown, or custom value..."
+      className={compact ? "min-h-[80px] text-xs" : "min-h-[100px] text-sm"}
+      autoFocus
+    />
+  );
+  if (choice === "aspect-ratio" || choice === "searchable") {
+    const withOther = allowOther ? [...options, "Other"] : options;
+    return (
+      <div className={cn(compact ? "space-y-1" : "space-y-1.5", "min-w-0")}>
+        {choice === "aspect-ratio" ? (
+          <AspectRatioSelect
+            value={selectedOption}
+            onChange={handleSelectChange}
+            options={withOther}
+            compact={compact}
+            ariaLabel={variableName}
+          />
+        ) : (
+          <OptionCombobox
+            value={selectedOption}
+            onChange={handleSelectChange}
+            options={withOther}
+            compact={compact}
+            ariaLabel={variableName}
+            placeholder="Choose an option..."
+          />
+        )}
+        {otherEditor}
+      </div>
+    );
+  }
+
   return (
     <div className={cn(compact ? "space-y-1" : "space-y-1.5", "min-w-0")}>
       <Select value={selectedOption} onValueChange={handleSelectChange}>

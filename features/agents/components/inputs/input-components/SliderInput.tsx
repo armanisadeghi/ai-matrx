@@ -7,6 +7,8 @@ interface SliderInputProps {
   min?: number;
   max?: number;
   step?: number;
+  /** Shown after the value ("s", "%"). */
+  unit?: string;
   variableName: string;
   compact?: boolean;
   wizardMode?: boolean;
@@ -23,8 +25,11 @@ export function SliderInput({
   min = 0,
   max = 100,
   step = 1,
+  unit,
   compact = false,
 }: SliderInputProps) {
+  const withUnit = (n: number) =>
+    unit ? `${n}${unit === "%" || unit === "s" ? "" : " "}${unit}` : String(n);
   const numValue = parseFloat(value);
   const safeValue = isNaN(numValue)
     ? min
@@ -40,7 +45,7 @@ export function SliderInput({
               : "text-xs text-muted-foreground"
           }
         >
-          {min}
+          {withUnit(min)}
         </span>
         <span
           className={
@@ -49,7 +54,7 @@ export function SliderInput({
               : "text-sm font-medium tabular-nums"
           }
         >
-          {safeValue}
+          {withUnit(safeValue)}
         </span>
         <span
           className={
@@ -58,7 +63,7 @@ export function SliderInput({
               : "text-xs text-muted-foreground"
           }
         >
-          {max}
+          {withUnit(max)}
         </span>
       </div>
       <Slider

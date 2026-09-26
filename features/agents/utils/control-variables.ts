@@ -15,6 +15,7 @@
  */
 
 import type { ControlDefinition } from "@/features/agents/hooks/useModelControls";
+import { choiceComponentType } from "@/features/agents/utils/choice-rule";
 import type {
   VariableCustomComponent,
   VariableDefinition,
@@ -48,10 +49,10 @@ export const DEFAULT_CONTROL_BINDABLE_POLICY: ControlBindablePolicy = {
 /** Labels for a boolean control's toggle; the server reads On/Off as true/false. */
 export const CONTROL_TOGGLE_VALUES: [string, string] = ["Off", "On"];
 
-/** Controls whose values are short visual shape tokens — a pill row reads best. */
-const PILL_KEYS = new Set(["aspect_ratio", "ratio"]);
-/** Any enum this small reads best as pills; larger ones collapse to a select. */
-const PILL_MAX_OPTIONS = 3;
+/** A bounded integer with this few steps reads best as pills ("1 2 3 4"). */
+const INTEGER_PILL_MAX_STEPS = 4;
+/** A bounded range wider than this is typed, never dragged (seeds, token caps). */
+const SLIDER_MAX_SPAN = 1000;
 
 /** Common BCP-47 codes for a free-form language control with no catalog enum. */
 export const LANGUAGE_OPTIONS = [
@@ -115,7 +116,9 @@ export function orderVariablesForForm<T extends VariableDefinition>(
 }
 
 /** Read the knob's value defensively: a malformed policy falls back to the default. */
-export function readControlBindablePolicy(value: unknown): ControlBindablePolicy {
+export function readControlBindablePolicy(
+  value: unknown,
+): ControlBindablePolicy {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     const v = value as Record<string, unknown>;
     const allow = Array.isArray(v.allow)
@@ -150,12 +153,24 @@ function numericStep(control: ControlDefinition): number {
   return span <= 2 ? 0.01 : span <= 20 ? 0.1 : 1;
 }
 
+/** A unit suffix for a numeric control, read from its key. */
+export function controlUnit(key: string): string | undefined {
+  if (/(^|_)(seconds|secs|duration)(_|$)/.test(key)) return "s";
+  if (/(^|_)ms(_|$)/.test(key)) return "ms";
+  if (/(^|_)(fps)(_|$)/.test(key)) return "fps";
+  if (/(^|_)(percent|pct)(_|$)/.test(key)) return "%";
+  if (/(^|_)(tokens)(_|$)/.test(key)) return "tokens";
+  return undefined;
+}
+
 /**
  * THE derivation: a control's catalog definition → the variable input component.
- * enum → pill-toggle (ratio keys or ≤3 options) or select; numeric with both
- * bounds → slider, otherwise number; boolean → toggle; a language control with no
- * enum → select of languages; free text → textarea. A voice control is an enum of
- * the model's voices, so it lands on select through the enum rule.
+ * enum → THE CHOICE RULE (`./choice-rule.ts`: pills ≤ 4 short options, select
+ * otherwise; the renderer upgrades long lists to a searchable select and ratio
+ * lists to the aspect-ratio picker); bounded integer with ≤ 4 steps → pills;
+ * bounded range ≤ 1000 wide → slider; otherwise a number field; numeric fields
+ * carry a unit read from the key; boolean → labelled switch; a language control
+ * with no enum → select of languages; free text → textarea.
  */
 export function deriveControlComponent(
   key: string,
@@ -163,8 +178,7 @@ export function deriveControlComponent(
 ): VariableCustomComponent {
   const options = control.enum ?? [];
   if (options.length > 0) {
-    const pills = PILL_KEYS.has(key) || options.length <= PILL_MAX_OPTIONS;
-    return { type: pills ? "pill-toggle" : "select", options: [...options] };
+    return { type: choiceComponentType(options), options: [...options] };
   }
   if (control.type === "boolean") {
     return { type: "toggle", toggleValues: CONTROL_TOGGLE_VALUES };
@@ -172,12 +186,25 @@ export function deriveControlComponent(
   if (control.type === "number" || control.type === "integer") {
     const hasBounds =
       typeof control.min === "number" && typeof control.max === "number";
+    if (
+      hasBounds &&
+      control.type === "integer" &&
+      control.max! - control.min! + 1 <= INTEGER_PILL_MAX_STEPS
+    ) {
+      const values: string[] = [];
+      for (let v = control.min!; v <= control.max!; v += 1)
+        values.push(String(v));
+      return { type: "pill-toggle", options: values };
+    }
+    const slider = hasBounds && control.max! - control.min! <= SLIDER_MAX_SPAN;
     const component: VariableCustomComponent = {
-      type: hasBounds ? "slider" : "number",
+      type: slider ? "slider" : "number",
       step: numericStep(control),
     };
     if (typeof control.min === "number") component.min = control.min;
     if (typeof control.max === "number") component.max = control.max;
+    const unit = controlUnit(key);
+    if (unit) component.unit = unit;
     return component;
   }
   if (isLanguageKey(key)) {

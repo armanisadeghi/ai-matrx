@@ -45,18 +45,54 @@ const SEED: ControlDefinition = { type: "integer", min: 0 };
 const WEB_SEARCH: ControlDefinition = { type: "boolean", default: false };
 
 describe("deriveControlComponent", () => {
-  it("aspect ratio → pill toggle carrying the catalog's allowed ratios", () => {
+  it("aspect ratio → select (drawn as the aspect-ratio picker), never a pill wall", () => {
     expect(deriveControlComponent("aspect_ratio", ASPECT)).toEqual({
-      type: "pill-toggle",
+      type: "select",
       options: ASPECT.enum,
     });
   });
 
-  it("a four-value enum (quality) → select", () => {
+  it("four short options (quality) → pill toggle", () => {
     expect(deriveControlComponent("quality", QUALITY)).toEqual({
-      type: "select",
+      type: "pill-toggle",
       options: ["auto", "low", "medium", "high"],
     });
+  });
+
+  it("five or more options → select", () => {
+    expect(
+      deriveControlComponent("style", {
+        type: "enum",
+        enum: ["any", "realistic", "digital", "vector", "icon"],
+      }).type,
+    ).toBe("select");
+  });
+
+  it("a long option never fits a pill → select", () => {
+    expect(
+      deriveControlComponent("mode", {
+        type: "enum",
+        enum: ["standard", "match_input_image"],
+      }).type,
+    ).toBe("select");
+  });
+
+  it("a bounded integer with four or fewer steps → pills of its values", () => {
+    expect(
+      deriveControlComponent("num_outputs", { type: "integer", min: 1, max: 4 }),
+    ).toEqual({ type: "pill-toggle", options: ["1", "2", "3", "4"] });
+  });
+
+  it("a very wide range → number field, never a slider", () => {
+    expect(
+      deriveControlComponent("max_tokens", { type: "integer", min: 1, max: 128000 }),
+    ).toMatchObject({ type: "number", unit: "tokens" });
+  });
+
+  it("a seconds control carries its unit", () => {
+    expect(
+      deriveControlComponent("duration_seconds", { type: "number", min: 1, max: 20 }),
+    ).toMatchObject({ type: "slider", unit: "s" });
   });
 
   it("a tiny enum → pill toggle", () => {
@@ -130,7 +166,7 @@ describe("bind / unbind", () => {
       name: "aspect_ratio",
       defaultValue: "16:9",
       required: false,
-      customComponent: { type: "pill-toggle", options: ASPECT.enum },
+      customComponent: { type: "select", options: ASPECT.enum },
       control: { key: "aspect_ratio" },
     });
 

@@ -1,5 +1,4 @@
 import React from "react";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import LightSwitchToggle from "@/components/matrx/LightSwitchToggle";
 
@@ -47,27 +46,29 @@ export function ToggleInput({
       />
     </div>
   ) : (
-    <div
+    // The switch says what it is set to, next to it — the field's own label
+    // already names it. "Off / On · Currently: On" said the same thing twice.
+    <label
       className={
         compact
-          ? "flex items-center justify-between p-2 bg-transparent rounded border-border"
-          : "flex items-center justify-between p-4 bg-transparent rounded-lg border-border"
+          ? "inline-flex min-h-7 cursor-pointer items-center gap-2"
+          : "inline-flex min-h-9 cursor-pointer items-center gap-2.5"
       }
     >
-      <div className={compact ? "" : "space-y-1"}>
-        <Label
-          className={compact ? "text-xs font-medium" : "text-sm font-medium"}
-        >
-          {offLabel} / {onLabel}
-        </Label>
-        {!compact && (
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Currently:{" "}
-            <span className="font-medium">{isOn ? onLabel : offLabel}</span>
-          </p>
-        )}
-      </div>
-      <Switch checked={isOn} onCheckedChange={handleToggle} />
-    </div>
+      <Switch
+        checked={isOn}
+        onCheckedChange={handleToggle}
+        aria-label={variableName}
+      />
+      <span
+        className={
+          compact
+            ? "text-xs font-medium text-foreground"
+            : "text-sm font-medium text-foreground"
+        }
+      >
+        {isOn ? onLabel : offLabel}
+      </span>
+    </label>
   );
 }

@@ -45,6 +45,9 @@ import {
 import type { ControlDefinition } from "@/lib/redux/slices/agent-settings/types";
 import { NumberInput } from "./NumberInput";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AspectRatioSelect } from "@/components/official/aspect-ratio/AspectRatioSelect";
+import { OptionCombobox } from "@/components/official/option-combobox/OptionCombobox";
+import { choiceControlFor } from "@/features/agents/utils/choice-rule";
 
 export interface SettingControlInputProps {
   /** Setting key (snake_case) — used for ids and response_format handling. */
@@ -94,34 +97,67 @@ export function SettingControlInput({
     const emit = (v: string) =>
       onChange(settingKey === "response_format" ? { type: v } : v);
 
+    // THE CHOICE RULE (features/agents/utils/choice-rule.ts): ratio lists get
+    // the aspect-ratio picker, lists over twelve get a searchable select.
+    const choice = choiceControlFor(control.enum);
+    const picker =
+      choice === "aspect-ratio" ? (
+        <AspectRatioSelect
+          value={isValueMismatch ? "" : stringValue}
+          onChange={emit}
+          options={control.enum}
+          variant="inline"
+          disabled={disabled}
+          id={inputId}
+          placeholder={explicitState ? "Not set" : "Select..."}
+        />
+      ) : choice === "searchable" ? (
+        <OptionCombobox
+          value={isValueMismatch ? "" : stringValue}
+          onChange={emit}
+          options={control.enum}
+          getLabel={explicitState ? humanizeSettingKey : undefined}
+          variant="inline"
+          disabled={disabled}
+          id={inputId}
+          placeholder={explicitState ? "Not set" : "Select..."}
+        />
+      ) : null;
+
     return (
       <div className="flex flex-1 items-center gap-1.5">
-        <Select
-          value={isValueMismatch ? "" : stringValue}
-          onValueChange={emit}
-          disabled={disabled}
-        >
-          {/* Inline trigger — borderless/transparent, matching the
+        {picker ?? (
+          <Select
+            value={isValueMismatch ? "" : stringValue}
+            onValueChange={emit}
+            disabled={disabled}
+          >
+            {/* Inline trigger — borderless/transparent, matching the
               ModelListDropdown trigger style for in-row dense controls. */}
-          <SelectTrigger className="h-7 flex-1 border-0 bg-transparent px-1 text-xs font-medium text-foreground/80 shadow-none hover:bg-transparent hover:text-foreground focus:ring-0 [&_svg]:h-3 [&_svg]:w-3">
-            <SelectValue
-              placeholder={
-                isValueMismatch
-                  ? stringValue
-                  : explicitState
-                    ? "Not set"
-                    : "Select..."
-              }
-            />
-          </SelectTrigger>
-          <SelectContent className="text-xs">
-            {control.enum.map((option) => (
-              <SelectItem key={option} value={option} className="py-1 text-xs">
-                {explicitState ? humanizeSettingKey(option) : option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <SelectTrigger className="h-7 flex-1 border-0 bg-transparent px-1 text-xs font-medium text-foreground/80 shadow-none hover:bg-transparent hover:text-foreground focus:ring-0 [&_svg]:h-3 [&_svg]:w-3">
+              <SelectValue
+                placeholder={
+                  isValueMismatch
+                    ? stringValue
+                    : explicitState
+                      ? "Not set"
+                      : "Select..."
+                }
+              />
+            </SelectTrigger>
+            <SelectContent className="text-xs">
+              {control.enum.map((option) => (
+                <SelectItem
+                  key={option}
+                  value={option}
+                  className="py-1 text-xs"
+                >
+                  {explicitState ? humanizeSettingKey(option) : option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         {isValueMismatch && (
           <TooltipProvider delayDuration={200}>
             <Tooltip>

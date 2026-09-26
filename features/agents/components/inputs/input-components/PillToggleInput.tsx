@@ -12,7 +12,8 @@ interface PillToggleInputProps {
 
 /**
  * Pill Toggle Input - Segmented pill control for single-select.
- * Best for 2–4 short options. Returns the selected option as text.
+ * Only for ≤ 4 short options (THE CHOICE RULE, features/agents/utils/choice-rule.ts —
+ * VariableInputComponent draws longer lists as a select). Returns the option as text.
  */
 export function PillToggleInput({
   value,
@@ -28,7 +29,7 @@ export function PillToggleInput({
 
   return (
     <div
-      className={`inline-flex w-full rounded-md border border-border bg-muted p-0.5 gap-0.5 ${options.length > 6 ? "flex-wrap" : ""}`}
+      className="inline-flex w-full rounded-md border border-border bg-muted p-0.5 gap-0.5"
       role="radiogroup"
       aria-label={variableName}
     >
@@ -42,11 +43,11 @@ export function PillToggleInput({
             aria-checked={isSelected}
             onClick={() => onChange(option)}
             className={`
-              ${options.length > 6 ? "flex-none" : "min-w-0 flex-1"} ${height} ${px} ${textSize} whitespace-normal break-words rounded font-medium leading-tight transition-all duration-150
+              min-w-0 flex-1 ${height} ${px} ${textSize} whitespace-normal break-words rounded font-medium leading-tight transition-all duration-150
               focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring
               ${
                 isSelected
-                  ? "bg-transparent text-foreground shadow-sm"
+                  ? "bg-background text-foreground shadow-sm ring-1 ring-border"
                   : "text-muted-foreground hover:text-foreground"
               }
             `}

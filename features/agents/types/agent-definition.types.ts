@@ -136,6 +136,8 @@ export interface VariableCustomComponent {
   min?: number;
   max?: number;
   step?: number;
+  /** Unit shown after a number/slider value ("s", "ms", "%"). Display only. */
+  unit?: string;
   /**
    * Structured-list binding. When present, options come from the bound Structured List and the
    * variable's value is a ```matrx reference fence string (one `structured_list_item` for

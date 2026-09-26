@@ -31,6 +31,7 @@ import { useContainerWidth } from "./useContainerColumns";
 import { Button } from "@/components/ui/button";
 import { Dices } from "lucide-react";
 import { IMAGE_ROLE_META } from "@/features/agents/image-roles/roles";
+import { choiceControlFor } from "@/features/agents/utils/choice-rule";
 import {
   isAutoAssignValue,
   RANDOM_AUTO_ASSIGN_VALUE,
@@ -254,8 +255,13 @@ export function VariableInputComponent({
         break;
 
       case "pill-toggle":
-        inputComponent = hasOptions ? (
-          <PillToggleInput
+        // THE CHOICE RULE (utils/choice-rule.ts): pills only for ≤ 4 short
+        // options. A longer stored pill list (older derivations stored 23
+        // aspect ratios as pills) draws as the select it should have been.
+        inputComponent = !hasOptions ? (
+          fallbackTextarea
+        ) : choiceControlFor(options) !== "pill-toggle" ? (
+          <SelectInput
             value={stringValue}
             onChange={stringOnChange}
             options={options}
@@ -263,7 +269,13 @@ export function VariableInputComponent({
             {...sharedProps}
           />
         ) : (
-          fallbackTextarea
+          <PillToggleInput
+            value={stringValue}
+            onChange={stringOnChange}
+            options={options}
+            variableName={formattedName}
+            {...sharedProps}
+          />
         );
         break;
 
@@ -339,6 +351,7 @@ export function VariableInputComponent({
             min={customComponent?.min}
             max={customComponent?.max}
             step={customComponent?.step}
+            unit={customComponent?.unit}
             variableName={formattedName}
             {...sharedProps}
           />
@@ -353,6 +366,7 @@ export function VariableInputComponent({
             min={customComponent?.min}
             max={customComponent?.max}
             step={customComponent?.step}
+            unit={customComponent?.unit}
             variableName={formattedName}
             {...sharedProps}
           />
