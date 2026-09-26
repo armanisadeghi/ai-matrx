@@ -2000,6 +2000,65 @@ export type Database = {
         Args: { p_except?: string; p_name: string; p_organization_id: string }
         Returns: string
       }
+      public_card_rows: {
+        Args: never
+        Returns: {
+          agent_type: string
+          auto_context_disabled: boolean
+          card_visibility: Database["platform"]["Enums"]["visibility"]
+          category: string | null
+          context_policies: Json
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          custom_tools: Json
+          default_rag_boost: number
+          deleted_at: string | null
+          description: string | null
+          id: string
+          input_contract: Json | null
+          input_contract_hash: string | null
+          input_kind: string | null
+          is_active: boolean
+          is_archived: boolean
+          is_favorite: boolean
+          matrx_actions: Json
+          mcp_servers: string[]
+          messages: Json
+          metadata: Json
+          model_id: string | null
+          model_tiers: Json | null
+          name: string
+          organization_id: string
+          output_contract_hash: string | null
+          output_schema: Json | null
+          rag_awareness_fragment: string | null
+          rag_awareness_mode: string
+          rag_awareness_refreshed_at: string | null
+          settings: Json
+          skill_config: Json
+          source_agent_id: string | null
+          source_snapshot_at: string | null
+          tags: string[]
+          task_id: string | null
+          tool_config: Json
+          tools: string[]
+          ui_gates: Json
+          updated_at: string
+          updated_by: string | null
+          updated_by_system: string | null
+          updated_by_tier: string | null
+          variable_definitions: Json | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "definition"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
     }
     Enums: {
       [_ in never]: never
@@ -3327,6 +3386,17 @@ export type Database = {
       model_message_flag_profile: {
         Args: { p_model_id: string }
         Returns: Json
+      }
+      offering_capabilities: {
+        Args: { p_model_ids?: string[] }
+        Returns: {
+          is_decision_model: boolean
+          model_id: string
+          multi_speaker: Json
+          offering_id: string
+          reference_roles: Json
+          supports_prefill: boolean
+        }[]
       }
       resolve_model_config: { Args: { p_model_id: string }; Returns: Json }
     }
@@ -115039,6 +115109,61 @@ export type Database = {
       engram_recount_successes: {
         Args: { p_definition_id: string }
         Returns: number
+      }
+      public_card_rows: {
+        Args: never
+        Returns: {
+          card_visibility: Database["platform"]["Enums"]["visibility"]
+          category: string | null
+          channels: Json
+          compiled_at: string | null
+          confirmed_success_count: number
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          demoted_at: string | null
+          demotion_reason: string | null
+          description: string | null
+          edges: Json
+          engram_counter_since: string | null
+          engram_state: string
+          engram_version_tags: Json | null
+          entry_nodes: Json
+          grounding_score: number | null
+          id: string
+          input_kind: string | null
+          is_active: boolean
+          is_archived: boolean
+          is_favorite: boolean
+          max_concurrent_runs: number | null
+          metadata: Json
+          name: string
+          nodes: Json
+          organization_id: string
+          output_kind: string | null
+          project_id: string | null
+          promotion_threshold_k: number | null
+          source_definition_id: string | null
+          source_snapshot_at: string | null
+          strict_channels: boolean
+          tags: string[]
+          task_id: string | null
+          updated_at: string
+          updated_by: string | null
+          updated_by_system: string | null
+          updated_by_tier: string | null
+          variables: Json
+          version: number
+          viewport: Json
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "definition"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       restore_triggers_archived_with: {
         Args: { p_archived_at: string; p_definition_id: string }
