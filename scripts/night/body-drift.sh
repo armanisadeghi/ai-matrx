@@ -32,7 +32,7 @@
 # count, never a mismatch (check:branch-schema-drift's rule).
 #
 # Usage:
-#   scripts/night/body-drift.sh --target clone|branch [--source production|clone] [--repair]
+#   scripts/night/body-drift.sh --target clone [--source production] [--repair]   (branch retired 2026-09-26)
 #                               [--schemas platform,iam,history,custom] [--list-file <path>]
 #                               [--repair-kinds table,column,...]   level only these kinds (a lane's
 #                               live rehearsal on the copy is left standing, and still counted)
@@ -76,7 +76,12 @@ if [ "$SELFTEST" = "1" ]; then
   exit $rc
 fi
 
-case "$TARGET" in clone|branch) ;; *) say "REFUSED: --target must be clone or branch (got '${TARGET}')."; exit 78 ;; esac
+# `branch` is refused by name: the rehearsal branch was deleted 2026-09-26 (lane DB-TOOLS-NO-BRANCH).
+case "$TARGET" in
+  clone) ;;
+  branch) say "REFUSED: --target branch — the rehearsal branch was deleted 2026-09-26; the clone is the only copy (--target clone)."; exit 78 ;;
+  *) say "REFUSED: --target must be clone (got '${TARGET}')."; exit 78 ;;
+esac
 case "$SOURCE" in production|clone) ;; *) say "REFUSED: --source must be production or clone."; exit 78 ;; esac
 [ "$SOURCE" = "$TARGET" ] && { say "REFUSED: the source and the copy are the same database."; exit 78; }
 [[ "$SCHEMAS" =~ '^[a-z_][a-z0-9_]*(,[a-z_][a-z0-9_]*)*$' ]] || { say "REFUSED: --schemas is a comma list of schema names."; exit 78; }

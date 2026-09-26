@@ -1,5 +1,14 @@
 # `scripts/night/` — unattended jobs that run inside the maintenance window
 
+> 🚨 **2026-09-25 (lane DB-TOOLS-NO-BRANCH): the night tooling works without the rehearsal branch**
+> (deleted 2026-09-26 00:30Z). `night_branch_dsn` and `night_target_dsn branch` refuse by name;
+> build_lock rows are taken on the **dev clone** (`night_lock_dsn`, also used by
+> `scripts/lib/lease.sh` and `pnpm db:rehearse`); `NIGHT_REHEARSE=1` reaches the clone;
+> `body-drift.sh --target branch` is refused; `branch-refresh.sh` and
+> `branch-carry-database-objects.sh` are RETIRED in their own bytes (exit 78). Guard:
+> `pnpm check:night-no-branch` (`:self-test` shows it RED on the pre-fix tree). Where the text
+> below says "branch" for a rehearsal or a lock, read "clone".
+
 > 🚨 **2026-09-21 (Claude Fable 5.1, release-automation session, on Arman's word):** the one-shot
 > `com.aimatrx.night-sweep.suite-sweep` for 2026-09-22 01:35 was **unloaded** and its plist renamed
 > `…plist.PAUSED-2026-09-21`. It runs ~190 suites serially against PRODUCTION, the class of Sunday
@@ -416,9 +425,9 @@ A rehearsal also never touches the plist, so rehearsing cannot disarm the real r
 | | what it is | the library call |
 |---|---|---|
 | 1 | **Window guard** — refuses outside its Pacific window and says the local time it read | `night_window_guard <open> <close>` |
-| 2 | **Target assertion** — the server names itself before anything is taken or run | `night_assert_target branch\|production <psql args…>` |
-| 3 | **Inverse hash gate** — for anything that changes the database, the sha256 of the inverse **proven on the branch under rule 27**. A moved inverse is an unproven inverse and the job refuses | `night_inverse_gate <file> <sha256>` |
-| 4 | **Lock take/release in a `trap`** — `campaign_watch.build_lock` on the branch, released on **every** exit path including a signal | `night_take_lock` / `night_release_lock` |
+| 2 | **Target assertion** — the server names itself before anything is taken or run | `night_assert_target clone\|production <psql args…>` |
+| 3 | **Inverse hash gate** — for anything that changes the database, the sha256 of the inverse **proven under rule 27 on the clone** (`pnpm db:rehearse … --target clone`). A moved inverse is an unproven inverse and the job refuses | `night_inverse_gate <file> <sha256>` |
+| 4 | **Lock take/release in a `trap`** — `campaign_watch.build_lock` on the dev clone (`night_lock_dsn`), released on **every** exit path including a signal | `night_take_lock` / `night_release_lock` |
 | 5 | **Self-delete** — unloads and removes its own plist so it can never fire twice | `night_self_destruct <label>` |
 | 6 | **A full log** in `common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20/`, one timestamped line per decision, with a `-rehearsal` suffix in rehearsal mode | `say …` + `exec >>"$LOG" 2>&1` |
 
@@ -441,7 +450,7 @@ exec >>"$LOG" 2>&1
 night_resolve_psql || exit $?
 night_window_guard $OPEN $CLOSE || exit $?
 night_inverse_gate "$INVERSE" "$INVERSE_SHA_PROVEN" || exit $?   # if it changes the database
-if [ "$REHEARSE" = "1" ]; then night_assert_target branch "$(night_branch_dsn)" || exit $?
+if [ "$REHEARSE" = "1" ]; then night_assert_target clone "$(night_target_dsn clone)" || exit $?
 else                           night_assert_target production "${PGA[@]}"      || exit $?; fi
 
 cleanup() { local rc=$?; night_release_lock; night_self_destruct "$LABEL"; say "finished, exit $rc"; }

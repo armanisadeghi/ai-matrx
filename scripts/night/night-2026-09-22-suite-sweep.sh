@@ -42,12 +42,12 @@ say "─────────── NIGHT-SWEEP suite sweep starting (pid $$)
 night_resolve_psql || exit $?
 night_window_guard $OPEN $CLOSE || exit $?
 
-# THE TARGET. A rehearsal may only ever reach the branch; the live run must be production.
+# THE TARGET. A rehearsal may only ever reach the dev clone (the rehearsal branch was deleted
+# 2026-09-26 — lane DB-TOOLS-NO-BRANCH); the live run must be production.
 if [ "$REHEARSE" = "1" ]; then
-  DSN="$(night_branch_dsn)"
-  [ -n "$DSN" ] || { say "REFUSED: no SUPABASE_BRANCH_DATABASE_URL. Nothing attempted."; exit 78; }
+  DSN="$(night_target_dsn clone)" || { say "REFUSED: no clone connection. Nothing attempted."; exit 78; }
   PGA=("$DSN")
-  night_assert_target branch "${PGA[@]}" || exit $?
+  night_assert_target clone "${PGA[@]}" || exit $?
 else
   U="$(grep -m1 '^SUPABASE_MATRIX_USER=' "$AIDREAM/.env" | cut -d= -f2- | tr -d '"')"
   H="$(grep -m1 '^SUPABASE_MATRIX_HOST=' "$AIDREAM/.env" | cut -d= -f2- | tr -d '"')"

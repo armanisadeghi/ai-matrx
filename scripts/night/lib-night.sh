@@ -153,11 +153,14 @@ night_dsn_strip() {
 }
 
 # ── the target ───────────────────────────────────────────────────────────────
+# 🚨 THE REHEARSAL BRANCH WAS DELETED 2026-09-26 00:30Z (lane DB-TOOLS-NO-BRANCH). A job that asks
+# for it is told so by name and gets nothing — never a stale SUPABASE_BRANCH_DATABASE_URL that
+# would connect to nothing, or to whatever that variable is re-pointed at next. Rehearse on the
+# clone (`night_target_dsn clone`); lock rows live on the clone (`night_lock_dsn`).
 night_branch_dsn() {
-  local raw
-  raw="$(grep -m1 '^SUPABASE_BRANCH_DATABASE_URL=' "$FRONTEND/.env.local" | cut -d= -f2- | tr -d '"')"
-  [ -n "$raw" ] || return 1
-  night_dsn_strip "$raw"
+  say "REFUSED: the rehearsal branch was deleted 2026-09-26; night_branch_dsn has no database to hand back."
+  say "  Rehearse on the quarantined clone (night_target_dsn clone); build_lock rows live there (night_lock_dsn)."
+  return 78
 }
 
 # The nightly dev clone's DSN. CLONE_DATABASE_URL wins; otherwise it is assembled from the
@@ -210,7 +213,7 @@ night_dsn_args() {
 # night job names the nightly dev clone exactly the way an agent at a terminal does, and
 # `night_target_dsn` hands back the connection each one is reached through:
 #
-#   branch      the rehearsal preview branch   SUPABASE_BRANCH_DATABASE_URL (.env.local)
+#   branch      RETIRED 2026-09-26 — the rehearsal branch was deleted; refused by name
 #   clone       the nightly dev clone          CLONE_DATABASE_URL, else CLONE-REF + its
 #                                              password file — NEVER SUPABASE_MATRIX_*
 #   production  the live database              the five SUPABASE_MATRIX_* (a job builds
@@ -222,14 +225,14 @@ night_dsn_args() {
 # `night_assert_target` checks the project ref in the connection as well. Never assemble a
 # clone connection by hand from SUPABASE_MATRIX_*; there is nothing in those five values
 # that could tell you which of the two you got.
-NIGHT_TARGETS="branch | clone | production"
+NIGHT_TARGETS="clone | production"
 
 # night_target_dsn branch|clone — the DSN for a rehearsal target, or empty + non-zero.
 # `production` deliberately has no entry: a job that means the live database says so in
 # its own five variables, where a reader can see it.
 night_target_dsn() {
   case "$1" in
-    branch) night_branch_dsn ;;
+    branch) night_branch_dsn; return 78 ;;
     clone)  night_clone_dsn ;;
     production)
       say "REFUSED: night_target_dsn has no production entry, deliberately — a job that means"
@@ -405,24 +408,30 @@ night_assert_target_readonly() {  # night_assert_target_readonly <target> <psql 
 }
 
 # ── the inverse gate ─────────────────────────────────────────────────────────
-# night_inverse_gate <file> <sha256 proven on the branch by rule 27>
+# night_inverse_gate <file> <sha256 proven on the clone by rule 27 (pnpm db:rehearse --target clone)>
 night_inverse_gate() {
   local f="$1" proven="$2" now
   if [ ! -f "$f" ]; then say "REFUSED: the inverse file is missing ($f). Nothing attempted."; return 78; fi
   now="$(shasum -a 256 "$f" | cut -d' ' -f1)"
   if [ "$now" != "$proven" ]; then
-    say "REFUSED: the inverse has changed since it was proven on the branch."
+    say "REFUSED: the inverse has changed since it was proven by rule 27."
     say "  proven: $proven"
     say "  on disk: $now"
-    say "  Re-run rule 27 on the branch and re-pin this hash. Nothing attempted."
+    say "  Re-run rule 27 on the clone (pnpm db:rehearse <up> --target clone) and re-pin this hash. Nothing attempted."
     return 78
   fi
-  say "inverse gate ok: $now (proven on the branch by rule 27)"
+  say "inverse gate ok: $now (proven by rule 27)"
   return 0
 }
 
 # ── the lock ─────────────────────────────────────────────────────────────────
-# The lock row always lives on the REHEARSAL BRANCH — that is what the runners check.
+# 🚨 THE LOCK ROW LIVES ON THE DEV CLONE (lane DB-TOOLS-NO-BRANCH, 2026-09-25). It lived on the
+# rehearsal branch until that branch was deleted (2026-09-26 00:30Z); every take here then read
+# SUPABASE_BRANCH_DATABASE_URL and failed, so every locking night job refused. `pnpm db:rehearse`
+# already takes its rows on the clone, and the clone carries campaign_watch.build_lock and the
+# lease functions (it is a restore of production), so the clone is where every lock caller meets.
+# One helper names it, so the next move is one line.
+night_lock_dsn() { night_clone_dsn; }
 #
 # A LOCK ROW IS A LEASE (lane LOCK-HYGIENE, 2026-09-22). Three rows leaked on 2026-09-22:
 # FIX-10A held `custom` for 20 minutes after its DONE report, STORE-TXN-3 held `platform` after
@@ -441,7 +450,7 @@ night_inverse_gate() {
 LOCK_TAKEN=0
 night_take_lock() {
   local lock="$1" lane="$2" note="$3" dsn outcome message
-  dsn="$(night_branch_dsn)"
+  dsn="$(night_lock_dsn)" || { say "REFUSED: could not reach the clone to take lock '$lock'. Nothing done."; return 75; }
   outcome="$("$PSQL" "$dsn" -qAt -F'|' -c \
     "select outcome, message from campaign_watch.lock_take('$lock', '$lane', '$note')" 2>&1)"
   message="${outcome#*|}"
@@ -483,7 +492,7 @@ _night_heartbeat() {
 night_renew_lock() {
   [ "${LOCK_TAKEN:-0}" = "1" ] || return 0
   local out
-  out="$("$PSQL" "$(night_branch_dsn)" -qAt -c \
+  out="$("$PSQL" "$(night_lock_dsn)" -qAt -c \
     "select campaign_watch.lock_renew('$LOCK_NAME', '$LOCK_LANE')" 2>&1)"
   if [ "$out" = "t" ]; then return 0; fi
   say "WARNING: the lease for '$LOCK_NAME' renewed NOTHING — $LOCK_LANE is no longer the holder (${out:-0 rows})."
@@ -493,7 +502,7 @@ night_renew_lock() {
 night_release_lock() {
   [ "${LOCK_TAKEN:-0}" = "1" ] || return 0
   local out
-  out="$("$PSQL" "$(night_branch_dsn)" -qAt -c \
+  out="$("$PSQL" "$(night_lock_dsn)" -qAt -c \
     "select campaign_watch.lock_release('$LOCK_NAME', '$LOCK_LANE')" 2>&1)"
   if [ "$out" = "t" ]; then say "lock released: $LOCK_NAME / $LOCK_LANE"
   else say "lock release returned: ${out:-(0 rows — not the holder)}"; fi
@@ -537,7 +546,7 @@ night_take_locks() {  # night_take_locks <lane> <note> <lock> [<lock> …]
 night_release_locks() {
   [ -n "${NIGHT_LOCKS_LANE:-}" ] || return 0
   [ "${#NIGHT_LOCKS_TAKEN[@]}" -gt 0 ] || return 0
-  local lock out dsn; dsn="$(night_branch_dsn)"
+  local lock out dsn; dsn="$(night_lock_dsn)"
   for lock in "${NIGHT_LOCKS_TAKEN[@]}"; do
     out="$("$PSQL" "$dsn" -qAt -c \
       "select campaign_watch.lock_release('$lock', '$NIGHT_LOCKS_LANE')" 2>&1)"

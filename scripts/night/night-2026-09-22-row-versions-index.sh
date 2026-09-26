@@ -42,8 +42,9 @@ night_window_guard $OPEN $CLOSE || exit $?
 night_inverse_gate "$INVERSE" "$INVERSE_SHA_PROVEN" || exit $?
 
 if [ "$REHEARSE" = "1" ]; then
-  TARGET=branch
-  night_assert_target branch "$(night_branch_dsn)" || exit $?
+  # The rehearsal branch was deleted 2026-09-26 (lane DB-TOOLS-NO-BRANCH); rehearse on the clone.
+  TARGET=clone
+  night_assert_target clone "$(night_target_dsn clone)" || exit $?
 else
   TARGET=production
   U="$(grep -m1 '^SUPABASE_MATRIX_USER=' "$AIDREAM/.env" | cut -d= -f2- | tr -d '"')"
