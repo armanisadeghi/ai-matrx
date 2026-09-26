@@ -15,6 +15,28 @@ material), **metered** (P8 `education.ingest_document`), and **lineage-linked**:
 gets a `source` association edge to a durable `cld_files` anchor, so "the kit" is simply the
 source file's associations — no new table.
 
+## 🚨 Material the learner already has is PICKED, never re-uploaded
+
+The front door has four inputs: **My files** · Upload · Paste · Link. **My files** opens THE one
+file picker (`openFilePicker` → the canonical `FilePickerWindow`/`FilesResourcePicker`; never a
+second picker) and hands `useIngest` a `{ kind: "stored", stored: { fileId, fileName, mimeType } }`
+input. Nothing is uploaded: the kit anchors on that exact `files.files` id, so every artifact's
+`source` edge (the registered `<artifact> -> file` lineage pairs, written by
+`convert/recordSourceLineage.ts` through the association RPCs) points at the file the person
+already owns, and a later run over the same file MERGES into the same kit (`/education/kits/<fileId>`).
+
+When the file is already a **Knowledge Source** (`files.files.canonical_processed_document_id`,
+resolved by the shared `resolveCanonicalProcessedDocumentId`), its text (`clean_content`, else
+`content`) is read directly and nothing is extracted a second time; `ref.processedDocumentId` and
+`meta.extractionMethod = "knowledge source"` record it. Otherwise the file is read by id through the
+SAME per-kind readers an upload uses (`extractFileText` — PDF/Office/audio/video by `file_id`;
+image OCR and plain text download the bytes via `fileHandler`, never re-send them). The chosen
+file opens in place (`openFilePreview`) and the panel says whether it is already a Source.
+
+Before 2026-09-26 the hero offered only Upload / Paste / Link, so a learner whose PDF was already
+in their files (and already a Knowledge Source) had to upload the same bytes again to study it —
+a private duplicate with its own processing bill.
+
 ## Architecture (the load-bearing split)
 
 ```
@@ -47,7 +69,7 @@ input ──useIngest──▶ { text, title, cld_files anchor } ──useKitGen
 
 | Route | What |
 |---|---|
-| `/education/start` | The Upload Hero flow (`StartHero`). Hub landing leads with it. |
+| `/education/start` | The Upload Hero flow (`StartHero`) — My files / Upload / Paste / Link. Hub landing leads with it. |
 | `/education/data` | Your data: export/import + ownership pledge (`DataOwnershipPage`). |
 | `/education/summaries/[id]` | Grounded study-summary viewer (`SummaryDetail`). |
 
@@ -261,6 +283,15 @@ with the stated vision.
   `### Chunk cN` markers before sending so cards ground + cite.
 
 ## Change log
+
+- **2026-09-26** — **Study what you already have.** New **My files** input on `/education/start`:
+  the canonical file picker → `useIngest` `stored` branch → the kit anchors on the existing file
+  (no upload), reusing the file's Knowledge Source text when one exists. The per-kind readers were
+  extracted into one `extractFileText` shared by upload and stored paths; `formatSupport` now
+  classifies any `{ name, type }` (`IngestFileLike`). Verified live as admin@admin.com on an owned
+  PDF that was already a Source: picked → "Already a Knowledge Source" → ingest 595 ms (no
+  extraction) → deck + summary built, 10 `source` edges on the ORIGINAL file id, 0 new files, kit
+  opens at `/education/kits/<fileId>` and appears on `/education/overview`.
 
 - **2026-08-22** — Gotcha about the production from-source agent not receiving variables retired: the
   kit deck runs the `flashcards.generate_from_source` mandate through `runHeadlessAgentJson`.

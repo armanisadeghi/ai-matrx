@@ -8,7 +8,7 @@
 // this component owns the flow + progressive UI. Targets light up as their
 // generators register (isTargetAvailable) — no change here needed.
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Upload,
   FileText,
@@ -19,6 +19,9 @@ import {
   ArrowRight,
   PackageOpen,
   ShieldCheck,
+  FolderOpen,
+  BookOpenCheck,
+  ExternalLink,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
@@ -42,14 +45,24 @@ import {
   describeIngestSupport,
   describeUrlSupport,
   classifyIngestUrl,
+  type IngestFileLike,
 } from "../formatSupport";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
+import { openFilePreview } from "@/features/files/components/preview/openFilePreview";
+import { lookupFileDocument } from "@/features/files/api/document-lookup";
+import { filesDb } from "@/features/files/filesDb";
+import { supabase } from "@/utils/supabase/client";
+import type { StoredFileInput } from "../types";
 
 
-type InputMode = "upload" | "paste" | "link";
+// "files" = material the learner ALREADY has. Picking it never uploads the
+// bytes again: the kit anchors on that exact file, and when the platform has
+// already made it a Knowledge Source its text is used as-is.
+type InputMode = "files" | "upload" | "paste" | "link";
 
 // THE HEADLINE FLOW'S PAYLOAD, taken from the vision verbatim: "a student drops
 // in a PDF, records a lecture, pastes a link or photographs their notes, and gets
@@ -81,6 +94,9 @@ export function StartHero() {
 
   const [mode, setMode] = useState<InputMode>("upload");
   const [file, setFile] = useState<File | null>(null);
+  const [stored, setStored] = useState<StoredFileInput | null>(null);
+  const [picking, setPicking] = useState(false);
+  const [pickError, setPickError] = useState<string | null>(null);
   const [pasteText, setPasteText] = useState("");
   const [url, setUrl] = useState("");
   const [selected, setSelected] = useState<Set<TargetKind>>(
@@ -109,8 +125,50 @@ export function StartHero() {
   // FileSupportNote already explains why — so we never start a doomed run or
   // spend the entitlement check on it.
   const fileSupported = !file || describeIngestSupport(file).supported;
+  const storedSupported =
+    !!stored &&
+    describeIngestSupport({ name: stored.fileName, type: stored.mimeType })
+      .supported;
+
+  // Choose material the learner already owns through THE one file picker
+  // (`openFilePicker` → the canonical FilePickerWindow; its upload area also
+  // lands a durable file, so both roads end at a file id — never a copy).
+  const pickFromFiles = useCallback(async () => {
+    if (picking) return;
+    setPicking(true);
+    setPickError(null);
+    try {
+      const ids = await openFilePicker({
+        title: "Choose material from your files",
+      });
+      const fileId = ids?.[0];
+      if (!fileId) return; // closed without choosing
+      const { data, error } = await filesDb(supabase)
+        .from("files")
+        .select("id, file_name, mime_type")
+        .eq("id", fileId)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) {
+        throw new Error("That file is no longer available — choose another.");
+      }
+      setStored({
+        fileId: data.id,
+        fileName: data.file_name,
+        mimeType: data.mime_type ?? "",
+      });
+    } catch (e) {
+      setPickError(
+        e instanceof Error ? e.message : "Couldn't open that file — try again.",
+      );
+    } finally {
+      setPicking(false);
+    }
+  }, [picking]);
 
   const hasInput =
+    (mode === "files" && storedSupported) ||
     (mode === "upload" && !!file && fileSupported) ||
     (mode === "paste" && pasteText.trim().length > 0) ||
     (mode === "link" && url.trim().length > 0);
@@ -128,7 +186,9 @@ export function StartHero() {
     await ingestGuard.guard(async () => {
       const kinds = [...selected].filter(isTargetAvailable);
       const input =
-        mode === "upload"
+        mode === "files"
+          ? ({ kind: "stored", stored: stored! } as const)
+          : mode === "upload"
           ? ({ kind: "file", file: file! } as const)
           : mode === "paste"
             ? ({ kind: "paste", text: pasteText } as const)
@@ -152,6 +212,7 @@ export function StartHero() {
     selected,
     mode,
     file,
+    stored,
     pasteText,
     url,
     isYouTube,
@@ -184,7 +245,8 @@ export function StartHero() {
           {/* The promise is the vision's, word for word (VISION §5), and it
               matches DEFAULT_TARGETS exactly — copy that understates what the
               button does is the same defect as copy that overstates it. */}
-          Drop a PDF, image, audio, or video — paste your notes, or link a page.
+          Use something already in your files, drop a PDF, image, audio, or
+          video — paste your notes, or link a page.
           We build flashcards, a summary, a quiz, a mind map and an audio
           overview — everything cited back to your own material.
         </p>
@@ -197,6 +259,10 @@ export function StartHero() {
             onMode={setMode}
             file={file}
             onFile={setFile}
+            stored={stored}
+            onPickStored={pickFromFiles}
+            picking={picking}
+            pickError={pickError}
             pasteText={pasteText}
             onPaste={setPasteText}
             url={url}
@@ -287,6 +353,10 @@ function InputPanel({
   onMode: (m: InputMode) => void;
   file: File | null;
   onFile: (f: File | null) => void;
+  stored: StoredFileInput | null;
+  onPickStored: () => void;
+  picking: boolean;
+  pickError: string | null;
   pasteText: string;
   onPaste: (t: string) => void;
   url: string;
@@ -296,6 +366,7 @@ function InputPanel({
   fileInputRef: React.RefObject<HTMLInputElement | null>;
 }) {
   const modes: { id: InputMode; label: string; icon: LucideIcon }[] = [
+    { id: "files", label: "My files", icon: FolderOpen },
     { id: "upload", label: "Upload", icon: Upload },
     { id: "paste", label: "Paste", icon: FileText },
     { id: "link", label: "Link", icon: Link2 },
@@ -320,6 +391,15 @@ function InputPanel({
       </div>
 
       <div className="p-4">
+        {props.mode === "files" && (
+          <StoredFilePanel
+            stored={props.stored}
+            onPick={props.onPickStored}
+            picking={props.picking}
+            error={props.pickError}
+          />
+        )}
+
         {props.mode === "upload" && (
           <div
             onDragOver={(e) => {
@@ -408,6 +488,110 @@ function InputPanel({
   );
 }
 
+// ─── Material the learner already owns ───────────────────────────────────────
+
+/**
+ * The "My files" door. Choosing opens THE one file picker; the chosen file is
+ * named, opens in place (the canonical preview window — never a dead end), and
+ * says plainly whether it is already a Knowledge Source (its text is reused, no
+ * second extraction) or will be read now.
+ */
+function StoredFilePanel({
+  stored,
+  onPick,
+  picking,
+  error,
+}: {
+  stored: StoredFileInput | null;
+  onPick: () => void;
+  picking: boolean;
+  error: string | null;
+}) {
+  const [isSource, setIsSource] = useState<boolean | null>(null);
+  const fileId = stored?.fileId;
+  useEffect(() => {
+    if (!fileId) return;
+    let live = true;
+    void lookupFileDocument(fileId).then((state) => {
+      if (live) setIsSource(state.kind === "found");
+    });
+    return () => {
+      live = false;
+      setIsSource(null);
+    };
+  }, [fileId]);
+
+  if (!stored) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border px-4 py-10 text-center">
+        <FolderOpen className="h-8 w-8 text-muted-foreground" />
+        <p className="text-sm font-medium text-foreground">
+          Study something you've already added
+        </p>
+        <p className="max-w-sm text-xs text-muted-foreground">
+          Pick any PDF, document, recording or note from your files. Nothing is
+          uploaded again — the kit is built from the file you already have.
+        </p>
+        <Button onClick={onPick} disabled={picking} className="min-h-11">
+          {picking ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <FolderOpen className="h-4 w-4" />
+          )}
+          Choose from my files
+        </Button>
+        {error && (
+          <p className="flex items-center gap-1.5 text-xs text-destructive">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-2 rounded-lg border border-border px-4 py-8 text-center">
+      <FileText className="h-8 w-8 text-primary" />
+      <button
+        type="button"
+        onClick={() => openFilePreview(stored.fileId)}
+        className="inline-flex max-w-full items-center gap-1.5 text-sm font-medium text-foreground underline-offset-2 hover:underline"
+        title="Open this file"
+      >
+        <span className="truncate">{stored.fileName}</span>
+        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      </button>
+      {isSource === true ? (
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <BookOpenCheck className="h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-500" />
+          Already a Knowledge Source — we'll use its text as-is.
+        </p>
+      ) : (
+        <FileSupportNote
+          file={{ name: stored.fileName, type: stored.mimeType }}
+        />
+      )}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onPick}
+        disabled={picking}
+        className="mt-1 min-h-9"
+      >
+        {picking && <Loader2 className="h-4 w-4 animate-spin" />}
+        Choose a different file
+      </Button>
+      {error && (
+        <p className="flex items-center gap-1.5 text-xs text-destructive">
+          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ─── Per-file honest status ──────────────────────────────────────────────────
 
 /**
@@ -416,7 +600,7 @@ function InputPanel({
  * unsupported kinds say so plainly instead of failing only at generate time.
  * Reads the SAME `formatSupport` truth table the ingest branch uses.
  */
-function FileSupportNote({ file }: { file: File }) {
+function FileSupportNote({ file }: { file: IngestFileLike }) {
   const support = describeIngestSupport(file);
   if (support.supported) {
     return (

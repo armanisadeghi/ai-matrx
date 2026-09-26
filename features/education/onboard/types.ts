@@ -7,12 +7,27 @@
 import type { SourceRef, TargetKind } from "@/features/education/convert/types";
 
 /** The raw input the user handed us at the front door. */
-export type IngestInputKind = "paste" | "file" | "url" | "youtube";
+export type IngestInputKind = "paste" | "file" | "stored" | "url" | "youtube";
+
+/**
+ * A file the learner ALREADY owns (picked from their files through the one
+ * canonical file picker). It is never uploaded again: the kit anchors on this
+ * exact `files.files` id, and when the platform already made it a Knowledge
+ * Source (`canonical_processed_document_id`) the kit reads that text instead of
+ * extracting it a second time.
+ */
+export interface StoredFileInput {
+  fileId: string;
+  fileName: string;
+  mimeType: string;
+}
 
 export interface RawIngestInput {
   kind: IngestInputKind;
   /** For `file`. */
   file?: File;
+  /** For `stored`. */
+  stored?: StoredFileInput;
   /** For `paste`. */
   text?: string;
   /** For `url` / `youtube`. */

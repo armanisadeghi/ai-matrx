@@ -62,7 +62,14 @@ const TEXT_EXT = /\.(txt|md|markdown|csv|tsv|json|html?|rtf|log|ya?ml)$/i;
  * HEIC and Office are checked before the generic image/`text` fallbacks, and
  * real OpenXML Office is checked before the broader legacy/ODF pattern.
  */
-export function classifyIngestFile(file: File): IngestFileKind {
+/**
+ * What the classifier reads: a name and a MIME type. A dropped `File` satisfies
+ * it, and so does a file the learner already OWNS (picked from their files —
+ * `{ name: file_name, type: mime_type }`), so the one truth table judges both.
+ */
+export type IngestFileLike = Pick<File, "name" | "type">;
+
+export function classifyIngestFile(file: IngestFileLike): IngestFileKind {
   const name = file.name || "";
   const mime = (file.type || "").toLowerCase();
 
@@ -132,7 +139,7 @@ export interface IngestSupport {
  * status the hero shows the moment a file is chosen, and the exact message the
  * ingest throws when a file can't be read. One string table, one truth.
  */
-export function describeIngestSupport(file: File): IngestSupport {
+export function describeIngestSupport(file: IngestFileLike): IngestSupport {
   const kind = classifyIngestFile(file);
   switch (kind) {
     case "pdf":

@@ -10,6 +10,9 @@
 //   • audio/video   → server-side transcription by file_id (`transcribeCloudFile`)
 //   • YouTube       → aidream's real spoken-transcript agent (`fetchYouTubeTranscript`)
 //   • URLs          → the scraper
+//   • a file the learner ALREADY owns → no upload at all: its Knowledge Source
+//     text when the platform already processed it, else the same per-kind
+//     readers above, by file id
 // The set of readable file types (and the honest gate for the rest) lives in
 // ONE place — `formatSupport.ts` — shared with the hero UI so they never drift.
 
@@ -32,11 +35,19 @@ import { formatFileSize } from "@ai-matrx/kit/format";
 import { transcribeCloudFile } from "@/features/audio/services/speechApi";
 import { fetchYouTubeTranscript } from "./youtubeTranscript";
 import { extractOfficeText } from "./officeExtract";
-import { describeIngestSupport } from "./formatSupport";
+import { describeIngestSupport, type IngestFileKind } from "./formatSupport";
+import { resolveCanonicalProcessedDocumentId } from "@/features/files/api/document-lookup";
+import { docprocDb } from "@/utils/supabase/docprocDb";
+import { supabase } from "@/utils/supabase/client";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { knobInt } from "@/lib/knobs/featureKnobs";
 import { KIT_KNOB_FEATURE } from "@/features/education/convert/coverage";
-import type { RawIngestInput, NormalizedIngest, IngestProgress } from "./types";
+import type {
+  RawIngestInput,
+  NormalizedIngest,
+  IngestProgress,
+  StoredFileInput,
+} from "./types";
 
 /**
  * Source ceiling, in characters.
@@ -91,6 +102,64 @@ function uploadProgressReporter(
           : formatFileSize(loaded),
     });
   };
+}
+
+/**
+ * The Knowledge Source the platform already made from an owned file — the
+ * canonical viewable extract (`files.files.canonical_processed_document_id`,
+ * resolved through the ONE shared resolver). Prefers the cleaned text. Returns
+ * null when the file was never processed or the Source holds no text, so the
+ * caller falls back to reading the file itself. A lookup FAILURE is reported
+ * loudly and also falls back — the learner's run is never sunk by an optional
+ * shortcut.
+ */
+async function readKnowledgeSource(fileId: string): Promise<{
+  text: string;
+  processedDocumentId: string;
+  totalPages: number | null;
+} | null> {
+  try {
+    const processedDocumentId = await resolveCanonicalProcessedDocumentId(fileId);
+    if (!processedDocumentId) return null;
+    const { data, error } = await docprocDb(supabase)
+      .from("processed_documents")
+      .select("content, clean_content, total_pages")
+      .eq("id", processedDocumentId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (error) throw error;
+    const text = (data?.clean_content?.trim() || data?.content?.trim() || "");
+    if (!text) return null;
+    return {
+      text,
+      processedDocumentId,
+      totalPages: data?.total_pages ?? null,
+    };
+  } catch (cause) {
+    captureError({
+      source: "runtime-exception",
+      operation: "select",
+      relation: "education/onboard/knowledge-source",
+      message: `Education could not read the Knowledge Source for file ${fileId}; reading the file itself instead: ${
+        cause instanceof Error ? cause.message : String(cause)
+      }`,
+      userMessage:
+        "We're reading your file directly — this can take a little longer.",
+      recoverable: true,
+      raw: cause,
+    });
+    return null;
+  }
+}
+
+/** The bytes of a file the learner owns, for the two browser-side readers. */
+async function downloadOwnedFile(stored: StoredFileInput): Promise<File> {
+  const blob = await fileHandler
+    .use({ kind: "file_id", fileId: stored.fileId, mime: stored.mimeType })
+    .as({ kind: "blob" });
+  return new File([blob], stored.fileName, {
+    type: stored.mimeType || blob.type,
+  });
 }
 
 export interface UseIngestResult {
@@ -229,6 +298,210 @@ export function useIngest(): UseIngestResult {
     [anchorText],
   );
 
+  /**
+   * Turn ONE stored file into study text by its kind. Shared by the upload
+   * path (bytes just stored) and the "from my files" path (bytes stored long
+   * ago) so both read a file the same way. Every server-side reader works BY
+   * FILE ID; only image OCR and plain text need the bytes in the browser, and
+   * `getFile` hands them over (the dropped File, or a download of the owned one).
+   */
+  const extractFileText = useCallback(
+    async (args: {
+      fileId: string | undefined;
+      kind: IngestFileKind;
+      name: string;
+      title: string;
+      inputKind: "file" | "stored";
+      getFile: () => Promise<File>;
+      onProgress?: (p: IngestProgress) => void;
+    }): Promise<NormalizedIngest> => {
+      const { fileId, kind, name, title, inputKind, getFile, onProgress } = args;
+
+      // ── Image → OCR via the pdf-extractor stream (accepts images; Tesseract) ─
+      if (kind === "image") {
+        onProgress?.({ phase: "extracting", message: "Reading the text in your image…" });
+        const complete = await streamPdfExtractText({
+          file: await getFile(),
+          baseUrl: pdf.backendUrl ?? "",
+          headers: await pdf.authHeaders(),
+        });
+        const raw = (complete.text_content ?? "").trim();
+        if (!raw) {
+          throw new Error(
+            "Couldn't read any text from that image. It works best on printed pages, slides, and screenshots — for handwriting, try a clearer, well-lit photo or paste the text.",
+          );
+        }
+        const { text, truncated } = await clampToKnob(raw);
+        // OCR output exists nowhere else — keep it.
+        await keepCleanCopy(text, title, fileId);
+        return {
+          text,
+          title,
+          ref: { kind: "file", fileId },
+          meta: {
+            chars: text.length,
+            extractionMethod: "ocr",
+            truncated,
+            inputKind,
+          },
+        };
+      }
+
+      // ── Audio / video → Groq-Whisper transcription of the stored file ───────
+      if (kind === "audio" || kind === "video") {
+        if (!fileId) {
+          throw new Error(
+            "Couldn't save that recording to transcribe it — please try again.",
+          );
+        }
+        onProgress?.({
+          phase: "transcribing",
+          message:
+            kind === "video"
+              ? "Transcribing the spoken audio from your video…"
+              : "Transcribing your audio…",
+        });
+        // The transcription backend reads its own bytes — hand it the durable
+        // identity (file_id), never a URL.
+        const result = await transcribeCloudFile({ fileId });
+        const raw = (result.text ?? "").trim();
+        if (!raw || raw.length < 8) {
+          throw new Error(
+            kind === "video"
+              ? "Couldn't hear enough speech in that video to transcribe. Make sure it has a clear spoken track."
+              : "Couldn't transcribe that audio — make sure it contains clear speech.",
+          );
+        }
+        const { text, truncated } = await clampToKnob(raw);
+        // The transcript exists nowhere else — keep it.
+        await keepCleanCopy(text, title, fileId);
+        return {
+          text,
+          title,
+          ref: { kind: "file", fileId },
+          meta: {
+            chars: text.length,
+            extractionMethod: "transcript",
+            truncated,
+            inputKind,
+          },
+        };
+      }
+
+      // ── Word / PowerPoint / Excel → aidream's content-processing extractor ──
+      if (kind === "office") {
+        if (!fileId) {
+          throw new Error(
+            "Couldn't save that file to extract it — please try again.",
+          );
+        }
+        onProgress?.({ phase: "extracting", message: `Reading ${name}…` });
+        const extracted = await extractOfficeText(backendApi.post, fileId, name);
+        const raw = extracted.text.trim();
+        if (!raw) {
+          throw new Error(
+            `Couldn't read any text from "${name}" — it may be empty or image-only.`,
+          );
+        }
+        const { text, truncated } = await clampToKnob(raw);
+        return {
+          text,
+          title,
+          ref: {
+            kind: "file",
+            fileId,
+            processedDocumentId: extracted.processedDocumentId,
+          },
+          meta: {
+            chars: text.length,
+            pages: extracted.totalPages ?? undefined,
+            extractionMethod: "native",
+            truncated,
+            inputKind,
+          },
+        };
+      }
+
+      if (kind === "pdf") {
+        // The bytes are already in cloud storage, so extraction is requested
+        // BY FILE ID. Posting the file a second time as multipart made a 78 MB
+        // drop upload 156 MB — minutes of silence for work the server could
+        // already reach. One upload, one canonical path.
+        if (!fileId) {
+          throw new Error(
+            "Couldn't save that PDF to extract it — please try again.",
+          );
+        }
+        onProgress?.({ phase: "extracting", message: "Extracting text from the PDF…" });
+        const complete = await streamPdfExtractTextRemote({
+          body: buildPdfSourceFromFileId(fileId),
+          baseUrl: pdf.backendUrl ?? "",
+          headers: await pdf.authHeaders(),
+          callbacks: {
+            onStarted: (started) =>
+              onProgress?.({
+                phase: "extracting",
+                message: "Extracting text from the PDF…",
+                ratio: 0,
+                detail: started.total_pages
+                  ? `${started.total_pages} pages to read`
+                  : undefined,
+              }),
+            onPageExtracted: (p) =>
+              onProgress?.({
+                phase: "extracting",
+                message: "Extracting text from the PDF…",
+                ratio:
+                  p.total_pages > 0 ? p.page_number / p.total_pages : undefined,
+                detail: `page ${p.page_number} of ${p.total_pages}`,
+              }),
+          },
+        });
+        const raw = (complete.text_content ?? "").trim();
+        if (!raw) {
+          throw new Error(
+            "No selectable text found in that PDF. If it's a scan, try the PDF extractor's OCR mode first.",
+          );
+        }
+        const { text, truncated } = await clampToKnob(raw);
+        return {
+          text,
+          title,
+          ref: { kind: "file", fileId },
+          meta: {
+            chars: text.length,
+            pages: complete.page_count ?? undefined,
+            extractionMethod: complete.ocr_pages > 0 ? "ocr" : "native",
+            truncated,
+            inputKind,
+          },
+        };
+      }
+
+      if (kind === "text") {
+        onProgress?.({ phase: "extracting", message: "Reading the file…" });
+        const raw = (await (await getFile()).text()).trim();
+        if (!raw) throw new Error("That file is empty.");
+        const { text, truncated } = await clampToKnob(raw);
+        return {
+          text,
+          title,
+          ref: { kind: "file", fileId },
+          meta: { chars: text.length, truncated, inputKind },
+        };
+      }
+
+      // Unreachable: callers gate every unsupported kind through
+      // `describeIngestSupport`, and pdf/image/audio/video/office/text are all
+      // handled. Kept as a loud backstop so a future new `IngestFileKind`
+      // can't silently fall through.
+      throw new Error(
+        `Can't read "${name}" yet. Supported: PDF, image, audio, video, or text — or paste the content directly.`,
+      );
+    },
+    [backendApi, keepCleanCopy, pdf],
+  );
+
   const normalize = useCallback(
     async (
       input: RawIngestInput,
@@ -317,7 +590,63 @@ export function useIngest(): UseIngestResult {
         };
       }
 
-      // ── File ───────────────────────────────────────────────────────────────
+      // ── A file the learner ALREADY owns ─────────────────────────────────────
+      // Picked from their files through the one canonical file picker. Nothing
+      // is uploaded: the kit anchors on this exact file id (so every artifact's
+      // `source` edge points at the file they already have, and a second run
+      // over it MERGES into the same kit). When the platform already made the
+      // file a Knowledge Source, its text is read straight from that Source —
+      // no second extraction, no second bill for OCR.
+      if (input.kind === "stored") {
+        const stored = input.stored;
+        if (!stored?.fileId) throw new Error("Choose a file first.");
+        const title =
+          input.title?.trim() || stored.fileName.replace(/\.[^.]+$/, "");
+        const support = describeIngestSupport({
+          name: stored.fileName,
+          type: stored.mimeType,
+        });
+        if (!support.supported) throw new Error(support.note);
+
+        onProgress?.({
+          phase: "extracting",
+          message: `Reading ${stored.fileName} from your files…`,
+        });
+        const knowledge = await readKnowledgeSource(stored.fileId);
+        if (knowledge) {
+          const { text, truncated } = await clampToKnob(knowledge.text);
+          return {
+            text,
+            title,
+            ref: {
+              kind: "file",
+              fileId: stored.fileId,
+              processedDocumentId: knowledge.processedDocumentId,
+            },
+            meta: {
+              chars: text.length,
+              pages: knowledge.totalPages ?? undefined,
+              extractionMethod: "knowledge source",
+              truncated,
+              inputKind: "stored",
+            },
+          };
+        }
+
+        // Not a Source yet — read it by its durable id through the same
+        // per-kind pipelines an upload uses (bytes are fetched, never re-sent).
+        return extractFileText({
+          fileId: stored.fileId,
+          kind: support.kind,
+          name: stored.fileName,
+          title,
+          inputKind: "stored",
+          getFile: () => downloadOwnedFile(stored),
+          onProgress,
+        });
+      }
+
+      // ── File (upload) ──────────────────────────────────────────────────────
       const file = input.file;
       if (!file) throw new Error("No file provided.");
       const title = input.title?.trim() || file.name.replace(/\.[^.]+$/, "");
@@ -326,7 +655,6 @@ export function useIngest(): UseIngestResult {
       // we spend an upload — the same message the hero shows up front.
       const support = describeIngestSupport(file);
       if (!support.supported) throw new Error(support.note);
-      const kind = support.kind;
 
       // Upload the original for durable ownership (goes to "my files"). This is
       // the lineage anchor for EVERY file kind — PDF, image, audio, video, text.
@@ -345,184 +673,17 @@ export function useIngest(): UseIngestResult {
           ),
         },
       );
-      const fileId = uploaded.fileId;
-
-      // ── Image → OCR via the pdf-extractor stream (accepts images; Tesseract) ─
-      if (kind === "image") {
-        onProgress?.({ phase: "extracting", message: "Reading the text in your image…" });
-        const complete = await streamPdfExtractText({
-          file,
-          baseUrl: pdf.backendUrl ?? "",
-          headers: await pdf.authHeaders(),
-        });
-        const raw = (complete.text_content ?? "").trim();
-        if (!raw) {
-          throw new Error(
-            "Couldn't read any text from that image. It works best on printed pages, slides, and screenshots — for handwriting, try a clearer, well-lit photo or paste the text.",
-          );
-        }
-        const { text, truncated } = await clampToKnob(raw);
-        // OCR output exists nowhere else — keep it.
-        await keepCleanCopy(text, title, fileId);
-        return {
-          text,
-          title,
-          ref: { kind: "file", fileId },
-          meta: {
-            chars: text.length,
-            extractionMethod: "ocr",
-            truncated,
-            inputKind: "file",
-          },
-        };
-      }
-
-      // ── Audio / video → Groq-Whisper transcription of the uploaded file ──────
-      if (kind === "audio" || kind === "video") {
-        if (!fileId) {
-          throw new Error(
-            "Couldn't save that recording to transcribe it — please try again.",
-          );
-        }
-        onProgress?.({
-          phase: "transcribing",
-          message:
-            kind === "video"
-              ? "Transcribing the spoken audio from your video…"
-              : "Transcribing your audio…",
-        });
-        // The transcription backend reads its own bytes — hand it the durable
-        // identity (file_id), never a URL.
-        const result = await transcribeCloudFile({ fileId });
-        const raw = (result.text ?? "").trim();
-        if (!raw || raw.length < 8) {
-          throw new Error(
-            kind === "video"
-              ? "Couldn't hear enough speech in that video to transcribe. Make sure it has a clear spoken track."
-              : "Couldn't transcribe that audio — make sure it contains clear speech.",
-          );
-        }
-        const { text, truncated } = await clampToKnob(raw);
-        // The transcript exists nowhere else — keep it.
-        await keepCleanCopy(text, title, fileId);
-        return {
-          text,
-          title,
-          ref: { kind: "file", fileId },
-          meta: {
-            chars: text.length,
-            extractionMethod: "transcript",
-            truncated,
-            inputKind: "file",
-          },
-        };
-      }
-
-      // ── Word / PowerPoint / Excel → aidream's content-processing extractor ──
-      if (kind === "office") {
-        if (!fileId) {
-          throw new Error(
-            "Couldn't save that file to extract it — please try again.",
-          );
-        }
-        onProgress?.({ phase: "extracting", message: `Reading ${file.name}…` });
-        const extracted = await extractOfficeText(backendApi.post, fileId, file.name);
-        const raw = extracted.text.trim();
-        if (!raw) {
-          throw new Error(
-            `Couldn't read any text from "${file.name}" — it may be empty or image-only.`,
-          );
-        }
-        const { text, truncated } = await clampToKnob(raw);
-        return {
-          text,
-          title,
-          ref: { kind: "file", fileId },
-          meta: {
-            chars: text.length,
-            pages: extracted.totalPages ?? undefined,
-            extractionMethod: "native",
-            truncated,
-            inputKind: "file",
-          },
-        };
-      }
-
-      if (kind === "pdf") {
-        // The bytes are already in cloud storage from the anchor upload above,
-        // so extraction is requested BY FILE ID. Posting the file a second time
-        // as multipart made a 78 MB drop upload 156 MB — minutes of silence for
-        // work the server could already reach. One upload, one canonical path.
-        if (!fileId) {
-          throw new Error(
-            "Couldn't save that PDF to extract it — please try again.",
-          );
-        }
-        onProgress?.({ phase: "extracting", message: "Extracting text from the PDF…" });
-        const complete = await streamPdfExtractTextRemote({
-          body: buildPdfSourceFromFileId(fileId),
-          baseUrl: pdf.backendUrl ?? "",
-          headers: await pdf.authHeaders(),
-          callbacks: {
-            onStarted: (started) =>
-              onProgress?.({
-                phase: "extracting",
-                message: "Extracting text from the PDF…",
-                ratio: 0,
-                detail: started.total_pages
-                  ? `${started.total_pages} pages to read`
-                  : undefined,
-              }),
-            onPageExtracted: (p) =>
-              onProgress?.({
-                phase: "extracting",
-                message: "Extracting text from the PDF…",
-                ratio:
-                  p.total_pages > 0 ? p.page_number / p.total_pages : undefined,
-                detail: `page ${p.page_number} of ${p.total_pages}`,
-              }),
-          },
-        });
-        const raw = (complete.text_content ?? "").trim();
-        if (!raw) {
-          throw new Error(
-            "No selectable text found in that PDF. If it's a scan, try the PDF extractor's OCR mode first.",
-          );
-        }
-        const { text, truncated } = await clampToKnob(raw);
-        return {
-          text,
-          title,
-          ref: { kind: "file", fileId },
-          meta: {
-            chars: text.length,
-            pages: complete.page_count ?? undefined,
-            extractionMethod: complete.ocr_pages > 0 ? "ocr" : "native",
-            truncated,
-            inputKind: "file",
-          },
-        };
-      }
-
-      if (kind === "text") {
-        onProgress?.({ phase: "extracting", message: "Reading the file…" });
-        const raw = (await file.text()).trim();
-        if (!raw) throw new Error("That file is empty.");
-        const { text, truncated } = await clampToKnob(raw);
-        return {
-          text,
-          title,
-          ref: { kind: "file", fileId },
-          meta: { chars: text.length, truncated, inputKind: "file" },
-        };
-      }
-
-      // Unreachable: `describeIngestSupport` above gates every unsupported kind,
-      // and pdf/image/audio/video/text are all handled. Kept as a loud backstop
-      // so a future new `IngestFileKind` can't silently fall through.
-      throw new Error(describeIngestSupport(file).note);
+      return extractFileText({
+        fileId: uploaded.fileId,
+        kind: support.kind,
+        name: file.name,
+        title,
+        inputKind: "file",
+        getFile: async () => file,
+        onProgress,
+      });
     },
-    [anchorText, keepCleanCopy, scrapeUrl, backendApi, upload, pdf],
+    [anchorText, scrapeUrl, backendApi, upload, extractFileText],
   );
 
   return { normalize };
