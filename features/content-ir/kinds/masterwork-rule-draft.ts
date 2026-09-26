@@ -13,7 +13,7 @@
  * (the VALUE-CONTRACT RATCHET), and the gap this kind closes: the registered
  * `emitted_json_schema` is now advertised on the wire (the `apply_surface_write`
  * inline spec prints `[kind=masterwork_rule_draft {…}]`) and ENFORCED at the
- * seam (`applySurfaceWrite` → `validateAgainstKind`) before the Expert is ever
+ * seam (`applySurfaceWrite` → `kindValidator.validate`) before the Expert is ever
  * asked to approve.
  *
  * Opened as residue 2 of `aidream/docs/handoffs/delegated-surface-tools-2026-09-12.md`

@@ -21,7 +21,8 @@ jest.mock("@/features/surfaces/manifests/registry", () => ({
   getManifest: mockGetManifest,
 }));
 
-// ONLY the network hop is faked. `validateAgainstKind`, `validateStructuralLeg`
+// ONLY the network hop is faked. `kindValidator` (content-ir's `createKindValidator`
+// over the app's `SchemaSourcePort`), `validateStructuralLeg`
 // and ajv all run for real — see the value-contract describe block below.
 const mockGetKindInputContract = jest.fn();
 jest.mock("@/features/content-ir/registry/schema-source-kind-tables", () => ({
@@ -36,7 +37,7 @@ import {
   refuseSurfaceWrite,
   __resetUnwiredTargetReports,
 } from "./surface-writeback";
-import { invalidateKindContractCache } from "@/features/content-ir/registry/validate-against-kind";
+import { kindValidator } from "@/features/content-ir/registry/kind-schema-source";
 import type {
   SurfaceManifest,
   SurfaceValue,
@@ -120,7 +121,7 @@ describe("surface writeback handler outcomes", () => {
 // FORCING FUNCTION: only the network hop is faked (the schema source), and the
 // fixture below is the ACTUAL `emitted_json_schema` of the live registered kind
 // `word_count_result` (content_ir.kind_definition, read 2026-09-11). Everything
-// that decides the verdict — `validateAgainstKind`, `validateStructuralLeg`,
+// that decides the verdict — `kindValidator.validate`, `validateStructuralLeg`,
 // ajv — runs for real, so this test goes red if the seam stops validating, if
 // the validator changes its verdict, or if the degraded-reason contract drifts.
 // A mocked validator would have proven nothing.
@@ -179,7 +180,7 @@ describe("surface writeback value contract", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    invalidateKindContractCache();
+    kindValidator.invalidate();
     handled = [];
     mockGetManifest.mockReturnValue({ writeTargets: [kindTarget] });
     unregister = registerSurfaceRuntime(
