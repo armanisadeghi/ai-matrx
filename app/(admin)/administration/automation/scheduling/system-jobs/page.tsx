@@ -859,6 +859,26 @@ export default function SystemJobsPage() {
     },
   ];
 
+  // The alchemy capture (lane ALCHEMY-BUTTON): both job lists, the open job, both load errors.
+  // Called before the organization early returns below: a hook after an early return renders
+  // fewer hooks on the refusal path and crashes the page ("Rendered fewer hooks than expected").
+  usePageCapture(() =>
+    adminPageCapture({
+      title: "System jobs",
+      route: "/administration/automation/scheduling/system-jobs",
+      selection: {
+        Organization: { id: organizationId ?? null, name: null },
+        "Open server job": clickedJob ? { id: clickedJob.id, name: clickedJob.title ?? null } : null,
+        "Open database job": clickedDbJob ? { id: String(clickedDbJob.jobid), name: clickedDbJob.jobname ?? null } : null,
+      },
+      errors: [loadError, dbLoadError],
+      sections: [
+        { id: "server-jobs", title: "Server jobs", role: "data", value: rows, brief: `${rows.length} server jobs` },
+        { id: "database-jobs", title: "Database jobs", role: "data", value: dbRows, brief: `${dbRows.length} database jobs` },
+      ],
+    }),
+  );
+
   // Nothing here can load without an organization, and the refusal happens
   // before the wire — so the screen says exactly that, with the picker, rather
   // than printing the transport's sentence into an empty-table caption.
@@ -886,24 +906,6 @@ export default function SystemJobsPage() {
       </div>
     );
   }
-
-  // The alchemy capture (lane ALCHEMY-BUTTON): both job lists, the open job, both load errors.
-  usePageCapture(() =>
-    adminPageCapture({
-      title: "System jobs",
-      route: "/administration/automation/scheduling/system-jobs",
-      selection: {
-        Organization: { id: organizationId ?? null, name: null },
-        "Open server job": clickedJob ? { id: clickedJob.id, name: clickedJob.title ?? null } : null,
-        "Open database job": clickedDbJob ? { id: String(clickedDbJob.jobid), name: clickedDbJob.jobname ?? null } : null,
-      },
-      errors: [loadError, dbLoadError],
-      sections: [
-        { id: "server-jobs", title: "Server jobs", role: "data", value: rows, brief: `${rows.length} server jobs` },
-        { id: "database-jobs", title: "Database jobs", role: "data", value: dbRows, brief: `${dbRows.length} database jobs` },
-      ],
-    }),
-  );
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-4">
