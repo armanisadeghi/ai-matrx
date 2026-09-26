@@ -36,6 +36,7 @@ const TABLES: Record<string, string> = {
   mathLink: "| Metric | Formula | Ref |\n|---|---|---|\n| Fill | $\\frac{a}{b}$ | [spec](https://ex.com/a_b) |\n| Margin | $x \\cdot y$ | <kbd>Ctrl</kbd> |",
   bold: "| Status | Owner |\n|---|---|\n| **fail** | _Dana_ |\n| __ok__ | *Luis* |",
   nolead: "Dock | Rule\n--- | ---\nD1 | open for A \\| B\nD2 | closed",
+  handoverOrder: "Step | Task | Who\n--- | --- | ---\n1 | Swap the label printer | Ines\n2 | Re-scan bay B3 | Omar",
   emptyCells: "| A | B | C |\n|---|---|---|\n|  | x |  |\n| y |  | z |",
   trailingBackslashCompact: "|Path|Owner|\n|---|---|\n|C:\\temp|Dana|\n|D:|Luis|",
 };
@@ -49,6 +50,11 @@ const EDITS: Edit[] = [
   { label: "clear", typed: () => "", displayed: () => "" },
   { label: "trailBackslash", typed: () => "C:\\new\\", displayed: () => "C:\\new\\" },
   { label: "pipeTyped", typed: () => "a | b", displayed: () => "a | b" },
+  // Round 5: a cell that starts like block syntax must never end a pipe-less table.
+  { label: "bulletTyped", typed: () => "- n/a", displayed: () => "- n/a" },
+  { label: "quoteTyped", typed: () => "> 90%", displayed: () => "> 90%" },
+  { label: "headingTyped", typed: () => "# 3", displayed: () => "# 3" },
+  { label: "orderedTyped", typed: () => "1. first", displayed: () => "1. first" },
 ];
 
 interface Outcome {
@@ -172,6 +178,10 @@ function visualPath(name: string, table: string, out: Outcome): void {
         ["replace", "Replaced", (tr) => tr.insertText("Replaced", cell.from, cell.to)],
         ["pipeTyped", "a | b", (tr) => tr.insertText("a | b", cell.from, cell.to)],
         ["trailBackslash", "C:\\new\\", (tr) => tr.insertText("C:\\new\\", cell.from, cell.to)],
+        ["bulletTyped", "- n/a", (tr) => tr.insertText("- n/a", cell.from, cell.to)],
+        ["quoteTyped", "> 90%", (tr) => tr.insertText("> 90%", cell.from, cell.to)],
+        ["headingTyped", "# 3", (tr) => tr.insertText("# 3", cell.from, cell.to)],
+        ["orderedTyped", "1. first", (tr) => tr.insertText("1. first", cell.from, cell.to)],
       ];
       if (cell.to > cell.from) kinds.push(["clear", "", (tr) => tr.delete(cell.from, cell.to)]);
       for (const [label, expected, apply] of kinds) {

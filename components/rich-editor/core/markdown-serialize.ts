@@ -22,7 +22,7 @@
 // this serializer reproduces its stored bytes exactly, so contract 2 is
 // measured, not hoped for.
 
-import { freshRow, respliceRow } from "./table-source";
+import { assertTableReadsBack, freshRow, respliceRow } from "./table-source";
 import type { Mark, Node as PMNode } from "@tiptap/pm/model";
 
 export interface Adjacency {
@@ -353,7 +353,11 @@ function serializeTable(table: PMNode): string {
       );
     }
   });
-  return lines.join("\n");
+  const written = lines.join("\n");
+  // The whole table must read back as one table (a pipe-less row starting `- `
+  // would end it): refused, never written (verify-RC-B4 R5-1).
+  assertTableReadsBack(written);
+  return written;
 }
 
 // ── Inline ─────────────────────────────────────────────────────────────────

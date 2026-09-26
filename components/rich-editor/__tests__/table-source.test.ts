@@ -154,3 +154,41 @@ describe("round 4: a written row always reads back as the intended grid", () => 
     expect(new TableWriteRefused("r", "x").message).toContain("x");
   });
 });
+
+// ── verify-RC-B4 round 5: block syntax in a first cell, and a WHOLE-table read-back ──
+import { assertTableReadsBack } from "../core/table-source";
+
+describe("round 5: the read-back judges the whole table, not one row", () => {
+  it("REFUSES the R5-1 shape: a pipe-less row whose first cell starts a list ends the table", () => {
+    // The exact bytes the round-4 writer produced (verify-RC-B4 R5-1).
+    const broken = "Step | Task | Who\n--- | --- | ---\n1 | Swap the label printer | Ines\n- | Re-scan bay B3 | Omar";
+    expect(() => assertTableReadsBack(broken)).toThrow(TableWriteRefused);
+  });
+
+  it("accepts a table that reads back whole", () => {
+    expect(() => assertTableReadsBack("Step | Task\n--- | ---\n1 | Swap\n| - | Re-scan |")).not.toThrow();
+  });
+});
+
+describe("round 5: a first cell that starts like a block never ends a pipe-less table", () => {
+  const table = "Dock | Owner | Status\n--- | --- | ---\nD1 | Dana | ok\nD2 | Luis | late";
+  for (const value of ["-", "- n/a", "* see note", "+", "1. first", "2) second", "# 3", "> 90%", "```", "---"]) {
+    it(`answer path: ${JSON.stringify(value)} in the first cell of a data row`, () => {
+      const next = grid(table);
+      next.rows[1][0] = value;
+      const out = rewriteTableSource(table, next);
+      expect(oracle(out)).toEqual([
+        ["Dock", "Owner", "Status"],
+        ["D1", "Dana", "ok"],
+        [value, "Luis", "late"],
+      ]);
+    });
+    it(`answer path: ${JSON.stringify(value)} in the first HEADER cell`, () => {
+      const next = grid(table);
+      next.headers = [value, "Owner", "Status"];
+      const out = rewriteTableSource(table, next);
+      expect(oracle(out)[0]).toEqual([value, "Owner", "Status"]);
+      expect(oracle(out)).toHaveLength(3);
+    });
+  }
+});
