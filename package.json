@@ -206,6 +206,7 @@
     "check:ui-primitives:strict": "tsx scripts/check-ui-primitives.ts --strict",
     "check:assist-priority": "tsx scripts/check-assist-priority.ts",
     "check:migration-judgment": "tsx scripts/check-migration-judgment.ts",
+    "check:list-lane-owner": "tsx scripts/check-list-lane-owner.ts",
     "check:migrations": "tsx scripts/check-migrations.ts",
     "check:ledgered-files-unedited": "node scripts/check-ledgered-files-unedited.mjs",
     "check:campaign-cic-invalid-guard": "node scripts/db/check-campaign-cic-invalid-guard.mjs",
