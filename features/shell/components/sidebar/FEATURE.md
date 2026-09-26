@@ -69,7 +69,7 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 
 ## Related features
 
-- Consumers: `features/agents/components/chat/ChatSidebarMenu.tsx`, `features/agents/components/shell/AgentRunSidebarMenu.tsx`, `features/code/shell/CodeSidebarMenu.tsx`, `features/admin/components/AdminRouteSidebarMenu.tsx`, `features/marketing/components/shell/MarketingSidebarMenu.tsx`.
+- Consumers: `features/agents/components/chat/ChatSidebarMenu.tsx`, `features/agents/components/shell/AgentRunSidebarMenu.tsx`, `features/code/shell/CodeSidebarMenu.tsx`, `features/admin/components/AdminRouteSidebarMenu.tsx`, `features/marketing/components/shell/MarketingSidebarMenu.tsx`, `features/research/components/shell/ResearchTopicSidebarMenu.tsx`.
 - Mobile route-menu bridge: `../mobile-sheet/MobileRouteMenuSlot.tsx`.
 
 ## Doctrine compliance

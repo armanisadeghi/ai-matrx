@@ -5,7 +5,6 @@ import {
   useTopicData,
   useTopicProgress,
 } from "@/features/research/context/ResearchContext";
-import ResearchLayoutShell from "@/features/research/components/shell/ResearchLayoutShell";
 import { StreamDebugOverlay } from "@/features/research/components/shared/StreamDebugOverlay";
 import { ResearchTopicWriteTargets } from "@/features/research/components/shell/ResearchTopicWriteTargets";
 import {
@@ -98,7 +97,9 @@ export default function ResearchTopicShell({
   return (
     <TopicProvider topicId={topicId} initialData={initialData}>
       <ResearchSurfaceRuntime topicId={topicId}>
-        <ResearchLayoutShell topicId={topicId}>{children}</ResearchLayoutShell>
+        {/* Topic navigation is the shell sidebar's route menu
+            (ResearchTopicSidebarMenu) — never a second page-local sidebar. */}
+        <main className="h-full min-w-0 overflow-y-auto">{children}</main>
         <StreamDebugOverlay />
       </ResearchSurfaceRuntime>
     </TopicProvider>

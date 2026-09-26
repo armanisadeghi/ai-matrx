@@ -341,7 +341,7 @@ export const RESEARCH_NAV_ITEMS: ResearchNavItem[] = [
   {
     key: "outputs",
     label: "Outputs",
-    icon: "Sparkles",
+    icon: "Package",
     href: (id) => `/research/topics/${id}/outputs`,
     group: "primary",
     mobileVisible: true,

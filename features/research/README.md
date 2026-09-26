@@ -41,5 +41,5 @@ consolidation/suggestion. Python is never a database gateway.
 
 Static metadata with `title.template` on the research layout; `generateMetadata` on the topic
 layout; JSON-LD (`ResearchProject`) on the topic overview; canonical URLs and `robots`.
-Mobile: `useIsMobile()`, bottom nav instead of sidebar, Dialogs become Drawers, `dvh` units,
+Mobile: `useIsMobile()`, topic navigation in the shell's mobile drawer (route menu), Dialogs become Drawers, `dvh` units,
 `pb-safe`, 16px input fonts, 44pt touch targets.

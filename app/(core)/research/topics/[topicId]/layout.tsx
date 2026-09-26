@@ -119,7 +119,7 @@ export default async function ResearchTopicLayout({
         </div>
       </PageHeader>
       <div className="flex h-dvh flex-col bg-textured">
-        {/* Spacer so the sidebar and content start below the glass header */}
+        {/* Spacer so the content starts below the glass header */}
         <div
           className="shrink-0"
           style={{ height: "var(--shell-header-h, 2.75rem)" }}

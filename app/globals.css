@@ -1700,13 +1700,6 @@
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
   }
 
-  /* Bottom padding for pages with a floating mobile nav to ensure content isn't obscured */
-  .research-mobile-scroll-pad {
-    padding-bottom: calc(
-      3.5rem + max(0.75rem, env(safe-area-inset-bottom, 0px))
-    );
-  }
-
   .mb-safe {
     margin-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
   }

@@ -16,6 +16,7 @@
 // RouteModeNav.
 
 import { AGENT_RUN_PATH_PATTERN } from "@/features/agents/components/shell/agent-run-route";
+import { RESEARCH_TOPIC_PATH_PATTERN } from "@/features/research/components/shell/research-topic-route";
 import { USER_SETTINGS_PATH_PATTERN } from "@/features/settings/route-shell/settings-route-path";
 import type { ShellIconName } from "@/features/shell/shellIconMap";
 
@@ -76,6 +77,13 @@ export const routeMenuRegistry: RouteMenuEntry[] = [
     label: "Marketing",
     importFn: () =>
       import("@/features/marketing/components/shell/MarketingSidebarMenu"),
+  },
+  {
+    pathPattern: RESEARCH_TOPIC_PATH_PATTERN,
+    iconName: "FlaskConical",
+    label: "Research Topic",
+    importFn: () =>
+      import("@/features/research/components/shell/ResearchTopicSidebarMenu"),
   },
   {
     pathPattern: /^\/images(?:\/|$)/,
