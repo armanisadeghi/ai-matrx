@@ -46,6 +46,18 @@ export const DOCUMENT_INPUTS: ReadonlyArray<{ name: string; text: string }> = [
   { name: "a pipe-led header wider than its delimiter is no table", text: `${INTRO}\n\n| Bay | Status |\n|---|\n| B3 | re-scan |\n\n${OUTRO}` },
   { name: "a header with no pipe over |---| is a one-column table", text: `${INTRO}\n\nNotes\n|---|\nDock B closed\n\n${OUTRO}` },
   { name: "a table under a list item's text is that item's text", text: `${INTRO}\n\n- Dock B is closed tonight\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n\n${OUTRO}` },
+  // verify-RC-B4 round 9: an HTML block tag is HTML (GFM), never a custom XML container;
+  // an ASCII tree needs dash connectors; a custom XML container keeps its block.
+  { name: "an unclosed <div> line ends at the blank line", text: `${INTRO}\n\n<div>\n\n${OUTRO}` },
+  { name: "a closed <section> container is one block", text: `${INTRO}\n\n<section>\nBay B3 re-scan.\n</section>\n\n${OUTRO}` },
+  { name: "an ASCII tree with dash connectors is a tree", text: `${INTRO}\n\nharbor\n|-- docks\n|   |-- B3\n|   +-- B4\n+-- yard\n\n${OUTRO}` },
+  { name: "a custom XML container keeps its block", text: `${INTRO}\n\n<shift_note>\nBay B3 re-scan.\n</shift_note>\n\n${OUTRO}` },
+];
+
+/** Tag names: which CommonMark reads as an HTML BLOCK (content-ir isHtmlBlockTagName). */
+export const HTML_TAG_NAME_INPUTS: readonly string[] = [
+  "div", "DIV", "section", "details", "dl", "dt", "dd", "h3", "script", "textarea", "search",
+  "span", "artifact", "widget", "thinking", "shift_note", "h7", "divx",
 ];
 
 export const ROW_INPUTS: readonly string[] = [

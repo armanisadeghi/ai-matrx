@@ -591,11 +591,67 @@
       "blocks": [
         [
           "text",
+          "Here is tonight's handover for the Harbor warehouse.\n\n- Dock B is closed tonight\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n\nOmar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "an unclosed <div> line ends at the blank line",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\n<div>\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse.\n\n<div>\n\nOmar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "a closed <section> container is one block",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\n<section>\nBay B3 re-scan.\n</section>\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "code",
+          "<section>\nBay B3 re-scan.\n</section>"
+        ],
+        [
+          "text",
+          "Omar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "an ASCII tree with dash connectors is a tree",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\nharbor\n|-- docks\n|   |-- B3\n|   +-- B4\n+-- yard\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
           "Here is tonight's handover for the Harbor warehouse."
         ],
         [
           "tree",
-          "- Dock B is closed tonight\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |"
+          "harbor\n|-- docks\n|   |-- B3\n|   +-- B4\n+-- yard"
+        ],
+        [
+          "text",
+          "Omar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "a custom XML container keeps its block",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\n<shift_note>\nBay B3 re-scan.\n</shift_note>\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "code",
+          "<shift_note>\nBay B3 re-scan.\n</shift_note>"
         ],
         [
           "text",
@@ -1169,6 +1225,128 @@
       ],
       "index": 0,
       "opens": false
+    }
+  ],
+  "rawHtmlTags": [
+    "a",
+    "abbr",
+    "b",
+    "blockquote",
+    "br",
+    "caption",
+    "code",
+    "col",
+    "colgroup",
+    "del",
+    "details",
+    "em",
+    "figcaption",
+    "figure",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "hr",
+    "i",
+    "img",
+    "ins",
+    "kbd",
+    "li",
+    "mark",
+    "ol",
+    "p",
+    "pre",
+    "s",
+    "small",
+    "span",
+    "strong",
+    "sub",
+    "summary",
+    "sup",
+    "table",
+    "tbody",
+    "td",
+    "tfoot",
+    "th",
+    "thead",
+    "tr",
+    "u",
+    "ul"
+  ],
+  "htmlBlockTagNames": [
+    {
+      "name": "div",
+      "isBlock": true
+    },
+    {
+      "name": "DIV",
+      "isBlock": true
+    },
+    {
+      "name": "section",
+      "isBlock": true
+    },
+    {
+      "name": "details",
+      "isBlock": true
+    },
+    {
+      "name": "dl",
+      "isBlock": true
+    },
+    {
+      "name": "dt",
+      "isBlock": true
+    },
+    {
+      "name": "dd",
+      "isBlock": true
+    },
+    {
+      "name": "h3",
+      "isBlock": true
+    },
+    {
+      "name": "script",
+      "isBlock": true
+    },
+    {
+      "name": "textarea",
+      "isBlock": true
+    },
+    {
+      "name": "search",
+      "isBlock": true
+    },
+    {
+      "name": "span",
+      "isBlock": false
+    },
+    {
+      "name": "artifact",
+      "isBlock": false
+    },
+    {
+      "name": "widget",
+      "isBlock": false
+    },
+    {
+      "name": "thinking",
+      "isBlock": false
+    },
+    {
+      "name": "shift_note",
+      "isBlock": false
+    },
+    {
+      "name": "h7",
+      "isBlock": false
+    },
+    {
+      "name": "divx",
+      "isBlock": false
     }
   ]
 }

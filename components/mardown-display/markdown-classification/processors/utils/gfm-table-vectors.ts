@@ -7,7 +7,9 @@ import { unescapeCellPipes } from "@/components/markdown-core/syntax/gfm-cell-pi
 import { parseMarkdownTable } from "@/components/mardown-display/blocks/table/parseMarkdownTable";
 import { splitContentIntoBlocksV2 } from "./content-splitter-v2";
 import { findTableEnd, tableStartsAt } from "./gfm-table-lines";
-import { CELL_INPUTS, DOCUMENT_INPUTS, ROW_INPUTS, TABLE_END_INPUTS, TABLE_INPUTS, TABLE_OPEN_INPUTS, TABLE_START_INPUTS } from "./gfm-table-vector-inputs";
+import { isHtmlBlockTagName } from "@ai-matrx/content-ir/source";
+import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
+import { CELL_INPUTS, DOCUMENT_INPUTS, HTML_TAG_NAME_INPUTS, ROW_INPUTS, TABLE_END_INPUTS, TABLE_INPUTS, TABLE_OPEN_INPUTS, TABLE_START_INPUTS } from "./gfm-table-vector-inputs";
 
 export interface GfmTableVectors {
   rows: Array<{ line: string; cells: string[] }>;
@@ -18,6 +20,10 @@ export interface GfmTableVectors {
   tableEnds: Array<{ lines: string[]; start: number; end: number }>;
   /** Whether a table opens at the candidate header (the third line from the end). */
   tableStarts: Array<{ lines: string[]; index: number; opens: boolean }>;
+  /** Raw HTML tags the renderer keeps (rehypeSafeRawHtml) — the Python list must equal it. */
+  rawHtmlTags: string[];
+  /** Tag names CommonMark reads as an HTML block (content-ir isHtmlBlockTagName). */
+  htmlBlockTagNames: Array<{ name: string; isBlock: boolean }>;
 }
 
 export function computeGfmTableVectors(): GfmTableVectors {
@@ -40,5 +46,7 @@ export function computeGfmTableVectors(): GfmTableVectors {
       ...TABLE_START_INPUTS.map((lines) => ({ lines: [...lines], index: lines.length - 3, opens: tableStartsAt(lines, lines.length - 3) })),
       ...TABLE_OPEN_INPUTS.map((lines) => ({ lines: [...lines], index: 0, opens: tableStartsAt(lines, 0) })),
     ],
+    rawHtmlTags: [...ALLOWED_RAW_HTML_TAGS].sort(),
+    htmlBlockTagNames: HTML_TAG_NAME_INPUTS.map((name) => ({ name, isBlock: isHtmlBlockTagName(name) })),
   };
 }

@@ -59,6 +59,7 @@ import { FENCE_META_KEY, splitFenceInfo } from "@/components/markdown-core/fence
 import {
   closeFence,
   fenceOpenerOf,
+  isHtmlBlockTagName,
   XmlContainerTracker,
 } from "@ai-matrx/content-ir/source";
 import { indexOutsideInlineCode } from "./inline-code-span";
@@ -939,17 +940,22 @@ interface UnrecognizedXmlStart {
  * can never end a section on different lines (RC-B10).
  */
 
+/** A known Matrx XML tag or a raw HTML tag the renderer keeps: never a generic XML container. */
+function isHtmlOrKnownTag(name: string): boolean {
+  return KNOWN_XML_TAG_NAMES.has(name) || ALLOWED_RAW_HTML_TAGS.has(name.toLowerCase());
+}
+
+/** The tag name a line opens with (`<div class="x">` → `div`), or null. */
+function leadingTagName(line: string): string | null {
+  return /^<([A-Za-z_][\w.:-]*)/.exec(line.trimStart())?.[1] ?? null;
+}
+
 /** Protect tag attributes while an opening tag is still arriving. */
 export function isUnclosedGenericXmlOpening(source: string): boolean {
   if (isPageBreakLine(source)) return false;
   const text = source.trimStart();
   const prefix = /^<([A-Za-z_][\w.:-]*)(?=\s|\/|$)/.exec(text);
-  if (
-    !prefix ||
-    KNOWN_XML_TAG_NAMES.has(prefix[1]) ||
-    ALLOWED_RAW_HTML_TAGS.has(prefix[1].toLowerCase())
-  )
-    return false;
+  if (!prefix || isHtmlOrKnownTag(prefix[1])) return false;
   let quote: string | null = null;
   for (let i = prefix[0].length; i < text.length; i++) {
     if (quote) {
@@ -975,11 +981,7 @@ export function startUnrecognizedXmlContainer(
   const openingTag = readXmlTag(firstTrimmed, 0);
   if (!openingTag || openingTag.isClosing) return null;
   const rootTag = openingTag.tagName;
-  if (
-    KNOWN_XML_TAG_NAMES.has(rootTag) ||
-    ALLOWED_RAW_HTML_TAGS.has(rootTag.toLowerCase())
-  )
-    return null;
+  if (isHtmlOrKnownTag(rootTag)) return null;
   return {
     tracker: new XmlContainerTracker(rootTag),
     rootStart: line.length - firstTrimmed.length,
@@ -1888,13 +1890,17 @@ function detectYoutubeMarkdown(line: string): {
 // ============================================================================
 
 const TREE_CHARS = /[├└│┌┐┘┬┴┤┼─]/;
-const ASCII_TREE_PATTERNS = /^[\s│|]*[├└+|][\s─\-]+/;
+// An ASCII connector is `+`/`|` FOLLOWED BY A DASH (`|-- src`, `+-- lib`) after any
+// run of vertical rails; a bare `| ` is a table row's edge, never a connector — so a
+// `| a | b |` line under a list item stays that item's text, as GFM reads it
+// (verify-RC-B4 round 9). Mirrored in aidream block_detector.py `_ASCII_TREE_RE`.
+const ASCII_TREE_PATTERNS = /^[\s│|]*(?:[├└]|[+|][─-])/;
 
 function isTreeLine(line: string): boolean {
   if (!line) return false;
   if (TREE_CHARS.test(line)) return true;
-  if (ASCII_TREE_PATTERNS.test(line)) return true;
-  return false;
+  // A GFM delimiter row (`|---|---|`) is a table's, never a tree connector.
+  return ASCII_TREE_PATTERNS.test(line) && !isGfmDelimiterRow(line);
 }
 
 function isMarkdownHeadingLine(line: string): boolean {
@@ -2224,9 +2230,14 @@ export const splitContentIntoBlocksWith = (
     // its close never arrives. Keeping it as XML code prevents downstream
     // text expansion from extracting directive/kind-looking JSON from a
     // malformed container while preserving every literal byte.
+    // Except an HTML BLOCK tag (`<div>`, `<section>`, …; content-ir
+    // isHtmlBlockTagName) that never closes: GFM ends that HTML block at the
+    // first blank line, so it stays in the text for the markdown renderer and
+    // the prose after it stays prose (verify-RC-B4 round 9). A CLOSED container
+    // is still claimed whole by 3c above. Mirrored in aidream block_detector.py.
     const incompleteUnrecognizedXml =
-      startUnrecognizedXmlContainer(processedLine) ||
-      isUnclosedGenericXmlOpening(processedLine);
+      !isHtmlBlockTagName(leadingTagName(processedLine) ?? "") &&
+      (startUnrecognizedXmlContainer(processedLine) || isUnclosedGenericXmlOpening(processedLine));
     if (incompleteUnrecognizedXml) {
       if (currentText.trim()) {
         blocks.push({ type: "text", content: currentText.trimEnd() });
