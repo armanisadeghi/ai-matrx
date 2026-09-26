@@ -25,6 +25,7 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { configureStore } from "@reduxjs/toolkit";
 
 import visionInterviewReducer, {
@@ -85,12 +86,16 @@ async function mount() {
   root = createRoot(container);
   await act(async () => {
     root.render(
+      // The app root (app/Providers.tsx) mounts one TooltipProvider; the
+      // room header's IntelligenceIndicator tooltip reads it.
       <Provider store={makeStore()}>
-        <RoomChatPane
-          onGotoStage={() => {}}
-          onRetryRoles={() => {}}
-          onAdvanceStage={async () => {}}
-        />
+        <TooltipProvider>
+          <RoomChatPane
+            onGotoStage={() => {}}
+            onRetryRoles={() => {}}
+            onAdvanceStage={async () => {}}
+          />
+        </TooltipProvider>
       </Provider>,
     );
   });

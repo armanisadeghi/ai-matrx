@@ -21,6 +21,7 @@
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 jest.mock("@/lib/api/call-api", () => ({
   callConversationContinue: jest.fn(),
@@ -103,13 +104,17 @@ async function mount(
   document.body.appendChild(host);
   const root: Root = createRoot(host);
   await act(async () => {
+    // The app root (app/Providers.tsx) mounts one TooltipProvider; the
+    // composer's IntelligenceIndicator tooltip reads it.
     root.render(
-      <AiMatrxReplyComposer
-        conversationId="conv-1"
-        conversationOrganizationId="org-1"
-        onAnswered={onAnswered}
-        {...props}
-      />,
+      <TooltipProvider>
+        <AiMatrxReplyComposer
+          conversationId="conv-1"
+          conversationOrganizationId="org-1"
+          onAnswered={onAnswered}
+          {...props}
+        />
+      </TooltipProvider>,
     );
   });
 
