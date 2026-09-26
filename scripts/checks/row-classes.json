@@ -6,7 +6,7 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 90,
+    "repo-only": 91,
     "live-db": 56,
     "clone-db": 3
   },
@@ -136,6 +136,12 @@
     "every-typescript-file-parses": {
       "class": "repo-only",
       "cmd": "pnpm check:parse",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
+    "every-ai-matrx-import-exists-in-the-installed-package": {
+      "class": "repo-only",
+      "cmd": "pnpm check:matrx-imports",
       "reason": "no database access in 1 file(s) reached",
       "evidence": []
     },

@@ -512,6 +512,8 @@
     "check:matrx-dist-integrity": "node scripts/check-matrx-dist-integrity.mjs",
     "check:matrx-dist-integrity:resolved": "node scripts/check-matrx-dist-integrity.mjs --resolved-only",
     "check:matrx-dist-integrity:self-test": "node scripts/check-matrx-dist-integrity.mjs --self-test",
+    "check:matrx-imports": "node scripts/check-matrx-imports.mjs",
+    "check:matrx-imports:self-test": "node scripts/check-matrx-imports.mjs --self-test",
     "check:package-twins": "node scripts/check-package-twins.mjs",
     "check:package-twins:strict": "node scripts/check-package-twins.mjs --strict",
     "check:package-twins:self-test": "node scripts/check-package-twins.mjs --self-test",

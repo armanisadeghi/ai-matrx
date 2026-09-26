@@ -78,6 +78,14 @@ if $STRICT; then
         # `pnpm check:parse --fix` repairs the injected-import class;
         # `pnpm check:parse:self-test` proves the guard can still fail.
         "Every TypeScript file parses|pnpm check:parse"
+        # EVERY NAMED @ai-matrx IMPORT EXISTS IN THE INSTALLED PACKAGE. On
+        # 2026-09-25 kind-schema-source.ts imported `createKindValidator` from
+        # @ai-matrx/content-ir/registry while the lockfile installed 0.18.6,
+        # which does not ship it: every dev route 500'd and Vercel v0.4.2360 +
+        # v0.4.2361 went red while parse, matrx-packages and dist-integrity
+        # were all green. ~30s, offline, zero findings at introduction.
+        # `pnpm check:matrx-imports:self-test` proves it can still fail.
+        "Every @ai-matrx import exists in the installed package|pnpm check:matrx-imports"
         # A `//` LINE INSIDE JSX CHILDREN IS TEXT, NOT A COMMENT. On 2026-09-17
         # the "Add brand" dialog showed a Data Doctrine CONVERGE stamp after the
         # organization name: a sweep had placed `// CONVERGE:` lines in JSX child
@@ -855,6 +863,14 @@ else
         # `pnpm check:parse --fix` repairs the injected-import class;
         # `pnpm check:parse:self-test` proves the guard can still fail.
         "Every TypeScript file parses|pnpm check:parse"
+        # EVERY NAMED @ai-matrx IMPORT EXISTS IN THE INSTALLED PACKAGE. On
+        # 2026-09-25 kind-schema-source.ts imported `createKindValidator` from
+        # @ai-matrx/content-ir/registry while the lockfile installed 0.18.6,
+        # which does not ship it: every dev route 500'd and Vercel v0.4.2360 +
+        # v0.4.2361 went red while parse, matrx-packages and dist-integrity
+        # were all green. ~30s, offline, zero findings at introduction.
+        # `pnpm check:matrx-imports:self-test` proves it can still fail.
+        "Every @ai-matrx import exists in the installed package|pnpm check:matrx-imports"
         # A `//` LINE INSIDE JSX CHILDREN IS TEXT, NOT A COMMENT. On 2026-09-17
         # the "Add brand" dialog showed a Data Doctrine CONVERGE stamp after the
         # organization name: a sweep had placed `// CONVERGE:` lines in JSX child
