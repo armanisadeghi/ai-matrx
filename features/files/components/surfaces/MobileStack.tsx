@@ -59,6 +59,7 @@ import {
   FolderRowContextMenu,
 } from "@/features/files/components/core/RowContextMenu/RowContextMenu";
 import { FilesTreeErrorState, FilesTreeLoadingState } from "./FilesTreeState";
+import { DriveBrowseMobileLink } from "@/features/files/google-drive/DriveBrowseMobileLink";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -135,21 +136,21 @@ export function MobileStack({
           own header (the file's name, Back, Actions) was drawn UNDER the shell header and a phone
           reader could not tell which file was open. This box starts where the padding ends. */}
       <div className="relative h-full w-full" data-mobile-stack-frames>
-      {stack.map((frame, idx) => {
-        const isTop = idx === stack.length - 1;
-        return (
-          <Frame
-            key={`${idx}-${frameKey(frame)}`}
-            frame={frame}
-            isTop={isTop}
-            depth={idx}
-            onBack={pop}
-            onPush={push}
-            onJumpTo={popTo}
-            titleSlot={idx === 0 ? titleSlot : undefined}
-          />
-        );
-      })}
+        {stack.map((frame, idx) => {
+          const isTop = idx === stack.length - 1;
+          return (
+            <Frame
+              key={`${idx}-${frameKey(frame)}`}
+              frame={frame}
+              isTop={isTop}
+              depth={idx}
+              onBack={pop}
+              onPush={push}
+              onJumpTo={popTo}
+              titleSlot={idx === 0 ? titleSlot : undefined}
+            />
+          );
+        })}
       </div>
 
       {/* Optional bottom action bar — renders on the top frame only */}
@@ -279,6 +280,8 @@ function FolderFrameBody({
         leftLabel={onBack ? "Back" : "Home"}
         onLeftPress={onBack}
       />
+
+      {!folderId ? <DriveBrowseMobileLink /> : null}
 
       {treeStatus === "idle" || treeStatus === "loading" ? (
         <FilesTreeLoadingState />

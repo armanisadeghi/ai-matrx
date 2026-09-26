@@ -6,6 +6,8 @@
  * layout.
  */
 
+import { DRIVE_BROWSE_FILES_PATH } from "@/features/files/google-drive/drive-browser";
+
 export type CloudFilesSection =
   | "all"
   | "folders"
@@ -33,7 +35,7 @@ export const PRIMARY_SECTIONS: SectionNavEntry[] = [
   { key: "recents", href: "/files/recents", label: "Recents" },
   { key: "photos", href: "/files/photos", label: "Photos" },
   { key: "shared", href: "/files/shared", label: "Shared" },
-  { key: "google-drive", href: "/files/google-drive", label: "Google Drive" },
+  { key: "google-drive", href: DRIVE_BROWSE_FILES_PATH, label: "Google Drive" },
   {
     key: "requests",
     href: "/files/requests",

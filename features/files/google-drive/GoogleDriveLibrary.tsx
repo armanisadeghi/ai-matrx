@@ -23,7 +23,10 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { Input } from "@ai-matrx/design-system";
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
 import { eligibleGoogleConnections } from "@/features/google-workspace/connection";
-import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
+import {
+  useGoogleCapabilities,
+  useGoogleConnectionInventory,
+} from "@/features/marketing/google/hooks";
 import {
   browseGoogleDrive,
   checkGoogleDriveFileAccess,
@@ -32,8 +35,16 @@ import {
 } from "@/features/marketing/google/service";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
+import {
+  ALL_ACCESSIBLE_DRIVE,
+  type DriveBrowseCriteria,
+  driveBrowseIsAvailable,
+  driveFileTypeLabel,
+  incompleteSearchNotice,
+  nextDriveBrowseInput,
+  openFreshGoogleDriveFile,
+} from "./drive-browser";
 
 const FOLDER_MIME_TYPE = "application/vnd.google-apps.folder";
 
@@ -57,10 +68,11 @@ function ownerLabel(
 export function GoogleDriveLibrary() {
   const { organizationId, organizationState } = useOrganizationRequired();
   const inventory = useGoogleConnectionInventory();
+  const capabilities = useGoogleCapabilities();
   const [connectionId, setConnectionId] = useState("");
   const [search, setSearch] = useState("");
-  const [folderId, setFolderId] = useState<string | null>(null);
-  const [folderName, setFolderName] = useState<string | null>(null);
+  const [criteria, setCriteria] =
+    useState<DriveBrowseCriteria>(ALL_ACCESSIBLE_DRIVE);
   const [page, setPage] = useState<DriveBrowsePage | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,18 +84,19 @@ export function GoogleDriveLibrary() {
     "drive-browse",
     connectionId,
   );
+  const driveBrowse = capabilities.data?.find(
+    (capability) => capability.key === "drive_browse",
+  );
+  const capabilityAvailable = driveBrowseIsAvailable(driveBrowse);
 
   async function load(
     next: {
-      folderId?: string | null;
-      folderName?: string | null;
       pageToken?: string | null;
-      search?: string;
+      criteria?: DriveBrowseCriteria;
     } = {},
   ) {
     if (!organizationId || !connectionId) return;
-    const nextFolderId = next.folderId === undefined ? folderId : next.folderId;
-    const nextSearch = next.search === undefined ? search : next.search;
+    const nextCriteria = next.criteria ?? criteria;
     setLoading(true);
     setError(null);
     setAccess(null);
@@ -91,14 +104,9 @@ export function GoogleDriveLibrary() {
       const result = await browseGoogleDrive({
         organizationId,
         connectionId,
-        folderId: nextFolderId,
-        pageToken: next.pageToken ?? null,
-        search: nextSearch,
+        ...nextDriveBrowseInput(nextCriteria, next.pageToken),
       });
-      setFolderId(nextFolderId);
-      setFolderName(
-        next.folderName === undefined ? folderName : next.folderName,
-      );
+      setCriteria(nextCriteria);
       setPage(result);
     } catch (caught) {
       setPage(null);
@@ -110,8 +118,7 @@ export function GoogleDriveLibrary() {
 
   function chooseConnection(id: string) {
     setConnectionId(id);
-    setFolderId(null);
-    setFolderName(null);
+    setCriteria(ALL_ACCESSIBLE_DRIVE);
     setPage(null);
     setAccess(null);
     setError(null);
@@ -137,9 +144,30 @@ export function GoogleDriveLibrary() {
     }
   }
 
+  async function openInGoogle(fileId: string) {
+    if (!organizationId || !connectionId) return;
+    setCheckingFileId(fileId);
+    setError(null);
+    setAccess(null);
+    try {
+      await openFreshGoogleDriveFile({
+        selectedConnectionId: connectionId,
+        check: () =>
+          checkGoogleDriveFileAccess({ organizationId, connectionId, fileId }),
+        open: (url) => window.open(url, "_blank", "noopener,noreferrer"),
+      });
+    } catch (caught) {
+      setError(extractErrorMessage(caught));
+    } finally {
+      setCheckingFileId(null);
+    }
+  }
+
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void load({ folderId: null, folderName: null, search });
+    void load({
+      criteria: { search: search.trim(), folderId: null, folderName: null },
+    });
   }
 
   if (organizationState !== "ready") {
@@ -148,7 +176,7 @@ export function GoogleDriveLibrary() {
 
   return (
     <main
-      className="mx-auto flex min-h-full w-full max-w-6xl flex-col gap-5 p-4 sm:p-6"
+      className="mx-auto flex min-h-full w-full max-w-6xl flex-col gap-5 px-4 pb-6 pt-[calc(var(--shell-header-h)+1rem)] sm:px-6"
       data-google-drive-library
     >
       <header className="rounded-xl border border-border bg-card p-5 shadow-sm">
@@ -161,8 +189,8 @@ export function GoogleDriveLibrary() {
               Google Drive
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Search or browse one connected account’s file metadata. This does
-              not open, download, export, or save any file.
+              Search or browse one connected account’s accessible Drive file
+              metadata. This does not open, download, export, or save any file.
             </p>
           </div>
           {page ? (
@@ -178,16 +206,24 @@ export function GoogleDriveLibrary() {
         </div>
       </header>
 
-      {inventory.isLoading ? (
+      {capabilities.isLoading || inventory.isLoading ? (
         <p className="rounded-xl border border-border p-5 text-sm text-muted-foreground">
           Loading connected Google accounts…
         </p>
-      ) : inventory.isError ? (
+      ) : capabilities.isError || inventory.isError ? (
         <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-5 text-sm text-foreground">
-          Connected Google accounts could not be loaded. Try again from the
-          Google connection screen.
+          Google Drive access could not be checked. Try again from the Google
+          connection screen.
           <ErrorAlchemyMenu />
         </div>
+      ) : !capabilityAvailable ? (
+        <p className="rounded-xl border border-border p-5 text-sm text-muted-foreground">
+          Google Drive metadata browsing is not available to this signed-in
+          account for this internal test.
+          {driveBrowse?.remedy
+            ? ` ${driveBrowse.remedy}`
+            : " The Files library cannot add this access."}
+        </p>
       ) : connections.length === 0 ? (
         <p className="rounded-xl border border-border p-5 text-sm text-muted-foreground">
           No connected Google account currently has Drive browse access for this
@@ -232,25 +268,23 @@ export function GoogleDriveLibrary() {
               type="button"
               variant="outline"
               disabled={!connectionId || loading}
-              onClick={() =>
-                void load({ folderId: null, folderName: null, search: "" })
-              }
+              onClick={() => void load({ criteria: ALL_ACCESSIBLE_DRIVE })}
             >
-              Browse My Drive
+              Browse all accessible Drive files
             </Button>
           </form>
-          {folderId ? (
+          {criteria.folderId ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Button
                 type="button"
                 size="sm"
                 variant="ghost"
-                onClick={() => void load({ folderId: null, folderName: null })}
+                onClick={() => void load({ criteria: ALL_ACCESSIBLE_DRIVE })}
                 disabled={loading}
               >
-                <ChevronLeft className="mr-1 h-4 w-4" /> My Drive
+                <ChevronLeft className="mr-1 h-4 w-4" /> All accessible files
               </Button>
-              <span>/ {folderName ?? "Folder"}</span>
+              <span>/ {criteria.folderName ?? "Folder"}</span>
             </div>
           ) : null}
         </section>
@@ -265,13 +299,12 @@ export function GoogleDriveLibrary() {
           <ErrorAlchemyMenu error={error} />
         </div>
       ) : null}
-      {page?.incomplete_search ? (
+      {incompleteSearchNotice(page) ? (
         <p
           className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-foreground"
           data-google-drive-incomplete
         >
-          Google marked this result incomplete. Refine the search before relying
-          on it as a complete list.
+          {incompleteSearchNotice(page)}
         </p>
       ) : null}
       {access ? (
@@ -316,6 +349,7 @@ export function GoogleDriveLibrary() {
                       <p className="mt-1 text-xs text-muted-foreground">
                         {ownerLabel(file.owners)} · Modified{" "}
                         {dateLabel(file.modified_at)} ·{" "}
+                        {driveFileTypeLabel(file)} ·{" "}
                         {file.shared_drive ? "Shared drive" : "My Drive"}
                       </p>
                     </div>
@@ -328,8 +362,11 @@ export function GoogleDriveLibrary() {
                           disabled={loading}
                           onClick={() =>
                             void load({
-                              folderId: file.id,
-                              folderName: file.name,
+                              criteria: {
+                                search: criteria.search,
+                                folderId: file.id,
+                                folderName: file.name,
+                              },
                             })
                           }
                         >
@@ -349,20 +386,20 @@ export function GoogleDriveLibrary() {
                           Check access
                         </Button>
                       )}
-                      {file.web_view_link ? (
-                        <a
-                          href={file.web_view_link}
-                          target="_blank"
-                          rel="noreferrer"
-                          className={cn(
-                            "inline-flex h-9 items-center rounded-md px-3 text-sm font-medium text-primary hover:bg-accent",
-                            checkingFileId === file.id &&
-                              "pointer-events-none opacity-50",
-                          )}
-                        >
-                          Google <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
-                        </a>
-                      ) : null}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        disabled={checkingFileId !== null}
+                        onClick={() => void openInGoogle(file.id)}
+                      >
+                        {checkingFileId === file.id ? (
+                          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <ExternalLink className="mr-1 h-3.5 w-3.5" />
+                        )}
+                        Open in Google
+                      </Button>
                     </div>
                   </li>
                 );

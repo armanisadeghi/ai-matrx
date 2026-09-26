@@ -33,6 +33,7 @@ import { StorageQuotaChip } from "./StorageQuotaChip";
 import { PRIMARY_SECTIONS } from "./section";
 import type { CloudFilesSection } from "./section";
 import { useGoogleCapabilities } from "@/features/marketing/google/hooks";
+import { driveBrowseIsAvailable } from "@/features/files/google-drive/drive-browser";
 
 export interface NavSidebarProps {
   section: CloudFilesSection;
@@ -126,14 +127,14 @@ export function NavSidebar({ section, onCollapse }: NavSidebarProps) {
         {/* Primary sections */}
         <nav aria-label="Cloud files sections" className="px-2">
           <ul className="flex flex-col gap-0.5">
-            {PRIMARY_SECTIONS.filter(
-              (item) =>
-                item.key !== "google-drive" ||
-                capabilities.data?.some(
-                  (capability) =>
-                    capability.key === "drive_browse" &&
-                    capability.rollout_phase === "internal_test",
-                ),
+            {PRIMARY_SECTIONS.filter((item) =>
+              item.key !== "google-drive"
+                ? true
+                : driveBrowseIsAvailable(
+                    capabilities.data?.find(
+                      (capability) => capability.key === "drive_browse",
+                    ),
+                  ),
             ).map((item) => {
               const active = section === item.key;
               return (
