@@ -46,6 +46,9 @@ jest.mock("@/features/agents/components/inputs/smart-input/SmartAgentInput", () 
   SmartAgentInput: () => null,
 }));
 import { TooltipProvider } from "@/components/ui/tooltip";
+// The app root's one Alchemy action registry (AlchemyHost, ALC-15): the
+// assistant turn's rich-document action bar reads it.
+import { AlchemyActionsTestHost } from "@/test-utils/alchemy-actions-host";
 
 // The user bubble's variable chips need the associations store; this test is
 // about the assistant turn, so that one leaf is stubbed.
@@ -209,13 +212,15 @@ async function replay(lines: string[], burst: boolean) {
     });
     root.render(
       <Provider store={store}>
-        <TooltipProvider>
-          <BoundColumn
-            conversationId={conversationId}
-            surfaceKey="agent-comparison-model"
-            hideInput
-          />
-        </TooltipProvider>
+        <AlchemyActionsTestHost>
+          <TooltipProvider>
+            <BoundColumn
+              conversationId={conversationId}
+              surfaceKey="agent-comparison-model"
+              hideInput
+            />
+          </TooltipProvider>
+        </AlchemyActionsTestHost>
       </Provider>,
     );
   });
@@ -293,6 +298,9 @@ describe("a stream of empty reasoning brackets", () => {
   it.each(CASES)("renders without an update-depth crash — %s", async (_label, lines, burst) => {
     const { text, errors } = await replay(lines(), burst);
     expect(depthErrors(errors)).toEqual([]);
+    // No section of the turn fell to its error boundary (a crash inside the
+    // answer is a crash, whatever message it carries).
+    expect(text).not.toContain("This section could not be displayed");
     // The column finishes with its Answers card: the holder that answered.
     expect(text).toContain("grok-4.7");
   }, 60_000);
