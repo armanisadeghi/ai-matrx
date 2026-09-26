@@ -94,7 +94,8 @@ export async function buildPastedTextLanding(
     // Landed unsaved: the Save panel opens next with Save on, so the person
     // chooses where it is filed in the same motion (and can decline).
     keep: false,
-    visibility: "personal",
+    // A Source is organization data (Arman 2026-09-26): no per-Source privacy.
+    visibility: "internal",
     organization_id: input.organizationId,
   };
 }

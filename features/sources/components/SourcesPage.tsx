@@ -428,7 +428,8 @@ export function SourcesPage() {
     try {
       const normalized = await fileHandler.upload(
         { kind: "file", file },
-        { visibility: "personal" },
+        // A Source is organization data (Arman 2026-09-26).
+        { visibility: "internal" },
       );
       toast.dismiss(tid);
       if (!normalized.fileId) {
@@ -772,10 +773,10 @@ export function SourcesPage() {
       id: "organization",
       header: "Organization",
       accessorFn: (r) => {
-        const org =
+        return (
           orgNames.get(r.organization_id) ??
-          (factsLoading ? "…" : "an organization you belong to");
-        return r.visibility === "personal" ? `Personal · ${org}` : org;
+          (factsLoading ? "…" : "an organization you belong to")
+        );
       },
       filter: "select",
       width: 150,
@@ -848,7 +849,9 @@ export function SourcesPage() {
 
   // ── Render ───────────────────────────────────────────────────────────────
 
-  const scopeLabel = activeOrgName ? activeOrgName : "My organization";
+  const scopeLabel = activeOrgName
+    ? `Anyone in ${activeOrgName}`
+    : "Anyone in my organization";
 
   return (
     <SurfaceRuntimeProvider
@@ -934,7 +937,7 @@ export function SourcesPage() {
         ) : null}
         {scopeChoice === "org" && !activeOrgId ? (
           <p className="rounded-md border border-border p-3 text-sm text-muted-foreground">
-            Choose an organization in the organization picker to see its shared
+            Choose an organization in the organization picker to see its
             Sources.
           </p>
         ) : null}
@@ -975,11 +978,11 @@ export function SourcesPage() {
               {
                 type: "button-group",
                 id: "scope",
-                label: "Whose",
+                label: "Captured by",
                 value: scopeChoice,
                 defaultValue: "mine",
                 options: [
-                  { value: "mine", label: "Mine" },
+                  { value: "mine", label: "Me" },
                   { value: "org", label: scopeLabel },
                 ],
                 onChange: (v) => {

@@ -37,7 +37,8 @@ describe("buildPastedTextLanding", () => {
     expect(body.portions[0].text).toBe("# Title\nBody text here.");
     expect(body.provenance).toMatchObject({ origin_client: "web", capture_method: "native", user_id: base.userId });
     expect(body.organization_id).toBe(base.organizationId);
-    expect(body.visibility).toBe("personal");
+    // Arman 2026-09-26: a Source is organization data — no per-Source privacy choice.
+    expect(body.visibility).toBe("internal");
     expect(body.keep).toBe(false);
     expect(body.mime_type).toBe("text/plain");
   });

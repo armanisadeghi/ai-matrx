@@ -69,6 +69,23 @@ export function listedSource<T extends Pick<SourceListRow, "name">>(row: T): T {
   return withDisplayTitle(row, "name");
 }
 
+/**
+ * WHOSE Sources a view lists — who captured them, never a privacy filter
+ * (Arman 2026-09-26: a Source is organization data; no per-Source privacy).
+ *   mine → Sources I captured.   orgs → every Source in the organization.
+ */
+export function applySourcesScope<
+  Q extends { eq: (column: string, value: string) => Q },
+>(
+  q: Q,
+  scope: { kind: "mine" } | { kind: "orgs"; organizationId: string },
+  userId: string,
+): Q {
+  return scope.kind === "mine"
+    ? q.eq("created_by", userId)
+    : q.eq("organization_id", scope.organizationId);
+}
+
 export interface SourceAttachment {
   target_type: string;
   target_id: string;

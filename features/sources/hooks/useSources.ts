@@ -7,8 +7,9 @@
  * never a server list endpoint — with its scope DECLARED (THE VIEW LAW,
  * `lib/list-scope/types.ts`): RLS is the ceiling, the scope is the view.
  *
- *   mine → Sources I created (`created_by = me`), any visibility.
- *   orgs → the selected organization's shared Sources (`visibility <> personal`).
+ *   mine → Sources I captured (`created_by = me`).
+ *   orgs → every Source in the selected organization (a Source is organization
+ *          data — Arman 2026-09-26; there is no per-Source privacy filter).
  *
  * The complete list is read with `readAllRows` (PostgREST caps a bare select
  * at 1000 and the facets/counts treat this list as complete). Per-row stage
@@ -22,6 +23,7 @@ import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import {
   SOURCE_LIST_COLUMNS,
+  applySourcesScope,
   currentVersionsOnly,
   listedSource,
   sourceFactsFromRow,
@@ -172,12 +174,7 @@ export function useSources(
               .is("deleted_at", null)
               // One row per Source: originals and recaptures, never derived copies.
               .or("parent_processed_id.is.null,derivation_kind.eq.recapture");
-            q =
-              scope.kind === "mine"
-                ? q.eq("created_by", userId)
-                : q
-                    .eq("organization_id", scope.organizationId)
-                    .neq("visibility", "personal");
+            q = applySourcesScope(q, scope, userId);
             return q
               .order("created_at", { ascending: false })
               .order("id", { ascending: true })
