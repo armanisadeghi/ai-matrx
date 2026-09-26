@@ -188,3 +188,24 @@ describe("schema-cache recovery", () => {
     expect(getSnapshot()).toHaveLength(0);
   });
 });
+
+describe("a re-scoped client is still captured (RC-B12 round 4)", () => {
+  beforeEach(() => clearCapturedErrors());
+
+  it("captures a failure read through .schema(a).schema(b).from(x)", async () => {
+    const failed = { data: null, error: { code: "XX500", message: "forced failure" }, status: 500 };
+    const builder = {
+      then(onFulfilled: (value: unknown) => unknown) {
+        return Promise.resolve(onFulfilled(failed));
+      },
+    };
+    const scope = (): Record<string, unknown> => ({ from: () => builder, schema: () => scope() });
+    const client = wrapClientForCapture({ schema: () => scope() }) as unknown as {
+      schema: (n: string) => { schema: (n: string) => { from: (r: string) => PromiseLike<unknown> } };
+    };
+
+    await Promise.resolve(client.schema("scheduler").schema("scheduler").from("sch_task"));
+    expect(getSnapshot()).toHaveLength(1);
+    expect(getSnapshot()[0]).toMatchObject({ relation: "sch_task" });
+  });
+});

@@ -428,6 +428,13 @@ function wrapScope<T extends object>(scope: T, schema: string): T {
             relation: fn,
           });
       }
+      // `.schema(a).schema(b)` (a service re-scoping a scoped client) must stay
+      // captured — the raw scope's `.schema` returned an unwrapped client and
+      // every read through it failed invisibly (RC-B12 round 4: scheduling).
+      if (prop === "schema" && typeof value === "function") {
+        return (name: string, ...rest: unknown[]) =>
+          wrapScope(Reflect.apply(value, target, [name, ...rest]) as object, name);
+      }
       return value;
     },
   });
