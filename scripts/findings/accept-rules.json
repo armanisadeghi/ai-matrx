@@ -1,0 +1,82 @@
+{
+  "_readme": "THE ACCEPT RULES — how each check’s own allowlist takes an accepted key (PLAN.md C1). ONE source for both callers: `pnpm findings accept` (scripts/findings/registry.mjs → accept-rules.mjs) and the server’s one-click Mark OK (aidream aidream/services/platform_checks/accept_rules.py fetches THIS file from main). A rule is data; its `kind` is implemented twice (JS here, Python there) and proven byte-identical by accept-corpus.json, which the server re-checks before every commit. A check with `no_accept` cannot be accepted, in the registry’s own words. Change a kind → run `node scripts/findings/accept-rules.mjs --write-corpus` and commit both files.",
+  "version": 1,
+  "checks": {
+    "visibility-vocabulary": {
+      "accept": {
+        "kind": "detector-allowlist",
+        "file": "scripts/visibility-vocab/allowlist.json",
+        "detectors": [
+          "retiredSpelling",
+          "collapsedUnion",
+          "onlyYouClaim"
+        ]
+      }
+    },
+    "access-guard-check": {
+      "accept": {
+        "kind": "detector-allowlist",
+        "file": "scripts/access-guards/allowlist.json",
+        "detectors": [
+          "lowestTierDefault",
+          "activeOrgAccess",
+          "handRolledLadder",
+          "bareRlsList"
+        ]
+      }
+    },
+    "url-state-written-outside-the-canonical-primitive": {
+      "no_accept": "scripts/check-url-state.ts has no allowlist (its exemptions are code rules). Accepting needs an allowlist there first, then an adapter in scripts/findings/registry.mjs."
+    },
+    "complete-list-reads-postgrest-silently-caps-at-1000": {
+      "no_accept": "scripts/check-unbounded-reads.ts has no allowlist or baseline (it is an advisory census). Accepting needs one there first, then an adapter in scripts/findings/registry.mjs."
+    },
+    "api-contract-ratchet": {
+      "accept": {
+        "kind": "sorted-array-with-sibling-reasons",
+        "file": "scripts/api-contracts-baseline.json",
+        "reasons_file": "scripts/api-contracts-baseline.reasons.json",
+        "reasons_readme": "Why each entry of scripts/api-contracts-baseline.json was accepted (written by `pnpm findings accept`). scripts/api-contracts-baseline.json is a plain array the check reads as-is, so the reasons live here."
+      }
+    },
+    "cx-source-attribution-is-registered": {
+      "no_accept": "The registry is a vocabulary, not an allowlist of defects: the fix IS registering the value. There is nothing to accept."
+    },
+    "record-naming-toasts-carry-their-record": {
+      "accept": {
+        "kind": "ids-count-reasons",
+        "file": "scripts/record-toasts.baseline.json"
+      }
+    },
+    "access-errors-surfaces-that-guess-why-a-read-failed": {
+      "no_accept": "This check is accepted by an inline `// access-errors: ok — <reason>` marker on the flagged line or the line above it (a source edit you make by hand), never a key list. An adapter would go in scripts/findings/registry.mjs."
+    },
+    "no-dead-ends-door-law": {
+      "no_accept": "The allowlist is a TypeScript module (scripts/dead-ends/allowlist.ts, DEAD_END_ALLOWLIST: { file, rule?, reason }) — a hand edit with a reason. An adapter would append to that array."
+    },
+    "type-escape-hatch-ratchet": {
+      "no_accept": "A per-category COUNT ratchet (scripts/type-escape-baseline.json) that only shrinks: there is no per-site entry to accept."
+    },
+    "ui-primitives-check": {
+      "no_accept": "Exemptions are code sets inside scripts/check-ui-primitives.ts, not a key list: every item is new."
+    },
+    "settings-new-knob-shaped-constants-ratchet": {
+      "no_accept": "scripts/settings-hardcoded-allowlist.json ONLY SHRINKS by its own law (`_how`): a new entry is a human's hand edit with a reason, never a command."
+    },
+    "package-logic-re-grown-outside-its-package": {
+      "no_accept": "Keys name the register row and list that covers the file (census / shapeCensus / inputCensus in scripts/check-package-twins.mjs); census entries are hand edits to that register."
+    },
+    "scroll-chain-clipped-tables-lists": {
+      "no_accept": "scripts/check-scroll-chain.ts has no allowlist or baseline: every item is new."
+    },
+    "canonical-agent-model-pickers": {
+      "no_accept": "Only an inline exemption in the source file (scripts/check-canonical-pickers.ts documents it) — no key list."
+    },
+    "surfaces-running-an-agent-without-naming-it": {
+      "no_accept": "scripts/check-agent-disclosure.ts has no allowlist or baseline: every item is new."
+    },
+    "route-metadata-and-favicons": {
+      "no_accept": "scripts/check-route-metadata.ts has no allowlist or baseline: every item is new."
+    }
+  }
+}

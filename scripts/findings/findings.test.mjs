@@ -18,6 +18,7 @@ import test from "node:test";
 import { manifestRows, runRows } from "../checks/run.mjs";
 import { REPO_ROOT, accept, collect, commitOnly, parseArgs, shellQuote } from "./findings.mjs";
 import { appendToJsonArray } from "./json-edit.mjs";
+import { CORPUS_PATH, applyAcceptRule, loadAcceptRules } from "./accept-rules.mjs";
 import { FINDINGS_CHECKS, byId } from "./registry.mjs";
 
 const ROWS = manifestRows();
@@ -46,6 +47,28 @@ test("every converted check (scripts/checks/converted-checks.test.mjs) has a fin
   assert.deepEqual(converted.filter((id) => !byId(id)), [], "converted checks missing from scripts/findings/registry.mjs");
   assert.deepEqual(FINDINGS_CHECKS.filter((c) => !ROWS.some((r) => r.id === c.id)).map((c) => c.id), [], "registry ids with no runner row");
   for (const c of FINDINGS_CHECKS) assert.ok(c.accept || c.noAccept, `${c.id}: neither an adapter nor a noAccept explanation`);
+});
+
+test("accept-rules.json declares exactly the registry's checks, each with a rule or a reason", () => {
+  const { checks } = loadAcceptRules();
+  assert.deepEqual(Object.keys(checks).sort(), FINDINGS_CHECKS.map((c) => c.id).sort());
+  for (const [id, entry] of Object.entries(checks)) {
+    assert.ok(Boolean(entry.accept) !== Boolean(entry.no_accept), `${id}: exactly one of accept / no_accept`);
+  }
+});
+
+test("the JS engine reproduces every golden case in accept-corpus.json byte for byte (the server's Python twin is held to the same file)", () => {
+  const { cases } = JSON.parse(readFileSync(join(REPO_ROOT, CORPUS_PATH), "utf8"));
+  assert.ok(cases.length >= 8, `corpus has only ${cases.length} case(s)`);
+  const { checks } = loadAcceptRules();
+  for (const [id, entry] of Object.entries(checks)) {
+    if (entry.accept) {
+      assert.ok(cases.some((c) => JSON.stringify(c.rule) === JSON.stringify(entry.accept)), `${id}: its live rule has no corpus case — run node scripts/findings/accept-rules.mjs --write-corpus`);
+    }
+  }
+  for (const c of cases) {
+    assert.deepEqual(applyAcceptRule(c.rule, c.files, c.params), c.expected, `corpus case "${c.name}" no longer matches the engine`);
+  }
 });
 
 test("appendToJsonArray appends one entry in place and leaves every other byte alone", () => {
