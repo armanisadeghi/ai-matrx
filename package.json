@@ -269,6 +269,8 @@
     "check:hardcoded-prompts:write": "tsx scripts/check-hardcoded-prompts.ts --write",
     "check:hardcoded-agents": "tsx scripts/check-hardcoded-agents.ts",
     "check:hardcoded-agents:write": "tsx scripts/check-hardcoded-agents.ts --write",
+    "check:one-door": "tsx scripts/check-one-door.ts",
+    "check:one-door:self-test": "tsx scripts/check-one-door.ts --self-test",
     "check:single-record-writes": "tsx scripts/check-single-record-writes.ts",
     "check:single-record-writes:write": "tsx scripts/check-single-record-writes.ts --write",
     "check:single-record-writes:self-test": "tsx scripts/check-single-record-writes.ts --self-test",
