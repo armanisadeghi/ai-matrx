@@ -77,8 +77,7 @@ comment on function iam.is_doors_only_refusal(boolean, oid[], "char", text, text
 comment on function iam.doors_only_refusals(regclass) is
   'DOORS-ONLY refusal policies on a table, exact shape only. Read by iam.verify_canonical.';
 
-revoke execute on function iam.is_doors_only_refusal(boolean, oid[], "char", text, text, text) from public, anon, authenticated;
-revoke execute on function iam.doors_only_refusals(regclass) from public, anon, authenticated;
+-- No privilege change: both helpers are invoker-rights reads of pg_policy, which every role can already read.
 
 do $patch$
 declare
