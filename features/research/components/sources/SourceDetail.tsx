@@ -81,6 +81,7 @@ import { OriginBadge } from "../shared/OriginBadge";
 import { getSourceNavOrder } from "../../utils/sourceNavOrder";
 import { ContentViewer } from "./ContentViewer";
 import { runResearchAction } from "../../utils/researchAction";
+import { staleAnalysisSentence } from "../../utils/staleAnalysis";
 import { PasteContentModal } from "./PasteContentModal";
 import { AnalyzeCurationDialog } from "./AnalyzeCurationDialog";
 import { AnalysisCard } from "../analysis/AnalysisCard";
@@ -1065,9 +1066,12 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
     refetchSource();
   }, [sourceId, refetchSource]);
 
+  // An edit may have made (or replaced) the Source's edited version, so the
+  // Restore control re-reads whether there is anything to undo.
   const handleContentSaved = useCallback(() => {
     refetchContent();
-  }, [refetchContent]);
+    refetchSourceEditState();
+  }, [refetchContent, refetchSourceEditState]);
 
   const isScraping = scrapeStream.isStreaming;
 
@@ -1918,11 +1922,10 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                 <div className="rounded-lg border border-amber-500/40 bg-amber-500/[0.06] px-3 py-2 flex items-start gap-2">
                   <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
                   <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
-                    Showing analysis from <b>v{staleAnalysisVersion}</b> of this
-                    content. You&rsquo;ve edited it since (now v
-                    {currentContent?.version}), so this may be out of date —
-                    re-analyze to refresh. Your previous analysis was kept, not
-                    deleted.
+                    {staleAnalysisSentence(
+                      staleAnalysisVersion,
+                      currentContent?.version ?? null,
+                    )}
                   </p>
                 </div>
               )}

@@ -5,7 +5,7 @@ import type { Database } from "@/types/database.types";
 import { isJsonObject } from "@/types/json";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { writeOne } from "@/utils/supabase/writeOne";
-import { getJson, postJson } from "@/lib/python-client";
+import { getJson, patchJson, postJson } from "@/lib/python-client";
 import type { components } from "@/types/python-generated/api-types";
 import { RESEARCH_ENDPOINTS } from "./service/research-endpoints";
 import type {
@@ -1642,6 +1642,23 @@ async function retireResearchCopy(contentId: string): Promise<void> {
     .not("original_content", "is", null)
     .select("id");
   if (error) throw error;
+}
+
+/**
+ * Save an edit of a page that is NOT yet a Source through the research edit
+ * route (`PATCH /research/topics/{t}/content/{id}`), which stores it as a new
+ * content version. A page that IS a Source is edited with
+ * `updateContentCurated` (the Source keeps the original).
+ */
+export async function saveResearchContentEdit(
+  topicId: string,
+  contentId: string,
+  text: string,
+): Promise<void> {
+  await patchJson<unknown, { content: string }>(
+    RESEARCH_ENDPOINTS.topic(topicId).content.edit(contentId),
+    { content: text },
+  );
 }
 
 /**

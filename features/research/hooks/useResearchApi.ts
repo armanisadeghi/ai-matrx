@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { RESEARCH_ENDPOINTS } from "../service/research-endpoints";
 import type {
-  ContentEditRequest,
   ContentPasteRequest,
   AnalyzeRequest,
   AnalyzeBulkRequest,
@@ -226,17 +225,7 @@ export function useResearchApi() {
       uploadFile: (topicId: string, formData: FormData) =>
         api.upload(endpoints(topicId).sources.upload, formData),
 
-      // --- Content (Python for versioning + hashing) ---
-      editContent: (
-        topicId: string,
-        contentId: string,
-        body: ContentEditRequest,
-      ) =>
-        api.fetch(endpoints(topicId).content.edit(contentId), {
-          method: "PATCH",
-          body: JSON.stringify(body),
-        }),
-
+      // --- Content (edits go through service.ts: a Source is edited through the Source) ---
       pasteContent: (
         topicId: string,
         sourceId: string,

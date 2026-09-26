@@ -5,7 +5,9 @@ import { Pencil, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Badge } from "@/components/ui/badge";
-import { useResearchApi } from "../../hooks/useResearchApi";
+import { saveResearchContentEdit, updateContentCurated } from "../../service";
+import { runResearchAction } from "../../utils/researchAction";
+import { toast } from "@/lib/toast";
 import type { ResearchContent } from "../../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -20,7 +22,6 @@ export function ContentViewer({
   content,
   onSaved,
 }: ContentViewerProps) {
-  const api = useResearchApi();
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState("");
   const [saving, setSaving] = useState(false);
@@ -35,16 +36,33 @@ export function ContentViewer({
     setEditText("");
   }, []);
 
+  // A page that is a Source is edited THROUGH the Source (a version beside
+  // the original, restorable); a page not yet a Source through research's
+  // edit route. A refusal keeps the editor open with the text and says the
+  // server's own sentence.
   const saveEdit = useCallback(async () => {
     setSaving(true);
     try {
-      await api.editContent(topicId, content.id, { content: editText });
+      const saved = await runResearchAction("Couldn't save your edit", async () => {
+        if (content.processed_document_id) {
+          const landed = await updateContentCurated(content, editText);
+          toast.success(
+            landed?.notices?.[0]?.message ??
+              "Your edit was saved to the Source; the original capture is kept.",
+          );
+        } else {
+          await saveResearchContentEdit(topicId, content.id, editText);
+          toast.success("Saved as a new version of this page.");
+        }
+        return true;
+      });
+      if (!saved) return;
       setEditing(false);
       onSaved();
     } finally {
       setSaving(false);
     }
-  }, [api, topicId, content.id, editText, onSaved]);
+  }, [topicId, content, editText, onSaved]);
 
   return (
     <div className="space-y-3">

@@ -12,12 +12,14 @@
  *     platform treats that answer as silence (no toast), and so do we;
  *   - the picker cannot be shown at all → "Nothing was added: choose a
  *     workspace first";
- *   - the action itself fails → the failure's own sentence.
+ *   - the action itself fails → the server's own sentence (a 4xx carries
+ *     the door's words, never the generic envelope text).
  * Returns the action's result, or `null` when it did not run or failed.
  */
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { toast } from "@/lib/toast";
+import { sourceRefusalSentence } from "@/features/sources/api/sourcesApi";
 
 export const NO_WORKSPACE_SENTENCE = "Nothing was added: choose a workspace first";
 
@@ -42,11 +44,7 @@ export async function runResearchAction<T>(
       toast.error(NO_WORKSPACE_SENTENCE);
       return null;
     }
-    const why =
-      error instanceof Error && error.message
-        ? error.message
-        : "The server did not say why.";
-    toast.error(`${failureTitle}: ${why}`);
+    toast.error(`${failureTitle}: ${sourceRefusalSentence(error)}`);
     return null;
   }
 }
