@@ -38,7 +38,7 @@ import { deleteDocument } from "@/features/data-tables/document-service";
 import { deleteFile } from "@/features/files/redux/thunks";
 import { deleteNote } from "@/features/notes/redux/thunks";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
-import { AssociationPicker } from "@ai-matrx/associations/react";
+import { AssociationPicker, UnresolvedRef } from "@ai-matrx/associations/react";
 import { ConversationPickerWindow } from "@/features/agents/components/conversation-history/ConversationPickerWindow";
 import {
   UniversalAssociationPicker,
@@ -151,7 +151,10 @@ export function WarRoomResourcesList({
     : adapter.rows;
   const visibleRows = rows.filter((r) => !removingKeys.has(r.key));
 
-  const { titleFor } = useEntityTitles(
+  // `isUnresolved` is the loud half of the title resolver: a row whose record could not be read
+  // (deleted, or not shared with this viewer) renders the honest "Unavailable" chip — never an
+  // "Untitled <type>" link that opens nothing, never its id (no-dead-ends door law, RC-A5g).
+  const { titleFor, isUnresolved } = useEntityTitles(
     visibleRows.map((r) => ({
       token: r.token,
       id: r.resourceId,
@@ -398,7 +401,12 @@ export function WarRoomResourcesList({
                             id: row.resourceId,
                             label: labelFor(row),
                           });
-                          const idPrefix = (
+                          const unresolved = isUnresolved({
+                            token: row.token,
+                            id: row.resourceId,
+                            label: labelFor(row),
+                          });
+                          const idPrefix = unresolved ? null : (
                             <ResourceIdCopy id={row.resourceId} />
                           );
                           const menu = (
@@ -456,6 +464,7 @@ export function WarRoomResourcesList({
                                   token={row.token}
                                   id={row.resourceId}
                                   title={title}
+                                  unresolved={unresolved}
                                   originNote={row.originNote}
                                   idPrefix={idPrefix}
                                   menu={menu}
@@ -601,10 +610,12 @@ function DefaultResourceRow({
   idPrefix,
   menu,
   busy,
+  unresolved = false,
 }: {
   token: string;
   id: string;
   title: string;
+  unresolved?: boolean;
   originNote?: string | null;
   idPrefix: ReactNode;
   menu: ReactNode;
@@ -620,14 +631,18 @@ function DefaultResourceRow({
             replaced, so middle-click and cmd-click work and no popup blocker
             can eat it. A token with no registry route renders as plain text,
             so the title can never look openable and no-op. */}
-        <EntityRef
-          token={token}
-          id={id}
-          name={title}
-          showIcon={false}
-          openInNewTab
-          className="text-sm text-foreground"
-        />
+        {unresolved ? (
+          <UnresolvedRef token={token} id={id} />
+        ) : (
+          <EntityRef
+            token={token}
+            id={id}
+            name={title}
+            showIcon={false}
+            openInNewTab
+            className="text-sm text-foreground"
+          />
+        )}
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
           {idPrefix}
           {originNote ? (
