@@ -17,7 +17,7 @@
  * organization column are read directly too.
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import {
@@ -40,8 +40,14 @@ export interface UseSourcesResult {
   loading: boolean;
   /** A sentence for the person when the list itself could not be read. */
   error: string | null;
-  /** Set when the per-row facts failed (stage/attached-to then read as unknown). */
+  /** Set when some rows' facts could not be read (those rows offer a retry). */
   factsError: string | null;
+  /** Rows whose facts read failed — they say "Couldn't read status — retry". */
+  factsFailed: Set<string>;
+  /** True while a retry for these ids is in flight. */
+  factsRetrying: Set<string>;
+  /** Re-read the facts of these rows only. */
+  retryFacts: (ids: string[]) => void;
   /** True while the per-row facts are being read (cells say "Checking…"). */
   factsLoading: boolean;
 }
@@ -54,48 +60,61 @@ export interface UseSourcesResult {
 const FACTS_BATCH = 25;
 const FACTS_PARALLEL = 8;
 
+export interface SourceFactsRead {
+  facts: Map<string, SourceFacts>;
+  /** Ids whose batch failed — only these rows lack facts because of an error. */
+  failedIds: Set<string>;
+}
+
+/**
+ * Parallel batches, each settling on its own: a batch that fails marks ONLY its
+ * ids as failed (the rows then offer a retry) and never discards the facts the
+ * other batches read. A row the server answered without the current-version
+ * columns counts as failed too — its stage would have to be guessed.
+ */
 export async function readSourceFacts(
   ids: string[],
-  onBatch?: (partial: Map<string, SourceFacts>) => void,
-): Promise<Map<string, SourceFacts>> {
-  const out = new Map<string, SourceFacts>();
+  onBatch?: (partial: SourceFactsRead) => void,
+): Promise<SourceFactsRead> {
+  const facts = new Map<string, SourceFacts>();
+  const failedIds = new Set<string>();
   const batches: string[][] = [];
   for (let i = 0; i < ids.length; i += FACTS_BATCH)
     batches.push(ids.slice(i, i + FACTS_BATCH));
   let next = 0;
-  let failed = false;
   const worker = async () => {
-    while (next < batches.length && !failed) {
+    while (next < batches.length) {
       const batch = batches[next++];
-      const { data, error } = await supabase
-        .schema("docproc")
-        .rpc("source_list_facts", { p_ids: batch });
-      if (error) {
-        failed = true;
-        throw new Error(
-          "The stage and attachments of these Sources could not be read.",
-        );
+      let rows: SourceFactsRow[] | null = null;
+      try {
+        const { data, error } = await supabase
+          .schema("docproc")
+          .rpc("source_list_facts", { p_ids: batch });
+        if (!error) rows = (data ?? []) as SourceFactsRow[];
+      } catch {
+        rows = null;
       }
-      for (const r of (data ?? []) as SourceFactsRow[]) {
-        const facts = sourceFactsFromRow(r);
-        if (!facts) {
-          // The server's facts lack the current-version columns: the stage
-          // would have to be guessed from the capture's own chunks, which is
-          // the "Searchable" lie for an edited Source. Say so instead.
-          failed = true;
-          throw new Error(
-            "The stage of these Sources could not be read: the server did not say which version is current.",
-          );
+      if (!rows) {
+        batch.forEach((id) => failedIds.add(id));
+      } else {
+        const answered = new Set<string>();
+        for (const r of rows) {
+          const f = sourceFactsFromRow(r);
+          if (!f) continue;
+          facts.set(r.processed_document_id, f);
+          answered.add(r.processed_document_id);
         }
-        out.set(r.processed_document_id, facts);
+        batch.forEach((id) => {
+          if (!answered.has(id)) failedIds.add(id);
+        });
       }
-      onBatch?.(new Map(out));
+      onBatch?.({ facts: new Map(facts), failedIds: new Set(failedIds) });
     }
   };
   await Promise.all(
     Array.from({ length: Math.min(FACTS_PARALLEL, batches.length) }, worker),
   );
-  return out;
+  return { facts, failedIds };
 }
 
 export function useSources(
@@ -103,7 +122,8 @@ export function useSources(
   userId: string | null,
   refreshKey: number,
 ): UseSourcesResult {
-  const [state, setState] = useState<UseSourcesResult>({
+  type OwnState = Omit<UseSourcesResult, "retryFacts">;
+  const [state, setState] = useState<OwnState>({
     rows: [],
     facts: new Map(),
     orgNames: new Map(),
@@ -111,6 +131,8 @@ export function useSources(
     error: null,
     factsError: null,
     factsLoading: true,
+    factsFailed: new Set(),
+    factsRetrying: new Set(),
   });
   const scopeKey = scope
     ? scope.kind === "mine"
@@ -127,6 +149,8 @@ export function useSources(
       error: null,
       factsLoading: true,
       facts: new Map(),
+      factsFailed: new Set(),
+      factsRetrying: new Set(),
     }));
     void (async () => {
       let rows: SourceListRow[];
@@ -176,7 +200,12 @@ export function useSources(
         readSourceFacts(
           rows.map((r) => r.id),
           (partial) => {
-            if (!cancelled) setState((s) => ({ ...s, facts: partial }));
+            if (!cancelled)
+              setState((s) => ({
+                ...s,
+                facts: partial.facts,
+                factsFailed: partial.failedIds,
+              }));
           },
         ),
         orgIds.length
@@ -196,14 +225,18 @@ export function useSources(
         }[])
           orgNames.set(o.id, o.name);
       }
+      const read =
+        factsResult.status === "fulfilled"
+          ? factsResult.value
+          : {
+              facts: new Map<string, SourceFacts>(),
+              failedIds: new Set(rows.map((r) => r.id)),
+            };
       setState((s) => ({
         ...s,
-        facts:
-          factsResult.status === "fulfilled" ? factsResult.value : new Map(),
-        factsError:
-          factsResult.status === "rejected"
-            ? "Stage and attachments could not be read, so they show as unknown."
-            : null,
+        facts: read.facts,
+        factsFailed: read.failedIds,
+        factsError: factsErrorFor(read.failedIds.size),
         orgNames,
         factsLoading: false,
       }));
@@ -215,5 +248,37 @@ export function useSources(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scopeKey, userId, refreshKey]);
 
-  return state;
+  const retryFacts = useCallback((ids: string[]) => {
+    if (!ids.length) return;
+    setState((s) => ({
+      ...s,
+      factsRetrying: new Set([...s.factsRetrying, ...ids]),
+    }));
+    void readSourceFacts(ids).then(({ facts, failedIds }) => {
+      setState((s) => {
+        const merged = new Map(s.facts);
+        facts.forEach((f, id) => merged.set(id, f));
+        const failed = new Set(s.factsFailed);
+        ids.forEach((id) =>
+          failedIds.has(id) ? failed.add(id) : failed.delete(id),
+        );
+        const retrying = new Set(s.factsRetrying);
+        ids.forEach((id) => retrying.delete(id));
+        return {
+          ...s,
+          facts: merged,
+          factsFailed: failed,
+          factsRetrying: retrying,
+          factsError: factsErrorFor(failed.size),
+        };
+      });
+    });
+  }, []);
+
+  return { ...state, retryFacts };
+}
+
+function factsErrorFor(failed: number): string | null {
+  if (!failed) return null;
+  return `The status of ${failed === 1 ? "1 Source" : `${failed} Sources`} couldn't be read. Retry on those rows.`;
 }

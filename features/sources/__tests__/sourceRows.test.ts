@@ -12,6 +12,8 @@ import {
   sourceFactsFromRow,
   sourceStage,
   SOURCE_STAGE_LABEL,
+  STAGE_CELL_LABEL,
+  stageCellState,
   type SourceFacts,
   type SourceListRow,
 } from "@/features/sources/sourceRows";
@@ -147,5 +149,25 @@ describe("reading the facts row", () => {
         attachments: [],
       }),
     ).toBeNull();
+  });
+});
+
+describe("a row's status cell", () => {
+  const f = facts({ currentChunkCount: 2 });
+  it("shows the stage whenever the row's facts were read — even if another batch failed", () => {
+    expect(stageCellState(f, { loading: false, failed: false, retrying: false })).toBe("searchable");
+  });
+  it("says checking while the read is in flight", () => {
+    expect(stageCellState(undefined, { loading: true, failed: false, retrying: false })).toBe("checking");
+  });
+  it("offers a retry — never 'Unknown' — when this row's batch failed", () => {
+    expect(stageCellState(undefined, { loading: false, failed: true, retrying: false })).toBe("read_failed");
+    expect(STAGE_CELL_LABEL.read_failed).toBe("Couldn't read status");
+  });
+  it("a settled row with no facts is a failed read too", () => {
+    expect(stageCellState(undefined, { loading: false, failed: false, retrying: false })).toBe("read_failed");
+  });
+  it("says retrying while its retry runs", () => {
+    expect(stageCellState(undefined, { loading: false, failed: true, retrying: true })).toBe("checking");
   });
 });

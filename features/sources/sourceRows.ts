@@ -275,6 +275,28 @@ export function sourceStage(
   return "not_searchable";
 }
 
+/** What one row's Stage cell shows: the stage, or the state of reading it. */
+export type StageCellState = SourceStage | "checking" | "read_failed";
+
+export const STAGE_CELL_LABEL: Record<"checking" | "read_failed", string> = {
+  checking: "Checking…",
+  read_failed: "Couldn't read status",
+};
+
+/**
+ * A row with facts shows its stage — whatever happened to other batches. A row
+ * without facts is "checking" while its read (or retry) runs, and otherwise a
+ * failed read with a retry: never a bare "Unknown".
+ */
+export function stageCellState(
+  facts: SourceFacts | undefined,
+  read: { loading: boolean; failed: boolean; retrying: boolean },
+): StageCellState {
+  if (facts) return sourceStage(facts);
+  if (read.retrying || (read.loading && !read.failed)) return "checking";
+  return "read_failed";
+}
+
 // ── Saved ────────────────────────────────────────────────────────────────────
 
 /**

@@ -127,6 +127,8 @@ import {
   isSourceSaved,
   sourceKindGroup,
   sourceStage,
+  stageCellState,
+  STAGE_CELL_LABEL,
   type SavedFilter,
   type SourceAttachment,
   type SourceFacts,
@@ -206,31 +208,53 @@ function toLibrarySummary(
  */
 function StageCell({
   facts,
-  loading,
+  read,
   busy,
   onReindex,
+  onRetryRead,
 }: {
   facts: SourceFacts | undefined;
-  loading: boolean;
+  read: { loading: boolean; failed: boolean; retrying: boolean };
   busy: boolean;
   onReindex: () => void;
+  onRetryRead: () => void;
 }) {
-  if (!facts)
+  const state = stageCellState(facts, read);
+  if (state === "checking")
     return (
       <span className="text-xs text-muted-foreground">
-        {loading ? "Checking…" : "Unknown"}
+        {STAGE_CELL_LABEL.checking}
       </span>
     );
-  const stage = sourceStage(facts);
-  if (stage !== "stale")
+  if (state === "read_failed")
+    return (
+      <span className="flex items-center gap-1.5 text-xs text-warning">
+        <span title="This row's status could not be read from the server. Other rows are unaffected.">
+          {STAGE_CELL_LABEL.read_failed}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-6 px-2 text-xs"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            onRetryRead();
+          }}
+        >
+          Retry
+        </Button>
+      </span>
+    );
+  if (state !== "stale")
     return (
       <span
         className={cn(
           "text-xs",
-          stage === "not_searchable" && "text-muted-foreground",
+          state === "not_searchable" && "text-muted-foreground",
         )}
       >
-        {SOURCE_STAGE_LABEL[stage]}
+        {SOURCE_STAGE_LABEL[state]}
       </span>
     );
   return (
@@ -286,15 +310,15 @@ function AttachedList({ attachments }: { attachments: SourceAttachment[] }) {
 
 function AttachedCell({
   facts,
-  loading,
+  checking,
 }: {
   facts: SourceFacts | undefined;
-  loading: boolean;
+  checking: boolean;
 }) {
   if (!facts)
     return (
       <span className="text-muted-foreground">
-        {loading ? "Checking…" : "Unknown"}
+        {checking ? STAGE_CELL_LABEL.checking : STAGE_CELL_LABEL.read_failed}
       </span>
     );
   const n = facts.attachments.length;
@@ -357,8 +381,23 @@ export function SourcesPage() {
       : activeOrgId
         ? { kind: "orgs", organizationId: activeOrgId }
         : null;
-  const { rows, facts, orgNames, loading, error, factsError, factsLoading } =
-    useSources(scope, userId, refreshKey);
+  const {
+    rows,
+    facts,
+    orgNames,
+    loading,
+    error,
+    factsError,
+    factsLoading,
+    factsFailed,
+    factsRetrying,
+    retryFacts,
+  } = useSources(scope, userId, refreshKey);
+  const readOf = (id: string) => ({
+    loading: factsLoading,
+    failed: factsFailed.has(id),
+    retrying: factsRetrying.has(id),
+  });
   const visibleRows = applySavedFilter(rows, savedFilter);
   const savedCount = rows.filter(isSourceSaved).length;
   const refresh = () => setRefreshKey((n) => n + 1);
@@ -679,19 +718,18 @@ export function SourcesPage() {
       id: "stage",
       header: "Stage",
       accessorFn: (r) => {
-        const f = facts.get(r.id);
-        return f
-          ? SOURCE_STAGE_LABEL[sourceStage(f)]
-          : factsLoading
-            ? "Checking…"
-            : "Unknown";
+        const st = stageCellState(facts.get(r.id), readOf(r.id));
+        return st === "checking" || st === "read_failed"
+          ? STAGE_CELL_LABEL[st]
+          : SOURCE_STAGE_LABEL[st];
       },
       cell: (r) => (
         <StageCell
           facts={facts.get(r.id)}
-          loading={factsLoading}
+          read={readOf(r.id)}
           busy={bulkBusy}
           onReindex={() => void reindex(r)}
+          onRetryRead={() => retryFacts([r.id])}
         />
       ),
       filter: "select",
@@ -702,7 +740,12 @@ export function SourcesPage() {
       header: "Attached to",
       accessorFn: (r) => facts.get(r.id)?.attachments.length ?? 0,
       cell: (r) => (
-        <AttachedCell facts={facts.get(r.id)} loading={factsLoading} />
+        <AttachedCell
+          facts={facts.get(r.id)}
+          checking={
+            stageCellState(facts.get(r.id), readOf(r.id)) === "checking"
+          }
+        />
       ),
       filter: false,
       width: 120,
@@ -859,7 +902,15 @@ export function SourcesPage() {
         ) : null}
         {factsError ? (
           <p className="text-xs text-amber-600 dark:text-amber-400">
-            {factsError}
+            {factsError}{" "}
+            <button
+              type="button"
+              className="underline underline-offset-2"
+              disabled={factsRetrying.size > 0}
+              onClick={() => retryFacts([...factsFailed])}
+            >
+              {factsRetrying.size > 0 ? "Retrying…" : "Retry all"}
+            </button>
             <ErrorAlchemyMenu error={factsError} />
           </p>
         ) : null}
@@ -1012,6 +1063,13 @@ export function SourcesPage() {
                           </span>
                         </>
                       ) : null}
+                    </>
+                  ) : factsFailed.has(r.id) ? (
+                    <>
+                      <span>·</span>
+                      <span className="text-warning">
+                        {STAGE_CELL_LABEL.read_failed}
+                      </span>
                     </>
                   ) : null}
                 </div>
