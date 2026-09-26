@@ -19,10 +19,19 @@
 // THIS ROUTE IS THE OLDER SIDE, AND ONLY THE OLDER SIDE (owner's ruling, 2026-09-23:
 // "don't redirect anything at all right now"). /data/<id> opens the older viewer over the
 // older store, exactly as it always did; /data-v2/<id> is the new side, side by side, so the
-// two can be compared everywhere. Nothing here asks the record store, sends anyone to
-// /data-v2, or talks about a move. The one flip later moves everything at once.
+// two can be compared everywhere. The one flip later moves everything at once.
+//
+// AFTER THE FLIP (lane SWITCH-AFTERMATH, 2026-09-26). When the table's organization has pressed
+// Data tables → new system, its older table is archived and the same-id copy in the record store IS
+// the table (the switch card promises "any link to it opens the copy"). Before this lane the route
+// still mounted the older viewer, which read the ARCHIVED older rows through get_full_table /
+// get_user_table_data_paginated_v2 — a page that looked exactly like before and could be edited
+// into a table nobody reads any more. Now the route asks the one answer (`tableLivesIn`, the store's
+// custom.where_tables_live, read from the switch) first: "record" mounts the new table page — the
+// same screen /data-v2/<id> is — under one line saying where the table lives; "older" mounts the
+// older viewer exactly as before. Same id, same address; no redirect.
 
-import { useCallback, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -35,6 +44,59 @@ import TableIdentityMenu, {
 } from "@/components/user-generated-table-data/TableIdentityMenu";
 import CreateTableModal from "@/components/user-generated-table-data/CreateTableModal";
 import { forgetTablePlacement } from "@/features/data-tables/data-source/table-home";
+import Link from "next/link";
+import { supabase } from "@/utils/supabase/client";
+import { tableLivesIn } from "@/features/unified-data/tableLivesIn";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { Button } from "@ai-matrx/design-system";
+import UnifiedDataTableRoute from "@/app/(core)/data-v2/[tableId]/page";
+
+/** Where this id is read and written, asked of the store once per id. */
+type Home =
+  | { state: "asking" }
+  | { state: "older" }
+  | { state: "record" }
+  | { state: "unknown"; why: string };
+
+function useWhereThisTableLives(tableId: string): Home & { retry: () => void } {
+  const [home, setHome] = useState<Home>({ state: "asking" });
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    setHome({ state: "asking" });
+    void tableLivesIn(supabase, tableId).then((answer) => {
+      if (!alive) return;
+      setHome(answer.ok ? { state: answer.livesIn } : { state: "unknown", why: answer.why });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [tableId, attempt]);
+  return { ...home, retry: () => setAttempt((n) => n + 1) };
+}
+
+/**
+ * THE TABLE LIVES IN THE NEW SYSTEM. The new table page (records-ui TablePage, the /data-v2 screen)
+ * under one line that says so; the line names where to switch back.
+ */
+function MovedTable({ tableId }: { tableId: string }) {
+  const params = useMemo(() => Promise.resolve({ tableId }), [tableId]);
+  return (
+    <div className="flex h-full flex-col">
+      <p
+        className="shrink-0 px-4 pb-1 pt-[calc(var(--shell-header-h)+0.25rem)] text-xs text-muted-foreground"
+        data-testid="table-lives-in-new-system"
+      >
+        This table now lives in the new system. Same table, same address; its organization switched its
+        Data tables. <Link href="/data" className="text-primary underline-offset-2 hover:underline">All tables</Link>
+      </p>
+      {/* The table page pads itself below the shell header; the line above already sits there. */}
+      <div className="min-h-0 flex-1 [--shell-header-h:0px]">
+        <UnifiedDataTableRoute params={params} />
+      </div>
+    </div>
+  );
+}
 
 interface DataTableDetailClientProps {
   tableId: string;
@@ -43,6 +105,35 @@ interface DataTableDetailClientProps {
 export default function DataTableDetailClient({
   tableId,
 }: DataTableDetailClientProps) {
+  const home = useWhereThisTableLives(tableId);
+  if (home.state === "record") return <MovedTable tableId={tableId} />;
+  if (home.state === "asking") {
+    return (
+      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+        <p className="p-4 text-sm text-muted-foreground">Opening the table&hellip;</p>
+      </div>
+    );
+  }
+  if (home.state === "unknown") {
+    return (
+      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+        <div className="m-4 flex flex-col items-start gap-2 rounded-md border border-dashed p-6">
+          <p className="text-sm font-medium">We could not find out where this table lives <ErrorAlchemyMenu /></p>
+          <p className="max-w-prose text-xs text-muted-foreground">
+            Nothing was opened. This is not an answer about your access. {home.why}
+          </p>
+          <Button size="sm" variant="outline" onClick={home.retry}>
+            Try again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  return <OlderTableDetail tableId={tableId} />;
+}
+
+/** The older viewer over the older store, exactly as before the switch. */
+function OlderTableDetail({ tableId }: DataTableDetailClientProps) {
   const router = useRouter();
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
   const [tables, setTables] = useState<TableSummary[]>([]);

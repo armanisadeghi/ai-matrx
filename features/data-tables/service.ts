@@ -813,6 +813,28 @@ export async function listExampleTables(): Promise<
   };
 }
 
+// ─── archive a table ─────────────────────────────────────────────────────────
+
+/**
+ * Move a whole table to Trash through whichever store holds it: a record-store Table through the
+ * store's `record_delete` (lane SWITCH-AFTERMATH — /data's home lists a switched organization's
+ * tables where they now live), an older table through `delete_user_table`. Both are soft.
+ */
+export async function archiveTable(tableId: string): Promise<ServiceResult<{ table_id: string }>> {
+  const home = recordStoreHomeOf(tableId);
+  if (home) {
+    const done = await recordStore.archiveTable(home, { tableId });
+    return done.success ? { success: true, data: { table_id: tableId } } : done;
+  }
+  const { data, error } = await supabase.rpc("delete_user_table", { p_table_id: tableId });
+  if (error) return refused(error);
+  const envelope = data as unknown as { success?: boolean; error?: string } | null;
+  if (envelope && envelope.success === false) {
+    return { success: false, error: envelope.error ?? operationFailed("delete this table").message };
+  }
+  return { success: true, data: { table_id: tableId } };
+}
+
 // ─── update_user_table_metadata ──────────────────────────────────────────────
 
 export type UpdateTableMetadataArgs = {

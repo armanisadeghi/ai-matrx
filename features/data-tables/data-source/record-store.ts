@@ -774,6 +774,21 @@ export async function deleteRow(
 }
 
 /**
+ * Archive a whole record-store Table (lane SWITCH-AFTERMATH: /data's home lists a switched
+ * organization's tables where they now live, with the same Delete). `record_delete` is soft: the
+ * Table goes to Trash and Restore brings it back under its own id.
+ */
+export async function archiveTable(
+  home: RecordStoreHome,
+  args: { tableId: string },
+): Promise<ServiceResult<{ table_id: string; archived_at: string }>> {
+  const done = await clientFor(home).recordDelete({ record_id: args.tableId });
+  invalidateRecordStoreTable(args.tableId);
+  if (!done.ok) return refused(done.error);
+  return { success: true, data: { table_id: args.tableId, archived_at: String(done.data) } };
+}
+
+/**
  * A paste, a fill, a bulk edit or clear, a bulk delete — ONE call to the store's many-changes door
  * (`custom.record_change_many`), ONE transaction: every change lands or none does, and a refused
  * one comes back with the store's own sentence naming its position. The older door's contract

@@ -32,7 +32,15 @@ import {
   ChevronRight,
   BookOpen,
 } from "lucide-react";
-import { listExampleTables } from "@/features/data-tables/service";
+import { archiveTable, listExampleTables } from "@/features/data-tables/service";
+import { placeTableInRecordStore } from "@/features/data-tables/data-source/table-home";
+import {
+  movedSentence,
+  switchBackHref,
+  switchedOrganizations,
+  tablesWhereTheyLive,
+  type SwitchedOrganization,
+} from "@/features/unified-data/cutover/dataTablesSwitched";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import Link from "next/link";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
@@ -75,6 +83,8 @@ interface UserTable {
   visibility?: string | null;
   organization_id?: string | null;
   user_id: string;
+  /** "records": the table lives in the new system — its organization pressed Data tables → new. */
+  store?: "records";
 }
 
 const LIST_ITEMS_PER_PAGE = 20;
@@ -199,6 +209,11 @@ export default function TableCards() {
   const [tableToDelete, setTableToDelete] = useState<UserTable | null>(null);
   const [tableToEdit, setTableToEdit] = useState<UserTable | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  // WHERE THE TABLES WENT (lane SWITCH-AFTERMATH). An organization that pressed Data tables → new
+  // system archived its older tables, so `get_user_tables` stops listing them; its tables are read
+  // where they now live and drawn here with the same cards, and one line says what happened.
+  const [switched, setSwitched] = useState<SwitchedOrganization[]>([]);
+  const [movedError, setMovedError] = useState<string | null>(null);
   const router = useRouter();
 
   // Get current grid columns and calculate card limits
@@ -346,7 +361,38 @@ export default function TableCards() {
       const { data, error } = await supabase.rpc("get_user_tables");
 
       if (error) throw error;
-      setTables(unwrapGetUserTables(data ?? null) as UserTable[]);
+      const older = unwrapGetUserTables(data ?? null) as UserTable[];
+
+      // The organizations that switched: their tables where they now live (same ids).
+      const orgs = await switchedOrganizations(supabase);
+      const moved: UserTable[] = [];
+      const problems: string[] = [];
+      if (!orgs.ok) {
+        problems.push(orgs.why);
+      } else {
+        const { data: claims } = await getClaimsUser(supabase);
+        const me = claims.user?.id ?? null;
+        const lists = await Promise.all(orgs.data.map((o) => tablesWhereTheyLive(supabase, o.organizationId)));
+        lists.forEach((answer, i) => {
+          const org = orgs.data[i]!;
+          if (!answer.ok) {
+            problems.push(`${org.organizationName}: ${answer.why}`);
+            return;
+          }
+          for (const t of answer.data) {
+            // The grid, rename and delete reach a moved table through the store (the one data seam).
+            placeTableInRecordStore(t.id, { organizationId: org.organizationId, userId: me });
+            moved.push(t as UserTable);
+          }
+        });
+        setSwitched(orgs.data);
+      }
+      setMovedError(problems.length ? problems.join(" ") : null);
+      const movedIds = new Set(moved.map((t) => t.id));
+      const merged = [...moved, ...older.filter((t) => !movedIds.has(t.id))].sort((a, b) =>
+        (b.last_activity_at ?? b.updated_at ?? "").localeCompare(a.last_activity_at ?? a.updated_at ?? ""),
+      );
+      setTables(merged);
       setError(null);
       setErrorCause(null);
     } catch (err) {
@@ -368,12 +414,18 @@ export default function TableCards() {
     if (!tableToDelete) return;
 
     try {
-      const { data, error } = await supabase.rpc("delete_user_table", {
-        p_table_id: tableToDelete.id,
-      });
+      if (tableToDelete.store === "records") {
+        // A table in the new system goes to Trash through the store's own door.
+        const done = await archiveTable(tableToDelete.id);
+        if (!done.success) throw new Error(done.error);
+      } else {
+        const { data, error } = await supabase.rpc("delete_user_table", {
+          p_table_id: tableToDelete.id,
+        });
 
-      if (error) throw error;
-      unwrapUserTableMutation(data ?? null);
+        if (error) throw error;
+        unwrapUserTableMutation(data ?? null);
+      }
 
       // Update local state after successful deletion
       setTables(tables.filter((table) => table.id !== tableToDelete.id));
@@ -664,6 +716,28 @@ export default function TableCards() {
 
   return (
     <div className="space-y-6">
+      {/* WHERE THE TABLES WENT — one line per organization that switched (lane SWITCH-AFTERMATH). */}
+      {(switched.length > 0 || movedError) && (
+        <div className="flex flex-col gap-1" data-testid="data-tables-moved-notice">
+          {switched.map((org) => (
+            <p key={org.organizationId} className="text-sm text-muted-foreground">
+              {switched.length > 1 || tables.some((t) => t.organization_id !== org.organizationId) ? (
+                <span className="font-medium text-foreground">{org.organizationName}: </span>
+              ) : null}
+              {movedSentence(org)}{" "}
+              <Link href={switchBackHref(org.organizationId)} className="text-primary underline-offset-2 hover:underline">
+                Switch back
+              </Link>
+            </p>
+          ))}
+          {movedError && (
+            <p className="text-sm text-destructive">
+              Some tables that moved to the new system could not be listed: {movedError}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Search Bar */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-md">
