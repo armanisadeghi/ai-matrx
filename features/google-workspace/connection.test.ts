@@ -82,6 +82,17 @@ describe("Google account selection", () => {
     ).toEqual([healthy]);
   });
 
+  it("keeps restricted Drive browsing isolated from Picker-selected files", () => {
+    const pickerOnly = connection("picker", "picker@example.com");
+    const driveBrowse = connection("browse", "browse@example.com", {
+      scopes: [GOOGLE_SCOPE.driveReadonly],
+    });
+
+    expect(
+      eligibleGoogleConnections([pickerOnly, driveBrowse], "drive-browse"),
+    ).toEqual([driveBrowse]);
+  });
+
   it("honors an explicit valid account and safely falls back when it disappears", () => {
     const first = connection("first", "first@example.com");
     const second = connection("second", "second@example.com");
@@ -94,13 +105,17 @@ describe("Google account selection", () => {
     );
   });
 
-  it("stores separate safe preferences for Workspace and Gmail", () => {
+  it("stores separate safe preferences for Workspace, Gmail, and Drive browse", () => {
     rememberGoogleConnection("workspace", "workspace-connection");
     rememberGoogleConnection("gmail-send", "gmail-connection");
+    rememberGoogleConnection("drive-browse", "drive-browse-connection");
 
     expect(preferredGoogleConnectionId("workspace")).toBe(
       "workspace-connection",
     );
     expect(preferredGoogleConnectionId("gmail-send")).toBe("gmail-connection");
+    expect(preferredGoogleConnectionId("drive-browse")).toBe(
+      "drive-browse-connection",
+    );
   });
 });

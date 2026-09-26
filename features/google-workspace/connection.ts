@@ -22,7 +22,11 @@ export interface GoogleConnectionRef {
   accountName: string | null;
 }
 
-export type GoogleConnectionCapability = "workspace" | "gmail-send";
+export type GoogleConnectionCapability =
+  | "workspace"
+  | "gmail-send"
+  /** Restricted whole-Drive metadata browse; internal review only. */
+  | "drive-browse";
 
 const GOOGLE_CONNECTION_PREFERENCE_KEYS: Record<
   GoogleConnectionCapability,
@@ -30,6 +34,7 @@ const GOOGLE_CONNECTION_PREFERENCE_KEYS: Record<
 > = {
   workspace: "google:preferred-connection:workspace",
   "gmail-send": "google:preferred-connection:gmail-send",
+  "drive-browse": "google:preferred-connection:drive-browse",
 };
 
 const GOOGLE_CONNECTION_CAPABILITY_SCOPES: Record<
@@ -38,6 +43,7 @@ const GOOGLE_CONNECTION_CAPABILITY_SCOPES: Record<
 > = {
   workspace: GOOGLE_SCOPE.driveFile,
   "gmail-send": GOOGLE_SCOPE.gmailSend,
+  "drive-browse": GOOGLE_SCOPE.driveReadonly,
 };
 
 /** Where AI Matrx connects to Google. Every refusal points here. */

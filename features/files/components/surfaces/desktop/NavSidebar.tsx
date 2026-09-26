@@ -32,6 +32,7 @@ import { SidebarModeToggle, useSidebarMode } from "./SidebarModeToggle";
 import { StorageQuotaChip } from "./StorageQuotaChip";
 import { PRIMARY_SECTIONS } from "./section";
 import type { CloudFilesSection } from "./section";
+import { useGoogleCapabilities } from "@/features/marketing/google/hooks";
 
 export interface NavSidebarProps {
   section: CloudFilesSection;
@@ -43,6 +44,7 @@ export function NavSidebar({ section, onCollapse }: NavSidebarProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { mode } = useSidebarMode();
+  const capabilities = useGoogleCapabilities();
   const foldersById = useAppSelector(selectAllFoldersMap);
 
   // Sections that filter the file list independently of activeFolderId
@@ -124,7 +126,15 @@ export function NavSidebar({ section, onCollapse }: NavSidebarProps) {
         {/* Primary sections */}
         <nav aria-label="Cloud files sections" className="px-2">
           <ul className="flex flex-col gap-0.5">
-            {PRIMARY_SECTIONS.map((item) => {
+            {PRIMARY_SECTIONS.filter(
+              (item) =>
+                item.key !== "google-drive" ||
+                capabilities.data?.some(
+                  (capability) =>
+                    capability.key === "drive_browse" &&
+                    capability.rollout_phase === "internal_test",
+                ),
+            ).map((item) => {
               const active = section === item.key;
               return (
                 <li key={item.key}>

@@ -22,6 +22,7 @@ import type {
   GmailModifyResult,
   GmailLabelsResult,
 } from "@/features/marketing/google/types";
+import type { components } from "@/types/python-generated/api-types";
 import { isGoogleConnectionResourceType } from "@/features/marketing/google/types";
 import { readConnectionStatus } from "@/features/connectors/connection-status";
 import {
@@ -419,6 +420,8 @@ async function organizationContextHeaders(
  * picker from them — the screen's own organization notice answers instead.
  */
 const READ_SHAPED_GOOGLE_POSTS: readonly string[] = [
+  "/api/google-sync/drive/browse",
+  "/api/google-sync/drive/file",
   "/api/google-integrations/gmail/search",
   "/api/google-integrations/gmail/message",
   "/api/google-integrations/youtube/preview",
@@ -430,6 +433,55 @@ const READ_SHAPED_GOOGLE_POSTS: readonly string[] = [
   "/api/google-integrations/tag-manager/inventory",
   "/api/google-workspace/sheets/read",
 ];
+
+export type DriveBrowsePage = components["schemas"]["DriveBrowsePage"];
+export type DriveFileMetadata = components["schemas"]["DriveFileMetadata"];
+
+/**
+ * One bounded metadata page from the explicitly selected Drive connection.
+ * This deliberately has no content/download option: the server route exposes
+ * only Drive's listed metadata fields and remains internal-review gated.
+ */
+export async function browseGoogleDrive(input: {
+  organizationId: string;
+  connectionId: string;
+  search?: string | null;
+  folderId?: string | null;
+  pageToken?: string | null;
+}): Promise<DriveBrowsePage> {
+  const response = await postGoogleBackend(
+    "/api/google-sync/drive/browse",
+    {
+      organization_id: input.organizationId,
+      connection_id: input.connectionId,
+      search: input.search?.trim() || null,
+      folder_id: input.folderId ?? null,
+      page_token: input.pageToken ?? null,
+    },
+    "Google Drive metadata could not load. Try again.",
+    input.organizationId,
+  );
+  return (await response.json()) as DriveBrowsePage;
+}
+
+/** Confirm current metadata access for one selected file without opening it. */
+export async function checkGoogleDriveFileAccess(input: {
+  organizationId: string;
+  connectionId: string;
+  fileId: string;
+}): Promise<DriveFileMetadata> {
+  const response = await postGoogleBackend(
+    "/api/google-sync/drive/file",
+    {
+      organization_id: input.organizationId,
+      connection_id: input.connectionId,
+      file_id: input.fileId,
+    },
+    "Google Drive could not confirm access to this file. Try again.",
+    input.organizationId,
+  );
+  return (await response.json()) as DriveFileMetadata;
+}
 
 function googlePostAsks(path: string): boolean {
   return !READ_SHAPED_GOOGLE_POSTS.some((read) => path.startsWith(read));
