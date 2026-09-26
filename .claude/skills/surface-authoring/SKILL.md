@@ -72,6 +72,7 @@ Fill this receipt, rather than replacing it with a narrative. For a read-only as
 - **Adding/removing/changing values on an existing manifest, or deleting a manifest** → read [`references/update-or-remove.md`](./references/update-or-remove.md).
 - **Adding live scope or a canonical v3 menu to UI that already exists — including a page or window being registered as a surface for the first time — or completing/repairing any existing surface** → read [`references/runtime-rollout.md`](./references/runtime-rollout.md) (its menu contract and live completion gate: canonical submenu label, no `INERT MENU` / `VALUE MAPPING GAP`, real `extraSections` handlers, focused `--surface` sync).
 - **Looking up where a type, helper, service, route, or check lives** → read [`references/file-map.md`](./references/file-map.md).
+- **Working the surface campaign (making many surfaces agent-readable in batches), or coordinating it** → a worker reads [`references/campaign-worker.md`](./references/campaign-worker.md) and nothing else; a coordinator reads [`references/campaign-coordinator.md`](./references/campaign-coordinator.md). Tools: `pnpm surface:census` (the one list) and `pnpm surface:probe` (verify a surface on the live site, no dev server). Open gaps: `docs/handoffs/surface-campaign.md`.
 
 This list names every reference file; a run that reaches none of these branches needs only this file.
 

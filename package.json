@@ -122,6 +122,8 @@
     "find-circular:count": "npx madge --circular --extensions ts,tsx --ts-config tsconfig.json lib/redux/ 2>&1 | grep 'Found'",
     "check:surface-impact": "tsx scripts/check-surface-impact.ts",
     "check:surface-impact:strict": "tsx scripts/check-surface-impact.ts --strict",
+    "surface:probe": "node scripts/surface-probe.mjs",
+    "surface:census": "tsx scripts/surface-census.ts",
     "check:surface-drift": "tsx scripts/check-surface-drift.ts",
     "check:surface-approval-render": "tsx scripts/check-surface-approval-render.ts",
     "check:surface-approval-render:census": "tsx scripts/check-surface-approval-render.ts --census",
