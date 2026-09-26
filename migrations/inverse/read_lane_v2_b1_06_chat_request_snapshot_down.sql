@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b1_06_chat_request_snapshot — un-enrolls chat.request_snapshot from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'chat' and table_name = 'request_snapshot' and is_active);
+select iam.apply_rls('chat', 'request_snapshot', (select token from platform.entity_types where schema_name = 'chat' and table_name = 'request_snapshot' and is_active), (select rls_variant from platform.entity_types where schema_name = 'chat' and table_name = 'request_snapshot' and is_active));

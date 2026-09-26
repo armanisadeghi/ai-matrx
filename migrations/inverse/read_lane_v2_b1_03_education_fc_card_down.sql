@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b1_03_education_fc_card — un-enrolls education.fc_card from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'education' and table_name = 'fc_card' and is_active);
+select iam.apply_rls('education', 'fc_card', (select token from platform.entity_types where schema_name = 'education' and table_name = 'fc_card' and is_active), (select rls_variant from platform.entity_types where schema_name = 'education' and table_name = 'fc_card' and is_active));

@@ -67,6 +67,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { stripReadLaneV2Guard } from "./lib/read-lane-v2-guard";
 import { loadDbEnv } from "./lib/direct-db";
 import { openGateDb } from "./lib/gate-db";
 import type { Client } from "pg";
@@ -230,7 +231,9 @@ export function policyLanes(
   const lanes = new Set<Lane>();
   let unclassified = 0;
   if (stdSelect) {
-    for (const arm of allDisjuncts(stdSelect)) {
+    // READ-LANE V2 (P4): the lane-admin guard wraps the whole std_select in `guard AND (…)`, which
+    // would make it ONE unclassifiable disjunct. The guard only narrows; judge the lanes inside it.
+    for (const arm of allDisjuncts(stripReadLaneV2Guard(stdSelect))) {
       const lane = classifyDisjunct(arm);
       if (lane) lanes.add(lane); else unclassified++;
     }
@@ -416,6 +419,15 @@ async function selfTest(db: Client): Promise<number> {
      topLevelDisjuncts("(((a = 1) OR (b = 2)) OR (c = 3))").length === 2);
   ok("RED   — and the DESCENT is what makes the reading real: the same expression has 3 arms in all",
      allDisjuncts("(((a = 1) OR (b = 2)) OR (c = 3))").length === 3);
+
+  // ── 1b. READ-LANE V2 (P4): a guarded std_select is judged by the lanes INSIDE the guard. ──
+  {
+    const inner = "((created_by = ( SELECT auth.uid() AS uid)) OR (visibility = 'public'::platform.visibility))";
+    const guarded = `((( SELECT is_platform_admin() AS is_platform_admin) IS NOT TRUE) AND (${inner}))`;
+    const g = policyLanes(guarded, []);
+    ok("GREEN — read-lane v2: a guarded std_select yields its owner and public lanes, nothing unclassified, no platform_admin lane",
+       g.lanes.has("owner") && g.lanes.has("public_visibility") && !g.lanes.has("platform_admin") && g.unclassified === 0);
+  }
 
   // ── 2. THE CLASSIFIER, on the exact text Postgres prints. ──
   ok("classifies the blanket platform-admin arm",

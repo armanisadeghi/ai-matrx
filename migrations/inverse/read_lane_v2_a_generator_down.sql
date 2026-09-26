@@ -1,233 +1,10 @@
--- chair-step: replaces six generator/prover bodies (iam.entity_read_expr, iam._apply_rls_unchecked, iam.apply_table_grants, iam.entity_read_equivalence, public.std_select_count_as, iam.verify_canonical) and REVOKEs client access on the new read-lane v2 helpers and rollout table; no policy statement, so no sign-in freeze. Nothing changes for any table until a read-lane v2 batch file enrolls and regenerates it. Rule 27 rehearsed on the clone 2026-09-26; chair-approved design.
--- based-on: iam.entity_read_expr(text, text, text, text) 2aebd0e3ff51d51bed60d61d23955478a2838bac6cea9eb6d43c534e6de7a843
--- based-on: iam._apply_rls_unchecked(text, text, text, text) 506790d2e3f0e9cb629c14197f91d199132e3cef288ba250226a5f96a1e51b69
--- based-on: iam.apply_table_grants(text, text, text) a04e5cef93d3559725194cd19d70ec8469ce3d20436b11ac2aff3d0460061bef
--- based-on: iam.entity_read_equivalence(text, text, text, uuid, integer, text) 7976497bb8c2aec420227dddd1b440662264d96664808721ae79ff79e8512fa7
--- based-on: public.std_select_count_as(uuid, text, text) 525b6888daa419413b24453f7776245b919d68f99f9603016e5178e59d873860
--- based-on: iam.verify_canonical(text, text, text, text) 3a3e4964e02efb001c52815b5de80c7f67a26f896b50484c1c584fc2feb50f45
--- read_lane_v2_a_generator — the RLS generator learns two faster read shapes, switched on per table.
---
--- Design, measurements, attack and the chair's approval (2026-09-26):
--- common-docs/projects/rich-content-unification/evidence/generator-perf-design.md
---
--- THE DEFECT (production, 2026-09-26, rolled back): a member's `chat.conversation_summary` built
--- four 86k-id access sets (2.4 s) because a component's parent arm is an uncorrelated
--- `fk IN (set)` — planned only as a hashed SubPlan, never per row — and a lane admin's flash-card
--- list ran 4,087 per-row iam.has_access calls (2.0 s) because permissive policies are OR-ed in
--- reverse name order and std_select is evaluated before platform_admin_read.
---
--- THE CHANGE. Functions only — no policy statement, no freeze. Nothing changes for any table until
--- a batch file enrolls its token in iam.read_lane_v2_rollout (P7) and regenerates it:
---   P1 iam.entity_read_expr: an eligible component edge asks the parent's own read through a
---      correlated probe, with the set form as its fallback outside row security.
---   P2 iam._apply_rls_unchecked: an enrolled std_select is guarded so a lane admin skips it.
---   P3 iam.entity_read_equivalence / public.std_select_count_as: evaluate the table unaliased, so
---      correlated arms parse (files.files already failed); the mirror carries the P2 guard.
---   P4 iam.verify_canonical: judges std_select without the exact guard literal.
---   P5 iam.verify_canonical: read_lane_v2_parents_eligible.
---   P6 iam.apply_table_grants: refuses to withdraw a signed-in read another table's policy uses.
--- The 16 kernel functions are untouched: iam.entity_read_kernel_fingerprint() is unchanged.
--- ── P7: the rollout table. A token listed here gets the new read-lane shapes (P1, P2) on its next
--- iam.apply_rls; every other regeneration emits exactly today's bytes. Written by the batch files,
--- one row per table, in the same transaction as that table's regeneration. Server-only.
-create table if not exists iam.read_lane_v2_rollout (
-  token       text primary key,
-  batch       text not null,
-  enrolled_at timestamptz not null default now()
-);
-comment on table iam.read_lane_v2_rollout is
-  'Read-lane v2 rollout (common-docs projects/rich-content-unification/evidence/generator-perf-design.md, P7). A token here gets the component parent-probe arm (P1) and the lane-admin std_select guard (P2) on its next iam.apply_rls. Retired when every generated table is through.';
-revoke all on iam.read_lane_v2_rollout from public, anon, authenticated;
-grant select on iam.read_lane_v2_rollout to service_role;
-
-create or replace function iam.read_lane_v2_enrolled(p_token text)
-returns boolean language sql stable set search_path to 'pg_catalog' as $$
-  select exists (select 1 from iam.read_lane_v2_rollout r where r.token = p_token)
-$$;
-
--- ── P2: the guard. Only NARROWS std_select: a lane admin gets false here and every row through
--- platform_admin_read (unconditional, emitted by the same iam.apply_rls call). Everyone else: true.
-create or replace function iam.read_lane_v2_guard()
-returns text language sql immutable as $$
-  select '((select public.is_platform_admin()) is not true) and '::text
-$$;
-
--- The guard exactly as PostgreSQL deparses it inside a std_select USING clause. Every reader that
--- matches admin text in std_select strips THIS literal (never a pattern), so an admin ARM anywhere
--- still counts. Proven equal to a real pg_get_expr by the functions migration's own check.
-create or replace function iam.read_lane_v2_guard_deparsed()
-returns text language sql immutable as $$
-  select '(( SELECT is_platform_admin() AS is_platform_admin) IS NOT TRUE) AND '::text
-$$;
-
--- `authenticated` can read the `id` of this relation (the only column the P1 probe touches).
-create or replace function iam.read_lane_v2_auth_reads_id(p_rel regclass)
-returns boolean language sql stable set search_path to 'pg_catalog' as $$
-  select exists (select 1 from pg_attribute a where a.attrelid = p_rel and a.attname = 'id' and not a.attisdropped)
-     and has_schema_privilege('authenticated', (select c.relnamespace from pg_class c where c.oid = p_rel), 'USAGE')
-     and has_column_privilege('authenticated', p_rel, 'id', 'SELECT')
-$$;
-
--- ── P1 eligibility, structural half (conditions 1–5 of the design). Independent of enrollment.
-create or replace function iam.read_lane_v2_edge_structural_ok(p_child text, p_parent text, p_fk text)
-returns boolean language plpgsql stable set search_path to 'pg_catalog' as $$
-declare
-  c record; p record; v_prel regclass; v_crel regclass;
-begin
-  if p_child is null or p_parent is null or p_child = p_parent then return false; end if;
-  if not exists (select 1 from platform.entity_relationships er
-                  where er.child_type = p_child and er.parent_type = p_parent
-                    and er.fk_column = p_fk and er.kind = 'composition') then
-    return false;
-  end if;
-  select et.schema_name, et.table_name, et.rls_variant into c
-    from platform.entity_types et where et.token = p_child and et.is_active;
-  select et.schema_name, et.table_name into p
-    from platform.entity_types et where et.token = p_parent and et.is_active;
-  if c.table_name is null or p.table_name is null or c.rls_variant is distinct from 'component' then
-    return false;
-  end if;
-  v_crel := to_regclass(format('%I.%I', c.schema_name, c.table_name));
-  v_prel := to_regclass(format('%I.%I', p.schema_name, p.table_name));
-  if v_crel is null or v_prel is null then return false; end if;
-  -- the child carries the FK; the parent does NOT carry a same-named column (the correlation
-  -- must bind to the child row)
-  if not exists (select 1 from pg_attribute a where a.attrelid = v_crel and a.attname = p_fk and not a.attisdropped)
-     or exists (select 1 from pg_attribute a where a.attrelid = v_prel and a.attname = p_fk and not a.attisdropped) then
-    return false;
-  end if;
-  -- the parent's row security is ON and a signed-in client can read its id
-  if not (select relrowsecurity from pg_class where oid = v_prel) then return false; end if;
-  if not iam.read_lane_v2_auth_reads_id(v_prel) then return false; end if;
-  -- the parent's signed-in read is exactly its generated policy set
-  if not exists (select 1 from pg_policy po where po.polrelid = v_prel and po.polname = 'std_select') then
-    return false;
-  end if;
-  if exists (select 1 from pg_policy po
-              where po.polrelid = v_prel and po.polcmd in ('r','*')
-                and (0::oid = any (po.polroles) or 'authenticated'::regrole::oid = any (po.polroles))
-                and po.polname <> all (iam.generated_policy_names())) then
-    return false;
-  end if;
-  -- no bespoke resolver behind the parent token (the same test iam.entity_read_expr uses)
-  if exists (select 1 from pg_proc pr join pg_namespace n on n.oid = pr.pronamespace
-              where n.nspname = 'iam' and pr.proname = 'has_access_for'
-                and pr.prosrc ~ ('p_type\s*=\s*''' || p_parent || '''')) then
-    return false;
-  end if;
-  return true;
-end $$;
-
--- ── P1 nesting depth, computed from the registry as if every token were enrolled, so the cap does
--- not depend on the order the batches run in. depth(t) = 0 when t emits no P1 arm; otherwise
--- 1 + the deepest parent it probes. An edge emits P1 only when depth(parent) <= 1, so a policy never
--- expands more than two nested parent reads (measured: web.crawl_event, four deep, planned in 162 ms).
-create or replace function iam.read_lane_v2_depth(p_token text, p_path text[] default '{}')
-returns integer language plpgsql stable set search_path to 'pg_catalog' as $$
-declare
-  rec record; v_d integer := 0; v_pd integer;
-begin
-  if p_token = any (p_path) or cardinality(p_path) > 16 then return 0; end if;
-  for rec in select er.parent_type, er.fk_column from platform.entity_relationships er
-              where er.child_type = p_token and er.kind = 'composition' and er.parent_type <> p_token
-  loop
-    if iam.read_lane_v2_edge_structural_ok(p_token, rec.parent_type, rec.fk_column) then
-      v_pd := iam.read_lane_v2_depth(rec.parent_type, p_path || p_token);
-      if v_pd <= 1 then v_d := greatest(v_d, v_pd + 1); end if;
-    end if;
-  end loop;
-  return v_d;
-end $$;
-
-create or replace function iam.read_lane_v2_edge_emits(p_child text, p_parent text, p_fk text)
-returns boolean language sql stable set search_path to 'pg_catalog' as $$
-  select iam.read_lane_v2_enrolled(p_child)
-     and iam.read_lane_v2_edge_structural_ok(p_child, p_parent, p_fk)
-     and iam.read_lane_v2_depth(p_parent) <= 1
-$$;
-
--- The P1 arm. Under row security (every client read) it is "the parent row is visible to this
--- person under the parent's own policies" — a correlated EXISTS the planner can answer with a pkey
--- probe. Outside row security (postgres / service_role evaluating the text: the provers) it falls
--- back to exactly the set form it replaces, and the same if the parent's row security is ever off.
-create or replace function iam.read_lane_v2_parent_arm(p_parent text, p_fk text)
-returns text language plpgsql stable set search_path to 'pg_catalog' as $$
-declare
-  v_ptbl text;
-begin
-  select format('%I.%I', et.schema_name, et.table_name) into v_ptbl
-    from platform.entity_types et where et.token = p_parent and et.is_active;
-  return format(
-    '(%1$I is not null and exists (select 1 from %2$s p__ where p__.id = %1$I'
-    ' and ((select row_security_active(%3$L::regclass))'
-    ' or p__.id in (select iam.unnest_uuids(iam.accessible_entity_ids(%4$L, ''viewer''::public.permission_level, 0, true))))))',
-    p_fk, v_ptbl, v_ptbl, p_parent);
-end $$;
-
--- Taken by iam._apply_rls_unchecked BEFORE its first policy statement, so a wait on a parent
--- happens before the auth/storage/realtime freeze starts, never inside it.
-create or replace function iam.read_lane_v2_lock_parents(p_token text)
-returns void language plpgsql set search_path to 'pg_catalog' as $$
-declare rec record;
-begin
-  for rec in select distinct format('%I.%I', pe.schema_name, pe.table_name) as ptbl
-               from platform.entity_relationships er
-               join platform.entity_types pe on pe.token = er.parent_type and pe.is_active
-              where er.child_type = p_token and er.kind = 'composition'
-                and iam.read_lane_v2_edge_emits(p_token, er.parent_type, er.fk_column)
-              order by 1
-  loop
-    execute format('lock table %s in access share mode', rec.ptbl);
-  end loop;
-end $$;
-
--- ── P6: a parent's client read cannot be withdrawn while another table's policy reads it.
-create or replace function iam.read_lane_v2_refuse_withdraw(p_rel regclass, p_had_read boolean)
-returns void language plpgsql stable set search_path to 'pg_catalog' as $$
-declare v_children text;
-begin
-  if not p_had_read or iam.read_lane_v2_auth_reads_id(p_rel) then return; end if;
-  select string_agg(distinct format('%s (policy %s)', po.polrelid::regclass, po.polname), ', ')
-    into v_children
-    from pg_depend d join pg_policy po on po.oid = d.objid
-   where d.classid = 'pg_policy'::regclass and d.refclassid = 'pg_class'::regclass
-     and d.refobjid = p_rel and po.polrelid <> p_rel;
-  if v_children is not null then
-    raise exception 'apply_table_grants: this would withdraw the signed-in read of % while other tables'' policies read it: %. Every read of those tables would fail with 42501. Regenerate them first (iam.apply_rls falls back to the set form when the parent is not readable), then withdraw.',
-      p_rel, v_children using errcode = '42501';
-  end if;
-end $$;
-
--- ── P5: a component whose std_select probes a parent that is no longer eligible.
-create or replace function iam.read_lane_v2_stale_edges(p_schema text, p_table text, p_token text)
-returns text language plpgsql stable set search_path to 'pg_catalog' as $$
-declare
-  v_sel text; rec record; v_bad text;
-begin
-  select pg_get_expr(po.polqual, po.polrelid) into v_sel from pg_policy po
-   where po.polrelid = to_regclass(format('%I.%I', p_schema, p_table)) and po.polname = 'std_select';
-  if v_sel is null or v_sel not like '%row_security_active(%' then return null; end if;
-  for rec in select er.parent_type, er.fk_column, format('%I.%I', pe.schema_name, pe.table_name) as ptbl
-               from platform.entity_relationships er
-               join platform.entity_types pe on pe.token = er.parent_type
-              where er.child_type = p_token and er.kind = 'composition'
-  loop
-    if position(('FROM ' || rec.ptbl || ' p__') in v_sel) > 0
-       and not iam.read_lane_v2_edge_structural_ok(p_token, rec.parent_type, rec.fk_column) then
-      v_bad := coalesce(v_bad || '; ', '') || format('%s via %s', rec.ptbl, rec.fk_column);
-    end if;
-  end loop;
-  if v_bad is null then return null; end if;
-  return 'std_select probes a parent that is no longer eligible (row security off, signed-in read withdrawn, a hand-written policy added, or a bespoke resolver): '
-         || v_bad || ' — re-run iam.apply_rls on this table (it falls back to the set form).';
-end $$;
-
-revoke all on function iam.read_lane_v2_enrolled(text), iam.read_lane_v2_guard(), iam.read_lane_v2_guard_deparsed(),
-  iam.read_lane_v2_auth_reads_id(regclass), iam.read_lane_v2_edge_structural_ok(text,text,text),
-  iam.read_lane_v2_depth(text,text[]), iam.read_lane_v2_edge_emits(text,text,text),
-  iam.read_lane_v2_parent_arm(text,text), iam.read_lane_v2_lock_parents(text),
-  iam.read_lane_v2_refuse_withdraw(regclass,boolean), iam.read_lane_v2_stale_edges(text,text,text)
-  from public, anon, authenticated;
+-- chair-step: inverse of read_lane_v2_a_generator — restores the six generator/prover bodies it replaced and removes the read-lane v2 helpers and rollout table. Policies already regenerated under v2 keep their v2 text until each enrolled table is regenerated again (run iam.apply_rls on them AFTER this inverse, with the rollout table gone, to put back the set form).
+-- based-on: iam.entity_read_expr(text, text, text, text) e50fb0ca6e84563f53f633ed97a4fb4e4ff7fedb7dcbb3774c457f47314b0f34
+-- based-on: iam._apply_rls_unchecked(text, text, text, text) a6bc3fd5b22b57b12d24290100c1d4de78dac61e5b4c4a20f26f05d00c3df5c7
+-- based-on: iam.apply_table_grants(text, text, text) 3c6b7bd6e2e7d5cbb5b8bda776f7532d3dfb952f6984144d204a65d73cf03f33
+-- based-on: iam.entity_read_equivalence(text, text, text, uuid, integer, text) f27f83a11f5fdb6940edbf2f5ae3acb928c0d715a0fa1d2af2fa0d44bab30591
+-- based-on: public.std_select_count_as(uuid, text, text) 19bb81f47868e2f1b74edde42f03b39f4584cd0cd912ea57d435727c58d75711
+-- based-on: iam.verify_canonical(text, text, text, text) 0ec1a3b16caf798daf3bf19998652f7d8bf9f2367e645886aa636916d05b643e
 
 CREATE OR REPLACE FUNCTION iam.entity_read_expr(p_schema text, p_table text, p_token text, p_variant text DEFAULT 'entity'::text)
  RETURNS text
@@ -499,12 +276,7 @@ begin
       -- `NULL in (…)` evaluate to NULL rather than false. 10 of web.site's 45
       -- rows have a NULL brand_id, and they were the last thing standing
       -- between this expression and a total one.
-      if p_variant = 'component' and iam.read_lane_v2_edge_emits(p_token, rec.parent_type, rec.fk_column) then
-        -- READ-LANE V2 (P1, generator-perf-design.md): the parent row is visible to this person
-        -- under the parent's own policies — a correlated probe the planner can answer per row —
-        -- with the set form below as its fallback outside row security.
-        v_arms := array_append(v_arms, iam.read_lane_v2_parent_arm(rec.parent_type, rec.fk_column));
-      elsif p_variant = 'component' then
+      if p_variant = 'component' then
         -- 🚨 MIRROR THE DEPLOYED LANE HERE, NOT THE KERNEL, and the difference is
         -- not academic. The generated component policy calls the 2-arg
         -- `accessible_entity_ids(parent,'viewer')` — include_public => TRUE —
@@ -883,7 +655,8 @@ begin
 
   return v_expr;
 end;
-$function$;
+$function$
+;
 
 CREATE OR REPLACE FUNCTION iam._apply_rls_unchecked(p_schema text, p_table text, p_token text, p_variant text DEFAULT 'entity'::text)
  RETURNS void
@@ -998,8 +771,6 @@ declare
   v_no_client_writes boolean := false;
   -- RC-A2c: the reference gate this token declares (platform.reference_gate), if any.
   v_ref_type_col text; v_ref_id_col text;
-  -- READ-LANE V2 (P7): the token is enrolled in iam.read_lane_v2_rollout.
-  v_v2 boolean := false;
 begin
   select coalesce(is_component, false), coalesce(suppress_platform_admin_lane, false),
          coalesce(component_anon_read_via_public_parent, false), client_excluded_columns
@@ -1007,8 +778,6 @@ begin
   from platform.entity_types where token = p_token;
 
   -- D347: publication is an additional anonymous-only restriction, never an access grant.
-  v_v2 := iam.read_lane_v2_enrolled(p_token);
-
   select anonymous_read_status into v_required_anon_status
     from platform.entity_types where token = p_token;
   if v_required_anon_status is not null then
@@ -1493,16 +1262,9 @@ begin
     -- entity_relationships, gates its org/visibility arms on those columns
     -- existing, and bounds the definer call by the id-producing lanes. A second
     -- component-shaped copy of that logic is how the two would drift.
-    if v_v2 then
-      -- READ-LANE V2 (P2): a lane admin skips std_select; platform_admin_read admits every row.
-      v_pol := v_pol || format(
-        'create policy std_select on %s for select to authenticated using (%s(%s(%s)))',
-        v_tbl, iam.read_lane_v2_guard(), v_admin_read, iam.entity_read_expr(p_schema, p_table, p_token, 'component'));
-    else
-      v_pol := v_pol || format(
-        'create policy std_select on %s for select to authenticated using (%s(%s))',
-        v_tbl, v_admin_read, iam.entity_read_expr(p_schema, p_table, p_token, 'component'));
-    end if;
+    v_pol := v_pol || format(
+      'create policy std_select on %s for select to authenticated using (%s(%s))',
+      v_tbl, v_admin_read, iam.entity_read_expr(p_schema, p_table, p_token, 'component'));
 
     -- THE PUBLIC-PARENT ANON LANE (0580). Emitted only for a flagged token.
     -- The policy admits a row when a composition parent is public and live;
@@ -1598,9 +1360,6 @@ begin
     -- IS its parent's (THE COMPONENT OWNERSHIP LAW). There is nothing to govern
     -- here, so the governance-column tier deliberately does not apply.
     perform iam.drop_governance_guard(p_schema, p_table);
-    -- READ-LANE V2: every parent a P1 arm reads is locked (ACCESS SHARE) HERE, before the first
-    -- policy statement, so a wait on a busy parent never happens inside the sign-in freeze.
-    if v_v2 then perform iam.read_lane_v2_lock_parents(p_token); end if;
     perform iam._rls_emit_policies(v_drop, v_pol);  -- POLICY-LOCK: the freeze starts here and ends at COMMIT
     return;
   end if;
@@ -1676,16 +1435,9 @@ begin
   -- reached only for ids the remaining id-producing lanes could admit. Same
   -- move the `ledger` (0439) and `component` lanes already made; `entity` was
   -- the last variant still asking the question one row at a time.
-  if v_v2 then
-    -- READ-LANE V2 (P2): a lane admin skips std_select; platform_admin_read admits every row.
-    v_pol := v_pol || format(
-      'create policy std_select on %s for select to authenticated using (%s(%s(%s)))',
-      v_tbl, iam.read_lane_v2_guard(), v_admin_read, iam.entity_read_expr(p_schema, p_table, p_token));
-  else
-    v_pol := v_pol || format(
-      'create policy std_select on %s for select to authenticated using (%s(%s))',
-      v_tbl, v_admin_read, iam.entity_read_expr(p_schema, p_table, p_token));
-  end if;
+  v_pol := v_pol || format(
+    'create policy std_select on %s for select to authenticated using (%s(%s))',
+    v_tbl, v_admin_read, iam.entity_read_expr(p_schema, p_table, p_token));
 
   -- DD-249, the entity/system tail. `system` keeps its unconditional anon lane: a system
   -- table IS the platform's own published catalogue (63 of its 134 tokens already resolve
@@ -1728,7 +1480,8 @@ begin
   perform iam._rls_emit_policies(v_drop, v_pol);  -- POLICY-LOCK: the freeze starts here and ends at COMMIT
 end;
 
-$function$;
+$function$
+;
 
 CREATE OR REPLACE FUNCTION iam.apply_table_grants(p_schema text, p_table text, p_variant text DEFAULT 'entity'::text)
  RETURNS void
@@ -1737,8 +1490,6 @@ AS $function$
 declare
   v_tbl text := format('%I.%I', p_schema, p_table);
   v_rel regclass := v_tbl::regclass;
-  -- READ-LANE V2 (P6): did a signed-in client read this table's id when we started?
-  v_v2_had_read boolean := iam.read_lane_v2_auth_reads_id(v_tbl::regclass);
   v_rls_on boolean;
   v_n_pol integer;
   v_live_cols integer;
@@ -1843,7 +1594,6 @@ begin
       -- quoting is format()'s job, one level in.
       format('update platform.schema_client_exposure set client_exposed = true, reason = %L, declared_by = %L where schema_name = %L; -- then re-run the provisioner',
              '<why this schema may be reached by client roles>', '<who decided>', p_schema);
-    perform iam.read_lane_v2_refuse_withdraw(v_rel, v_v2_had_read);
     return;
   end if;
 
@@ -1913,7 +1663,6 @@ begin
       end loop;
     end if;
     execute format('grant all on %s to service_role', v_tbl);
-    perform iam.read_lane_v2_refuse_withdraw(v_rel, v_v2_had_read);
     return;
   end if;
 
@@ -2161,9 +1910,9 @@ begin
   end;
   -- service_role is the server's bypass lane and always needs full reach.
   execute format('grant all on %s to service_role', v_tbl);
-  perform iam.read_lane_v2_refuse_withdraw(v_rel, v_v2_had_read);
 end;
-$function$;
+$function$
+;
 
 CREATE OR REPLACE FUNCTION iam.entity_read_equivalence(p_schema text, p_table text, p_token text, p_user uuid, p_limit integer DEFAULT NULL::integer, p_baseline text DEFAULT NULL::text)
  RETURNS TABLE(lost bigint, gained bigint, compared bigint)
@@ -2205,24 +1954,18 @@ begin
   v_new := format('%s(%s)',
                   iam.platform_admin_read_prefix(p_token),
                   iam.entity_read_expr(p_schema, p_table, p_token, coalesce(v_variant, 'entity')));
-  -- READ-LANE V2 (P2): an enrolled token's std_select carries the lane-admin guard; so does the mirror.
-  if iam.read_lane_v2_enrolled(p_token) then
-    v_new := format('%s(%s)', iam.read_lane_v2_guard(), v_new);
-  end if;
 
-  -- READ-LANE V2 (P3): the table is evaluated UNALIASED. PostgreSQL deparses an outer reference
-  -- inside a policy subquery qualified by the table's own name, so an aliased `(select …) s` made
-  -- every correlated arm unparseable here (files.files failed this way before read-lane v2).
-  v_src := case when p_limit is null then 'true'
-                else format('id in (select s__.id from %I.%I s__ order by s__.id limit %s)', p_schema, p_table, p_limit) end;
+  v_src := format('select * from %I.%I%s', p_schema, p_table,
+                  case when p_limit is null then '' else format(' order by id limit %s', p_limit) end);
 
   return query execute format(
     'select count(*) filter (where (%1$s) and not (%2$s))::bigint,'
     '       count(*) filter (where (%2$s) and not (%1$s))::bigint,'
-    '       count(*)::bigint from %3$I.%4$I where %5$s',
-    v_old, v_new, p_schema, p_table, v_src);
+    '       count(*)::bigint from (%3$s) s',
+    v_old, v_new, v_src);
 end;
-$function$;
+$function$
+;
 
 CREATE OR REPLACE FUNCTION public.std_select_count_as(p_user uuid, p_schema text, p_table text)
  RETURNS bigint
@@ -2238,12 +1981,13 @@ begin
   end if;
   perform set_config('request.jwt.claims',
     json_build_object('sub', p_user, 'role', 'authenticated')::text, true);
-  execute format('select count(*)::bigint from %I.%I where (%s)', p_schema, p_table, v_qual)  -- READ-LANE V2 (P3): unaliased, so correlated arms parse
+  execute format('select count(*)::bigint from (select * from %I.%I) s where (%s)', p_schema, p_table, v_qual)
     into v_n;
   perform set_config('request.jwt.claims', '', true);
   return v_n;
 end;
-$function$;
+$function$
+;
 
 CREATE OR REPLACE FUNCTION iam.verify_canonical(p_schema text, p_table text, p_token text, p_variant text DEFAULT NULL::text)
  RETURNS TABLE(check_name text, status text, detail text)
@@ -2426,10 +2170,6 @@ BEGIN
     SELECT pg_get_expr(polqual,polrelid) INTO v_sel FROM pg_policy
      WHERE polrelid=v_tbl AND polname='ref_all_members_read';
   END IF;
-  -- READ-LANE V2 (P4): the lane-admin guard only NARROWS std_select (a lane admin reads through
-  -- platform_admin_read). Every check below judges std_select without that exact literal; an admin
-  -- ARM anywhere is still seen.
-  v_sel := replace(v_sel, iam.read_lane_v2_guard_deparsed(), '');
   SELECT pg_get_expr(polqual,polrelid) INTO v_pub FROM pg_policy WHERE polrelid=v_tbl AND polname='pub_read';
 
   check_name:='entity_registered';
@@ -2946,7 +2686,7 @@ BEGIN
         IF r_pol.polname IN ('platform_admin_all','platform_admin_select') THEN
           v_admin_ok := position(w_admin in r_pol.q) > 0;
         END IF;
-        v_rest := replace(replace(replace(r_pol.q, iam.read_lane_v2_guard_deparsed(), ''), w_admin, ''), w_super, '');
+        v_rest := replace(replace(r_pol.q, w_admin, ''), w_super, '');
         IF v_rest LIKE '%is_platform_admin%' THEN
           v_bad := coalesce(v_bad || '; ', '') || r_pol.polname || ' carries an UNWALLED platform-admin arm';
         ELSIF v_rest LIKE '%is_super_admin%' AND r_pol.q NOT LIKE '%system_orgs%' THEN
@@ -3370,14 +3110,6 @@ BEGIN
     ELSE status:='PASS'; detail:=v_lanes.resolved_class::text; END IF;
   END IF; RETURN NEXT;
 
-  -- READ-LANE V2 (P5): a component whose std_select probes its parent's own read needs that parent
-  -- to still be eligible — row security on, a signed-in read of its id, only generated policies.
-  IF COALESCE(v_sel,'') LIKE '%row_security_active(%' THEN
-    check_name:='read_lane_v2_parents_eligible';
-    detail:=iam.read_lane_v2_stale_edges(p_schema, p_table, p_token);
-    status:=CASE WHEN detail IS NULL THEN 'PASS' ELSE 'FAIL' END; RETURN NEXT;
-  END IF;
-
   -- 🚨 DD-185 (2026-09-13) — THE §6e SYSTEM-ORGANIZATION ARM IS AN EVERY-SIGNED-IN-USER ARM.
   -- `class_lanes_match_policy` above could not see this one: it keys the organization arms on
   -- `org_role_lane` and `platform_admin_lane`, and the global-readable arm is neither — it is
@@ -3458,19 +3190,18 @@ BEGIN
   ELSE status:='FAIL'; detail:=format('registry resource_type=%s != token=%s',v_reg_rt,p_token); END IF; RETURN NEXT;
 END;
 
-$function$;
+$function$
+;
 
--- The guard literal that every reader strips must be what PostgreSQL really prints. Proven here, on
--- a throwaway expression, inside this transaction.
-do $$
-declare v text;
-begin
-  create temp table _rlv2_probe (id uuid) on commit drop;
-  execute 'create view pg_temp._rlv2_probe_v as select 1 from pg_temp._rlv2_probe where '
-          || iam.read_lane_v2_guard() || '(id is not null)';
-  select pg_get_viewdef('pg_temp._rlv2_probe_v'::regclass) into v;
-  if position(rtrim(iam.read_lane_v2_guard_deparsed()) in v) = 0 then
-    raise exception 'read_lane_v2: the deparsed guard % is not what PostgreSQL prints: %', iam.read_lane_v2_guard_deparsed(), v;
-  end if;
-  drop view pg_temp._rlv2_probe_v;
-end $$;
+drop function if exists iam.read_lane_v2_stale_edges(text,text,text);
+drop function if exists iam.read_lane_v2_refuse_withdraw(regclass,boolean);
+drop function if exists iam.read_lane_v2_lock_parents(text);
+drop function if exists iam.read_lane_v2_parent_arm(text,text);
+drop function if exists iam.read_lane_v2_edge_emits(text,text,text);
+drop function if exists iam.read_lane_v2_depth(text,text[]);
+drop function if exists iam.read_lane_v2_edge_structural_ok(text,text,text);
+drop function if exists iam.read_lane_v2_auth_reads_id(regclass);
+drop function if exists iam.read_lane_v2_guard_deparsed();
+drop function if exists iam.read_lane_v2_guard();
+drop function if exists iam.read_lane_v2_enrolled(text);
+drop table if exists iam.read_lane_v2_rollout;

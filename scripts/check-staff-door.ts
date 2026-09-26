@@ -63,6 +63,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { stripReadLaneV2GuardSql } from "./lib/read-lane-v2-guard";
 import { armScratchSignals, registeredScratchPlan, teardownScratch } from "./lib/scratch-teardown";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -228,7 +229,8 @@ select coalesce(json_agg(x order by x->>'token'), '[]'::json) as j from (
           -- common-docs/policies/our-own-admin-database-access.md: the platform-admin READ lane is
           -- expected everywhere and is never a staff-door finding (Arman, 2026-09-24).
           and p.polname <> 'platform_admin_read'
-          and coalesce(pg_get_expr(p.polqual, p.polrelid), '') ~ 'is_platform_admin|is_super_admin'),
+          -- READ-LANE V2 (P4): the lane-admin guard only narrows std_select; its exact literal is stripped.
+          and ${stripReadLaneV2GuardSql("coalesce(pg_get_expr(p.polqual, p.polrelid), '')")} ~ 'is_platform_admin|is_super_admin'),
     'declares_closed', et.suppress_platform_admin_lane,
     -- DD-229: the routing key. There is no 'machinery' rls_variant (the CHECK admits only
     -- entity/component/system/restricted/ledger/personal) — machinery is an audit_class, which is

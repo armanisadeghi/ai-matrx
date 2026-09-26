@@ -68,6 +68,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { stripReadLaneV2Guard } from "./lib/read-lane-v2-guard";
 import { armScratchSignals, registeredScratchPlan, teardownScratch } from "./lib/scratch-teardown";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -184,7 +185,8 @@ export function unwalledArms(row: RowVisibilityRow): string[] {
   const bad: string[] = [];
   for (const p of row.policies) {
     if (p.polname === ADMIN_READ_POLICY) continue; // our-own-admin-database-access.md: never a finding
-    const q = (p.qual ?? "").replace(/\s+/g, " ");
+    // READ-LANE V2 (P4): the lane-admin guard only narrows std_select; its exact literal is stripped.
+    const q = stripReadLaneV2Guard((p.qual ?? "").replace(/\s+/g, " "));
     if (p.polname === "platform_admin_all" && !q.includes(W_ADMIN)) {
       bad.push(`${p.polname}: USING does not exclude visibility='personal'`);
       continue;
@@ -272,7 +274,7 @@ export function componentDoorsNotThroughParent(row: ComponentRow): string[] {
   if (doors.length === 0) return ["no permissive read policy for a signed-in client exists at all"];
   const bad: string[] = [];
   for (const p of doors) {
-    const q = (p.qual ?? "").replace(/\s+/g, " ");
+    const q = stripReadLaneV2Guard((p.qual ?? "").replace(/\s+/g, " "));  // READ-LANE V2 (P4)
     const throughParent = row.parents.some(
       (x) =>
         q.includes(`accessible_entity_ids('${x.parent_type}'`) ||
@@ -365,6 +367,11 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
       { token: "x", variant: "entity", policies: [{ polname: "platform_admin_all", qual: `(${W_ADMIN})` }] }, false],
     ["a std_select whose admin arm is unwalled",
       { token: "x", variant: "entity", policies: [{ polname: "std_select", qual: "(( SELECT is_platform_admin() AS is_platform_admin) OR (created_by = ( SELECT auth.uid() AS uid)))" }] }, true],
+    // READ-LANE V2 (P4): the lane-admin guard only narrows; it is not an arm. An arm inside it still is.
+    ["read-lane v2 · a GUARDED std_select with only the owner arm",
+      { token: "x", variant: "entity", policies: [{ polname: "std_select", qual: "((( SELECT is_platform_admin() AS is_platform_admin) IS NOT TRUE) AND ((created_by = ( SELECT auth.uid() AS uid))))" }] }, false],
+    ["read-lane v2 · an UNWALLED admin arm inside a guarded std_select",
+      { token: "x", variant: "entity", policies: [{ polname: "std_select", qual: "((( SELECT is_platform_admin() AS is_platform_admin) IS NOT TRUE) AND ((( SELECT is_platform_admin() AS is_platform_admin) OR (created_by = ( SELECT auth.uid() AS uid)))))" }] }, true],
     ["a std_select whose admin arm is walled",
       { token: "x", variant: "entity", policies: [{ polname: "std_select", qual: `((${W_ADMIN}) OR (created_by = ( SELECT auth.uid() AS uid)))` }] }, false],
     ["a restricted std_select with a bare super-admin arm",
