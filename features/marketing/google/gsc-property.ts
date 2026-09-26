@@ -145,6 +145,11 @@ const ACCESS_FAILURE_PATTERNS: readonly RegExp[] = [
   /access.*(revoked|denied)/i,
   /token.*(expired|revoked)/i,
   /connection.*(revoked|missing|no longer active)/i,
+  // "Google connection <id> does not exist or was disconnected … reconnect the
+  // Google account" — the server's own sentence for a deleted connection. Missing
+  // until 2026-09-26, so that run rendered as an ordinary failure with no Reconnect
+  // remedy. Mirrored server-side in matrx_seo.collection_outcome._RECONNECT_PATTERNS.
+  /was disconnected/i,
 ];
 
 /**
