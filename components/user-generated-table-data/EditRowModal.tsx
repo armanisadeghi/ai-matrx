@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { upsertRow } from "@/features/data-tables/service";
+import { offerToAddChoiceOption } from "@/features/data-tables/choice-option-nudge";
 import { isServiceFailure } from "@/features/data-tables/types";
 import {
   Dialog,
@@ -242,6 +243,13 @@ export default function EditRowModal({
       const result = await upsertRow({ tableId, rowId, data: rowData });
       if (isServiceFailure(result)) {
         throw new Error(result.error);
+      }
+
+      // An off-list value on a choice column: offer to make it an option.
+      for (const field of fields) {
+        if (initialRowData?.[field.field_name] !== rowData[field.field_name]) {
+          offerToAddChoiceOption({ tableId, field, saved: rowData[field.field_name], onAdded: onSuccess });
+        }
       }
 
       onSuccess();

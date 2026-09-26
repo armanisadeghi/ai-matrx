@@ -159,6 +159,7 @@ import {
   setTableStyle,
   upsertCell,
 } from "@/features/data-tables/service";
+import { offerToAddChoiceOption } from "@/features/data-tables/choice-option-nudge";
 import {
   CELL_TINT_CLASS,
   ROW_TINT_CLASS,
@@ -4431,6 +4432,20 @@ const UserTableViewer = ({
             })),
           ]),
         )}
+        valuesInData={Object.fromEntries(
+          fields.map((f) => [
+            f.field_name,
+            [
+              ...new Set(
+                (fullDatasetCache ?? displayRows).flatMap((r) => {
+                  const raw = r.data?.[f.field_name];
+                  if (raw === null || raw === undefined || raw === "") return [];
+                  return Array.isArray(raw) ? raw.map(String) : typeof raw === "object" ? [] : [String(raw)];
+                }),
+              ),
+            ].sort(),
+          ]),
+        )}
         onSetPath={(path, value) => writeStylePath(path, value)}
       />
 
@@ -5306,14 +5321,23 @@ const UserTableViewer = ({
                               }
                               // Patch, never refetch — a full reload remounts
                               // the body and throws away the user's place.
-                              onSaved={(newValue, serverUpdatedAt) =>
+                              onSaved={(newValue, serverUpdatedAt) => {
                                 patchLocalCell(
                                   row.id,
                                   field.field_name,
                                   newValue,
                                   serverUpdatedAt,
-                                )
-                              }
+                                );
+                                // An off-list value on a choice column: offer to
+                                // make it an option, one click, never blocking.
+                                offerToAddChoiceOption({
+                                  tableId,
+                                  field,
+                                  saved: newValue,
+                                  onAdded: () =>
+                                    void loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true),
+                                });
+                              }}
                             />
                           </div>
                           {cellData && (

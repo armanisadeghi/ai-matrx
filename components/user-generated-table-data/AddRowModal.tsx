@@ -1,5 +1,6 @@
 'use client'
 
+import { offerToAddChoiceOption } from "@/features/data-tables/choice-option-nudge";
 import { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -197,6 +198,13 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess, relat
         throw new Error(result.error);
       }
       
+      // An off-list value on a choice column: offer to make it an option.
+      for (const field of fields) {
+        if (field.field_name in rowData) {
+          offerToAddChoiceOption({ tableId, field, saved: rowData[field.field_name], onAdded: onSuccess });
+        }
+      }
+
       // Reset form and close modal
       setRowData({});
       
