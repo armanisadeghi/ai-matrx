@@ -160,7 +160,7 @@ export default function ActivityFeedPanel({ sites }: { sites: ClientSiteSummary[
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {activity.length === 0 && !isLoading && (
+                        {activity.length === 0 && !isLoading && !error && (
                             <TableRow>
                                 <TableCell colSpan={7} className="h-32 text-center text-muted-foreground text-xs">
                                     <div className="flex flex-col items-center gap-2">

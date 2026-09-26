@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ReadFailure } from '@/components/read-state/ReadFailure';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ExternalLink, Eye, Loader2, RefreshCw, FileText } from 'lucide-react';
 
@@ -24,6 +25,7 @@ export default function SitePageTreePanel({ sites }: { sites: ClientSiteSummary[
     const [siteId, setSiteId] = useState<string>(sites[0]?.id ?? '');
     const [pages, setPages] = useState<AdminPage[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState<unknown>(null);
 
     const site = sites.find((s) => s.id === siteId);
 
@@ -39,6 +41,10 @@ export default function SitePageTreePanel({ sites }: { sites: ClientSiteSummary[
             // Feed as clickable media link-outs — not here (they are events, not
             // page state).
             setPages(await CmsPageService.adminListPages(siteId));
+            setLoadError(null);
+        } catch (err) {
+            setPages([]);
+            setLoadError(err ?? true);
         } finally {
             setIsLoading(false);
         }
@@ -97,7 +103,18 @@ export default function SitePageTreePanel({ sites }: { sites: ClientSiteSummary[
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {sorted.length === 0 && !isLoading && (
+                        {loadError != null && !isLoading && (
+                            <TableRow>
+                                <TableCell colSpan={4} className="p-0">
+                                    <ReadFailure
+                                        error={loadError}
+                                        what={`${site?.name ?? 'this site'}'s pages`}
+                                        onRetry={() => void fetchPages()}
+                                    />
+                                </TableCell>
+                            </TableRow>
+                        )}
+                        {sorted.length === 0 && !isLoading && loadError == null && (
                             <TableRow>
                                 <TableCell colSpan={4} className="h-24 text-center text-muted-foreground text-xs">
                                     No pages on this site yet.

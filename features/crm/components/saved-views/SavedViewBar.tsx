@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { Bookmark, Check, Loader2, MoreVertical, Plus, Users } from "lucide-react";
 import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -98,6 +99,8 @@ export function SavedViewBar<TDef>({
 }: SavedViewBarProps<TDef>) {
   const [views, setViews] = useState<SavedView<TDef>[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [saveOpen, setSaveOpen] = useState(false);
   const [renaming, setRenaming] = useState<SavedView<TDef> | null>(null);
   const [renameBusy, setRenameBusy] = useState(false);
@@ -108,9 +111,13 @@ export function SavedViewBar<TDef>({
     void (async () => {
       try {
         const rows = await fetchSavedViews(ctx, codec);
-        if (!cancelled) setViews(rows);
+        if (!cancelled) {
+          setViews(rows);
+          setLoadError(null);
+        }
       } catch (e) {
         if (!cancelled) {
+          setLoadError(e ?? true);
           console.error("[crm] saved views load failed:", e);
           toast.error(
             e instanceof Error ? e.message : "Could not load smart views",
@@ -123,7 +130,7 @@ export function SavedViewBar<TDef>({
     return () => {
       cancelled = true;
     };
-  }, [ctx]);
+  }, [ctx, loadAttempt]);
 
   // Open the URL's view once, when it first becomes available. `openedFromUrl`
   // guards it so a user who then clicks a different chip is not yanked back.
@@ -314,6 +321,16 @@ export function SavedViewBar<TDef>({
           <Loader2 className="h-3 w-3 animate-spin" />
           Loading views…
         </span>
+      ) : loadError != null && views.length === 0 ? (
+        <ReadFailure
+          error={loadError}
+          what="your smart views"
+          className="m-0"
+          onRetry={() => {
+            setLoading(true);
+            setLoadAttempt((n) => n + 1);
+          }}
+        />
       ) : views.length === 0 ? (
         <span className="text-xs text-muted-foreground">
           None yet — filter the list, then save it as a view your team can work.

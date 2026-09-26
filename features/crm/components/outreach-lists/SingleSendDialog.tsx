@@ -79,6 +79,9 @@ export function SingleSendDialog({
   const [reputationCaseId, setReputationCaseId] = useState("none");
   const [draft, setDraft] = useState<OutreachDraft | null>(null);
   const [problem, setProblem] = useState<OutreachProblem | null>(null);
+  // The template/case read failed: its failure is the problem box below, so
+  // "No email-ready template" must not also claim there are none.
+  const [templatesReadFailed, setTemplatesReadFailed] = useState(false);
   const [busy, setBusy] = useState<
     "loading" | "preview" | "approve" | "send" | null
   >(open ? "loading" : null);
@@ -94,6 +97,7 @@ export function SingleSendDialog({
       listOrganizationReputationCases(list.organization_id),
     ])
       .then(async ([rows, cases]) => {
+        setTemplatesReadFailed(false);
         setReputationCaseId(memberReputationCaseId ?? "none");
         const emailTemplates = rows.filter((row) => subjectTemplate(row));
         setTemplates(emailTemplates);
@@ -115,7 +119,10 @@ export function SingleSendDialog({
         setReputationCases(pitchable);
         if (emailTemplates.length === 1) setTemplateId(emailTemplates[0].id);
       })
-      .catch((error: unknown) => setProblem(readOutreachProblem(error)))
+      .catch((error: unknown) => {
+        setTemplatesReadFailed(true);
+        setProblem(readOutreachProblem(error));
+      })
       .finally(() => setBusy(null));
   }, [list.organization_id, memberReputationCaseId, open]);
 
@@ -244,7 +251,7 @@ export function SingleSendDialog({
                 requires a fresh preview and approval.
               </p>
             )}
-            {busy !== "loading" && templates.length === 0 && (
+            {busy !== "loading" && !templatesReadFailed && templates.length === 0 && (
               <p className="text-sm text-muted-foreground">
                 No email-ready template exists yet. Add a subject and body in{" "}
                 <Link className="underline" href="/chat/message-templates/new">

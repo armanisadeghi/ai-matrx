@@ -173,14 +173,14 @@ export function DuplicateReviewPage() {
             undone exactly.
           </p>
 
-          {isLoading && (
+          {isLoading && !error && (
             <div className="space-y-3">
               <Skeleton className="h-28 w-full rounded-md" />
               <Skeleton className="h-28 w-full rounded-md" />
             </div>
           )}
 
-          {!isLoading && candidates.length === 0 && (
+          {!isLoading && !error && candidates.length === 0 && (
             <div className="flex flex-col items-center gap-2 rounded-md border border-border bg-card px-4 py-8 text-center">
               <CheckCircle2 className="h-6 w-6 text-muted-foreground" />
               <p className="text-sm font-medium text-foreground">

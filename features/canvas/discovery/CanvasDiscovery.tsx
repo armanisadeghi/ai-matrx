@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { ReadFailure } from '@/components/read-state/ReadFailure';
 import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/utils/supabase/client';
 import { buildSearchOr } from '@/utils/supabase-search';
@@ -32,7 +33,7 @@ export function CanvasDiscovery() {
     const [filterType, setFilterType] = useState<CanvasType | 'all'>('all');
     const supabase = createClient();
 
-    const { data: canvases = [], isLoading } = useQuery({
+    const { data: canvases = [], isLoading, error: readError, refetch } = useQuery({
         queryKey: ['discover-canvases', sortBy, filterType, searchTerm],
         queryFn: async () => {
             let query = supabase
@@ -205,6 +206,8 @@ export function CanvasDiscovery() {
                             <div key={i} className="h-64 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
                         ))}
                     </div>
+                ) : readError ? (
+                    <ReadFailure error={readError} what="community canvases" onRetry={() => void refetch()} />
                 ) : canvases.length === 0 ? (
                     <div className="text-center py-16">
                         <div className="text-gray-400 dark:text-gray-600 space-y-3">

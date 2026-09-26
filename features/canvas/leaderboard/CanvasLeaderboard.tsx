@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useLeaderboard } from '@/hooks/canvas/useLeaderboard';
+import { ReadFailure } from '@/components/read-state/ReadFailure';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, Clock, Loader2 } from 'lucide-react';
@@ -24,7 +25,7 @@ export function CanvasLeaderboard({
     limit = 10,
     showCurrentUserRank = true 
 }: CanvasLeaderboardProps) {
-    const { data, isLoading } = useLeaderboard(canvasId, limit);
+    const { data, isLoading, error, refetch } = useLeaderboard(canvasId, limit);
 
     if (isLoading) {
         return (
@@ -32,6 +33,10 @@ export function CanvasLeaderboard({
                 <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
             </div>
         );
+    }
+
+    if (error) {
+        return <ReadFailure error={error} what="this canvas's leaderboard" onRetry={() => void refetch()} />;
     }
 
     if (!data || data.entries.length === 0) {

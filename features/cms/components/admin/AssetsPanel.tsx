@@ -22,6 +22,7 @@ import { formatFileSize } from "@ai-matrx/kit/format";
 import { AssetInUseError, CmsAssetService } from '../../services/cmsService';
 import type { AssetComponentUsage, AssetPageUsage, ClientAsset, ClientSiteSummary } from '../../types';
 import { Button } from '@/components/ui/button';
+import { ReadFailure } from '@/components/read-state/ReadFailure';
 import { Input } from '@ai-matrx/design-system';
 import {
     Select,
@@ -81,6 +82,7 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
     const [siteId, setSiteId] = useState<string>(sites[0]?.id ?? '');
     const [assets, setAssets] = useState<ClientAsset[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [loadError, setLoadError] = useState<unknown>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [editing, setEditing] = useState<ClientAsset | null>(null);
@@ -97,7 +99,9 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
         try {
             const rows = await CmsAssetService.adminListAssets(siteId);
             setAssets(rows);
+            setLoadError(null);
         } catch (err) {
+            setLoadError(err ?? true);
             toast.error(err instanceof Error ? err.message : 'Failed to load assets');
         } finally {
             setIsLoading(false);
@@ -247,7 +251,13 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
             </div>
 
             <div className="flex-1 min-h-0 overflow-y-auto">
-                {assets.length === 0 && !isLoading ? (
+                {loadError != null && assets.length === 0 && !isLoading ? (
+                    <ReadFailure
+                        error={loadError}
+                        what={`${site?.name ?? 'this site'}'s assets`}
+                        onRetry={() => void refresh()}
+                    />
+                ) : assets.length === 0 && !isLoading ? (
                     <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground text-xs">
                         <ImageIcon className="h-8 w-8 opacity-40" />
                         No assets on {site?.name ?? 'this site'} yet. Upload one, or let an agent use the cms_asset tool.
