@@ -308,7 +308,10 @@ export function EntityRef({
           data-agent-link-resolving={hrefResolving ? "true" : undefined}
         >
           {labelBody}
-          <ErrorAlchemyMenu error={refusal} />
+          {/* The error's actions ride only a KNOWN refusal: a plain name that
+              simply has no door is not an error, and a copy-error button on it
+              was a control that said something went wrong when nothing had. */}
+          {refusal ? <ErrorAlchemyMenu error={refusal} /> : null}
         </span>
       )}
 
