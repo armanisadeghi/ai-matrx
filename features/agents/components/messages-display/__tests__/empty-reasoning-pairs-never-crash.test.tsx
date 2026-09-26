@@ -10,12 +10,18 @@
  * the client must render it: the column finishes with its Answers card.
  *
  * The stream is the REAL captured pre-fix Grok NDJSON, replayed through the
- * REAL process-stream thunk into the REAL root reducer, while the REAL
- * transcript (AgentConversationDisplay → AgentAssistantMessage →
- * EnhancedChatMarkdown → InlineThinkingSlot / DecisionAnswersBlock) is mounted
- * and subscribed. It is delivered one event per read (slow provider) and in
- * one read (fast provider). A synthetic 200-pair stream covers "more than any
- * capture so far".
+ * REAL process-stream thunk into the REAL root reducer, while the REAL battle
+ * column (BoundColumn → AgentConversationColumn with the Creator panel open →
+ * AgentAssistantMessage → EnhancedChatMarkdown → DecisionAnswersBlock) is
+ * mounted and subscribed. One event per read (slow provider) and one read
+ * (fast provider); a synthetic 200-pair stream covers "more than any capture".
+ *
+ * HONEST SCOPE: this seat did NOT reproduce the crash before the reducer
+ * coalescing landed (it was green on the pre-fix reducer too, as was a live
+ * localhost replay). It is the end-to-end witness that the column renders the
+ * shape to its Answers card with no update-depth error; the failing-then-
+ * passing guard for the coalescing is
+ * redux/execution-system/active-requests/__tests__/empty-reasoning-pairs-coalesce.test.ts.
  */
 
 import React, { act } from "react";
@@ -234,10 +240,6 @@ async function replay(lines: string[], burst: boolean) {
   }
   await new Promise((resolve) => setTimeout(resolve, 100));
   globals.IS_REACT_ACT_ENVIRONMENT = true;
-  if (process.env.DEBUG_ERRS) console.log('TEXT', host.textContent?.slice(0,2000));
-  if (process.env.DEBUG_ERRS) console.log('HTML', host.innerHTML.replace(/class="[^"]*"/g,'').slice(0, 6000));
-  if (process.env.DEBUG_ERRS) console.log('STATE', JSON.stringify((store.getState() as any).messages.byConversationId[conversationId], null, 1).slice(0, 3000));
-  if (process.env.DEBUG_ERRS) console.log(errors.map((e) => (e instanceof Error ? e.stack : JSON.stringify(e, (_k, v) => (v instanceof Error ? v.stack : v))).slice(0, 3000)));
 
   const text = host.textContent ?? "";
   await act(async () => root?.unmount());
@@ -281,9 +283,6 @@ beforeAll(() => {
 });
 
 const CASES: Array<[string, () => string[], boolean]> = [
-  ["pairs 5", () => withEmptyPairs(loadGrokLines(), 5), false],
-  ["pairs 30", () => withEmptyPairs(loadGrokLines(), 30), false],
-  ["pairs 60", () => withEmptyPairs(loadGrokLines(), 60), false],
   ["captured Grok stream (119 empty pairs), one event per read", loadGrokLines, false],
   ["captured Grok stream (119 empty pairs), one read", loadGrokLines, true],
   ["200 empty pairs, one event per read", () => withEmptyPairs(loadGrokLines(), 200), false],

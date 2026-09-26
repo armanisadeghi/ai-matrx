@@ -574,7 +574,7 @@ const activeRequestsSlice = createSlice({
       if (!request || request.isReasoningStreaming) return;
 
       // An EMPTY start/stop pair creates nothing: reopen the previous run.
-      if (false && reopenEmptyReasoningRun(request)) return;
+      if (!request.isTextStreaming && reopenEmptyReasoningRun(request)) return;
 
       closeOpenTextRun(request, action.payload.timestamp);
 
