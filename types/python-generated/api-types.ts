@@ -33777,8 +33777,8 @@ export interface paths {
         put?: never;
         /**
          * Create Soft Mandate
-         * @description Create a SOFT mandate homed in the caller's personal organization
-         *     (level='user') or in an organization the caller administers
+         * @description Create a SOFT mandate visible only to its author, homed in the request's
+         *     active organization (level='user'), or in an organization the caller administers
          *     (level='organization'). Same key validation, same 409/422 as ``POST /mandates``.
          */
         post: operations["create_soft_mandate_mandates_soft_post"];
@@ -41257,6 +41257,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/checks/accept-adapters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Accept Adapters
+         * @description Which aidream checks Mark OK can accept (scripts/findings.py REGISTRY — the CLI's own list), so
+         *     the page draws "No accept — why?" instead of a Mark OK that can only refuse. matrx-frontend's
+         *     checks come from its own scripts/findings/accept-rules.json at build time.
+         */
+        get: operations["accept_adapters_admin_checks_accept_adapters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/agent-context/organizations": {
         parameters: {
             query?: never;
@@ -42762,6 +42784,37 @@ export interface components {
             indicator: "critical" | "major" | "minor" | "none";
             /** Operational */
             operational: boolean;
+        };
+        /** AcceptAdapter */
+        AcceptAdapter: {
+            /** Id */
+            id: string;
+            /**
+             * Accept
+             * @description True when Mark OK can accept this check's findings
+             */
+            accept: boolean;
+            /**
+             * Files
+             * @description The allowlist files an accept writes
+             */
+            files?: string[];
+            /**
+             * No Accept
+             * @description Why this check has no accept, in the registry's words
+             */
+            no_accept?: string | null;
+        };
+        /** AcceptAdaptersResponse */
+        AcceptAdaptersResponse: {
+            /**
+             * Repo
+             * @default aidream
+             * @constant
+             */
+            repo?: "aidream";
+            /** Checks */
+            checks: components["schemas"]["AcceptAdapter"][];
         };
         /** AcceptBriefResult */
         AcceptBriefResult: {
@@ -61943,8 +61996,6 @@ export interface components {
             name: string;
             /** Slug */
             slug: string;
-            /** Is Personal */
-            is_personal: boolean;
         };
         /** ContextOrganizationsResponse */
         ContextOrganizationsResponse: {
@@ -96258,8 +96309,6 @@ export interface components {
             id: string;
             /** Name */
             name: string;
-            /** Is Personal */
-            is_personal: boolean;
             /** Abbreviation */
             abbreviation?: string | null;
             /** Archived At */
@@ -117124,9 +117173,9 @@ export interface components {
          * @description A SOFT mandate authored by an ordinary user or an organization admin.
          *
          *     Soft = origin 'user', goal_grounding 'H', no Holder — exactly what
-         *     ``create_user_mandate`` writes. ``level`` picks the home: the caller's
-         *     personal organization (visibility 'personal') or an organization they
-         *     administer (visibility 'internal'). System mandates stay platform-admin only
+         *     ``create_user_mandate`` writes. ``level`` picks the home: the request's
+         *     active organization, visible to the author alone (visibility 'personal'), or
+         *     an organization they administer (visibility 'internal'). System mandates stay platform-admin only
          *     on ``POST /mandates``.
          */
         SoftMandateCreateRequest: {
@@ -201787,6 +201836,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    accept_adapters_admin_checks_accept_adapters_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptAdaptersResponse"];
                 };
             };
         };

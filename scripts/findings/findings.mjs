@@ -25,6 +25,7 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { manifestRows, runRows } from "../checks/run.mjs";
+import { commitLine } from "./accept-rules.mjs";
 import { FINDINGS_CHECKS, byId } from "./registry.mjs";
 
 export const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -155,7 +156,9 @@ export async function accept({ checkId, key, reason, commit = true, root = REPO_
     throw error;
   }
 
-  const message = `chore(findings): accept ${checkId} ${key.length > 80 ? `${key.slice(0, 79)}…` : key}\n\nCheck: ${checkId}\nKey: ${key}\nReason: ${reason.trim()}\nAccepted-by: ${accepter}\nDate: ${date}\n`;
+  // One line per field, CI-skip directives neutralized (the allowlist keeps the reason as typed).
+  const oneKey = commitLine(key);
+  const message = `chore(findings): accept ${checkId} ${oneKey.length > 80 ? `${oneKey.slice(0, 79)}…` : oneKey}\n\nCheck: ${checkId}\nKey: ${oneKey}\nReason: ${commitLine(reason)}\nAccepted-by: ${commitLine(accepter)}\nDate: ${date}\n`;
   if (!commit) return { files, committed: null, message };
   return { ...commitOnly(root, files, message), message };
 }

@@ -71,7 +71,18 @@ adapter). Registered in `features/admin/constants/admin-categories.ts` (Reportin
   `model.ts` `pendingAcceptView`: *Marked OK — landing* (commit link) until the next ingested run
   marks the item accepted; *Mark OK failed* with the server's error + remedy (claimable again);
   *interrupted* for a committing marker older than 5 min; *accept landed, still reported* when a
-  run that started after the commit still lists it. A second click is a no-op (`already_landed`).
+  run that started after the commit still lists it. Mark OK stays drawn on that state and WORKS:
+  the server re-reads main — a reverted accept is committed again; an accept main's newest run
+  already carries yet still reports is recorded *Mark OK failed* with "the entry does not match
+  what the check reads" and the fix (`landed → failed`,
+  `migrations/ops_check_item_accept_landed_can_fail_2026_09_26h.sql`). `already_landed` is said
+  only while main still carries the accept and its newest run predates it, and it is an info
+  toast, never a success (`model.ts acceptOutcomeTone`). A retry after an uncertain outcome is
+  safe: the server reads main at HEAD first and never writes a second entry.
+- **Failure titles never guess.** `refused` = nothing written; `failed` = "Mark OK failed" with the
+  server's message + remedy, which say whether anything reached main (checked, or "not known");
+  `error` (`accept_error`) = the server stopped before committing anything; `unreachable` = no
+  answer at all.
 - **Where the button lives.** Mark OK (or "No accept — why?", or "fix the check") is drawn INSIDE
   the State cell, and State is the second column right after Finding, so the decision is on screen
   at every width from 375px (the phone card carries the State cell) without scrolling sideways. It
@@ -80,8 +91,11 @@ adapter). Registered in `features/admin/constants/admin-categories.ts` (Reportin
   column out to ~480px. Finding now leads (the label lands in the wide column, capped at 20rem).
 - The one-line `findings accept` command stays in the dialog as the secondary path ("Prefer a
   terminal?").
-- matrx-frontend checks with no adapter get "No accept — why?" with the rules file's own
-  `no_accept` words; the server refuses those (and aidream's) in the registry's words too.
+- A check with no adapter — matrx-frontend (its rules file's `no_accept` words) or aidream (the
+  server's findings REGISTRY via `GET /admin/checks/accept-adapters`, `acceptApi.ts
+  fetchAidreamAcceptAdapters`; a check the registry does not list has none) — gets "No accept —
+  why?" instead of a Mark OK that could only refuse (`model.ts acceptInfoFor` / `hasAccept`). If
+  that list cannot be read, Mark OK stays and the server refuses by name.
 - `ops.check_item_db_accept` (the DB accept for an item with no repo home) is server-only and
   no item can reach it today, so the page offers no control for it.
 
@@ -118,3 +132,6 @@ adapter). Registered in `features/admin/constants/admin-categories.ts` (Reportin
   admin@admin.com, reason + Accepted-by in the message and a `reasons` entry in
   `scripts/file_access_gate_baseline.json`); re-run on that commit reported it known/accepted and
   the re-ingest marked it `accepted` (basis allowlist), opened 0; the open list went 8 → 7.
+- `2026-09-26` — MARK-OK-VERIFY D1–D7 fixed: no lying button after an accept that did not take or
+  a revert; idempotent against main at HEAD; truthful failure titles; aidream checks with no
+  adapter show "No accept — why?"; engines refuse odd inputs alike (corpus `refused: true` cases).

@@ -7,8 +7,9 @@
  * `findings accept` CLI uses, and records "landing" on the item until the next run confirms it.
  */
 
-import { apiPost } from "@/lib/api/typed-client";
+import { apiGet, apiPost } from "@/lib/api/typed-client";
 import { BackendApiError } from "@/lib/api/errors";
+import type { AcceptInfo } from "./model";
 
 export type AcceptOutcome =
   | {
@@ -20,8 +21,13 @@ export type AcceptOutcome =
     }
   | {
       ok: false;
-      /** `refused`: nothing was written. `failed`: the accept was claimed and could not land (recorded on the item). */
-      kind: "refused" | "failed" | "unreachable";
+      /**
+       * `refused`: nothing was written. `failed`: the accept was claimed and did not land or did not
+       * take (recorded on the item; the message and remedy say whether anything reached main).
+       * `error`: the server stopped before committing anything (`accept_error`). `unreachable`: no
+       * answer at all.
+       */
+      kind: "refused" | "failed" | "error" | "unreachable";
       message: string;
       remedy: string | null;
     };
@@ -46,7 +52,14 @@ export async function markFindingOk(itemId: string, reason: string): Promise<Acc
     };
   } catch (error) {
     if (error instanceof BackendApiError) {
-      const kind = error.code === "accept_refused" ? "refused" : error.code === "accept_failed" ? "failed" : "unreachable";
+      const kind =
+        error.code === "accept_refused"
+          ? "refused"
+          : error.code === "accept_failed"
+            ? "failed"
+            : error.status != null && error.status > 0
+              ? "error"
+              : "unreachable";
       return { ok: false, kind, message: error.detail || error.userMessage, remedy: remedyOf(error.details) };
     }
     return {
@@ -55,5 +68,22 @@ export async function markFindingOk(itemId: string, reason: string): Promise<Acc
       message: error instanceof Error ? error.message : String(error),
       remedy: "The server did not answer. Nothing is known to have been written — reload the page to see the finding's state, then try again or use the copy-command.",
     };
+  }
+}
+
+/**
+ * aidream's accept adapters (`GET /admin/checks/accept-adapters`, the server's findings REGISTRY),
+ * keyed by check id. `null` when the list could not be read — the page then keeps Mark OK (the
+ * server still refuses a check with no adapter by name) rather than hide a real accept.
+ */
+export async function fetchAidreamAcceptAdapters(): Promise<Record<string, AcceptInfo> | null> {
+  try {
+    const { data } = await apiGet("/admin/checks/accept-adapters");
+    return Object.fromEntries(
+      data.checks.map((c) => [c.id, { files: c.accept ? c.files ?? [] : null, noAccept: c.accept ? null : (c.no_accept ?? null) }]),
+    );
+  } catch (error) {
+    console.warn("[check-findings] could not read aidream's accept adapters; Mark OK stays and the server refuses by name", error);
+    return null;
   }
 }

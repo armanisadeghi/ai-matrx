@@ -17,7 +17,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { applyAcceptRule, ruleFiles } from "./accept-rules.mjs";
+import { applyAcceptRule, readUtf8Strict, ruleFiles } from "./accept-rules.mjs";
 import ACCEPT_RULES from "./accept-rules.json" with { type: "json" };
 
 /**
@@ -38,7 +38,7 @@ function fromRules(id) {
       rule,
       apply({ key, reason, by, date, root }) {
         const current = Object.fromEntries(
-          files.map((rel) => [rel, existsSync(join(root, rel)) ? readFileSync(join(root, rel), "utf8") : null]),
+          files.map((rel) => [rel, existsSync(join(root, rel)) ? readUtf8Strict(join(root, rel)) : null]),
         );
         for (const [rel, text] of Object.entries(applyAcceptRule(rule, current, { key, reason, by, date }))) {
           writeFileSync(join(root, rel), text);

@@ -1,5 +1,14 @@
 import { execFileSync } from "node:child_process";
-import { acceptCommand, parsePendingAccept, pendingAcceptView, shellQuote, summarizeChecks } from "./model";
+import {
+  acceptCommand,
+  acceptInfoFor,
+  acceptOutcomeTone,
+  hasAccept,
+  parsePendingAccept,
+  pendingAcceptView,
+  shellQuote,
+  summarizeChecks,
+} from "./model";
 import type { CheckCatalogEntry, CheckItemTally, CheckRunSummary } from "./service";
 
 const NOW = Date.parse("2026-09-26T12:00:00Z");
@@ -133,5 +142,41 @@ describe("pendingAcceptView (one-click Mark OK)", () => {
     expect(pendingAcceptView("open", committing, null, now).kind).toBe("committing");
     const stale = parsePendingAccept({ status: "committing", at: "2026-09-26T11:00:00Z" });
     expect(pendingAcceptView("open", stale, null, now).kind).toBe("interrupted");
+  });
+});
+
+describe("which checks draw Mark OK (MARK-OK-VERIFY D7)", () => {
+  const fe = { "visibility-vocabulary": { files: ["a.json"], noAccept: null }, "ui-primitives-check": { files: null, noAccept: "code sets" } };
+  const be = {
+    "file-access-gate": { files: ["scripts/file_access_gate_baseline.json"], noAccept: null },
+    "orm-bypass": { files: null, noAccept: "The baseline is a total pinned at 0" },
+  };
+
+  it("an aidream check with no adapter says why instead of drawing a Mark OK that can only refuse", () => {
+    const info = acceptInfoFor("aidream", "orm-bypass", fe, be);
+    expect(hasAccept(info)).toBe(false);
+    expect(info?.noAccept).toMatch(/pinned at 0/);
+    expect(hasAccept(acceptInfoFor("aidream", "file-access-gate", fe, be))).toBe(true);
+  });
+
+  it("an aidream check the registry does not list has no accept either", () => {
+    const info = acceptInfoFor("aidream", "some-new-check", fe, be);
+    expect(hasAccept(info)).toBe(false);
+    expect(info?.noAccept).toMatch(/not in aidream's findings registry/);
+  });
+
+  it("a frontend check without an adapter says why; an unknown aidream list keeps Mark OK", () => {
+    expect(hasAccept(acceptInfoFor("matrx-frontend", "ui-primitives-check", fe, be))).toBe(false);
+    expect(hasAccept(acceptInfoFor("matrx-frontend", "visibility-vocabulary", fe, be))).toBe(true);
+    expect(hasAccept(acceptInfoFor("aidream", "orm-bypass", fe, null))).toBe(true);
+  });
+});
+
+describe("an answer that is not a success is never toasted as one (MARK-OK-VERIFY D1)", () => {
+  it("already_landed and in_flight are information", () => {
+    expect(acceptOutcomeTone("already_landed")).toBe("info");
+    expect(acceptOutcomeTone("in_flight")).toBe("info");
+    expect(acceptOutcomeTone("landed")).toBe("success");
+    expect(acceptOutcomeTone("already_on_main")).toBe("success");
   });
 });

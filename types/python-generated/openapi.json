@@ -73307,7 +73307,7 @@
           "Mandates"
         ],
         "summary": "Create Soft Mandate",
-        "description": "Create a SOFT mandate homed in the caller's personal organization\n(level='user') or in an organization the caller administers\n(level='organization'). Same key validation, same 409/422 as ``POST /mandates``.",
+        "description": "Create a SOFT mandate visible only to its author, homed in the request's\nactive organization (level='user'), or in an organization the caller administers\n(level='organization'). Same key validation, same 409/422 as ``POST /mandates``.",
         "operationId": "create_soft_mandate_mandates_soft_post",
         "requestBody": {
           "content": {
@@ -93701,6 +93701,29 @@
         }
       }
     },
+    "/admin/checks/accept-adapters": {
+      "get": {
+        "tags": [
+          "Admin",
+          "Admin Checks"
+        ],
+        "summary": "Accept Adapters",
+        "description": "Which aidream checks Mark OK can accept (scripts/findings.py REGISTRY — the CLI's own list), so\nthe page draws \"No accept — why?\" instead of a Mark OK that can only refuse. matrx-frontend's\nchecks come from its own scripts/findings/accept-rules.json at build time.",
+        "operationId": "accept_adapters_admin_checks_accept_adapters_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptAdaptersResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/agent-context/organizations": {
       "get": {
         "tags": [
@@ -97567,6 +97590,67 @@
           "operational"
         ],
         "title": "AcceloServiceStatus"
+      },
+      "AcceptAdapter": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "accept": {
+            "type": "boolean",
+            "title": "Accept",
+            "description": "True when Mark OK can accept this check's findings"
+          },
+          "files": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Files",
+            "description": "The allowlist files an accept writes"
+          },
+          "no_accept": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "No Accept",
+            "description": "Why this check has no accept, in the registry's words"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "accept"
+        ],
+        "title": "AcceptAdapter"
+      },
+      "AcceptAdaptersResponse": {
+        "properties": {
+          "repo": {
+            "type": "string",
+            "const": "aidream",
+            "title": "Repo",
+            "default": "aidream"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/AcceptAdapter"
+            },
+            "type": "array",
+            "title": "Checks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "checks"
+        ],
+        "title": "AcceptAdaptersResponse"
       },
       "AcceptBriefResult": {
         "properties": {
@@ -142202,18 +142286,13 @@
           "slug": {
             "type": "string",
             "title": "Slug"
-          },
-          "is_personal": {
-            "type": "boolean",
-            "title": "Is Personal"
           }
         },
         "type": "object",
         "required": [
           "id",
           "name",
-          "slug",
-          "is_personal"
+          "slug"
         ],
         "title": "ContextOrganizationOption"
       },
@@ -219181,10 +219260,6 @@
             "type": "string",
             "title": "Name"
           },
-          "is_personal": {
-            "type": "boolean",
-            "title": "Is Personal"
-          },
           "abbreviation": {
             "anyOf": [
               {
@@ -219211,8 +219286,7 @@
         "type": "object",
         "required": [
           "id",
-          "name",
-          "is_personal"
+          "name"
         ],
         "title": "OrganizationSummary"
       },
@@ -266518,7 +266592,7 @@
           "level"
         ],
         "title": "SoftMandateCreateRequest",
-        "description": "A SOFT mandate authored by an ordinary user or an organization admin.\n\nSoft = origin 'user', goal_grounding 'H', no Holder — exactly what\n``create_user_mandate`` writes. ``level`` picks the home: the caller's\npersonal organization (visibility 'personal') or an organization they\nadminister (visibility 'internal'). System mandates stay platform-admin only\non ``POST /mandates``."
+        "description": "A SOFT mandate authored by an ordinary user or an organization admin.\n\nSoft = origin 'user', goal_grounding 'H', no Holder — exactly what\n``create_user_mandate`` writes. ``level`` picks the home: the request's\nactive organization, visible to the author alone (visibility 'personal'), or\nan organization they administer (visibility 'internal'). System mandates stay platform-admin only\non ``POST /mandates``."
       },
       "SoftMandateCreatedResponse": {
         "properties": {

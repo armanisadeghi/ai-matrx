@@ -18,7 +18,7 @@ import test from "node:test";
 import { manifestRows, runRows } from "../checks/run.mjs";
 import { REPO_ROOT, accept, collect, commitOnly, parseArgs, shellQuote } from "./findings.mjs";
 import { appendToJsonArray } from "./json-edit.mjs";
-import { CORPUS_PATH, applyAcceptRule, loadAcceptRules } from "./accept-rules.mjs";
+import { CORPUS_PATH, RuleError, applyAcceptRule, commitLine, loadAcceptRules, readUtf8Strict } from "./accept-rules.mjs";
 import { FINDINGS_CHECKS, byId } from "./registry.mjs";
 
 const ROWS = manifestRows();
@@ -67,8 +67,56 @@ test("the JS engine reproduces every golden case in accept-corpus.json byte for 
     }
   }
   for (const c of cases) {
-    assert.deepEqual(applyAcceptRule(c.rule, c.files, c.params), c.expected, `corpus case "${c.name}" no longer matches the engine`);
+    if (c.refused) {
+      assert.throws(() => applyAcceptRule(c.rule, c.files, c.params), RuleError, `corpus case "${c.name}" is a refusal the engine no longer makes`);
+    } else {
+      assert.deepEqual(applyAcceptRule(c.rule, c.files, c.params), c.expected, `corpus case "${c.name}" no longer matches the engine`);
+    }
   }
+});
+
+// ── MARK-OK-VERIFY (common-docs/projects/checks-run-in-the-app/MARK-OK-VERIFY.md) ────────────────
+
+const DETECTOR = { kind: "detector-allowlist", file: "a.json", detectors: ["d1"] };
+const P = (key, reason = "why") => ({ key, reason, by: "Ada", date: "2026-09-26" });
+
+test("D2: an accept the file already carries changes nothing — a retry never writes a second entry", () => {
+  const once = applyAcceptRule(DETECTOR, { "a.json": '{\n  "d1": []\n}\n' }, P("d1|x.ts|7"));
+  assert.deepEqual(applyAcceptRule(DETECTOR, once, P("d1|x.ts|7", "retried with another reason")), {});
+  assert.deepEqual(applyAcceptRule(DETECTOR, once, P("d1|x.ts|*")).hasOwnProperty("a.json"), true, "a whole-file entry is a different entry");
+  const ids = { kind: "ids-count-reasons", file: "c.json" };
+  const first = applyAcceptRule(ids, { "c.json": '{\n  "count": 0,\n  "ids": []\n}\n' }, P("k"));
+  assert.deepEqual(applyAcceptRule(ids, first, P("k", "again")), {});
+  const sorted = { kind: "sorted-array-with-sibling-reasons", file: "b.json", reasons_file: "r.json", reasons_readme: "r" };
+  const got = applyAcceptRule(sorted, { "b.json": "[]\n", "r.json": null }, P("k"));
+  assert.deepEqual(applyAcceptRule(sorted, got, P("k", "again")), {});
+});
+
+test("D4: a line or key the two engines would read differently is refused, never guessed", () => {
+  const files = { "a.json": '{\n  "d1": []\n}\n' };
+  for (const line of ["0", "-0", "0x10", "0b11", "1e3", "1_0", "\u0663", "Infinity", "NaN", "9007199254740993", "012", " 12"]) {
+    assert.throws(() => applyAcceptRule(DETECTOR, files, P(`d1|x.ts|${line}`)), RuleError, `line ${JSON.stringify(line)} was not refused`);
+  }
+  assert.throws(() => applyAcceptRule(DETECTOR, files, P("d1|lone \ud800.ts|*")), RuleError);
+  assert.throws(() => applyAcceptRule(DETECTOR, files, P("d1|x.ts|*", "lone \udc00")), RuleError);
+  const sorted = { kind: "sorted-array-with-sibling-reasons", file: "b.json", reasons_file: "r.json", reasons_readme: "r" };
+  for (const key of ["42", "1", "__proto__"]) {
+    assert.throws(() => applyAcceptRule(sorted, { "b.json": "[]\n", "r.json": null }, P(key)), RuleError, `key ${key} was not refused`);
+  }
+  assert.throws(() => applyAcceptRule({ kind: "ids-count-reasons", file: "c.json" }, { "c.json": '{"ratio": 0.5, "ids": []}' }, P("k")), RuleError);
+});
+
+test("D4: a file that is not valid UTF-8 is refused, never rewritten with U+FFFD", () => {
+  const dir = mkdtempSync(join(tmpdir(), "findings-utf8-"));
+  writeFileSync(join(dir, "bad.json"), Buffer.from([0x7b, 0x22, 0xff, 0x22, 0x3a, 0x31, 0x7d]));
+  assert.throws(() => readUtf8Strict(join(dir, "bad.json")), RuleError);
+});
+
+test("D5: the commit line collapses newlines and neutralizes CI skip directives", () => {
+  const line = commitLine("fine [skip ci]\n\nCo-Authored-By: Mallory <m@x>\r\u001b[31m ***NO_CI*** [ CI  Skip ]\u2028x");
+  assert.ok(!/[\n\r\u001b\u2028]/.test(line), line);
+  assert.ok(!/\[\s*(skip ci|ci\s+skip)\s*\]|\*\*\*NO_CI\*\*\*/i.test(line), line);
+  assert.match(line, /^fine \(skip ci\) Co-Authored-By: Mallory <m@x> \[31m \(NO_CI\) \(CI Skip\) x$/);
 });
 
 test("appendToJsonArray appends one entry in place and leaves every other byte alone", () => {

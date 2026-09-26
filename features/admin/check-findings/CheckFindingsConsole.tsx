@@ -76,11 +76,15 @@ import {
   STATE_FILTER_STATES,
   acceptBasisLabel,
   acceptCommand,
+  acceptInfoFor,
+  acceptOutcomeTone,
+  hasAccept,
   isCheckRepo,
   isReservedKey,
   isStateFilter,
   pendingAcceptView,
   summarizeChecks,
+  type AcceptInfo,
   type PendingAcceptView,
   type CheckRepo,
   type CheckSummaryRow,
@@ -92,16 +96,12 @@ import {
   type CheckFindingsSource,
   type CheckItem,
 } from "./service";
-import { markFindingOk } from "./acceptApi";
+import { fetchAidreamAcceptAdapters, markFindingOk } from "./acceptApi";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** What the server page knows about matrx-frontend's accept adapters (scripts/findings/registry.mjs). */
-export interface FrontendAcceptInfo {
-  /** Files the adapter writes; null when the check has no adapter. */
-  files: string[] | null;
-  /** How this check is accepted when it has no adapter, in the registry's own words. */
-  noAccept: string | null;
-}
+/** How a check's findings are accepted (model.ts AcceptInfo); the route builds it from accept-rules.json. */
+export type FrontendAcceptInfo = AcceptInfo;
 
 export interface CheckFindingsConsoleProps {
   frontendAccept: Record<string, FrontendAcceptInfo>;
@@ -151,6 +151,16 @@ function ConsoleBody({ frontendAccept, source = liveCheckFindingsSource, banner 
   const [reloadKey, setReloadKey] = useState(0);
   const [items, setItems] = useState<Load<CheckItem[]>>({ status: "loading" });
   const [accepting, setAccepting] = useState<CheckItem | null>(null);
+  // aidream's accept adapters, from the server's findings REGISTRY; null = not known (Mark OK stays).
+  const [aidreamAccept, setAidreamAccept] = useState<Record<string, AcceptInfo> | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    fetchAidreamAcceptAdapters().then((info) => live && setAidreamAccept(info));
+    return () => {
+      live = false;
+    };
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -267,6 +277,7 @@ function ConsoleBody({ frontendAccept, source = liveCheckFindingsSource, banner 
             onRetry={() => setReloadKey((k) => k + 1)}
             onAccept={setAccepting}
             frontendAccept={frontendAccept}
+            aidreamAccept={aidreamAccept}
           />
         ) : (
           <CheckBoard
@@ -280,6 +291,7 @@ function ConsoleBody({ frontendAccept, source = liveCheckFindingsSource, banner 
           item={accepting}
           row={accepting ? rows.find((r) => r.check.id === accepting.check_id) ?? null : null}
           frontendAccept={frontendAccept}
+          aidreamAccept={aidreamAccept}
           latestRunStartedAt={
             accepting ? (rows.find((r) => r.check.id === accepting.check_id)?.run?.started_at ?? null) : null
           }
@@ -578,8 +590,10 @@ function CheckDetail({
   onRetry,
   onAccept,
   frontendAccept,
+  aidreamAccept,
 }: {
   frontendAccept: Record<string, FrontendAcceptInfo>;
+  aidreamAccept: Record<string, AcceptInfo> | null;
   row: CheckSummaryRow | null;
   loadingSnapshot: boolean;
   checkId: string;
@@ -593,13 +607,9 @@ function CheckDetail({
 }) {
   const repo: CheckRepo | null = row && isCheckRepo(row.check.repo) ? row.check.repo : null;
   const run = row?.run ?? null;
-  // A matrx-frontend check with no accept adapter gets an honest "why" instead of "Mark OK".
-  // aidream's adapters are not visible from here; its command refuses by name when absent.
-  const acceptable = !(
-    repo === "matrx-frontend" &&
-    row?.check.stable_id != null &&
-    frontendAccept[row.check.stable_id]?.files === null
-  );
+  // A check with no accept adapter (either repo) gets an honest "why" instead of a Mark OK that
+  // can only refuse after the admin typed a reason.
+  const acceptable = hasAccept(acceptInfoFor(repo, row?.check.stable_id ?? null, frontendAccept, aidreamAccept));
 
   const columns: MatrxColumnDef<CheckItem>[] = [
     {
@@ -1068,6 +1078,7 @@ function AcceptDialog({
   item,
   row,
   frontendAccept,
+  aidreamAccept,
   latestRunStartedAt,
   onClose,
   onAccepted,
@@ -1075,6 +1086,7 @@ function AcceptDialog({
   item: CheckItem | null;
   row: CheckSummaryRow | null;
   frontendAccept: Record<string, FrontendAcceptInfo>;
+  aidreamAccept: Record<string, AcceptInfo> | null;
   latestRunStartedAt: string | null;
   onClose: () => void;
   onAccepted: () => void;
@@ -1087,8 +1099,8 @@ function AcceptDialog({
   const open = item != null;
   const repo: CheckRepo | null = row && isCheckRepo(row.check.repo) ? row.check.repo : null;
   const checkId = row?.check.stable_id ?? null;
-  const fe = repo === "matrx-frontend" && checkId ? frontendAccept[checkId] : undefined;
-  const noAdapter = fe != null && fe.files == null;
+  const fe = acceptInfoFor(repo, checkId, frontendAccept, aidreamAccept);
+  const noAdapter = !hasAccept(fe);
   const command = item && repo && checkId ? acceptCommand(repo, checkId, item.item_key, reason) : null;
   const pending = item ? pendingAcceptView(item.state, item.pending_accept, latestRunStartedAt, now || Date.now()) : null;
 
@@ -1109,14 +1121,18 @@ function AcceptDialog({
     setResult({ kind: "working" });
     const outcome = await markFindingOk(item.id, reason.trim());
     if (outcome.ok) {
-      toast.success(outcome.message || "Marked OK");
+      // "Already marked OK — landing" / "committing right now" are the truth, not a success.
+      if (acceptOutcomeTone(outcome.status) === "success") toast.success(outcome.message || "Marked OK");
+      else toast.info(outcome.message);
       onAccepted();
       close();
       return;
     }
+    // The server's message and remedy say whether anything reached main; the title never guesses.
     const titleFor = {
       refused: "Not marked OK — nothing was written",
-      failed: "Mark OK failed — nothing reached main",
+      failed: "Mark OK failed",
+      error: "Mark OK stopped before committing anything",
       unreachable: "Could not reach the server",
     } as const;
     setResult({ kind: "error", title: titleFor[outcome.kind], message: outcome.message, remedy: outcome.remedy });
@@ -1145,8 +1161,9 @@ function AcceptDialog({
         <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2">
           <p className="font-medium text-destructive">The accept landed, but the check still reports this finding.</p>
           <p className="text-muted-foreground">
-            A run that started after the commit ({pending.pending.commitSha?.slice(0, 7)}) still lists it, so the allowlist
-            entry did not cover it. Run the command below in a checkout — it re-runs the check and says why.
+            A run that started after the commit ({pending.pending.commitSha?.slice(0, 7)}) still lists it. Mark OK again
+            checks main: if the accept was reverted it commits it again; if main&apos;s newest run already carries it and
+            still reports this finding, it records that the entry does not match what the check reads, with the fix.
           </p>
         </div>
       ) : null}

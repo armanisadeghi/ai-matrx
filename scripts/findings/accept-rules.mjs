@@ -7,12 +7,14 @@
  * twin over the same corpus (fetched from main with the rules) before every commit — so the two
  * implementations cannot disagree silently.
  *
- *   applyAcceptRule(rule, files, { key, reason, by, date }) → { [rel]: newText }
+ *   applyAcceptRule(rule, files, { key, reason, by, date }) → { [rel]: newText }  ({} = already accepted there)
  *     files: { [rel]: text | null }  (null = the file does not exist yet)
+ *   An input the two engines would render differently (odd line numbers, integer-like keys, lone
+ *   surrogates, floats) is REFUSED by both (RuleError) — the corpus carries those refusals too.
  *
  *   node scripts/findings/accept-rules.mjs --write-corpus   regenerate accept-corpus.json
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -34,45 +36,163 @@ export function ruleFiles(rule) {
 
 const json2 = (data) => `${JSON.stringify(data, null, 2)}\n`;
 
+/** A refusal both engines raise for the same input (the Python twin raises RuleError). */
+export class RuleError extends Error {}
+
+// ── Inputs both engines accept identically, or refuse identically ─────────────────────────────
+// A key, a line or a document the two JSON/number/string models would render differently is
+// REFUSED by both, never guessed: JavaScript orders integer-like object keys first (Python keeps
+// insertion order), `Number()` reads `0x10`/`1e3`/`-0` where Python's int() does not, a lone
+// surrogate has no UTF-8 form, a float prints differently (`1.0` vs `1`), `__proto__` is an
+// assignment in JavaScript. The golden corpus carries each of these as a refusal case.
+
+const LINE = /^[1-9][0-9]{0,8}$/;
+const INTEGER_LIKE = /^[0-9]+$/;
+
+function refuseOddString(text, what) {
+  if (!text.isWellFormed()) throw new RuleError(`${what} holds a lone surrogate (no UTF-8 form) — refused`);
+}
+
+/** Refuse what JSON.stringify and json.dumps would render differently (every depth). */
+function refuseUnportable(value, where) {
+  if (typeof value === "string") return refuseOddString(value, where);
+  if (typeof value === "number") {
+    if (!Number.isSafeInteger(value)) throw new RuleError(`${where} holds the number ${value}, which the two engines print differently — refused`);
+    return;
+  }
+  if (value == null || typeof value === "boolean") return;
+  if (Array.isArray(value)) {
+    value.forEach((v, i) => refuseUnportable(v, `${where}[${i}]`));
+    return;
+  }
+  for (const [k, v] of Object.entries(value)) {
+    if (INTEGER_LIKE.test(k) || k === "__proto__") throw new RuleError(`${where} has the key ${JSON.stringify(k)}, which the two engines order differently — refused`);
+    refuseOddString(k, `${where} key`);
+    refuseUnportable(v, `${where}.${k}`);
+  }
+}
+
+function refuseParams({ key, reason, by, date }) {
+  if (typeof key !== "string" || !key) throw new RuleError("no key given");
+  if (INTEGER_LIKE.test(key) || key === "__proto__") throw new RuleError(`key ${JSON.stringify(key)} is integer-like or __proto__ — refused (the two engines order such keys differently)`);
+  for (const [what, text] of [["key", key], ["reason", reason], ["by", by], ["date", date]]) refuseOddString(String(text), what);
+}
+
+function parse(text, rel) {
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    throw new RuleError(`${rel} is not JSON: ${error.message}`);
+  }
+}
+
+function stringList(value, where) {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || value.some((v) => typeof v !== "string")) throw new RuleError(`${where} is not an array of strings — refused`);
+  return value;
+}
+
+function plainObject(value, where) {
+  if (value === undefined) return {};
+  if (value == null || typeof value !== "object" || Array.isArray(value)) throw new RuleError(`${where} is not an object — refused`);
+  return value;
+}
+
 const KINDS = {
-  /** { "<detector>": [{ file, line?, justification, addedBy, date }] }, key `<detector>|<file>|<line or *>`, appended in place. */
+  /**
+   * { "<detector>": [{ file, line?, justification, addedBy, date }] }, key `<detector>|<file>|<line or *>`,
+   * appended in place. An entry with the same file and line already there = already accepted: no change.
+   */
   "detector-allowlist"(rule, files, { key, reason, by, date }) {
     const [detector, file, line, ...rest] = key.split("|");
     if (rest.length || !rule.detectors.includes(detector) || !file || !line) {
-      throw new Error(`key "${key}" is not <${rule.detectors.join("|")}>|<file>|<line or *>`);
+      throw new RuleError(`key "${key}" is not <${rule.detectors.join("|")}>|<file>|<line or *>`);
     }
+    if (line !== "*" && !LINE.test(line)) throw new RuleError(`key "${key}": the line must be a positive whole number (1–999999999) or * — refused`);
     const entry = { file, ...(line === "*" ? {} : { line: Number(line) }), justification: reason, addedBy: by, date };
-    return { [rule.file]: appendToJsonArray(files[rule.file], detector, entry) };
+    refuseUnportable(entry, "the entry");
+    const existing = parse(files[rule.file], rule.file)?.[detector];
+    if (Array.isArray(existing)) {
+      const same = existing.some(
+        (e) => e != null && typeof e === "object" && !Array.isArray(e) && e.file === file &&
+          (line === "*" ? !("line" in e) : e.line === entry.line),
+      );
+      if (same) return {};
+    }
+    try {
+      return { [rule.file]: appendToJsonArray(files[rule.file], detector, entry) };
+    } catch (error) {
+      throw new RuleError(error.message);
+    }
   },
-  /** A plain sorted JSON array of keys, plus the reasons it cannot hold in a sibling file. */
+  /** A plain sorted JSON array of keys, plus the reasons it cannot hold in a sibling file. Listed + reasoned = no change. */
   "sorted-array-with-sibling-reasons"(rule, files, { key, reason, by, date }) {
-    const list = JSON.parse(files[rule.file]);
+    const list = parse(files[rule.file], rule.file);
+    if (!Array.isArray(list)) throw new RuleError(`${rule.file} is not an array — refused`);
+    stringList(list, rule.file);
     const reasonsText = files[rule.reasons_file];
-    const reasons = reasonsText != null ? JSON.parse(reasonsText) : { _readme: rule.reasons_readme };
-    reasons[key] = { reason, accepted_by: by, date };
-    return {
-      [rule.file]: json2([...new Set([...list, key])].sort()),
-      [rule.reasons_file]: json2(reasons),
-    };
+    const reasons = plainObject(reasonsText != null ? parse(reasonsText, rule.reasons_file) : { _readme: rule.reasons_readme ?? null }, rule.reasons_file);
+    if (list.includes(key) && Object.hasOwn(reasons, key)) return {};
+    const nextReasons = { ...reasons, [key]: { reason, accepted_by: by, date } };
+    const nextList = [...new Set([...list, key])].sort();
+    refuseUnportable(nextList, rule.file);
+    refuseUnportable(nextReasons, rule.reasons_file);
+    return { [rule.file]: json2(nextList), [rule.reasons_file]: json2(nextReasons) };
   },
-  /** { …, count, ids: [sorted], reasons: { id: {…} } } — the check reads `ids`; `--update` keeps `reasons`. */
+  /** { …, count, ids: [sorted], reasons: { id: {…} } } — the check reads `ids`; `--update` keeps `reasons`. Listed + reasoned = no change. */
   "ids-count-reasons"(rule, files, { key, reason, by, date }) {
-    const data = JSON.parse(files[rule.file]);
-    const ids = [...new Set([...(data.ids ?? []), key])].sort();
-    const reasons = { ...(data.reasons ?? {}), [key]: { reason, accepted_by: by, date } };
-    return { [rule.file]: json2({ ...data, count: ids.length, ids, reasons }) };
+    const data = parse(files[rule.file], rule.file);
+    plainObject(data, rule.file);
+    const listed = stringList(data.ids, `${rule.file} ids`);
+    const had = plainObject(data.reasons, `${rule.file} reasons`);
+    if (listed.includes(key) && Object.hasOwn(had, key)) return {};
+    const ids = [...new Set([...listed, key])].sort();
+    const reasons = { ...had, [key]: { reason, accepted_by: by, date } };
+    const next = { ...data, count: ids.length, ids, reasons };
+    refuseUnportable(next, rule.file);
+    return { [rule.file]: json2(next) };
   },
 };
 
 export const ACCEPT_KINDS = Object.keys(KINDS);
 
+/**
+ * The new bytes of every file the accept changes — `{}` when the files already carry this accept
+ * (retrying an accept never writes a second entry). Throws RuleError for an input the two engines
+ * would not render identically.
+ */
 export function applyAcceptRule(rule, files, params) {
   const kind = KINDS[rule.kind];
-  if (!kind) throw new Error(`accept rule kind "${rule.kind}" is not implemented (known: ${ACCEPT_KINDS.join(", ")})`);
+  if (!kind) throw new RuleError(`accept rule kind "${rule.kind}" is not implemented (known: ${ACCEPT_KINDS.join(", ")})`);
   for (const rel of [rule.file]) {
-    if (files[rel] == null) throw new Error(`${rel} does not exist — the accept rule edits it in place`);
+    if (files[rel] == null) throw new RuleError(`${rel} does not exist — the accept rule edits it in place`);
   }
+  refuseParams(params);
   return kind(rule, files, params);
+}
+
+/** Read a file as STRICT UTF-8 — a file that is not valid UTF-8 is refused, never rewritten with U+FFFD. */
+export function readUtf8Strict(path) {
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(readFileSync(path));
+  } catch (error) {
+    if (error instanceof TypeError) throw new RuleError(`${path} is not valid UTF-8 — refused (an accept edits text in place and never guesses bytes)`);
+    throw error;
+  }
+}
+
+/**
+ * One commit-message line: whitespace and control characters collapse to single spaces (a reason
+ * can never forge a trailer line), and CI skip directives are neutralized (a reason never stops
+ * the run that confirms the accept). The allowlist keeps the reason exactly as typed.
+ */
+export function commitLine(text) {
+  return String(text)
+    .replace(/[\s\p{Cc}\p{Zl}\p{Zp}]+/gu, " ")
+    .trim()
+    .replace(/\[\s*(skip\s+ci|ci\s+skip|no\s+ci|skip\s+actions|actions\s+skip)\s*\]/giu, "($1)")
+    .replace(/\*\*\*\s*NO_CI\s*\*\*\*/giu, "(NO_CI)")
+    .replace(/skip-checks\s*:\s*true/giu, "skip-checks (true)");
 }
 
 // ── The golden corpus ─────────────────────────────────────────────────────────────────────────
@@ -111,24 +231,96 @@ const SYNTHETIC = [
       { key: "b::`${x}` done", reason: "again", by: "Ada", date: "2026-09-26" },
     ],
   },
+  // ── Idempotency: the file already carries this accept → no change (a retry never widens it).
+  {
+    kind: "detector-allowlist",
+    rule: { kind: "detector-allowlist", file: "a.json", detectors: ["d1"] },
+    files: { "a.json": '{\n  "d1": [\n    {\n      "file": "x.ts",\n      "line": 7,\n      "justification": "first"\n    },\n    {\n      "file": "y.ts"\n    }\n  ]\n}\n' },
+    params: [
+      { key: "d1|x.ts|7", reason: "retried with another reason", by: "Ada", date: "2026-09-27" },
+      { key: "d1|y.ts|*", reason: "retried", by: "Ada", date: "2026-09-27" },
+      { key: "d1|x.ts|*", reason: "same file, whole-file entry is a different entry", by: "Ada", date: "2026-09-27" },
+      { key: "d1|y.ts|3", reason: "same file, a line entry is a different entry", by: "Ada", date: "2026-09-27" },
+    ],
+  },
+  {
+    kind: "sorted-array-with-sibling-reasons",
+    rule: { kind: "sorted-array-with-sibling-reasons", file: "b.json", reasons_file: "b.reasons.json", reasons_readme: "r" },
+    files: { "b.json": '["a.ts"]\n', "b.reasons.json": '{\n  "_readme": "r",\n  "a.ts": {"reason": "first"}\n}\n' },
+    params: [{ key: "a.ts", reason: "retried", by: "Ada", date: "2026-09-27" }],
+  },
+  {
+    kind: "ids-count-reasons",
+    rule: { kind: "ids-count-reasons", file: "c.json" },
+    files: { "c.json": '{\n  "count": 1,\n  "ids": ["k"],\n  "reasons": {"k": {"reason": "first"}}\n}\n' },
+    params: [{ key: "k", reason: "retried", by: "Ada", date: "2026-09-27" }],
+  },
+  // ── Refused by BOTH engines (JS Number()/int(), key order, lone surrogates, floats, __proto__).
+  {
+    kind: "detector-allowlist",
+    rule: { kind: "detector-allowlist", file: "a.json", detectors: ["d1"] },
+    files: { "a.json": '{\n  "d1": []\n}\n' },
+    params: ["0", "-0", "-3", "0x10", "0b11", "0o7", "1e3", "1.5", "1_0", "\u0663", " 12", "12 ", "+12", "Infinity", "NaN", "nan", "1e400", "9007199254740993", "1000000000", "012"].map(
+      (line) => ({ key: `d1|x.ts|${line}`, reason: "odd line", by: "Ada", date: "2026-09-26" }),
+    ).concat([
+      { key: "d1|lone \ud800 surrogate.ts|*", reason: "odd file", by: "Ada", date: "2026-09-26" },
+      { key: "d1|x.ts|*", reason: "lone \udc00 surrogate in the reason", by: "Ada", date: "2026-09-26" },
+      { key: "d1|x.ts|999999999", reason: "the largest line both engines take", by: "Ada", date: "2026-09-26" },
+      { key: "d1|\ud83d\ude00 paired surrogates.ts|1", reason: "a paired surrogate is fine: \u2028 \u0000 \u007f", by: "Ada", date: "2026-09-26" },
+    ]),
+  },
+  {
+    kind: "sorted-array-with-sibling-reasons",
+    rule: { kind: "sorted-array-with-sibling-reasons", file: "b.json", reasons_file: "b.reasons.json", reasons_readme: "r" },
+    files: { "b.json": '["z.ts"]\n', "b.reasons.json": '{\n  "_readme": "r"\n}\n' },
+    params: ["1", "42", "007", "__proto__", "\ud800", "\uffff last", "\ud83d\ude00 before \uffff in UTF-16"].map(
+      (key) => ({ key, reason: "odd key", by: "Ada", date: "2026-09-26" }),
+    ),
+  },
+  {
+    kind: "sorted-array-with-sibling-reasons",
+    rule: { kind: "sorted-array-with-sibling-reasons", file: "b.json", reasons_file: "b.reasons.json", reasons_readme: "r" },
+    files: { "b.json": '["z.ts"]\n', "b.reasons.json": '{\n  "_readme": "r",\n  "7": {"reason": "hand-written integer-like key"}\n}\n' },
+    params: [{ key: "a.ts", reason: "the file already holds a key the engines order differently", by: "Ada", date: "2026-09-26" }],
+  },
+  {
+    kind: "ids-count-reasons",
+    rule: { kind: "ids-count-reasons", file: "c.json" },
+    files: { "c.json": '{\n  "ratio": 1.0,\n  "big": 1e2,\n  "count": 0,\n  "ids": []\n}\n' },
+    params: [{ key: "k", reason: "integral floats print the same once read as integers", by: "Ada", date: "2026-09-26" }],
+  },
+  {
+    kind: "ids-count-reasons",
+    rule: { kind: "ids-count-reasons", file: "c.json" },
+    files: { "c.json": '{\n  "ratio": 0.5,\n  "count": 0,\n  "ids": []\n}\n' },
+    params: [{ key: "k", reason: "a real float prints differently: refused", by: "Ada", date: "2026-09-26" }],
+  },
+  {
+    kind: "ids-count-reasons",
+    rule: { kind: "ids-count-reasons", file: "c.json" },
+    files: { "c.json": '{\n  "count": 0,\n  "ids": "not-an-array"\n}\n' },
+    params: [{ key: "k", reason: "ids is a string: refused", by: "Ada", date: "2026-09-26" }],
+  },
+  {
+    kind: "ids-count-reasons",
+    rule: { kind: "ids-count-reasons", file: "c.json" },
+    files: { "c.json": '{\n  "count": 0,\n  "ids": [],\n  "big": 9007199254740993\n}\n' },
+    params: [{ key: "k", reason: "an unsafe integer: refused", by: "Ada", date: "2026-09-26" }],
+  },
 ];
 
 /** Every case the corpus holds: synthetic edge cases plus each live rule over its real file today. */
 export function corpusCases(root = REPO_ROOT) {
   const cases = [];
   for (const s of SYNTHETIC) {
-    for (const p of s.params) cases.push({ name: `${s.kind}: ${p.key}`, rule: s.rule, files: s.files, params: p });
+    for (const p of s.params) cases.push({ name: `${s.kind}: ${JSON.stringify(p.key)} (${p.reason})`, rule: s.rule, files: s.files, params: p });
   }
   const { checks } = loadAcceptRules(root);
   for (const [id, entry] of Object.entries(checks)) {
     if (!entry.accept) continue;
     const files = {};
     for (const rel of ruleFiles(entry.accept)) {
-      try {
-        files[rel] = readFileSync(join(root, rel), "utf8");
-      } catch {
-        files[rel] = null;
-      }
+      files[rel] = existsSync(join(root, rel)) ? readUtf8Strict(join(root, rel)) : null;
     }
     const sample = {
       "detector-allowlist": `${entry.accept.detectors?.[0]}|corpus/sample — file.ts|*`,
@@ -142,7 +334,15 @@ export function corpusCases(root = REPO_ROOT) {
       params: { key: sample, reason: "corpus: a reason with \"quotes\" — and a dash", by: "Corpus Admin", date: "2026-09-26" },
     });
   }
-  return cases.map((c) => ({ ...c, expected: applyAcceptRule(c.rule, c.files, c.params) }));
+  // A refusal is part of the contract: `expected: null` + `refused: true` means BOTH engines must refuse.
+  return cases.map((c) => {
+    try {
+      return { ...c, expected: applyAcceptRule(c.rule, c.files, c.params) };
+    } catch (error) {
+      if (!(error instanceof RuleError)) throw error;
+      return { ...c, expected: null, refused: true };
+    }
+  });
 }
 
 export function writeCorpus(root = REPO_ROOT) {

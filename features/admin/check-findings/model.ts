@@ -259,3 +259,52 @@ export function pendingAcceptView(
   if (Number.isFinite(landedAt) && Number.isFinite(runAt) && runAt > landedAt) return { kind: "still_reported", pending };
   return { kind: "landing", pending };
 }
+
+// ── Which checks Mark OK can accept (MARK-OK-VERIFY D7) ───────────────────────────────────────
+
+/** How a check's findings are accepted: the files an accept writes, or why it has none. */
+export interface AcceptInfo {
+  /** Files the adapter writes; null when the check has no adapter. */
+  files: string[] | null;
+  /** How this check is accepted when it has no adapter, in the registry's own words. */
+  noAccept: string | null;
+}
+
+/**
+ * The accept a check offers. matrx-frontend's comes from its own accept-rules.json (build time);
+ * aidream's from the server's findings REGISTRY (`GET /admin/checks/accept-adapters`) — a check
+ * that registry does not list has no accept either. `null` = not known yet (or the list could not
+ * be read): the page keeps Mark OK and the server refuses by name, rather than hide a real accept.
+ */
+export function acceptInfoFor(
+  repo: string | null,
+  stableId: string | null,
+  frontend: Record<string, AcceptInfo>,
+  aidream: Record<string, AcceptInfo> | null,
+): AcceptInfo | null {
+  if (!repo || !stableId) return null;
+  if (repo === "matrx-frontend") return frontend[stableId] ?? null;
+  if (repo === "aidream") {
+    if (!aidream) return null;
+    return (
+      aidream[stableId] ?? {
+        files: null,
+        noAccept: `${stableId} is not in aidream's findings registry (scripts/findings.py REGISTRY), so it has no accept.`,
+      }
+    );
+  }
+  return null;
+}
+
+/** Mark OK is drawn only when the check has an accept (or it is not known); otherwise "No accept — why?". */
+export function hasAccept(info: AcceptInfo | null): boolean {
+  return info == null || info.files !== null;
+}
+
+/**
+ * Whether a server answer is a success to celebrate. `already_landed` / `in_flight` are the truth
+ * but not a success — they are said as information, never with a success toast.
+ */
+export function acceptOutcomeTone(status: string): "success" | "info" {
+  return status === "landed" || status === "already_accepted" || status === "already_on_main" ? "success" : "info";
+}
