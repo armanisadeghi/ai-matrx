@@ -22,7 +22,6 @@ import { getUserOrganizations } from "@/features/organizations/service";
 import {
   DECISION_SUBJECT_KIND,
   decisionJudgeKey,
-  decisionSource,
   orderQueue,
   readReviewItem,
   type DecisionSource,
@@ -146,8 +145,6 @@ export async function loadQueue(
 }
 
 export interface QueueFacets {
-  /** How many items came from each source (combined queue). */
-  sources: Record<DecisionSource, number>;
   questions: string[];
   models: string[];
   methods: string[];
@@ -165,7 +162,7 @@ export async function loadFacets(scope: QueueScope): Promise<QueueFacets> {
       const base = client
         .schema("platform")
         .from("judge_verdict")
-        .select("id, judge_key, question, model, judge_version, authority_verdict, metadata", {
+        .select("id, question, model, judge_version, authority_verdict, metadata", {
           count: "exact",
         });
       const scoped = scope.agentId
@@ -179,15 +176,12 @@ export async function loadFacets(scope: QueueScope): Promise<QueueFacets> {
     },
     { label: "platform.judge_verdict (decision answers)" },
   );
-  const sources: Record<DecisionSource, number> = { agent: 0, workflow: 0, model: 0 };
   const questions = new Set<string>();
   const models = new Set<string>();
   const methods = new Set<string>();
   const versions = new Set<number>();
   let labeled = 0;
   for (const row of rows) {
-    const runId = isJsonObject(row.metadata) ? row.metadata.workflow_run_id : null;
-    sources[decisionSource(row.judge_key, typeof runId === "string" ? runId : null)] += 1;
     questions.add(row.question);
     if (row.model) models.add(row.model);
     const method = isJsonObject(row.metadata) ? row.metadata.method : null;
@@ -196,7 +190,6 @@ export async function loadFacets(scope: QueueScope): Promise<QueueFacets> {
     if (row.authority_verdict) labeled += 1;
   }
   return {
-    sources,
     questions: [...questions].sort(),
     models: [...models].sort(),
     methods: [...methods].sort(),

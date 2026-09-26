@@ -298,13 +298,10 @@ export function ReviewQueue({
             value={filters.source ?? ALL}
             onValueChange={(v) => setFilter("source", v === ALL ? null : (v as DecisionSource))}
             data={[
-              { value: ALL, label: "Every source" },
-              ...(["agent", "workflow", "model"] as const).map((source) => ({
-                value: source,
-                label: facets
-                  ? `${DECISION_SOURCE_LABELS[source]} ${facets.sources[source]}`
-                  : DECISION_SOURCE_LABELS[source],
-              })),
+              { value: ALL, label: "All sources" },
+              { value: "agent", label: "Agents" },
+              { value: "workflow", label: "Workflows" },
+              { value: "model", label: "API" },
             ]}
           />
         )}
