@@ -97,6 +97,7 @@ import { healStreamingMarkdown } from "@/components/markdown-core/stream-heal";
 import { extractFrontmatter } from "@/components/markdown-core/syntax/frontmatter";
 import { MarkdownSourceEditProvider } from "@/components/markdown-core/syntax/elements/MarkdownSourceEdit";
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { ImagePolicyProvider } from "@/components/rich-content/prose/remote-image-policy";
 
 let container: HTMLDivElement;
 let root: Root;
@@ -507,9 +508,15 @@ describe("verify-RC-B8 fix round", () => {
 
   it("a titled image is a numbered figure, counted document-wide", async () => {
     const doc = ':::figure[First]{#fig:a}\nx\n:::\n\n```js\nsplit()\n```\n\n![Kiln shelf](https://example.com/k.png "Cone 6 shelf layout")\n\nSee @fig:a.';
-    const scope = await render(standard(doc));
+    // The viewer's own document: the remote figure image draws (without a referrer)…
+    const scope = await render(<ImagePolicyProvider value="self">{standard(doc)}</ImagePolicyProvider>);
     expect([...scope.querySelectorAll("figcaption")].map(text)).toEqual(["Figure 1. First", "Figure 2. Cone 6 shelf layout"]);
-    expect(scope.querySelector("figure img")).not.toBeNull();
+    expect(scope.querySelector("figure img")?.getAttribute("referrerpolicy")).toBe("no-referrer");
+    // …and in text someone else wrote, the figure keeps its number and caption but asks first.
+    const other = await render(<ImagePolicyProvider value="other">{standard(doc)}</ImagePolicyProvider>);
+    expect([...other.querySelectorAll("figcaption")].map(text)).toEqual(["Figure 1. First", "Figure 2. Cone 6 shelf layout"]);
+    expect(other.querySelector("figure img")).toBeNull();
+    expect(other.querySelector('figure [data-rc-remote-image="example.com"]')).not.toBeNull();
   });
 
   it("author ids are prefixed user-content- and anchors still resolve", async () => {

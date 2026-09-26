@@ -234,11 +234,12 @@ describe("streaming healing in the markdown core", () => {
     jest.restoreAllMocks();
   });
 
-  async function renderAnswer(content: string, isStreamActive: boolean) {
+  // Healing is judged on text whose remote images LOAD (the viewer's own), so every fetch the
+  // renderer would make is visible; the AI-answer case below proves the same answer asks first.
+  async function renderAnswer(content: string, isStreamActive: boolean, policy: "self" | "ai" = "self") {
     await act(async () => {
       root.render(
-        // The viewer's own text: remote images load, so the test sees every fetch.
-        <ImagePolicyProvider value="self">
+        <ImagePolicyProvider value={policy}>
           <EnhancedChatMarkdownInternal
             content={content}
             isStreamActive={isStreamActive}
@@ -311,6 +312,18 @@ describe("streaming healing in the markdown core", () => {
         // Outbound links carry our attribution tag; the target is what matters.
         .map((href) => href.replace(/[?&]utm_source=aimatrx$/, ""));
       expect(hrefs).toEqual(links);
+    },
+  );
+
+  it.each(CASES)(
+    "as an AI answer, the same finished answer fetches no remote image until clicked: $name",
+    async ({ answer, images }) => {
+      await renderAnswer(answer, false, "ai");
+      const remote = images.filter((src) => /^https?:\/\//.test(src));
+      for (const src of remote) {
+        expect(container.querySelector(`img[src="${src}"]`)).toBeNull();
+        expect(container.querySelector(`[data-rc-remote-image="${new URL(src).host}"]`)).not.toBeNull();
+      }
     },
   );
 });

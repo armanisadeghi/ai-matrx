@@ -21,7 +21,7 @@ import {
 } from "@ai-matrx/media/core";
 import { fileSourceToMediaRef } from "@/features/files/media-client/refs";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
-import { RemoteImageGate } from "@/components/rich-content/prose/remote-image-policy";
+import { RemoteImageGate, remoteImageHost } from "@/components/rich-content/prose/remote-image-policy";
 
 const MAX_IMAGE_HEIGHT = 700;
 
@@ -60,6 +60,8 @@ const ImageBlockImpl: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image"
   // durable, so a load failure means the file session needs re-establishing.
   const src = effectiveSrc ?? "";
   const renderSrc = effectiveSrc ?? undefined;
+  // A remote image that draws tells its website nothing about where it was opened (remote-image-policy.tsx).
+  const remoteReferrer = renderSrc && remoteImageHost(renderSrc) ? ("no-referrer" as const) : undefined;
   const {
     retryKey,
     onLoadError: handleImageError,
@@ -199,6 +201,7 @@ const ImageBlockImpl: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image"
         key={retryKey}
         ref={imageRef}
         src={renderSrc}
+        referrerPolicy={remoteReferrer}
         alt={alt}
         onDoubleClick={handleExpand}
         onError={handleImageError}
@@ -362,6 +365,7 @@ const ImageBlockImpl: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image"
           <img
             key={retryKey}
             src={renderSrc}
+            referrerPolicy={remoteReferrer}
             alt={alt}
             onClick={(e) => e.stopPropagation()}
             onDoubleClick={handleCloseExpanded}

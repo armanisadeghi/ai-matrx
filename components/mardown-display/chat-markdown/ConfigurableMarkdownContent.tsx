@@ -33,7 +33,7 @@ import {
   useMediaLoadRecovery,
 } from "@ai-matrx/media/core";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
-import { RemoteImageGate, withImagePolicy, type ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
+import { RemoteImageGate, remoteImageHost, withImagePolicy, type ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 import { fileSourceToMediaRef } from "@/features/files/media-client/refs";
 
 /**
@@ -83,6 +83,8 @@ function DurableMarkdownImgImpl({
       {...props}
       src={effectiveSrc}
       alt={alt || "Image"}
+      // A remote image that draws tells its website nothing about where it was opened.
+      referrerPolicy={remoteImageHost(effectiveSrc) ? "no-referrer" : props.referrerPolicy}
       onError={onError}
     />
   );

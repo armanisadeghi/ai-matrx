@@ -89,6 +89,8 @@ describe("DurableMarkdownImg", () => {
       failureRef: null,
     });
     expect(container.querySelector("img")?.getAttribute("src")).toBe(external);
+    // A remote image that draws sends no referrer (chair ruling 2026-09-25).
+    expect(container.querySelector("img")?.getAttribute("referrerpolicy")).toBe("no-referrer");
   });
 
   it("never falls back to the unauthenticated byte endpoint while the blob loads", () => {
