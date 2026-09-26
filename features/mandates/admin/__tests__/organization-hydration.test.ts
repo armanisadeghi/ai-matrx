@@ -35,11 +35,17 @@ describe("MandatesConsole organization hydration boundary", () => {
     );
   });
 
-  it("reads the organization from the app-context authority the transport uses", () => {
-    expect(source).toMatch(/selectOrganizationId[\s\S]{0,120}appContextSlice/);
-    expect(source).toContain(
-      "const selectedOrganizationId = useAppSelector(selectOrganizationId);",
+  it("reads the organization from the authority the transport uses", () => {
+    // On the admin seat that is the platform tenant, never the admin's own
+    // workspace (cd3aa60960; "No one acts as themselves in admin") — the ONE
+    // hook that answers it, lib/api/useServerOrganizationId.ts.
+    expect(source).toMatch(
+      /import \{ useServerOrganizationId \} from "@\/lib\/api\/useServerOrganizationId";/,
     );
+    expect(source).toContain(
+      "const selectedOrganizationId = useServerOrganizationId();",
+    );
+    expect(source).not.toContain("useAppSelector(selectOrganizationId)");
   });
 
   it("waits for explicit organization context and refetches when it changes", () => {
