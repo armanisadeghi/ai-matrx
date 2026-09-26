@@ -18,6 +18,8 @@
 
 **The Data Doctrine binds data work.** Custom data, table types, organizations, and access words are ruled by the AI Matrx Data Doctrine (Arman, 2026-09-10) — a doctrine document, presumed right against the code and any other doc, amended only by him (`common-docs/policies/doctrine-documents.md`). Its data rules live once at `common-docs/systems/platform/db-rules/DECISIONS.md`; the gap between them and the code is tracked in `common-docs/projects/data-doctrine-adoption/REGISTER.md`. Live names (scope, component, machinery, graveyard, is_personal…) stay until their convergence campaign runs — never rename on sight.
 
+**Canonical-first triage.** Before reporting or fixing ANY database finding (a DB-wide scan, an advisor, a lint, a grep across schemas), bucket it by table: `graveyard` is dead — never mention it; `public` is a queue, not a finding; anything else, check `audit.summary.certified` first. The same problem on certified tables is a major defect fixed at its source now; a problem only on uncertified tables while certified ones are clean is a non-issue — put the effort into moving those tables onto the canonical Entity system (Arman, 2026-09-25: *"we need all hands on deck to clean up the old junk and move things forward"*). `common-docs/policies/canonical-first-triage.md`.
+
 **Agents never author agents.** No agent creates, rewrites, or tunes a platform agent's instructions or a mandate's prompt on its own authority — the loop runs problem → Arman vision session → mandate brief → the agent-generation agent → results read with him on small real data → he edits and re-runs (Arman, 2026-09-18: *"a single agent performs better than that entire [Masterwork] system combined… pure slop"*). `common-docs/policies/agents-never-author-agents.md`.
 <!-- nine-laws:end -->
 
@@ -76,6 +78,7 @@ Next.js 16.2+ (App Router) · React 19.2 · TypeScript 6.0+ (strict, no `any`) �
 
 ## Supabase & database
 
+- **Found something with a DB-wide check? Triage by table first** — graveyard is dead, public is a queue, anything else counts only if the same problem shows on certified tables (`audit.summary.certified`); if it shows only on uncertified ones, the work is canonicalizing them — `../common-docs/policies/canonical-first-triage.md`.
 - **Project `brsgrqvjdzwihsvnfqkf`** (Matrx Main) — the only DB this repo talks to, addressed by URL `db.matrxserver.com`. Always pass that `project_id` to Supabase MCP tools. Clients: `@/utils/supabase/client` / `@/utils/supabase/server`; every client passes the `utils/supabase/authCookie.ts` options (domain-wide cookie spans the subdomains).
 - 🚨 **A list you treat as complete is read with `readAllRows`** (from `@ai-matrx/data/db`, the extracted package) — PostgREST silently caps at 1000 rows; any existence check / diff / set subtraction / `.length` comparison on a bare `.select()` goes confidently wrong. The package module's header carries the full rule. Sweep: `pnpm check:unbounded-reads`.
 - 🚨 **New table = `platform.create_entity_table`, never hand DDL; `organization_id` NOT NULL; RLS ONLY via `iam.apply_rls` (never a hand-written policy); "done" ONLY when `iam.canonical_certify_ok(schema, table, token)` is `true`.** Full contract: `../common-docs/systems/platform/db-rules/FEATURE.md` §0. Retrofitting an existing table: **invoke the `db-canonicalize-table` skill**.

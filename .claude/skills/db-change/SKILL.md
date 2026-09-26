@@ -35,6 +35,11 @@ lies — is **not applied when noticed.** It goes on the cross-repo
 census, and one session applies the batch end-to-end in a window (Arman, 2026-09-10). Every
 change pays the full multi-layer sweep below; batching pays it once.
 
+**Came here from a DB-wide check?** Triage the finding by table first —
+[canonical-first triage](../../../../common-docs/policies/canonical-first-triage.md): graveyard is
+dead, public is a queue, and a problem that shows only on uncertified tables (while certified ones
+are clean) is not a fix — the work is canonicalizing that table (`db-canonicalize-table`).
+
 ## 🛑 THE PRIME DIRECTIVE — read this before you touch anything, or you will hurt the project
 
 **This migration is past the point of no return. The app is ALREADY DOWN and stays down until the system is 100% canonical.** There is no safe partial state, nothing to protect, and no going back — the only exit is *forward, completely*. Everything below exists because agents keep half-doing the job and leaving the app in the broken middle. Do not be one of them.

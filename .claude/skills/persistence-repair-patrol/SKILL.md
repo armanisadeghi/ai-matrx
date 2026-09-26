@@ -24,6 +24,10 @@ Find bugs and fix them.” This runbook implements that request and its five
 stated weaknesses: false access blockers, reporting instead of fixing, avoidable
 local-environment friction, missing continuous improvement, and stale secondhand claims.
 
+When a finding traces to a table, triage it by that table first —
+[canonical-first triage](/policies/canonical-first-triage.md): graveyard is dead, public is a
+queue, and a problem that shows only on uncertified tables is canonicalization work, not a repair.
+
 ## Repositories and entry points
 
 | Repository | Role |

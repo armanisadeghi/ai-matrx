@@ -27,6 +27,10 @@ The one-pass recipe (backfill → capture → repoint the legacy version RPCs �
 
 ## ⚡ Field realities — read these first, they each cost a round-trip (verified 2026-07-05)
 
+0. **This is where a DB-wide finding on an uncertified table should land.** Under
+   [canonical-first triage](../../../../common-docs/policies/canonical-first-triage.md), a problem that
+   appears only on uncertified tables is fixed by converting the table here — never by patching the old shape.
+
 1. **A table is usually FAR more canonical than "not started."** A prior "canonicalize + move" migration often already added `created_by`/`visibility`/`deleted_at` + canonical RLS + `_stamp_actor`/`_touch_row`, and left only: the **kill-list columns** (`user_id`/`is_public`/`is_deleted`) undropped + the **base FK constraints** missing. **Run `iam.verify_canonical(s,t,tok)` for EVERY involved table BEFORE writing anything** — it prints the exact remaining gap. Don't assume; the delta is often tiny.
    - **The gate keys on the TOKEN, never the table name — and the token is often singular while the table is plural** (`code_file` ⟷ `code_files`, `code_folder` ⟷ `code_file_folders`). Passing the table name as the token yields a signature TRIO of FALSE fails — `entity_registered` ("no entity_types row for token=…"), `policy_uses_has_access` ("std_select does not call has_access('…')"), `sharing_token` ("registry resource_type=… != token=…"). If you see exactly those three, you passed the wrong token — get it from `platform.entity_types`/`audit.summary`, not by pluralizing the table name. (The admin verify UI now warns on this mismatch.)
 2. **`canonical_certify` reads a CACHED snapshot — `audit.refresh()` is MANDATORY before it's truthful.** After you `CREATE OR REPLACE` a broken dependent function or fix anything, `canonical_certify_ok` KEEPS reporting the old `broken_dependent_fn`/finding until you `SELECT audit.refresh();`. A "still broken" you already fixed is the #1 false failure — refresh, then re-check.
