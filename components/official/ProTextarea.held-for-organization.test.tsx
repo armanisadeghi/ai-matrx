@@ -141,7 +141,11 @@ async function mount() {
   return root;
 }
 
-const menuVisible = () => document.body.textContent?.includes("Clean up") ?? false;
+// The ⋯ menu's own open panel. (Its entries follow the one registry tree —
+// 397d5dded1 folded "Clean up" under "Improve with AI" — so an entry's label is
+// not the marker of the menu being open.)
+const menuVisible = () =>
+  document.querySelector('[role="dialog"][data-state="open"]') !== null;
 
 async function openMenu() {
   const trigger = document.querySelector<HTMLButtonElement>('button[aria-label="More options"]');
