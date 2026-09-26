@@ -38,6 +38,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 import { repoFiles } from "./lib/repo-files";
+import { emitItem } from "./checks/items.mjs";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");
@@ -102,6 +103,8 @@ function isAllowed(
     if (e.file !== file) continue;
     if (e.line != null && Math.abs(e.line - line) > 2) continue;
     usedEntries.add(entryKey(detector, e));
+    // C5 item line: the key IS this allowlist entry's key (known debt).
+    emitItem({ key: entryKey(detector, e), status: "known", file, line, rule: detector });
     allowed = true;
   }
   return allowed;
@@ -411,6 +414,18 @@ function main(): number {
       );
     }
     console.log("");
+  }
+
+  // C5 item line: a finding's key is the file-level allowlist key that WOULD cover it.
+  for (const f of findings) {
+    emitItem({
+      key: entryKey(f.detector, { file: f.file, justification: "" }),
+      status: "new",
+      title: `${f.file}:${f.line} — ${titles[f.detector]}`,
+      file: f.file,
+      line: f.line,
+      rule: f.detector,
+    });
   }
 
   if (findings.length === 0) {
