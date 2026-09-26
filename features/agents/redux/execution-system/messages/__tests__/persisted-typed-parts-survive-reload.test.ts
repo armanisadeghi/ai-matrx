@@ -173,8 +173,10 @@ describe("reference roles survive a reload", () => {
   } as ImageMediaPart;
 
   it("the attachment chip names the role", () => {
+    // The role rides as its own badge (cf98ecfc1f), never prefixed into the title.
     const [item] = normalizeMessagePart(subject, 0, "c1");
-    expect(item?.title).toMatch(/^Subject reference · /);
+    expect(item?.caption).toBe("Subject reference");
+    expect(item?.title).not.toMatch(/Subject reference/);
   });
 
   it("an inline image block carries role and name", () => {
@@ -196,6 +198,6 @@ describe("reference roles survive a reload", () => {
     expect(data.reference_role).toBe("extend");
     expect(data.reference_name).toBe("intro");
     const [item] = normalizeMessagePart(video, 0, "c1");
-    expect(item?.title).toMatch(/^Video to extend · @intro · /);
+    expect(item?.caption).toBe("Video to extend · @intro");
   });
 });
