@@ -16,6 +16,7 @@
 // shown rendered, edited as source, written back verbatim. A whole block with
 // CRLF line endings or Private Use characters is locked outright.
 
+import { splitRowSegments } from "./table-source";
 import { Lexer, type Token, type Tokens } from "marked";
 import { isPageBreakLine } from "@ai-matrx/print/directives";
 import type { JSONContent } from "@tiptap/core";
@@ -388,11 +389,6 @@ function blockJSON(token: Token, state: ParseState): JSONContent | null {
     default:
       return null;
   }
-}
-
-/** A table row's bytes split on its unescaped pipes (edge segments included). */
-export function splitRowSegments(line: string): string[] {
-  return line.split(/(?<!\\)\|/);
 }
 
 const ALERT_MARKER = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?=\n|$)/i;

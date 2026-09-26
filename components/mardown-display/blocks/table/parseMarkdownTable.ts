@@ -9,6 +9,7 @@
  */
 
 import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";
+import { rowCells } from "@/components/rich-editor/core/table-source";
 
 export interface ParsedTable {
   headers: string[];
@@ -41,13 +42,9 @@ export function parseMarkdownTable(content: string): ParsedTable | null {
     const separatorLine = lines[1];
     if (!separatorLine.match(/^\|[:\s|\-]+\|?$/)) return null;
 
-    const parseRow = (line: string): string[] => {
-      const cells = line.split("|").map((cell) => cell.trim());
-      // Drop empty first/last cells from leading/trailing pipes.
-      if (cells.length > 0 && cells[0] === "") cells.shift();
-      if (cells.length > 0 && cells[cells.length - 1] === "") cells.pop();
-      return cells;
-    };
+    // An escaped `\|` is part of its cell, never a boundary (the table writer
+    // reads rows the same way: components/rich-editor/core/table-source.ts).
+    const parseRow = rowCells;
 
     const headers = parseRow(headerLine);
     if (headers.length === 0) return null;
