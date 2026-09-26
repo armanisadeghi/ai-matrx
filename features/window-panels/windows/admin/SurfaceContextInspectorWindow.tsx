@@ -23,6 +23,7 @@ import {
   TriangleAlert,
   X,
 } from "lucide-react";
+import { validateLoadedValues } from "@ai-matrx/alchemy/declare";
 import { Badge } from "@/components/ui/badge";
 import { CopyForAiButton } from "@/components/agent-copy/CopyForAiButton";
 import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
@@ -121,17 +122,18 @@ function useInspectorModel(
     return manifest?.values ?? allBaseline();
   }, [surfaceName]);
 
-  const declaredNames = useMemo(
-    () => new Set(declared.map((v) => v.name)),
-    [declared],
-  );
-
+  // One rule for "undeclared" — the package's loaded-value check, the same
+  // one the surface runtime announces in development (ALC-14).
   const undeclared = useMemo(
     () =>
-      Object.keys(scope).filter(
-        (k) => !declaredNames.has(k),
+      validateLoadedValues(
+        // Only `name` is read; the app's SurfaceValue carries it.
+        { surfaceName: surfaceName ?? "", values: declared as unknown as Parameters<typeof validateLoadedValues>[0]["values"] },
+        scope,
+      ).flatMap(
+        (issue) => (issue.path.startsWith("values/") ? [issue.path.slice("values/".length)] : []),
       ),
-    [scope, declaredNames],
+    [surfaceName, scope, declared],
   );
 
   const items: InspectorItem[] = useMemo(
