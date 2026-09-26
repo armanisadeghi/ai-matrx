@@ -182,7 +182,9 @@ function ClaimHandle({ onClaimed }: { onClaimed: (p: CreatorProfileMine) => void
                   We couldn't check this handle — you can still try to claim it.
                   <ErrorAlchemyMenu
                     error={checkError}
-                    input={{ operation: "Check handle availability", calls: ["creator_handle_available"], unsavedInput: { handle } }}
+                    operation="Check handle availability"
+                    calls={["creator_handle_available"]}
+                    unsavedInput={{ handle, displayName }}
                   />
                 </span>
               ) : null}
