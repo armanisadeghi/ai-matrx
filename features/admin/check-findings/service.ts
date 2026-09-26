@@ -17,7 +17,7 @@
 import { readAllRows } from "@ai-matrx/data/db";
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
-import { parsePendingAccept, type PendingAccept } from "./model";
+import { pendingAcceptFromMetadata, type PendingAccept } from "./model";
 
 type OpsTables = Database["ops"]["Tables"];
 type CheckCatalogRow = OpsTables["proof_check"]["Row"];
@@ -190,9 +190,7 @@ async function loadItems(
   );
   return rows.map(({ metadata, ...item }) => ({
     ...item,
-    pending_accept: parsePendingAccept(
-      metadata != null && typeof metadata === "object" && !Array.isArray(metadata) ? metadata.pending_accept : null,
-    ),
+    pending_accept: pendingAcceptFromMetadata(metadata),
   }));
 }
 

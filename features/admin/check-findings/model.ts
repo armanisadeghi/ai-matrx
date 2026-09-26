@@ -221,6 +221,11 @@ export function parsePendingAccept(value: unknown): PendingAccept | null {
   };
 }
 
+/** `ops.check_item.metadata` → its `pending_accept` marker, if any. */
+export function pendingAcceptFromMetadata(metadata: unknown): PendingAccept | null {
+  return isRecord(metadata) ? parsePendingAccept(metadata.pending_accept) : null;
+}
+
 /** How long a `committing` marker is trusted before it reads as interrupted (the DB reclaims at 5 min). */
 export const COMMITTING_STALE_MS = 5 * 60_000;
 
