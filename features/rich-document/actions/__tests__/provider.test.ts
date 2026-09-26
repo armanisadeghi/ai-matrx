@@ -99,3 +99,13 @@ describe("one formatted copy (ALC-15 finding 5)", () => {
     expect(getAction("copy-formatted")?.label).toBe("Copy formatted");
   });
 });
+
+describe("read-only content (ALC-15 verifier finding 6)", () => {
+  it("never offers the full-screen editor on a read-only source (an error card, a copy)", () => {
+    const ctx = chatContext("assistant");
+    const raw = { ...ctx, source: { type: "raw" as const, title: "Your podcasts couldn't load", readOnly: true } };
+    expect(resolveActions(raw).map((a) => a.id)).not.toContain("open-fullscreen-editor");
+    const editable = { ...ctx, source: { type: "raw" as const, title: "Draft" } };
+    expect(resolveActions(editable).map((a) => a.id)).toContain("open-fullscreen-editor");
+  });
+});
