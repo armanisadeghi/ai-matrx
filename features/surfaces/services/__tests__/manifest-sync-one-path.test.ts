@@ -146,5 +146,7 @@ describe("applyManifestSync writes only what the package plan declares", () => {
     );
     expect(touchedUndeclared).toEqual([]);
     expect(result.urlPatternsUpdated.map((u) => u.surfaceName)).not.toContain(UNDECLARED);
+    // The declared surface's pattern already matches the DB: nothing was "set".
+    expect(result.urlPatternsUpdated).toEqual([]);
   });
 });

@@ -1450,13 +1450,16 @@ export async function applyManifestSync(
       sb
         .schema("ui")
         .from("ui_surface")
-        .select("name, parent_surface_name", { count: "exact" })
+        .select("name, parent_surface_name, url_pattern", { count: "exact" })
         .order("name", { ascending: true })
         .range(from, to),
     { label: "ui.ui_surface" },
   );
   const dbParentByName = new Map(
     parentRowsBefore.map((r) => [r.name, r.parent_surface_name]),
+  );
+  const dbUrlPatternByName = new Map(
+    parentRowsBefore.map((r) => [r.name, r.url_pattern]),
   );
   const plan = planManifestSync(
     toPackageResolved(targetManifests, getRawManifest),
@@ -1496,7 +1499,10 @@ export async function applyManifestSync(
     }));
   const urlPatternsUpdated: ApplyManifestSyncResult["urlPatternsUpdated"] =
     executed.updatedSurfaces.flatMap(({ name, update }) =>
-      typeof update.url_pattern === "string"
+      // Reported only when the value actually changed — a sync that rewrites
+      // the same pattern did not "set" anything.
+      typeof update.url_pattern === "string" &&
+      dbUrlPatternByName.get(name) !== update.url_pattern
         ? [{ surfaceName: name, urlPattern: update.url_pattern }]
         : [],
     );
