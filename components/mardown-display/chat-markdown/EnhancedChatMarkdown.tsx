@@ -923,6 +923,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
   // block objects; hand back the previous object for every block whose data
   // did not change, so only the block that changed renders again.
   const prevBlocksRef = useRef<RenderBlock[]>([]);
+  // Per-slot memory for the interleaved paths (see stableSlotBlocks below).
+  const slotBlocksRef = useRef(new Map<string, RenderBlock[]>());
   const stableBlocks = useMemo(
     () => reuseUnchangedBlocks(prevBlocksRef.current, processedBlocks),
     [processedBlocks],
@@ -1181,6 +1183,16 @@ export const EnhancedChatMarkdownInternal: React.FC<
   // Renders one live grouped slot (the pre-fold shape) — shared between the
   // top-level map and the expanded body of an AgentWorkGroup, so folded items
   // render EXACTLY as they would ungrouped (no wrappers, no drift).
+  // THE UNCHANGED-BLOCK LAW on the interleaved paths (tool calls, persisted
+  // segments): each slot/segment re-splits its text on every render, so its
+  // blocks go through the same reuse, keyed by the slot, before they render.
+  const stableSlotBlocks = (key: string, next: RenderBlock[]): RenderBlock[] => {
+    const prev = slotBlocksRef.current.get(key) ?? [];
+    const stable = reuseUnchangedBlocks(prev, next);
+    slotBlocksRef.current.set(key, stable);
+    return stable;
+  };
+
   const renderGroupedSlot = (slot: GroupedSlot, i: number) => {
     if (!requestId) return null;
     if (slot.kind === "tool_batch") {
@@ -1256,20 +1268,21 @@ export const EnhancedChatMarkdownInternal: React.FC<
             }
           }
           const isStreamingRb = rb.status === "streaming";
-          return sub.map((b, j) =>
-            renderBlock(
-              {
-                ...b,
-                isStreamingBlock: isStreamingRb && j === lastReasoningIdx,
-              } as RenderBlock,
-              i * 1000 + j,
+          return stableSlotBlocks(
+            `slot:${slot.seq}`,
+            sub.map(
+              (b, j) =>
+                ({
+                  ...b,
+                  isStreamingBlock: isStreamingRb && j === lastReasoningIdx,
+                }) as RenderBlock,
             ),
-          );
+          ).map((b, j) => renderBlock(b, i * 1000 + j));
         }
       }
 
-      const block = renderBlockToContentBlock(rb);
-      return renderBlock(block, i);
+      const [block] = stableSlotBlocks(`slotb:${slot.seq}`, [renderBlockToContentBlock(rb)]);
+      return renderBlock(block as RenderBlock, i);
     }
     if (slot.kind === "tool") {
       if (!machineFramesVisible) {
@@ -1398,8 +1411,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
         serverData: segment.data ?? undefined,
         metadata: segment.metadata,
       };
-      return expandTextBlocksInList([block]).map((expandedBlock, blockIdx) =>
-        renderBlock(expandedBlock, segIdx * 1000 + blockIdx),
+      return stableSlotBlocks(`segrb:${segIdx}`, expandTextBlocksInList([block])).map(
+        (expandedBlock, blockIdx) => renderBlock(expandedBlock, segIdx * 1000 + blockIdx),
       );
     }
     if (segment.type === "thinking") {
@@ -1417,9 +1430,10 @@ export const EnhancedChatMarkdownInternal: React.FC<
           ];
         }
       })();
-      return thinkBlocks.map((block, blockIdx) =>
-        renderBlock({ ...block, type: "reasoning" }, segIdx * 1000 + blockIdx),
-      );
+      return stableSlotBlocks(
+        `segthink:${segIdx}`,
+        thinkBlocks.map((block) => ({ ...block, type: "reasoning" }) as RenderBlock),
+      ).map((block, blockIdx) => renderBlock(block, segIdx * 1000 + blockIdx));
     }
     if (segment.type === "text") {
       const segBlocks = (() => {
@@ -1436,8 +1450,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
           ];
         }
       })();
-      return segBlocks.map((block, blockIdx) =>
-        renderBlock(block, segIdx * 1000 + blockIdx),
+      return stableSlotBlocks(`segtext:${segIdx}`, segBlocks as RenderBlock[]).map(
+        (block, blockIdx) => renderBlock(block, segIdx * 1000 + blockIdx),
       );
     }
     return null;
