@@ -37,6 +37,7 @@ class ManualResizeObserver {
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 import { MermaidViewport } from "../MermaidViewport";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const SVG = '<svg viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg"><text>x</text></svg>';
 
@@ -47,7 +48,11 @@ it("a new diagram is fitted without reading the frame's size from a dirty layout
   const root = createRoot(host);
   observing = false;
   await act(async () => {
-    root.render(<MermaidViewport svg={SVG} />);
+    root.render(
+      <TooltipProvider>
+        <MermaidViewport svg={SVG} />
+      </TooltipProvider>,
+    );
   });
   // Frame callbacks and timers that ran after the markup went in.
   await act(async () => {
