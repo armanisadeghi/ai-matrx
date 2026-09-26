@@ -23,11 +23,6 @@ export type MandateAdminListArgs =
 /** Which admin page is asking: the management list or the support lookup. */
 export type MandateAdminLane = "system" | "support";
 
-const DOOR: Record<MandateAdminLane, "mnd_admin_list" | "mnd_admin_support_list"> = {
-  system: "mnd_admin_list",
-  support: "mnd_admin_support_list",
-};
-
 /** One row of a `page` answer: the ids plus the facts only the database knows. */
 export interface MandateAdminPageRow {
   id: string;
@@ -109,7 +104,10 @@ export async function callMandateAdminList<T>(
   args: MandateAdminListArgs,
   lane: MandateAdminLane = "system",
 ): Promise<T> {
-  const { data, error } = await supabase.rpc(DOOR[lane], args);
+  const { data, error } =
+    lane === "support"
+      ? await supabase.rpc("mnd_admin_support_list", args)
+      : await supabase.rpc("mnd_admin_list", args);
   if (error) {
     // A door's refusal is a sentence written for a person and is carried
     // intact; a statement timeout is not, so it gets plain words. `code` rides

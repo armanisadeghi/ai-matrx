@@ -86,32 +86,53 @@ describe("packing the facts", () => {
 });
 
 describe("reading the answers", () => {
-  it("scope arguments: platform scopes only, narrowing on Organizations and Users", () => {
-    expect(scopeArgs(query({ scope: { kind: "platform_orgs", organizationId: "org-1" } }))).toMatchObject({ p_scope: "orgs", p_org_id: "org-1" });
-    expect(scopeArgs(query({ scope: { kind: "platform_orgs", organizationId: null } })).p_org_id).toBeUndefined();
-    expect(scopeArgs(query({ scope: { kind: "platform_users", organizationId: "p-1" } }))).toMatchObject({ p_scope: "users", p_org_id: "p-1" });
-    expect(scopeArgs(query({ scope: { kind: "platform_all" } })).p_scope).toBe("all");
-    expect(scopeArgs(query({ scope: { kind: "system" }, search: "  " })).p_search).toBeUndefined();
+  // Arman, 2026-09-26: the admin mandate page manages SYSTEM mandates only;
+  // tenant mandates are looked up on Mandate support lookup.
+  it("the management lane asks for the system corpus and nothing else", () => {
+    expect(scopeArgs(query({ scope: { kind: "system" }, search: "  " }))).toMatchObject({ p_scope: "system", p_search: undefined });
+    for (const scope of [
+      { kind: "platform_orgs", organizationId: "org-1" },
+      { kind: "platform_users", organizationId: null },
+      { kind: "platform_all" },
+    ] as const) {
+      expect(() => scopeArgs(query({ scope }), "system")).toThrow(/manages system mandates only/);
+    }
   });
 
-  it("THE ADMIN SEAT: a personal-seat scope never reaches the admin list", () => {
+  it("the support lane: Organizations / Users / All, narrowing on Organizations and Users, never System", () => {
+    expect(scopeArgs(query({ scope: { kind: "platform_orgs", organizationId: "org-1" } }), "support")).toMatchObject({ p_scope: "orgs", p_org_id: "org-1" });
+    expect(scopeArgs(query({ scope: { kind: "platform_orgs", organizationId: null } }), "support").p_org_id).toBeUndefined();
+    expect(scopeArgs(query({ scope: { kind: "platform_users", organizationId: "p-1" } }), "support")).toMatchObject({ p_scope: "users", p_org_id: "p-1" });
+    expect(scopeArgs(query({ scope: { kind: "platform_all" } }), "support").p_scope).toBe("all");
+    expect(() => scopeArgs(query({ scope: { kind: "system" } }), "support")).toThrow(/no "system" view/);
+  });
+
+  it("THE ADMIN SEAT: a personal-seat scope reaches neither lane", () => {
     // Arman, 2026-09-26: "No one acts as themselves in admin."
-    expect(() => scopeArgs(query({ scope: { kind: "mine" } }))).toThrow(/no "mine" scope/);
-    expect(() => scopeArgs(query({ scope: { kind: "orgs", organizationId: null } }))).toThrow(/no "orgs" scope/);
+    for (const lane of ["system", "support"] as const) {
+      expect(() => scopeArgs(query({ scope: { kind: "mine" } }), lane)).toThrow(/"mine"/);
+      expect(() => scopeArgs(query({ scope: { kind: "orgs", organizationId: null } }), lane)).toThrow(/"orgs"/);
+    }
   });
 
-  it("tab counts and owner narrowing", () => {
+  it("management counts: the System count alone, no tabs, no narrows", () => {
+    expect(countsFromAnswer({ system: 469 }, "system")).toEqual({ byKind: { system: 469 }, narrow: {} });
+  });
+
+  it("support counts and owner narrowing — no System tab", () => {
     expect(
-      countsFromAnswer({
-        system: 469,
-        orgs: 3,
-        users: 275,
-        all: 747,
-        orgs_narrow: [{ id: "o1", label: "Titanium", count: 2 }],
-        users_narrow: [{ id: "p1", label: "Aamir Hussain", count: 19 }],
-      }),
+      countsFromAnswer(
+        {
+          orgs: 3,
+          users: 275,
+          all: 747,
+          orgs_narrow: [{ id: "o1", label: "Titanium", count: 2 }],
+          users_narrow: [{ id: "p1", label: "Aamir Hussain", count: 19 }],
+        },
+        "support",
+      ),
     ).toEqual({
-      byKind: { system: 469, platform_orgs: 3, platform_users: 275, platform_all: 747 },
+      byKind: { platform_orgs: 3, platform_users: 275, platform_all: 747 },
       narrow: {
         platform_orgs: [{ id: "o1", label: "Titanium", count: 2 }],
         platform_users: [{ id: "p1", label: "Aamir Hussain", count: 19 }],
@@ -119,7 +140,7 @@ describe("reading the answers", () => {
       narrowUnavailable: {},
     });
     expect(
-      countsFromAnswer({ system: 1, orgs: 0, users: 0, all: 1, orgs_narrow: [], users_narrow: [] }).narrowUnavailable,
+      countsFromAnswer({ orgs: 0, users: 0, all: 1, orgs_narrow: [], users_narrow: [] }, "support").narrowUnavailable,
     ).toEqual({
       platform_orgs: "No organization owns a mandate.",
       platform_users: "No person owns a mandate.",
