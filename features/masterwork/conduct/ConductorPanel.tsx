@@ -40,11 +40,11 @@ import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/
 import { AgentCredit } from "../components/AgentCredit";
 import {
   BookOpen,
-  BrainCircuit,
   ExternalLink,
   Plus,
   Workflow,
 } from "lucide-react";
+import { AGENT_ICON, AGENT_ICON_NAME } from "@/components/icons/domain-icons";
 import { Button } from "@/components/ui/button";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
@@ -328,7 +328,7 @@ function ConductorColumn({
     dispatch(
       setDisplayIconNameOverride({
         conversationId,
-        value: "BrainCircuit",
+        value: AGENT_ICON_NAME,
       }),
     );
   }, [conversationId, dispatch, rulebookName]);
@@ -699,7 +699,7 @@ export function ConductorPanel({
       initialFocus
       title={
         <span className="inline-flex min-w-0 items-center gap-2">
-          <BrainCircuit className="h-4 w-4 text-primary" aria-hidden />
+          <AGENT_ICON className="h-4 w-4 text-primary" aria-hidden />
           <span className="truncate">Build it with me</span>
           <AgentCredit
             mandate={MANDATE_KEYS.masterwork__conductor}

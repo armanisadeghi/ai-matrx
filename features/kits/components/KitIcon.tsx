@@ -6,7 +6,6 @@
 
 import {
   BookOpen,
-  BrainCircuit,
   Cpu,
   Database,
   FileText,
@@ -28,13 +27,14 @@ import {
   Workflow,
   type LucideIcon,
 } from "lucide-react";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { cn } from "@/utils/cn";
 
 const ICONS: Record<string, LucideIcon> = {
   BookOpen,
-  BrainCircuit,
+  BrainCircuit: AGENT_ICON,
   Cpu,
-  Bot: BrainCircuit,
+  Bot: AGENT_ICON,
   Database,
   FileText,
   Filter,

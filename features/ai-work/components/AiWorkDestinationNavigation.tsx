@@ -24,7 +24,7 @@ const CONTINUE_DOORS: readonly WorkDoor[] = [
     description:
       "Compose and launch a new AI Matrx request with the available destinations.",
     href: "/work/new",
-    iconName: "BrainCircuit",
+    iconName: "Webhook",
   },
   {
     title: "Saved requests",

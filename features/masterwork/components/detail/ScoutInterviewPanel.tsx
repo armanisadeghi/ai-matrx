@@ -18,6 +18,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { AgentCredit } from "../AgentCredit";
+import { AGENT_ICON_NAME } from "@/components/icons/domain-icons";
 import {
   ExternalLink,
   MessagesSquare,
@@ -466,7 +467,7 @@ function InterviewColumn({
       }),
     );
     dispatch(
-      setDisplayIconNameOverride({ conversationId, value: "BrainCircuit" }),
+      setDisplayIconNameOverride({ conversationId, value: AGENT_ICON_NAME }),
     );
   }, [conversationId, dispatch]);
 

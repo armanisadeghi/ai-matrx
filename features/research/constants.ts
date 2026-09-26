@@ -5,6 +5,7 @@ import type {
   SourceOrigin,
   ResearchStreamStep,
 } from "./types";
+import { INTELLIGENCE_ICON_NAME } from "@/components/icons/domain-icons";
 
 // ============================================================================
 // STATUS COLORS
@@ -399,7 +400,7 @@ export const RESEARCH_NAV_ITEMS: ResearchNavItem[] = [
   {
     key: "intelligence",
     label: "Intelligence",
-    icon: "BrainCircuit",
+    icon: INTELLIGENCE_ICON_NAME,
     href: (id) => `/research/topics/${id}/intelligence`,
     group: "secondary",
     mobileVisible: false,

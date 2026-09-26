@@ -19,6 +19,7 @@ import {
   adminCategoriesData,
   type AdminToolLink,
 } from "@/features/admin/constants/admin-categories";
+import { INTELLIGENCE_ICON_NAME } from "@/components/icons/domain-icons";
 
 export interface AdminNavigationDestination extends AdminToolLink {
   /**
@@ -221,7 +222,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
     // every other mandate page is reached from inside the list's header.
     name: "Intelligence",
     slug: "intelligence",
-    iconName: "BrainCircuit",
+    iconName: INTELLIGENCE_ICON_NAME,
     iconColor: "text-teal-600",
     sections: [
       {
@@ -747,12 +748,12 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
   {
     name: "Marketing",
     slug: "marketing",
-    iconName: "BrainCircuit",
+    iconName: "Cpu",
     iconColor: "text-emerald-600",
     sections: [
       {
         name: "Coverage engines",
-        iconName: "BrainCircuit",
+        iconName: "Cpu",
         destinations: [
           destination("/administration/marketing/run-console"),
           destination("/administration/marketing/seo-operations"),

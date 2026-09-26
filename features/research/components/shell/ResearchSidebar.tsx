@@ -19,7 +19,6 @@ import {
   Brain,
   ListChecks,
   ListTree,
-  BrainCircuit,
   Info,
   ChevronDown,
   PanelLeftClose,
@@ -27,6 +26,7 @@ import {
   Video,
   GraduationCap,
 } from "lucide-react";
+import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import { RESEARCH_NAV_ITEMS } from "../../constants";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -51,7 +51,7 @@ const ICON_MAP: Record<string, typeof LayoutDashboard> = {
   Brain,
   ListChecks,
   ListTree,
-  BrainCircuit,
+  BrainCircuit: INTELLIGENCE_ICON,
   Video,
   GraduationCap,
 };

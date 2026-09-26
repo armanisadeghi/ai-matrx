@@ -10,14 +10,14 @@ import {
 const crossNamespaceGroup: ShellNavItem = {
   label: "Knowledge",
   href: "/knowledge",
-  iconName: "BrainCircuit",
+  iconName: "BookOpen",
   section: "primary",
   ownedRoutePrefixes: ["/rag"],
   children: [
     {
       label: "Knowledge Hub",
       href: "/knowledge",
-      iconName: "BrainCircuit",
+      iconName: "BookOpen",
       exact: true,
     },
     {

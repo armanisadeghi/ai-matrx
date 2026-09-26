@@ -5,7 +5,6 @@ import {
   AppWindow,
   ArrowRight,
   BellRing,
-  BrainCircuit,
   CalendarDays,
   Check,
   FileEdit,
@@ -21,6 +20,7 @@ import {
   RectangleVertical,
   Square,
   Target,
+  Webhook,
 } from "lucide-react";
 import {
   Popover,
@@ -73,7 +73,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   FileText,
   Target,
   CalendarDays,
-  BrainCircuit,
+  BrainCircuit: Webhook,
 };
 
 export function ModeIcon({
@@ -83,7 +83,7 @@ export function ModeIcon({
   name: string;
   className?: string;
 }) {
-  const Cmp = ICONS[name] ?? BrainCircuit;
+  const Cmp = ICONS[name] ?? Webhook;
   return <Cmp className={className} />;
 }
 

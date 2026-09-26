@@ -16,11 +16,11 @@ import {
   Brain,
   ListChecks,
   ListTree,
-  BrainCircuit,
   Video,
   GraduationCap,
   type LucideIcon,
 } from "lucide-react";
+import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import { RESEARCH_NAV_ITEMS } from "../../constants";
 import { MobileDock, type DockItem } from "@/components/navigation/MobileDock";
 
@@ -39,7 +39,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Brain,
   ListChecks,
   ListTree,
-  BrainCircuit,
+  BrainCircuit: INTELLIGENCE_ICON,
   Video,
   GraduationCap,
 };

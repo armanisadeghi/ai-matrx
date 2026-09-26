@@ -26,14 +26,15 @@
 import { useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  BrainCircuit,
   Gavel,
   Globe2,
   Info,
   Network,
   PanelTop,
+  Search,
   Tag,
 } from "lucide-react";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
@@ -466,7 +467,7 @@ export function useKeywordMenuSection(opts: {
       kind: "item",
       id: "kw-set-dimension",
       label: "Answer a dimension…",
-      icon: BrainCircuit,
+      icon: AGENT_ICON,
       onSelect: withRow((row) => surfaces.openDimension(row)),
     },
     {
@@ -544,7 +545,7 @@ export function useKeywordMenuSection(opts: {
       kind: "item",
       id: "kw-intel",
       label: "Open Keyword Intelligence",
-      icon: BrainCircuit,
+      icon: Search,
       onSelect: withRow((row) => {
         openKeywordWindow({
           phrase: row.phrase,

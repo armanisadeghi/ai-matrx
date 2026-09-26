@@ -17,6 +17,8 @@
  * in lucide-react (an unknown name falls back to the Zap glyph).
  */
 
+import { INTELLIGENCE_ICON_NAME } from "@/components/icons/domain-icons";
+
 export interface AdminToolLink {
   title: string;
   description: string;
@@ -889,7 +891,7 @@ export const adminCategoriesData: AdminCategory[] = [
     // the application. Holds Mandates for now; more will come. Mandates are
     // never under Agents. Metadata only — placement lives in admin-navigation.
     name: "Intelligence",
-    iconName: "BrainCircuit",
+    iconName: INTELLIGENCE_ICON_NAME,
     iconColor: "text-teal-600",
     landingPath: "/administration/intelligence",
     features: [
@@ -1395,14 +1397,14 @@ export const adminCategoriesData: AdminCategory[] = [
   {
     name: "Marketing Engines",
     landingPath: "/administration/marketing/run-console",
-    iconName: "BrainCircuit",
+    iconName: "Cpu",
     iconColor: "text-emerald-600",
     features: [
       {
         title: "Run console",
         description:
           "Drive the keyword-coverage engines by hand: pick brands, cap the keywords per run, watch the pass think, and read what it placed, proposed, protected and quarantined. Schedules are authored here at system, organization or brand scope — nearest wins.",
-        iconName: "BrainCircuit",
+        iconName: "Cpu",
         link: "/administration/marketing/run-console",
         isNew: true,
       },

@@ -79,7 +79,7 @@ export const FAMILY_STYLE: Record<
 export const FAMILY_ICON: Record<NodeFamily, string> = {
   input: "ClipboardPen",
   prepare: "Layers",
-  think: "BrainCircuit",
+  think: "Cpu",
   agent: "Bot",
   deliver: "PackageCheck",
 };

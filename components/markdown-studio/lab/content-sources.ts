@@ -388,7 +388,7 @@ export const STUDIO_SOURCES: Record<StudioSourceKind, StudioSourceDef> = {
     kind: "agent-prompt",
     token: "agent",
     label: "Agent prompt",
-    icon: "BrainCircuit",
+    icon: "Webhook",
     list: listAgents,
     load: loadAgentPrompt,
   },

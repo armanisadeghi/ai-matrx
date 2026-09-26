@@ -7,7 +7,6 @@ import {
   AlertTriangle,
   Archive,
   BarChart3,
-  BrainCircuit,
   ExternalLink,
   Loader2,
   MoreVertical,
@@ -208,7 +207,7 @@ export function SiteKeywordPerformanceWorkspace() {
           {
             id: "intel",
             label: "Keyword Intelligence",
-            icon: BrainCircuit,
+            icon: Search,
             onSelect: () => {
               openKeywordWindow({
                 phrase: row.query ?? "",
@@ -743,7 +742,7 @@ export function SiteKeywordPerformanceWorkspace() {
                   });
                 }}
               >
-                <BrainCircuit className="h-3.5 w-3.5" />
+                <Search className="h-3.5 w-3.5" />
               </Button>
               <ItemMenu config={() => rowMenuConfig(row)}>
                 <Button

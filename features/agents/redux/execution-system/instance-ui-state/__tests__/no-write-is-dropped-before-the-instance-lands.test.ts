@@ -109,7 +109,7 @@ describe("a display write made before the instance row exists is never dropped",
       }),
       setDisplayIconNameOverride({
         conversationId: CONVERSATION,
-        value: "BrainCircuit",
+        value: "Webhook",
       }),
     );
 
@@ -130,7 +130,7 @@ describe("a display write made before the instance row exists is never dropped",
     expect(entry?.displayDescriptionOverride).toBe(
       "Start anywhere — I ask from there.",
     );
-    expect(entry?.displayIconNameOverride).toBe("BrainCircuit");
+    expect(entry?.displayIconNameOverride).toBe("Webhook");
     // The ledger is spent, not kept forever.
     expect(after.pendingByConversationId[CONVERSATION]).toBeUndefined();
   });
@@ -245,7 +245,7 @@ describe("the designed staging order raises no error and no warning", () => {
       }),
       setDisplayIconNameOverride({
         conversationId: CONVERSATION,
-        value: "BrainCircuit",
+        value: "Webhook",
       }),
       creation(),
     );

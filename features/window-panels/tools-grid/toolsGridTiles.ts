@@ -31,7 +31,6 @@ import {
   Boxes,
   Brackets,
   Brain,
-  BrainCircuit,
   Bug,
   BugPlay,
   Building2,
@@ -89,6 +88,7 @@ import {
   Upload,
   Zap,
 } from "lucide-react";
+import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectActiveAgentId } from "@/lib/redux/slices/agent-settings/selectors";
@@ -446,7 +446,7 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
   {
     id: "tile.mandates",
     label: "Mandates",
-    icon: BrainCircuit,
+    icon: INTELLIGENCE_ICON,
     category: "dupes",
     overlayId: "mandateWindow",
   },
@@ -587,7 +587,7 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
   {
     id: "tile.keyword-intelligence",
     label: "Keyword Intelligence",
-    icon: BrainCircuit,
+    icon: Search,
     category: "files-web",
     overlayId: "keywordWindow",
   },

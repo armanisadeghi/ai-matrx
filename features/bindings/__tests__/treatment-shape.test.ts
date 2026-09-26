@@ -119,7 +119,7 @@ describe("treatment-shape — the client codec for mandate.treatment.config", ()
       sortOrder: 12,
       enabledFeatures: ["general", "notes"],
       surfaceName: "matrx-user/transcripts-clean",
-      iconName: "BrainCircuit",
+      iconName: "Webhook",
       keyboardShortcut: "Cmd+Shift+K",
       writePolicies: { cleaned_transcript: "ask" as const },
     };

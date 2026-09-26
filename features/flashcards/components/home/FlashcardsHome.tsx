@@ -20,6 +20,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useRouter } from "next/navigation";
+import { INTELLIGENCE_ICON_NAME } from "@/components/icons/domain-icons";
 import {
   Layers,
   Plus,
@@ -419,7 +420,7 @@ export function FlashcardsHome() {
       // review, card images) is a Mandate the learner may re-point at their
       // own agent, and this surface named none of that. Deep-linked to the
       // `flashcards` domain: the bare list is 264 mandates across 45 domains.
-      icon: "BrainCircuit",
+      icon: INTELLIGENCE_ICON_NAME,
       label: "Flashcards intelligence",
       onPress: () =>
         goTo("__mandates__", featureIntelligenceHref("flashcards")),

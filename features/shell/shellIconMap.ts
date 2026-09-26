@@ -2,6 +2,7 @@
 // Keep in sync with iconName strings in `constants/nav-data.ts`.
 
 import type { LucideIcon } from "lucide-react";
+import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import {
   AppWindow,
   Aperture,
@@ -12,7 +13,6 @@ import {
   BookOpen,
   BookmarkCheck,
   Brain,
-  BrainCircuit,
   Braces,
   BadgeDollarSign,
   BadgeCheck,
@@ -142,7 +142,7 @@ export const shellIconComponents = {
   BookOpen,
   BookmarkCheck,
   Brain,
-  BrainCircuit,
+  BrainCircuit: INTELLIGENCE_ICON,
   Braces,
   BadgeDollarSign,
   BadgeCheck,

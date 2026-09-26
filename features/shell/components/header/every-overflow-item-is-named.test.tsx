@@ -30,7 +30,7 @@ const FLASHCARD_ACTIONS = [
   { icon: "CalendarClock", label: "Review due", onPress: noop },
   { icon: "TrendingUp", label: "Progress", onPress: noop },
   { icon: "CloudOff", label: "Downloaded & offline", onPress: noop },
-  { icon: "BrainCircuit", label: "AI steps", onPress: noop },
+  { icon: "Webhook", label: "AI steps", onPress: noop },
 ];
 
 function TapButton(_: { ariaLabel?: string; label?: string; onClick?: () => void }) {

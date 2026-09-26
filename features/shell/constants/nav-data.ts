@@ -1519,7 +1519,7 @@ export const primaryNavItems: ShellNavItem[] = [
       {
         label: "Instant Capture",
         href: "/tools/product-capture/instant",
-        iconName: "BrainCircuit",
+        iconName: "ScanLine",
         description:
           "Capture product photos and process them on the spot — the analysis streams back live",
         color: "orange",

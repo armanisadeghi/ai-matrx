@@ -69,6 +69,7 @@ const MasterAgentWindow = dynamic(
 // even when the Master panel is closed.
 import { MasterWatchLayerDoor as MasterWatchLayer } from "@/features/war-room/components/master/MasterWatchLayerDoor";
 import { featureIntelligenceHref } from "@/features/mandates/feature-intelligence/hrefs";
+import { INTELLIGENCE_ICON_NAME } from "@/components/icons/domain-icons";
 
 type WarRoomAllViewMode = "rooms" | "threads";
 
@@ -145,7 +146,7 @@ export function WarRoomAllView() {
       // THE DOOR LAW — the Master Agent and the room's other AI steps are
       // Mandates the user may re-point at their own agent, with no deploy.
       // Deep-linked to the `war_room` domain (the bare list is 331 mandates).
-      icon: "BrainCircuit",
+      icon: INTELLIGENCE_ICON_NAME,
       label: "War Room intelligence",
       onPress: () => router.push(featureIntelligenceHref("war_room")),
     },

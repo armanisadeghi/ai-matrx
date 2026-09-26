@@ -15,13 +15,14 @@ import {
   Archive,
   ArrowDownRight,
   ArrowUpRight,
-  BrainCircuit,
   Loader2,
   MoreVertical,
+  Search,
   RefreshCw,
   TestTube2,
   X,
 } from "lucide-react";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -861,7 +862,7 @@ export default function KeywordResearchWorkbench() {
           {
             id: "intel",
             label: "Keyword Intelligence",
-            icon: BrainCircuit,
+            icon: Search,
             onSelect: () => {
               openKeywordIntel({ phrase: row.phrase });
             },
@@ -1323,7 +1324,7 @@ function KeywordSourceChip({ discovered }: { discovered: boolean | null }) {
   }
   return discovered ? (
     <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 px-2 py-0.5 text-[10px] font-medium text-primary">
-      <BrainCircuit className="h-3 w-3" />
+      <AGENT_ICON className="h-3 w-3" />
       Research
     </span>
   ) : (
