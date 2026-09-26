@@ -23,6 +23,7 @@ import { applySuggestion } from "./suggestion";
 import { mentionedUserIds } from "./mentions";
 import {
   addComment,
+  canEditSource,
   createHighlight,
   deleteComment,
   deleteHighlight,
@@ -130,6 +131,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [doors, setDoors] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
   const [capturedBodies, setCapturedBodies] = useState<Record<number, string | null>>({});
   const sourceRef = useRef(source);
   sourceRef.current = source;
@@ -145,11 +147,13 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
     // The two halves load independently: a refused edge read must never hide
     // the comment threads (or the reverse). Each failure is shown by name.
     const titles = getAssociationsStore().titles;
-    const [threads, edges] = await Promise.allSettled([
+    const [threads, edges, editable] = await Promise.allSettled([
       listCommentThreads(src),
       listEdgeItems(src, (token, ids) => titles.fetch(token, ids)),
+      src.save ? canEditSource(src) : Promise.resolve(false),
     ]);
     if (seq !== loadSeq.current) return;
+    setCanEdit(editable.status === "fulfilled" && editable.value === true);
     const next: AnnotationItem[] = [];
     const errors: string[] = [];
     if (threads.status === "fulfilled") {
@@ -464,6 +468,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
       if (!src?.save || !item.anchor || item.suggestedText == null || !item.commentId) {
         return "This document cannot be edited here, so the suggestion cannot be applied.";
       }
+      if (!canEdit) return "Only someone who can edit this document can accept a suggestion, so it was not applied.";
       try {
         const { nextBody } = applySuggestion(src.body, src.contentVersion, item.anchor, item.suggestedText);
         await src.save(nextBody);
@@ -474,7 +479,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
         return message(e);
       }
     },
-    [reload],
+    [reload, canEdit],
   );
 
   /**
@@ -498,6 +503,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
     collaborationDoors: doors,
     links: !!(source && tryGetEntityInfo(source.token)),
     paint: typeof CSS !== "undefined" && "highlights" in CSS,
+    canEdit,
   };
 
   return {
@@ -510,7 +516,8 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
     postOnWholeDocument,
     discardDraft,
     acceptSuggestion,
-    rejectSuggestion: (commentId: string) => act(() => deleteComment(commentId)),
+    // Rejecting keeps the suggestion (resolved, under "Show resolved") — archive, never delete.
+    rejectSuggestion: (commentId: string) => act(() => resolveComment(commentId, true)),
     editComment: editMine,
     deleteComment: (commentId: string) =>
       act(async () => {

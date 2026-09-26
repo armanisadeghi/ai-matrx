@@ -649,3 +649,21 @@ export async function linkableKinds(targetToken: string): Promise<string[]> {
   return (data ?? []).map((r: { source_type: string }) => r.source_type);
 }
 
+/**
+ * May this person EDIT the record itself (the rung an accepted suggestion writes at)? Controls that
+ * change the record are absent for anyone who cannot use them (door law); a failed check answers
+ * "no" — a control that might refuse is worse than none.
+ */
+export async function canEditSource(source: AnnotationSource): Promise<boolean> {
+  const { data, error } = await supabase.rpc("has_permission", {
+    p_resource_type: source.token,
+    p_resource_id: source.id,
+    p_required_permission: "editor",
+  });
+  if (error) {
+    console.error("[annotations] could not ask whether this record can be edited", error);
+    return false;
+  }
+  return data === true;
+}
+
