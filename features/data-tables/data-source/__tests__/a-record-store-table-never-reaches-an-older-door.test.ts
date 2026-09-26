@@ -87,7 +87,7 @@ describe("an older table", () => {
     ["upsertCell", "udt_upsert_cell"],
     ["bulkWrite", "udt_bulk_write"],
     ["setTableStyle", "udt_set_table_style"],
-    ["hasEditorAccess", "has_permission"],
+    ["hasEditorAccess", "has_access"], // the access kernel (canActOn → iam.has_access), never the direct-share check
     ["setRowOrdering", "update_user_table_row_ordering"],
     ["deleteRow", "delete_data_row_from_user_table"],
     ["updateTableConfig", "update_user_table_config"],
