@@ -25,6 +25,20 @@ import {
   type DecisionAnswersView,
 } from "./read";
 
+/**
+ * The answer in words. A score reads as its peak level ("4 · down for
+ * someone"); the probability-weighted average sits in the quiet footer —
+ * "2.3 — down for someone" put two different numbers' meanings in one phrase.
+ */
+function headline(answer: DecisionAnswerView): string {
+  if (answer.type === "score" && typeof answer.answer === "number") {
+    const key = answer.answerKey;
+    const label = key == null ? undefined : answer.legend[key];
+    if (label) return `${key} · ${label}`;
+  }
+  return formatDecisionAnswer(answer);
+}
+
 function percent(value: number | null): string {
   if (value == null) return "—";
   return `${Math.round(value * 100)}%`;
@@ -34,24 +48,31 @@ function percent(value: number | null): string {
 function ProbabilityBar({
   value,
   threshold,
+  peak,
   className,
 }: {
   value: number;
   threshold?: number | null;
+  /** Only the answer given is coloured; the rest of the spread stays grey. */
+  peak: boolean;
   className?: string;
 }) {
   const under = threshold != null && value < threshold;
   return (
     <div
       className={cn(
-        "relative h-1.5 w-full min-w-[3rem] rounded-full bg-muted overflow-hidden",
+        "relative h-1.5 w-full min-w-[3rem] rounded-full bg-border/60 overflow-hidden",
         className,
       )}
     >
       <div
         className={cn(
           "h-full rounded-full",
-          under ? "bg-amber-500" : "bg-emerald-500",
+          !peak
+            ? "bg-muted-foreground/40"
+            : under
+              ? "bg-amber-500"
+              : "bg-emerald-500",
         )}
         style={{ width: `${Math.max(2, Math.min(100, value * 100))}%` }}
       />
@@ -73,6 +94,9 @@ function ProbabilityBar({
  * true-probability scale, is marked on the Yes row rather than on whichever
  * answer came back.
  */
+/** Choice options under this share fold into one "+N below 5%" line. */
+const MINOR_SHARE = 0.05;
+
 function Distribution({
   answer,
   threshold,
@@ -81,42 +105,63 @@ function Distribution({
   threshold?: number | null;
 }) {
   if (answer.probabilities.length === 0) return null;
+  // A score is a scale: its levels stay in level order so the shape reads.
+  // A choice is sorted by share and its long tail folds away.
+  const ordered =
+    answer.type === "score"
+      ? [...answer.probabilities].sort((a, b) => Number(a.key) - Number(b.key))
+      : answer.probabilities;
+  const shown =
+    answer.type === "choice"
+      ? ordered.filter(
+          (e) => e.value >= MINOR_SHARE || e.key === answer.answerKey,
+        )
+      : ordered;
+  const folded = ordered.length - shown.length;
   return (
-    <div className="mt-1 flex flex-col gap-0.5">
-      {answer.probabilities.map((entry) => (
-        <div
-          key={entry.key}
-          className={cn(
-            "grid grid-cols-[minmax(4rem,9rem)_1fr_2.5rem] items-center gap-1.5 text-[10px]",
-            entry.key === answer.answerKey && "font-semibold text-foreground",
-          )}
-          data-peak={entry.key === answer.answerKey ? "true" : undefined}
-        >
-          <span
-            className={cn(
-              "truncate text-muted-foreground",
-              entry.key === answer.answerKey && "font-semibold text-foreground",
-            )}
-            title={entry.label}
+    <div className="mt-1.5 flex flex-col gap-1">
+      {shown.map((entry) => {
+        const peak = entry.key === answer.answerKey;
+        return (
+          <div
+            key={entry.key}
+            className="grid grid-cols-[minmax(4.5rem,10rem)_minmax(3rem,14rem)_2.5rem] items-center gap-2 text-[11px]"
+            data-peak={peak ? "true" : undefined}
           >
-            {entry.label}
-          </span>
-          <ProbabilityBar
-            value={entry.value}
-            threshold={
-              answer.type === "noul" && entry.key === "true" ? threshold : null
-            }
-          />
-          <span
-            className={cn(
-              "text-right font-mono text-muted-foreground",
-              entry.key === answer.answerKey && "text-foreground",
-            )}
-          >
-            {percent(entry.value)}
-          </span>
-        </div>
-      ))}
+            <span
+              className={cn(
+                "truncate",
+                peak ? "font-medium text-foreground" : "text-muted-foreground",
+              )}
+              title={entry.label}
+            >
+              {entry.label}
+            </span>
+            <ProbabilityBar
+              value={entry.value}
+              peak={peak}
+              threshold={
+                answer.type === "noul" && entry.key === "true"
+                  ? threshold
+                  : null
+              }
+            />
+            <span
+              className={cn(
+                "text-right tabular-nums",
+                peak ? "text-foreground" : "text-muted-foreground",
+              )}
+            >
+              {percent(entry.value)}
+            </span>
+          </div>
+        );
+      })}
+      {folded > 0 && (
+        <span className="text-[11px] text-muted-foreground">
+          +{folded} more under {percent(MINOR_SHARE)}
+        </span>
+      )}
     </div>
   );
 }
@@ -148,32 +193,28 @@ export function DecisionAnswers({
         className,
       )}
     >
-      {/* One row. Model, method, cost — nothing repeated, nothing explained. */}
-      <div className="flex items-center gap-2 flex-wrap border-b border-border px-2 py-1.5">
-        <span className="font-medium">Answers</span>
-        <span className="font-mono text-[10px] text-muted-foreground">
-          {view.answers.length}
+      {/* One quiet row. Model, method, cost are provenance — secondary. */}
+      <div className="flex items-center gap-2 flex-wrap border-b border-border px-3 py-1.5 text-[11px] text-muted-foreground">
+        <span className="font-medium text-foreground">
+          {view.answers.length === 1
+            ? "1 answer"
+            : `${view.answers.length} answers`}
         </span>
-        {view.model && (
-          <span className="font-mono text-[10px] text-muted-foreground">
-            {view.model}
-          </span>
-        )}
+        {view.model && <span className="truncate">{view.model}</span>}
         {method ? (
           <span
             className={cn(
-              "rounded px-1.5 py-0.5 text-[10px]",
-              method === "native"
-                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-                : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+              "cursor-help",
+              method !== "native" &&
+                "rounded bg-amber-500/10 px-1.5 py-0.5 text-amber-700 dark:text-amber-400",
             )}
             title={METHOD_EXPLANATIONS[method]}
           >
-            {METHOD_LABELS[method]}
+            {METHOD_LABELS[method]} probabilities
           </span>
         ) : (
           <span
-            className="inline-flex items-center gap-1 rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive"
+            className="inline-flex items-center gap-1 rounded bg-destructive/10 px-1.5 py-0.5 text-destructive"
             title="Without a method, there is no way to tell a measured probability from one the model wrote out."
           >
             <AlertTriangle className="w-3 h-3" />
@@ -181,7 +222,7 @@ export function DecisionAnswers({
           </span>
         )}
         {view.costUsd != null && (
-          <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+          <span className="ml-auto tabular-nums">
             {formatUsd(view.costUsd, { digits: "adaptive" })}
           </span>
         )}
@@ -195,46 +236,54 @@ export function DecisionAnswers({
           const probability = answerProbability(answer);
           const unreadable = answer.answer === null;
           return (
-            <div key={answer.name} className="px-2 py-1.5">
-              <div className="flex items-baseline gap-2 flex-wrap">
-                <span className="font-mono text-[10px] text-muted-foreground">
-                  {answer.name}
-                </span>
-                <span
-                  className={cn(
-                    "font-medium",
-                    unreadable && "text-destructive",
-                  )}
-                >
-                  {formatDecisionAnswer(answer)}
-                </span>
-                {probability != null && (
-                  <span className="font-mono text-[10px] text-muted-foreground">
-                    {percent(probability)}
-                  </span>
-                )}
-                {answer.confidence != null && (
-                  <span
-                    className="font-mono text-[10px] text-muted-foreground"
-                    title="How sure the holder is of this answer."
-                  >
-                    conf {percent(answer.confidence)}
-                  </span>
-                )}
-              </div>
-
+            <div key={answer.name} className="px-3 py-2">
               {instruction && (
-                <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                <p className="text-[11px] leading-snug text-muted-foreground">
                   {instruction}
                 </p>
               )}
+              <div className="mt-0.5 flex items-baseline gap-2 flex-wrap">
+                <span
+                  className={cn(
+                    "text-sm font-semibold",
+                    unreadable && "text-destructive",
+                  )}
+                >
+                  {headline(answer)}
+                </span>
+                {probability != null && (
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    {percent(probability)}
+                  </span>
+                )}
+                <span className="ml-auto font-mono text-[10px] text-muted-foreground/80">
+                  {answer.name}
+                </span>
+              </div>
 
               <Distribution answer={answer} threshold={threshold} />
 
-              {threshold != null && (
-                <p className="mt-0.5 text-[10px] text-muted-foreground">
-                  Author&rsquo;s suggested cut {percent(threshold)} — the
-                  consumer decides.
+              {(threshold != null ||
+                answer.confidence != null ||
+                (answer.type === "score" &&
+                  typeof answer.answer === "number")) && (
+                <p className="mt-1 flex flex-wrap gap-x-3 text-[10px] tabular-nums text-muted-foreground">
+                  {answer.type === "score" &&
+                    typeof answer.answer === "number" && (
+                      <span title="The probability-weighted average level.">
+                        Average level {answer.answer.toFixed(1)}
+                      </span>
+                    )}
+                  {answer.confidence != null && (
+                    <span title="How sure the holder is of this answer.">
+                      Confidence {percent(answer.confidence)}
+                    </span>
+                  )}
+                  {threshold != null && (
+                    <span title="The author's suggested cut — the consumer decides.">
+                      Suggested cut {percent(threshold)}
+                    </span>
+                  )}
                 </p>
               )}
             </div>
