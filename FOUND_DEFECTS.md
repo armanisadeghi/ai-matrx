@@ -15,6 +15,16 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D353 — "Use template" (and Generate conductor) inserts an agent with no organization (2026-09-26)
+
+`public.agx_create_agent_from_template(p_template_id uuid)` — called by
+`app/api/agents/templates/[id]/use/route.ts`, which `conductorService.createFromTemplate`
+(`features/agents/orchestras/conductor/`) uses — inserts `agent.definition` with
+`organization_id = NULL`. The column is NOT NULL with no default and no BEFORE INSERT trigger on
+the table fills it (verified live 2026-09-26), so the copy is refused (23502). Fix: the RPC takes
+`p_organization_id` (the selected organization, sent as `X-Organization-Id` through
+`fetchWithOrganization`) and writes it; nothing substitutes one. Not re-tested in the browser.
+
 ### D352 — RC-A1 trash migration is stale against the access kernel and cannot be safely retried (2026-09-26)
 
 `migrations/rcstore_n_trash_is_the_owners_alone.sql` remains **unapplied and untouched**. Its
