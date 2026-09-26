@@ -287,6 +287,7 @@ describe("the run form groups bound controls after the content inputs", () => {
     const root = {
       instanceVariableValues: state,
       contextItems: { ids: [], entities: {} },
+      scopesTree: { contextItemsByTypeId: {} },
     } as unknown as Parameters<ReturnType<typeof selectVisibleInputDefinitions>>[0];
     expect(
       selectVisibleInputDefinitions(CONVERSATION)(root).map((d) => d.name),

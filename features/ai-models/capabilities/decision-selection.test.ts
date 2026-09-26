@@ -27,16 +27,18 @@ it("admits decision models only for an explicit decision or catalog editing purp
   ]);
 });
 
-it("offers an agent author BOTH contracts and nothing else", () => {
-  // The agent builder's picker: a message may be a conversational turn or a
-  // Questions part answered by a decision holder, so both are selectable —
-  // but an embedding/extraction/realtime/background model still is not.
+it("offers an agent author the three agent contracts and nothing else", () => {
+  // The agent builder's picker: a message may be a conversational turn, a
+  // Questions part answered by a decision holder, or a provider-managed
+  // research agent (Arman, 2026-09-26) — but an embedding/extraction/realtime
+  // model still is not.
+  const research = otherContracts.find((m) => m.interaction === "agent")!;
   expect(
     modelsForSelectionPurpose(
       [chat, decision, hiddenChat, ...otherContracts],
       "agent",
     ),
-  ).toEqual([chat, decision, hiddenChat]);
+  ).toEqual([chat, decision, hiddenChat, research]);
 });
 
 it("prevents fallback and replacement routes from crossing the decision boundary", () => {
