@@ -21,6 +21,13 @@
  *   scripts/checks/run.py writes, so aidream's fixer dispatcher serves both.
  * - NOTHING FAILS SILENTLY. A row whose command cannot start, or that times
  *   out, is a WARNING finding that says so.
+ * - ITEMS BEFORE INFLOW. A check that prints `MATRX-ITEM {...}` lines (it is
+ *   asked to with MATRX_ITEMS=1) gets ONE finding per item: `item_key` (the key
+ *   its own allowlist/baseline uses), `ratchet` ("new" | "known"), and a
+ *   fingerprint of (check, key) that no count or ordering can move. Known items
+ *   are debt — written to the JSON, never printed, never handed off. A failing
+ *   check with no NEW item keeps its summary finding too, so a failure is never
+ *   hidden. Protocol: common-docs/projects/checks-run-in-the-app/ITEM-PROTOCOL.md.
  *
  * Rows: every gate in `scripts/run-release-gates.sh --list` (the manifest stays
  * there, where it always was) plus the checks the old release.sh ran before the
@@ -43,6 +50,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { ITEMS_ENV, ITEM_PREFIX, itemFingerprint, parseItems } from "./items.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const LOG_DIR = join(REPO_ROOT, "tmp", "checks");
@@ -296,7 +304,7 @@ function runCommand(cmd, timeoutSeconds) {
     try {
       child = spawn("bash", ["-c", cmd], {
         cwd: REPO_ROOT,
-        env: { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1", CI: process.env.CI ?? "" },
+        env: { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1", CI: process.env.CI ?? "", [ITEMS_ENV]: "1" },
         stdio: ["ignore", "pipe", "pipe"],
         detached: true,
       });
@@ -350,19 +358,52 @@ async function runRow(row, timeoutOverride) {
       },
     ];
   }
-  const verdict = judge(row, code, output);
-  if (!verdict) return [];
-  return [
-    {
+  const { items, errors } = parseItems(output);
+  // Item lines are machine records, never a headline: judge the rest of the output.
+  const judged = items.length || errors.length ? plain(output).split("\n").filter((l) => !l.trimStart().startsWith(ITEM_PREFIX)).join("\n") : output;
+  const verdict = judge(row, code, judged);
+  const summary = verdict && {
+    check: row.id,
+    category: row.category,
+    level: row.level,
+    title: verdict.title,
+    count: verdict.count,
+    remedy: row.cmd,
+    detail,
+  };
+  const findings = [];
+  if (errors.length) {
+    findings.push({
+      check: row.id,
+      category: row.category,
+      level: WARNING,
+      title: oneLine(`${shortLabel(row.label)}: ${errors.length} malformed MATRX-ITEM line(s) — ${errors[0]}`),
+      count: errors.length,
+      remedy: row.cmd,
+      detail,
+    });
+  }
+  if (!items.length) return summary ? [...findings, summary] : findings;
+  for (const item of items) {
+    findings.push({
       check: row.id,
       category: row.category,
       level: row.level,
-      title: verdict.title,
-      count: verdict.count,
+      title: oneLine(`${shortLabel(row.label)}: ${item.title || item.key}`),
+      count: item.count,
+      fingerprint: itemFingerprint(row.id, item.key),
       remedy: row.cmd,
       detail,
-    },
-  ];
+      item_key: item.key,
+      ratchet: item.status,
+      ...(item.file ? { file: item.file } : {}),
+      ...(item.line !== null ? { line: item.line } : {}),
+    });
+  }
+  // A failing check whose every item is known debt is still failing (a stale allowlist entry, a
+  // crash after the scan…): its summary stays, so the failure is never hidden behind "known".
+  if (summary && !items.some((i) => i.status === "new")) findings.push(summary);
+  return findings;
 }
 
 class Gate {
@@ -410,7 +451,44 @@ export async function runRows(rows, { workers = DEFAULT_WORKERS, dbWorkers = DEF
       }
     }),
   );
-  return findings.map((f) => ({ ...f, fingerprint: fingerprint(f.check, f.title) }));
+  return findings.map((f) => ({ ...f, fingerprint: f.fingerprint ?? fingerprint(f.check, f.title) }));
+}
+
+/** Per check that named items: how many are new (not in its baseline) and how many are known debt. */
+export function itemTally(findings) {
+  const tally = {};
+  for (const f of findings) {
+    if (!f.item_key) continue;
+    const t = (tally[f.check] ??= { new: 0, known: 0 });
+    t[f.ratchet === "known" ? "known" : "new"] += 1;
+  }
+  return tally;
+}
+
+/**
+ * What the terminal shows: one row per check, never one per item. An itemized check is one row
+ * ("N new, M known — first <key>") when it has a NEW item; known-only debt is never printed.
+ */
+export function displayFindings(findings, labels = {}) {
+  const shown = findings.filter((f) => !f.item_key);
+  const byCheck = new Map();
+  for (const f of findings) {
+    if (!f.item_key) continue;
+    if (!byCheck.has(f.check)) byCheck.set(f.check, []);
+    byCheck.get(f.check).push(f);
+  }
+  for (const [check, items] of byCheck) {
+    const fresh = items.filter((f) => f.ratchet !== "known");
+    if (!fresh.length) continue;
+    const known = items.length - fresh.length;
+    const label = labels[check] ? shortLabel(labels[check]) : check;
+    shown.push({
+      ...fresh[0],
+      title: oneLine(`${label}: ${fresh.length} new, ${known} known — first ${fresh[0].item_key}`),
+      count: fresh.length,
+    });
+  }
+  return shown;
 }
 
 export function renderTable(findings) {
@@ -480,13 +558,21 @@ export async function main(argv = process.argv.slice(2)) {
   const started = Date.now();
   const findings = await runRows(rows, { workers: args.workers, dbWorkers: args.dbWorkers, timeout: args.timeout });
   const elapsed = formatDurationMs(Date.now() - started, { style: "compact" });
-  if (findings.length) process.stdout.write(`${renderTable(findings)}\n`);
-  const errors = findings.filter((f) => f.level === ERROR).length;
-  process.stdout.write(`checks: ${rows.length} run, ${findings.length} finding${findings.length === 1 ? "" : "s"}${errors ? `, ${errors} error` : ""} (${elapsed})\n`);
+  const shown = displayFindings(findings, Object.fromEntries(rows.map((r) => [r.id, r.label])));
+  if (shown.length) process.stdout.write(`${renderTable(shown)}\n`);
+  const errors = shown.filter((f) => f.level === ERROR).length;
+  process.stdout.write(`checks: ${rows.length} run, ${shown.length} finding${shown.length === 1 ? "" : "s"}${errors ? `, ${errors} error` : ""} (${elapsed})\n`);
   if (args.json) {
     mkdirSync(dirname(args.json), { recursive: true });
-    const ordered = findings.map(({ check, category, level, title, count, fingerprint: fp, remedy, detail }) => ({ check, category, level, title, count, fingerprint: fp, remedy, detail }));
-    writeFileSync(args.json, [JSON.stringify(skipped.length ? { ran: rows.map((r) => r.id), skipped_live_db: skipped.map((r) => r.id) } : { ran: rows.map((r) => r.id) }), ...ordered.map((f) => JSON.stringify(f))].join("\n") + "\n");
+    const ordered = findings.map(({ check, category, level, title, count, fingerprint: fp, remedy, detail, item_key, ratchet, file, line }) => ({
+      check, category, level, title, count, fingerprint: fp, remedy, detail,
+      ...(item_key ? { item_key, ratchet, ...(file ? { file } : {}), ...(line != null ? { line } : {}) } : {}),
+    }));
+    const header = { ran: rows.map((r) => r.id) };
+    if (skipped.length) header.skipped_live_db = skipped.map((r) => r.id);
+    const tally = itemTally(findings);
+    if (Object.keys(tally).length) header.items = tally;
+    writeFileSync(args.json, [JSON.stringify(header), ...ordered.map((f) => JSON.stringify(f))].join("\n") + "\n");
   }
   return 0;
 }

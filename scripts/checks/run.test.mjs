@@ -225,3 +225,88 @@ test("the same defect with a different first offender keeps its fingerprint", ()
     fingerprint("x", "Gate: 4 findings — first lib/c/d.tsx:7"),
   );
 });
+
+// ── C5: items before inflow (common-docs/projects/checks-run-in-the-app/ITEM-PROTOCOL.md) ─────────
+import { emitItem, itemFingerprint, parseItems } from "./items.mjs";
+
+const ITEM = (json) => `[ "$MATRX_ITEMS" = 1 ] && echo 'MATRX-ITEM ${JSON.stringify(json)}'`;
+
+test("items: a check that names its items gets ONE finding per item, keyed by the item, with its ratchet flag", () => {
+  const cmd = [
+    ITEM({ key: "retiredSpelling|a.ts|*", status: "new", title: "a.ts uses 'shared'", file: "a.ts", line: 3 }),
+    ITEM({ key: "retiredSpelling|a.ts|*", status: "known" }),
+    ITEM({ key: "onlyYou|b.tsx|*", status: "new", file: "b.tsx" }),
+    ITEM({ key: "onlyYou|c.tsx|*", status: "known", file: "c.tsx" }),
+    "echo '[FAIL] a.ts:3'; exit 1",
+  ].join("; ");
+  const { out, header, findings } = runWithManifest([`Itemized gate|${cmd}`]);
+  // No summary finding: the items ARE the finding. The repeated key is one item, counted twice,
+  // and "new" wins over "known" for it (one uncovered occurrence is not accepted debt).
+  assert.equal(findings.length, 3, JSON.stringify(findings));
+  const byKey = Object.fromEntries(findings.map((f) => [f.item_key, f]));
+  assert.equal(byKey["retiredSpelling|a.ts|*"].ratchet, "new");
+  assert.equal(byKey["retiredSpelling|a.ts|*"].count, 2);
+  assert.equal(byKey["retiredSpelling|a.ts|*"].file, "a.ts");
+  assert.equal(byKey["retiredSpelling|a.ts|*"].line, 3);
+  assert.equal(byKey["onlyYou|c.tsx|*"].ratchet, "known");
+  for (const f of findings) {
+    assert.equal(f.check, "itemized-gate");
+    assert.equal(f.fingerprint, itemFingerprint("itemized-gate", f.item_key));
+    assert.equal(f.remedy, cmd);
+  }
+  assert.deepEqual(header.items, { "itemized-gate": { new: 2, known: 1 } });
+  // The terminal stays one row per check, never one per item.
+  assert.equal(out.trim().split("\n").length, 3, out);
+  assert.match(out, /2 new, 1 known/);
+});
+
+test("items: an item's fingerprint survives a different count, order and title", () => {
+  assert.equal(itemFingerprint("x", "k"), itemFingerprint("x", "k"));
+  assert.notEqual(itemFingerprint("x", "k"), itemFingerprint("y", "k"));
+  assert.notEqual(itemFingerprint("x", "k"), fingerprint("x", "k"));
+  const a = parseItems('MATRX-ITEM {"key":"k1","title":"3 hits"}\nMATRX-ITEM {"key":"k2"}');
+  const b = parseItems('MATRX-ITEM {"key":"k2"}\nMATRX-ITEM {"key":"k1","title":"4 hits"}\nMATRX-ITEM {"key":"k1"}');
+  assert.deepEqual(a.items.map((i) => i.key).sort(), b.items.map((i) => i.key).sort());
+});
+
+test("items: a failing check whose items are ALL known keeps its summary finding (a failure is never hidden)", () => {
+  const cmd = `${ITEM({ key: "t1", status: "known" })}; echo 'stale allowlist entry: t9'; exit 1`;
+  const { findings } = runWithManifest([`Known only|${cmd}`]);
+  assert.equal(findings.filter((f) => f.item_key).length, 1);
+  const summary = findings.filter((f) => !f.item_key);
+  assert.equal(summary.length, 1, JSON.stringify(findings));
+  assert.equal(summary[0].fingerprint, fingerprint(summary[0].check, summary[0].title));
+});
+
+test("items: a clean check still reports its known debt in the JSON, and prints nothing", () => {
+  const cmd = `${ITEM({ key: "debt-1", status: "known" })}; ${ITEM({ key: "debt-2", status: "known" })}; true`;
+  const { out, header, findings } = runWithManifest([`Clean with debt|${cmd}`]);
+  assert.equal(out.trim().split("\n").length, 1, out);
+  assert.equal(findings.length, 2);
+  assert.ok(findings.every((f) => f.ratchet === "known"));
+  assert.deepEqual(header.items, { "clean-with-debt": { new: 0, known: 2 } });
+});
+
+test("items: a malformed item line is a warning finding, never silently dropped", () => {
+  const cmd = `echo 'MATRX-ITEM {not json'; echo 'MATRX-ITEM {"status":"new"}'; ${ITEM({ key: "ok" })}; exit 1`;
+  const { findings } = runWithManifest([`Bad items|${cmd}`]);
+  const bad = findings.find((f) => /malformed MATRX-ITEM/.test(f.title));
+  assert.ok(bad, JSON.stringify(findings));
+  assert.equal(bad.count, 2);
+  assert.equal(bad.level, "warning");
+  assert.ok(findings.some((f) => f.item_key === "ok" && f.ratchet === "new"));
+});
+
+test("items: a check prints item lines only when the runner asks (MATRX_ITEMS=1)", () => {
+  const lines = [];
+  emitItem({ key: "k" }, { env: {}, write: (s) => lines.push(s) });
+  assert.equal(lines.length, 0);
+  emitItem({ key: "k", status: "known", line: 4 }, { env: { MATRX_ITEMS: "1" }, write: (s) => lines.push(s) });
+  assert.deepEqual(lines, ['MATRX-ITEM {"key":"k","status":"known","line":4}\n']);
+  assert.throws(() => emitItem({ key: "" }, { env: { MATRX_ITEMS: "1" }, write: () => {} }), /no key/);
+  assert.throws(() => emitItem({ key: "k", status: "old" }, { env: { MATRX_ITEMS: "1" }, write: () => {} }), /not new\|known/);
+});
+
+test("items: the fingerprint vector is identical to aidream's runner (tests/test_check_runner_items.py)", () => {
+  assert.equal(itemFingerprint("visibility-vocabulary", "onlyYouClaim|a.tsx|*"), "997499345e4cd7772cd7aa6b481902bc1c8584f9");
+});
