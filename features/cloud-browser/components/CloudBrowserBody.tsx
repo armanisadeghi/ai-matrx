@@ -32,8 +32,7 @@ import { useScreenshotSession } from "../hooks/useScreenshotSession";
 import {
   dismissHandoff,
   mintStreamTicket,
-  StreamConnectError,
-} from "../service";
+  StreamConnectError, browserActionBlockedReason } from "../service";
 import { BackendApiError } from "@/lib/api/errors";
 import type {
   EgressUnavailable,
@@ -213,6 +212,13 @@ export function CloudBrowserBody({
   /** The claim itself — control plane + control stream. WHEN it runs is the
    *  takeover controller's business, not this component's. */
   const claimControl = useCallback(async (opts?: { immediate?: boolean }) => {
+    const blocked = browserActionBlockedReason();
+    if (blocked) {
+      // Never a dead button: with no organization chosen the request would
+      // only wait and refuse; say why, right now, and leave the wheel where it is.
+      toast.warning(blocked);
+      return;
+    }
     setBusy(true);
     try {
       await cb.takeControl(opts);

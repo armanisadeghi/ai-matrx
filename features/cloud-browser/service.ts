@@ -2,7 +2,7 @@
 import { getJson, postJson, requestRaw } from "@/lib/python-client";
 import { supabase } from "@/utils/supabase/client";
 import { writeOne } from "@/utils/supabase/writeOne";
-import { waitForOrganizationAdmission } from "@/lib/api/organization-admission";
+import { peekSelectedOrganizationId, waitForOrganizationAdmission } from "@/lib/api/organization-admission";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { getResourceAccess } from "@/utils/permissions/access";
@@ -1114,6 +1114,20 @@ export async function renewStreamTicket(
  * Superseded the bare `claim-control` call, which only worked inside an
  * agent-initiated handoff window.
  */
+/**
+ * Why a browser action cannot even be attempted right now, in one sentence
+ * for the person — or null when it can.
+ *
+ * Every browser-manager request is made in an organization; with none chosen
+ * the transport waits for admission and then refuses. Seen from the panel on
+ * 2026-09-26 that was eight silent seconds and a "Take control" button that
+ * did nothing. The panel asks this first and says the sentence instead.
+ */
+export function browserActionBlockedReason(): string | null {
+  if (peekSelectedOrganizationId()) return null;
+  return "Choose an organization at the top of the page first — a browser is always driven inside one.";
+}
+
 export async function takeControl(
   runId: string,
   me: { userId: string; displayName: string },
