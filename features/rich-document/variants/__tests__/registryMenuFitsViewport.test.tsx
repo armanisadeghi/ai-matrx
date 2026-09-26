@@ -141,6 +141,13 @@ async function renderAnchoredMenu(
   };
 }
 
+// Every menu leaves the page on teardown even when its test failed: a failed
+// assertion used to skip `cleanup()`, and the next test then counted the
+// leaked menu's rows too (36 "user" rows) and measured its panel.
+afterEach(() => {
+  document.body.innerHTML = "";
+});
+
 describe("message ⋯ menu fits a 768px-tall viewport (D6)", () => {
   it("puts Add to Rulebook in the visible region of the assistant menu", async () => {
     const menu = await renderMenu(menuItems("assistant"));

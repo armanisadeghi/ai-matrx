@@ -181,9 +181,12 @@ export const MENU_STRUCTURE: MenuSection[] = [
     ],
   },
   {
+    // App doors that act on no content: feedback, and the read-aloud voice
+    // setting (the Listen button's settings door; a loose top-level row it
+    // was the 18th, below the fold — D6).
     submenu: "App",
     icon: Settings,
-    actionIds: ["submit-feedback"],
+    actionIds: ["submit-feedback", "tts-voice-settings"],
   },
 ];
 
