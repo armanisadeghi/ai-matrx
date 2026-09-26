@@ -135,6 +135,11 @@ export function WikiLink(props: WikiLinkProps) {
       }
       toast.success(`Created the note "${title}".`);
       if (result.href) setCreated(result.href);
+    } catch (e) {
+      // A refusal thrown below (e.g. no organization chosen) must reach the
+      // person, never die as an unhandled rejection.
+      console.error("[wikilink] creating the note failed", e);
+      toast.error(`"${resolution.title}" was not created: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setCreating(false);
     }
