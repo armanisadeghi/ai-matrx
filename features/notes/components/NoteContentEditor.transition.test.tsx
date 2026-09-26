@@ -12,6 +12,7 @@ jest.mock("@/lib/toast", () => ({ toast: new Proxy({}, { get: () => jest.fn() })
 import React, { act } from "react";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
+import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import { enableMapSet } from "immer";
 enableMapSet();
 import { createRoot } from "react-dom/client";
@@ -25,7 +26,7 @@ const note=(o:Partial<Note>={}):Note=>({id,organization_id:org,version:4,content
 it("renders mounted realtime, dirty, and acknowledgement transitions without rebasing the draft",async()=>{
  (globalThis as typeof globalThis & {IS_REACT_ACT_ENVIRONMENT?:boolean}).IS_REACT_ACT_ENVIRONMENT=true;
  Object.defineProperty(window, "matchMedia", { value: () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }), configurable: true });
- const store=configureStore({reducer:{notes:notesReducer,userAuth:(state={id:actor,authReady:true})=>state},middleware:(gdm)=>gdm({serializableCheck:false})});
+ const store=configureStore({reducer:{notes:notesReducer,userAuth:(state={id:actor,authReady:true})=>state,appContext:appContextReducer},middleware:(gdm)=>gdm({serializableCheck:false})});
  const root=createRoot(document.createElement("div"));
  const render=async()=>act(async()=>root.render(<Provider store={store}><NotesInstanceProvider value="i"><NoteContentEditor noteId={id}/></NotesInstanceProvider></Provider>));
  try {

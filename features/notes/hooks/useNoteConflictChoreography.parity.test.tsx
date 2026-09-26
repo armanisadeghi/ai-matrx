@@ -99,6 +99,7 @@ jest.mock("@/features/notes/components/NoteDraftRecoveryBanner", () => ({ NoteDr
 import React, { act } from "react";
 import { Provider, useSelector } from "react-redux";
 import { configureStore, isAction, type Middleware } from "@reduxjs/toolkit";
+import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import { enableMapSet } from "immer";
 import { createRoot } from "react-dom/client";
 import notesReducer, { upsertNoteFromServer, recordNoteConflict, setNoteField } from "../redux/slice";
@@ -136,6 +137,8 @@ function makeStore() {
     reducer: {
       notes: notesReducer,
       userAuth: (state = { id: ACTOR, authReady: true }) => state,
+      // The real app-context reducer: the editors' ShareModal reads the personal org from it.
+      appContext: appContextReducer,
     },
     middleware: (gdm) =>
       gdm({ serializableCheck: false, immutableCheck: false }).concat(recordActionTypes),
