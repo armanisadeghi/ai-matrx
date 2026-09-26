@@ -14,7 +14,10 @@ import {
   getAllManifests,
   getRawManifest,
 } from "@/features/surfaces/manifests/registry";
-import type { SurfaceSyncPlan } from "@ai-matrx/alchemy/checks";
+import {
+  renderSurfaceSyncStatements,
+  type SurfaceSyncPlan,
+} from "@ai-matrx/alchemy/checks";
 import {
   planManifestSync,
   toPackageResolved,
@@ -204,6 +207,24 @@ async function main() {
       );
     }
     const failures: string[] = [];
+    if (check) {
+      // The ONE sync's SQL, planned against the live schema with no write:
+      // EXPLAIN (never ANALYZE) inside this READ ONLY transaction proves every
+      // statement parses, names real columns and has a matching ON CONFLICT
+      // target — the emitter can never be ahead of the database.
+      for (const statement of renderSurfaceSyncStatements(plan)) {
+        try {
+          await client.query("SAVEPOINT plan_statement");
+          await client.query(`EXPLAIN ${statement}`);
+          await client.query("RELEASE SAVEPOINT plan_statement");
+        } catch (error) {
+          await client.query("ROLLBACK TO SAVEPOINT plan_statement");
+          failures.push(
+            `sync plan does not plan against the live schema: ${error instanceof Error ? error.message : String(error)} — in: ${statement.slice(0, 120)}…`,
+          );
+        }
+      }
+    }
     const surfaces = new Map(
       surfaceRows.rows.map((row) => [String(row.name), row]),
     );
