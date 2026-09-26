@@ -688,7 +688,9 @@ export default function UnifiedDataTableRoute({
             }
           />
         )}
-        <div className={mountsTheTable ? "h-full px-3 pb-2 pt-1" : "h-full overflow-y-auto p-4"}>
+        {/* Scrollable either way: the table page fills this exactly when its footer is sticky (the
+            rows scroll inside it), and an older records-ui that does not fill still scrolls here. */}
+        <div className={mountsTheTable ? "h-full overflow-y-auto px-3 pb-2 pt-1" : "h-full overflow-y-auto p-4"}>
         {object.state === "resolving" ? (
           <p className="text-sm text-muted-foreground">Opening the table&hellip;</p>
         ) : object.state === "not-given" && pendingInvitation === undefined ? (
