@@ -1,4 +1,3 @@
--- draft: alchemy-chair ALC-14 — prepared, NOT applied; the chair rehearses on the clone and applies in the 1–4 AM PT window
 -- Matrx Alchemy ALC-14 — Declare columns + re-key STEP 1 of 3 (CONTRACT §2.7, chair rulings N4/N5).
 --
 -- Additive only. Every new column has a default, so every live emitter keeps working
