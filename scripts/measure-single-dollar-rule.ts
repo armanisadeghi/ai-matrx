@@ -79,8 +79,34 @@ const pandocContent: Rule = (content, after) =>
 const pandocContentGlue: Rule = (content, after) =>
   pandocContent(content, after) && !(/^[0-9]/.test(content) && after !== undefined && /[A-Za-z]/.test(after));
 
+/**
+ * What a rule reads after the closing `$`. Rules up to content-ir 0.18.x read ONE
+ * character; from the variable-chain guard on, the rule reads the following name
+ * (`singleDollarAfter`: up to 32 characters, `\n` marking the end of the text).
+ */
+type AfterMode = "char" | "name";
+function afterOf(text: string, close: number, mode: AfterMode): string | undefined {
+  if (mode === "char") return text[close + 1];
+  const rest = text.slice(close + 1, close + 33);
+  return rest.length < 32 ? `${rest}\n` : rest;
+}
+
+/**
+ * The false-positive classes the variable-chain guard was built for (verify-RC-B3 F5),
+ * counted so a candidate's lost spans can be read by class:
+ *   - `template-literal`: `${a}${b}`, `${name}` — the span is `{identifier}` or the
+ *     closer is glued to the next `${`;
+ *   - `shell-variable-chain`: `$USER$HOSTNAME`, `A=$A$B`, `df$col$sub`, `$name.$ext`,
+ *     `PS1='$USER@$HOST'` — an identifier span whose closer is glued to the next name.
+ */
+function spanClass(content: string, afterName: string): string {
+  if (/^\{[A-Za-z_][\w.]*\}$/.test(content) || afterName.startsWith("{")) return "template-literal";
+  if (/^[A-Za-z_][A-Za-z0-9_]*[.@-]?$/.test(content) && /^[A-Za-z0-9_]/.test(afterName)) return "shell-variable-chain";
+  return "other";
+}
+
 /** Every `$…$` span the scan finds with this rule: [open, closeExclusive]. */
-function spans(m: SourceModule, text: string, rule: Rule): Array<[number, number]> {
+function spans(m: SourceModule, text: string, rule: Rule, mode: AfterMode = "char"): Array<[number, number]> {
   const out: Array<[number, number]> = [];
   if (!text.includes("$")) return out;
   const code = m.findCodeRanges(text);
@@ -118,7 +144,7 @@ function spans(m: SourceModule, text: string, rule: Rule): Array<[number, number
       }
     }
     if (close === -1 || text[close + 1] === "$") continue;
-    if (rule(text.slice(i + 1, close), text[close + 1])) {
+    if (rule(text.slice(i + 1, close), afterOf(text, close, mode))) {
       out.push([i, close + 1]);
       i = close;
     }
@@ -132,7 +158,7 @@ interface Tally {
   rows: number;
   rowsWithDollar: number;
   current: number;
-  byCandidate: Record<string, { spans: number; gained: number; lost: number; rowsChanged: number }>;
+  byCandidate: Record<string, { spans: number; gained: number; lost: number; rowsChanged: number; lostByClass: Record<string, number> }>;
 }
 
 async function main(): Promise<number> {
@@ -171,7 +197,7 @@ async function main(): Promise<number> {
   try {
     for (const [source, plan] of Object.entries(sources)) {
       const tally: Tally = { rows: 0, rowsWithDollar: 0, current: 0, byCandidate: {} };
-      for (const name of Object.keys(candidates)) tally.byCandidate[name] = { spans: 0, gained: 0, lost: 0, rowsChanged: 0 };
+      for (const name of Object.keys(candidates)) tally.byCandidate[name] = { spans: 0, gained: 0, lost: 0, rowsChanged: 0, lostByClass: {} };
       tallies[source] = tally;
       let after = "00000000-0000-0000-0000-000000000000";
       for (;;) {
@@ -187,7 +213,7 @@ async function main(): Promise<number> {
             tally.current += now.length;
             const nowKeys = new Set(now.map(([a, b]) => `${a}:${b}`));
             for (const [name, rule] of Object.entries(candidates)) {
-              const next = spans(m, text, rule);
+              const next = spans(m, text, rule, name === "candidate_module" ? "name" : "char");
               const nextKeys = new Set(next.map(([a, b]) => `${a}:${b}`));
               const t = tally.byCandidate[name]!;
               t.spans += next.length;
@@ -201,6 +227,8 @@ async function main(): Promise<number> {
               for (const [a, b] of now) {
                 if (nextKeys.has(`${a}:${b}`)) continue;
                 t.lost += 1;
+                const cls = spanClass(text.slice(a + 1, b - 1), afterOf(text, b - 1, "name") ?? "");
+                t.lostByClass[cls] = (t.lostByClass[cls] ?? 0) + 1;
                 changed = true;
                 if (name === sampled) record(source, plan.assistant, row.id, text, a, b, "lost");
               }
@@ -213,7 +241,8 @@ async function main(): Promise<number> {
       }
       console.log(`${source}: rows ${tally.rows}, rows with $ ${tally.rowsWithDollar}, current math spans ${tally.current}`);
       for (const [name, t] of Object.entries(tally.byCandidate)) {
-        console.log(`  ${name.padEnd(20)} spans ${t.spans}  gained ${t.gained}  lost ${t.lost}  rows changed ${t.rowsChanged}`);
+        const classes = Object.entries(t.lostByClass).map(([k, v]) => `${k} ${v}`).join(", ");
+        console.log(`  ${name.padEnd(20)} spans ${t.spans}  gained ${t.gained}  lost ${t.lost}${classes ? ` (${classes})` : ""}  rows changed ${t.rowsChanged}`);
       }
     }
   } finally {
