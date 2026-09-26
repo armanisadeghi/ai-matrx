@@ -36,6 +36,7 @@ import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { loadCloneDbEnv, loadCloneRef } from "./lib/migration-target";
 import { exitAfterDrain, installBlockingStdio } from "./lib/exit-after-drain";
 import {
   CORPUS_SOURCES,
@@ -125,17 +126,27 @@ async function main(): Promise<number> {
     ? ((await import(pathToFileURL(resolve(modulePath)).href)) as SourceModule)
     : await import("@ai-matrx/content-ir/source");
 
-  const env = loadDbEnv();
-  if ("missing" in env) {
-    console.error(
-      `UNMEASURED: no database connection — set ${env.missing.join(", ")} (looked in ${env.looked.join(", ") || "nothing"}).`,
-    );
-    return 2;
+  // The full run is a heavy read: it belongs on the nightly dev CLONE
+  // (`--target clone`); live takes bounded statements only (30s).
+  const onClone = argValue("--target") === "clone";
+  let env: Parameters<typeof connectDirect>[0] & { from: string };
+  if (onClone) {
+    const root = resolve(__dirname, "..");
+    env = loadCloneDbEnv(root, loadCloneRef(root));
+  } else {
+    const live = loadDbEnv();
+    if ("missing" in live) {
+      console.error(
+        `UNMEASURED: no database connection — set ${live.missing.join(", ")} (looked in ${live.looked.join(", ") || "nothing"}).`,
+      );
+      return 2;
+    }
+    env = live;
   }
-  console.log(`Database connection from ${env.from}; session READ ONLY.`);
+  console.log(`Database connection from ${env.from}${onClone ? " (the dev clone)" : ""}; session READ ONLY.`);
   const cx = await connectDirect(env, "source-roundtrip-corpus");
   await cx.query("set session characteristics as transaction read only");
-  await cx.query("set statement_timeout = '30s'");
+  await cx.query(`set statement_timeout = '${onClone ? "120s" : "30s"}'`);
 
   const report: Record<string, SourceStats> = {};
   const started = Date.now();

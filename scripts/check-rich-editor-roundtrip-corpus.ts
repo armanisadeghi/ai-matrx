@@ -74,7 +74,7 @@ import { planSave } from "../components/rich-editor/core/save-plan";
 import { rewriteTableSource, splitRowSegments, TableWriteRefused } from "../components/rich-editor/core/table-source";
 import { parseMarkdownTable } from "../components/mardown-display/blocks/table/parseMarkdownTable";
 import { oracleTableGrid } from "./lib/gfm-table-oracle";
-import { isGfmDelimiterRow } from "../components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { findTableEnd, tableStartsAt } from "../components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 const args = process.argv.slice(2);
 const argValue = (flag: string): string | undefined => {
@@ -374,9 +374,11 @@ function judgeAnswerTables(text: string, stats: SourceStats): string | null {
     if (block.kind !== "prose") continue;
     const lines = block.raw.split("\n");
     for (let i = 0; i + 1 < lines.length; i += 1) {
-      if (!(lines[i] ?? "").includes("|") || !isGfmDelimiterRow(lines[i + 1] ?? "")) continue;
-      let end = i + 2;
-      while (end < lines.length && (lines[end] ?? "").trim() && (lines[end] ?? "").includes("|")) end += 1;
+      // The table's extent by THE GFM rule (gfm-table-lines) — the extent chat's
+      // splitter hands the answer-table editor; a `> 8C | …` quote line after a
+      // pipe-less table is not part of it (it used to be, by "any line with a pipe").
+      if (!tableStartsAt(lines, i)) continue;
+      const end = findTableEnd(lines, i);
       const table = lines.slice(i, end).join("\n");
       i = end - 1;
       const grid = parseMarkdownTable(table);
