@@ -154,7 +154,7 @@ end;
 $$;
 
 comment on function platform.write_is_a_persons_own() is
-  'COPY-WRITABLE: true when this write is a signed-in person''s own action on the client channel (custom.caller_role() = authenticated, auth.uid() set, and no actor declaration: app.actor_tier other than human, app.actor_system, app.actor_agent, or an x-matrx-actor-* request header). Agents, automations, the platform''s machinery and every server channel declare themselves and answer false. Private: asked by the copy fence''s verdict.';
+  'COPY-WRITABLE: true when this write is a signed-in person''s own action on the client channel (custom.caller_role() = authenticated, auth.uid() set, and no actor declaration: app.actor_tier other than human, app.actor_system, app.actor_agent, or an x-matrx-actor-* request header). Agents, automations, the platform''s machinery and every server channel declare themselves and answer false. Private: asked by custom._older_table_copy_refusal and custom._older_table_copy_verdict.';
 
 revoke all on function platform.write_is_a_persons_own() from public, anon, authenticated, service_role;
 
@@ -163,13 +163,17 @@ insert into platform.client_callable_door
 select 'platform', 'write_is_a_persons_own', iam.door_identity_args(p.oid), platform.door_argtypes(p.proargtypes),
        'migrations/campaign/copywritable_people_test_the_copy_until_the_switch.sql (lane COPY-WRITABLE)',
        'Takes no argument; reads only the request''s own role, claims, actor settings and headers, and answers one boolean.',
-       'server_only: called only from inside custom._older_table_copy_verdict (the copy fence''s verdict); EXECUTE is revoked from every client role and from the server key.',
+       'server_only: called only from inside custom._older_table_copy_refusal and custom._older_table_copy_verdict (both SECURITY DEFINER); EXECUTE is revoked from every client role and from the server key.',
        false, false
   from pg_proc p where p.oid = 'platform.write_is_a_persons_own()'::regprocedure
 on conflict (schema_name, function_name, identity_argtypes) do nothing;
 
--- ── 3. THE FENCE'S VERDICT ────────────────────────────────────────────────────────────────────
-create or replace function custom._older_table_copy_verdict(p_table_id uuid)
+-- ── 3. THE FENCE'S QUESTION AND ITS VERDICT ──────────────────────────────────────────────────
+-- The fence's question keeps its name, its client door and its contract (NULL = this caller may
+-- write, else the sentence), so anything that still asks it hears the new rule: a person's own
+-- write to a test copy is NULL now. Its body is production's (SUITE-HEALTH-3: the sentence names
+-- the table only to who may open the copy) with that one new answer and the new sentence.
+create or replace function custom._older_table_copy_refusal(p_table_id uuid)
 returns text
 language plpgsql
 stable
@@ -189,16 +193,17 @@ begin
   if not found then
     return null;
   end if;
+  -- A PERSON TESTS THE COPY (COPY-WRITABLE). Her own write is allowed; the fence notes it and
+  -- the switch replaces it with the older table's rows.
   if platform.write_is_a_persons_own() then
-    return 'person';
+    return null;
   end if;
-  -- THE NAME ONLY TO WHO MAY OPEN THE COPY (the SUITE-HEALTH-3 rule, carried from
-  -- the body of custom._older_table_copy_refusal this file replaces). The same may-open ladder every
+  -- THE NAME ONLY TO WHO MAY OPEN THE COPY (SUITE-HEALTH-3). The same may-open ladder every
   -- door asks, about the copy by its id. A caller it refuses is still refused the write; the
   -- sentence just names nothing. A copy that is not in the record store is not named either.
   if exists (select 1 from custom.record r where r.id = p_table_id) then
     begin
-      perform custom.assert_client_may_open(v_org, p_table_id, 'custom._older_table_copy_verdict', 'viewer', 'table');
+      perform custom.assert_client_may_open(v_org, p_table_id, 'custom._older_table_copy_refusal', 'viewer', 'table');
     exception when insufficient_privilege or null_value_not_allowed then
       v_name := 'this table';
     end;
@@ -210,25 +215,12 @@ begin
 end;
 $$;
 
-comment on function custom._older_table_copy_verdict(uuid) is
-  'COPY-WRITABLE: the copy fence''s verdict for a write to table <id> in the record store — null (not the copy of a live older table in an organization whose Data tables switch is off: the store''s own doors decide), ''person'' (a person''s own write to a test copy: allowed and noted, replaced by the older table at the switch), or the sentence that refuses an agent''s, automation''s or integration''s write with the older table''s address. Private: called by custom._context_copy_fence() and custom._copy_evaluation_note.';
+comment on function custom._older_table_copy_refusal(uuid) is
+  'WHERE-LIVES-SWITCH, amended by COPY-WRITABLE: null when this caller may write table <id> in the record store (not the copy of a live older table in an organization whose Data tables switch is off, or a signed-in person''s own write to that test copy), else the sentence that refuses an agent''s, automation''s or integration''s write with the older table''s address; the sentence names the table only to a caller custom.assert_client_may_open lets open the copy.';
 
-revoke all on function custom._older_table_copy_verdict(uuid) from anon;   -- PUBLIC is cleared at a definer's birth (ddl_guard §6d-4)
-
-insert into platform.client_callable_door
-  (schema_name, function_name, identity_args, identity_argtypes, declared_by, reason, signed_in_callers)
-select 'custom', '_older_table_copy_verdict', iam.door_identity_args(p.oid), platform.door_argtypes(p.proargtypes),
-       'migrations/campaign/copywritable_people_test_the_copy_until_the_switch.sql (lane COPY-WRITABLE)',
-       'The copy fence''s verdict, asked by custom._context_copy_fence() as the writer (so every writer role executes it). p_table_id is only looked up; NULL answers NULL. It answers NULL, the word ''person'' or a refusal sentence; the sentence names the table only to a caller custom.assert_client_may_open lets open the copy, else says "this table".',
-       true
-  from pg_proc p where p.oid = 'custom._older_table_copy_verdict(uuid)'::regprocedure
-on conflict (schema_name, function_name, identity_argtypes) do nothing;
-
-grant execute on function custom._older_table_copy_verdict(uuid) to authenticated, service_role;
-
--- The fence's old question keeps its name and contract (NULL = may write, else the sentence), so
--- anything that still asks it hears the new rule.
-create or replace function custom._older_table_copy_refusal(p_table_id uuid)
+-- The verdict the fence's private note asks: null (not a test copy), 'person', or the refusal.
+-- Server-only: the note is SECURITY DEFINER and asks it as the store's owner.
+create or replace function custom._older_table_copy_verdict(p_table_id uuid)
 returns text
 language plpgsql
 stable
@@ -236,12 +228,35 @@ security definer
 set search_path to 'pg_catalog'
 as $$
 begin
-  return nullif(custom._older_table_copy_verdict(p_table_id), 'person');
+  if p_table_id is null or platform.table_lives_in(p_table_id) is distinct from 'older' then
+    return null;
+  end if;
+  if not exists (select 1 from workbench.udt_datasets d where d.id = p_table_id and d.deleted_at is null) then
+    return null;
+  end if;
+  if platform.write_is_a_persons_own() then
+    return 'person';
+  end if;
+  return custom._older_table_copy_refusal(p_table_id);
 end;
 $$;
 
-comment on function custom._older_table_copy_refusal(uuid) is
-  'WHERE-LIVES-SWITCH, amended by COPY-WRITABLE: null when this caller may write table <id> in the record store — including a person''s own write to a test copy — else the sentence that refuses an agent''s, automation''s or integration''s write to the copy of a live older table in an organization whose Data tables switch is off. Reads custom._older_table_copy_verdict.';
+comment on function custom._older_table_copy_verdict(uuid) is
+  'COPY-WRITABLE: the verdict for a write to table <id> in the record store: null (not the copy of a live older table in an organization whose Data tables switch is off), ''person'' (a person''s own test write: allowed and noted), or the refusal sentence of custom._older_table_copy_refusal. Private: asked by custom._copy_evaluation_note.';
+
+revoke all on function custom._older_table_copy_verdict(uuid) from public, anon, authenticated, service_role;
+
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, declared_by, reason, non_client_lane, signed_in_callers, anonymous_callers)
+select 'custom', '_older_table_copy_verdict', iam.door_identity_args(p.oid), platform.door_argtypes(p.proargtypes),
+       'migrations/campaign/copywritable_people_test_the_copy_until_the_switch.sql (lane COPY-WRITABLE)',
+       'The verdict the copy fence''s private note asks; p_table_id is only looked up; it answers NULL, the word ''person'' or the sentence of custom._older_table_copy_refusal.',
+       'server_only: called only from inside custom._copy_evaluation_note (SECURITY DEFINER); EXECUTE is revoked from every client role and from the server key.',
+       false, false
+  from pg_proc p where p.oid = 'custom._older_table_copy_verdict(uuid)'::regprocedure
+on conflict (schema_name, function_name, identity_argtypes) do update
+   set reason = excluded.reason, non_client_lane = excluded.non_client_lane,
+       signed_in_callers = excluded.signed_in_callers, anonymous_callers = excluded.anonymous_callers;
 
 -- ── 4. THE FENCE'S TWO PRIVATE STEPS ──────────────────────────────────────────────────────────
 create or replace function custom._copy_evaluation_note(p_org uuid, p_table uuid, p_id uuid, p_class text)
@@ -401,9 +416,9 @@ begin
   -- A PERSON's own write to the copy (the new table page, the record page) is a test: allowed,
   -- and noted with the row as the mover left it, so the switch can replace it with the older
   -- table's truth. Any other writer is refused with the older table's address.
-  v_older := custom._older_table_copy_verdict(v_copyof);
-  if v_older = 'person' then
-    perform custom._copy_evaluation_note(new.organization_id, v_copyof, new.id, new.data_class);
+  v_older := custom._older_table_copy_refusal(v_copyof);
+  if v_older is null and v_copyof is not null then
+    perform custom._copy_evaluation_note(new.organization_id, v_copyof, new.id, new.data_class);   -- notes only a person's write to a test copy
   elsif v_older is not null then
     raise exception '%', v_older
       using errcode = '42501',
@@ -472,8 +487,9 @@ set search_path to 'pg_catalog'
 as $$
 declare
   v_claims jsonb := nullif(current_setting('request.jwt.claims', true), '')::jsonb;
+  v_me     uuid  := auth.uid();
 begin
-  if auth.uid() is null and v_claims is not null and coalesce(v_claims ->> 'role', '') <> 'service_role' then
+  if v_me is null and v_claims is not null and coalesce(v_claims ->> 'role', '') <> 'service_role' then
     raise exception 'Sign in to ask where a table lives.' using errcode = '42501';
   end if;
   if coalesce(cardinality(p_table_ids), 0) > 1000 then
@@ -481,13 +497,25 @@ begin
   end if;
   return query
     select i.id,
-           l.lives_in,
-           case l.lives_in
+           h.lives_in,
+           case h.lives_in
              when 'older' then 'It is an older table, and the older table is the one agents, automations and integrations read and write until an owner switches Data tables on the organization''s settings page. Its copy in the new system (if it has one) is a test copy: people may edit it, and the switch replaces those edits with the older table''s rows.'
              else 'It lives in the new system (the record store); the store''s own doors decide whether you may open it.'
            end
       from (select distinct u.id from unnest(coalesce(p_table_ids, '{}'::uuid[])) as u(id) where u.id is not null) i
-      cross join lateral (select platform.table_lives_in(i.id) as lives_in) l;
+      cross join lateral (select platform.table_lives_in(i.id) as lives_in) l
+      -- WHO MAY BE TOLD `older` (SUITE-HEALTH-3). A person is told an older table's home only
+      -- when she may open it: the older store's own read rule for her, or the one ladder on its
+      -- record-store copy. Anyone else hears `record` — the word an id nobody minted answers —
+      -- and the store's doors then say "not found" for it exactly as for that id. No person
+      -- (the service lane, the store owner) is answered as before.
+      cross join lateral (
+        select case
+                 when l.lives_in is distinct from 'older' or v_me is null then l.lives_in
+                 when workbench.dataset_readable_by(v_me, i.id) then l.lives_in
+                 when custom.has_visibility(v_me, 'record', i.id, 'viewer'::public.permission_level) then l.lives_in
+                 else 'record'
+               end as lives_in) h;
 end;
 $$;
 
@@ -1062,9 +1090,9 @@ $function$;
 -- ── 13. THE FILE PROVES ITSELF ────────────────────────────────────────────────────────────────
 do $g$
 begin
-  if pg_get_functiondef('custom._context_copy_fence()'::regprocedure) not like '%_older_table_copy_verdict%'
+  if pg_get_functiondef('custom._context_copy_fence()'::regprocedure) not like '%_older_table_copy_refusal%'
      or pg_get_functiondef('custom._context_copy_fence()'::regprocedure) not like '%_copy_evaluation_note%' then
-    raise exception 'copywritable: the fence does not ask the verdict or note a person''s test write';
+    raise exception 'copywritable: the fence does not ask its question or note a person''s test write';
   end if;
   if pg_get_functiondef('platform._cutover_seam_apply(text,uuid,text,uuid,uuid)'::regprocedure) not like '%_cutover_copy_resync%' then
     raise exception 'copywritable: the press step does not re-sync before it flips';
@@ -1075,7 +1103,8 @@ begin
      or has_function_privilege('anon', 'custom.table_copy_evaluation_state(uuid)', 'execute')
      or not has_function_privilege('authenticated', 'custom.table_copy_evaluation_state(uuid)', 'execute')
      or not has_function_privilege('authenticated', 'custom._copy_evaluation_note(uuid,uuid,uuid,text)', 'execute')
-     or not has_function_privilege('authenticated', 'custom._older_table_copy_verdict(uuid)', 'execute') then
+     or has_function_privilege('authenticated', 'custom._older_table_copy_verdict(uuid)', 'execute')
+     or not has_function_privilege('authenticated', 'custom._older_table_copy_refusal(uuid)', 'execute') then
     raise exception 'copywritable: a grant is not what the file says';
   end if;
   if has_table_privilege('authenticated', 'platform.cutover_evaluation_write', 'select')
