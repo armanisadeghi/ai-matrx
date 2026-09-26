@@ -322,8 +322,10 @@ export function EntityRef({
             // `opacity-0` alone still takes pointer events, which on a touch
             // device leaves an invisible new-tab link sitting beside every name:
             // a tap that lands there opens a tab with nothing to explain why.
-            // `pointer-events-none` closes that; it does not affect the keyboard,
-            // so the controls stay tab-reachable and `focus-within` restores them.
+            // `pointer-events-none` closes that for the cluster; the Quick look
+            // button opts back in below. A pointer press on that named,
+            // accessibility-exposed control must not fall through to a
+            // clickable row before hover has revealed it.
             !alwaysShowActions &&
               "pointer-events-none opacity-0 transition-opacity " +
                 "group-hover/entity-ref:pointer-events-auto group-hover/entity-ref:opacity-100 " +
@@ -339,7 +341,7 @@ export function EntityRef({
                 stop(e);
                 setPeekOpen(true);
               }}
-              className={CONTROL_CLASS}
+              className={cn(CONTROL_CLASS, "pointer-events-auto")}
             >
               <Lightbulb className="h-3 w-3" />
             </button>

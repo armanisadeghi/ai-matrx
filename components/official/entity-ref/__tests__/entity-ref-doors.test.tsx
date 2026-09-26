@@ -161,6 +161,23 @@ describe("EntityRef doors for mandates/shortcuts surfaces", () => {
     );
   });
 
+  it("keeps Quick look pointer-reachable before hover without exposing hidden new-tab controls", () => {
+    renderRef(
+      <EntityRef token="organization" id="org-9" name="Acme Health" />,
+    );
+
+    const controls = container.querySelector(
+      'button[title="Quick look at Acme Health"]',
+    );
+    expect(controls?.className.split(/\s+/)).toContain("pointer-events-auto");
+
+    // The enclosing cluster still turns off hit-testing while hidden, so the
+    // adjacent invisible new-tab link cannot steal an ordinary row click.
+    expect(controls?.parentElement?.className.split(/\s+/)).toContain(
+      "pointer-events-none",
+    );
+  });
+
   it("a name with no route and no peek renders as plain text, never a dead link", () => {
     renderRef(<EntityRef token="seo_keyword" id="k1" name="best crm" />);
     expect(container.querySelector("a")).toBeNull();
