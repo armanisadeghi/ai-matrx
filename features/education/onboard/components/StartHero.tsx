@@ -62,7 +62,7 @@ import type { StoredFileInput } from "../types";
 // "files" = material the learner ALREADY has. Picking it never uploads the
 // bytes again: the kit anchors on that exact file, and when the platform has
 // already made it a Knowledge Source its text is used as-is.
-type InputMode = "files" | "upload" | "paste" | "link";
+export type InputMode = "files" | "upload" | "paste" | "link";
 
 // THE HEADLINE FLOW'S PAYLOAD, taken from the vision verbatim: "a student drops
 // in a PDF, records a lecture, pastes a link or photographs their notes, and gets
@@ -85,14 +85,19 @@ const DEFAULT_TARGETS: TargetKind[] = [
   "notes",
 ];
 
-export function StartHero() {
+export function StartHero({
+  initialMode = "upload",
+}: {
+  /** Which input tab opens first — `?from=files` lands on "My files". */
+  initialMode?: InputMode;
+} = {}) {
   const kit = useKitGeneration();
   const ingestGuard = useEntitlementGuard("education.ingest_document");
   // School-safe COPPA gate: an under-13 account with no active guardian link is
   // blocked from AI generation until a parent approves (never a silent failure).
   const coppa = useAiComplianceGate();
 
-  const [mode, setMode] = useState<InputMode>("upload");
+  const [mode, setMode] = useState<InputMode>(initialMode);
   const [file, setFile] = useState<File | null>(null);
   const [stored, setStored] = useState<StoredFileInput | null>(null);
   const [picking, setPicking] = useState(false);

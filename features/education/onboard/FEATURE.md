@@ -33,6 +33,14 @@ SAME per-kind readers an upload uses (`extractFileText` — PDF/Office/audio/vid
 image OCR and plain text download the bytes via `fileHandler`, never re-send them). The chosen
 file opens in place (`openFilePreview`) and the panel says whether it is already a Source.
 
+**The door has ONE address:** `startRoutes.ts` (`EDU_STUDY_MY_FILES_HREF` =
+`/education/start?from=files`; the page passes `initialMode="files"` to `StartHero`). The Education
+home (`/education/overview`) links it as **Study a file you have** in the Recently-created header,
+beside "Your library" — never a second flow. Guard:
+`__tests__/stored-file-ingest.test.tsx` drives the real stored branch + the real
+`recordSourceLineage` and fails if the path uploads, re-anchors on another id, or drops the edge
+(proven red against both sabotages on 2026-09-26).
+
 Before 2026-09-26 the hero offered only Upload / Paste / Link, so a learner whose PDF was already
 in their files (and already a Knowledge Source) had to upload the same bytes again to study it —
 a private duplicate with its own processing bill.
@@ -292,6 +300,11 @@ with the stated vision.
   PDF that was already a Source: picked → "Already a Knowledge Source" → ingest 595 ms (no
   extraction) → deck + summary built, 10 `source` edges on the ORIGINAL file id, 0 new files, kit
   opens at `/education/kits/<fileId>` and appears on `/education/overview`.
+  Follow-up the same day: the overview now links the door (**Study a file you have** →
+  `/education/start?from=files`), and the guard test landed. Live proofs as admin: a `.txt` with NO
+  Source read by id (2,594 chars, summary built, `study_media -> file` edge on the original id, 0
+  new files); and the refactored **Upload** path (a fresh PDF → one new file row, summary built,
+  `study_media -> file` edge, kit opens at `/education/kits/<newFileId>`).
 
 - **2026-08-22** — Gotcha about the production from-source agent not receiving variables retired: the
   kit deck runs the `flashcards.generate_from_source` mandate through `runHeadlessAgentJson`.

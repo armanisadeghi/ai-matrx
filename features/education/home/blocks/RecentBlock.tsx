@@ -12,6 +12,7 @@
 
 import Link from "next/link";
 import {
+  FolderOpen,
   ArrowRight,
   LayoutGrid,
   MoreHorizontal,
@@ -28,6 +29,7 @@ import { EducationLibraryRows } from "../../library/components/EducationLibraryR
 import { educationLibraryHref } from "../../library/types";
 import { educationLibraryMenuFor } from "../../library/useEducationLibraryRowActions";
 import type { EducationSnapshot } from "../types";
+import { EDU_STUDY_MY_FILES_HREF } from "../../onboard/startRoutes";
 
 export function RecentBlock({ snapshot }: { snapshot: EducationSnapshot }) {
   const { prefs, setView } = useListViewPrefs("education-home-recent", {
@@ -80,6 +82,13 @@ export function RecentBlock({ snapshot }: { snapshot: EducationSnapshot }) {
               <Rows3 className="h-4 w-4" />
             </Button>
           </div>
+          <Link
+            href={EDU_STUDY_MY_FILES_HREF}
+            className="inline-flex min-h-10 items-center gap-1 px-1 text-xs text-primary"
+          >
+            <FolderOpen className="h-3 w-3" />
+            Study a file you have
+          </Link>
           <Link
             href="/education/library"
             className="inline-flex min-h-10 items-center gap-1 px-1 text-xs text-primary"
