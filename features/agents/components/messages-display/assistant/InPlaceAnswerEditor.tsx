@@ -30,6 +30,7 @@ import {
   saveAnswerEdit,
 } from "@/features/agents/redux/execution-system/message-crud/save-answer-edit.thunk";
 import { toast } from "@/lib/toast";
+import { rebaseEdit } from "@/features/agents/redux/execution-system/message-crud/answer-text-splice";
 
 interface InPlaceAnswerEditorProps {
   conversationId: string;
@@ -129,8 +130,35 @@ function LoadedAnswerEditor({
     else close();
   };
 
-  const onSave = async (text: string) => {
+  const onSave = async (text: string): Promise<string | void> => {
     const result = await dispatch(saveAnswerEdit({ conversationId, messageId, newText: text, openedText: openedOn }));
+    if (saveAnswerEdit.rejected.match(result) && result.payload?.code === "stale" && result.payload.storedText !== undefined) {
+      // ANOTHER TAB SAVED FIRST (verify-RC-B5 r4 N3). Retrying the same save
+      // can only be refused again, so it is never offered: the person's edit
+      // is carried onto the newer saved text when it does not touch the same
+      // words, and otherwise the editor closes onto the saved version with the
+      // edit one click away — one instruction, never "reload" + "try again".
+      const theirs = result.payload.storedText;
+      const merged = rebaseEdit(openedOn, text, theirs);
+      if (merged !== null) {
+        const rebased = await dispatch(saveAnswerEdit({ conversationId, messageId, newText: merged, openedText: theirs }));
+        if (!saveAnswerEdit.rejected.match(rebased)) {
+          toast.info("Another tab saved this answer first — your edit was added on top of it.");
+          window.setTimeout(close, 0);
+          return;
+        }
+      }
+      window.setTimeout(close, 0);
+      toast.error("Another tab changed the same words first, so your edit was not saved. The answer shows what is saved.", {
+        action: {
+          label: "Copy my edit",
+          onClick: () => {
+            void navigator.clipboard?.writeText(text);
+          },
+        },
+      });
+      return;
+    }
     if (saveAnswerEdit.rejected.match(result)) {
       // The editor words it "Not saved: <reason>. Your text is still here" —
       // hand it the reason without its own closing period (no "again..").
@@ -141,6 +169,7 @@ function LoadedAnswerEditor({
     window.setTimeout(close, 0);
     return result.payload.storedText;
   };
+
 
   // Escape belongs to the innermost thing that is open: the slash / variable
   // menu, an island's own code editor, the find field. Only an Escape none of

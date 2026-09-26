@@ -75,12 +75,15 @@ export interface SaveAnswerEditResult {
    * display edit: one per mapped hunk; a whole-text edit: 1). 0 = nothing.
    */
   changedSpans: number;
+  /** The change touched most of the answer — say "rewritten", not a count. */
+  mostlyRewritten: boolean;
 }
 
 interface ThunkApi {
   dispatch: AppDispatch;
   state: RootState;
-  rejectValue: { message: string };
+  /** `code: "stale"` — the saved answer changed since the editor opened. */
+  rejectValue: { message: string; code?: "stale"; storedText?: string };
 }
 
 export const saveAnswerEdit = createAsyncThunk<SaveAnswerEditResult, SaveAnswerEditArgs, ThunkApi>(
@@ -98,17 +101,20 @@ export const saveAnswerEdit = createAsyncThunk<SaveAnswerEditResult, SaveAnswerE
     }
     if (openedText !== undefined && stored.text !== openedText) {
       return rejectWithValue({
-        message:
-          "This answer changed since you opened it (another tab or edit saved first). Nothing was written — copy your text, reload, and edit again.",
+        code: "stale",
+        storedText: stored.text,
+        message: "This answer changed since you opened it (another tab or edit saved first), so nothing was saved",
       });
     }
     let newText = givenText;
     let changedSpans = 1;
+    let mostlyRewritten = false;
     if (displayEdit) {
       const mapped = spliceDisplayEdit(stored.text, displayEdit.previous, displayEdit.next);
       if ("error" in mapped) return rejectWithValue({ message: mapped.error });
       newText = mapped.text;
       changedSpans = mapped.changedSpans;
+      mostlyRewritten = mapped.mostlyRewritten;
     }
     if (newText === undefined) {
       return rejectWithValue({ message: "Nothing to save: no edited text was given." });
@@ -116,7 +122,7 @@ export const saveAnswerEdit = createAsyncThunk<SaveAnswerEditResult, SaveAnswerE
     const plan = spliceAnswerText(stored.content, newText);
     if ("error" in plan) return rejectWithValue({ message: plan.error });
     if (!plan.changed) {
-      return { written: false, storedText: stored.text, changedSpans: 0 };
+      return { written: false, storedText: stored.text, changedSpans: 0, mostlyRewritten: false };
     }
     try {
       await dispatch(
@@ -130,7 +136,7 @@ export const saveAnswerEdit = createAsyncThunk<SaveAnswerEditResult, SaveAnswerE
       return rejectWithValue({ message });
     }
     const after = getState().messages.byConversationId[conversationId]?.byId?.[messageId];
-    return { written: true, storedText: projectAnswerText(after?.content).text, changedSpans };
+    return { written: true, storedText: projectAnswerText(after?.content).text, changedSpans, mostlyRewritten };
   },
 );
 

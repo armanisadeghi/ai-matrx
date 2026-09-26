@@ -56,6 +56,11 @@ export const chatMessageAdapter: ContentSourceAdapter = {
     const result = await dispatch(
       saveAnswerEdit({ conversationId, messageId, displayEdit: { previous: previousContent, next: newContent } }),
     ).unwrap();
-    return { kind: "chat-answer", written: result.written, changedSpans: result.changedSpans };
+    return {
+      kind: "chat-answer",
+      written: result.written,
+      changedSpans: result.changedSpans,
+      mostlyRewritten: result.mostlyRewritten,
+    };
   },
 };

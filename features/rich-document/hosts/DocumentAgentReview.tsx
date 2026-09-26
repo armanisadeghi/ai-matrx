@@ -49,6 +49,7 @@ import {
   savePreparedContentEdit,
 } from "../actions/handlers/preparedEdit";
 import { explainSpliceRefusal, spliceProposal } from "../review/proposedEdit";
+import { maskProtectedSpans, unmaskProtectedSpans } from "../review/protectedSpans";
 import type { ChatAnswerSaveReceipt, ContentSource, RichDocumentActionContext } from "../types";
 
 export interface DocumentAgentReviewProps {
@@ -95,6 +96,20 @@ export function DocumentAgentReview({
 
   const effectiveCleanupAgent = agentId ?? cleanupAgentId;
 
+  // What the agent receives: the text with its protected spans (terminal
+  // escapes, {{variables}}, inline tags…) as markers it cannot alter; the
+  // result gets them back byte-for-byte before review (review/protectedSpans).
+  const agentInput = prepared ? maskProtectedSpans(prepared.content) : null;
+  const receiveResult = (raw: string) => {
+    if (!agentInput) return;
+    const restored = unmaskProtectedSpans(raw, agentInput.spans);
+    if ("error" in restored) {
+      toast.error(restored.error);
+      return;
+    }
+    setProposal(restored.text);
+  };
+
   // The splice is computed up front so a refusal is SAID before Apply, never
   // discovered after it.
   let splice: ReturnType<typeof spliceProposal> = null;
@@ -133,7 +148,9 @@ export function DocumentAgentReview({
         description:
           receipt && !receipt.written
             ? "Nothing needed changing — the saved text already reads this way."
-            : `${spans} ${spans === 1 ? "place" : "places"} changed; everything else is exactly as it was.`,
+            : receipt?.mostlyRewritten
+              ? "Most of the text was rewritten; hidden and protected parts are exactly as they were."
+              : `${spans} ${spans === 1 ? "place" : "places"} changed; everything else is exactly as it was.`,
       });
       onClose();
     } catch (error) {
@@ -202,10 +219,10 @@ export function DocumentAgentReview({
             toast.info(definition.chooseAgentToast);
             return;
           }
-          void agentAction.run(prepared.content, effectiveCleanupAgent);
+          void agentAction.run(agentInput?.text ?? prepared.content, effectiveCleanupAgent);
         }}
         canRun={Boolean(effectiveCleanupAgent) && !agentAction.isBusy}
-        onApply={() => setProposal(agentAction.result)}
+        onApply={() => receiveResult(agentAction.result)}
         onBack={onClose}
         onCancel={onClose}
       />
@@ -221,8 +238,8 @@ export function DocumentAgentReview({
         agentLabel={agentName}
         onAgentIdChange={(id) => setAgentId(id)}
         onAgentClear={() => setAgentId(null)}
-        sourceText={prepared.content}
-        onApplySourceText={(text) => setProposal(text)}
+        sourceText={agentInput?.text ?? prepared.content}
+        onApplySourceText={receiveResult}
         onBack={onClose}
         onCancel={onClose}
         sourceFeature={ctx.source.type === "note" ? "notes" : ctx.source.type === "chat-message" ? "chat" : "documents"}

@@ -352,8 +352,10 @@ export interface RichDocumentActionContextCallbacks {
 export interface ChatAnswerSaveReceipt {
   kind: "chat-answer";
   written: boolean;
-  /** Separate spans of the stored answer that changed; everything else is byte-identical. */
+  /** Places (lines) of the answer that changed; everything else is byte-identical. */
   changedSpans: number;
+  /** The change touched most of the answer — reported as a rewrite, not a count. */
+  mostlyRewritten: boolean;
 }
 
 export interface RichDocumentActionContext {

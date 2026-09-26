@@ -20,6 +20,8 @@ import { extractFlatText } from "../../messages/messages.selectors";
 import { saveAnswerEdit, saveMessageDisplayEdit } from "../save-answer-edit.thunk";
 import { chatMessageAdapter } from "@/features/rich-document/actions/sources/chat-message";
 import {
+  describeDisplayChange,
+  rebaseEdit,
   diffDisplayHunks,
   displayOfStoredAnswer,
   projectAnswerText,
@@ -199,7 +201,7 @@ describe("saveAnswerEdit — byte-exact splice", () => {
     expected[2] = { ...expected[2], text: ", and lower at altitude.\n\n## Why\n\nAir pressure falls as you climb." };
     expect(args.p_new_content).toEqual(expected);
     expect(JSON.stringify(args.p_new_content)).toBe(JSON.stringify(expected));
-    expect(result).toEqual({ written: true, storedText: edited, changedSpans: 1 });
+    expect(result).toEqual({ written: true, storedText: edited, changedSpans: 1, mostlyRewritten: false });
   });
 
   test("an edit inside the cited segment keeps its citations and every other part", () => {
@@ -260,7 +262,12 @@ describe("saveAnswerEdit — a no-op save writes nothing", () => {
       )
       .unwrap();
     expect(rpc).not.toHaveBeenCalled();
-    expect(result).toEqual({ written: false, storedText: projectAnswerText(STORED).text, changedSpans: 0 });
+    expect(result).toEqual({
+      written: false,
+      storedText: projectAnswerText(STORED).text,
+      changedSpans: 0,
+      mostlyRewritten: false,
+    });
     const row = s.getState().messages.byConversationId[CONVERSATION_ID].byId[MESSAGE_ID];
     expect(row.status).toBe("active");
   });
@@ -392,7 +399,7 @@ describe("in-body edits (code block, table, decision) splice against the STORED 
   test("a table edit keeps the trailing spaces and blank-line runs around it", () => {
     const display = extractFlatText(record(stored));
     const result = spliceDisplayEdit(storedText, display, display.replace("| 5y | 7.5% |", "| 5y | 7.25% |"));
-    expect(result).toEqual({ text: storedText.replace("| 5y | 7.5% |", "| 5y | 7.25% |"), changedSpans: 1 });
+    expect(result).toEqual({ text: storedText.replace("| 5y | 7.5% |", "| 5y | 7.25% |"), changedSpans: 1, mostlyRewritten: false });
   });
 
   test("a display that no longer matches the stored text refuses instead of guessing", () => {
@@ -490,7 +497,12 @@ describe("verify-RC-B5 round 2: separate hunks, each mapped on its own, islands 
   });
 
   test("three typos → three spans; the reasoning and every other byte stay", () => {
-    expect(spliceDisplayEdit(storedText, shown, approved)).toEqual({ text: cleaned, changedSpans: 3 });
+    // Three typo fixes on two lines are two places, not three word hunks.
+    expect(spliceDisplayEdit(storedText, shown, approved)).toEqual({
+      text: cleaned,
+      changedSpans: 2,
+      mostlyRewritten: false,
+    });
   });
 
   function chatCtx(s: ReturnType<typeof store>): RichDocumentActionContext {
@@ -517,7 +529,7 @@ describe("verify-RC-B5 round 2: separate hunks, each mapped on its own, islands 
     });
     const [, args] = rpc.mock.calls[0] as [string, { p_new_content: unknown }];
     expect(args.p_new_content).toEqual([row[0], { type: "text", text: cleaned }]);
-    expect(receipt).toEqual({ kind: "chat-answer", written: true, changedSpans: 3 });
+    expect(receipt).toEqual({ kind: "chat-answer", written: true, changedSpans: 2, mostlyRewritten: false });
   });
 
   test("HTML preview save (the bridge's door) writes only the fixes", async () => {
@@ -553,6 +565,7 @@ describe("verify-RC-B5 round 2: separate hunks, each mapped on its own, islands 
     expect(spliceDisplayEdit(storedText, shown, next)).toEqual({
       text: storedText.replace("\nThe dock team", "\nUpdate: The dock team"),
       changedSpans: 1,
+      mostlyRewritten: false,
     });
   });
 
@@ -569,6 +582,7 @@ describe("verify-RC-B5 round 2: separate hunks, each mapped on its own, islands 
     expect(spliceDisplayEdit(code, view, view.replace("print(1)", "print(2)"))).toEqual({
       text: code.replace("print(1)", "print(2)"),
       changedSpans: 1,
+      mostlyRewritten: false,
     });
   });
 
@@ -608,5 +622,37 @@ describe("verify-RC-B5 round 3 F2: a refused in-body edit never stays on screen"
       action: { label: string; onClick: () => void };
     };
     expect(options.action.label).toBe("Copy my edit");
+  });
+});
+
+describe("verify-RC-B5 r4 N2: the toast reports meaningful places, not word hunks", () => {
+  test("a two-line translation is a rewrite, not '23 places changed'", () => {
+    const before = "The new terminals arrive next week.\nCheck the outlets before you plug them in.";
+    const after = "Las nuevas terminales llegan la próxima semana.\nRevisen los enchufes antes de conectarlas.";
+    const size = describeDisplayChange(before, diffDisplayHunks(before, after));
+    expect(size.mostlyRewritten).toBe(true);
+  });
+
+  test("three typo fixes on two lines are two places", () => {
+    const before = "Teh warehouse recieved 40 pallets.\nThe dock team sheduled Thursday.";
+    const after = "The warehouse received 40 pallets.\nThe dock team scheduled Thursday.";
+    expect(describeDisplayChange(before, diffDisplayHunks(before, after))).toEqual({
+      regions: 2,
+      mostlyRewritten: false,
+    });
+  });
+});
+
+describe("verify-RC-B5 r4 N3: a stale save carries the edit onto the newer text, or says it cannot", () => {
+  const base = "Restart the payment daemon before you call the helpdesk.";
+  test("edits to different words merge cleanly", () => {
+    const mine = base.replace("helpdesk", "IT helpdesk");
+    const theirs = base.replace("Restart", "Please restart");
+    expect(rebaseEdit(base, mine, theirs)).toBe("Please restart the payment daemon before you call the IT helpdesk.");
+  });
+  test("edits to the same words are a conflict — nothing is guessed", () => {
+    const mine = base.replace("payment daemon", "POS service");
+    const theirs = base.replace("payment daemon", "card service");
+    expect(rebaseEdit(base, mine, theirs)).toBeNull();
   });
 });

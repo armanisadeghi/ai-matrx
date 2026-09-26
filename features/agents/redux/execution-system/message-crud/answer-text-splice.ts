@@ -307,8 +307,55 @@ function alignDisplay(stored: string, display: string): number[] | null {
 }
 
 export type DisplayEditResult =
-  | { text: string; changedSpans: number }
+  | { text: string; changedSpans: number; mostlyRewritten: boolean }
   | { error: string };
+
+/**
+ * How a person should hear the size of a change (verify-RC-B5 r4 N2): word
+ * hunks on the same line are ONE place ("23 places changed" for a two-line
+ * translation was noise), and a change touching most of the text is reported
+ * as a rewrite, not counted.
+ */
+export function describeDisplayChange(
+  previous: string,
+  hunks: readonly DisplayHunk[],
+): { regions: number; mostlyRewritten: boolean } {
+  if (hunks.length === 0) return { regions: 0, mostlyRewritten: false };
+  const lineOf = (pos: number) => (previous.slice(0, pos).match(/\n/g) ?? []).length;
+  const regions = new Set(hunks.map((h) => lineOf(h.start))).size;
+  const touched = hunks.reduce((n, h) => n + Math.max(h.end - h.start, h.text.length), 0);
+  return { regions, mostlyRewritten: previous.length > 0 && touched / previous.length >= 0.5 };
+}
+
+/**
+ * Carry a person's edit (base → mine) onto a newer saved text (base → theirs)
+ * — a clean three-way merge, or `null` when both changed the same words
+ * (then nothing may be guessed). Used when another tab saved first.
+ */
+export function rebaseEdit(base: string, mine: string, theirs: string): string | null {
+  if (theirs === base) return mine;
+  if (mine === base) return theirs;
+  const ours = diffDisplayHunks(base, mine);
+  const others = diffDisplayHunks(base, theirs);
+  for (const a of ours) {
+    for (const b of others) {
+      const overlap = a.start < b.end && b.start < a.end;
+      const samePoint = a.start === a.end && b.start === b.end && a.start === b.start;
+      const touchesInsert =
+        (a.start === a.end && a.start > b.start && a.start < b.end) ||
+        (b.start === b.end && b.start > a.start && b.start < a.end);
+      if (overlap || samePoint || touchesInsert) return null;
+    }
+  }
+  const shift = (pos: number) =>
+    others.reduce((d, h) => (h.end <= pos ? d + (h.text.length - (h.end - h.start)) : d), 0);
+  let out = theirs;
+  for (const h of [...ours].sort((x, y) => y.start - x.start)) {
+    const at = h.start + shift(h.start);
+    out = out.slice(0, at) + h.text + out.slice(at + (h.end - h.start));
+  }
+  return out;
+}
 
 /**
  * Map an edit made on DISPLAY text onto the STORED answer text (RC-B5).
@@ -337,7 +384,7 @@ export function spliceDisplayEdit(
   previousDisplay: string,
   nextDisplay: string,
 ): DisplayEditResult {
-  if (previousDisplay === nextDisplay) return { text: stored, changedSpans: 0 };
+  if (previousDisplay === nextDisplay) return { text: stored, changedSpans: 0, mostlyRewritten: false };
   if (displayOfStoredAnswer(stored) !== previousDisplay) {
     return {
       error: "The answer changed since this text was shown (or it is still being written). Nothing was saved — reload and try again.",
@@ -365,6 +412,16 @@ export function spliceDisplayEdit(
       return {
         error:
           "One change spans text the view hides or collapses (a hidden reasoning section or extra blank lines), so it cannot be placed exactly. Nothing was saved — make that change in the editor.",
+      };
+    }
+    // Terminal/control bytes (ANSI colour codes, TUI output) are never
+    // rewritten by a text edit — a model returns them as spaces. Owner:
+    // never destroy TUI escape characters (verify-RC-B5 r4 N1).
+    // eslint-disable-next-line no-control-regex
+    if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(stored.slice(first, last + 1))) {
+      return {
+        error:
+          "One change would rewrite terminal codes (the colour and control characters in command output), which are never changed this way. Nothing was saved.",
       };
     }
     placed.push({ start: first, end: last + 1, text: hunk.text });
@@ -443,5 +500,6 @@ export function spliceDisplayEdit(
       error: "The saved answer would not show exactly what you approved, so nothing was saved. Make this change in the editor.",
     };
   }
-  return { text, changedSpans: placed.length };
+  const size = describeDisplayChange(previousDisplay, diffDisplayHunks(previousDisplay, nextDisplay));
+  return { text, changedSpans: size.regions, mostlyRewritten: size.mostlyRewritten };
 }
