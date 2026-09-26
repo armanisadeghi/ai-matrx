@@ -129,7 +129,9 @@ export function CompactVersionPicker({
             placeholder={
               loading
                 ? "Loading agent versions…"
-                : versions.length === 0
+                : error
+                  ? "Couldn't read the versions"
+                  : versions.length === 0
                   ? "No versions yet"
                   : "Pick a version"
             }

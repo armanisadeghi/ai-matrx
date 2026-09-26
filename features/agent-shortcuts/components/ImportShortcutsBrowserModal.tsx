@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   AlertCircle,
   Building,
@@ -190,11 +191,14 @@ export function ImportShortcutsBrowserModal({
         })}
       </div>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+      {/* A failed refresh over rows already on screen: say it above them. */}
+      {error && rows.length > 0 && (
+        <ReadFailure
+          error={error}
+          what="the non-global shortcuts"
+          className="m-0"
+          onRetry={() => void loadRows()}
+        />
       )}
 
       <ScrollArea className="flex-1 min-h-0 border border-border rounded-md bg-background">
@@ -203,6 +207,12 @@ export function ImportShortcutsBrowserModal({
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             Loading shortcuts...
           </div>
+        ) : error && rows.length === 0 ? (
+          <ReadFailure
+            error={error}
+            what="the non-global shortcuts"
+            onRetry={() => void loadRows()}
+          />
         ) : filtered.length === 0 ? (
           <div className="py-12 text-center text-sm text-muted-foreground">
             {rows.length === 0

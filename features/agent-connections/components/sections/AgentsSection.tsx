@@ -11,6 +11,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { useAgents } from "../../hooks/useAgents";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { selectSelectedItemId, setSelectedItemId } from "../../redux/ui/slice";
 import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
 
@@ -18,7 +19,7 @@ export function AgentsSection() {
   const dispatch = useAppDispatch();
   const selectedItemId = useAppSelector(selectSelectedItemId);
   const [search, setSearch] = useState("");
-  const { agents, loading } = useAgents();
+  const { agents, loading, error, reload } = useAgents();
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -57,6 +58,8 @@ export function AgentsSection() {
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading agents…
           </div>
+        ) : error && agents.length === 0 ? (
+          <ReadFailure error={error} what="your agents" onRetry={reload} />
         ) : filtered.length === 0 ? (
           <div className="px-4 py-10 text-center text-sm text-muted-foreground">
             {search ? "No agents match your search." : "No agents yet."}

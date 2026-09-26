@@ -59,7 +59,6 @@ export function AgentVersionCompact({
   useEffect(() => {
     if (!open || !agentId || versions !== null || loading) return;
     setLoading(true);
-    setLoadError(null);
     dispatch(fetchAgentVersionHistory({ agentId }))
       .unwrap()
       .then((rows) => setVersions(rows ?? []))

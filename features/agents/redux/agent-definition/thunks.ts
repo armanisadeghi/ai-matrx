@@ -349,6 +349,7 @@ export const fetchAgentsList = createAsyncThunk<void, void, ThunkApi>(
   "agentDefinition/fetchList",
   async (_, { dispatch }) => {
     dispatch(setAgentsStatus("loading"));
+    dispatch(setAgentsError(null));
     const catalog = getAgentCatalog();
     try {
       await catalog.ensureLoaded();

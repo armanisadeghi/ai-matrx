@@ -8,7 +8,11 @@ import {
   selectShortcutsSliceError,
 } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { fetchShortcutsForScope } from "@/features/agents/redux/agent-shortcuts/thunks";
-import { selectCategoryTreeByScope } from "@/features/agents/redux/agent-shortcut-categories/selectors";
+import {
+  selectCategoryTreeByScope,
+  selectCategoriesStatus,
+  selectCategoriesError,
+} from "@/features/agents/redux/agent-shortcut-categories/selectors";
 import { fetchCategoriesForScope } from "@/features/agents/redux/agent-shortcut-categories/thunks";
 import { selectContentBlocksByScope } from "@/features/agent-connections/redux/skl/content-block-compat";
 import { fetchRenderDefinitions } from "@/features/agent-connections/redux/skl/thunks";
@@ -30,6 +34,10 @@ export interface UseAgentShortcutsResult {
   contentBlocks: AgentContentBlockRecord[];
   isLoading: boolean;
   error: string | null;
+  /** The categories read is separate from the shortcuts read. */
+  categoriesLoading: boolean;
+  /** The categories read's failure — gate a "no categories" view on it. */
+  categoriesError: string | null;
   refetch: () => void;
 }
 
@@ -51,6 +59,8 @@ export function useAgentShortcuts({
   );
   const status = useAppSelector(selectShortcutsSliceStatus);
   const error = useAppSelector(selectShortcutsSliceError);
+  const categoriesStatus = useAppSelector(selectCategoriesStatus);
+  const categoriesError = useAppSelector(selectCategoriesError);
 
   // Content blocks are canonical skill.render_definition rows — fetched via
   // the skl slice. Its Scope has no "global" (a global read is the same
@@ -88,6 +98,11 @@ export function useAgentShortcuts({
     contentBlocks: contentBlocks ?? [],
     isLoading: status === "loading",
     error: error ?? null,
+    categoriesLoading: categoriesStatus === "loading",
+    categoriesError:
+      categoriesStatus === "failed"
+        ? (categoriesError ?? "The categories failed to load")
+        : null,
     refetch,
   };
 }

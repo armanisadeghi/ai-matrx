@@ -257,7 +257,9 @@ export function AgentVersionPicker({
         }`
       : loading
         ? "Reading this agent's versions…"
-        : "No version pinned";
+        : fetchError
+          ? "Couldn't read this agent's versions"
+          : "No version pinned";
 
   if (collapsible && !expanded) {
     return (
@@ -379,7 +381,7 @@ export function AgentVersionPicker({
                 </SelectItem>
               );
             })}
-            {versions.length === 0 && !loading && (
+            {versions.length === 0 && !loading && !fetchError && (
               <div className="px-3 py-2 text-xs text-muted-foreground">
                 No versions recorded yet.
               </div>

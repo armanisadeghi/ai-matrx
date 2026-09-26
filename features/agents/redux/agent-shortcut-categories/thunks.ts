@@ -65,6 +65,7 @@ export const fetchCategoriesForScope = createAsyncThunk<
   ThunkApi
 >("agentShortcutCategory/fetchForScope", async (scopeRef, { dispatch }) => {
   dispatch(setCategoriesStatus("loading"));
+  dispatch(setCategoriesError(null));
   dispatch(clearCategoryScope({ scopeRef }));
   try {
     const qs = buildScopeQueryString(scopeRef);

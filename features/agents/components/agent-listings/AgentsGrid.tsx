@@ -53,7 +53,11 @@ import {
   selectAllAgentTags,
   selectTotalSharedAgentsCount,
 } from "@ai-matrx/agents/catalog";
-import { selectAgentsSliceStatus } from "@/features/agents/redux/agent-definition/selectors";
+import {
+  selectAgentsSliceStatus,
+  selectAgentsSliceError,
+} from "@/features/agents/redux/agent-definition/selectors";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   fetchAgentsList,
   deleteAgent,
@@ -115,6 +119,7 @@ export function AgentsGrid() {
 
   const sliceStatus = useAppSelector(selectAgentsSliceStatus);
   const isLoading = sliceStatus === "idle" || sliceStatus === "loading";
+  const listError = useAppSelector(selectAgentsSliceError);
 
   const [, startTransition] = useTransition();
   const [navigatingId, setNavigatingId] = useState<string | null>(null);
@@ -838,6 +843,12 @@ export function AgentsGrid() {
         {renderVersionLookup()}
         {isLoading ? (
           <AgentsSkeleton count={isMobile ? 4 : 8} />
+        ) : sliceStatus === "failed" && catalogRows.length === 0 ? (
+          <ReadFailure
+            error={listError ?? true}
+            what="your agents"
+            onRetry={() => void dispatch(fetchAgentsList())}
+          />
         ) : activeTab === "mine" ? (
           filteredOwnedAgents.length === 0 ? (
             <div className="border border-primary/20 rounded-xl p-8 bg-gradient-to-br from-primary/5 to-secondary/5">

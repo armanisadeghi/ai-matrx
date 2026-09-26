@@ -38,6 +38,7 @@ import {
   Hammer,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAgentShortcuts } from "../hooks/useAgentShortcuts";
 import { useAgentShortcutCrud } from "../hooks/useAgentShortcutCrud";
@@ -106,7 +107,13 @@ export function LinkAgentToShortcutModal({
 }: LinkAgentToShortcutModalProps) {
   const isMobile = useIsMobile();
   const { toast } = useToast();
-  const { shortcuts, categories, isLoading } = useAgentShortcuts({
+  const {
+    shortcuts,
+    categories,
+    isLoading,
+    categoriesError,
+    refetch: refetchShortcuts,
+  } = useAgentShortcuts({
     scope,
     scopeId,
     autoFetch: isOpen,
@@ -372,7 +379,14 @@ export function LinkAgentToShortcutModal({
               className="h-9"
               disabled={isProcessing}
             />
-            {categories.length === 0 && !isLoading && (
+            {categoriesError && categories.length === 0 ? (
+              <ReadFailure
+                error={categoriesError}
+                what="this scope's categories"
+                className="m-0"
+                onRetry={refetchShortcuts}
+              />
+            ) : categories.length === 0 && !isLoading && (
               <p className="text-xs text-muted-foreground">
                 This scope has no categories yet. Create one to place the
                 shortcut.

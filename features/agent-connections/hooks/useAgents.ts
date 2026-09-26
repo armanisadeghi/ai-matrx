@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectLiveAgents,
   selectAgentsSliceStatus,
+  selectAgentsSliceError,
 } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentsList } from "@/features/agents/redux/agent-definition/thunks";
 import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
@@ -20,6 +21,7 @@ export function useAgents(): UseAgentsResult {
   const dispatch = useAppDispatch();
   const agents = useAppSelector(selectLiveAgents);
   const status = useAppSelector(selectAgentsSliceStatus);
+  const sliceError = useAppSelector(selectAgentsSliceError);
 
   useEffect(() => {
     if (status === "idle") {
@@ -28,15 +30,17 @@ export function useAgents(): UseAgentsResult {
   }, [status, dispatch]);
 
   const loading = status === "loading";
+  // The list read's failure — a view gates its "No agents yet" on this.
+  const error = status === "failed" ? (sliceError ?? "The agent list failed to load") : null;
   return useMemo(
     () => ({
       agents,
       loading,
-      error: null,
+      error,
       reload: () => {
         void dispatch(fetchAgentsList());
       },
     }),
-    [agents, loading, dispatch],
+    [agents, loading, error, dispatch],
   );
 }
