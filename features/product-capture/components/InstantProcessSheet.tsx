@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/drawer";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
 import { INSTANT_ANALYSIS_KIND } from "../pipeline-types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
@@ -42,6 +43,12 @@ export interface InstantProcessSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   conversationId: string | null;
+  /**
+   * Which feature's instant-analysis job this sheet is showing — this
+   * component is shared between commerce intake and product capture, and
+   * each has its own mandate key. Defaults to `product_capture`.
+   */
+  feature?: "commerce_intake" | "product_capture";
   /** The run has been triggered (may precede the conversation existing). */
   pending: boolean;
   isRunning: boolean;
@@ -64,6 +71,7 @@ export function InstantProcessSheet({
   open,
   onOpenChange,
   conversationId,
+  feature = "product_capture",
   pending,
   isRunning,
   error,
@@ -97,6 +105,7 @@ export function InstantProcessSheet({
         <DrawerHeader className="pb-2 text-left">
           <DrawerTitle className="flex items-center gap-2 text-base">
             Instant analysis
+            <IntelligenceIndicator feature={feature} label="Instant analysis" />
             {isRunning && (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             )}

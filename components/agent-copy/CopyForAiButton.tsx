@@ -8,6 +8,7 @@ import {
   type AlchemyCopyVariant,
 } from "@ai-matrx/design-system/content-transfer";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
 type Resolvable<T> = T | (() => T | Promise<T>);
 
@@ -54,14 +55,17 @@ export function CopyForAiButton({
   };
 
   return (
-    <MatrxCopyMenu
-      sourceId={`direct-ai:${sourceId}`}
-      label={label}
-      aiVariants={[directAiCopy]}
-      hide={["copy", "export"]}
-      disabled={disabled}
-      size={compact ? "xs" : size}
-      className={cn(compact && "matrx-alchemy-compact", className)}
-    />
+    <div className="inline-flex items-center gap-1">
+      <MatrxCopyMenu
+        sourceId={`direct-ai:${sourceId}`}
+        label={label}
+        aiVariants={[directAiCopy]}
+        hide={["copy", "export"]}
+        disabled={disabled}
+        size={compact ? "xs" : size}
+        className={cn(compact && "matrx-alchemy-compact", className)}
+      />
+      <IntelligenceIndicator feature="alchemy" label="Copy for AI" />
+    </div>
   );
 }

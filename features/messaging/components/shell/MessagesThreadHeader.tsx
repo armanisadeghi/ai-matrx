@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 // LAST, so "Ana Maria Rivera" is AR — this surface previously took first +
 // second and printed "AM". An empty title now reads "?" instead of "".
 import { getInitials } from "@ai-matrx/kit/format";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
 interface MessagesThreadHeaderProps {
   title: string;
@@ -54,6 +55,7 @@ export function MessagesThreadHeader({
           </div>
         </>
       }
+      right={<IntelligenceIndicator feature="messaging" label="This conversation" />}
     />
   );
 }

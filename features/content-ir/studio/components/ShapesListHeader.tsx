@@ -5,6 +5,7 @@
 
 import { Shapes } from "lucide-react";
 import { SHAPES_FEATURE_LABEL } from "@/features/content-ir/studio/constants";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
 export function ShapesListHeader() {
   return (
@@ -13,6 +14,7 @@ export function ShapesListHeader() {
       <span className="text-sm font-semibold text-foreground">
         {SHAPES_FEATURE_LABEL}
       </span>
+      <IntelligenceIndicator feature="content_ir" label="Shape studio" />
     </div>
   );
 }

@@ -29,6 +29,7 @@ import {
   PROJECT_CREATE_SOURCE_FEATURE,
 } from "@/features/projects/debug/projectCreateAiDebug";
 import { useMandate } from "@/features/mandates/useMandate";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { FileJson } from "lucide-react";
 import { useDispatchThunk } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
@@ -123,6 +124,11 @@ export function ProjectCreatePanel({
       bodyClassName="min-h-[560px]"
       manualPaneClassName="p-4 pt-1"
       aiPaneClassName="bg-background"
+      headerRight={
+        aiAgentId ? (
+          <IntelligenceIndicator feature="projects" label="New project" />
+        ) : null
+      }
       extraTabs={
         enableJsonImport
           ? [

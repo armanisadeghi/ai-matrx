@@ -33,6 +33,7 @@ import {
 } from "./catalog";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
 type RunState =
   | { phase: "idle" }
@@ -102,8 +103,9 @@ export function ConversationAnalyzePanel({
       <div className="flex items-start gap-3">
         <AGENT_ICON className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-semibold text-foreground">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             Analyze this conversation
+            <IntelligenceIndicator feature="conversation" label="Analyze this conversation" />
           </h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Each reviewer reads this conversation&apos;s full history and

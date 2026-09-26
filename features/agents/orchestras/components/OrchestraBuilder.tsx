@@ -57,6 +57,7 @@ import { ConductorInspector } from "./ConductorInspector";
 import { OrchestraSettingsDialog } from "./OrchestraSettingsDialog";
 import { accentClasses } from "./accents";
 import { DEFAULT_ORCHESTRA_ACCENT } from "../constants";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
 // Loaded only when the user opens the embedded run panel — it drags the whole
 // conversation runtime with it (see OrchestraRunPanel's own dynamic AgentRunnerPage).
@@ -326,6 +327,7 @@ export function OrchestraBuilder({
         ]}
         activeModeHref={view === "grid" ? `${basePath}?view=grid` : basePath}
         actions={headerActions}
+        right={<IntelligenceIndicator feature="orchestras" label="Orchestra builder" />}
       />
 
       {/* body — builder chrome (rail search, canvas Arrange panel) is static top

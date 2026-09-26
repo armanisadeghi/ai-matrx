@@ -16,6 +16,7 @@ import { useSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeCon
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
 export interface ScrollAssistantLauncherImplProps {
   inputVariant?: "single-line" | "multiline";
@@ -167,6 +168,13 @@ function AuthenticatedAmbientAssistant({
           />
         )}
       </div>
+      {conversationId && mandate && (
+        <IntelligenceIndicator
+          feature="ambient"
+          label="The page assistant"
+          className="pointer-events-auto absolute -left-2 -top-2 z-10 bg-card/95 shadow-glass backdrop-blur-glass"
+        />
+      )}
       <Button
         type="button"
         variant="ghost"

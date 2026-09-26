@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
 const EDUCATION_NAV_ITEMS = [
   {
@@ -51,6 +52,7 @@ export function EducationHeader() {
   return (
     <RouteHeader
       center={<RouteModeNav items={EDUCATION_NAV_ITEMS} />}
+      right={<IntelligenceIndicator feature="education" label="Education" />}
       fallback
     />
   );

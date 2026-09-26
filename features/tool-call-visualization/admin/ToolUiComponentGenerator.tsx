@@ -58,6 +58,7 @@ import { ToolCallVisualization } from "@/features/tool-call-visualization/compon
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1385,6 +1386,7 @@ export function ToolUiComponentGenerator({
                   <Zap className="w-3.5 h-3.5 mr-1.5" />
                   Generate Component
                 </Button>
+                <IntelligenceIndicator feature="tool_viz" label="Generate Component" />
               </div>
             </>
           )}

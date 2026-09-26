@@ -584,6 +584,7 @@ export function IntakeCaptureScreenV2({
           open={processOpen}
           onOpenChange={setProcessOpen}
           conversationId={instant.conversationId}
+          feature="commerce_intake"
           pending={
             processOpen &&
             instant.isRunning &&

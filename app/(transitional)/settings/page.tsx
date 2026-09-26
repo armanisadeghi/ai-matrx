@@ -1,24 +1,15 @@
-'use client';
-
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+// /settings has no content of its own — it only ever lands on Profile.
+// A server-side redirect() (same convention as /education, /shapes,
+// /agents) sends the browser straight to /settings/profile with no
+// client render in between, so there is no "Loading settings…" screen to
+// get stuck on. The previous version did this with a client `useEffect` +
+// `router.replace`, which under React's dev double-invoke fired the
+// replace twice, racing two `_rsc` fetches against each other; the loser
+// left the tab parked on /settings showing the spinner forever (found
+// 2026-09-26 while verifying settings doors as admin@admin.com).
+import { redirect } from 'next/navigation';
 
 export default function SettingsPage() {
-  const router = useRouter();
-
-  useEffect(() => {
-    // Redirect to profile by default
-    router.replace('/settings/profile');
-  }, [router]);
-
-  return (
-    <div className="flex items-center justify-center h-full">
-      <div className="text-center">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-500 mx-auto mb-4" />
-        <p className="text-muted-foreground">Loading settings...</p>
-      </div>
-    </div>
-  );
+  redirect('/settings/profile');
 }
 

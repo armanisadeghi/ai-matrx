@@ -44,6 +44,7 @@ import type {
 import { cn } from "@/lib/utils";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
 export const BINDING_MAPPER_MANDATE_KEY = MANDATE_KEYS.surfaces_client__binding_mapper;
 
@@ -258,27 +259,30 @@ export function BindingSuggestionsTab({
               </>
             )}
           </p>
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => void handleSuggest()}
-            disabled={disabled || running || targetNames.length === 0}
-          >
-            {running ? (
-              <>
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                Analyzing {availableSurfaceValues.length} {words.sourceNoun}
-                {availableSurfaceValues.length === 1 ? "" : "s"} ×{" "}
-                {targetNames.length} inputs
-                {streamedChars > 0 ? ` — writing (${streamedChars})` : "…"}
-              </>
-            ) : (
-              <>
-                <Route className="mr-1.5 h-3.5 w-3.5" />
-                Suggest configuration
-              </>
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => void handleSuggest()}
+              disabled={disabled || running || targetNames.length === 0}
+            >
+              {running ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  Analyzing {availableSurfaceValues.length} {words.sourceNoun}
+                  {availableSurfaceValues.length === 1 ? "" : "s"} ×{" "}
+                  {targetNames.length} inputs
+                  {streamedChars > 0 ? ` — writing (${streamedChars})` : "…"}
+                </>
+              ) : (
+                <>
+                  <Route className="mr-1.5 h-3.5 w-3.5" />
+                  Suggest configuration
+                </>
+              )}
+            </Button>
+            <IntelligenceIndicator feature="surfaces_client" label="Suggest configuration" />
+          </div>
           {targetNames.length === 0 && (
             <p className="text-[10px] text-muted-foreground">
               This agent has no variables or context policies to map.

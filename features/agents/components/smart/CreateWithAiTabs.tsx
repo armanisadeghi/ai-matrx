@@ -85,6 +85,8 @@ export interface CreateWithAiTabsProps {
   bodyClassName?: string;
   manualPaneClassName?: string;
   aiPaneClassName?: string;
+  /** Rendered beside the mode switcher — e.g. an `IntelligenceIndicator` for the AI tab's job. */
+  headerRight?: React.ReactNode;
 }
 
 function ModeButton({
@@ -136,6 +138,7 @@ export function CreateWithAiTabs({
   bodyClassName,
   manualPaneClassName,
   aiPaneClassName,
+  headerRight,
 }: CreateWithAiTabsProps) {
   const [mode, setMode] = useState<CreateWithAiMode>(defaultMode);
   // Lazy-mount each non-manual tab on first visit, then keep it mounted so
@@ -184,6 +187,7 @@ export function CreateWithAiTabs({
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       <div className={cn("flex-shrink-0 px-1 pb-3", headerClassName)}>
+        <div className="flex items-center gap-2">
         <div className="inline-flex w-full items-center gap-1 rounded-lg bg-muted p-1">
           <ModeButton
             active={mode === "manual"}
@@ -211,6 +215,8 @@ export function CreateWithAiTabs({
               isMobile={isMobile}
             />
           ))}
+        </div>
+        {headerRight}
         </div>
       </div>
 
