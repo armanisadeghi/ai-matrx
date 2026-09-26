@@ -8,12 +8,12 @@ import {
   Zap,
   Tag,
   Target,
-  type LucideIcon
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { COLUMN_IDS } from "../../constants";
 import { selectLatestRunForColumn } from "../../redux/selectors";
 import { runConceptPassThunk } from "../../redux/runConceptPass.thunk";
@@ -80,13 +80,14 @@ export function ConceptsColumn({ sessionId, className }: ConceptsColumnProps) {
     return out;
   }, [ids, byId]);
 
-  const latestRun = useAppSelector(
-    selectLatestRunForColumn(sessionId, 3),
-  );
+  const latestRun = useAppSelector(selectLatestRunForColumn(sessionId, 3));
 
   const isRunning = latestRun?.status === "running";
-  const dotState =
-    isRunning ? "running" : latestRun?.status === "failed" ? "error" : "idle";
+  const dotState = isRunning
+    ? "running"
+    : latestRun?.status === "failed"
+      ? "error"
+      : "idle";
   const status = useMemo(() => {
     if (items.length === 0) return isRunning ? "running…" : undefined;
     return `${items.length} concept${items.length === 1 ? "" : "s"}${isRunning ? " · running" : ""}`;
@@ -108,9 +109,7 @@ export function ConceptsColumn({ sessionId, className }: ConceptsColumnProps) {
   const dispatch = useAppDispatch();
   const handleManualRun = () => {
     if (isRunning) return;
-    void dispatch(
-      runConceptPassThunk({ sessionId, triggerCause: "manual" }),
-    );
+    void dispatch(runConceptPassThunk({ sessionId, triggerCause: "manual" }));
   };
   const manualButton = (
     <button
@@ -163,23 +162,28 @@ export function ConceptsColumn({ sessionId, className }: ConceptsColumnProps) {
   const headerActions = (
     <>
       {manualButton}
-      <WatchRunButton sessionId={sessionId} columnIdx={3} label="Pulling out concepts" />
+      <WatchRunButton
+        sessionId={sessionId}
+        columnIdx={3}
+        label="Pulling out concepts"
+      />
       {items.length > 0 && (
-        <ContentActionBar
+        <RichDocumentActions
           content={exportMarkdown}
-          title={
-            sessionTitle ? `Concepts — ${sessionTitle}` : "Concepts"
-          }
-          metadata={{
-            source: "transcript-studio",
-            column: "concepts",
-            session_id: sessionId,
-            session_title: sessionTitle,
-            concept_count: items.length,
+          source={{
+            type: "raw",
+            title: sessionTitle ? `Concepts — ${sessionTitle}` : "Concepts",
           }}
-          instanceKey={`studio-concepts-${sessionId}`}
-          hideSpeaker
-          hidePencil
+          actions={{
+            metadata: {
+              source: "transcript-studio",
+              column: "concepts",
+              session_id: sessionId,
+              session_title: sessionTitle,
+              concept_count: items.length,
+            },
+            exclude: ["open-fullscreen-editor", "tts-play"],
+          }}
         />
       )}
     </>
@@ -200,9 +204,7 @@ export function ConceptsColumn({ sessionId, className }: ConceptsColumnProps) {
       {items.length === 0 ? (
         <ColumnEmptyState
           title={
-            isRunning
-              ? "Extracting concepts…"
-              : "Concept extraction every 200s"
+            isRunning ? "Extracting concepts…" : "Concept extraction every 200s"
           }
           description={
             latestRun?.status === "failed"

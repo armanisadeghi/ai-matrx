@@ -51,8 +51,12 @@ import {
 import { tallyContributions, wordCount } from "./format";
 import { getRulebook } from "../service";
 import type { Rulebook } from "../types";
-import { getExpertCorpus, type ExpertContribution, type ExpertCorpus } from "./service";
-import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import {
+  getExpertCorpus,
+  type ExpertContribution,
+  type ExpertCorpus,
+} from "./service";
+import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { DriveLinkButton } from "@/features/masterwork/drive/DriveLinkButton";
 import {
   contributionAgentPayload,
@@ -180,7 +184,11 @@ function ContributionCard({
                       {turn.speaker}
                     </p>
                   ) : null}
-                  <MarkdownStream imagePolicy="self" content={turn.text} hideCopyButton />
+                  <MarkdownStream
+                    imagePolicy="self"
+                    content={turn.text}
+                    hideCopyButton
+                  />
                 </div>
               )}
             </li>
@@ -294,7 +302,12 @@ function ContributionCard({
       {/* THE DOOR LAW — every message reaches the conversation it came from. */}
       {c.conversationId ? (
         <div className="mt-3">
-          <Button asChild size="sm" variant="ghost" className="h-9 px-2 text-xs">
+          <Button
+            asChild
+            size="sm"
+            variant="ghost"
+            className="h-9 px-2 text-xs"
+          >
             <Link
               href={`/chat/${c.conversationId}`}
               target="_blank"
@@ -460,10 +473,9 @@ export function ExpertRecordPage({
                 — into a Google Doc they can edit and share, printed, emailed.
                 The canonical action bar carries every destination, so this
                 surface owns none of them. */}
-            <ContentActionBar
+            <RichDocumentActions
               content={corpusHuman(corpus, name)}
-              title={`${name} — your words`}
-              instanceKey={`masterwork-record-${rulebookId}`}
+              source={{ type: "raw", title: `${name} — your words` }}
             />
             {/* THE DRIVING DOOR. Everything else on this screen is the record
                 of what has already been said; this is the cheapest way to say
@@ -533,8 +545,8 @@ export function ExpertRecordPage({
           {corpus.hiddenInterviewCount === 1 ? "" : "s"} belong
           {corpus.hiddenInterviewCount === 1 ? "s" : ""} to this Rulebook but
           {corpus.hiddenInterviewCount === 1 ? " was" : " were"} recorded by
-          someone else and {corpus.hiddenInterviewCount === 1 ? "is" : "are"} not
-          shared with you.
+          someone else and {corpus.hiddenInterviewCount === 1 ? "is" : "are"}{" "}
+          not shared with you.
         </p>
       ) : null}
 
@@ -590,11 +602,7 @@ export function ExpertRecordPage({
       ) : (
         <ul className="space-y-3">
           {corpus.contributions.map((c) => (
-            <ContributionCard
-              key={c.id}
-              contribution={c}
-              rulebookName={name}
-            />
+            <ContributionCard key={c.id} contribution={c} rulebookName={name} />
           ))}
         </ul>
       )}

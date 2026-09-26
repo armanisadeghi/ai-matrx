@@ -3,7 +3,8 @@
 import React, { useRef, useCallback, useState } from "react";
 import { Mic, Plus, Minus, Type, X } from "lucide-react";
 import ActionFeedbackButton from "@/components/official/ActionFeedbackButton";
-import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
+import { clearContentAction } from "@/features/rich-document/actions/hostActions";
 import { cn } from "@/lib/utils";
 
 interface TranscriptEntry {
@@ -94,13 +95,13 @@ export function VoicePadFooterRight({
       {(hasContent || entries.length > 0) && (
         <>
           <div className="mx-0.5 h-3 w-px bg-border/50" />
-          <ContentActionBar
+          <RichDocumentActions
             content={text}
-            title="Voice Pad Transcript"
-            hideSpeaker
-            hidePencil
-            onDelete={onClearAll}
-            deleteAriaLabel="Clear"
+            source={{ type: "raw", title: "Voice Pad Transcript" }}
+            actions={{
+              exclude: ["open-fullscreen-editor", "tts-play"],
+              extra: [clearContentAction(onClearAll, "Clear")],
+            }}
           />
         </>
       )}

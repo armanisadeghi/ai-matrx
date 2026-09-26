@@ -10,7 +10,7 @@ import { useResearchStream } from '../../hooks/useResearchStream';
 import { useStreamDebug } from '../../context/ResearchContext';
 import MarkdownStream from '@/components/MarkdownStream';
 import { confirm } from '@/components/dialogs/confirm/ConfirmDialogHost';
-import { ContentActionBar } from '@/components/content-actions/ContentActionBar';
+import { RichDocumentActions } from '@/features/rich-document/RichDocumentActions';
 import { StoppedEarlyNote } from '../shared/StoppedEarlyNote';
 import { ResearchUsedBy } from '../shared/ResearchUsedBy';
 import type { ResearchSynthesis, ResearchDataEvent } from '../../types';
@@ -169,16 +169,15 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
                             )}
                             <MarkdownStream imagePolicy="ai" content={consolidation.result} />
                             <div className="flex justify-end">
-                                <ContentActionBar
-                                    content={consolidation.result}
-                                    title={tag ? `${tag.name} — consolidation` : 'Tag consolidation'}
-                                    instanceKey={`consolidation-${consolidation.id}`}
-                                    metadata={{
+                                <RichDocumentActions
+                                  content={consolidation.result}
+                                  source={{ type: "raw", title: tag ? `${tag.name} — consolidation` : 'Tag consolidation' }}
+                                  actions={{ metadata: {
                                         consolidationId: consolidation.id,
                                         tagId,
                                         version: consolidation.version ?? undefined,
                                         model_id: consolidation.model_id ?? undefined,
-                                    }}
+                                    } }}
                                 />
                             </div>
                         </div>

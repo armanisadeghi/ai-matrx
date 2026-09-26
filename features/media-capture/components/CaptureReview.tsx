@@ -31,7 +31,7 @@ import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useOutputSinkRef } from "@/features/audio/useOutputSinkRef";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import { transcribeCloudFile } from "@/features/audio/services/speechApi";
-import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -94,7 +94,9 @@ export function CaptureReview({
 
   const canTranscribe = kind !== "photo" && savedFileId !== null;
   const current =
-    transcription && transcription.fileId === savedFileId ? transcription : null;
+    transcription && transcription.fileId === savedFileId
+      ? transcription
+      : null;
   const transcribing = current?.status === "loading";
   const transcript = current?.status === "done" ? current.text : null;
   const transcriptError = current?.status === "error" ? current.error : null;
@@ -127,7 +129,9 @@ export function CaptureReview({
       if (controller.signal.aborted) return;
       console.error("[CaptureReview] transcription failed", err);
       const message =
-        err instanceof Error ? err.message : "Transcription failed — try again.";
+        err instanceof Error
+          ? err.message
+          : "Transcription failed — try again.";
       setTranscription({ fileId, status: "error", text: "", error: message });
       toast.error(message);
     } finally {
@@ -206,7 +210,9 @@ export function CaptureReview({
         </p>
       )}
       {uploadError && (
-        <p className="mt-2 text-xs text-destructive">{uploadError} <ErrorAlchemyMenu error={uploadError} /></p>
+        <p className="mt-2 text-xs text-destructive">
+          {uploadError} <ErrorAlchemyMenu error={uploadError} />
+        </p>
       )}
 
       <div className="mt-2 flex shrink-0 items-center gap-2 pb-safe">
@@ -251,7 +257,12 @@ export function CaptureReview({
           </Button>
         )}
         {!savedFileId && (
-          <Button size="sm" className="ml-auto h-9" onClick={onSave} disabled={saving}>
+          <Button
+            size="sm"
+            className="ml-auto h-9"
+            onClick={onSave}
+            disabled={saving}
+          >
             {saving ? (
               <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
             ) : (
@@ -267,13 +278,16 @@ export function CaptureReview({
         <div className="mt-2 shrink-0 rounded-lg border border-border bg-card p-3">
           <div className="mb-2 flex items-center gap-2">
             <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-xs font-medium text-foreground">Transcript</span>
+            <span className="text-xs font-medium text-foreground">
+              Transcript
+            </span>
             {transcript && (
-              <ContentActionBar
+              <RichDocumentActions
                 content={transcript}
-                title={`Transcript — ${fileName}`}
-                metadata={{ file_id: savedFileId, source: "media-capture" }}
-                instanceKey={`capture-transcript-${savedFileId ?? "pending"}`}
+                source={{ type: "raw", title: `Transcript — ${fileName}` }}
+                actions={{
+                  metadata: { file_id: savedFileId, source: "media-capture" },
+                }}
                 className="ml-auto"
               />
             )}
@@ -295,7 +309,9 @@ export function CaptureReview({
             <div className="flex items-start gap-1.5">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
               <div className="min-w-0">
-                <p className="text-xs text-destructive">{transcriptError} <ErrorAlchemyMenu error={transcriptError} /></p>
+                <p className="text-xs text-destructive">
+                  {transcriptError} <ErrorAlchemyMenu error={transcriptError} />
+                </p>
                 <Button
                   variant="outline"
                   size="sm"

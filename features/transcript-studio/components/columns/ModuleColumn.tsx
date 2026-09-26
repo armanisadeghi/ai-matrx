@@ -5,7 +5,7 @@ import { ListChecks, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import MarkdownStream from "@/components/MarkdownStream";
-import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { COLUMN_IDS } from "../../constants";
 import { selectLatestRunForColumn } from "../../redux/selectors";
 import { runModulePassThunk } from "../../redux/runModulePass.thunk";
@@ -60,13 +60,14 @@ export function ModuleColumn({ sessionId, className }: ModuleColumnProps) {
   const moduleDef = useMemo(() => getModule(moduleId), [moduleId]);
 
   // Run audit, used for the dot + status string.
-  const latestRun = useAppSelector(
-    selectLatestRunForColumn(sessionId, 4),
-  );
+  const latestRun = useAppSelector(selectLatestRunForColumn(sessionId, 4));
 
   const isRunning = latestRun?.status === "running";
-  const dotState =
-    isRunning ? "running" : latestRun?.status === "failed" ? "error" : "idle";
+  const dotState = isRunning
+    ? "running"
+    : latestRun?.status === "failed"
+      ? "error"
+      : "idle";
   const status = useMemo(() => {
     const labelPrefix = moduleDef?.label ?? moduleId;
     if (segments.length === 0) {
@@ -87,9 +88,7 @@ export function ModuleColumn({ sessionId, className }: ModuleColumnProps) {
   const dispatch = useAppDispatch();
   const handleManualRun = () => {
     if (isRunning) return;
-    void dispatch(
-      runModulePassThunk({ sessionId, triggerCause: "manual" }),
-    );
+    void dispatch(runModulePassThunk({ sessionId, triggerCause: "manual" }));
   };
   const manualButton = (
     <button
@@ -137,24 +136,25 @@ export function ModuleColumn({ sessionId, className }: ModuleColumnProps) {
         label={`Building ${(moduleDef?.label ?? moduleId).toLowerCase()}`}
       />
       {segments.length > 0 && (
-        <ContentActionBar
+        <RichDocumentActions
           content={exportMarkdown}
-          title={
-            sessionTitle
+          source={{
+            type: "raw",
+            title: sessionTitle
               ? `${moduleDef?.label ?? "Module"} — ${sessionTitle}`
-              : moduleDef?.label ?? "Module Output"
-          }
-          metadata={{
-            source: "transcript-studio",
-            column: "module",
-            session_id: sessionId,
-            session_title: sessionTitle,
-            module_id: moduleId,
-            passes: segments.length,
+              : (moduleDef?.label ?? "Module Output"),
           }}
-          instanceKey={`studio-module-${sessionId}-${moduleId}`}
-          hideSpeaker
-          hidePencil
+          actions={{
+            metadata: {
+              source: "transcript-studio",
+              column: "module",
+              session_id: sessionId,
+              session_title: sessionTitle,
+              module_id: moduleId,
+              passes: segments.length,
+            },
+            exclude: ["open-fullscreen-editor", "tts-play"],
+          }}
         />
       )}
     </>
@@ -181,11 +181,7 @@ export function ModuleColumn({ sessionId, className }: ModuleColumnProps) {
         />
       ) : segments.length === 0 ? (
         <ColumnEmptyState
-          title={
-            isRunning
-              ? `Running ${moduleDef.label}…`
-              : moduleDef.label
-          }
+          title={isRunning ? `Running ${moduleDef.label}…` : moduleDef.label}
           description={
             latestRun?.status === "failed"
               ? "Last run failed. Recording continues; the next tick retries."

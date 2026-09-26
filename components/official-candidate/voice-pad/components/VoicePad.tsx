@@ -14,7 +14,7 @@ import {
 } from "@/lib/redux/slices/voicePadSlice";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
-import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createVoicePadScope } from "@/features/surfaces/manifests/voice-pad.manifest";
 
@@ -285,11 +285,10 @@ export default function VoicePad({ instanceId }: VoicePadProps) {
       }
       footerRight={
         hasContent ? (
-          <ContentActionBar
+          <RichDocumentActions
             content={currentText}
-            title="Voice Pad Transcript"
-            hideSpeaker
-            hidePencil
+            source={{ type: "raw", title: "Voice Pad Transcript" }}
+            actions={{ exclude: ["open-fullscreen-editor", "tts-play"] }}
           />
         ) : undefined
       }
@@ -316,19 +315,19 @@ export default function VoicePad({ instanceId }: VoicePadProps) {
         isEditable
         getWriteHandlers={getWriteHandlers}
       >
-      <Suspense fallback={<ExpandedLoadingFallback />}>
-        <VoicePadExpanded
-          entries={entries}
-          draftText={draftText}
-          liveTranscript={liveTranscript}
-          onTranscriptionComplete={handleTranscriptionComplete}
-          onLiveTranscript={handleLiveTranscript}
-          onRemoveEntry={handleRemoveEntry}
-          onClearAll={handleClearAll}
-          onDraftChange={handleDraftChange}
-          micButtonId={micId}
-        />
-      </Suspense>
+        <Suspense fallback={<ExpandedLoadingFallback />}>
+          <VoicePadExpanded
+            entries={entries}
+            draftText={draftText}
+            liveTranscript={liveTranscript}
+            onTranscriptionComplete={handleTranscriptionComplete}
+            onLiveTranscript={handleLiveTranscript}
+            onRemoveEntry={handleRemoveEntry}
+            onClearAll={handleClearAll}
+            onDraftChange={handleDraftChange}
+            micButtonId={micId}
+          />
+        </Suspense>
       </SurfaceRuntimeProvider>
     </WindowPanel>
   );

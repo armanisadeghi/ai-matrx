@@ -5,7 +5,7 @@
  * actually receive?"
  *
  * The viewing machinery (section rail, Everything view, Rendered/Raw/Split,
- * ContentActionBar) is the generic `TextSectionsWindow` primitive
+ * RichDocumentActions) is the generic `TextSectionsWindow` primitive
  * (`features/window-panels/windows/text-sections/TextSectionsWindow.tsx`),
  * extracted from this window because "read labeled chunks of text properly"
  * is universal. What stays HERE is everything research-specific: resolving the
@@ -115,8 +115,7 @@ function ResearchContextPreviewWindowInner({
           variables: {},
           contextRefs: {},
           report: null,
-          error:
-            e instanceof Error ? e.message : "Could not build the preview",
+          error: e instanceof Error ? e.message : "Could not build the preview",
         });
       }
     })();

@@ -138,8 +138,8 @@ jest.mock("@/components/MarkdownStream", () => ({
 jest.mock("@/components/agent-copy/CopyButtons", () => ({
   CopyButtons: () => null,
 }));
-jest.mock("@/components/content-actions/ContentActionBar", () => ({
-  ContentActionBar: () => null,
+jest.mock("@/features/rich-document/RichDocumentActions", () => ({
+  RichDocumentActions: () => null,
 }));
 jest.mock("@/features/masterwork/drive/DriveLinkButton", () => ({
   DriveLinkButton: () => null,
@@ -158,8 +158,9 @@ jest.mock("@ai-matrx/media/react", () => ({
   ),
 }));
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
-  true;
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 let host: HTMLDivElement;
 let root: Root;
@@ -219,10 +220,9 @@ describe("Your words — one source, one card", () => {
     expect(tallyContributions(corpus.contributions)).toEqual({
       total: 7,
       byKind: "4 interview turns and 3 documents",
-      expertChars: HER_TURN_CHARS + FILES.reduce(
-        (n, [, name]) => n + documentText(name).length,
-        0,
-      ),
+      expertChars:
+        HER_TURN_CHARS +
+        FILES.reduce((n, [, name]) => n + documentText(name).length, 0),
     });
     // The eleven-card header is gone in both its halves.
     expect(onScreen).not.toContain("11 things");

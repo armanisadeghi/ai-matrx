@@ -18,7 +18,7 @@
  *     and audio items only. It calls `transcribeCloudFile` (POST
  *     /audio/transcribe-file) BY FILE ID — the bytes never round-trip through
  *     the browser — and shows the result through the existing
- *     `<ContentActionBar />` (copy / read aloud / save to notes / export).
+ *     the one action bar (`RichDocumentActions`: copy / read aloud / save to notes / export).
  *
  * Mobile: the transcript surface is a Drawer, not a Dialog (house rule).
  */
@@ -43,7 +43,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
 import { PermissionsDialog } from "@/features/files/components/core/PermissionsDialog/PermissionsDialog";
 import { RenameDialog } from "@/features/files/components/core/RenameDialog/RenameDialog";
@@ -111,9 +111,7 @@ export function CaptureItemActions({
       setTranscript(text);
     } catch (err) {
       console.error("[CaptureItemActions] transcription failed", err);
-      toast.error(
-        err instanceof Error ? err.message : "Transcription failed.",
-      );
+      toast.error(err instanceof Error ? err.message : "Transcription failed.");
     } finally {
       setTranscribing(false);
     }
@@ -123,11 +121,10 @@ export function CaptureItemActions({
 
   const transcriptBody = transcript ? (
     <div className="flex min-h-0 flex-col gap-2">
-      <ContentActionBar
+      <RichDocumentActions
         content={transcript}
-        title={`Transcript — ${fileName}`}
-        instanceKey={`capture-transcript-${fileId}`}
-        metadata={{ file_id: fileId, capture_kind: kind }}
+        source={{ type: "raw", title: `Transcript — ${fileName}` }}
+        actions={{ metadata: { file_id: fileId, capture_kind: kind } }}
       />
       <div className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-muted/30 px-3 py-2 text-sm leading-relaxed text-foreground">
         {transcript}

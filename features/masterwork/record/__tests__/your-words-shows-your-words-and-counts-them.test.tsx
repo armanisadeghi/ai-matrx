@@ -86,7 +86,10 @@ const corpus = {
     },
   ],
   totalChars:
-    HER_CHARS + SCOUT_TURN_1.length + SCOUT_TURN_2.length + "assistant: ".length * 4,
+    HER_CHARS +
+    SCOUT_TURN_1.length +
+    SCOUT_TURN_2.length +
+    "assistant: ".length * 4,
   expertChars: HER_CHARS,
   laneCounts: { interview: 1 },
   limits: [],
@@ -121,8 +124,8 @@ jest.mock("@/components/MarkdownStream", () => ({
 jest.mock("@/components/agent-copy/CopyButtons", () => ({
   CopyButtons: () => null,
 }));
-jest.mock("@/components/content-actions/ContentActionBar", () => ({
-  ContentActionBar: () => null,
+jest.mock("@/features/rich-document/RichDocumentActions", () => ({
+  RichDocumentActions: () => null,
 }));
 jest.mock("@/features/masterwork/drive/DriveLinkButton", () => ({
   DriveLinkButton: () => null,
@@ -134,8 +137,9 @@ jest.mock("@ai-matrx/media/react", () => ({
   InlineMediaRef: () => null,
 }));
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
-  true;
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 let host: HTMLDivElement;
 let root: Root;

@@ -23,7 +23,6 @@ import { EmailInputDialog } from "./EmailInputDialog";
  * closes.
  *
  * Used by unauthenticated "Email to me" flows in:
- *   - components/content-actions/contentActionRegistry.ts
  *   - features/rich-document/actions/handlers/export.ts (the ONE action
  *     registry — every chat message and document menu)
  */

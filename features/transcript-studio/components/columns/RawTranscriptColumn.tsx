@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { FileAudio, Mic, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   shortenStudioSegments,
@@ -110,7 +110,7 @@ export function RawTranscriptColumn({
       {/*
        * Copy-for-AI for the raw stream. A live session's chunk list grows
        * without bound, so this is the "massive" size class and gets the
-       * composer. The ContentActionBar below is a different affordance (plain
+       * composer. The action bar below is a different affordance (plain
        * text copy / export of the rendered column) and stays.
        */}
       {segments.length > 0 && (
@@ -259,22 +259,23 @@ export function RawTranscriptColumn({
         />
       )}
       {segments.length > 0 && (
-        <ContentActionBar
+        <RichDocumentActions
           content={exportText}
-          title={
-            sessionTitle
+          source={{
+            type: "raw",
+            title: sessionTitle
               ? `Raw Transcript — ${sessionTitle}`
-              : "Raw Transcript"
-          }
-          metadata={{
-            source: "transcript-studio",
-            column: "raw",
-            session_id: sessionId,
-            session_title: sessionTitle,
+              : "Raw Transcript",
           }}
-          instanceKey={`studio-raw-${sessionId}`}
-          hideSpeaker
-          hidePencil
+          actions={{
+            metadata: {
+              source: "transcript-studio",
+              column: "raw",
+              session_id: sessionId,
+              session_title: sessionTitle,
+            },
+            exclude: ["open-fullscreen-editor", "tts-play"],
+          }}
         />
       )}
     </>
@@ -291,10 +292,7 @@ export function RawTranscriptColumn({
 
   return (
     <section
-      className={cn(
-        "flex h-full min-h-0 flex-col bg-background",
-        className,
-      )}
+      className={cn("flex h-full min-h-0 flex-col bg-background", className)}
       aria-label="Raw transcript"
     >
       <ColumnHeader

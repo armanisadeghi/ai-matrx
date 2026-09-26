@@ -26,8 +26,11 @@ import {
 } from "@/lib/redux/slices/voicePadSlice";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
-import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
-import { FilesTapButton } from "@ai-matrx/tap-target/buttons";
+import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
+import {
+  clearContentAction,
+  hostCopyAction,
+} from "@/features/rich-document/actions/hostActions";
 import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
 import { TranscriptionCleanupContextPanel } from "./TranscriptionCleanupContextPanel";
 import {
@@ -343,14 +346,15 @@ export default function TranscriptionCleanup({
             </span>
             <div className="flex items-center gap-1">
               {(transcriptDisplay.trim().length > 0 || entries.length > 0) && (
-                <ContentActionBar
+                <RichDocumentActions
                   content={transcriptDisplay}
-                  title="Voice Pad Transcript"
-                  instanceKey={`transcription-cleanup-transcript-${instanceId}`}
-                  hideSpeaker
-                  hidePencil
-                  onDelete={handleClearAll}
-                  deleteAriaLabel="Clear transcript"
+                  source={{ type: "raw", title: "Voice Pad Transcript" }}
+                  actions={{
+                    exclude: ["open-fullscreen-editor", "tts-play"],
+                    extra: [
+                      clearContentAction(handleClearAll, "Clear transcript"),
+                    ],
+                  }}
                 />
               )}
             </div>
@@ -400,25 +404,27 @@ export default function TranscriptionCleanup({
                 )}
               />
               {ai.phase === "complete" && responseValue.trim().length > 0 && (
-                <ContentActionBar
+                <RichDocumentActions
                   content={responseValue}
-                  title={`AI-cleaned: ${selectedAgent.name}`}
-                  metadata={{
-                    agent_id: selectedAgent.id,
-                    agent_name: selectedAgent.name,
-                    source: "transcription-cleanup",
+                  source={{
+                    type: "raw",
+                    title: `AI-cleaned: ${selectedAgent.name}`,
                   }}
-                  instanceKey={`transcription-cleanup-response-${instanceId}`}
-                  hideSpeaker
-                  hidePencil
-                  extras={
-                    <FilesTapButton
-                      variant="group"
-                      onClick={handleCopyJoined}
-                      ariaLabel="Copy transcript + AI response"
-                      className="text-muted-foreground"
-                    />
-                  }
+                  actions={{
+                    metadata: {
+                      agent_id: selectedAgent.id,
+                      agent_name: selectedAgent.name,
+                      source: "transcription-cleanup",
+                    },
+                    exclude: ["open-fullscreen-editor", "tts-play"],
+                    extra: [
+                      hostCopyAction(
+                        "copy-joined",
+                        "Copy transcript + AI response",
+                        handleCopyJoined,
+                      ),
+                    ],
+                  }}
                 />
               )}
             </div>

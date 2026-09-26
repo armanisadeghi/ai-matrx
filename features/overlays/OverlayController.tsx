@@ -5101,7 +5101,7 @@ export default function OverlayController() {
 
       {/* htmlPreview — multi-instance. Callback-aware: a function can't
           travel through Redux, so callers that own the save (rich-document
-          source adapters, ContentActionBar) pass a `callbackGroupId` string
+          source adapters, host action bars) pass a `callbackGroupId` string
           and the bridge emits the save on that group. Without a group, the
           bridge self-handles via `editMessage` from its conversationId +
           messageId (see HtmlPreviewBridge.handleMarkdownSave). */}

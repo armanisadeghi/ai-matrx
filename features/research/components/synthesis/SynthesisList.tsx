@@ -28,7 +28,7 @@ import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilter
 import type { ResearchSynthesis, ResearchDataEvent } from "../../types";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import MarkdownStream from "@/components/markdown";
-import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import {
   normalizeSynthesisScope,
@@ -220,17 +220,16 @@ function SynthesisCard({
                 </div>
               </NonEditableContextMenu>
               <div className="flex justify-end">
-                <ContentActionBar
+                <RichDocumentActions
                   content={synthesis.result}
-                  title={label}
-                  instanceKey={`synthesis-${synthesis.id}`}
-                  metadata={{
+                  source={{ type: "raw", title: label }}
+                  actions={{ metadata: {
                     synthesisId: synthesis.id,
                     scope: synthesis.scope,
                     version: synthesis.version,
                     model_id: synthesis.model_id ?? undefined,
                     keyword_id: synthesis.keyword_id ?? undefined,
-                  }}
+                  } }}
                 />
               </div>
             </div>

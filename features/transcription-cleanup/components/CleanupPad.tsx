@@ -87,8 +87,8 @@ import {
   MicrophoneIconButton,
   type MicrophoneIconButtonHandle,
 } from "@/features/audio/components/MicrophoneIconButton";
-import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
-import { FilesTapButton } from "@ai-matrx/tap-target/buttons";
+import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
+import { clearContentAction, hostCopyAction } from "@/features/rich-document/actions/hostActions";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import {
   useFloatingRunWindow,
@@ -931,7 +931,7 @@ export default function CleanupPad({
 
   // One-click raw↔cleaned compare: the raw transcript is the baseline (old),
   // the AI-cleaned text is the new version, so the diff reads as what cleanup
-  // changed. (ContentActionBar still offers clipboard/base compares too.)
+  // changed. (The action bar still offers clipboard/base compares too.)
   const openDiff = useOpenDiffViewerWindow();
   const handleCompareClean = useCallback(() => {
     openDiff({
@@ -2545,14 +2545,10 @@ export default function CleanupPad({
             </>
           ) : null}
           {(transcriptDisplay.trim().length > 0 || entries.length > 0) && (
-            <ContentActionBar
+            <RichDocumentActions
               content={transcriptDisplay}
-              title="Voice Pad Transcript"
-              instanceKey={`transcription-cleanup-page-transcript-${INSTANCE_ID}`}
-              hideSpeaker
-              hidePencil
-              onDelete={handleClearAll}
-              deleteAriaLabel="Clear transcript"
+              source={{ type: "raw", title: "Voice Pad Transcript" }}
+              actions={{ exclude: ["open-fullscreen-editor", "tts-play"], extra: [clearContentAction(handleClearAll, "Clear transcript")] }}
             />
           )}
         </div>
@@ -2636,24 +2632,13 @@ export default function CleanupPad({
               </button>
             )}
           {responseValue.trim().length > 0 && (
-            <ContentActionBar
+            <RichDocumentActions
               content={responseValue}
-              title={`AI-cleaned: ${agentNames[cleanAgentId] ?? "agent"}`}
-              metadata={{
+              source={{ type: "raw", title: `AI-cleaned: ${agentNames[cleanAgentId] ?? "agent"}` }}
+              actions={{ metadata: {
                 agent_id: cleanAgentId,
                 source: "transcription-cleanup-page",
-              }}
-              instanceKey={`transcription-cleanup-page-response-${INSTANCE_ID}`}
-              hideSpeaker
-              hidePencil
-              extras={
-                <FilesTapButton
-                  variant="group"
-                  onClick={handleCopyJoined}
-                  ariaLabel="Copy transcript + cleaned text"
-                  className="text-muted-foreground"
-                />
-              }
+              }, exclude: ["open-fullscreen-editor", "tts-play"], extra: [hostCopyAction("copy-joined", "Copy transcript + cleaned text", handleCopyJoined)] }}
             />
           )}
         </div>
@@ -2848,16 +2833,13 @@ export default function CleanupPad({
             </span>
           )}
           {activeSlotValue.trim().length > 0 && (
-            <ContentActionBar
+            <RichDocumentActions
               content={activeSlotValue}
-              title={`Custom: ${activeSlot?.agentId ? (agentNames[activeSlot.agentId] ?? "agent") : "output"}`}
-              metadata={{
+              source={{ type: "raw", title: `Custom: ${activeSlot?.agentId ? (agentNames[activeSlot.agentId] ?? "agent") : "output"}` }}
+              actions={{ metadata: {
                 agent_id: activeSlot?.agentId ?? "",
                 source: "transcription-cleanup-page-custom",
-              }}
-              instanceKey={`transcription-cleanup-page-custom-${activeSlot?.id ?? INSTANCE_ID}`}
-              hideSpeaker
-              hidePencil
+              }, exclude: ["open-fullscreen-editor", "tts-play"] }}
             />
           )}
         </div>

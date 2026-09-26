@@ -13,7 +13,7 @@ export interface TranscriptsExtraSectionsArgs {
  * renders them; this wrapper only describes them).
  *
  * Kept intentionally small: the viewer header already hosts the richer surface
- * actions (export / save-to-notes / promote-to-studio via `ContentActionBar`).
+ * actions (export / save-to-notes / promote-to-studio via the one action bar, `RichDocumentActions`).
  * The right-click menu just adds the one action a reader expects there — copy
  * the whole transcript — wired to real behavior, not a placeholder.
  */

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { RefreshCw, Stars } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { COLUMN_IDS } from "../../constants";
 import { selectLatestRunForColumn } from "../../redux/selectors";
 import { runCleaningPassThunk } from "../../redux/runCleaningPass.thunk";
@@ -59,14 +59,15 @@ export function CleanedTranscriptColumn({
   );
 
   const status = useMemo(() => {
-    if (segments.length === 0) return latestColumnRun?.status === "running"
-      ? "running…"
-      : undefined;
+    if (segments.length === 0)
+      return latestColumnRun?.status === "running" ? "running…" : undefined;
     const lastEnd = segments[segments.length - 1]!.tEnd;
     const passes = segments.length;
     const lastRunStatus = latestColumnRun?.status;
-    if (lastRunStatus === "running") return `running · ${passes} pass${passes === 1 ? "" : "es"}`;
-    if (lastRunStatus === "failed") return `last run failed · ${passes} pass${passes === 1 ? "" : "es"}`;
+    if (lastRunStatus === "running")
+      return `running · ${passes} pass${passes === 1 ? "" : "es"}`;
+    if (lastRunStatus === "failed")
+      return `last run failed · ${passes} pass${passes === 1 ? "" : "es"}`;
     return `${passes} pass${passes === 1 ? "" : "es"} · ${formatTimecode(lastEnd)}`;
   }, [segments, latestColumnRun]);
 
@@ -89,9 +90,7 @@ export function CleanedTranscriptColumn({
   const isRunning = latestColumnRun?.status === "running";
   const handleManualRun = () => {
     if (isRunning) return;
-    void dispatch(
-      runCleaningPassThunk({ sessionId, triggerCause: "manual" }),
-    );
+    void dispatch(runCleaningPassThunk({ sessionId, triggerCause: "manual" }));
   };
   const manualButton = (
     <button
@@ -129,25 +128,30 @@ export function CleanedTranscriptColumn({
   const headerActions = (
     <>
       {manualButton}
-      <WatchRunButton sessionId={sessionId} columnIdx={2} label="Cleaning transcript" />
+      <WatchRunButton
+        sessionId={sessionId}
+        columnIdx={2}
+        label="Cleaning transcript"
+      />
       {segments.length > 0 && (
-        <ContentActionBar
+        <RichDocumentActions
           content={exportText}
-          title={
-            sessionTitle
+          source={{
+            type: "raw",
+            title: sessionTitle
               ? `Cleaned Transcript — ${sessionTitle}`
-              : "Cleaned Transcript"
-          }
-          metadata={{
-            source: "transcript-studio",
-            column: "cleaned",
-            session_id: sessionId,
-            session_title: sessionTitle,
-            passes: segments.length,
+              : "Cleaned Transcript",
           }}
-          instanceKey={`studio-cleaned-${sessionId}`}
-          hideSpeaker
-          hidePencil
+          actions={{
+            metadata: {
+              source: "transcript-studio",
+              column: "cleaned",
+              session_id: sessionId,
+              session_title: sessionTitle,
+              passes: segments.length,
+            },
+            exclude: ["open-fullscreen-editor", "tts-play"],
+          }}
         />
       )}
     </>

@@ -7,9 +7,7 @@
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
 import { extractErrorMessage } from "@/utils/errors";
-import {
-  selectConversationTitle,
-} from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectMessagePosition } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { buildConversationMessageTitle } from "@/features/agents/utils/conversation-message-title";
 import type {
@@ -171,7 +169,9 @@ export function chatIds(ctx: RichDocumentActionContext): {
   if (ctx.source.type !== "chat-message") {
     return {
       conversationId:
-        ctx.source.type === "working-document" ? ctx.source.conversationId : null,
+        ctx.source.type === "working-document"
+          ? ctx.source.conversationId
+          : null,
       messageId: null,
     };
   }
@@ -188,12 +188,14 @@ export function isChatUserMessage(ctx: RichDocumentActionContext): boolean {
 
 /**
  * Canonical title for anything created FROM this content. Chat: "{conversation
- * title} Message {n}" (the shared builder); every other source: undefined —
+ * title} Message {n}" (the shared builder); raw content: its own `title`;
+ * every other source: undefined —
  * callers supply their destination-appropriate fallback.
  */
 export function deriveContentTitle(
   ctx: RichDocumentActionContext,
 ): string | undefined {
+  if (ctx.source.type === "raw") return ctx.source.title?.trim() || undefined;
   const { conversationId, messageId } = chatIds(ctx);
   if (!conversationId || ctx.source.type !== "chat-message") return undefined;
   const state = ctx.getState();
@@ -229,7 +231,6 @@ export function chatWriteBackBlocked(ctx: RichDocumentActionContext): boolean {
   if (!ext) return false;
   return ext.contentIsStructuredRaw || ext.role === "user";
 }
-
 
 /**
  * THE ONE "prepare content for a destination" step. Every action that sends

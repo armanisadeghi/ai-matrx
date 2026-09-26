@@ -100,7 +100,7 @@ const CAMERA_ADMIN_MAP: FeatureAdminMap = {
       tier: "internal",
       notes: [
         "Move + Share are the two items FileContextMenu leaves to its host — wired here with openFolderPicker + useFileMutation and PermissionsDialog.",
-        "Transcribe calls transcribeCloudFile (POST /audio/transcribe-file) by file_id; result renders through <ContentActionBar />.",
+        "Transcribe calls transcribeCloudFile (POST /audio/transcribe-file) by file_id; result renders through the one action bar (RichDocumentActions).",
       ],
     },
     {
@@ -131,7 +131,7 @@ const CAMERA_ADMIN_MAP: FeatureAdminMap = {
       name: "CaptureControls / CaptureReview / DeviceFallbackInput",
       filePath: "features/media-capture/components/",
       description:
-        "Studio sub-surfaces: mode/framing controls, review playback via the audio output sink plus server-side transcription with the shared ContentActionBar, and the OS-camera fallback input (EXIF-stripped).",
+        "Studio sub-surfaces: mode/framing controls, review playback via the audio output sink plus server-side transcription with the shared action bar (RichDocumentActions), and the OS-camera fallback input (EXIF-stripped).",
       status: "Live",
       tier: "internal",
     },

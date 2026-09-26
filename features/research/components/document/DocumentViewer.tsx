@@ -28,7 +28,7 @@ import { DocumentSkeleton } from "../shared/Skeletons";
 import type { ResearchDocument } from "../../types";
 import { tokenUsageFromJson } from "../../types";
 import MarkdownStream from "@/components/MarkdownStream";
-import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
 import { deriveReadiness } from "../../readiness";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
@@ -117,7 +117,8 @@ export default function DocumentViewer() {
   // The assembled document predates the topic report it was built from — the
   // readiness ledger's `document_stale`, surfaced as a banner, never a silent
   // regeneration.
-  const documentStale = deriveReadiness(progress).document.readiness === "stale";
+  const documentStale =
+    deriveReadiness(progress).document.readiness === "stale";
 
   const handleExport = useCallback(
     async (format: string) => {
@@ -142,7 +143,9 @@ export default function DocumentViewer() {
           URL.revokeObjectURL(url);
         } else {
           // For other formats, download as text for now
-          const blob = new Blob([document.content ?? ""], { type: "text/plain" });
+          const blob = new Blob([document.content ?? ""], {
+            type: "text/plain",
+          });
           const url = URL.createObjectURL(blob);
           const a = window.document.createElement("a");
           a.href = url;
@@ -215,7 +218,8 @@ export default function DocumentViewer() {
     );
   }
 
-  const docHasContent = !!document.content && document.content.trim().length > 0;
+  const docHasContent =
+    !!document.content && document.content.trim().length > 0;
   // A failed/stopped doc that still produced content falls through to render
   // that content (with a note). Only a content-less failure shows this state.
   if (document.status === "failed" && !docHasContent) {
@@ -486,17 +490,21 @@ export default function DocumentViewer() {
         {/* Content actions — copy, TTS, full-screen viewer, save to notes/code/tasks, HTML preview, email, print. */}
         {!stream.isStreaming && document.content && (
           <div className="mt-6 pt-3 border-t border-border flex justify-end">
-            <ContentActionBar
+            <RichDocumentActions
               content={document.content}
-              title={document.title ?? "Research Document"}
-              instanceKey={`research-document-${topicId}-${document.version}`}
-              metadata={{
-                topicId,
-                documentId: document.id,
-                version: document.version,
-                title: document.title ?? null,
-                created_at: document.created_at,
-                ...(docTokenUsage ? { token_usage: docTokenUsage } : {}),
+              source={{
+                type: "raw",
+                title: document.title ?? "Research Document",
+              }}
+              actions={{
+                metadata: {
+                  topicId,
+                  documentId: document.id,
+                  version: document.version,
+                  title: document.title ?? null,
+                  created_at: document.created_at,
+                  ...(docTokenUsage ? { token_usage: docTokenUsage } : {}),
+                },
               }}
             />
           </div>

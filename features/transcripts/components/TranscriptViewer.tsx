@@ -57,7 +57,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PromoteToStudioButton } from "@/features/transcript-studio/components/conversion/PromoteToStudioButton";
-import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { useTranscriptsSurfaceScope } from "@/features/transcripts/hooks/useTranscriptsSurfaceScope";
 import {
@@ -865,18 +865,18 @@ export function TranscriptViewer() {
                   </Button>
                 )}
                 {transcriptContent.trim().length > 0 && (
-                  <ContentActionBar
+                  <RichDocumentActions
                     content={transcriptContent}
-                    title={activeTranscript.title}
-                    metadata={{
-                      source: "transcripts",
-                      transcript_id: activeTranscript.id,
-                      description: activeTranscript.description,
-                      tags: activeTranscript.tags,
+                    source={{ type: "raw", title: activeTranscript.title }}
+                    actions={{
+                      metadata: {
+                        source: "transcripts",
+                        transcript_id: activeTranscript.id,
+                        description: activeTranscript.description,
+                        tags: activeTranscript.tags,
+                      },
+                      exclude: ["open-fullscreen-editor", "tts-play"],
                     }}
-                    instanceKey={`transcript-${activeTranscript.id}`}
-                    hideSpeaker
-                    hidePencil
                   />
                 )}
                 <PromoteToStudioButton transcript={activeTranscript} />
@@ -967,8 +967,12 @@ export function TranscriptViewer() {
                     className="cursor-pointer"
                   />
                   <div className="flex justify-between text-xs text-muted-foreground font-mono">
-                    <span>{formatDurationSeconds(currentTime, { style: "clock" })}</span>
-                    <span>{formatDurationSeconds(duration, { style: "clock" })}</span>
+                    <span>
+                      {formatDurationSeconds(currentTime, { style: "clock" })}
+                    </span>
+                    <span>
+                      {formatDurationSeconds(duration, { style: "clock" })}
+                    </span>
                   </div>
                 </div>
 

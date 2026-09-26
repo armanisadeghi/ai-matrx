@@ -6,7 +6,7 @@
  * Any surface holding named sections of text content renders them here: a real
  * window panel with a section rail, an "Everything" view (all sections as one
  * document, in order), Rendered / Raw / Split views, and the standard
- * ContentActionBar so the content can go to Notes, a task, a download or the
+ * the one action bar (RichDocumentActions) so the content can go to Notes, a task, a download or the
  * editor like anything else in the app.
  *
  * This was lifted out of the research Context Preview window because the shape
@@ -33,7 +33,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import MarkdownStream from "@/components/MarkdownStream";
-import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { formatChars } from "@/lib/tokens/estimate";
 import type { OverlayId } from "@/features/overlays/catalogue";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -79,7 +79,7 @@ export interface TextSectionsWindowProps {
   toolbarExtras?: ReactNode;
   /** Pinned under the rail (truncation warnings and the like). */
   railFooter?: ReactNode;
-  /** Namespaces the ContentActionBar instance key. */
+  /** Namespaces the action bar instance key. */
   instanceKeyPrefix: string;
   /** Extra metadata handed to the action bar. */
   metadata?: Record<string, unknown>;
@@ -187,14 +187,13 @@ export function TextSectionsWindow({
           <div className="ml-auto flex items-center gap-1.5">
             {toolbarExtras}
             {shownContent && (
-              <ContentActionBar
+              <RichDocumentActions
                 content={shownContent}
-                title={shownTitle}
-                instanceKey={`${instanceKeyPrefix}:${active}`}
-                metadata={{
+                source={{ type: "raw", title: shownTitle }}
+                actions={{ metadata: {
                   ...metadata,
                   section: active === EVERYTHING ? null : active,
-                }}
+                } }}
               />
             )}
           </div>

@@ -38,22 +38,25 @@ export interface NoteEditBase {
 }
 
 /** Full physical values displayed when a Notes editor was opened. */
-export type NoteDisplayedPhysicalSnapshot = Omit<Pick<
-  Note,
-  | "id"
-  | "organization_id"
-  | "version"
-  | "content"
-  | "label"
-  | "folder_name"
-  | "folder_id"
-  | "tags"
-  | "metadata"
-  | "visibility"
-  | "position"
-  | "project_id"
-  | "task_id"
->, "content"> & { content: string };
+export type NoteDisplayedPhysicalSnapshot = Omit<
+  Pick<
+    Note,
+    | "id"
+    | "organization_id"
+    | "version"
+    | "content"
+    | "label"
+    | "folder_name"
+    | "folder_id"
+    | "tags"
+    | "metadata"
+    | "visibility"
+    | "position"
+    | "project_id"
+    | "task_id"
+  >,
+  "content"
+> & { content: string };
 
 export type NoteIdentityContentSource = {
   type: "note";
@@ -107,7 +110,11 @@ type ContentSourceIdentity =
       kind: "working" | "scratch";
       documentId?: string | null;
     }
-  | { type: "raw" };
+  | {
+      type: "raw";
+      /** What this content is called (a report, a transcript) — seeds titles and file names. */
+      title?: string;
+    };
 
 // ============================================================================
 // ACTION IDS — central enum of built-in actions. `extra` actions may use any

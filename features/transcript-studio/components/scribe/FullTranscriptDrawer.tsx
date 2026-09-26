@@ -10,7 +10,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import {
   selectCleanedSegmentForRecording,
   selectRawSegmentsForRecording,
@@ -96,12 +96,15 @@ export function FullTranscriptDrawer({
                 Raw transcript
               </h3>
               {rawText && (
-                <ContentActionBar
+                <RichDocumentActions
                   content={rawText}
-                  metadata={{
-                    session_id: sessionId,
-                    recording_segment_id: recordingSegmentId ?? "",
-                    kind: "raw",
+                  source={{ type: "raw" }}
+                  actions={{
+                    metadata: {
+                      session_id: sessionId,
+                      recording_segment_id: recordingSegmentId ?? "",
+                      kind: "raw",
+                    },
                   }}
                 />
               )}
@@ -124,12 +127,15 @@ export function FullTranscriptDrawer({
               </h3>
               <div className="flex items-center gap-1">
                 {cleanText && (
-                  <ContentActionBar
+                  <RichDocumentActions
                     content={cleanText}
-                    metadata={{
-                      session_id: sessionId,
-                      recording_segment_id: recordingSegmentId ?? "",
-                      kind: "clean",
+                    source={{ type: "raw" }}
+                    actions={{
+                      metadata: {
+                        session_id: sessionId,
+                        recording_segment_id: recordingSegmentId ?? "",
+                        kind: "clean",
+                      },
                     }}
                   />
                 )}

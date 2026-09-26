@@ -39,7 +39,7 @@ import { MediaOptionsGrid } from "@/features/podcasts/generator/components/Media
 import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
 import MarkdownStream from "@/components/MarkdownStream";
 import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
-import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { useMandate } from "@/features/mandates/useMandate";
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
@@ -369,7 +369,10 @@ function DomainReportsCard({
                 )}
                 {/* Which agent writes this output — the same mandate the Context
                     Builder runs through, so a rebind here changes the run there. */}
-                <MandateAgentPicker mandateKey={def.mandateKey} className="shrink-0" />
+                <MandateAgentPicker
+                  mandateKey={def.mandateKey}
+                  className="shrink-0"
+                />
               </div>
               {existing.length > 0 && (
                 <div className="mt-1.5 space-y-1">
@@ -413,10 +416,9 @@ function DomainReportsCard({
           <div className="px-3 py-3 max-h-[460px] overflow-y-auto">
             <MarkdownStream imagePolicy="ai" content={viewingMarkdown} />
             <div className="flex justify-end mt-2">
-              <ContentActionBar
+              <RichDocumentActions
                 content={viewingMarkdown}
-                title={viewing.title}
-                instanceKey={`research-domain-${viewing.id}`}
+                source={{ type: "raw", title: viewing.title }}
               />
             </div>
           </div>
@@ -1032,10 +1034,9 @@ function BlogOutputCard({
             <div className="px-3 py-3 max-h-[460px] overflow-y-auto">
               <MarkdownStream imagePolicy="ai" content={viewingMarkdown} />
               <div className="flex justify-end mt-2">
-                <ContentActionBar
+                <RichDocumentActions
                   content={viewingMarkdown}
-                  title={viewing.title}
-                  instanceKey={`research-blog-${viewing.id}`}
+                  source={{ type: "raw", title: viewing.title }}
                 />
               </div>
             </div>
@@ -1131,9 +1132,12 @@ function MandateUnavailableNote({ message }: { message: string }) {
         <p className="text-xs font-medium text-destructive">
           This generator has no agent bound
         </p>
-        <p className="text-[11px] text-muted-foreground break-words">{message}</p>
+        <p className="text-[11px] text-muted-foreground break-words">
+          {message}
+        </p>
       </div>
-    <ErrorAlchemyMenu /></div>
+      <ErrorAlchemyMenu />
+    </div>
   );
 }
 

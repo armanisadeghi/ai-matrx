@@ -2,7 +2,10 @@
 
 import React, { useEffect, useCallback, useRef } from "react";
 import { useAppSelector, useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { disposeFullScreenEditorCallbackGroup, emitFullScreenEditorSave } from "@/features/overlays/callbacks/fullScreenEditor";
+import {
+  disposeFullScreenEditorCallbackGroup,
+  emitFullScreenEditorSave,
+} from "@/features/overlays/callbacks/fullScreenEditor";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import { useHtmlPreviewState } from "@/features/html-pages/hooks/useHtmlPreviewState";
 import HtmlPreviewFullScreenEditor from "@/features/html-pages/components/HtmlPreviewFullScreenEditor";
@@ -136,7 +139,10 @@ export function HtmlPreviewBridge({
             act: "linked to the conversation",
           })
         ) {
-          console.error("[HtmlPreviewBridge] Failed to register artifact:", err);
+          console.error(
+            "[HtmlPreviewBridge] Failed to register artifact:",
+            err,
+          );
           toast.error("This page is not linked to the conversation", {
             description:
               "Page published, but it was not linked to this message. Try publishing again.",
@@ -202,7 +208,7 @@ export function HtmlPreviewBridge({
 
   // Save the edited markdown back to the source. A function can't travel
   // through Redux, so callers that own the save (rich-document source
-  // adapters, ContentActionBar) register a callback group and pass its
+  // adapters, host action bars) register a callback group and pass its
   // `callbackGroupId`; the group always wins. Without one, the bridge
   // self-handles via `editMessage` when it has a conversation + message
   // target — preserving the message's non-text blocks.
@@ -220,13 +226,14 @@ export function HtmlPreviewBridge({
           "[HtmlPreviewBridge] Save invoked with no save target: no callbackGroupId and no conversationId+messageId. " +
             "The opening call site must pass `onSave` via useOpenHtmlPreviewBridge (callback registry) or a chat target.",
         );
-        throw new Error("Save is not wired for this content — nothing was saved.");
+        throw new Error(
+          "Save is not wired for this content — nothing was saved.",
+        );
       }
       // The preview opened on the message's DISPLAY text: splice only the
       // changed span into the stored row (RC-B5), never the display text.
-      const { saveMessageDisplayEdit } = await import(
-        "@/features/agents/redux/execution-system/message-crud/save-answer-edit.thunk"
-      );
+      const { saveMessageDisplayEdit } =
+        await import("@/features/agents/redux/execution-system/message-crud/save-answer-edit.thunk");
       await saveMessageDisplayEdit(dispatch, store.getState, {
         conversationId,
         messageId,

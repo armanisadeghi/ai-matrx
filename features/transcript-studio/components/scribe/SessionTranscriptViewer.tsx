@@ -10,7 +10,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import {
   selectRecordingSegments,
   selectSessionCleanedTimestamped,
@@ -102,9 +102,10 @@ export function SessionTranscriptViewer({
           </DrawerTitle>
           <div className="flex items-center gap-1">
             {text && (
-              <ContentActionBar
+              <RichDocumentActions
                 content={text}
-                metadata={{ session_id: sessionId, kind: mode }}
+                source={{ type: "raw" }}
+                actions={{ metadata: { session_id: sessionId, kind: mode } }}
               />
             )}
             {/* The run streams in its own floating window; this reopens it. */}
