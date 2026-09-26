@@ -723,7 +723,7 @@ export function MessageItem({
   return (
     <div className={cn("group rounded-lg bg-muted ")}>
       {/* Header */}
-      <div className="flex items-center justify-between sticky top-0 z-10 pt-0 pb-1 pr-2 rounded-t-lg bg-transparent">
+      <div className="flex items-center justify-between sticky top-0 z-10 pt-0 pb-1 pr-2 rounded-t-lg bg-muted">
         <div className="flex items-center gap-1">
           <Select
             value={displayRole}

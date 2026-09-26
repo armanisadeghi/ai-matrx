@@ -1,14 +1,16 @@
 "use client";
 
 /**
- * The `decision_questions` part editor — a TABLE, not a text box.
+ * The `decision_questions` part editor — one numbered card per question.
  *
- * A questions part is a list of output fields, and a list of fields with a
- * type and a rubric each is a table: one row per question, the columns are
- * name · type · instruction · criteria · threshold. Writing it as prose in a
- * textarea hides exactly the things the author gets wrong — a duplicated
- * field name, a two-part question, a rubric with one level, a budget already
- * blown — so every one of those is a cell or a badge here.
+ * A questions part is a list of output fields, each with a type and a rubric.
+ * Every question is its own unit: the question text leads (it is what the
+ * author thinks in), the type is a segmented control, the field name it
+ * answers into is secondary, and the criteria sit indented beneath it. The
+ * things authors get wrong — a duplicated field name, a two-part question, a
+ * rubric with one level, a budget already blown — are shown AT the question
+ * they concern. Champion: Typeform's builder and Linear's issue templates —
+ * one card per item, the prompt dominant, settings a quiet row beneath.
  *
  * Contract: `common-docs/systems/agents/typed-messages/FEATURE.md`.
  * Every string field is a slot: `{{variable}}` works in the instruction and
@@ -16,16 +18,22 @@
  * the builder (`HighlightedText`).
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
-  ChevronDown,
-  ChevronRight,
   GripVertical,
+  Info,
+  ListChecks,
   Plus,
   Scissors,
   Trash2,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -119,7 +127,22 @@ function asNoul(criteria: DecisionQuestionSpec["criteria"]): {
 }
 
 // ---------------------------------------------------------------------------
-// Budget meter — the two ceilings, both live
+// Focus helper — Enter in the last option/level adds the next and lands there
+// ---------------------------------------------------------------------------
+
+function focusSoon(selector: string) {
+  requestAnimationFrame(() => {
+    const el = document.querySelector<HTMLElement>(selector);
+    const target =
+      el && el.matches("input, textarea")
+        ? el
+        : el?.querySelector<HTMLElement>("input, textarea");
+    target?.focus();
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Budget meter — the two ceilings, one compact row
 // ---------------------------------------------------------------------------
 
 function Bar({
@@ -133,7 +156,7 @@ function Bar({
 }) {
   const pct = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
   return (
-    <div className="h-1 w-20 rounded-full bg-muted overflow-hidden">
+    <div className="h-1 w-10 rounded-full bg-border overflow-hidden">
       <div
         className={cn(
           "h-full rounded-full transition-all",
@@ -143,65 +166,129 @@ function Bar({
               ? "bg-amber-500"
               : "bg-emerald-500",
         )}
-        style={{ width: `${Math.max(pct, 2)}%` }}
+        style={{ width: `${Math.max(pct, 3)}%` }}
       />
     </div>
   );
 }
 
-interface BudgetMeterProps {
+function BudgetMeter({
+  reading,
+}: {
   reading: ReturnType<typeof readDecisionBudget>;
+}) {
+  const { limits } = reading;
+  const source =
+    limits.source === "catalog"
+      ? "Limits come from this model's catalog entry."
+      : limits.source === "unloaded"
+        ? "Platform default limits — the model's own limits have not loaded yet."
+        : "Platform default limits — this model's catalog entry declares none.";
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            className="inline-flex items-center gap-2 text-[11px] text-muted-foreground tabular-nums cursor-default"
+            data-dq-budget
+          >
+            <span className="inline-flex items-center gap-1">
+              <Bar
+                used={reading.totalTokens}
+                limit={limits.totalTokens}
+                over={reading.overTotal}
+              />
+              <span className={cn(reading.overTotal && "text-destructive")}>
+                {formatTokens(reading.totalTokens)}/
+                {formatTokens(limits.totalTokens)}
+              </span>
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Bar
+                used={reading.statePlusLongestTokens}
+                limit={limits.statePlusLongestQuestionTokens}
+                over={reading.overStatePlusLongest}
+              />
+              <span
+                className={cn(
+                  reading.overStatePlusLongest && "text-destructive",
+                )}
+              >
+                {formatTokens(reading.statePlusLongestTokens)}/
+                {formatTokens(limits.statePlusLongestQuestionTokens)}
+              </span>
+            </span>
+            <Info className="h-3 w-3 opacity-60" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-[260px] text-xs">
+          <p>
+            <span className="font-medium">First bar:</span> the rest of this
+            message plus every question.
+          </p>
+          <p className="mt-1">
+            <span className="font-medium">Second bar:</span> the rest of this
+            message plus the longest single question — each question is read on
+            its own against the whole message.
+          </p>
+          <p className="mt-1 text-muted-foreground">Estimated. {source}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 }
 
-function BudgetMeter({ reading }: BudgetMeterProps) {
-  const { limits } = reading;
+// ---------------------------------------------------------------------------
+// Shared bits
+// ---------------------------------------------------------------------------
+
+const FIELD = "h-7 text-xs";
+
+function RemoveButton({
+  onClick,
+  label,
+  disabled,
+}: {
+  onClick: () => void;
+  label: string;
+  disabled?: boolean;
+}) {
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-      <span className="inline-flex items-center gap-1.5" title="The state is every other part of this message, plus every question.">
-        <span>State + all questions</span>
-        <Bar
-          used={reading.totalTokens}
-          limit={limits.totalTokens}
-          over={reading.overTotal}
-        />
-        <span
-          className={cn("font-mono", reading.overTotal && "text-destructive")}
-        >
-          {formatTokens(reading.totalTokens)}/{formatTokens(limits.totalTokens)}
-        </span>
-      </span>
-      <span className="inline-flex items-center gap-1.5" title="A decision reads one question at a time against the whole state, so the longest single question is its own ceiling.">
-        <span>State + longest question</span>
-        <Bar
-          used={reading.statePlusLongestTokens}
-          limit={limits.statePlusLongestQuestionTokens}
-          over={reading.overStatePlusLongest}
-        />
-        <span
-          className={cn(
-            "font-mono",
-            reading.overStatePlusLongest && "text-destructive",
-          )}
-        >
-          {formatTokens(reading.statePlusLongestTokens)}/
-          {formatTokens(limits.statePlusLongestQuestionTokens)}
-        </span>
-      </span>
-      <span className="opacity-70">
-        estimate ·{" "}
-        {limits.source === "catalog"
-          ? "limits from the model catalog"
-          : limits.source === "unloaded"
-            ? "platform default limits — the model's own limits have not loaded yet"
-            : "platform default limits — this model's catalog row declares none"}
-      </span>
-      {(reading.overTotal || reading.overStatePlusLongest) && (
-        <span className="text-destructive">
-          {reading.overTotal
-            ? "Over the shared budget — shorten the state or remove questions."
-            : "One question plus the state is over budget — shorten that question."}
-        </span>
-      )}
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-destructive disabled:pointer-events-none disabled:opacity-30"
+    >
+      <Trash2 className="h-3.5 w-3.5" />
+    </button>
+  );
+}
+
+function AddRowButton({
+  onClick,
+  disabled,
+  children,
+  hint,
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+  children: ReactNode;
+  hint: string;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        className="inline-flex h-7 items-center gap-1 rounded px-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+      >
+        <Plus className="h-3.5 w-3.5" />
+        {children}
+      </button>
+      <span className="text-[11px] text-muted-foreground/80">{hint}</span>
     </div>
   );
 }
@@ -216,19 +303,29 @@ function ScoreLevelRow({
   value,
   onChange,
   onRemove,
+  onEnter,
   canRemove,
   validVariables,
+  focusId,
 }: {
   id: string;
   index: number;
   value: string;
   onChange: (next: string) => void;
   onRemove: () => void;
+  onEnter: () => void;
   canRemove: boolean;
   validVariables: string[];
+  focusId: string;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
   return (
     <div
       ref={setNodeRef}
@@ -237,37 +334,42 @@ function ScoreLevelRow({
     >
       <button
         type="button"
-        className="cursor-grab text-muted-foreground hover:text-foreground"
+        className="inline-flex h-7 w-4 shrink-0 cursor-grab items-center justify-center text-muted-foreground/60 hover:text-foreground"
         aria-label={`Reorder level ${index + 1}`}
         {...attributes}
         {...listeners}
       >
-        <GripVertical className="w-3 h-3" />
+        <GripVertical className="h-3.5 w-3.5" />
       </button>
-      <span className="w-4 text-right font-mono text-[10px] text-muted-foreground">
+      <span className="w-4 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
         {index + 1}
       </span>
-      <Input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={index === 0 ? "Lowest level" : "Level description"}
-        aria-label={`Score level ${index + 1}`}
-        className="h-6 flex-1 text-[11px]"
-      />
-      {value.includes("{{") && (
-        <span className="text-[10px]">
-          <HighlightedText text={value} validVariables={validVariables} />
-        </span>
-      )}
-      <button
-        type="button"
+      <div className="min-w-0 flex-1">
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              onEnter();
+            }
+          }}
+          placeholder={index === 0 ? "Lowest level" : "Describe this level"}
+          aria-label={`Score level ${index + 1}`}
+          data-dq-focus={focusId}
+          className={FIELD}
+        />
+        {value.includes("{{") && (
+          <div className="mt-0.5 text-[11px]">
+            <HighlightedText text={value} validVariables={validVariables} />
+          </div>
+        )}
+      </div>
+      <RemoveButton
         onClick={onRemove}
         disabled={!canRemove}
-        aria-label={`Remove level ${index + 1}`}
-        className="p-0.5 rounded text-muted-foreground hover:text-destructive disabled:opacity-30"
-      >
-        <Trash2 className="w-3 h-3" />
-      </button>
+        label={`Remove level ${index + 1}`}
+      />
     </div>
   );
 }
@@ -298,6 +400,14 @@ function ScoreCriteria({
     if (from < 0 || to < 0) return;
     onChange(arrayMove(levels, from, to));
   };
+  const canAdd = levels.length < SCORE_LEVEL_MAX;
+  const addAfter = (i: number) => {
+    if (!canAdd) return;
+    const next = [...levels];
+    next.splice(i + 1, 0, "");
+    onChange(next);
+    focusSoon(`[data-dq-focus="${questionKey}-level-${i + 1}"]`);
+  };
   return (
     <div className="flex flex-col gap-1">
       <DndContext
@@ -312,8 +422,10 @@ function ScoreCriteria({
               id={ids[i]}
               index={i}
               value={level}
+              focusId={ids[i]}
               validVariables={validVariables}
               canRemove={levels.length > SCORE_LEVEL_MIN}
+              onEnter={() => addAfter(i)}
               onChange={(next) =>
                 onChange(levels.map((v, idx) => (idx === i ? next : v)))
               }
@@ -322,28 +434,19 @@ function ScoreCriteria({
           ))}
         </SortableContext>
       </DndContext>
-      <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="h-6 text-[11px] px-2"
-          disabled={levels.length >= SCORE_LEVEL_MAX}
-          onClick={() => onChange([...levels, ""])}
-        >
-          <Plus className="w-3 h-3 mr-1" />
-          Add level
-        </Button>
-        <span className="text-[10px] text-muted-foreground">
-          {levels.length} of {SCORE_LEVEL_MIN}–{SCORE_LEVEL_MAX}, lowest first
-        </span>
-      </div>
+      <AddRowButton
+        onClick={() => addAfter(levels.length - 1)}
+        disabled={!canAdd}
+        hint={`Lowest first · ${levels.length} of ${SCORE_LEVEL_MAX} · Enter adds the next`}
+      >
+        Add level
+      </AddRowButton>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Criteria cell
+// Criteria — indented under the question
 // ---------------------------------------------------------------------------
 
 function CriteriaCell({
@@ -360,20 +463,26 @@ function CriteriaCell({
   if (question.type === "noul") {
     const criteria = asNoul(question.criteria);
     return (
-      <div className="grid gap-1 sm:grid-cols-2">
+      <div className="grid grid-cols-[4.5rem_1fr] items-center gap-x-2 gap-y-1">
+        <span className="text-[11px] font-medium text-muted-foreground">
+          Yes when
+        </span>
         <Input
           value={criteria.true}
           onChange={(e) => onChange({ ...criteria, true: e.target.value })}
-          placeholder="What makes it true (optional)"
-          aria-label="True clarifier"
-          className="h-6 text-[11px]"
+          placeholder="Optional"
+          aria-label="Yes when"
+          className={FIELD}
         />
+        <span className="text-[11px] font-medium text-muted-foreground">
+          No when
+        </span>
         <Input
           value={criteria.false}
           onChange={(e) => onChange({ ...criteria, false: e.target.value })}
-          placeholder="What makes it false (optional)"
-          aria-label="False clarifier"
-          className="h-6 text-[11px]"
+          placeholder="Optional"
+          aria-label="No when"
+          className={FIELD}
         />
       </div>
     );
@@ -399,12 +508,20 @@ function CriteriaCell({
     });
     onChange(out);
   };
+  const canAdd = options.length < CHOICE_OPTION_MAX;
+  const addAfter = (i: number) => {
+    if (!canAdd) return;
+    const next = [...options];
+    next.splice(i + 1, 0, ["", ""]);
+    setOptions(next);
+    focusSoon(`[data-dq-focus="${questionKey}-choice-${i + 1}"]`);
+  };
   return (
     <div className="flex flex-col gap-1">
       {options.map(([key, description], i) => (
         <div
           key={`${questionKey}-choice-${i}`}
-          className="grid gap-1 sm:grid-cols-[minmax(6rem,0.4fr)_1fr_auto] items-center"
+          className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_auto] items-center gap-1.5"
         >
           <Input
             value={key}
@@ -415,9 +532,10 @@ function CriteriaCell({
                 ),
               )
             }
-            placeholder="option_name"
+            placeholder="Option"
             aria-label={`Option ${i + 1} name`}
-            className="h-6 text-[11px] font-mono"
+            data-dq-focus={`${questionKey}-choice-${i}`}
+            className={cn(FIELD, "font-medium")}
           />
           <Input
             value={description}
@@ -428,36 +546,222 @@ function CriteriaCell({
                 ),
               )
             }
-            placeholder="When this option is the answer"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addAfter(i);
+              }
+            }}
+            placeholder="When this is the answer (optional)"
             aria-label={`Option ${i + 1} description`}
-            className="h-6 text-[11px]"
+            className={FIELD}
           />
-          <button
-            type="button"
+          <RemoveButton
             onClick={() => setOptions(options.filter((_, idx) => idx !== i))}
             disabled={options.length <= CHOICE_OPTION_MIN}
-            aria-label={`Remove option ${i + 1}`}
-            className="p-0.5 rounded text-muted-foreground hover:text-destructive disabled:opacity-30"
-          >
-            <Trash2 className="w-3 h-3" />
-          </button>
+            label={`Remove option ${i + 1}`}
+          />
         </div>
       ))}
-      <div className="flex items-center gap-2">
-        <Button
+      <AddRowButton
+        onClick={() => addAfter(options.length - 1)}
+        disabled={!canAdd}
+        hint={
+          options.length >= CHOICE_OPTION_MAX - 5
+            ? `${options.length} of ${CHOICE_OPTION_MAX}`
+            : "Enter adds the next"
+        }
+      >
+        Add option
+      </AddRowButton>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// One question — a numbered card
+// ---------------------------------------------------------------------------
+
+interface QuestionCardProps {
+  id: string;
+  index: number;
+  question: DecisionQuestionSpec;
+  tokens: number;
+  duplicate: boolean;
+  validVariables: string[];
+  onInstruction: (value: string) => void;
+  onName: (value: string) => void;
+  onPatch: (patch: Partial<DecisionQuestionSpec>) => void;
+  onRemove: () => void;
+}
+
+function QuestionCard({
+  id,
+  index,
+  question,
+  tokens,
+  duplicate,
+  validVariables,
+  onInstruction,
+  onName,
+  onPatch,
+  onRemove,
+}: QuestionCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+  const lint = lintQuestion(question);
+  const instructions = question.instructions ?? "";
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      data-dq-question={index + 1}
+      className={cn(
+        "group/q rounded-md border border-border bg-background",
+        isDragging && "z-10 shadow-lg opacity-90",
+      )}
+    >
+      {/* The question — dominant */}
+      <div className="flex items-start gap-2 px-2 pt-2">
+        <button
           type="button"
-          size="sm"
-          variant="outline"
-          className="h-6 text-[11px] px-2"
-          disabled={options.length >= CHOICE_OPTION_MAX}
-          onClick={() => setOptions([...options, ["", ""]])}
+          className="mt-1 inline-flex h-5 w-5 shrink-0 cursor-grab items-center justify-center rounded-full bg-muted text-[11px] font-semibold tabular-nums text-muted-foreground hover:bg-accent hover:text-foreground active:cursor-grabbing"
+          aria-label={`Question ${index + 1} — drag to reorder`}
+          title="Drag to reorder"
+          {...attributes}
+          {...listeners}
         >
-          <Plus className="w-3 h-3 mr-1" />
-          Add option
-        </Button>
-        <span className="text-[10px] text-muted-foreground">
-          {options.length} of {CHOICE_OPTION_MIN}–{CHOICE_OPTION_MAX}
+          <span className="group-hover/q:hidden">{index + 1}</span>
+          <GripVertical className="hidden h-3 w-3 group-hover/q:block" />
+        </button>
+        <div className="min-w-0 flex-1" data-dq-focus={`${id}-text`}>
+          <ProTextarea
+            value={instructions}
+            onChange={(e) => onInstruction(e.target.value)}
+            placeholder="Ask exactly one thing about the message above."
+            aria-label={`Question ${index + 1}`}
+            autoGrow
+            minHeight={32}
+            maxHeight={160}
+            className="text-sm font-medium"
+          />
+          {instructions.includes("{{") && (
+            <div className="mt-0.5 text-[11px] leading-snug">
+              <HighlightedText
+                text={instructions}
+                validVariables={validVariables}
+              />
+            </div>
+          )}
+          {lint && (
+            <p className="mt-1 flex items-start gap-1 text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+              <Scissors className="mt-px h-3 w-3 shrink-0" />
+              <span>{lint.reason}</span>
+            </p>
+          )}
+        </div>
+        <RemoveButton
+          onClick={onRemove}
+          label={`Remove question ${index + 1}`}
+        />
+      </div>
+
+      {/* Settings row — type first, then the quiet details */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-2 pb-2 pt-1.5 @[30rem]/dq:pl-9">
+        <div
+          role="radiogroup"
+          aria-label={`Question ${index + 1} answer type`}
+          className="inline-flex rounded-md border border-border bg-muted p-0.5"
+        >
+          {TYPE_ORDER.map((type) => {
+            const on = question.type === type;
+            return (
+              <button
+                key={type}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() =>
+                  !on && onPatch({ type, criteria: defaultCriteria(type) })
+                }
+                className={cn(
+                  "h-6 rounded px-2.5 text-xs font-medium transition-colors",
+                  on
+                    ? "bg-background text-foreground shadow-sm ring-1 ring-border"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {TYPE_LABELS[type]}
+              </button>
+            );
+          })}
+        </div>
+
+        <label className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          Field
+          <Input
+            value={question.name}
+            onChange={(e) => onName(e.target.value)}
+            aria-label={`Question ${index + 1} field name`}
+            placeholder="field_name"
+            className={cn(
+              "h-6 w-52 max-w-full font-mono text-[11px]",
+              duplicate && "border-destructive text-destructive",
+            )}
+          />
+        </label>
+
+        <label className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          Threshold
+          <Input
+            value={
+              question.suggested_threshold == null
+                ? ""
+                : String(question.suggested_threshold)
+            }
+            onChange={(e) => {
+              const raw = e.target.value.trim();
+              const parsed = raw === "" ? null : Number(raw);
+              onPatch({
+                suggested_threshold:
+                  parsed != null && Number.isFinite(parsed) ? parsed : null,
+              });
+            }}
+            inputMode="decimal"
+            placeholder="0.7"
+            aria-label={`Question ${index + 1} suggested threshold`}
+            className="h-6 w-14 text-center text-[11px] tabular-nums"
+          />
+        </label>
+
+        <span className="ml-auto text-[11px] tabular-nums text-muted-foreground/80">
+          {formatTokens(tokens)} tokens
         </span>
+
+        {duplicate && (
+          <p className="basis-full text-[11px] text-destructive">
+            Another question already answers into “{question.name}” — rename one
+            of them.
+          </p>
+        )}
+      </div>
+
+      {/* Criteria — indented, scannable */}
+      <div className="border-t border-border/60 px-2 py-2 @[30rem]/dq:pl-9">
+        <div className="border-l-2 border-border pl-3">
+          <CriteriaCell
+            question={question}
+            questionKey={id}
+            validVariables={validVariables}
+            onChange={(criteria) => onPatch({ criteria })}
+          />
+        </div>
       </div>
     </div>
   );
@@ -492,9 +796,6 @@ export function DecisionQuestionsEditor({
   className,
 }: DecisionQuestionsEditorProps) {
   const [manualNames, setManualNames] = useState<Set<number>>(new Set());
-  const [openCriteria, setOpenCriteria] = useState<Set<number>>(
-    () => new Set(questions.map((_, i) => i)),
-  );
 
   const reading = useMemo(
     () => readDecisionBudget({ model, stateText, questions }),
@@ -515,9 +816,19 @@ export function DecisionQuestionsEditor({
 
   const refused = compatibility?.verdict === "refused";
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+  const ids = questions.map((_, i) => `dq-${i}`);
+
   const update = (index: number, patch: Partial<DecisionQuestionSpec>) => {
     onChange(
-      questions.map((q, i) => (i === index ? { ...q, ...patch } : q)) as DecisionQuestionSpec[],
+      questions.map((q, i) =>
+        i === index ? { ...q, ...patch } : q,
+      ) as DecisionQuestionSpec[],
     );
   };
 
@@ -542,52 +853,93 @@ export function DecisionQuestionsEditor({
     update(index, patch);
   };
 
-  const toggleCriteria = (index: number) =>
-    setOpenCriteria((prev) => {
-      const next = new Set(prev);
-      if (next.has(index)) next.delete(index);
-      else next.add(index);
-      return next;
-    });
+  const addQuestion = () => {
+    onChange([...questions, newDecisionQuestion(questions)]);
+    focusSoon(`[data-dq-focus="dq-${questions.length}-text"]`);
+  };
+
+  const removeQuestion = (index: number) => {
+    onChange(questions.filter((_, i) => i !== index));
+    setManualNames(
+      (prev) =>
+        new Set(
+          [...prev]
+            .filter((i) => i !== index)
+            .map((i) => (i > index ? i - 1 : i)),
+        ),
+    );
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const from = ids.indexOf(String(active.id));
+    const to = ids.indexOf(String(over.id));
+    if (from < 0 || to < 0) return;
+    onChange(arrayMove(questions, from, to));
+    // Manual-name marks travel with their question.
+    const order = arrayMove(
+      questions.map((_, i) => i),
+      from,
+      to,
+    );
+    setManualNames(
+      (prev) =>
+        new Set(
+          order.flatMap((oldIdx, newIdx) => (prev.has(oldIdx) ? [newIdx] : [])),
+        ),
+    );
+  };
+
+  const over = reading.overTotal || reading.overStatePlusLongest;
 
   return (
     <div
       className={cn(
-        "@container/dq flex flex-col gap-2 w-full rounded-lg border border-border bg-card p-2",
+        "@container/dq flex w-full flex-col gap-2",
         refused && "opacity-50 grayscale",
         className,
       )}
+      data-dq-editor
     >
       {/* One row. The message header already says where we are. */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs font-medium">Questions</span>
-        <span className="text-[10px] font-mono text-muted-foreground">
-          {questions.length}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium">
+          <ListChecks className="h-3.5 w-3.5 text-muted-foreground" />
+          Questions
+          <span className="tabular-nums text-muted-foreground">
+            {questions.length}
+          </span>
         </span>
-        <div className="ml-auto flex items-center gap-2">
-          <BudgetMeter reading={reading} />
+        <BudgetMeter reading={reading} />
+        <div className="ml-auto flex items-center gap-1">
           <Button
             type="button"
             size="sm"
             variant="outline"
-            className="h-6 text-[11px] px-2"
-            onClick={() => onChange([...questions, newDecisionQuestion(questions)])}
+            className="h-7 px-2 text-xs"
+            onClick={addQuestion}
           >
-            <Plus className="w-3 h-3 mr-1" />
+            <Plus className="mr-1 h-3.5 w-3.5" />
             Add question
           </Button>
           {onRemovePart && (
-            <button
-              type="button"
+            <RemoveButton
               onClick={onRemovePart}
-              aria-label="Remove questions part"
-              className="p-1 rounded text-muted-foreground hover:text-destructive"
-            >
-              <Trash2 className="w-3 h-3" />
-            </button>
+              label="Remove the questions part"
+            />
           )}
         </div>
       </div>
+
+      {over && (
+        <p className="flex items-start gap-1.5 text-[11px] text-destructive">
+          <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
+          {reading.overTotal
+            ? "Over the shared budget — shorten the rest of the message or remove questions."
+            : "The longest question plus the rest of the message is over budget — shorten that question."}
+        </p>
+      )}
 
       {compatibility && compatibility.verdict !== "native" && (
         <div
@@ -600,188 +952,54 @@ export function DecisionQuestionsEditor({
                 : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
           )}
         >
-          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" />
+          <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
           <span>{compatibility.reason}</span>
         </div>
       )}
 
-      {/*
-        The table is a GRID, and it collapses to one field per line when the
-        panel is narrow — the agent builder's message column is ~400px, and a
-        five-column table crammed into it is unreadable, which is worse than
-        not being a table. Container query, not a viewport breakpoint: the
-        same editor renders in a narrow builder panel and a wide full-screen
-        editor on the same screen.
-      */}
-      <div className="text-xs">
-        <div className="hidden @[46rem]/dq:grid grid-cols-[9rem_13rem_1fr_5.5rem_1.5rem] gap-2 text-[10px] uppercase tracking-wide text-muted-foreground pb-1">
-          <span>Name</span>
-          <span>Type</span>
-          <span>Instruction</span>
-          <span>Threshold</span>
-          <span />
-        </div>
-
-        {questions.map((question, index) => {
-          const lint = lintQuestion(question);
-          const duplicate = duplicateNames.has(index);
-          const criteriaOpen = openCriteria.has(index);
-          const tokens = reading.questionTokens[index] ?? 0;
-          return (
-            <div
-              key={`q-${index}`}
-              className="border-t border-border/60 py-1.5"
-            >
-              <div className="grid grid-cols-1 @[46rem]/dq:grid-cols-[9rem_13rem_1fr_5.5rem_1.5rem] gap-2 items-start">
-                <div>
-                  <Input
-                    value={question.name}
-                    onChange={(e) => {
-                      setManualNames((prev) => new Set(prev).add(index));
-                      update(index, {
-                        name: normalizeQuestionName(e.target.value),
-                      });
-                    }}
-                    aria-label={`Question ${index + 1} name`}
-                    placeholder="field_name"
-                    className={cn(
-                      "h-6 text-[11px] font-mono",
-                      duplicate && "border-destructive",
-                    )}
-                  />
-                  {duplicate && (
-                    <p className="mt-0.5 text-[10px] text-destructive">
-                      Two questions cannot answer into the same field.
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <div className="inline-flex rounded-md border border-border bg-muted p-0.5">
-                    {TYPE_ORDER.map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() =>
-                          update(index, {
-                            type,
-                            criteria: defaultCriteria(type),
-                          })
-                        }
-                        aria-pressed={question.type === type}
-                        className={cn(
-                          "rounded px-1.5 py-0.5 text-[10px] transition-colors",
-                          question.type === type
-                            ? "bg-background shadow-sm text-foreground"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        {TYPE_LABELS[type]}
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => toggleCriteria(index)}
-                    className="mt-1 flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-foreground"
-                  >
-                    {criteriaOpen ? (
-                      <ChevronDown className="w-3 h-3" />
-                    ) : (
-                      <ChevronRight className="w-3 h-3" />
-                    )}
-                    Criteria
-                  </button>
-                </div>
-
-                <div className="min-w-0">
-                  <ProTextarea
-                    value={question.instructions ?? ""}
-                    onChange={(e) => setInstruction(index, e.target.value)}
-                    placeholder="Ask exactly one thing about the state."
-                    aria-label={`Question ${index + 1} instruction`}
-                    autoGrow
-                    minHeight={28}
-                    maxHeight={140}
-                    className="text-[11px]"
-                  />
-                  {(question.instructions ?? "").includes("{{") && (
-                    <div className="mt-0.5 text-[10px] leading-snug">
-                      <HighlightedText
-                        text={question.instructions ?? ""}
-                        validVariables={validVariables}
-                      />
-                    </div>
-                  )}
-                  {lint && (
-                    <p className="mt-0.5 flex items-start gap-1 text-[10px] text-amber-600 dark:text-amber-400">
-                      <Scissors className="w-3 h-3 shrink-0 mt-px" />
-                      <span>{lint.reason}</span>
-                    </p>
-                  )}
-                  <span className="mt-0.5 block text-[10px] font-mono text-muted-foreground">
-                    {formatTokens(tokens)} tokens
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1">
-                  <span className="@[46rem]/dq:hidden text-[10px] text-muted-foreground">
-                    Threshold
-                  </span>
-                  <Input
-                    value={
-                      question.suggested_threshold == null
-                        ? ""
-                        : String(question.suggested_threshold)
-                    }
-                    onChange={(e) => {
-                      const raw = e.target.value.trim();
-                      const parsed = raw === "" ? null : Number(raw);
-                      update(index, {
-                        suggested_threshold:
-                          parsed != null && Number.isFinite(parsed)
-                            ? parsed
-                            : null,
-                      });
-                    }}
-                    inputMode="decimal"
-                    placeholder="0.7"
-                    aria-label={`Question ${index + 1} suggested threshold`}
-                    className="h-6 w-[4.5rem] text-[11px] font-mono"
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    onChange(questions.filter((_, i) => i !== index))
-                  }
-                  aria-label={`Remove question ${index + 1}`}
-                  className="p-1 rounded text-muted-foreground hover:text-destructive justify-self-start"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </div>
-
-              {criteriaOpen && (
-                <div className="mt-1.5 @[46rem]/dq:pl-[9.5rem]">
-                  <CriteriaCell
-                    question={question}
-                    questionKey={`q-${index}`}
-                    validVariables={validVariables}
-                    onChange={(criteria) => update(index, { criteria })}
-                  />
-                </div>
-              )}
+      {questions.length === 0 ? (
+        <button
+          type="button"
+          onClick={addQuestion}
+          className="flex flex-col items-center gap-1 rounded-md border border-dashed border-border px-4 py-5 text-center hover:bg-accent/40"
+        >
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-foreground">
+            <Plus className="h-3.5 w-3.5" />
+            Add the first question
+          </span>
+          <span className="text-[11px] text-muted-foreground">
+            Each question becomes one named field in the answer.
+          </span>
+        </button>
+      ) : (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+            <div className="flex flex-col gap-2">
+              {questions.map((question, index) => (
+                <QuestionCard
+                  key={ids[index]}
+                  id={ids[index]}
+                  index={index}
+                  question={question}
+                  tokens={reading.questionTokens[index] ?? 0}
+                  duplicate={duplicateNames.has(index)}
+                  validVariables={validVariables}
+                  onInstruction={(v) => setInstruction(index, v)}
+                  onName={(v) => {
+                    setManualNames((prev) => new Set(prev).add(index));
+                    update(index, { name: normalizeQuestionName(v) });
+                  }}
+                  onPatch={(patch) => update(index, patch)}
+                  onRemove={() => removeQuestion(index)}
+                />
+              ))}
             </div>
-          );
-        })}
-      </div>
-
-      {questions.length === 0 && (
-        <p className="text-[11px] text-muted-foreground">
-          No questions yet. Each one becomes a named field in the answer.
-        </p>
+          </SortableContext>
+        </DndContext>
       )}
     </div>
   );
