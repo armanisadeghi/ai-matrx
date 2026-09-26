@@ -161,6 +161,28 @@ export async function fetchConversationBundle(
           { code: CONVERSATION_NOT_MATERIALIZED },
         );
       }
+      // The RPC returns messages, tool calls and media but NO run history
+      // (`requests` / `user_requests`). Without it, an initial hydrate seeds
+      // nothing into activeRequests, so after any reload every run's tokens,
+      // cost and timing read empty and the response-feedback bar (which needs
+      // a completed request) vanishes. Fetch it the way the fallback path
+      // does; pagination callers opt out with `skipObservabilityFallback`.
+      if (
+        !skipObservabilityFallback &&
+        bundle.requests === undefined &&
+        bundle.userRequests === undefined &&
+        (bundle as { user_requests?: unknown }).user_requests === undefined
+      ) {
+        try {
+          const history = await fetchRunHistory(conversationId);
+          return { ...bundle, ...history };
+        } catch (historyErr) {
+          console.warn(
+            "[conversation-bundle] run history could not be read; run stats and feedback stay empty for this load.",
+            describeSupabaseError(historyErr),
+          );
+        }
+      }
       return bundle;
     }
      
@@ -208,12 +230,7 @@ export async function fetchConversationBundle(
   // parent user_request_ids from them.
   const requestsQuery = skipObservabilityFallback
     ? Promise.resolve({ data: [] as CxRequestRow[] })
-    : supabase
-        .schema("chat").from("request")
-        .select("*")
-        .eq("conversation_id", conversationId)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: true });
+    : requestsForConversation(conversationId);
 
   const [conversationRes, messagesRes, requestsRes] = await Promise.all([
     // maybeSingle, NOT single: a client-minted conversation has no row until
@@ -231,17 +248,13 @@ export async function fetchConversationBundle(
 
   let userRequestsRes: { data: CxUserRequestRow[] | null } = { data: [] };
   if (!skipObservabilityFallback) {
-    const reqRows: CxRequestRow[] = requestsRes?.data ?? [];
-    const userRequestIds = Array.from(
-      new Set(reqRows.map((r) => r.user_request_id).filter(Boolean)),
-    );
-    if (userRequestIds.length > 0) {
-      userRequestsRes = await supabase
-        .schema("chat").from("user_request")
-        .select("*")
-        .in("id", userRequestIds)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: true });
+    try {
+      userRequestsRes = await userRequestsForRequests(requestsRes?.data ?? []);
+    } catch (historyErr) {
+      console.warn(
+        "[conversation-bundle] user_request rows could not be read; run stats stay empty for this load.",
+        describeSupabaseError(historyErr),
+      );
     }
   }
 
@@ -314,6 +327,48 @@ export async function fetchConversationBundle(
     userRequests: userRequestsRes?.data ?? [],
     requests: requestsRes?.data ?? [],
   };
+}
+
+// `cx_request` keeps `conversation_id`; it's the m2m between conversations and
+// user requests. `cx_user_request` no longer carries `conversation_id`, so a
+// conversation's run history is its requests first, then their distinct
+// parent user_request rows.
+function requestsForConversation(conversationId: string) {
+  return supabase
+    .schema("chat").from("request")
+    .select("*")
+    .eq("conversation_id", conversationId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true });
+}
+
+async function userRequestsForRequests(
+  reqRows: CxRequestRow[],
+): Promise<{ data: CxUserRequestRow[] | null }> {
+  const userRequestIds = Array.from(
+    new Set(reqRows.map((r) => r.user_request_id).filter(Boolean)),
+  );
+  if (userRequestIds.length === 0) return { data: [] };
+  const res = await supabase
+    .schema("chat").from("user_request")
+    .select("*")
+    .in("id", userRequestIds)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true });
+  if (res.error) throw res.error;
+  return res;
+}
+
+/** A conversation's run history, in the bundle's shape. Throws on a read error. */
+async function fetchRunHistory(conversationId: string): Promise<{
+  requests: CxRequestRow[];
+  userRequests: CxUserRequestRow[];
+}> {
+  const requestsRes = await requestsForConversation(conversationId);
+  if (requestsRes.error) throw requestsRes.error;
+  const requests = (requestsRes.data ?? []) as CxRequestRow[];
+  const userRequestsRes = await userRequestsForRequests(requests);
+  return { requests, userRequests: userRequestsRes.data ?? [] };
 }
 
 // =============================================================================
