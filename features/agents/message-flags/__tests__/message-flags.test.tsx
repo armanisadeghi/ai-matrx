@@ -207,7 +207,7 @@ describe("MessageFlagToggles", () => {
     expect(prefill.getAttribute("aria-pressed")).toBe("true");
     expect(prefill.dataset.verdict).toBe("refused");
     // a set flag the model refuses is amber, never quietly "on"
-    expect(prefill.className).toContain("text-amber-600");
+    expect(prefill.className).toContain("text-amber-700");
     expect(cache.getAttribute("aria-pressed")).toBe("false");
     expect(container.textContent).toContain("Claude Sonnet 5 cannot continue a reply from a prefill");
     act(() => cache.click());
