@@ -58,7 +58,7 @@ import { isRecordUnavailableError } from "@/lib/records/recordUnavailable";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import type { ContentSource } from "@/features/rich-document/types";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectAdminLaneOpen, selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { useSetting } from "@/features/settings/hooks/useSetting";
 import { AnalysisView } from "./AnalysisView";
 import { StudioEditorMode } from "./StudioEditorMode";
@@ -138,6 +138,9 @@ export function MarkdownStudio() {
   // Admin mode = the admin lane (the tester route). An admin on a user page
   // sees exactly what anyone else sees.
   const isAdmin = useAppSelector(selectIsSuperAdmin);
+  // The admin layout already places content below its header; a user page's
+  // header floats over the content, so only there does the body pad down.
+  const inAdminLane = useAppSelector(selectAdminLaneOpen);
   const searchParams = useSearchParams();
 
   // Per-person settings (userPreferences.display), live + synced by default.
@@ -463,6 +466,10 @@ export function MarkdownStudio() {
   // Keyboard shortcuts: ⌘S save, ⇧⌘S fork, ⌘K samples, ⌘Enter run the
   // comparison, ⌘. switch Studio/Analysis.
   const onShortcut = useEffectEvent((e: KeyboardEvent) => {
+    if (e.key === "Escape" && fullScreen && !e.defaultPrevented) {
+      setFullScreen(false);
+      return;
+    }
     const mod = e.metaKey || e.ctrlKey;
     if (!mod) return;
     // Editor mode owns its own keys (⌘S saves the proving copy there).
@@ -484,8 +491,6 @@ export function MarkdownStudio() {
     } else if (e.key === ".") {
       e.preventDefault();
       setMode((m) => (m === "studio" ? "analysis" : "studio"));
-    } else if (e.key === "Escape" && fullScreen) {
-      setFullScreen(false);
     }
   });
   useEffect(() => {
@@ -581,7 +586,7 @@ export function MarkdownStudio() {
         }]
       : []),
     { icon: "Copy", label: "Copy source", onPress: () => void handleCopySource() },
-    { icon: "History", label: "Restore last draft", onPress: () => void handleRestoreDraft() },
+    { icon: "FileClock", label: "Restore last draft", onPress: () => void handleRestoreDraft() },
     {
       icon: previewUpdates === "live" ? "Hand" : "Zap",
       label:
@@ -738,8 +743,9 @@ export function MarkdownStudio() {
     <div
       className={cn(
         "matrx-touch-targets flex h-full w-full flex-col bg-textured",
-        // Full screen: the same studio laid over the whole page.
-        fullScreen && "fixed inset-0 z-50",
+        // Full screen: the studio takes the whole window under the app
+        // header (which keeps the studio's own actions reachable); Esc exits.
+        fullScreen && "fixed inset-x-0 bottom-0 top-[var(--shell-header-h)] z-30",
       )}
     >
       <PageHeader>
@@ -757,7 +763,7 @@ export function MarkdownStudio() {
 
       <div
         className="flex min-h-0 flex-1 flex-col"
-        style={{ paddingTop: fullScreen ? undefined : "var(--shell-header-h)" }}
+        style={{ paddingTop: fullScreen || inAdminLane ? undefined : "var(--shell-header-h)" }}
       >
         {/* Status strip — current sample name, dirty indicator */}
         <div className="flex min-w-0 items-center gap-2 overflow-hidden whitespace-nowrap border-b border-border/50 bg-muted/20 px-4 py-1.5 text-[11px] [&>*]:shrink-0">

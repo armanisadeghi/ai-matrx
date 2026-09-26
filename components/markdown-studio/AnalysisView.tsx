@@ -177,13 +177,18 @@ export function AnalysisView({
     }
   };
 
-  // ⌘Enter from anywhere in the studio: run on the chosen source.
+  // ⌘Enter from anywhere in the studio: run on the chosen source — once the
+  // signed-in token has loaded (a run fired on mount before it arrived was
+  // refused by the server as unauthenticated).
+  const [handledSignal, setHandledSignal] = useState(0);
+  const tokenReady = Boolean(apiConfig.authToken);
   const runFromShortcut = useEffectEvent(() => {
+    setHandledSignal(runSignal);
     if (!isRunning) void handleRun();
   });
   useEffect(() => {
-    if (runSignal > 0) runFromShortcut();
-  }, [runSignal]);
+    if (runSignal > handledSignal && tokenReady) runFromShortcut();
+  }, [runSignal, handledSignal, tokenReady]);
 
   /** The FULL report: XML with every drifting block's contents, the raw input and the server address. */
   const handleCopyFullReport = async () => {
