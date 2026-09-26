@@ -29,7 +29,8 @@ describe("schedule surface context-menu contract", () => {
 
     expect(detail.match(/<NonEditableContextMenu/g)).toHaveLength(1);
     expect(detail).toMatch(
-      /<NonEditableContextMenu[\s\S]*?<div className="contents">[\s\S]*?<ScheduleDetailBody taskId=\{taskId\} \/>/,
+      // The body carries the seat (owner, or admin on the admin route — 63e6efa729).
+      /<NonEditableContextMenu[\s\S]*?<div className="contents">[\s\S]*?<ScheduleDetailBody taskId=\{taskId\} seat=\{seat\} \/>/,
     );
     expect(detail).toContain('surfaceName="matrx-user/schedules"');
     expect(detail).toContain("getApplicationScope={getSchedulesScope}");
