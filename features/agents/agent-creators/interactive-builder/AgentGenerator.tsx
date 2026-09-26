@@ -221,7 +221,14 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
   // In mandate mode the door is the Mandate's own resolution: `error` set
   // means the job has no Holder yet (or the caller may not run it), and the
   // banner below says so with the remedy — never a dead Generate button.
-  const holderDraft = useMandate(mandateMode ? HOLDER_DRAFT_MANDATE_KEY : "");
+  // An organization's agent is drafted FOR that organization: the job resolves
+  // and runs in the organization the owner names, never the active workspace
+  // (access follows the object; the page already knows the org).
+  const ownerOrganizationId =
+    mandate?.owner.kind === "organization" ? mandate.owner.organizationId : null;
+  const holderDraft = useMandate(mandateMode ? HOLDER_DRAFT_MANDATE_KEY : "", {
+    organizationId: ownerOrganizationId,
+  });
   const shortcutReady = mandateMode
     ? holderDraft.mandate !== null
     : generatorShortcut !== null;
@@ -447,6 +454,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
           },
           jsonExtraction: HOLDER_DRAFT_JSON_EXTRACTION,
           sourceFeature: "agent-generator",
+          ...(ownerOrganizationId ? { organizationId: ownerOrganizationId } : {}),
           ...(authoringModel
             ? { config: { llmOverrides: { model: authoringModel } } }
             : {}),
