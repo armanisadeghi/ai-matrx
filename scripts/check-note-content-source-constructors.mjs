@@ -9,15 +9,17 @@ const allowedConstructorFile = "features/notes/richDocumentSource.ts";
 // .wt/ and .coldwalk*/ are parked checkouts other lanes leave in the shared
 // tree; scanning them re-reports files the tracked tree already fixed (it
 // halted release 2026-09-18 on four .wt copies of richDocumentSource.ts).
-// work/ and tmp/ are gitignored scratch (lockfile repairs, type-sync copies) —
-// the same stale-copy class.
-const ignoredDirectories = new Set([".git", ".next", "node_modules", ".matrx", ".wt", ".claude", "work", "tmp"]);
-const isIgnoredDirectory = (name) => ignoredDirectories.has(name) || name.startsWith(".coldwalk");
+const ignoredDirectories = new Set([".git", ".next", "node_modules", ".matrx", ".wt", ".claude"]);
+// The ROOT work/ and tmp/ are gitignored scratch (lockfile repairs, type-sync
+// copies) — the same stale-copy class. Root only: app/(core)/work/ is real code.
+const ignoredRootDirectories = new Set(["work", "tmp"]);
+const isIgnoredDirectory = (name, directory) =>
+  ignoredDirectories.has(name) || name.startsWith(".coldwalk") || (directory === root && ignoredRootDirectories.has(name));
 const sourceExtensions = new Set([".ts", ".tsx"]);
 
 function sourceFiles(directory = root) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    if (entry.isDirectory()) return isIgnoredDirectory(entry.name) ? [] : sourceFiles(join(directory, entry.name));
+    if (entry.isDirectory()) return isIgnoredDirectory(entry.name, directory) ? [] : sourceFiles(join(directory, entry.name));
     return sourceExtensions.has(entry.name.slice(entry.name.lastIndexOf("."))) ? [join(directory, entry.name)] : [];
   });
 }
