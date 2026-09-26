@@ -125,6 +125,7 @@ describe("VaultPasswordHistoryPanel", () => {
     let resolve!: (value: {
       entries: [];
       count: number;
+      history_revision: number;
       capture_cutoff_at: null;
       value_availability: "unavailable";
       next_before_revision: null;
@@ -168,6 +169,7 @@ describe("VaultPasswordHistoryPanel", () => {
     let resolve!: (value: {
       entries: [];
       count: number;
+      history_revision: number;
       capture_cutoff_at: null;
       value_availability: "unavailable";
       next_before_revision: null;
@@ -235,7 +237,9 @@ describe("VaultPasswordHistoryPanel", () => {
         />,
       );
     });
-    expect(host.textContent).toContain("Old value unavailable");
+    expect(host.textContent).toContain(
+      "This recorded password is unavailable and cannot be restored.",
+    );
     expect(host.textContent).not.toContain("Show old password");
     expect(revealVaultPasswordHistory).not.toHaveBeenCalled();
   });
@@ -329,10 +333,11 @@ describe("VaultPasswordHistoryPanel", () => {
       history_revision: 2,
       capture_cutoff_at: "2026-09-25T00:00:00Z",
       value_availability: "available",
+      restore_available: true,
       next_before_revision: null,
       omitted_count: 0,
       incomplete: false,
-    } as never);
+    });
     restoreVaultPasswordHistory.mockResolvedValue({
       item_id: "item-a",
       field_id: "field-password",
@@ -378,5 +383,12 @@ describe("VaultPasswordHistoryPanel", () => {
     expect(toastSuccess).toHaveBeenCalledWith(
       "Password restored from its recorded history.",
     );
+    expect(
+      (
+        Array.from(host.querySelectorAll("button")).find(
+          (button) => button.textContent === "Restore",
+        ) as HTMLButtonElement
+      ).disabled,
+    ).toBe(false);
   });
 });

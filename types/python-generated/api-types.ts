@@ -55939,6 +55939,8 @@ export interface components {
             reasoning_effort?: ("auto" | "high" | "low" | "max" | "medium" | "minimal" | "none" | "xhigh") | null;
             /** Reasoning Summary */
             reasoning_summary?: ("always" | "auto" | "concise" | "detailed" | "never") | null;
+            /** Visualization */
+            visualization?: ("auto" | "off") | null;
             /** Thinking Level */
             thinking_level?: ("high" | "low" | "medium" | "minimal") | null;
             /** Include Thoughts */
@@ -84688,6 +84690,8 @@ export interface components {
             reasoning_effort?: ("auto" | "high" | "low" | "max" | "medium" | "minimal" | "none" | "xhigh") | null;
             /** Reasoning Summary */
             reasoning_summary?: ("always" | "auto" | "concise" | "detailed" | "never") | null;
+            /** Visualization */
+            visualization?: ("auto" | "off") | null;
             /** Thinking Level */
             thinking_level?: ("high" | "low" | "medium" | "minimal") | null;
             /** Include Thoughts */
@@ -91634,7 +91638,7 @@ export interface components {
              * @default turn
              * @enum {string}
              */
-            interaction?: "extraction" | "realtime" | "turn";
+            interaction?: "agent" | "decision" | "extraction" | "realtime" | "turn";
             /** Features */
             features?: string[];
             /** Native Tools */
@@ -129246,7 +129250,7 @@ export interface components {
         VaultPasswordHistoryEntry: {
             /**
              * Revision
-             * @description Gate B reconstruction cap; this does not define retention.
+             * @description Positive Postgres int4 revision; this does not define retention.
              */
             revision: number;
             /** Recorded At */
@@ -129258,9 +129262,9 @@ export interface components {
             /**
              * Value Availability
              * @default unavailable
-             * @constant
+             * @enum {string}
              */
-            value_availability?: "unavailable";
+            value_availability?: "available" | "unavailable";
         };
         /**
          * VaultPasswordHistoryResponse
@@ -129273,12 +129277,19 @@ export interface components {
             count: number;
             /** Capture Cutoff At */
             capture_cutoff_at?: string | null;
+            /** History Revision */
+            history_revision: number;
             /**
              * Value Availability
              * @default unavailable
-             * @constant
+             * @enum {string}
              */
-            value_availability?: "unavailable";
+            value_availability?: "available" | "unavailable";
+            /**
+             * Restore Available
+             * @default false
+             */
+            restore_available?: boolean;
             /** Next Before Revision */
             next_before_revision?: number | null;
             /** Omitted Count */
@@ -129324,7 +129335,7 @@ export interface components {
             field_id: string;
             /**
              * Revision
-             * @description Gate B reconstruction cap; this does not define retention.
+             * @description Positive Postgres int4 revision; this does not define retention.
              */
             revision: number;
         };

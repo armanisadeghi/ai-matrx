@@ -892,6 +892,7 @@ export function VaultWorkspace({
           definitions={defsByKey}
           busy={vault.busy}
           actions={vault.actions}
+          onItemChanged={vault.refresh}
           onClose={() => setSelectedId(null)}
         />
 
@@ -1502,6 +1503,7 @@ function VaultDetailDialog({
   definitions,
   busy,
   actions,
+  onItemChanged,
   onClose,
 }: {
   open: boolean;
@@ -1511,6 +1513,7 @@ function VaultDetailDialog({
   definitions: Map<string, CredentialDefinition>;
   busy: boolean;
   actions: VaultActions;
+  onItemChanged: () => Promise<void>;
   onClose: () => void;
 }) {
   const SelectedIcon = selectedIdentity?.icon ?? KeyRound;
@@ -1551,6 +1554,7 @@ function VaultDetailDialog({
               definitions={definitions}
               busy={busy}
               actions={actions}
+              onItemChanged={onItemChanged}
               onClose={onClose}
             />
           )}

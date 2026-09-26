@@ -126967,6 +126967,21 @@
             ],
             "title": "Reasoning Summary"
           },
+          "visualization": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "off"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visualization"
+          },
           "thinking_level": {
             "anyOf": [
               {
@@ -193012,6 +193027,21 @@
             ],
             "title": "Reasoning Summary"
           },
+          "visualization": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "off"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visualization"
+          },
           "thinking_level": {
             "anyOf": [
               {
@@ -209001,6 +209031,8 @@
           "interaction": {
             "type": "string",
             "enum": [
+              "agent",
+              "decision",
               "extraction",
               "realtime",
               "turn"
@@ -293616,10 +293648,10 @@
         "properties": {
           "revision": {
             "type": "integer",
-            "maximum": 100.0,
+            "maximum": 2147483647.0,
             "minimum": 1.0,
             "title": "Revision",
-            "description": "Gate B reconstruction cap; this does not define retention."
+            "description": "Positive Postgres int4 revision; this does not define retention."
           },
           "recorded_at": {
             "type": "string",
@@ -293635,7 +293667,10 @@
           },
           "value_availability": {
             "type": "string",
-            "const": "unavailable",
+            "enum": [
+              "available",
+              "unavailable"
+            ],
             "title": "Value Availability",
             "default": "unavailable"
           }
@@ -293677,16 +293712,31 @@
             ],
             "title": "Capture Cutoff At"
           },
+          "history_revision": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 0.0,
+            "title": "History Revision"
+          },
           "value_availability": {
             "type": "string",
-            "const": "unavailable",
+            "enum": [
+              "available",
+              "unavailable"
+            ],
             "title": "Value Availability",
             "default": "unavailable"
+          },
+          "restore_available": {
+            "type": "boolean",
+            "title": "Restore Available",
+            "default": false
           },
           "next_before_revision": {
             "anyOf": [
               {
                 "type": "integer",
+                "maximum": 2147483647.0,
                 "minimum": 1.0
               },
               {
@@ -293711,6 +293761,7 @@
         "required": [
           "entries",
           "count",
+          "history_revision",
           "omitted_count",
           "incomplete"
         ],
@@ -293726,13 +293777,13 @@
           },
           "revision": {
             "type": "integer",
-            "maximum": 100.0,
+            "maximum": 2147483647.0,
             "minimum": 1.0,
             "title": "Revision"
           },
           "expected_history_revision": {
             "type": "integer",
-            "maximum": 100.0,
+            "maximum": 2147483647.0,
             "minimum": 1.0,
             "title": "Expected History Revision"
           }
@@ -293787,10 +293838,10 @@
           },
           "revision": {
             "type": "integer",
-            "maximum": 100.0,
+            "maximum": 2147483647.0,
             "minimum": 1.0,
             "title": "Revision",
-            "description": "Gate B reconstruction cap; this does not define retention."
+            "description": "Positive Postgres int4 revision; this does not define retention."
           }
         },
         "additionalProperties": false,

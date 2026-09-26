@@ -228,6 +228,9 @@ export function VaultPasswordHistoryPanel({
       revealedIdentity.current = null;
       setRevealedRevision(null);
       setPendingRestoreRevision(null);
+      // `refreshHistory` advances the request generation, so settle this
+      // action before refreshing the parent item and timeline.
+      setWorkingRevision(null);
       toast.success("Password restored from its recorded history.");
       await onItemChanged?.();
       if (generation.current !== request) return;
@@ -306,7 +309,9 @@ export function VaultPasswordHistoryPanel({
               revealedIdentity.current === identity;
             const working = workingRevision === entry.revision;
             const restoreAvailable =
-              valueAvailable && entry.revision < currentHistoryRevision;
+              history.restore_available === true &&
+              valueAvailable &&
+              entry.revision < currentHistoryRevision;
             return (
               <li
                 key={`${entry.field_id}:${entry.revision}`}
