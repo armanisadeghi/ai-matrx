@@ -1,4 +1,3 @@
--- draft: perf-lane can-run fast path + ladder asks each holder once; applying after rehearsal
 -- based-on: iam.runnable_agent_for_org(uuid, uuid) cc1ea416f9b7c0f42eb3ae835e67f96025bcecc7d181aec7820674c7c2ff70fc
 -- based-on: iam.runnable_version_for_org(uuid, uuid) f3d3f8dd47c7f3d71a615722d1c54b844121de84a3309dee7e6b915ba4020574
 -- based-on: mandate._rungs(uuid[], uuid, uuid) c2aa43ee427b0bf40ea4755b6c6825cc602264132d3743ecec61d8e1baf44e4c
@@ -32,16 +31,21 @@
 -- check; the full ladder (every live mandate) for test@test.com, admin@admin.com and two org owners,
 -- each as the person alone, the person in up to three of their organizations, and each organization
 -- alone — 20 seats, 0 differences (md5 of every row). Re-proven on production in a rolled-back
--- transaction before applying (see the UI-REGISTER done line).
+-- transaction before applying: 24 cases (test@test.com + admin@admin.com x page/counts/facets x
+-- person/organization x scopes), md5 identical before/after; the clone rehearsal could not run
+-- (the clone answered default_transaction_read_only=on to the build-lock take).
 --
 -- Functions only: no table is touched, no lock beyond the catalogue rows replaced.
 
 CREATE OR REPLACE FUNCTION iam._agent_open_to_every_member(p_agent_id uuid, p_organization_id uuid)
  RETURNS boolean
  LANGUAGE sql
- STABLE SECURITY DEFINER
+ STABLE
  SET search_path TO 'public'
 AS $function$
+  -- SECURITY INVOKER on purpose: its only callers (iam.runnable_agent_for_org /
+  -- iam.runnable_version_for_org) are SECURITY DEFINER and already run as the owner, so it reads
+  -- exactly what the kernel reads there; called from anywhere else it sees only what its caller may.
   -- 🚨 CAN-RUN FAST PATH (2026-09-26). TRUE only when the access kernel is CERTAIN to admit every
   -- member of p_organization_id to this agent at viewer — so iam.runnable_agent_for_org /
   -- iam.runnable_version_for_org can answer without walking the kernel once per member (each
@@ -390,5 +394,20 @@ AS $function$
   FROM coded c
   ORDER BY c.mandate_key, c.rung_order;
 $function$;
-REVOKE ALL ON FUNCTION iam._agent_open_to_every_member(uuid, uuid) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION iam._agent_open_to_every_member(uuid, uuid) TO service_role;
+
+-- Declared access decisions (provision_shape_guard): both shared checks are server/ladder-only.
+INSERT INTO platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
+   non_client_lane, signed_in_callers, anonymous_callers)
+SELECT 'iam', v.fn, v.args, ARRAY['uuid'::regtype, 'uuid'::regtype]::oid[],
+       v.reason, 'access_can_run_asked_once_2026_09_26',
+       'server_only: called by mandate._rungs and mandate.binding_holder_runnable (both SECURITY DEFINER, running as the owner) and by the aidream server lane; no client ever holds EXECUTE on it.',
+       false, false
+FROM (VALUES
+  ('runnable_agent_for_org', 'p_agent_id uuid, p_organization_id uuid',
+   'p_agent_id is the agent whose reachability is judged (NULL answers NULL); p_organization_id is the organization whose EVERY member must be able to open it through iam.has_access_for (NULL or a system org answers false unless the agent is a live builtin). It returns one boolean and no row data.'),
+  ('runnable_version_for_org', 'p_version_id uuid, p_organization_id uuid',
+   'p_version_id is the agent version judged through its agent (NULL answers NULL); p_organization_id is the organization whose EVERY member must be able to open that agent through iam.has_access_for (NULL or a system org answers false unless the agent is a live builtin). It returns one boolean and no row data.')
+) AS v(fn, args, reason)
+WHERE NOT EXISTS (SELECT 1 FROM platform.client_callable_door d
+                   WHERE d.schema_name = 'iam' AND d.function_name = v.fn AND d.identity_args = v.args);
