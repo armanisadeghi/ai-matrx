@@ -445,6 +445,11 @@ export default function RichEditorImpl({
         sourceFeature={sourceFeature}
         surfaceName={surfaceName}
         getApplicationScope={getApplicationScope}
+        insertAtCaret={(text) => {
+          if (!handle.current) return false;
+          handle.current.replaceSelection(text);
+          return true;
+        }}
         onTextReplace={(text) => handle.current?.replaceSelection(text)}
         onTextInsertBefore={(text) => handle.current?.insertText(text, "before")}
         onTextInsertAfter={(text) => handle.current?.insertText(text, "after")}

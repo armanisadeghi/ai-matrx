@@ -318,6 +318,7 @@ export function useContextMenuActions(
     isEditable,
     editorId,
     getTextarea,
+    insertAtCaret,
     onContentInserted,
     onTextReplace,
     onDelete,
@@ -891,6 +892,10 @@ export function useContextMenuActions(
         return;
       }
     }
+    if (insertAtCaret?.(template)) {
+      onContentInserted?.();
+      return;
+    }
     // Read-only surface (or the insert target vanished): never a silent no-op —
     // copy the block so the gesture still yields the text.
     void navigator.clipboard.writeText(template).then(
@@ -942,7 +947,8 @@ export function useContextMenuActions(
   // other surface (or a "Copy" choice inside the picker) gets it on the
   // clipboard — never a silent no-op.
   const canInsertReference =
-    isEditable && (Boolean(editorId) || Boolean(getTextarea));
+    isEditable &&
+    (Boolean(editorId) || Boolean(getTextarea) || Boolean(insertAtCaret));
   const copyReference = (pick: ReferencePick) => {
     void navigator.clipboard.writeText(pick.fence).then(
       () =>
@@ -979,6 +985,10 @@ export function useContextMenuActions(
         onContentInserted?.();
         return;
       }
+    }
+    if (!editorId && !getTextarea && insertAtCaret?.(`\n\n${pick.fence}\n\n`)) {
+      onContentInserted?.();
+      return;
     }
     toast({
       title: "Copied instead",

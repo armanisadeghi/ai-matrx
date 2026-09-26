@@ -157,6 +157,12 @@ export function EditorPanel({
           contentSource={{ type: "raw" }}
           getApplicationScope={getScope}
           onContentInserted={() => setTimeout(() => editorRef.current?.focus(), 100)}
+          insertAtCaret={(text) => {
+            const editor = editorRef.current;
+            if (!editor) return false;
+            editor.replaceSelection(text);
+            return true;
+          }}
           onTextReplace={(text) => editorRef.current?.replaceSelection(text)}
           onTextInsertBefore={(text) => editorRef.current?.insertText(text, "before")}
           onTextInsertAfter={(text) => editorRef.current?.insertText(text, "after")}

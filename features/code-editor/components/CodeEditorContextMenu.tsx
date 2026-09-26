@@ -197,6 +197,18 @@ export function CodeEditorContextMenu({
         onTextReplaced?.(newText);
     };
 
+    // Content blocks and references land at the caret, replacing the selection.
+    const insertAtCaret = (text: string): boolean => {
+        const ed = editorRef.current;
+        const selection = ed?.getSelection();
+        if (!ed || !selection) return false;
+        ed.executeEdits('context-menu-insert', [
+            { range: selection, text, forceMoveMarkers: true },
+        ]);
+        ed.focus();
+        return true;
+    };
+
     const handleTextInsertBefore = (text: string) => {
         const ed = editorRef.current;
         const position = ed?.getPosition();
@@ -241,6 +253,7 @@ export function CodeEditorContextMenu({
                 {...CODE_WORKSPACE_CONTEXT_MENU_PROPS}
                 contextData={getContextData()}
                 getApplicationScope={getApplicationScope}
+                insertAtCaret={insertAtCaret}
                 onTextReplace={handleTextReplace}
                 onTextInsertBefore={handleTextInsertBefore}
                 onTextInsertAfter={handleTextInsertAfter}
