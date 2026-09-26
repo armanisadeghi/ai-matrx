@@ -34,6 +34,10 @@ export interface DisplayPreferences {
    * ClassicViewNotice). Per-user so a dismissal on a laptop carries to a phone.
    */
   agentsClassicNoticeDismissed?: boolean;
+  /** Markdown Studio: the preview follows every keystroke ("live") or the Update action ("manual"). */
+  markdownStudioPreviewUpdates?: "live" | "manual";
+  /** Markdown Studio: editor and preview scroll together. */
+  markdownStudioScrollSync?: boolean;
   darkMode: boolean;
   theme: string;
   dashboardLayout: string;
@@ -967,6 +971,8 @@ export const initializeUserPreferencesState = (
       items: [],
     },
     display: {
+      markdownStudioPreviewUpdates: "live",
+      markdownStudioScrollSync: true,
       darkMode: false,
       theme: "default",
       dashboardLayout: "default",

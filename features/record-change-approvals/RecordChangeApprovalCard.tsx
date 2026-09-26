@@ -18,6 +18,8 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
@@ -29,6 +31,7 @@ import type { PendingAsk } from "@/features/agents/ui-first-tools/redux/pending-
 
 import {
   approvalChangeFor,
+  waitTableId,
   type RecordChangeWait,
 } from "./recordChangeApproval";
 import {
@@ -46,6 +49,12 @@ export interface RecordChangeApprovalCardProps {
   conversationId?: string;
   /** The agent's display name, when the surface knows it. */
   actorName?: string | null;
+  /** The table's name when the mounting surface already knows it (skips a read). */
+  tableName?: string | null;
+  /** Hide "Open the table" — set by the table's own page, which is already there. */
+  hideOpen?: boolean;
+  /** Told once the decision is taken, so a list can refresh. */
+  onDecided?: () => void;
 }
 
 type Decision =
@@ -59,6 +68,9 @@ export function RecordChangeApprovalCard({
   callId,
   conversationId,
   actorName,
+  tableName: knownTableName,
+  hideOpen = false,
+  onDecided,
 }: RecordChangeApprovalCardProps) {
   // THE switch, asked for the organization the person is actually working in.
   // A card that offered to write into a store this organization does not keep
@@ -71,21 +83,22 @@ export function RecordChangeApprovalCard({
   });
 
   const [decision, setDecision] = useState<Decision>({ state: "open" });
-  const [tableName, setTableName] = useState<string | null>(null);
+  const [fetchedTableName, setTableName] = useState<string | null>(null);
+  const tableName = knownTableName ?? fetchedTableName;
+  const tableId = waitTableId(wait);
 
-  // The table a pending column belongs to, by NAME. Asked once, and only for
-  // the column case — a table proposal names itself.
+  // The table a pending change belongs to, by NAME. Asked once, and only when
+  // the mounting surface did not already know it — a table proposal names itself.
   useEffect(() => {
-    if (wait.change.change === "table") return;
+    if (!tableId || knownTableName) return;
     let live = true;
-    const tableId = wait.change.tableId;
     void tableNameFor(tableId).then((name) => {
       if (live && name) setTableName(name);
     });
     return () => {
       live = false;
     };
-  }, [wait]);
+  }, [tableId, knownTableName]);
 
   const decide = useCallback(
     (choice: "approve" | "decline") => {
@@ -109,6 +122,7 @@ export function RecordChangeApprovalCard({
             return;
           }
           setDecision({ state: "decided", sentence: outcome.detail });
+          onDecided?.();
         },
         (error: unknown) => {
           setDecision({
@@ -121,7 +135,7 @@ export function RecordChangeApprovalCard({
         },
       );
     },
-    [wait],
+    [wait, onDecided],
   );
 
   const ask: PendingAsk = {
@@ -159,11 +173,25 @@ export function RecordChangeApprovalCard({
     );
   }
 
+  const openTable =
+    tableId && !hideOpen ? (
+      <Link
+        href={`/data/${tableId}`}
+        className="inline-flex min-h-11 items-center gap-1 rounded-md px-2.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground sm:min-h-8"
+      >
+        <ExternalLink className="size-3.5" />
+        Open the table
+      </Link>
+    ) : null;
+
   const outcome =
     decision.state === "applying" ? (
       <span>Applying…</span>
     ) : decision.state === "decided" ? (
-      <span>{decision.sentence}</span>
+      <span className="flex flex-wrap items-center gap-1.5">
+        <span data-held-write-outcome="">{decision.sentence}</span>
+        {openTable}
+      </span>
     ) : null;
 
   return (
@@ -172,6 +200,8 @@ export function RecordChangeApprovalCard({
         ask={ask}
         onDecide={decide}
         allowRespond={false}
+        labels={{ approve: "Approve", decline: "Refuse" }}
+        secondaryAction={openTable}
         note={`${wait.policy.why} ${wait.policy.howToChange}`}
         {...(outcome ? { outcome } : {})}
       />

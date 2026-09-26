@@ -34,6 +34,12 @@ export interface ToolErrorCardProps {
  */
 /** Calm one-line label for inline chat; Results tab uses the full message. */
 export function toolErrorLabel(entry: ToolLifecycleEntry): string {
+    // A WRITE THE STORE HELD FOR A PERSON IS NOT AN ARGUMENT ERROR (VERIFIER-26
+    // item 5). Older servers answered it as `approval_required`; the word
+    // "required" matched the pattern below and the chip said "The agent sent
+    // invalid arguments", which was false. Asked first, so it can never be
+    // mistaken for one again.
+    if (isHeldForApprovalError(entry)) return "Held for your approval";
     const hay = `${entry.errorType ?? ""} ${entry.errorMessage ?? ""}`.toLowerCase();
     if (
         /valid|argument|param|schema|required|missing|expected|must be|unrecognized|not allowed|format|type error/.test(
@@ -45,6 +51,16 @@ export function toolErrorLabel(entry: ToolLifecycleEntry): string {
     const trimmed = entry.errorType?.trim();
     if (trimmed) return humanizeKey(trimmed);
     return "This step didn't complete";
+}
+
+/** An errored entry whose "error" is really a write held for approval. */
+export function isHeldForApprovalError(entry: ToolLifecycleEntry): boolean {
+    const type = (entry.errorType ?? "").toLowerCase();
+    return (
+        type === "approval_required" ||
+        type === "held_for_approval" ||
+        /is waiting for a person/i.test(entry.errorMessage ?? "")
+    );
 }
 
 /** The first non-empty line of a message, trimmed — never a stack trace. */

@@ -40,6 +40,7 @@ import type {
   SourceChunk,
   SourceEntity,
 } from "@/features/source-studio/hooks/useSourceData";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type SideTab = "chunks" | "entities" | "associations";
 
@@ -199,7 +200,7 @@ function ChunksTab({
                 </div>
               )}
               {chunksError && (
-                <p className="text-sm text-destructive">{chunksError}</p>
+                <p className="text-sm text-destructive">{chunksError} <ErrorAlchemyMenu error={chunksError} /></p>
               )}
               {noChunks && (
                 <div
@@ -271,7 +272,7 @@ function EntitiesTab({
           <div className="h-16 animate-pulse rounded-md bg-muted/50" />
         )}
         {entitiesError && (
-          <p className="text-sm text-destructive">{entitiesError}</p>
+          <p className="text-sm text-destructive">{entitiesError} <ErrorAlchemyMenu error={entitiesError} /></p>
         )}
         {!entitiesLoading && !entitiesError && entities.length === 0 && (
           <p className="text-sm text-muted-foreground">
@@ -347,6 +348,7 @@ function AttachmentsListFallback({ attachments, onAttach }: SourceSidePanesProps
         {attachments === null ? (
           <p className="text-sm text-muted-foreground">
             What this Source is attached to could not be read.
+            <ErrorAlchemyMenu />
           </p>
         ) : attachments.length === 0 ? (
           <p className="text-sm text-muted-foreground">

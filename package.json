@@ -1049,6 +1049,7 @@
       "@types/react": "latest",
       "@types/react-dom": "latest",
       "@ai-matrx/records": "latest",
+      "@ai-matrx/alchemy": "file:/tmp/ai-matrx-alchemy-0.8.7.tgz",
       "katex": "^0.18.9",
       "dompurify": "3.4.16",
       "image-size": "2.0.4",

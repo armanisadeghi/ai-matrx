@@ -6,6 +6,8 @@ import {
   AGENT_RUN_WINDOW_CONVERSATION_ARG,
   AGENT_RUN_WINDOW_URL_MODE,
 } from "@/features/window-panels/windows/agents/agentRunWindowAddress";
+import { readAgentPanelSurfaceArg } from "@/features/window-panels/windows/agents/agentPanelSurfaceAddress";
+import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ALL_WINDOW_STATIC_METADATA } from "../registry/windowRegistryMetadata";
@@ -120,7 +122,7 @@ export function initUrlHydration() {
     //   • the display mode the LINK named — it is the more specific intent;
     //   • `autoRun: false` — reopening an address is NEVER a decision to spend
     //     a paid run. Nobody clicked; a refresh must not fire an agent.
-    dispatchThunk(
+    const loading = dispatchThunk(
       dispatch,
       loadConversation({
         conversationId,
@@ -128,6 +130,18 @@ export function initUrlHydration() {
         displayOverrides: { displayMode, autoRun: false },
       }),
     );
+
+    // 4. re-bind the page surface the link names (`s-<surface>`), AFTER the
+    //    load so the DB-shaped record cannot drop it. Without this the
+    //    restored window sent its next turn with no `context` at all — the
+    //    stamp is what makes `refreshSurfaceScope` read the page's live values
+    //    (agentPanelSurfaceAddress.ts).
+    const surfaceName = readAgentPanelSurfaceArg(args);
+    if (surfaceName) {
+      void Promise.resolve(loading).then(() =>
+        dispatch(patchConversation({ conversationId, surfaceName })),
+      );
+    }
   });
 
   // Voice Pad — simple

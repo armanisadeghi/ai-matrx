@@ -29,6 +29,7 @@ import {
   sourceFeatureFromStorage,
 } from "@/features/agents/types/instance.types";
 import { hydrateConversation } from "../conversations/conversations.slice";
+import { setAutoRun } from "../instance-ui-state/instance-ui-state.slice";
 import { hydrateMessages } from "../messages/messages.slice";
 import { setFocus } from "../conversation-focus/conversation-focus.slice";
 import { markCacheBypass } from "./cache-bypass.slice";
@@ -140,6 +141,13 @@ export const forkConversation = createAsyncThunk<
     const bundle = data as unknown as ForkBundle;
     const newConversationId = bundle.conversation.id;
     const conv = bundle.conversation;
+
+    // A fork is a conversation read back from the database: it never auto-runs.
+    // Pinned BEFORE the record lands as "ready" — with no ui-state entry
+    // `selectAutoRun` defaults to true and a mounted AgentRunner would fire an
+    // empty run (the same class `loadConversation` closes; callers that re-run
+    // a fork, like fork-and-resubmit, execute explicitly).
+    dispatch(setAutoRun({ conversationId: newConversationId, value: false }));
 
     // Hydrate the conversation record.
     dispatch(

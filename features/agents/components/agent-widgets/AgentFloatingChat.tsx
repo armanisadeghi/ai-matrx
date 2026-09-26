@@ -3,6 +3,7 @@
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectInstanceDisplayTitle } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { agentPanelUrlArgs } from "@/features/window-panels/windows/agents/agentPanelSurfaceAddress";
 import { AgentRunner } from "../smart/AgentRunner";
 import { AgentChatHistorySidebar } from "./AgentChatHistorySidebar";
 
@@ -24,6 +25,14 @@ export function AgentFloatingChat({
     selectInstanceDisplayTitle(conversationId),
   );
 
+  // The page surface this conversation is bound to rides in the address, so a
+  // reload restores the binding with the window (agentPanelSurfaceAddress.ts).
+  const surfaceName = useAppSelector(
+    (state) =>
+      state.conversations.byConversationId[conversationId]?.surfaceName ??
+      null,
+  );
+
   return (
     <WindowPanel
       id={instanceId}
@@ -37,7 +46,7 @@ export function AgentFloatingChat({
       bodyClassName="p-0"
       urlSyncKey="agent"
       urlSyncId={conversationId}
-      urlSyncArgs={{ m: "fc" }}
+      urlSyncArgs={agentPanelUrlArgs("fc", surfaceName)}
       sidebar={<AgentChatHistorySidebar conversationId={conversationId} />}
       sidebarDefaultSize={250}
       sidebarMinSize={150}

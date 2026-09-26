@@ -166,7 +166,7 @@ describeLive("the approval card, against the live record store", () => {
     expect(shown).toContain("custom/agent_schema_changes");
 
     await act(async () => {
-      button("Apply").click();
+      button("Approve").click();
     });
     await settleDecision();
 
@@ -182,7 +182,7 @@ describeLive("the approval card, against the live record store", () => {
     const { tableId, key } = await renderWait("decline");
 
     await act(async () => {
-      button("Keep as is").click();
+      button("Refuse").click();
     });
     await settleDecision();
 

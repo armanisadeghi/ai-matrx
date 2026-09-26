@@ -264,6 +264,7 @@ describe("facts about errors are not errors (UI audit C)", () => {
     expect(count('<span className="text-red-500">{r.error_count}</span>')).toBe(0);
     expect(count('{r.error_count > 0 ? <span className="text-red-500">{r.error_count}</span> : null}')).toBe(0);
     expect(count('<Badge variant="destructive">{r.error_type}</Badge>')).toBe(0);
+    expect(count('<Badge variant="outline">{kept ? "Saved" : "Not saved"}</Badge>')).toBe(0);
     expect(count('<span className="text-red-500">{r.error}</span>')).toBe(1);
   });
 });

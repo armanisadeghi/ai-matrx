@@ -60,6 +60,7 @@ import { LevelCompareView } from "./lab/LevelCompareView";
 import { PrintPreviewView } from "./lab/PrintPreviewView";
 import { DocumentPropertiesPanel } from "@/components/markdown-core/syntax/elements/DocumentPropertiesPanel";
 import { MarkdownSourceEditProvider } from "@/components/markdown-core/syntax/elements/MarkdownSourceEdit";
+import { useProgressiveCount } from "@/components/mardown-display/chat-markdown/progressive-mount";
 
 /** Task checkboxes toggle in the preview only when the buffer can be saved to. */
 function MaybeSourceEdit({
@@ -126,11 +127,13 @@ interface PreviewPanelProps {
    * button that switches back — no tab strip row above the panes.
    */
   onShowSource?: () => void;
+  /** The rendered view scrolled — the studio syncs the editor to it. */
+  onPreviewScroll?: () => void;
 }
 
 export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
   function PreviewPanel(
-    { content, contentSource, sourceActions, mode, onModeChange, title, onContentChange, onShowSource },
+    { content, contentSource, sourceActions, mode, onModeChange, title, onContentChange, onShowSource, onPreviewScroll },
     ref,
   ) {
     const [serverMode, setServerMode] = useState<BlockProcessingMode>("stream");
@@ -154,6 +157,8 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
 
     const hasContent = content.trim().length > 0;
     const blocks = mode === "blocks" && hasContent ? runV2Parser(content) : [];
+    // A 5 MB document is ~8,000 blocks: the listing mounts in slices too.
+    const shownBlocks = useProgressiveCount(blocks.length);
     const renderedText = streamText ?? content;
 
     const runReplay = () => {
@@ -287,7 +292,7 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
 
         {mode === "rendered" &&
           (hasContent ? (
-            <div ref={ref} className="flex-1 overflow-auto p-4" data-matrx-doc-root="">
+            <div ref={ref} onScroll={onPreviewScroll} className="flex-1 overflow-auto p-4" data-matrx-doc-root="">
               <DocumentPropertiesPanel source={renderedText} className="mb-3" />
               <MaybeSourceEdit source={content} save={isReplaying ? undefined : onContentChange}>
                 <RichDocument imagePolicy="self"
@@ -312,7 +317,7 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
             {blocks.length === 0 ? (
               <PreviewEmptyState />
             ) : (
-              blocks.map((block, idx) => {
+              blocks.slice(0, shownBlocks).map((block, idx) => {
                 const style = getBlockTypeStyle(block.type);
                 return (
                   <div

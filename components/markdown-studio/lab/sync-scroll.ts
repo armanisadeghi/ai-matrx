@@ -280,6 +280,27 @@ export function mapScroll(
 }
 
 /**
+ * Checkpoints are expensive on a big document (a re-parse of the whole text
+ * plus a layout read of every rendered block) and scroll events fire at frame
+ * rate — so they are computed ONCE per (text, preview height) and reused until
+ * the text changes or the preview re-lays out.
+ */
+const checkpointCache = new WeakMap<
+  HTMLElement,
+  { text: string; lineHeight: number; scrollHeight: number; paired: ReturnType<typeof buildPairedCheckpoints> }
+>();
+
+function cachedCheckpoints(text: string, lineHeight: number, preview: HTMLElement) {
+  const hit = checkpointCache.get(preview);
+  if (hit && hit.text === text && hit.lineHeight === lineHeight && hit.scrollHeight === preview.scrollHeight) {
+    return hit.paired;
+  }
+  const paired = buildPairedCheckpoints(text, lineHeight, preview);
+  checkpointCache.set(preview, { text, lineHeight, scrollHeight: preview.scrollHeight, paired });
+  return paired;
+}
+
+/**
  * Map a source scroll position onto the target pane, block-paired when the
  * raw text and rendered DOM can be paired, proportional otherwise.
  * `direction` says which pane is scrolling.
@@ -295,7 +316,7 @@ export function syncPaneScroll(args: {
   const pvMax = preview.scrollHeight - preview.clientHeight;
   const lineHeight =
     parseFloat(window.getComputedStyle(ta).lineHeight) || 20;
-  const paired = buildPairedCheckpoints(text, lineHeight, preview);
+  const paired = cachedCheckpoints(text, lineHeight, preview);
   if (direction === "text-to-preview") {
     preview.scrollTop =
       paired && paired.textPx.length >= 2

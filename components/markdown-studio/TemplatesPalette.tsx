@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { cn } from "@/lib/utils";
 import { STUDIO_TEMPLATES, type StudioTemplate } from "./templates";
+import { getBuiltinSamples } from "./builtin-samples";
 import { getBlockTypeStyle } from "./block-type-colors";
 
 // Note: the trigger lives in the route header (a `HeaderAction`), so this
@@ -62,17 +63,24 @@ export function TemplatesPalette({
       title={
         <span className="flex items-center gap-2">
           <Layers className="h-4 w-4 text-primary" />
-          Start from a template
+          Templates & built-in samples
         </span>
       }
-      description="Curated samples covering each render-block type the platform supports."
+      description="Curated templates for each render-block type, then real AI answers to test against."
       position="right"
       defaultSize={38}
       contentClassName="flex min-h-0 flex-1 flex-col p-0"
     >
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <div className="grid grid-cols-1 gap-1 p-2">
-          {STUDIO_TEMPLATES.map((template) => {
+        {[
+          { heading: "Templates", items: STUDIO_TEMPLATES },
+          { heading: "Built-in samples", items: open ? getBuiltinSamples() : [] },
+        ].map((group) => (
+        <div key={group.heading} className="grid grid-cols-1 gap-1 p-2">
+          <span className="px-2.5 pt-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            {group.heading}
+          </span>
+          {group.items.map((template) => {
             const Icon = ICON_MAP[template.icon];
             return (
               <button
@@ -124,6 +132,7 @@ export function TemplatesPalette({
             );
           })}
         </div>
+        ))}
       </div>
     </MatrxDynamicPanelHost>
   );

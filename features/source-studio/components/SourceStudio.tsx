@@ -121,6 +121,7 @@ import {
 } from "@/features/source-studio/sourceStudioModel";
 import { OriginalPane } from "./OriginalPane";
 import { SourceSidePanes, type SideTab } from "./SourceSidePanes";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The surface the standalone reader has always emitted — agents keep their context. */
 const SOURCE_SURFACE = "matrx-user/knowledge-viewer";
@@ -567,11 +568,13 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
           {version.error && (
             <div className="shrink-0 border-b px-4 py-1 text-xs text-warning">
               {version.error}
+              <ErrorAlchemyMenu error={version.error} />
             </div>
           )}
           {media.error && (
             <div className="shrink-0 border-b px-4 py-1 text-xs text-warning">
               {media.error}
+              <ErrorAlchemyMenu error={media.error} />
             </div>
           )}
 
@@ -812,7 +815,7 @@ function PortionsList({
             ))}
           </div>
         )}
-        {error && <p className="p-3 text-sm text-destructive">{error}</p>}
+        {error && <p className="p-3 text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>}
         {!loading && !error && portions.length === 0 && (
           <p className="p-3 text-sm text-muted-foreground">
             This Source has no text yet. Use Process now to read it again.
@@ -971,7 +974,7 @@ function PortionTextPane({
   if (loading) {
     body = <div className="h-40 animate-pulse rounded-md bg-muted/50" />;
   } else if (error) {
-    body = <p className="text-sm text-destructive">{error}</p>;
+    body = <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>;
   } else if (!portion) {
     body = <p className="text-sm text-muted-foreground">Nothing to show yet.</p>;
   } else if (isEditing) {

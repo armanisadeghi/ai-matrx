@@ -389,7 +389,8 @@ function classify(node: JsxLike): ErrorDisplayHit["reason"] | null {
   // Anything painted red, rose or amber inside an error branch is the error
   // shown (`{load.status === "error" ? <p className="text-destructive">{load.detail}</p> : …}`).
   if ((red || NOTICE.test(className)) && (renderedAny || words.trim()) && inErrorBranch(node)) return "red-error";
-  if (FAILURE_WORDS.test(words)) return "failure-words";
+  // A status chip ("Saved" / "Not saved") is a label, not an error to copy.
+  if (FAILURE_WORDS.test(words) && !/^(Badge|StatusBadge|Chip)$/.test(tagName(node))) return "failure-words";
   if (errorFedByProp(node)) return "failure-words";
   // An error constant rendered as the element's own words.
   if (errorLeaves.some((leaf) => ERROR_CONSTANT.test(leaf))) return "failure-words";

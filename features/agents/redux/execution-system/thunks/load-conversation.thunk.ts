@@ -53,6 +53,7 @@ import { fetchInputCapabilitiesSnapshot } from "../instance-input-capabilities/i
 import { parsePersistedInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.persistence";
 import {
   initInstanceUIState,
+  setAutoRun,
   type InitInstanceUIStatePayload,
 } from "../instance-ui-state/instance-ui-state.slice";
 import {
@@ -264,6 +265,40 @@ export const loadConversation = createAsyncThunk<
     //   bundle.tool_calls?.length ?? 0,
     // );
 
+    // ── 0. Display state — BEFORE the record reads "ready" ──────────────────
+    // 🚨 A CONVERSATION READ BACK FROM THE DATABASE NEVER AUTO-RUNS. Its turns
+    // already happened; reopening it (a reload restoring `?panels=agent:…`, a
+    // history row, a deep link) is never a decision to spend a paid run. The
+    // record lands below as `status: "ready"`, and `AgentRunner` executes any
+    // conversation that is ready while `selectAutoRun` reads true — which it
+    // does by DEFAULT for a conversation with no ui-state entry yet. This
+    // block used to run at step 5, after an awaited capability read, so every
+    // restored panel fired an empty `POST /v2/ai/conversations/<id>` in that
+    // window ("This request ends with an assistant response…", found live
+    // 2026-09-26 on /data-v2). So: display first, and auto-run pinned off —
+    // over a stored `metadata.display.autoRun` and a caller override alike.
+    // Sending the next message is untouched; it never reads autoRun.
+    const metaObj =
+      typeof conv.metadata === "object" && conv.metadata !== null
+        ? (conv.metadata as Record<string, unknown>)
+        : {};
+    const displayMeta =
+      (metaObj.display as Record<string, unknown> | undefined) ?? undefined;
+    if (displayMeta || displayOverrides) {
+      dispatch(
+        initInstanceUIState({
+          conversationId,
+          ...displayMeta,
+          ...displayOverrides,
+          autoRun: false,
+        } as never),
+      );
+    } else {
+      // Keep whatever display the caller already seeded (resumeConversation's
+      // cold path creates the instance with its mode) — only pin auto-run.
+      dispatch(setAutoRun({ conversationId, value: false }));
+    }
+
     // ── 1. Conversation record (includes sidebar + scope + relation fields) ──
     dispatch(
       hydrateConversation({
@@ -459,24 +494,8 @@ export const loadConversation = createAsyncThunk<
       }),
     );
 
-    // ── 5. Display + context (stored under metadata.display / metadata.context
-    //      per the Phase 7 decision — config is server-strict) ────────────────
-    const metaObj =
-      typeof conv.metadata === "object" && conv.metadata !== null
-        ? (conv.metadata as Record<string, unknown>)
-        : {};
-    const displayMeta =
-      (metaObj.display as Record<string, unknown> | undefined) ?? undefined;
-    if (displayMeta || displayOverrides) {
-      dispatch(
-        initInstanceUIState({
-          conversationId,
-          ...displayMeta,
-          ...displayOverrides,
-        } as never),
-      );
-    }
-
+    // ── 5. Context (stored under metadata.context per the Phase 7 decision —
+    //      config is server-strict). Display was written before step 1. ───────
     const contextMeta =
       (metaObj.context as Record<string, unknown> | undefined) ?? undefined;
     if (contextMeta) {

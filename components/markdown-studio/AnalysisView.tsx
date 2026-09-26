@@ -7,7 +7,7 @@
 
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useEffectEvent, useState } from "react";
 import {
   AlertTriangle,
   Boxes,
@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Cog,
   Copy,
+  FileText,
   GaugeCircle,
   Play,
   ServerCog,
@@ -44,9 +45,16 @@ import {
 import { runServerParser } from "@/components/admin/markdown-tester/utils/run-server-parser";
 import {
   diffBlocks,
+  findRawSegment,
   type DiffCell,
   type DiffReport,
 } from "@/components/admin/markdown-tester/utils/diff-blocks";
+import { buildDriftReportXml } from "@/components/admin/markdown-tester/utils/drift-report";
+import { OptionCombobox } from "@/components/official/option-combobox/OptionCombobox";
+import type { MarkdownSample } from "@/components/admin/markdown-tester/samples-service";
+import type { UserMarkdownSample } from "./user-samples-service";
+import { STUDIO_TEMPLATES } from "./templates";
+import { getBuiltinSamples } from "./builtin-samples";
 import { getBlockTypeStyle } from "./block-type-colors";
 import type { SplitterBlock } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
@@ -55,6 +63,29 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface AnalysisViewProps {
   content: string;
   contentLabel: string;
+  /** Each new number (⌘Enter) runs the comparison. */
+  runSignal?: number;
+  /** Compare any saved sample WITHOUT loading it into the editor. */
+  userSamples?: UserMarkdownSample[];
+  sharedSamples?: MarkdownSample[];
+}
+
+const CURRENT = "current";
+
+/** Every comparable source, by value: the buffer or any sample, never loaded. */
+function sourceCatalog(
+  content: string,
+  contentLabel: string,
+  userSamples: UserMarkdownSample[],
+  sharedSamples: MarkdownSample[],
+) {
+  const entries = new Map<string, { label: string; content: string }>();
+  entries.set(CURRENT, { label: `This buffer — ${contentLabel}`, content });
+  for (const s of userSamples) entries.set(`user:${s.id}`, { label: s.name, content: s.content });
+  for (const s of sharedSamples) entries.set(`shared:${s.id}`, { label: s.name, content: s.content });
+  for (const s of getBuiltinSamples()) entries.set(s.id, { label: s.title, content: s.content });
+  for (const t of STUDIO_TEMPLATES) entries.set(`template:${t.id}`, { label: t.title, content: t.content });
+  return entries;
 }
 
 interface RunResult {
@@ -70,8 +101,19 @@ interface RunResult {
   };
 }
 
-export function AnalysisView({ content, contentLabel }: AnalysisViewProps) {
+export function AnalysisView({
+  content,
+  contentLabel,
+  runSignal = 0,
+  userSamples = [],
+  sharedSamples = [],
+}: AnalysisViewProps) {
   const apiConfig = useApiTestConfig({ defaultServerType: "local" });
+  const [sourceId, setSourceId] = useState(CURRENT);
+  const catalog = sourceCatalog(content, contentLabel, userSamples, sharedSamples);
+  const selected = catalog.get(sourceId) ?? catalog.get(CURRENT)!;
+  const runContent = selected.content;
+  const runLabel = sourceId === CURRENT ? contentLabel : selected.label;
   const [reduxMode, setReduxMode] = useState<ReduxParseMode>("one-shot");
   const [isRunning, setIsRunning] = useState(false);
   const [result, setResult] = useState<RunResult | null>(null);
@@ -79,8 +121,8 @@ export function AnalysisView({ content, contentLabel }: AnalysisViewProps) {
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
 
   const handleRun = async () => {
-    if (!content.trim()) {
-      toast.error("Nothing to compare — paste markdown into the editor first.");
+    if (!runContent.trim()) {
+      toast.error("Nothing to compare — paste markdown into the editor or pick a sample.");
       return;
     }
     setIsRunning(true);
@@ -89,15 +131,15 @@ export function AnalysisView({ content, contentLabel }: AnalysisViewProps) {
 
     try {
       const v2Start = performance.now();
-      const v2Blocks = runV2Parser(content);
+      const v2Blocks = runV2Parser(runContent);
       const v2Ms = performance.now() - v2Start;
 
       const reduxStart = performance.now();
-      const reduxBlocks = runReduxParser(content, { mode: reduxMode });
+      const reduxBlocks = runReduxParser(runContent, { mode: reduxMode });
       const reduxMs = performance.now() - reduxStart;
 
       const serverStart = performance.now();
-      const serverRes = await runServerParser(content, {
+      const serverRes = await runServerParser(runContent, {
         baseUrl: apiConfig.baseUrl,
         authHeaders: apiConfig.authHeaders,
       });
@@ -110,7 +152,7 @@ export function AnalysisView({ content, contentLabel }: AnalysisViewProps) {
       });
 
       setResult({
-        raw: content,
+        raw: runContent,
         v2: v2Blocks,
         redux: reduxBlocks,
         server: serverRes.blocks,
@@ -135,11 +177,39 @@ export function AnalysisView({ content, contentLabel }: AnalysisViewProps) {
     }
   };
 
+  // ⌘Enter from anywhere in the studio: run on the chosen source.
+  const runFromShortcut = useEffectEvent(() => {
+    if (!isRunning) void handleRun();
+  });
+  useEffect(() => {
+    if (runSignal > 0) runFromShortcut();
+  }, [runSignal]);
+
+  /** The FULL report: XML with every drifting block's contents, the raw input and the server address. */
+  const handleCopyFullReport = async () => {
+    if (!result) return;
+    try {
+      await navigator.clipboard.writeText(
+        buildDriftReportXml(result, {
+          route: typeof window !== "undefined" ? window.location.pathname : "/markdown-studio",
+          tool: "Block Parser Comparison (V2 local · Redux accumulator · Python server)",
+          source: runLabel,
+          reduxMode,
+          serverUrl: apiConfig.baseUrl,
+        }),
+      );
+      toast.success("Full report copied (XML with block contents and the raw input)");
+    } catch {
+      toast.error("Clipboard copy failed");
+    }
+  };
+
   const handleCopyReport = async () => {
     if (!result) return;
     const lines: string[] = [];
     lines.push(`# Block Parser Drift Report`);
-    lines.push(`Source: ${contentLabel}`);
+    lines.push(`Source: ${runLabel}`);
+    lines.push(`Server: ${apiConfig.baseUrl}`);
     lines.push(`Redux mode: ${reduxMode}`);
     lines.push(`Drift rows: ${result.report.driftCount} / ${result.report.rows.length}`);
     lines.push(`V2 vs Redux: ${(result.report.v2VsRedux * 100).toFixed(1)}%`);
@@ -183,8 +253,28 @@ export function AnalysisView({ content, contentLabel }: AnalysisViewProps) {
           <Workflow className="h-4 w-4 text-primary" />
           <span className="text-sm font-semibold">Parser drift analysis</span>
           <Badge variant="outline" className="ml-1 h-5 px-1.5 text-[10px]">
-            {content.length} chars · {contentLabel}
+            {runContent.length} chars
           </Badge>
+        </div>
+
+        <div className="flex min-w-0 items-center gap-1.5">
+          <Label className="text-[11px] text-muted-foreground">Source</Label>
+          <OptionCombobox
+            value={sourceId}
+            onChange={setSourceId}
+            groups={[
+              { heading: "Editor", options: [CURRENT] },
+              ...(userSamples.length ? [{ heading: "My samples", options: userSamples.map((s) => `user:${s.id}`) }] : []),
+              ...(sharedSamples.length ? [{ heading: "Shared samples", options: sharedSamples.map((s) => `shared:${s.id}`) }] : []),
+              { heading: "Built-in samples", options: getBuiltinSamples().map((s) => s.id), collapsed: true },
+              { heading: "Templates", options: STUDIO_TEMPLATES.map((t) => `template:${t.id}`), collapsed: true },
+            ]}
+            getLabel={(id) => catalog.get(id)?.label ?? id}
+            getHint={(id) => `${(catalog.get(id)?.content.length ?? 0).toLocaleString()} chars`}
+            ariaLabel="Compare which text"
+            compact
+            className="w-56"
+          />
         </div>
 
         <div className="ml-auto flex items-center gap-2 flex-wrap">
@@ -208,7 +298,7 @@ export function AnalysisView({ content, contentLabel }: AnalysisViewProps) {
           <Button
             size="sm"
             onClick={handleRun}
-            disabled={isRunning || !content.trim()}
+            disabled={isRunning || !runContent.trim()}
             className="h-8 px-3 text-xs font-medium"
           >
             {isRunning ? (
@@ -231,9 +321,27 @@ export function AnalysisView({ content, contentLabel }: AnalysisViewProps) {
               className="h-8 px-2.5 text-xs"
             >
               <Copy className="h-3 w-3 mr-1.5" />
-              Copy report
+              Copy summary
             </Button>
           )}
+          {result && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCopyFullReport}
+              className="h-8 px-2.5 text-xs"
+              title="XML with every drifting block's contents, the full input and the server address — paste it straight into an agent"
+            >
+              <Copy className="h-3 w-3 mr-1.5" />
+              Copy full report
+            </Button>
+          )}
+          <span
+            className="hidden max-w-[16rem] truncate font-mono text-[10px] text-muted-foreground xl:inline"
+            title={`Python block processor: ${apiConfig.baseUrl}`}
+          >
+            Server: {apiConfig.baseUrl}
+          </span>
         </div>
       </div>
 
@@ -496,7 +604,8 @@ function BlockComparison({
             </button>
 
             {isExpanded && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 border-t border-border bg-muted/10 p-3">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 border-t border-border bg-muted/10 p-3">
+                <RawPanel text={findRawSegment(result.raw, row.v2.block)} />
                 <DiffPanel label="V2" cell={row.v2} highlight={false} />
                 <DiffPanel label="Redux" cell={row.redux} highlight />
                 <DiffPanel label="Server" cell={row.server} highlight />
@@ -505,6 +614,22 @@ function BlockComparison({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/** The raw input segment this row came from. */
+function RawPanel({ text }: { text: string }) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <FileText className="h-3 w-3" />
+          Raw input
+        </span>
+        <span className="text-[10px] text-muted-foreground font-mono">{text.length} B</span>
+      </div>
+      <DiffPre text={text} highlightAt={-1} />
     </div>
   );
 }

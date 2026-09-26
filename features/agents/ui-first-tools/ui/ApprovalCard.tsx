@@ -83,6 +83,14 @@ interface ApprovalCardProps {
    * the fact the decision turns on.
    */
   note?: ReactNode;
+  /**
+   * The words on the two decision buttons. A suspended tool call is "Apply /
+   * Keep as is"; a write the store HOLDS for a person is "Approve / Refuse",
+   * because that is the decision the queue records.
+   */
+  labels?: { approve?: string; decline?: string };
+  /** One extra control in the action row — e.g. "Open the table". */
+  secondaryAction?: ReactNode;
 }
 
 const VERB_META: Record<
@@ -136,6 +144,8 @@ export function ApprovalCard({
   outcome,
   allowRespond = true,
   note,
+  labels,
+  secondaryAction,
 }: ApprovalCardProps) {
   const dispatch = useAppDispatch();
   const [remember, setRemember] = useState(false);
@@ -248,7 +258,7 @@ export function ApprovalCard({
           className="min-h-11 flex-1 gap-1.5 px-2.5 sm:min-h-8 sm:flex-none"
         >
           <Check className="size-4" />
-          Apply
+          {labels?.approve ?? "Apply"}
         </Button>
         <Button
           size="sm"
@@ -256,8 +266,9 @@ export function ApprovalCard({
           onClick={decline}
           className="min-h-11 flex-1 px-2.5 sm:min-h-8 sm:flex-none"
         >
-          Keep as is
+          {labels?.decline ?? "Keep as is"}
         </Button>
+        {secondaryAction}
         {allowRespond && (
           <Button
             size="sm"

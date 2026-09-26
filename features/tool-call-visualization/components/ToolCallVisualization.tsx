@@ -50,7 +50,19 @@ import {
   wasToolCardLive,
 } from "./toolCardUiSession";
 import { useDbToolRendererState } from "../db-renderer/useDbToolMeta";
-import { ToolErrorCard } from "../result-fields/ToolErrorCard";
+import {
+  ToolErrorCard,
+  isHeldForApprovalError,
+  toolErrorFirstLine,
+} from "../result-fields/ToolErrorCard";
+import { resultAsObject } from "../renderers/_shared";
+import { RecordChangeApprovalCard } from "@/features/record-change-approvals/RecordChangeApprovalCard";
+import {
+  heldWriteHeadline,
+  readRecordChangeWait,
+  type RecordChangeWait,
+} from "@/features/record-change-approvals/recordChangeApproval";
+import { useHeldWriteTableName } from "@/features/record-change-approvals/useHeldWriteTableName";
 import { ToolUpdatesOverlay } from "./ToolUpdatesOverlay";
 import { getToolArtifact } from "../registry/toolArtifact";
 import { ArtifactResultBar } from "./ArtifactResultBar";
@@ -73,6 +85,22 @@ export interface ToolCallVisualizationProps {
   /** Persisted (post-stream) snapshot — some renderers render compactly. */
   isPersisted?: boolean;
   className?: string;
+}
+
+// ─── Held writes ──────────────────────────────────────────────────────────────
+
+/**
+ * THE ONE PLACE A HELD WRITE IS NOTICED IN CHAT (VERIFIER-26 item 5).
+ *
+ * Any tool whose write the record store held for a person — `records`,
+ * `dataset`, and whatever tool next writes through `record_propose` — answers
+ * with the store's own wait (`awaiting_approval`, `approval_id`, the change).
+ * The shell reads it here, for EVERY tool, so the decision card is never again
+ * mounted by one renderer and missing from another's.
+ */
+function heldWriteOf(entry: ToolLifecycleEntry | null | undefined): RecordChangeWait | null {
+  if (!entry || entry.status !== "completed") return null;
+  return readRecordChangeWait(resultAsObject(entry));
 }
 
 // ─── Shell implementation ─────────────────────────────────────────────────────
@@ -155,11 +183,20 @@ const ToolCallVisualizationInner: React.FC<{
   // directly (no fold line / chevron / hover icons); while streaming it keeps
   // the slim row so there's a working indicator.
   const glyph = getToolGlyph(headerTool?.toolName ?? null);
+  // A write the store held for a person: the chip says so, and the card that
+  // decides it is open — a decision nobody can see is the dead end this closes.
+  const heldWait = entries.length === 1 ? heldWriteOf(headerTool) : null;
+  const heldTableName = useHeldWriteTableName(heldWait);
+  const legacyHeld =
+    entries.length === 1 &&
+    headerTool?.status === "error" &&
+    isHeldForApprovalError(headerTool);
   const HeaderInline =
     headerTool && headerTool.status !== "error"
       ? getInlineRenderer(headerTool.toolName)
       : null;
   const cardMode =
+    !heldWait &&
     getToolChrome(headerTool?.toolName ?? null) === "card" &&
     allTerminal &&
     phase !== "error" &&
@@ -196,8 +233,9 @@ const ToolCallVisualizationInner: React.FC<{
 
   // The automatic expand decision (no user override). Errors and generic raw
   // payloads NEVER default to expanded; a click still wins via `userChoice`.
-  const autoExpanded =
-    phase === "error"
+  const autoExpanded = heldWait
+    ? true
+    : phase === "error"
       ? false
       : effectiveMode === "stay-open"
         ? true
@@ -303,19 +341,28 @@ const ToolCallVisualizationInner: React.FC<{
   // to update plan: <reason>" on error), not by a status icon. Per-tool labels
   // live in the registry; common widget tools have built-in fallbacks; the
   // rest fall back to the displayName as-is.
-  const phaseLabel = getToolPhaseLabel(
-    headerTool?.toolName ?? null,
-    toolDisplayName,
-    phase,
-    headerTool?.errorMessage ?? null,
-    headerTool ?? undefined,
-  );
+  const phaseLabel = heldWait
+    ? heldWriteHeadline(heldWait, heldTableName)
+    : legacyHeld
+      ? [
+          "Held for your approval",
+          toolErrorFirstLine(headerTool?.errorMessage ?? null),
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      : getToolPhaseLabel(
+          headerTool?.toolName ?? null,
+          toolDisplayName,
+          phase,
+          headerTool?.errorMessage ?? null,
+          headerTool ?? undefined,
+        );
 
   // Query subtitle (e.g. "AI lawyers" for a search) — kept ONLY when it adds
   // information that the verb-phrase label doesn't already convey. Dropped
   // entirely on error (the error reason is already in the main label).
   const querySubtitle: string | null =
-    phase === "error" ? null : headerSubtitle;
+    phase === "error" || heldWait ? null : headerSubtitle;
 
   // A completed tool that left behind an openable artifact (a working-document
   // patch, a saved/edited note) gets a persistent, full-width ArtifactResultBar
@@ -323,7 +370,7 @@ const ToolCallVisualizationInner: React.FC<{
   // final version. Single-entry only (a batch has no single artifact); each kind
   // needs its open handle (working document → conversationId; note → its id).
   const artifactRaw =
-    phase === "complete" && entries.length === 1
+    phase === "complete" && entries.length === 1 && !heldWait
       ? getToolArtifact(headerTool)
       : null;
   const artifact =
@@ -535,7 +582,9 @@ const ToolCallVisualizationInner: React.FC<{
                 // failure. Short-circuit BEFORE resolving the renderer so an
                 // errored DB tool doesn't fetch/compile a body it won't show.
                 const isErrored = entry.status === "error";
-                const InlineRenderer = isErrored
+                const entryWait =
+                  entry === headerTool ? heldWait : heldWriteOf(entry);
+                const InlineRenderer = isErrored || entryWait
                   ? null
                   : getInlineRenderer(entry.toolName);
                 return (
@@ -545,7 +594,16 @@ const ToolCallVisualizationInner: React.FC<{
                         {groupDisplayName}
                       </div>
                     )}
-                    {isErrored || !InlineRenderer ? (
+                    {entryWait ? (
+                      <RecordChangeApprovalCard
+                        wait={entryWait}
+                        callId={entry.callId}
+                        {...(conversationId ? { conversationId } : {})}
+                        {...(entry === headerTool && heldTableName
+                          ? { tableName: heldTableName }
+                          : {})}
+                      />
+                    ) : isErrored || !InlineRenderer ? (
                       <ToolErrorCard
                         entry={entry}
                         onOpenOverlay={handleOpenOverlay}

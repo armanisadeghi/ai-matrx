@@ -1,5 +1,7 @@
 // components/markdown-studio/SampleLibrarySheet.tsx
-// Slide-in library of the user's saved markdown samples. Each card
+// Slide-in library: the person's own saved markdown samples, then the team's
+// SHARED samples (read-only starter samples for everyone; admins manage them
+// from the studio in the admin lane). Each card
 // shows the title, description, block tag chips, and the relative
 // updated timestamp. Click loads into the editor; row hover reveals
 // rename + delete actions.
@@ -29,6 +31,7 @@ import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { useUserMarkdownSamples } from "./useUserMarkdownSamples";
 import { getBlockTypeStyle } from "./block-type-colors";
 import type { UserMarkdownSample } from "./user-samples-service";
+import type { MarkdownSample } from "@/components/admin/markdown-tester/samples-service";
 // `formatRelativeTime` is THE package formatter (`@ai-matrx/kit/format`,
 // census H1 2026-09-07). This surface previously carried a local copy.
 import { formatRelativeTime } from "@ai-matrx/kit/format";
@@ -44,6 +47,12 @@ interface SampleLibrarySheetProps {
   onOpenChange: (open: boolean) => void;
   loadedSampleId: string | null;
   onLoad: (sample: UserMarkdownSample) => void;
+  /** The shared library (read-only starter samples). */
+  sharedSamples?: MarkdownSample[];
+  sharedLoading?: boolean;
+  onLoadShared?: (sample: MarkdownSample) => void;
+  /** Admin lane: shared samples are editable (Update / Edit details in the studio). */
+  canManageShared?: boolean;
 }
 
 export function SampleLibrarySheet({
@@ -51,6 +60,10 @@ export function SampleLibrarySheet({
   onOpenChange,
   loadedSampleId,
   onLoad,
+  sharedSamples = [],
+  sharedLoading = false,
+  onLoadShared,
+  canManageShared = false,
 }: SampleLibrarySheetProps) {
   const { samples, isLoading, error, update, remove } =
     useUserMarkdownSamples();
@@ -68,6 +81,22 @@ export function SampleLibrarySheet({
       idMatchesQuery(s, q)
     );
   });
+
+  const matches = (s: { name: string; description: string | null; detected_blocks: string[] | null }) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      s.name.toLowerCase().includes(q) ||
+      (s.description ?? "").toLowerCase().includes(q) ||
+      (s.detected_blocks ?? []).some((b) => b.toLowerCase().includes(q))
+    );
+  };
+  const sharedFiltered = sharedSamples.filter(matches);
+
+  const handleLoadShared = (sample: MarkdownSample) => {
+    onLoadShared?.(sample);
+    onOpenChange(false);
+  };
 
   const handleLoad = (sample: UserMarkdownSample) => {
     onLoad(sample);
@@ -125,10 +154,10 @@ export function SampleLibrarySheet({
         title={
           <span className="flex items-center gap-2">
             <BookOpen className="h-4 w-4 text-primary" />
-            Your sample library
+            Samples
           </span>
         }
-        description="Saved markdown samples — pick one to load into the editor."
+        description="Your saved samples and the team's shared samples — pick one to load into the editor."
         position="left"
         defaultSize={38}
         contentClassName="flex min-h-0 flex-1 flex-col p-0"
@@ -270,6 +299,86 @@ export function SampleLibrarySheet({
                   </button>
                 );
               })}
+            </div>
+          )}
+          {(sharedLoading || sharedSamples.length > 0) && (
+            <div className="mt-3 space-y-1 border-t border-border pt-2">
+              <div className="flex items-center justify-between px-2 pb-1">
+                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Shared samples
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  {canManageShared ? "you manage these" : "read-only — fork to keep changes"}
+                </span>
+              </div>
+              {sharedLoading && sharedSamples.length === 0 ? (
+                <div className="flex items-center gap-2 px-3 py-3 text-xs text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Loading shared samples…
+                </div>
+              ) : sharedFiltered.length === 0 ? (
+                <p className="px-3 py-2 text-xs text-muted-foreground">No shared sample matches.</p>
+              ) : (
+                sharedFiltered.map((sample) => {
+                  const isLoaded = sample.id === loadedSampleId;
+                  return (
+                    <button
+                      key={sample.id}
+                      onClick={() => handleLoadShared(sample)}
+                      className={cn(
+                        "group w-full rounded-lg border px-3 py-2.5 text-left transition-all",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        isLoaded
+                          ? "border-primary/50 bg-primary/5 shadow-sm"
+                          : "border-transparent hover:border-border hover:bg-accent",
+                      )}
+                    >
+                      <div className="min-w-0 space-y-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate text-sm font-medium">{sample.name}</span>
+                          {isLoaded && (
+                            <Badge variant="default" className="h-4 px-1.5 text-[10px] font-medium">
+                              loaded
+                            </Badge>
+                          )}
+                        </div>
+                        {sample.description && (
+                          <p className="line-clamp-1 text-[11px] leading-snug text-muted-foreground">
+                            {sample.description}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {(sample.detected_blocks ?? []).slice(0, 4).map((tag) => {
+                            const style = getBlockTypeStyle(tag);
+                            return (
+                              <span
+                                key={tag}
+                                className={cn(
+                                  "inline-flex items-center rounded-full border px-1.5 py-0 text-[10px] font-medium",
+                                  style.bg,
+                                  style.text,
+                                  style.border,
+                                )}
+                              >
+                                {tag}
+                              </span>
+                            );
+                          })}
+                          {(sample.detected_blocks ?? []).length > 4 && (
+                            <span className="text-[10px] text-muted-foreground">
+                              +{(sample.detected_blocks ?? []).length - 4}
+                            </span>
+                          )}
+                          <span className="ml-auto flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                            <Clock className="h-2.5 w-2.5" />
+                            {formatRelativeTime(sample.updated_at, { fallbackToInput: true })}
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
             </div>
           )}
         </ScrollArea>

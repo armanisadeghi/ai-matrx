@@ -1,5 +1,14 @@
 "use client";
 
+// components/markdown-studio/lab/ServerEventInspector.tsx
+// The Python block processor, raw: every NDJSON server event as it arrived
+// (Raw Output), the input rendered directly, and the processed render, with
+// "Include raw_content" and a REPLAY of the captured server events at a
+// chosen delay. Moved here from the block-processing dev demo (2026-09-26) so
+// the Markdown Studio's admin Inspect view and the demo page render the SAME
+// component. Controlled by `content` inside the studio (no input column);
+// uncontrolled, with its own sample, on the demo page.
+
 import React, { useState, useCallback, useRef } from "react";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { ENDPOINTS } from "@/lib/api/endpoints";
@@ -97,10 +106,16 @@ function TabButton({ active, onClick, icon, label, badge }: TabButtonProps) {
 // Main client
 // ─────────────────────────────────────────────────────
 
-export default function BlockProcessingClient() {
+interface ServerEventInspectorProps {
+  /** The studio's buffer. When given, the inspector has no input column. */
+  content?: string;
+}
+
+export default function ServerEventInspector({ content: controlled }: ServerEventInspectorProps = {}) {
   const apiConfig = useApiTestConfig({ defaultServerType: "local" });
 
-  const [content, setContent] = useState(SAMPLE_CONTENT);
+  const [ownContent, setContent] = useState(SAMPLE_CONTENT);
+  const content = controlled ?? ownContent;
   const [includeRaw, setIncludeRaw] = useState(false);
   const [apiMode, setApiMode] = useState<ApiMode>("stream");
   const [outputTab, setOutputTab] = useState<OutputTab>("raw");
@@ -352,7 +367,8 @@ export default function BlockProcessingClient() {
             </p>
           </div>
 
-          {/* Content textarea */}
+          {/* Content textarea — the studio supplies its own buffer */}
+          {controlled === undefined && (
           <div>
             <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
               Content to process
@@ -370,6 +386,7 @@ export default function BlockProcessingClient() {
               {content.length.toLocaleString()} chars
             </p>
           </div>
+          )}
 
           {/* Options */}
           <label

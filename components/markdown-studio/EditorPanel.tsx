@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { BlockStatsCard } from "./BlockStatsCard";
 import { runV2Parser } from "@/components/admin/markdown-tester/utils/run-v2-parser";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
 
 interface EditorPanelProps {
   content: string;
@@ -25,6 +27,14 @@ interface EditorPanelProps {
    * "Preview" button — no tab strip row above the panes (UI audit B).
    */
   onShowPreview?: () => void;
+  /**
+   * A DEFERRED copy of the buffer for the counts and the block atlas — on a
+   * multi-megabyte document they re-split the whole text, and that must
+   * never sit between a keystroke and its paint.
+   */
+  statsContent?: string;
+  /** The studio's surface scope — what the right-click AI actions see. */
+  getScope?: () => ApplicationScope;
 }
 
 export function EditorPanel({
@@ -34,18 +44,27 @@ export function EditorPanel({
   onClear,
   textareaRef,
   onShowPreview,
+  statsContent,
+  getScope,
 }: EditorPanelProps) {
+  const counted = statsContent ?? content;
+  const localRef = React.useRef<HTMLTextAreaElement | null>(null);
+  const setTextarea = (el: HTMLTextAreaElement | null) => {
+    localRef.current = el;
+    if (typeof textareaRef === "function") textareaRef(el);
+    else if (textareaRef) (textareaRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = el;
+  };
   const stats = useMemo(() => {
-    const lines = content.split("\n").length;
-    const chars = content.length;
-    const words = content.trim() ? content.trim().split(/\s+/).length : 0;
+    const lines = counted.split("\n").length;
+    const chars = counted.length;
+    const words = counted.trim() ? counted.trim().split(/\s+/).length : 0;
     return { lines, chars, words };
-  }, [content]);
+  }, [counted]);
 
   const detectedBlocks = useMemo(() => {
-    if (!content.trim()) return [];
-    return runV2Parser(content);
-  }, [content]);
+    if (!counted.trim()) return [];
+    return runV2Parser(counted);
+  }, [counted]);
 
   return (
     <div className="@container flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card/30">
@@ -104,17 +123,31 @@ export function EditorPanel({
 
       {/* Editor */}
       <div className="relative flex-1 min-h-0 overflow-hidden">
+        {/* Right-click: content blocks and AI actions that replace, insert
+            before or insert after — THE shared editable menu (the one the
+            admin tester used), never a fork. */}
+        <EditableContextMenu
+          sourceFeature="documents"
+          surfaceName="matrx-user/markdown-studio"
+          contentSource={{ type: "raw" }}
+          getApplicationScope={getScope}
+          getTextarea={() => localRef.current}
+          onContentInserted={() => setTimeout(() => localRef.current?.focus(), 100)}
+          onTextReplace={(text) => onChange(text)}
+          onTextInsertBefore={(text) => onChange(`${text}${localRef.current?.value ?? content}`)}
+          onTextInsertAfter={(text) => onChange(`${localRef.current?.value ?? content}${text}`)}
+        >
         <textarea
-          ref={textareaRef}
+          ref={setTextarea}
           value={content}
           onChange={(e) => onChange(e.target.value)}
           onScroll={onScroll}
           spellCheck={false}
           placeholder="Type or paste markdown here.
 
-Try a template from the top bar to see every block type the parser can detect.
+Try a template from the top bar to see every block type the parser can detect. Right-click for content blocks and AI actions.
 
-⌘K to load a sample · ⌘S to save · ⌘Enter to run analysis"
+⌘K samples · ⌘S save · ⌘Enter run the comparison"
           className={cn(
             "h-full w-full resize-none bg-transparent px-4 py-3",
             "font-mono text-[13px] leading-[1.55] tracking-tight",
@@ -123,6 +156,7 @@ Try a template from the top bar to see every block type the parser can detect.
           )}
           style={{ fontSize: "16px" }}
         />
+        </EditableContextMenu>
       </div>
 
       {/* Footer — block atlas */}

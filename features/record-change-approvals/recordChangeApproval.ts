@@ -87,6 +87,24 @@ export interface PendingRecordsChange {
   rows: Record<string, unknown>[];
 }
 
+/** Values an agent wants to change on a record in a table that already existed. */
+export interface PendingPatchChange {
+  change: "patch";
+  /** The table the record lives in. */
+  tableId: string;
+  /** The record being changed. */
+  recordId: string;
+  /** The values, exactly as they will be written. */
+  patch: Record<string, unknown>;
+}
+
+/** A record an agent wants to move to the trash, in a table that already existed. */
+export interface PendingDeleteChange {
+  change: "delete";
+  tableId: string;
+  recordId: string;
+}
+
 export interface RecordChangeWait {
   /** `field_propose` | `table_propose` | `record_write` — the verb that waited. */
   action: string;
@@ -104,7 +122,17 @@ export interface RecordChangeWait {
   approvers: RecordChangeApprover[];
   /** The tool's own sentence saying what was NOT done. */
   notDone: string;
-  change: PendingFieldChange | PendingTableChange | PendingRecordsChange;
+  change:
+    | PendingFieldChange
+    | PendingTableChange
+    | PendingRecordsChange
+    | PendingPatchChange
+    | PendingDeleteChange;
+}
+
+/** The table a wait is about, when it is about an existing one. */
+export function waitTableId(wait: RecordChangeWait): string | null {
+  return wait.change.change === "table" ? null : wait.change.tableId;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -197,6 +225,33 @@ export function readRecordChangeWait(result: unknown): RecordChangeWait | null {
       approvers,
       notDone,
       change: { change: "records", tableId, rows: pendingRows },
+    };
+  }
+
+  // A PATCH — the record and the exact values. `record_propose` carries both
+  // since 2026-09-26 (VERIFIER-26 item 5); an older answer without the patch
+  // is not a decision anybody could be shown, so it is not drawn as one.
+  const recordId = asText(body["record_id"]);
+  const patch = asRecord(body["patch"]);
+  if (recordId && tableId && patch && action !== "record_delete") {
+    return {
+      action: action || "record_write",
+      policy,
+      approvalId,
+      approvers,
+      notDone,
+      change: { change: "patch", tableId, recordId, patch },
+    };
+  }
+
+  if (recordId && tableId && action === "record_delete") {
+    return {
+      action,
+      policy,
+      approvalId,
+      approvers,
+      notDone,
+      change: { change: "delete", tableId, recordId },
     };
   }
 
@@ -318,6 +373,41 @@ export function approvalChangeFor(
     };
   }
 
+  if (wait.change.change === "patch") {
+    const table =
+      options.tableName?.trim() || "the table the agent was asked about";
+    const patch = wait.change.patch;
+    const keys = Object.keys(patch).filter((k) => !k.startsWith("_"));
+    return {
+      ...base,
+      verb: "update",
+      entity: "record",
+      title: `A record in ${table}`,
+      fields: [
+        { label: "Table", after: table },
+        ...keys.map(
+          (key) =>
+            ({
+              label: humanKey(key),
+              after: String(patch[key] ?? ""),
+            }) satisfies ApprovalFieldDiff,
+        ),
+      ],
+    };
+  }
+
+  if (wait.change.change === "delete") {
+    const table =
+      options.tableName?.trim() || "the table the agent was asked about";
+    return {
+      ...base,
+      verb: "update",
+      entity: "record",
+      title: `Move a record in ${table} to the trash`,
+      fields: [{ label: "Table", after: table }],
+    };
+  }
+
   if (wait.change.change === "field") {
     const fields: ApprovalFieldDiff[] = [
       { label: "Column", after: wait.change.label },
@@ -356,7 +446,11 @@ export function approvalChangeFor(
  */
 export function declinedSentence(wait: RecordChangeWait): string {
   const what =
-    wait.change.change === "field"
+    wait.change.change === "patch"
+      ? "The record was not changed."
+      : wait.change.change === "delete"
+        ? "The record was not moved to the trash."
+        : wait.change.change === "field"
       ? `The column ${wait.change.label} was not added.`
       : wait.change.change === "records"
         ? `${wait.change.rows.length} ${
@@ -364,4 +458,104 @@ export function declinedSentence(wait: RecordChangeWait): string {
           } not written.`
         : `The table ${wait.change.name} was not created.`;
   return `${what} ${wait.policy.howToChange}`;
+}
+
+/**
+ * WHAT THE CHIP SAYS about a held write — "Held for your approval: <what> on
+ * <table>". VERIFIER-26 item 5: the chip used to read "The agent sent invalid
+ * arguments" over a write the store had correctly held, which was false and
+ * sent the person looking for a mistake nobody made.
+ */
+export function heldWriteHeadline(
+  wait: RecordChangeWait,
+  tableName?: string | null,
+): string {
+  const table = tableName?.trim() || null;
+  const on = table ? ` on ${table}` : "";
+  const c = wait.change;
+  const what =
+    c.change === "records"
+      ? `${c.rows.length} new ${c.rows.length === 1 ? "record" : "records"}`
+      : c.change === "patch"
+        ? "a change to a record"
+        : c.change === "delete"
+          ? "moving a record to the trash"
+          : c.change === "field"
+            ? `the column ${c.label}`
+            : `the new table ${c.name}`;
+  return `Held for your approval: ${what}${c.change === "table" ? "" : on}`;
+}
+
+/**
+ * A queue row (`custom.work_approval_read`) as the SAME wait a tool result
+ * carries — so the table's own page draws the SAME card the chat draws, and a
+ * person may decide from either. The row keeps the change, its subject and its
+ * approvers; the policy sentences are the queue's, said once here.
+ */
+export function waitFromQueueRow(row: unknown): RecordChangeWait | null {
+  const r = asRecord(row);
+  if (!r) return null;
+  if ((asText(r["state"]) ?? "pending") !== "pending") return null;
+  const approvalId = asText(r["approval_id"]);
+  const change = asRecord(r["change"]);
+  const subjectId = asText(r["subject_id"]);
+  if (!approvalId || !change || !subjectId) return null;
+  const subjectKind = asText(r["subject_kind"]) ?? "record";
+  const tableId =
+    subjectKind === "table" ? subjectId : asText(r["subject_table_id"]);
+  const kind = asText(change["kind"]);
+  const policy: RecordChangeApprovalPolicy = {
+    setting: "ask",
+    why:
+      asText(r["origin"]) === "agent"
+        ? "An agent asked to change a table that already existed, and this organization asks a person first."
+        : "Somebody asked for this change, and this organization asks a person first.",
+    howToChange:
+      "An administrator changes this in the organization's settings, under Agent changes to this organization's data.",
+    reason: "queued",
+  };
+  const base = {
+    action: kind ?? "",
+    policy,
+    approvalId,
+    approvers: approversOf(r["approvers"]),
+    notDone: "",
+  };
+  if (kind === "record_add" && tableId) {
+    const rows = rowsOf(change["rows"]);
+    if (!rows) return null;
+    return { ...base, change: { change: "records", tableId, rows } };
+  }
+  if (kind === "record_patch" && tableId) {
+    const patch = asRecord(change["patch"]);
+    if (!patch) return null;
+    return {
+      ...base,
+      change: { change: "patch", tableId, recordId: subjectId, patch },
+    };
+  }
+  if (kind === "record_delete" && tableId) {
+    return {
+      ...base,
+      change: { change: "delete", tableId, recordId: subjectId },
+    };
+  }
+  if (kind === "field_add" && tableId) {
+    const field = asRecord(change["field"]);
+    const key = asText(field?.["key"]);
+    if (!field || !key) return null;
+    return {
+      ...base,
+      change: {
+        change: "field",
+        tableId,
+        key,
+        label: asText(field["label"]) ?? key,
+        parityType: asText(field["parity_type"]),
+        behaviour: asText(field["type"]),
+        declaration: field,
+      },
+    };
+  }
+  return null;
 }

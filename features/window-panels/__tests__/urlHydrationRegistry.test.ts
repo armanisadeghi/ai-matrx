@@ -5,6 +5,8 @@ import { ALL_WINDOW_STATIC_METADATA } from "../registry/windowRegistryMetadata";
 import { initUrlHydration } from "../url-sync/initUrlHydration";
 import { getHydrator } from "../url-sync/UrlPanelRegistry";
 import { PANEL_KEY_ALIASES } from "../url-sync/panelKeyAliases";
+import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
+import { agentPanelUrlArgs } from "../windows/agents/agentPanelSurfaceAddress";
 
 jest.mock(
   "@/features/agents/redux/execution-system/thunks/load-conversation.thunk",
@@ -143,6 +145,54 @@ describe("URL hydration registry", () => {
           },
         }),
       );
+    });
+
+    // 🚨 2026-09-26 (/data-v2 side chat): a reload restored the window but not
+    // its page binding, so the next turn went out with NO `context`. The token
+    // carries the surface (`s-<surface>`) and the restore stamps it back once
+    // the conversation is loaded — never before, or the DB record drops it.
+    it("re-binds the page surface the link names, after the load", async () => {
+      const dispatch = hydrate("agent", CONVERSATION_ID, {
+        m: "flexible-panel",
+        s: "matrx-user/data-tables",
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+      const types = dispatch.mock.calls.map(([action]) => action?.type);
+      expect(dispatch).toHaveBeenCalledWith(
+        patchConversation({
+          conversationId: CONVERSATION_ID,
+          surfaceName: "matrx-user/data-tables",
+        }),
+      );
+      expect(types.indexOf(patchConversation.type)).toBeGreaterThan(
+        types.indexOf("test/loadConversation"),
+      );
+    });
+
+    it("stamps nothing for an unbound link or a malformed surface", async () => {
+      const cases: Record<string, string>[] = [
+        { m: "flexible-panel" },
+        { m: "fc", s: "not a surface" },
+      ];
+      for (const args of cases) {
+        const dispatch = hydrate("agent", CONVERSATION_ID, args);
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(
+          dispatch.mock.calls.some(
+            ([action]) => action?.type === patchConversation.type,
+          ),
+        ).toBe(false);
+      }
+    });
+
+    it("the shells write the binding into the address they mint", () => {
+      expect(agentPanelUrlArgs("flexible-panel", "matrx-user/data-tables")).toEqual({
+        m: "flexible-panel",
+        s: "matrx-user/data-tables",
+      });
+      expect(agentPanelUrlArgs("fc", null)).toEqual({ m: "fc" });
     });
 
     it("falls back to the floating chat when the link names no mode", () => {

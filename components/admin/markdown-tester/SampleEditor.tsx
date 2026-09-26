@@ -56,6 +56,9 @@ export interface SampleEditorProps {
   /** Identity for the open session — when this changes the form remounts. */
   sessionKey?: string;
   busy?: boolean;
+  /** Overrides the default dialog title / sentence (the studio names its library). */
+  title?: string;
+  description?: string;
   onConfirm: (values: {
     name: string;
     description: string;
@@ -182,7 +185,7 @@ function SampleEditorForm({
         <Badge variant="outline" className="text-[10px] h-4 px-1.5">
           {initial.content.split("\n").length} lines
         </Badge>
-        <span>Content comes from the current textarea.</span>
+        <span>Content comes from the editor.</span>
       </div>
     </form>
   );
@@ -195,6 +198,8 @@ export function SampleEditor({
   initial,
   sessionKey,
   busy = false,
+  title: titleProp,
+  description: descriptionProp,
   onConfirm,
 }: SampleEditorProps) {
   const isMobile = useIsMobile();
@@ -207,7 +212,8 @@ export function SampleEditor({
     [mode, sessionKey],
   );
 
-  const title = mode === "create" ? "Save new sample" : "Edit sample";
+  const title = titleProp ?? (mode === "create" ? "Save new sample" : "Edit sample");
+  const sentence = descriptionProp ?? "Test fixtures stored in the admin samples table.";
   const confirmLabel =
     mode === "create" ? "Save sample" : "Save changes";
 
@@ -245,7 +251,7 @@ export function SampleEditor({
           <DrawerHeader>
             <DrawerTitle>{title}</DrawerTitle>
             <DrawerDescription>
-              Test fixtures stored in the admin samples table.
+              {sentence}
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-2">{body}</div>
@@ -263,7 +269,7 @@ export function SampleEditor({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Test fixtures stored in the admin samples table.
+            {sentence}
           </DialogDescription>
         </DialogHeader>
         {body}

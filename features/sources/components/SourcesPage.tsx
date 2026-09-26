@@ -727,7 +727,6 @@ export function SourcesPage() {
         ) : (
           <Badge variant="outline" className="text-muted-foreground">
             Not saved
-            <ErrorAlchemyMenu />
           </Badge>
         ),
       filter: "select",

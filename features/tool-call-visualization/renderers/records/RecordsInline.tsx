@@ -10,7 +10,10 @@
  * existed does not happen, and the result comes back carrying the change, why
  * it waited and how an administrator changes that. That is a decision, and a
  * decision belongs on screen — `<RecordChangeApprovalCard>` is where it is
- * taken (`features/record-change-approvals`).
+ * taken (`features/record-change-approvals`). The SHELL mounts it for every
+ * tool (`ToolCallVisualization`, `heldWriteOf`) before any renderer is asked,
+ * so this renderer never sees a held write (VERIFIER-26 item 5: it used to be
+ * the only mount, and the `dataset` tool's held writes had no card at all).
  *
  * Every other terminal result gets the tool's own sentence rather than a JSON
  * dump: `not_done` when nothing happened, the store's error when it refused,
@@ -19,8 +22,6 @@
 
 import { AlertTriangle } from "lucide-react";
 
-import { RecordChangeApprovalCard } from "@/features/record-change-approvals/RecordChangeApprovalCard";
-import { readRecordChangeWait } from "@/features/record-change-approvals/recordChangeApproval";
 
 import type { ToolRendererProps } from "../../types";
 import { resultAsObject } from "../_shared";
@@ -41,7 +42,7 @@ function sentenceFor(result: Record<string, unknown>): string | null {
   return null;
 }
 
-export function RecordsInline({ entry, conversationId }: ToolRendererProps) {
+export function RecordsInline({ entry }: ToolRendererProps) {
   if (entry.status === "error") {
     return (
       <div className="flex items-start gap-1.5 text-xs text-destructive">
@@ -54,17 +55,6 @@ export function RecordsInline({ entry, conversationId }: ToolRendererProps) {
 
   const result = resultAsObject(entry);
   if (!result) return null;
-
-  const wait = readRecordChangeWait(result);
-  if (wait) {
-    return (
-      <RecordChangeApprovalCard
-        wait={wait}
-        callId={entry.callId}
-        {...(conversationId ? { conversationId } : {})}
-      />
-    );
-  }
 
   const sentence = sentenceFor(result);
   if (!sentence) return null;

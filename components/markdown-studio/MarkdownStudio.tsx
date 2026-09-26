@@ -1,15 +1,26 @@
 // components/markdown-studio/MarkdownStudio.tsx
-// The user-facing Markdown Studio playground. Two top-level modes —
-// Studio (live editor + preview) and Analysis (parser drift report) —
-// share a single content buffer so switching between them never loses
-// the user's work. Loading a sample syncs the textarea + flags that
-// sample as the "loaded" baseline; subsequent edits keep the baseline
-// link but mark the buffer as dirty.
+// The Markdown Studio — THE markdown workbench. Modes share a single content
+// buffer so switching between them never loses the user's work:
+//   Studio   — live editor + preview (every preview view in PreviewPanel)
+//   Analysis — the three-parser drift report
+//   Editor   — the rich editor over a disposable proving copy
+//   Annotate — the annotation sidecar on a real document
+//   Inspect  — ADMIN ONLY (the admin tester route): raw server events,
+//              replay of captured server events, processors and AST
+// The admin tester route (/administration/utilities/markdown-tester) renders
+// this same component; the admin lane is what turns admin mode on (shared
+// sample library writes + Inspect). Loading a sample syncs the textarea and
+// flags that sample as the "loaded" baseline; later edits mark it dirty.
+//
+// 🚨 A HUGE DOCUMENT NEVER BLOCKS TYPING: the preview and the editor's block
+// atlas read a DEFERRED copy of the buffer, so a keystroke paints first and
+// the (interruptible) re-render of a 5 MB preview follows.
 
 "use client";
 
 import React, {
   useCallback,
+  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
@@ -23,12 +34,15 @@ import { cn } from "@/lib/utils";
 import { RichContent } from "@/components/rich-content/RichContent";
 import { recordToast, toast } from "@/lib/toast";
 import { detectRenderBlocks } from "@/components/admin/markdown-tester/utils/detect-render-blocks";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { useMarkdownAutosave } from "@/components/admin/markdown-tester/useMarkdownAutosave";
+import { SampleEditor } from "@/components/admin/markdown-tester/SampleEditor";
+import { useMarkdownSamples } from "@/components/admin/markdown-tester/useMarkdownSamples";
+import type { MarkdownSample } from "@/components/admin/markdown-tester/samples-service";
 import { printMarkdownContent } from "@/features/conversation/utils/markdown-print";
 import { EditorPanel } from "./EditorPanel";
 import { PreviewPanel, type PreviewMode } from "./PreviewPanel";
 import { AnnotateView } from "./AnnotateView";
+import { InspectView } from "./InspectView";
 import { SourcePickerPanel } from "./lab/SourcePickerPanel";
 import {
   STUDIO_SOURCES,
@@ -44,6 +58,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import type { ContentSource } from "@/features/rich-document/types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { useSetting } from "@/features/settings/hooks/useSetting";
 import { AnalysisView } from "./AnalysisView";
 import { StudioEditorMode } from "./StudioEditorMode";
 import { SampleLibrarySheet } from "./SampleLibrarySheet";
@@ -60,26 +75,37 @@ import type { HeaderAction } from "@/features/shell/components/header/variants/t
 import { ArchiveRecordDialog } from "@/features/trash/components/ArchiveRecordButton";
 
 /**
- * The studio's two modes — the ONE vocabulary. `StudioMode` derives from it, so
- * the header toggle (typed through `active`/`onChange`) and the `view_mode`
- * surface write handler, which validates against this array rather than
- * re-typed literals, can never drift apart.
+ * The studio's modes an agent may switch to — the ONE vocabulary. `StudioMode`
+ * derives from it, so the header toggle and the `view_mode` surface write
+ * handler (which validates against this array) can never drift apart. The
+ * admin-only Inspect view is deliberately NOT in it.
  */
 export const MARKDOWN_STUDIO_MODES = ["studio", "analysis", "editor", "annotate"] as const;
 type StudioMode = (typeof MARKDOWN_STUDIO_MODES)[number];
+type ViewMode = StudioMode | "inspect";
+
+/** How the preview follows the editor — a per-person setting, live by default. */
+export type PreviewUpdateMode = "live" | "manual";
 
 const EMPTY = "";
 const RAW_SOURCE: ContentSource = { type: "raw" };
 
+/** The sample the buffer came from: the person's own, or the shared library. */
+type LoadedSample =
+  | { lib: "user"; sample: UserMarkdownSample }
+  | { lib: "shared"; sample: MarkdownSample };
+
+type SampleDialog =
+  | { open: false }
+  | { open: true; intent: "save" | "fork" | "save-shared" | "edit" };
+
 export function MarkdownStudio() {
   const [content, setContent] = useState(EMPTY);
-  const [mode, setMode] = useState<StudioMode>("studio");
-  const [loadedSampleId, setLoadedSampleId] = useState<string | null>(null);
+  const [mode, setMode] = useState<ViewMode>("studio");
+  const [loadedRef, setLoadedRef] = useState<{ lib: "user" | "shared"; id: string } | null>(null);
   const [loadedSampleName, setLoadedSampleName] = useState<string | null>(null);
-  const [saveDialog, setSaveDialog] = useState<{
-    open: boolean;
-    intent: "save" | "fork";
-  }>({ open: false, intent: "save" });
+  const [sampleDialog, setSampleDialog] = useState<SampleDialog>({ open: false });
+  const [dialogSession, setDialogSession] = useState(0);
   const [saving, setSaving] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -88,6 +114,11 @@ export function MarkdownStudio() {
   const [mobilePane, setMobilePane] = useState<"source" | "preview">("source");
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState<PreviewMode>("rendered");
+  // Desktop layout: the editor alone, and the whole studio over the page.
+  const [previewHidden, setPreviewHidden] = useState(false);
+  const [fullScreen, setFullScreen] = useState(false);
+  // ⌘Enter asks the Analysis view to run; each press is a new number.
+  const [analysisRunSignal, setAnalysisRunSignal] = useState(0);
   // The real record currently loaded (read-only copy), if any.
   const [loadedSource, setLoadedSource] = useState<LoadedStudioContent | null>(
     null,
@@ -100,18 +131,45 @@ export function MarkdownStudio() {
     id: string;
     error: unknown;
   } | null>(null);
+  // Admin mode = the admin lane (the tester route). An admin on a user page
+  // sees exactly what anyone else sees.
   const isAdmin = useAppSelector(selectIsSuperAdmin);
   const searchParams = useSearchParams();
+
+  // Per-person settings (userPreferences.display), live + synced by default.
+  const [previewUpdatesSetting, setPreviewUpdates] = useSetting<PreviewUpdateMode | undefined>(
+    "userPreferences.display.markdownStudioPreviewUpdates",
+  );
+  const [scrollSyncSetting, setScrollSync] = useSetting<boolean | undefined>(
+    "userPreferences.display.markdownStudioScrollSync",
+  );
+  const previewUpdates: PreviewUpdateMode = previewUpdatesSetting === "manual" ? "manual" : "live";
+  const scrollSync = scrollSyncSetting !== false;
+  // Manual mode renders the last "Update preview".
+  const [manualContent, setManualContent] = useState(EMPTY);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewScrollRef = useRef<HTMLDivElement>(null);
 
   const { create, update, samples } = useUserMarkdownSamples();
-  const { loadAutosave } = useMarkdownAutosave("markdown-studio", content);
-  const loadedSample = useMemo(
-    () => samples.find((s) => s.id === loadedSampleId) ?? null,
-    [loadedSampleId, samples],
+  const shared = useMarkdownSamples();
+  const { loadAutosave } = useMarkdownAutosave(
+    isAdmin ? "admin-tester" : "markdown-studio",
+    content,
   );
+  const loaded: LoadedSample | null = useMemo(() => {
+    if (!loadedRef) return null;
+    if (loadedRef.lib === "user") {
+      const s = samples.find((x) => x.id === loadedRef.id);
+      return s ? { lib: "user", sample: s } : null;
+    }
+    const s = shared.samples.find((x) => x.id === loadedRef.id);
+    return s ? { lib: "shared", sample: s } : null;
+  }, [loadedRef, samples, shared.samples]);
+
+  // What every render reads: deferred, so typing is never held by the preview.
+  const deferredContent = useDeferredValue(content);
+  const previewContent = previewUpdates === "live" ? deferredContent : manualContent;
 
   // Restore autosave on first mount.
   useEffect(() => {
@@ -121,48 +179,66 @@ export function MarkdownStudio() {
     loadAutosave().then((saved) => {
       if (saved) {
         setContent(saved);
+        setManualContent(saved);
       }
     });
   }, [loadAutosave]);
 
   // Dirty = the buffer diverges from the loaded sample (derived, never stored).
-  const isDirty = loadedSample
-    ? content !== loadedSample.content
+  const isDirty = loaded
+    ? content !== loaded.sample.content
     : content.length > 0;
+  // A shared sample outside admin mode is a read-only starter: never "unsaved".
+  const canWriteLoaded = loaded?.lib === "user" || (loaded?.lib === "shared" && isAdmin);
 
   const handleChange = useCallback((value: string) => {
     setContent(value);
   }, []);
 
+  /** Replace the whole buffer (a load): the manual preview follows at once. */
+  const replaceBuffer = (value: string) => {
+    setContent(value);
+    setManualContent(value);
+  };
+
   const clearSourceParams = () => syncStudioSourceUrl(null);
 
   const handleClear = () => {
-    setContent(EMPTY);
-    setLoadedSampleId(null);
+    replaceBuffer(EMPTY);
+    setLoadedRef(null);
     setLoadedSampleName(null);
     setLoadedSource(null);
     setSourceGate(null);
     clearSourceParams();
   };
 
-  const handleLoadTemplate = useCallback((template: StudioTemplate) => {
-    setContent(template.content);
-    setLoadedSampleId(null);
+  const handleLoadTemplate = (template: StudioTemplate) => {
+    replaceBuffer(template.content);
+    setLoadedRef(null);
     setLoadedSampleName(template.title);
     setLoadedSource(null);
     setSourceGate(null);
     syncStudioSourceUrl(null);
-    toast.success(`Loaded template: ${template.title}`);
-  }, []);
+    toast.success(`Loaded ${template.id.startsWith("builtin:") ? "sample" : "template"}: ${template.title}`);
+  };
 
-  const handleLoadSample = useCallback((sample: UserMarkdownSample) => {
-    setContent(sample.content);
-    setLoadedSampleId(sample.id);
+  const handleLoadSample = (sample: UserMarkdownSample) => {
+    replaceBuffer(sample.content);
+    setLoadedRef({ lib: "user", id: sample.id });
     setLoadedSampleName(sample.name);
     setLoadedSource(null);
     setSourceGate(null);
     syncStudioSourceUrl(null);
-  }, []);
+  };
+
+  const handleLoadShared = (sample: MarkdownSample) => {
+    replaceBuffer(sample.content);
+    setLoadedRef({ lib: "shared", id: sample.id });
+    setLoadedSampleName(sample.name);
+    setLoadedSource(null);
+    setSourceGate(null);
+    syncStudioSourceUrl(null);
+  };
 
   // Real-content sources ────────────────────────────────────────────────
   // Last `kind:id` a deep link (or a pick) resolved — a re-render or our own
@@ -173,12 +249,12 @@ export function MarkdownStudio() {
     const def = STUDIO_SOURCES[kind];
     setSourceLoading(def.label);
     try {
-      const loaded = await loadStudioSource(kind, id);
+      const loadedContent = await loadStudioSource(kind, id);
       setSourceGate(null);
-      setContent(loaded.content);
-      setLoadedSampleId(null);
-      setLoadedSampleName(loaded.title);
-      setLoadedSource(loaded);
+      replaceBuffer(loadedContent.content);
+      setLoadedRef(null);
+      setLoadedSampleName(loadedContent.title);
+      setLoadedSource(loadedContent);
       setMobilePane("preview");
       deepLinkHandledRef.current = `${kind}:${id}`;
       syncStudioSourceUrl({ kind, id });
@@ -214,26 +290,55 @@ export function MarkdownStudio() {
   }, [deepLinkKind, deepLinkId]);
 
   // Save flow ───────────────────────────────────────────────────────────
-  const openSaveDialog = (intent: "save" | "fork") => {
-    setSaveDialog({ open: true, intent });
+  const openSampleDialog = (intent: "save" | "fork" | "save-shared" | "edit") => {
+    setDialogSession((n) => n + 1);
+    setSampleDialog({ open: true, intent });
   };
 
-  const handleSaveAs = async (name: string) => {
+  const handleSampleDialogConfirm = async (values: {
+    name: string;
+    description: string;
+    detectedBlocks: string[];
+  }) => {
+    if (!sampleDialog.open) return;
+    const intent = sampleDialog.intent;
     setSaving(true);
     try {
-      const created = await create({
-        name,
-        description: "",
-        content,
-        detected_blocks: detectRenderBlocks(content),
-      });
-      setLoadedSampleId(created.id);
-      setLoadedSampleName(created.name);
-      recordToast.success(
-        { type: "markdown_sample", id: created.id, title: created.name },
-        `Saved "${created.name}" to your library`,
-      );
-      setSaveDialog({ open: false, intent: "save" });
+      if (intent === "edit" && loaded) {
+        // Name / description / tags only — the buffer is untouched.
+        const patch = {
+          name: values.name,
+          description: values.description,
+          detected_blocks: values.detectedBlocks,
+        };
+        const updated =
+          loaded.lib === "user"
+            ? await update(loaded.sample.id, patch)
+            : await shared.update(loaded.sample.id, patch);
+        setLoadedSampleName(updated.name);
+        recordToast.success(
+          { type: "markdown_sample", id: updated.id, title: updated.name },
+          `Updated the details of "${updated.name}"`,
+        );
+      } else {
+        const input = {
+          name: values.name,
+          description: values.description,
+          content,
+          detected_blocks: values.detectedBlocks,
+        };
+        const created =
+          intent === "save-shared" ? await shared.create(input) : await create(input);
+        setLoadedRef({ lib: intent === "save-shared" ? "shared" : "user", id: created.id });
+        setLoadedSampleName(created.name);
+        recordToast.success(
+          { type: "markdown_sample", id: created.id, title: created.name },
+          intent === "save-shared"
+            ? `Saved "${created.name}" to the shared library`
+            : `Saved "${created.name}" to your library`,
+        );
+      }
+      setSampleDialog({ open: false });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Save failed");
     } finally {
@@ -242,21 +347,18 @@ export function MarkdownStudio() {
   };
 
   const handleQuickUpdate = async () => {
-    if (!loadedSample) return;
+    if (!loaded || !canWriteLoaded) return;
     setSaving(true);
     try {
-      const updated = await update(loadedSample.id, {
-        content,
-        detected_blocks: detectRenderBlocks(content),
-      });
+      const patch = { content, detected_blocks: detectRenderBlocks(content) };
+      const updated =
+        loaded.lib === "user"
+          ? await update(loaded.sample.id, patch)
+          : await shared.update(loaded.sample.id, patch);
       setLoadedSampleName(updated.name);
       recordToast.success(
-        {
-          type: "markdown_sample",
-          id: loadedSample.id,
-          title: updated.name,
-        },
-        `Updated "${updated.name}"`,
+        { type: "markdown_sample", id: loaded.sample.id, title: updated.name },
+        loaded.lib === "shared" ? `Updated shared sample "${updated.name}"` : `Updated "${updated.name}"`,
       );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Update failed");
@@ -265,55 +367,52 @@ export function MarkdownStudio() {
     }
   };
 
-  // Sync-scroll between textarea and preview (cheap proportional sync).
+  // Scroll sync between textarea and preview — block-paired, both directions,
+  // behind a per-person on/off setting.
   const isSyncingRef = useRef(false);
-  const handleEditorScroll = useCallback(() => {
-    if (isSyncingRef.current) return;
+  const syncScroll = (direction: "text-to-preview" | "preview-to-text") => {
+    if (!scrollSync || isSyncingRef.current) return;
     const ta = textareaRef.current;
     const pv = previewScrollRef.current;
     if (!ta || !pv) return;
     isSyncingRef.current = true;
-    // Block-paired sync (the admin tester's), proportional fallback.
-    syncPaneScroll({
-      text: content,
-      textarea: ta,
-      preview: pv,
-      direction: "text-to-preview",
-    });
+    syncPaneScroll({ text: previewContent, textarea: ta, preview: pv, direction });
     requestAnimationFrame(() => {
       isSyncingRef.current = false;
     });
-  }, [content]);
+  };
 
-  // Keyboard shortcuts: ⌘S save, ⌘E run analysis, ⌘. toggle modes.
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const mod = e.metaKey || e.ctrlKey;
-      if (!mod) return;
-      // Editor mode owns its own keys (⌘S saves the proving copy there).
-      if (mode === "editor") return;
-      if (e.key === "s" && !e.shiftKey) {
-        e.preventDefault();
-        if (loadedSample && isDirty) void handleQuickUpdate();
-        else if (content.trim()) openSaveDialog("save");
-      } else if (e.key === "s" && e.shiftKey) {
-        e.preventDefault();
-        if (content.trim()) openSaveDialog("fork");
-      } else if (e.key === ".") {
-        e.preventDefault();
-        setMode((m) => (m === "studio" ? "analysis" : "studio"));
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [loadedSample, isDirty, content, handleQuickUpdate, mode]);
+  const handleCopySource = async () => {
+    if (!content) {
+      toast.info("Nothing to copy yet");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(content);
+      toast.success(`Copied ${content.length.toLocaleString()} characters of source`);
+    } catch {
+      toast.error("The clipboard refused the copy — select the text and copy it instead.");
+    }
+  };
 
-  const contentLabel =
-    loadedSampleName ?? (content.trim() ? "Untitled" : "Empty");
+  const handleRestoreDraft = async () => {
+    const saved = await loadAutosave();
+    if (saved === null) {
+      toast.info("There is no saved draft on this device yet.");
+      return;
+    }
+    replaceBuffer(saved);
+    setLoadedRef(null);
+    setLoadedSampleName(null);
+    setLoadedSource(null);
+    toast.success(`Restored the last draft (${saved.length.toLocaleString()} characters)`);
+  };
 
-  const handlePrimaryAction = useCallback(() => {
+  const handleUpdatePreview = () => setManualContent(content);
+
+  const handlePrimaryAction = () => {
     if (saving) return;
-    if (loadedSample) {
+    if (loaded && canWriteLoaded) {
       if (!isDirty) {
         toast.info("Already saved");
         return;
@@ -324,88 +423,188 @@ export function MarkdownStudio() {
         toast.info("Nothing to save yet");
         return;
       }
-      openSaveDialog("save");
+      openSampleDialog("save");
     }
-  }, [saving, loadedSample, isDirty, content, handleQuickUpdate]);
+  };
 
-  const handleForkAction = useCallback(() => {
-    if (!loadedSample || saving) return;
+  const handleForkAction = () => {
+    if (!loaded || saving) return;
     if (!content.trim()) {
       toast.info("Nothing to fork yet");
       return;
     }
-    openSaveDialog("fork");
-  }, [loadedSample, saving, content]);
+    openSampleDialog("fork");
+  };
+
+  const runAnalysis = () => {
+    if (!content.trim()) {
+      toast.info("Nothing to analyze yet — type or paste markdown first.");
+      return;
+    }
+    setMode("analysis");
+    setAnalysisRunSignal((n) => n + 1);
+  };
+
+  // Keyboard shortcuts: ⌘S save, ⇧⌘S fork, ⌘K samples, ⌘Enter run the
+  // comparison, ⌘. switch Studio/Analysis.
+  const onShortcut = useEffectEvent((e: KeyboardEvent) => {
+    const mod = e.metaKey || e.ctrlKey;
+    if (!mod) return;
+    // Editor mode owns its own keys (⌘S saves the proving copy there).
+    if (mode === "editor") return;
+    const key = e.key.toLowerCase();
+    if (key === "s" && !e.shiftKey) {
+      e.preventDefault();
+      handlePrimaryAction();
+    } else if (key === "s" && e.shiftKey) {
+      e.preventDefault();
+      if (content.trim()) openSampleDialog("fork");
+    } else if (key === "k" && !e.shiftKey) {
+      e.preventDefault();
+      setTemplatesOpen(false);
+      setLibraryOpen(true);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      runAnalysis();
+    } else if (e.key === ".") {
+      e.preventDefault();
+      setMode((m) => (m === "studio" ? "analysis" : "studio"));
+    } else if (e.key === "Escape" && fullScreen) {
+      setFullScreen(false);
+    }
+  });
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => onShortcut(e);
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  const contentLabel =
+    loadedSampleName ?? (content.trim() ? "Untitled" : "Empty");
 
   // Print / Save PDF — the SAME canonical path every markdown surface uses
   // (`printMarkdownContent` -> `@ai-matrx/print/markdown`). Never a second
   // converter or stylesheet. More printables: the hub at /print.
-  const handlePrint = useCallback(() => {
+  const handlePrint = () => {
     if (!content.trim()) {
       toast.info("Nothing to print yet");
       return;
     }
-    printMarkdownContent(content, loadedSample?.name ?? "Markdown");
-  }, [content, loadedSample]);
+    printMarkdownContent(content, loaded?.sample.name ?? "Markdown");
+  };
 
-  const headerActions: HeaderAction[] = useMemo(() => {
-    const actions: HeaderAction[] = [
-      {
-        icon: "FolderOpen",
-        label: "Open",
-        onPress: () => setSourcePickerOpen(true),
+  // Every control lives in the page header's action set (inline icons on
+  // desktop, the "More actions" menu beyond three, one sheet on phones) —
+  // never a new row, strip or badge under the header.
+  const headerActions: HeaderAction[] = [
+    ...(previewUpdates === "manual" && mode === "studio"
+      ? [{ icon: "RefreshCw", label: "Update preview", onPress: handleUpdatePreview }]
+      : []),
+    {
+      icon: "FolderOpen",
+      label: "Open",
+      onPress: () => setSourcePickerOpen(true),
+    },
+    {
+      // RC-B11: the annotation sidecar on a live document (AnnotateView).
+      icon: "Highlighter",
+      label: mode === "annotate" ? "Close annotations" : "Annotate",
+      onPress: () => setMode((m) => (m === "annotate" ? "studio" : "annotate")),
+    },
+    {
+      icon: "Printer",
+      label: "Print / Save PDF",
+      onPress: handlePrint,
+    },
+    // The studio's own record kind is archivable where it is named (door law) —
+    // from the header's action set, never a button in the "Loaded" info strip.
+    ...(loadedSource?.kind === "document"
+      ? [{ icon: "Archive", label: "Archive document", onPress: () => setArchiveOpen(true) }]
+      : []),
+    {
+      icon: "BookOpen",
+      label:
+        samples.length + shared.samples.length > 0
+          ? `Samples (${samples.length + shared.samples.length}) · ⌘K`
+          : "Samples · ⌘K",
+      onPress: () => setLibraryOpen(true),
+    },
+    {
+      icon: "Layers",
+      label: "Templates & built-in samples",
+      onPress: () => setTemplatesOpen(true),
+    },
+    {
+      icon: loaded && canWriteLoaded ? "SaveAll" : "Save",
+      label:
+        loaded && canWriteLoaded
+          ? isDirty
+            ? loaded.lib === "shared"
+              ? "Update shared sample"
+              : "Update"
+            : "Saved"
+          : "Save to my library",
+      onPress: handlePrimaryAction,
+    },
+    ...(loaded
+      ? [{ icon: "GitFork", label: "Fork into my library", onPress: handleForkAction }]
+      : []),
+    ...(loaded && canWriteLoaded
+      ? [{ icon: "Tags", label: "Edit name, description & tags", onPress: () => openSampleDialog("edit") }]
+      : []),
+    ...(isAdmin
+      ? [{
+          icon: "Share2",
+          label: "Save to the shared library",
+          onPress: () => {
+            if (!content.trim()) {
+              toast.info("Nothing to save yet");
+              return;
+            }
+            openSampleDialog("save-shared");
+          },
+        }]
+      : []),
+    { icon: "Copy", label: "Copy source", onPress: () => void handleCopySource() },
+    { icon: "History", label: "Restore last draft", onPress: () => void handleRestoreDraft() },
+    {
+      icon: previewUpdates === "live" ? "Hand" : "Zap",
+      label:
+        previewUpdates === "live"
+          ? "Preview: live — switch to manual updates"
+          : "Preview: manual — switch to live updates",
+      onPress: () => {
+        const next: PreviewUpdateMode = previewUpdates === "live" ? "manual" : "live";
+        setManualContent(content);
+        setPreviewUpdates(next);
       },
-      {
-        // RC-B11: the annotation sidecar on a live document (AnnotateView).
-        icon: "Highlighter",
-        label: mode === "annotate" ? "Close annotations" : "Annotate",
-        onPress: () => setMode((m) => (m === "annotate" ? "studio" : "annotate")),
-      },
-      {
-        icon: "Printer",
-        label: "Print / Save PDF",
-        onPress: handlePrint,
-      },
-      // The studio's own record kind is archivable where it is named (door law) —
-      // from the header's action set, never a button in the "Loaded" info strip.
-      ...(loadedSource?.kind === "document"
-        ? [{ icon: "Archive", label: "Archive document", onPress: () => setArchiveOpen(true) }]
-        : []),
-      {
-        icon: "BookOpen",
-        label:
-          samples.length > 0 ? `Library (${samples.length})` : "Library",
-        onPress: () => setLibraryOpen(true),
-      },
-      {
-        icon: "Layers",
-        label: "Templates",
-        onPress: () => setTemplatesOpen(true),
-      },
-      {
-        icon: loadedSample ? "SaveAll" : "Save",
-        label: loadedSample ? (isDirty ? "Update" : "Saved") : "Save",
-        onPress: handlePrimaryAction,
-      },
-    ];
-    if (loadedSample) {
-      actions.push({
-        icon: "GitFork",
-        label: "Fork",
-        onPress: handleForkAction,
-      });
-    }
-    return actions;
-  }, [
-    samples.length,
-    loadedSample,
-    isDirty,
-    handlePrimaryAction,
-    handleForkAction,
-    handlePrint,
-    mode,
-    loadedSource,
-  ]);
+    },
+    {
+      icon: scrollSync ? "Unlink" : "Link",
+      label: scrollSync ? "Turn scroll sync off" : "Turn scroll sync on",
+      onPress: () => setScrollSync(!scrollSync),
+    },
+    ...(mode === "studio"
+      ? [{
+          icon: previewHidden ? "Eye" : "EyeOff",
+          label: previewHidden ? "Show preview" : "Hide preview",
+          onPress: () => setPreviewHidden((v) => !v),
+        }]
+      : []),
+    {
+      icon: fullScreen ? "Minimize2" : "Maximize2",
+      label: fullScreen ? "Exit full screen" : "Full screen",
+      onPress: () => setFullScreen((v) => !v),
+    },
+    { icon: "Play", label: "Run comparison · ⌘↵", onPress: runAnalysis },
+    ...(isAdmin
+      ? [{
+          icon: "Microscope",
+          label: mode === "inspect" ? "Close Inspect" : "Inspect (server events, processors)",
+          onPress: () => setMode((m) => (m === "inspect" ? "studio" : "inspect")),
+        }]
+      : []),
+  ];
 
   // Surface scope — built at trigger time (▶ Run), never on mount, so the
   // agent always sees the live buffer rather than a render-stale copy.
@@ -418,25 +617,25 @@ export function MarkdownStudio() {
     return createMarkdownStudioScope({
       content,
       document_label: contentLabel,
-      is_from_library: Boolean(loadedSample),
+      is_from_library: Boolean(loaded),
       detected_blocks: detectRenderBlocks(content),
       is_dirty: isDirty,
       is_saving: saving,
       view_mode: mode,
       library_sample_count: samples.length,
-      sample_id: loadedSampleId ?? undefined,
+      sample_id: loadedRef?.id ?? undefined,
       sample_name: loadedSampleName ?? undefined,
       selection: selected,
     });
   }, [
     content,
     contentLabel,
-    loadedSample,
+    loaded,
     isDirty,
     saving,
     mode,
     samples.length,
-    loadedSampleId,
+    loadedRef,
     loadedSampleName,
   ]);
 
@@ -494,6 +693,24 @@ export function MarkdownStudio() {
     };
   }, [saving]);
 
+  const dialogIntent = sampleDialog.open ? sampleDialog.intent : "save";
+  const dialogInitial =
+    dialogIntent === "edit" && loaded
+      ? {
+          name: loaded.sample.name,
+          description: loaded.sample.description ?? "",
+          detectedBlocks: loaded.sample.detected_blocks ?? [],
+          content: loaded.sample.content,
+        }
+      : {
+          name: dialogIntent === "fork" && loadedSampleName ? `${loadedSampleName} (copy)` : "",
+          description: "",
+          detectedBlocks: [],
+          content,
+        };
+
+  const showPreview = !previewHidden;
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/markdown-studio"
@@ -503,7 +720,13 @@ export function MarkdownStudio() {
     >
     {/* matrx-touch-targets: the platform's 44px touch floor for every
         control in the studio on phones/touch (desktop density untouched). */}
-    <div className="matrx-touch-targets flex h-full w-full flex-col bg-textured">
+    <div
+      className={cn(
+        "matrx-touch-targets flex h-full w-full flex-col bg-textured",
+        // Full screen: the same studio laid over the whole page.
+        fullScreen && "fixed inset-0 z-50",
+      )}
+    >
       <PageHeader>
         <HeaderToggle
           options={[
@@ -511,7 +734,7 @@ export function MarkdownStudio() {
             { icon: "GitCompare", label: "Analysis", value: "analysis" },
             { icon: "PenLine", label: "Editor", value: "editor" },
           ]}
-          active={mode}
+          active={mode === "inspect" ? "studio" : mode}
           onChange={setMode}
           actions={headerActions}
         />
@@ -519,7 +742,7 @@ export function MarkdownStudio() {
 
       <div
         className="flex min-h-0 flex-1 flex-col"
-        style={{ paddingTop: "var(--shell-header-h)" }}
+        style={{ paddingTop: fullScreen ? undefined : "var(--shell-header-h)" }}
       >
         {/* Status strip — current sample name, dirty indicator */}
         <div className="flex min-w-0 items-center gap-2 overflow-hidden whitespace-nowrap border-b border-border/50 bg-muted/20 px-4 py-1.5 text-[11px] [&>*]:shrink-0">
@@ -532,12 +755,17 @@ export function MarkdownStudio() {
               contentLabel
             )}
           </span>
-          {loadedSample && (
+          {loaded && (
             <Badge
               variant="outline"
               className="h-4 px-1.5 text-[10px] font-normal"
+              title={
+                loaded.lib === "shared" && !isAdmin
+                  ? "A shared starter sample — fork it into your library to keep your changes"
+                  : undefined
+              }
             >
-              from library
+              {loaded.lib === "shared" ? (isAdmin ? "shared library" : "shared · read-only") : "from library"}
             </Badge>
           )}
           {loadedSource && (
@@ -561,7 +789,7 @@ export function MarkdownStudio() {
               Opening {sourceLoading.toLowerCase()}…
             </span>
           )}
-          {isDirty && !loadedSource && (
+          {isDirty && !loadedSource && (loaded ? canWriteLoaded : true) && (
             <Badge
               variant="outline"
               className="h-4 px-1.5 text-[10px] font-normal border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
@@ -569,8 +797,18 @@ export function MarkdownStudio() {
               unsaved changes
             </Badge>
           )}
+          {previewUpdates === "manual" && content !== manualContent && mode === "studio" && (
+            <button
+              type="button"
+              onClick={handleUpdatePreview}
+              className="rounded border border-primary/40 bg-primary/10 px-1.5 text-[10px] text-primary hover:bg-primary/20"
+              title="The preview shows your last update — click to render the current text"
+            >
+              preview behind · update
+            </button>
+          )}
           <span className="ml-auto hidden text-muted-foreground font-mono sm:inline">
-            ⌘S save · ⇧⌘S fork · ⌘. switch view
+            ⌘S save · ⌘K samples · ⌘↵ analyze · ⌘. switch view
           </span>
         </div>
 
@@ -590,7 +828,12 @@ export function MarkdownStudio() {
               />
             </div>
           ) : mode === "studio" ? (
-            <div className="flex h-full flex-col gap-2 p-3 lg:grid lg:grid-cols-2 lg:gap-3">
+            <div
+              className={cn(
+                "flex h-full flex-col gap-2 p-3 lg:grid lg:gap-3",
+                showPreview ? "lg:grid-cols-2" : "lg:grid-cols-1",
+              )}
+            >
               {/* Phones get ONE full-height pane at a time — two stacked panes
                   left the editor about two lines tall (RC-B1 verify D5). Each
                   pane's own header switches to the other: no tab strip row. */}
@@ -602,13 +845,16 @@ export function MarkdownStudio() {
               >
               <EditorPanel
                 content={content}
+                statsContent={deferredContent}
                 onChange={handleChange}
                 onClear={handleClear}
-                onScroll={handleEditorScroll}
+                onScroll={() => syncScroll("text-to-preview")}
                 textareaRef={textareaRef}
                 onShowPreview={() => setMobilePane("preview")}
+                getScope={getScope}
               />
               </div>
+              {showPreview && (
               <div
                 className={cn(
                   "min-h-0 flex-1 lg:block lg:h-full",
@@ -616,7 +862,7 @@ export function MarkdownStudio() {
                 )}
               >
               <PreviewPanel
-                content={content}
+                content={previewContent}
                 // The studio holds a COPY: the source rides read-only, so the
                 // registry offers nothing that would change the original.
                 contentSource={
@@ -630,9 +876,11 @@ export function MarkdownStudio() {
                 title={contentLabel}
                 onContentChange={handleChange}
                 onShowSource={() => setMobilePane("source")}
+                onPreviewScroll={() => syncScroll("preview-to-text")}
                 ref={previewScrollRef}
               />
               </div>
+              )}
             </div>
           ) : mode === "annotate" ? (
             <AnnotateView
@@ -643,14 +891,22 @@ export function MarkdownStudio() {
             />
           ) : mode === "editor" ? (
             <StudioEditorMode
-              key={loadedSource ? `${loadedSource.kind}:${loadedSource.id}` : (loadedSampleId ?? "buffer")}
+              key={loadedSource ? `${loadedSource.kind}:${loadedSource.id}` : (loadedRef?.id ?? "buffer")}
               content={content}
               title={contentLabel}
               contentSource={loadedSource?.contentSource ?? RAW_SOURCE}
               onContentChange={handleChange}
             />
+          ) : mode === "inspect" && isAdmin ? (
+            <InspectView content={deferredContent} />
           ) : (
-            <AnalysisView content={content} contentLabel={contentLabel} />
+            <AnalysisView
+              content={content}
+              contentLabel={contentLabel}
+              runSignal={analysisRunSignal}
+              userSamples={samples}
+              sharedSamples={shared.samples}
+            />
           )}
         </main>
       </div>
@@ -659,8 +915,12 @@ export function MarkdownStudio() {
       <SampleLibrarySheet
         open={libraryOpen}
         onOpenChange={setLibraryOpen}
-        loadedSampleId={loadedSampleId}
+        loadedSampleId={loadedRef?.id ?? null}
         onLoad={handleLoadSample}
+        sharedSamples={shared.samples}
+        sharedLoading={shared.isLoading}
+        onLoadShared={handleLoadShared}
+        canManageShared={isAdmin}
       />
       <SourcePickerPanel
         open={sourcePickerOpen}
@@ -687,31 +947,35 @@ export function MarkdownStudio() {
         />
       )}
 
-      {/* ── Save dialog ─────────────────────────────────────────────── */}
-      <TextInputDialog
-        open={saveDialog.open}
+      {/* ── Save / fork / edit-details dialog (name, description, tags) ── */}
+      <SampleEditor
+        open={sampleDialog.open}
         onOpenChange={(o) => {
-          if (!o && !saving) setSaveDialog({ open: false, intent: "save" });
+          if (!o && !saving) setSampleDialog({ open: false });
         }}
+        mode={dialogIntent === "edit" ? "edit" : "create"}
+        sessionKey={`${dialogIntent}:${dialogSession}`}
+        initial={dialogInitial}
+        busy={saving}
         title={
-          saveDialog.intent === "fork"
-            ? "Fork into a new sample"
-            : "Save to your library"
+          dialogIntent === "fork"
+            ? "Fork into your library"
+            : dialogIntent === "save-shared"
+              ? "Save to the shared library"
+              : dialogIntent === "edit"
+                ? "Edit sample details"
+                : "Save to your library"
         }
         description={
-          saveDialog.intent === "fork"
-            ? `Branch "${loadedSampleName ?? "this sample"}" — the original stays untouched.`
-            : "Give this sample a name. We'll auto-detect the block types from the content."
+          dialogIntent === "save-shared"
+            ? "Everyone sees shared samples as read-only starter samples."
+            : dialogIntent === "fork"
+              ? `Branch "${loadedSampleName ?? "this sample"}" — the original stays untouched.`
+              : dialogIntent === "edit"
+                ? "Change the name, description or tags. The text itself is saved with Update."
+                : "Name it, say what it is for, and check the detected block tags."
         }
-        placeholder="e.g. Mixed code + table"
-        defaultValue={
-          saveDialog.intent === "fork" && loadedSampleName
-            ? `${loadedSampleName} (copy)`
-            : ""
-        }
-        confirmLabel="Save sample"
-        busy={saving}
-        onConfirm={handleSaveAs}
+        onConfirm={handleSampleDialogConfirm}
       />
     </div>
     </SurfaceRuntimeProvider>

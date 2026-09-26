@@ -58,6 +58,7 @@ import { tableCopyEvaluation, useTableCopyEvaluation } from "@/features/unified-
 import { replaceAddressWithoutNavigating, currentPathWithSearch } from "@/lib/url-state/addressWithoutNavigating";
 import { RECORDS_FILES } from "@/features/unified-data/recordsFiles";
 import { RECORDS_TEXT } from "@/features/unified-data/recordsCleanText";
+import { HeldWritesOnTable } from "@/features/record-change-approvals/HeldWritesOnTable";
 import { RecordStoreTableSurface, useGridContextChannel } from "@/features/unified-data/grid-agent-context/RecordStoreTableSurface";
 import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
 import { tablePageCapture } from "@/components/agent-copy/page-capture/pageCapture";
@@ -82,8 +83,11 @@ function TableRouteHeader({
   allTablesHref,
   switcherFooter,
   fallback = false,
+  organizationId = null,
 }: {
   tableId: string;
+  /** The TABLE's organization — where its held writes wait (VERIFIER-26 item 5). */
+  organizationId?: string | null;
   actions?: ReactNode;
   allTablesHref: string;
   switcherFooter?: ReactNode;
@@ -112,6 +116,9 @@ function TableRouteHeader({
       }
       right={
         <>
+          {/* A write the store held for a person, decided from here as well as from the chat.
+              Absent unless something is waiting. */}
+          <HeldWritesOnTable key="held" tableId={tableId} organizationId={organizationId} />
           <span key="capture" className="hidden sm:inline-flex">
             <PageCaptureButton size="xs" />
           </span>
@@ -590,6 +597,7 @@ export default function UnifiedDataTableRoute({
     header: ({ actions }) => (
       <TableRouteHeader
         tableId={tableId}
+        organizationId={readingOrganizationId}
         actions={actions}
         allTablesHref={allTablesHref}
         switcherFooter={whereItLives}
@@ -875,6 +883,7 @@ export default function UnifiedDataTableRoute({
             <TableRouteHeader
               fallback
               tableId={tableId}
+              organizationId={readingOrganizationId}
               allTablesHref={allTablesHref}
               switcherFooter={whereItLives}
             />
