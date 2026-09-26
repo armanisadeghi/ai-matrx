@@ -268,6 +268,7 @@
     "check:agent-disclosure": "tsx scripts/check-agent-disclosure.ts",
     "check:hardcoded-prompts:strict": "tsx scripts/check-hardcoded-prompts.ts --strict",
     "check:hardcoded-prompts:write": "tsx scripts/check-hardcoded-prompts.ts --write",
+    "check:admin-no-personal-seat": "tsx scripts/check-admin-no-personal-seat.ts",
     "check:hardcoded-agents": "tsx scripts/check-hardcoded-agents.ts",
     "check:hardcoded-agents:write": "tsx scripts/check-hardcoded-agents.ts --write",
     "check:reserved-icons": "tsx scripts/check-reserved-icons.ts",

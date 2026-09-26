@@ -171,6 +171,7 @@ Non-obvious homes: live `/chat` → [`features/agents/components/chat/FEATURE.md
 ## State & admin gating
 
 - Redux RTK for ALL global state — extend existing slices, never parallel or local state. Typed hooks from `@/lib/redux/hooks.ts` only; every selector memoized via `createSelector`, one property per selector; small updates, no large object replacements. Missing action/selector → ask before creating.
+- 🚨 **The admin seat never acts as itself** (Arman, 2026-09-26): no Mine / My Orgs / "yours" / active-org filter on any admin page — lists use `ADMIN_LIST_SCOPES` (System / Organizations / Users / All) with an owner column, actions act at the record's owner level, shared components take the seat from the page (`adminDoorOpen()`). `../common-docs/policies/admin-seat-never-acts-as-itself.md`. Guard: `pnpm check:admin-no-personal-seat`.
 - Admin levels (`admins.level`: `developer|senior_admin|super_admin`): default gate `selectIsSuperAdmin` / `requireSuperAdmin` / `checkIsSuperAdmin`; lower deliberately via `selectAdminLevel`; hydrated once at session boot (`state.userAuth.adminLevel`) — don't refetch, don't invent a new gate primitive.
 - **Routine access refusal is repair work.** Restore only the intended admin/operator identity
   and canonical grant, retry the failed operation, and verify it; never stop at “ask a super
