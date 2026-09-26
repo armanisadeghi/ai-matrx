@@ -51,6 +51,14 @@ export type SettingsSelectProps<T extends string = string> =
     last?: boolean;
   };
 
+/**
+ * Radix Select reads a value of "" as "nothing selected" and shows a blank
+ * trigger, so an option whose value IS "" (a "None" choice — e.g. voice
+ * emotion) looked unset even while it was the saved choice. Every settings
+ * select maps "" to this token on the way in and back to "" on the way out.
+ */
+const EMPTY_OPTION_VALUE = "__settings-empty-option__";
+
 export function SettingsSelect<T extends string = string>({
   value,
   onValueChange,
@@ -66,6 +74,9 @@ export function SettingsSelect<T extends string = string>({
   const id = rowProps.id ?? `settings-${generatedId}`;
   const variant = stacked ? "stacked" : "inline";
   const effectiveWidth: Width = stacked ? "full" : width;
+  // Only a select that OFFERS "" as a choice maps it; elsewhere "" still
+  // means "not chosen yet" and the placeholder shows.
+  const hasEmptyOption = options.some((opt) => opt.value === "");
 
   return (
     <SettingsRow
@@ -76,8 +87,10 @@ export function SettingsSelect<T extends string = string>({
       last={last}
     >
       <Select
-        value={value}
-        onValueChange={(v) => onValueChange(v as T)}
+        value={value === "" && hasEmptyOption ? EMPTY_OPTION_VALUE : value}
+        onValueChange={(v) =>
+          onValueChange((v === EMPTY_OPTION_VALUE ? "" : v) as T)
+        }
         disabled={rowProps.disabled}
       >
         <SelectTrigger
@@ -91,7 +104,7 @@ export function SettingsSelect<T extends string = string>({
           {options.map((opt) => (
             <SelectItem
               key={opt.value}
-              value={opt.value}
+              value={opt.value === "" ? EMPTY_OPTION_VALUE : opt.value}
               disabled={opt.disabled}
               // Outside ItemText via the prop — a description passed as a
               // child ends up inside the closed trigger and gets clipped.

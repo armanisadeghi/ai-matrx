@@ -32,7 +32,12 @@ import { SettingsRow } from "@/components/official/settings/SettingsRow";
 import { useListeningSettings } from "@/features/audio/service/useListeningSettings";
 import { TTS_DEFAULT_SPEED } from "@/lib/cartesia/config";
 import type { ScopedKnob } from "@/lib/scoped-config/types";
-import { LANGUAGE_OPTIONS } from "../agent-writable-settings";
+import {
+  LANGUAGE_OPTIONS,
+  VOICE_EMOTION_OPTIONS,
+  type VoiceEmotion,
+} from "../agent-writable-settings";
+import { useSetting } from "../hooks/useSetting";
 import { useUniversalSettings } from "../universal/UniversalSettingsContext";
 import { UniversalSettingsRows } from "../universal/UniversalSettingsPane";
 import { VoiceLibrary } from "./voices/VoiceLibrary";
@@ -45,6 +50,9 @@ export default function VoicesTab() {
   const settings = useUniversalSettings();
   const { speed, language, update } = useListeningSettings();
   const [dragSpeed, setDragSpeed] = useState<number | null>(null);
+  const [emotion, setEmotion] = useSetting<VoiceEmotion>(
+    "userPreferences.voice.emotion",
+  );
 
   const knobs = [READ_ALOUD_VOICE_KEY, LIVE_CONVERSATION_VOICE_KEY]
     .map((key) => settings.knobByKey(key))
@@ -93,8 +101,8 @@ export default function VoicesTab() {
       {knobs.length > 0 && <UniversalSettingsRows knobs={knobs} hideKey />}
 
       <SettingsSection
-        title="Read-aloud speed and language"
-        description="How your read-aloud voice speaks."
+        title="How your read-aloud voice speaks"
+        description="Speed, language and emotion for read-aloud."
       >
         <SettingsSlider
           label="Read-aloud speed"
@@ -117,6 +125,13 @@ export default function VoicesTab() {
           value={language}
           onValueChange={(v) => void update({ language: v })}
           options={LANGUAGE_OPTIONS}
+        />
+        <SettingsSelect
+          label="Read-aloud emotion"
+          description="The tone your read-aloud voice speaks in — the chat speaker, the Listen panel and spoken replies. Live conversation uses a different engine and is not affected."
+          value={emotion}
+          onValueChange={setEmotion}
+          options={VOICE_EMOTION_OPTIONS}
           last
         />
       </SettingsSection>

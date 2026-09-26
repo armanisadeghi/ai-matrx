@@ -1,23 +1,18 @@
 "use client";
 
 import { Mic } from "lucide-react";
-import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import { SettingsButton } from "@/components/official/settings/primitives/SettingsButton";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsLink } from "@/components/official/settings/primitives/SettingsLink";
-import { useSetting } from "../hooks/useSetting";
 import { settingDoorHref } from "../doors/settingDoorTarget";
 import { VOICE_SETTING_DOORS } from "./voices/voiceSettingDoors";
 import { useSettingsTabNavigate } from "../components/SettingsPresentationContext";
-import { VOICE_EMOTION_OPTIONS, type VoiceEmotion } from "../agent-writable-settings";
 
 export default function VoiceTab() {
-  // Voice, speed and language live on the Voices screen (VoicesTab) — the ONE
-  // place every voice is chosen and heard. This screen keeps the listening side.
-  const [emotion, setEmotion] = useSetting<VoiceEmotion>(
-    "userPreferences.voice.emotion",
-  );
+  // Voice, speed, language and emotion live on the Voices screen (VoicesTab)
+  // — the ONE place every voice is chosen and heard. This screen keeps the
+  // listening side.
   const navigateToTab = useSettingsTabNavigate();
 
   return (
@@ -31,16 +26,9 @@ export default function VoiceTab() {
       <SettingsSection title="Voice">
         <SettingsLink
           label="Voices you hear"
-          description="Your read-aloud voice, your live conversation voice, and every other voice AI Matrx speaks with — each with a sample."
+          description="Your read-aloud voice (with its speed, language and emotion), your live conversation voice, and every other voice AI Matrx speaks with — each with a sample."
           href={settingDoorHref(VOICE_SETTING_DOORS.readAloud)}
           actionLabel="Voices"
-        />
-        <SettingsSelect
-          label="Emotion / tone"
-          description="Applied to your read-aloud voice, spoken replies, and the Listen panel — every surface that speaks through Cartesia. Live voice conversation runs on a different engine (xAI Realtime) and doesn't read this. Only the values Cartesia actually supports are offered — a free-text word like 'cheerful' used to be accepted here and silently ignored."
-          value={emotion}
-          onValueChange={setEmotion}
-          options={VOICE_EMOTION_OPTIONS}
           last
         />
       </SettingsSection>

@@ -160,7 +160,7 @@ export function useCartesiaSpeaker({
       toast.error('Speech playback failed', { description: msg });
       if (mountedRef.current) setPhase('error');
     }
-  }, [voiceId, language, speed, processMarkdown, dictionarySurfaceKey, ensureConnection]);
+  }, [voiceId, language, speed, emotion, processMarkdown, dictionarySurfaceKey, ensureConnection]);
 
   const pause = useCallback(async () => {
     if (playerRef.current && phase === 'playing') {

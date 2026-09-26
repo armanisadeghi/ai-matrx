@@ -303,7 +303,7 @@ export function getFixInstructions(diagnostics: DiagnosticResult): string[] {
     instructions.push('**Reset Microphone Permission:**');
     
     if (browserInfo.name === 'Chrome' || browserInfo.name === 'Edge') {
-      instructions.push('1. Click the lock icon 🔒 in the address bar');
+      instructions.push('1. Click the lock icon at the left of the address bar');
       instructions.push('2. Find "Microphone" and change it to "Allow"');
       instructions.push('3. Refresh this page');
     } else if (browserInfo.name === 'Firefox') {

@@ -92,11 +92,8 @@ export default function VoiceSettingsPage() {
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
             <p>
-              • Your voice recordings are sent to our secure transcription
-              service (Groq Whisper API)
-            </p>
-            <p>
-              • Recordings are processed in real-time and not stored permanently
+              • What you say is sent to AI Matrx&apos;s transcription service
+              to be turned into text
             </p>
             <p>
               • You can revoke microphone permission at any time through your
