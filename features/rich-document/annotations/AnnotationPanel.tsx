@@ -398,7 +398,9 @@ function ReplyRow({
   const { api, source } = useSidecar();
   const [editing, setEditing] = useState(false);
   const [conflict, setConflict] = useState<{ mine: string; theirs: string } | null>(null);
-  const base = { body: reply.body, version: reply.version };
+  // The text and version the person STARTED editing from — frozen when the editor opens, so a
+  // realtime reload of the thread underneath never turns a stale edit into a silent overwrite.
+  const [base, setBase] = useState({ body: reply.body, version: reply.version });
   return (
     <div onClick={(e) => e.stopPropagation()}>
       <p className="text-[11px] text-muted-foreground">
@@ -411,7 +413,7 @@ function ReplyRow({
             source={source}
             autoFocus
             mentions={api.state.capabilities.collaborationDoors}
-            initialValue={reply.body}
+            initialValue={base.body}
             submitLabel="Save"
             onCancel={() => { setEditing(false); setConflict(null); }}
             onSubmit={async (text) => {
@@ -447,7 +449,7 @@ function ReplyRow({
           <CommentBody body={reply.body} />
           {reply.mine && (
             <div className="flex gap-2">
-              <button type="button" className="text-[11px] text-muted-foreground hover:text-foreground" onClick={() => setEditing(true)}>
+              <button type="button" className="text-[11px] text-muted-foreground hover:text-foreground" onClick={() => { setBase({ body: reply.body, version: reply.version }); setEditing(true); }}>
                 Edit
               </button>
               <button type="button" className="text-[11px] text-muted-foreground hover:text-destructive" onClick={() => void run(api.deleteComment(reply.id))}>
@@ -478,7 +480,8 @@ function ThreadActions({
   const [conflict, setConflict] = useState<{ mine: string; theirs: string } | null>(null);
   const doors = api.state.capabilities.collaborationDoors;
   const id = item.commentId!;
-  const base = { body: item.body, version: item.version ?? null };
+  // Frozen when the editor opens (see the reply above): the compare-and-swap base.
+  const [base, setBase] = useState({ body: item.body, version: item.version ?? null });
   const conflictBox = conflict && (
     <div role="alert" className="mt-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs">
       <p className="font-medium text-foreground">Someone changed this comment while you were editing it.</p>
@@ -515,7 +518,7 @@ function ThreadActions({
           source={source}
           autoFocus
           mentions={doors}
-          initialValue={item.body}
+          initialValue={base.body}
           submitLabel="Save"
           onCancel={() => { setEditing(false); setConflict(null); }}
           onSubmit={async (text) => {
@@ -589,7 +592,7 @@ function ThreadActions({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
-              <DropdownMenuItem onSelect={() => setEditing(true)}>Edit</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => { setBase({ body: item.body, version: item.version ?? null }); setEditing(true); }}>Edit</DropdownMenuItem>
               <DropdownMenuItem className="text-destructive" onSelect={() => void run(api.deleteComment(id), "Comment deleted.")}>
                 <Trash2 className="mr-2 h-3.5 w-3.5" aria-hidden />Delete
               </DropdownMenuItem>
