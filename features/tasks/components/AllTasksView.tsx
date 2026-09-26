@@ -16,6 +16,8 @@ import CompactTaskItem from './CompactTaskItem';
 import { ActiveScopeFilterChips } from './TaskScopeFilter';
 import { sortTasks } from '../utils/taskSorting';
 import type { Project, Task, TaskSortConfig, TaskWithProject } from '../types';
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { useTasksRead } from "@/features/tasks/hooks/useTasksRead";
 
 interface AllTasksViewProps {
   selectedTaskId: string | null;
@@ -28,6 +30,7 @@ export default function AllTasksView({ selectedTaskId, onTaskSelect, onTaskToggl
   const filter = useAppSelector(selectTaskFilter);
   const showCompleted = useAppSelector(selectShowCompleted);
   const loading = useAppSelector(selectTasksLoading);
+  const tasksRead = useTasksRead();
   const sortBy = useAppSelector(selectSortBy);
   const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
 
@@ -112,6 +115,10 @@ export default function AllTasksView({ selectedTaskId, onTaskSelect, onTaskToggl
       filteredTasks: getFilteredTasksForProject(project)
     }))
     .filter(project => project.filteredTasks.length > 0);
+
+  if (tasksRead.status === "error" && projectsWithTasks.length === 0) {
+    return <ReadFailure error={tasksRead.error ?? true} what="your tasks" onRetry={tasksRead.retry} />;
+  }
 
   if (projectsWithTasks.length === 0) {
     return (

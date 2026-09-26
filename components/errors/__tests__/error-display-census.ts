@@ -997,8 +997,25 @@ function gatedByEarlyReturn(node: ts.Node, fn: ts.FunctionLikeDeclaration): bool
   );
 }
 
+/**
+ * A reasoned, per-view exemption: `read-gate-exempt: <why this view is not a
+ * read's answer>` in a comment on the view's line or the three lines above it.
+ * The reason must say something (≥ 20 characters) — a bare marker exempts
+ * nothing, and there is no file- or folder-wide switch.
+ */
+export const READ_GATE_EXEMPT = /read-gate-exempt:\s*(\S[^\n]{19,})/;
+
+function isExempt(sourceLines: string[], line: number): boolean {
+  for (let i = Math.max(0, line - 4); i < line; i++) {
+    const m = READ_GATE_EXEMPT.exec(sourceLines[i] ?? "");
+    if (m && m[1].replace(/\*\/|\}/g, "").trim().length >= 20) return true;
+  }
+  return false;
+}
+
 export function findUngatedEmptyStates(source: string, fileName = "file.tsx"): number[] {
   const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const sourceLines = source.split("\n");
   const lines = new Set<number>();
   const consider = (node: ts.Node) => {
     const fn = enclosingFunction(node);
@@ -1009,7 +1026,9 @@ export function findUngatedEmptyStates(source: string, fileName = "file.tsx"): n
     // know whether that read failed.
     if (!knowsItIsARead(node, fn as ts.FunctionLikeDeclaration)) return;
     if (gatedByAncestors(node, fn) || gatedByEarlyReturn(node, fn as ts.FunctionLikeDeclaration)) return;
-    lines.add(sf.getLineAndCharacterOfPosition(node.getStart()).line + 1);
+    const line = sf.getLineAndCharacterOfPosition(node.getStart()).line + 1;
+    if (isExempt(sourceLines, line)) return;
+    lines.add(line);
   };
   const visit = (n: ts.Node) => {
     if ((ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n)) && EMPTY_TAG.test(tagName(n)) && tagName(n) !== "ReadGate") {

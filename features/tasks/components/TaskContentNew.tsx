@@ -55,6 +55,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { useTasksRead } from "@/features/tasks/hooks/useTasksRead";
 
 export default function TaskContentNew() {
   const router = useRouter();
@@ -73,6 +75,7 @@ export default function TaskContentNew() {
   } = useRefocusInputAfterAsync(isCreatingTask);
   const isCreatingProject = useAppSelector(selectIsCreatingProject);
   const loading = useAppSelector(selectTasksLoading);
+  const tasksRead = useTasksRead();
   const searchQuery = useAppSelector(selectSearchQuery);
   const sortBy = useAppSelector(selectSortBy);
   const filteredTasks = useAppSelector(selectFilteredTasks);
@@ -179,6 +182,10 @@ export default function TaskContentNew() {
   };
 
   // Loading skeleton
+  if (tasksRead.status === "error" && projects.length === 0) {
+    return <ReadFailure error={tasksRead.error ?? true} what="your tasks" onRetry={tasksRead.retry} />;
+  }
+
   if (loading && projects.length === 0) {
     return (
       <div className="flex-1 flex overflow-hidden bg-textured">

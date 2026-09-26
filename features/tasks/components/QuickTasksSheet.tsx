@@ -89,6 +89,8 @@ import { XTapButton } from "@ai-matrx/tap-target/buttons";
 import type { TaskFilterType } from "../types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOverlayData } from "@/lib/redux/slices/overlaySlice";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { useTasksRead } from "@/features/tasks/hooks/useTasksRead";
 
 interface QuickTasksSheetProps {
   onClose?: () => void;
@@ -137,6 +139,7 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
     scheduleRefocus: scheduleQuickAddRefocus,
   } = useRefocusInputAfterAsync(isCreatingTask);
   const loading = useAppSelector(selectTasksLoading);
+  const tasksRead = useTasksRead();
   const sortBy = useAppSelector(selectSortBy);
   const searchQuery = useAppSelector(selectSearchQuery);
   const filteredTasks = useAppSelector(selectFilteredTasks);
@@ -298,6 +301,10 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
   const selectedTask = selectedTaskId
     ? filteredTasks.find((t) => t.id === selectedTaskId)
     : null;
+
+  if (tasksRead.status === "error" && projects.length === 0) {
+    return <ReadFailure error={tasksRead.error ?? true} what="your tasks" onRetry={tasksRead.retry} />;
+  }
 
   if (loading && projects.length === 0) {
     return (

@@ -72,6 +72,8 @@ import {
   TasksListContextMenu,
 } from "@/features/tasks/components/TasksListContextMenu";
 import { toast } from "@/lib/toast";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { useTasksRead } from "@/features/tasks/hooks/useTasksRead";
 
 /**
  * Style prefs for this pane (synced across devices via `userPreferences`).
@@ -107,6 +109,7 @@ export default function TaskListPane() {
   const activeProject = useAppSelector(selectActiveProject);
   const projects = useAppSelector(selectProjects);
   const loading = useAppSelector(selectTasksLoading);
+  const tasksRead = useTasksRead();
   const groupBy = useAppSelector(selectGroupBy);
   const smartView = useAppSelector(selectSmartView);
   const searchQuery = useAppSelector(selectSearchQuery);
@@ -349,6 +352,8 @@ export default function TaskListPane() {
                 <div key={i} className="h-12 bg-muted/50 rounded" />
               ))}
             </div>
+          ) : tasksRead.status === "error" && totalCount === 0 ? (
+            <ReadFailure error={tasksRead.error ?? true} what="your tasks" onRetry={tasksRead.retry} />
           ) : totalCount === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground/60 px-6 py-12">
               <CircleDashed className="w-8 h-8 mb-2 opacity-40" />

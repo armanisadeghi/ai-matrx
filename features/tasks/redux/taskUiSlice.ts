@@ -1,6 +1,8 @@
 "use client";
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import type { ReadStatus } from "@/components/read-state/ReadGate";
+import type { HierarchyState } from "@/features/agent-context/redux/hierarchySlice";
 import type { DatabaseTask, ProjectWithTasks } from "../types/database";
 import type { TaskFilterType } from "../types";
 import type { TaskSortField } from "../types/sort";
@@ -12,8 +14,8 @@ export interface TaskUiState {
   projectsWithTasks: ProjectWithTasks[];
   sharedTasks: DatabaseTask[];
 
-  // Lifecycle
-  loading: boolean;
+  // Lifecycle — the task list's READ status is the hierarchy read's
+  // (selectTasksReadStatus); this slice never held a real one.
   initialized: boolean;
   isCreatingProject: boolean;
   isCreatingTask: boolean;
@@ -120,7 +122,6 @@ const initialState: TaskUiState = {
   projectsWithTasks: [],
   sharedTasks: [],
 
-  loading: false,
   initialized: false,
   isCreatingProject: false,
   isCreatingTask: false,
@@ -268,9 +269,6 @@ const slice = createSlice({
     },
 
     // ─── Lifecycle ──────────────────────────────────────────────────────────
-    setLoading(state, action: PayloadAction<boolean>) {
-      state.loading = action.payload;
-    },
     setInitialized(state, action: PayloadAction<boolean>) {
       state.initialized = action.payload;
     },
@@ -458,7 +456,6 @@ export const {
   addProjectToList,
   patchProject,
   removeProject,
-  setLoading,
   setInitialized,
   setIsCreatingProject,
   setIsCreatingTask,
@@ -501,12 +498,28 @@ export default slice.reducer;
 // ─── Selectors ─────────────────────────────────────────────────────────────
 
 type StateWithTasksUi = { tasksUi: TaskUiState };
+type StateWithHierarchy = { hierarchy: HierarchyState };
 
 export const selectTaskUi = (s: StateWithTasksUi) => s.tasksUi;
 export const selectProjectsWithTasks = (s: StateWithTasksUi) =>
   s.tasksUi.projectsWithTasks;
 export const selectSharedTasks = (s: StateWithTasksUi) => s.tasksUi.sharedTasks;
-export const selectTasksLoading = (s: StateWithTasksUi) => s.tasksUi.loading;
+/**
+ * The task list is read by the hierarchy fetch (`fetchFullContext`), so ITS
+ * status is the list's read status (RC-B12 round 12). This slice used to carry
+ * its own `loading` flag that nothing ever set — every task view showed "No
+ * tasks" at once while the read was in flight, and again when it failed.
+ */
+export const selectTasksReadStatus = (s: StateWithHierarchy): ReadStatus => {
+  const st = s.hierarchy.fullContextStatus;
+  if (st === "error") return "error";
+  if (st === "success") return "ready";
+  return "loading";
+};
+export const selectTasksReadError = (s: StateWithHierarchy) =>
+  s.hierarchy.fullContextError;
+export const selectTasksLoading = (s: StateWithHierarchy) =>
+  selectTasksReadStatus(s) === "loading";
 export const selectTasksInitialized = (s: StateWithTasksUi) =>
   s.tasksUi.initialized;
 export const selectIsCreatingProject = (s: StateWithTasksUi) =>

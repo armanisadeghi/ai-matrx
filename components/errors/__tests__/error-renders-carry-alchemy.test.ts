@@ -362,6 +362,17 @@ describe("an empty view is an answer only after a read that succeeded (RC-B12 ro
     expect(ungated("return p.matches.length === 0 ? <p>No matches found</p> : <List />;")).toBe(0);
   });
 
+  it("self-test: an exemption needs a reason on the view itself — a bare marker exempts nothing", () => {
+    const view = (comment: string) =>
+      ungated(`const { rows, isLoading } = p.q;\n  return isLoading ? <Spinner /> : rows.length === 0 ? (\n    ${comment}\n    <p>No rows yet</p>\n  ) : <List />;`);
+    expect(view("")).toBe(1);
+    expect(view("// read-gate-exempt:")).toBe(1);
+    expect(view("// read-gate-exempt: static")).toBe(1);
+    expect(view("// read-gate-exempt: rows come from the parent's props, which own the read and its failure")).toBe(0);
+    // The marker far above the view does not reach it.
+    expect(ungated(`// read-gate-exempt: rows come from the parent's props, which own the read\n\n\n\n\n const { rows, isLoading } = p.q;\n  return isLoading ? <Spinner /> : rows.length === 0 ? <p>No rows yet</p> : <List />;`)).toBe(1);
+  });
+
   /**
    * THE BURN-DOWN. Every read-backed empty view that is not gated on the
    * read's outcome, per file, at the start of round 11. Shrink-only: a file

@@ -3,9 +3,16 @@ import TaskItem from './TaskItem';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { selectTasksLoading } from '@/features/tasks/redux/taskUiSlice';
 import type { TaskWithProject } from '../types';
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { useTasksRead } from "@/features/tasks/hooks/useTasksRead";
 
 export default function TaskList({ tasks }: { tasks: TaskWithProject[] }) {
   const loading = useAppSelector(selectTasksLoading);
+  const tasksRead = useTasksRead();
+
+  if (tasksRead.status === "error" && tasks.length === 0) {
+    return <ReadFailure error={tasksRead.error ?? true} what="your tasks" onRetry={tasksRead.retry} />;
+  }
 
   // Don't show empty state while loading - show skeleton tasks
   if (loading && tasks.length === 0) {

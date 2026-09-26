@@ -43,6 +43,8 @@ import TaskScopeFilter from "./TaskScopeFilter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { useTasksRead } from "@/features/tasks/hooks/useTasksRead";
 
 const Circle = ({ size }: { size: number }) => (
   <svg
@@ -78,6 +80,7 @@ export default function Sidebar(): JSX.Element {
   const isCreatingProject = useAppSelector(selectIsCreatingProject);
   const operatingProjectId = useAppSelector(selectOperatingProjectId);
   const loading = useAppSelector(selectTasksLoading);
+  const tasksRead = useTasksRead();
   const filter = useAppSelector(selectTaskFilter);
 
   const handleFilterClick = (filterType: TaskFilterType) => {
@@ -271,7 +274,10 @@ export default function Sidebar(): JSX.Element {
             })}
           </div>
 
-          {projects.length === 0 && !loading && (
+          {projects.length === 0 && tasksRead.status === "error" && (
+            <ReadFailure error={tasksRead.error ?? true} what="your tasks" onRetry={tasksRead.retry} />
+          )}
+          {projects.length === 0 && tasksRead.status === "ready" && (
             <p className="text-xs text-muted-foreground text-center py-4">
               No projects yet.
               <br />
