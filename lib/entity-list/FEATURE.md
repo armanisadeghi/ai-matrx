@@ -50,6 +50,11 @@ state, and a pasted link reproduces the list exactly.
   prefs-only.
 - Typing in search commits with `replace`, so one search is one history entry,
   not forty.
+- **The first render reads the URL.** The kit's `useUrlSearchParams` has a server
+  snapshot of "", so the server and hydration passes painted the default lane
+  (Mine) before flipping. `useListSearchParams.ts` reads Next's request
+  `useSearchParams()` until hydration, the kit's live snapshot after. Guard:
+  `__tests__/first-render-reads-the-url.test.tsx` (RED "Mine" on the kit hook).
 
 ## The archive axis is a LAW, and its default is a knob
 

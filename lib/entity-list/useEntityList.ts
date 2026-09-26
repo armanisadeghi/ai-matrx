@@ -14,7 +14,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectArchivedDefault } from "@/lib/redux/preferences/userPreferenceSelectors";
-import { commitUrlParams, useUrlSearchParams } from "@ai-matrx/kit/url-state";
+import { commitUrlParams } from "@ai-matrx/kit/url-state";
+import { useListSearchParams } from "./useListSearchParams";
 import type { EntityListController, EntityListService } from "./config";
 import { toEntityListFailure, type EntityListFailure } from "./failure";
 import {
@@ -152,7 +153,7 @@ function useQueryState(
   (updater: (prev: EntityListQuery) => EntityListQuery) => void,
 ] {
   const [localQuery, setLocalQuery] = useState<EntityListQuery>(defaults);
-  const searchParams = useUrlSearchParams();
+  const searchParams = useListSearchParams();
 
   // useSyncExternalStore already re-renders on popstate, so a URL-backed query
   // needs no effect and no mirror state: Back/Forward simply re-parses.

@@ -26,7 +26,8 @@ import { Button } from "@/components/ui/button";
 import { ItemContextMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
-import { commitUrlParams, useUrlSearchParams } from "@ai-matrx/kit/url-state";
+import { commitUrlParams } from "@ai-matrx/kit/url-state";
+import { useListSearchParams } from "../useListSearchParams";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { defaultHiddenColumns } from "../columns";
 import type { ListScope, ListScopeKind } from "@/lib/list-scope/types";
@@ -169,7 +170,7 @@ export function EntityListPage<TRow>({
   // if the recipient's stored preference silently re-sorts it. So on a
   // URL-backed surface the URL wins when present, and writing a sort updates
   // both: the link stays truthful and the preference still persists.
-  const urlParams = useUrlSearchParams();
+  const urlParams = useListSearchParams();
   const prefsSort = { sort: prefs.sort, direction: prefs.direction };
   const effectiveSort = urlState
     ? readSortFromParams(urlParams, prefsSort)
