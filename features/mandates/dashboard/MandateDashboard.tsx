@@ -197,25 +197,28 @@ export function MandateDashboard() {
 
   return (
     <div className="flex min-w-0 flex-col gap-5 p-4">
-      <header className="flex min-w-0 items-center gap-3">
-        <h1 className="text-lg font-semibold">Mandate numbers</h1>
-        <span className="rounded border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground">
+      {/* One row at every width: nothing wraps or breaks mid-word, and the
+          Refresh label folds to its icon on a phone (punch list 2026-09-26). */}
+      <header className="flex min-w-0 items-center gap-2 sm:gap-3">
+        <h1 className="truncate text-lg font-semibold">Mandate numbers</h1>
+        <span className="shrink-0 whitespace-nowrap rounded border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground">
           System
         </span>
         {coverageSlot.data ? (
-          <span className="text-xs text-muted-foreground">
+          <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
             {ago(coverageSlot.data.computed_at)}
           </span>
         ) : null}
         <Button
           variant="outline"
           size="sm"
-          className="ml-auto"
+          className="ml-auto shrink-0"
           onClick={() => setReloads((value) => value + 1)}
           disabled={anyLoading}
+          aria-label="Refresh"
         >
-          <RefreshCw className="mr-2 h-4 w-4" aria-hidden />
-          Refresh
+          <RefreshCw className="h-4 w-4 sm:mr-2" aria-hidden />
+          <span className="hidden sm:inline">Refresh</span>
         </Button>
       </header>
 
