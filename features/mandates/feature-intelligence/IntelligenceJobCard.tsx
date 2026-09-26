@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { agentHref } from "../admin/mandate-health";
 import { MemberHealthBadge } from "../member-list/columns";
+import { MandateStatusControl } from "../status/MandateStatusControl";
 import { useMandateInputSurface } from "../input-surface";
 import { kindPhrase } from "../provision-shapes";
 import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
@@ -182,6 +183,16 @@ export function IntelligenceJobCard({
             <h3 className="text-[15px] font-semibold leading-tight text-foreground">
               {row.shortName}
             </h3>
+            {/* THE STATUS — draft vs active is never left to a guess. The
+                person who made this job may change it here. */}
+            <MandateStatusControl
+              mandateId={row.id}
+              name={row.shortName}
+              status={row.status}
+              canManage={!orgLevel && row.createdByMe && row.origin === "soft" && !row.isSystem}
+              onSetHolder={onUseOwn}
+              size="md"
+            />
             {row.health !== "OK" ? <MemberHealthBadge health={row.health} /> : null}
             {!row.isSystem ? (
               <Badge variant="outline" className="font-normal text-muted-foreground">

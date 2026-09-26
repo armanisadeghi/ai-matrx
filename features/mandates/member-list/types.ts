@@ -8,6 +8,8 @@
 // (code declarations, coverage, grades, other people's customizations) exists
 // on this row.
 
+import type { MandateStatus } from "@/features/mandates/status/mandate-status";
+
 /** Which seat the list answers from. The admin seat is ../admin-list. */
 export type MandateListLevel = "person" | "organization";
 
@@ -39,6 +41,8 @@ export interface MandateMemberRow {
   /** platform.visibility: personal | internal | link | public. */
   visibility: string;
   isEnabled: boolean;
+  /** THE status from this seat (features/mandates/status/mandate-status.ts). */
+  status: MandateStatus;
   updatedAt: string | null;
   createdAt: string | null;
 }

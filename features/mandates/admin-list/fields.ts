@@ -8,6 +8,10 @@
 import { COVERAGE_META } from "@/features/mandates/coverage";
 import { BLOCKER_META, GRADE_META, IMPACT_GRADE_ORDER } from "@/features/mandates/admin/impact";
 import type { MandateAdminRow, MandateCodeState } from "./types";
+import {
+  MANDATE_STATUS_ORDER,
+  mandateStatusLabel,
+} from "@/features/mandates/status/mandate-status";
 
 /** A key the code scan has no reference to — nobody looked, never "unused". */
 export const NONE_FOUND = "None found";
@@ -55,6 +59,11 @@ const text = (pick: (row: MandateAdminRow) => string | null | undefined): FieldR
 
 export const FIELDS: Record<string, FieldReader> = {
   name: text((r) => r.name),
+  status: {
+    values: (r) => [r.status],
+    sort: (r) => MANDATE_STATUS_ORDER.indexOf(r.status),
+    label: mandateStatusLabel,
+  },
   featureLabel: text((r) => r.featureLabel),
   mandateKey: text((r) => r.mandateKey),
   agentName: {

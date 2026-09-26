@@ -8,6 +8,7 @@
 // row menu carries Quick look / Open / new tab / copy. The service is built
 // by the page (it needs the viewer and dispatch), so it is left empty here.
 
+import { mandateStatusLabel } from "@/features/mandates/status/mandate-status";
 import { useState } from "react";
 import { Copy, ExternalLink, Eye, Trash2 } from "lucide-react";
 import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
@@ -136,7 +137,16 @@ export const adminMandateListConfig: EntityListConfig<MandateAdminRow> = {
   tableToolbar: { tableId: "admin-mandates-list-preview" },
   searchPlaceholder: "Search mandates, keys, agents…",
   useRowActions: useMandateAdminRowActions,
-  facetSections: [],
+  facetSections: [
+    {
+      // THE STATUS facet — the same values the Status column filters by.
+      facet: "status",
+      filterId: "status",
+      label: "Status",
+      noneLabel: "Unknown",
+      formatValue: mandateStatusLabel,
+    },
+  ],
   copy: {
     label: "Mandate",
     listLabel: "Mandates",

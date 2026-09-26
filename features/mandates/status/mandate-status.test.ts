@@ -3,6 +3,7 @@ import {
   countMandateStatuses,
   mandateStatusLabel,
   mandateStatusOf,
+  mandateStatusOfRow,
 } from "./mandate-status";
 
 describe("mandateStatusOf — the one status rule", () => {
@@ -34,5 +35,19 @@ describe("mandateStatusOf — the one status rule", () => {
   it("counts every status, zero when absent", () => {
     const counts = countMandateStatuses(["draft", "active", "active"] as const, (s) => s);
     expect(counts).toEqual({ draft: 1, active: 2, disabled: 0, archived: 0 });
+  });
+});
+
+describe("mandateStatusOfRow — the definition row + its live bindings", () => {
+  it("no default holder, no fallback, no live binding is a draft", () => {
+    expect(mandateStatusOfRow({ is_enabled: true }, [{ deleted_at: "x" }])).toBe("draft");
+  });
+  it("a live binding, a fallback, or a default holder each make it active", () => {
+    expect(mandateStatusOfRow({ is_enabled: true }, [{ deleted_at: null }])).toBe("active");
+    expect(mandateStatusOfRow({ is_enabled: true, fallback_mandate_key: "a.b" })).toBe("active");
+    expect(mandateStatusOfRow({ is_enabled: true, default_holder_version_id: "v" })).toBe("active");
+  });
+  it("a removed row is archived", () => {
+    expect(mandateStatusOfRow({ is_enabled: true, deleted_at: "2026-09-25" })).toBe("archived");
   });
 });

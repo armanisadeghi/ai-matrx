@@ -4,6 +4,7 @@
 // (migrations/mnd_member_list_server_read_2026_09_25.sql) — the non-admin
 // sibling of `mnd_admin_list`. Signed-in people only; RLS-respecting.
 
+import { mandateStatusOf } from "@/features/mandates/status/mandate-status";
 import type { Database, Json } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import type { MandateMemberRow } from "./types";
@@ -83,6 +84,9 @@ export function memberRowFromWire(wire: MandateMemberWireRow): MandateMemberRow 
     origin: wire.origin === "code" ? "code" : "soft",
     visibility: wire.visibility,
     isEnabled: wire.is_enabled,
+    // The same rule the database facets by (mnd_list_status_facet_2026_09_25):
+    // from this seat, "draft" means nothing resolves to run it.
+    status: mandateStatusOf({ isEnabled: wire.is_enabled, hasHolder: wire.holder_type != null }),
     updatedAt: wire.updated_at,
     createdAt: wire.created_at,
   };

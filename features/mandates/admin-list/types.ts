@@ -18,6 +18,7 @@ import type { UngradedReason } from "@/features/mandates/admin/impact-cells";
 import type { WorkflowImpactVerdict } from "@/features/mandates/admin/workflow-impact";
 import type { MandateSourceFacts } from "@/features/mandates/code-references/data";
 import type { MandateContractState } from "./rpc";
+import type { MandateStatus } from "@/features/mandates/status/mandate-status";
 
 /** Code-backed (declared in repo code) or soft (exists only as a DB row). */
 export type MandateOrigin = "code" | "soft";
@@ -45,6 +46,8 @@ export interface MandateAdminRow extends MandateRow {
   /** "Podcast", "SEO › Ai Visibility", "Shortcuts", "Agent apps". */
   featureLabel: string;
   goal: string | null;
+  /** THE status (features/mandates/status/mandate-status.ts) — draft/active/disabled. */
+  status: MandateStatus;
 
   /** Null when the coverage report did not answer — never guessed green. */
   coverage: MandateCoverageBucket | null;

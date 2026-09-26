@@ -12,6 +12,11 @@
 //   board     GET /mandates/references/board                  — scan freshness, findings, conversion list
 
 import { unmetContractChecks } from "@/features/mandates/contract-check";
+import {
+  countMandateStatuses,
+  mandateStatusOfRow,
+  type MandateStatus,
+} from "@/features/mandates/status/mandate-status";
 import { featureLabelOf } from "@/features/mandates/admin-list/rows";
 import {
   buildCoverageIndex,
@@ -37,6 +42,8 @@ export interface DefinitionMetrics {
   codeBacked: number;
   soft: number;
   disabled: number;
+  /** THE status of every job (features/mandates/status/mandate-status.ts). */
+  statuses: Record<MandateStatus, number>;
   features: FeatureCount[];
   workflowHeld: number;
   /** Default holders pinned to a version vs following latest. */
@@ -106,6 +113,9 @@ export function definitionMetrics(
     codeBacked,
     soft: data.mandates.length - codeBacked,
     disabled,
+    statuses: countMandateStatuses(data.mandates, (row) =>
+      mandateStatusOfRow(row, data.bindingsByMandateId[row.id] ?? []),
+    ),
     features,
     workflowHeld,
     defaultsPinned,

@@ -11,7 +11,7 @@
 // from the real fields, worst-first:
 //
 //   archived  — `deleted_at` is set. Removed; restorable from Trash.
-//   disabled  — `is_enabled` is false. Turned off: nothing runs it, for anyone.
+//   disabled  — `is_enabled` is false. Turned off: resolving it refuses, for everyone.
 //   draft     — on, but nothing fills it: no Mandate Holder at its own rung,
 //               no fallback job, and no live binding at any level. It exists
 //               only as a definition; running it refuses.
@@ -67,19 +67,19 @@ export const MANDATE_STATUS_META: Record<MandateStatus, MandateStatusMeta> = {
     label: "Draft",
     tone: "warning",
     icon: CircleDashed,
-    meaning: "Nothing runs this job yet. Set a Mandate Holder to make it active.",
+    meaning: "No Mandate Holder yet, so asking for this job is refused. Set one to make it active.",
   },
   active: {
     label: "Active",
     tone: "success",
     icon: CircleCheck,
-    meaning: "On, and a Mandate Holder runs it.",
+    meaning: "On, and a Mandate Holder answers it.",
   },
   disabled: {
     label: "Disabled",
     tone: "danger",
     icon: CircleOff,
-    meaning: "Turned off. Nothing runs it for anyone until it is enabled.",
+    meaning: "Turned off: asking for this job is refused for everyone until it is enabled.",
   },
   archived: {
     label: "Archived",
@@ -108,4 +108,30 @@ export function countMandateStatuses<T>(
   const out: Record<MandateStatus, number> = { draft: 0, active: 0, disabled: 0, archived: 0 };
   for (const row of rows) out[statusOf(row)] += 1;
   return out;
+}
+
+/**
+ * The status of one mandate ROW with its live bindings — for surfaces that
+ * hold the definition row itself (record page, window, workspace). Same rule
+ * as the admin list database: a default Holder, a fallback job, or any live
+ * binding fills it.
+ */
+export function mandateStatusOfRow(
+  mandate: {
+    deleted_at?: string | null;
+    is_enabled?: boolean | null;
+    default_holder_id?: string | null;
+    default_holder_version_id?: string | null;
+    fallback_mandate_key?: string | null;
+  },
+  liveBindings: readonly { deleted_at?: string | null }[] = [],
+): MandateStatus {
+  return mandateStatusOf({
+    deletedAt: mandate.deleted_at ?? null,
+    isEnabled: mandate.is_enabled !== false,
+    hasHolder:
+      Boolean(mandate.default_holder_id || mandate.default_holder_version_id) ||
+      Boolean(mandate.fallback_mandate_key) ||
+      liveBindings.some((b) => !b.deleted_at),
+  });
 }

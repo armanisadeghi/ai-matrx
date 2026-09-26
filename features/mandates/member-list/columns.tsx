@@ -21,6 +21,8 @@ import {
 import { agentHref } from "@/features/mandates/admin/mandate-health";
 import { cn } from "@/lib/utils";
 import type { MandateMemberRow } from "./types";
+import { MandateStatusControl } from "@/features/mandates/status/MandateStatusControl";
+import { mandateStatusLabel } from "@/features/mandates/status/mandate-status";
 
 type Spec = EntityColumnSpec<MandateMemberRow>;
 
@@ -107,7 +109,14 @@ export function MemberHealthBadge({ health }: { health: string }) {
   );
 }
 
-export function memberMandateColumns(): Spec[] {
+export interface MemberColumnOptions {
+  /** May this seat change the row's status? Absent = badge only. */
+  canManage?: (row: MandateMemberRow) => boolean;
+  /** Re-ask the list after a status change. */
+  onChanged?: () => void;
+}
+
+export function memberMandateColumns(options: MemberColumnOptions = {}): Spec[] {
   return [
     {
       id: "name",
@@ -127,6 +136,26 @@ export function memberMandateColumns(): Spec[] {
         ),
       },
     },
+    // THE STATUS, beside the name — draft vs active can never be missed.
+    facetColumn(
+      "status",
+      "Status",
+      120,
+      (row) => (
+        <MandateStatusControl
+          mandateId={row.id}
+          name={row.name}
+          status={row.status}
+          canManage={options.canManage?.(row) ?? false}
+          onChanged={options.onChanged}
+          size="sm"
+        />
+      ),
+      {
+        formatFacetValue: mandateStatusLabel,
+        sortWords: { asc: "drafts first", desc: "active first" },
+      },
+    ),
     facetColumn("featureLabel", "Feature", 150, (row) => <TextCell value={row.featureLabel} />),
     // No Key column here: a member reads the Mandate's name, never its key
     // (owner ruling — the admin list's Key column is the one place a key shows).

@@ -4,6 +4,7 @@
 // No fetching here (see ./store.ts), so the derivations are testable and a
 // source that failed stays visibly UNKNOWN instead of reading as "none".
 
+import { mandateStatusOf } from "@/features/mandates/status/mandate-status";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { buildRow } from "@/features/mandates/admin/mandate-health";
 import type {
@@ -288,6 +289,12 @@ export function buildAdminRows(sources: MandateAdminSources): MandateAdminRow[] 
     return {
       ...base,
       name: mandateDisplayName(base.mandateKey, mandate.label),
+      // The same rule the database facets by (mnd_list_status_facet_2026_09_25).
+      status: mandateStatusOf({
+        deletedAt: mandate.deleted_at ?? null,
+        isEnabled: Boolean(mandate.is_enabled),
+        hasHolder: hasHolder || Boolean(fallbackKey) || bindings.length > 0,
+      }),
       featureLabel: featureLabelOf(base.mandateKey, truth?.source?.module),
       goal: resolveMandateGoal({
         stored: mandate.goal,

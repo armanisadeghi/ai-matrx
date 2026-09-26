@@ -22,6 +22,7 @@ import type {
 import { EMPTY_FACETS, EMPTY_SCOPE_COUNTS } from "@/lib/entity-list/types";
 import type { ListScopeKind } from "@/lib/list-scope/types";
 import { memberMandateColumns } from "./columns";
+import { mandateStatusLabel } from "@/features/mandates/status/mandate-status";
 import { MandateMemberPeek } from "./MandateMemberPeek";
 import { memberMandateListHref, memberMandateRecordHref } from "./routes";
 import type { MandateListLevel, MandateMemberRow } from "./types";
@@ -132,6 +133,8 @@ export function memberMandateListConfig(
           level={options.level}
           hrefFor={hrefFor}
           onClose={() => setPeekId(null)}
+          canManage={(row) => canRemoveMemberRow(row, options)}
+          onChanged={options.onChanged}
         />
       ) : null,
     };
@@ -158,7 +161,10 @@ export function memberMandateListConfig(
       fetchCounts: async () => EMPTY_SCOPE_COUNTS,
       fetchFacets: async () => EMPTY_FACETS,
     },
-    columns: memberMandateColumns(),
+    columns: memberMandateColumns({
+      canManage: (row) => canRemoveMemberRow(row, options),
+      onChanged: options.onChanged,
+    }),
     prefsVersion: 1,
     prefsDefaults: { sort: "name", direction: "asc", pageSize: 50 },
     getRowId: (row) => row.id,
@@ -169,7 +175,16 @@ export function memberMandateListConfig(
     tableToolbar: { tableId: surfaceKey },
     searchPlaceholder: "Search mandates, keys, agents…",
     useRowActions,
-    facetSections: [],
+    facetSections: [
+      {
+        // THE STATUS facet — the same values the Status column filters by.
+        facet: "status",
+        filterId: "status",
+        label: "Status",
+        noneLabel: "Unknown",
+        formatValue: mandateStatusLabel,
+      },
+    ],
     copy: {
       label: "Mandate",
       listLabel: "Mandates",

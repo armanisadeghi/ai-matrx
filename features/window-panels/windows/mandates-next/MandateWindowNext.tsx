@@ -50,6 +50,10 @@ import {
   type RecordTabId,
 } from "@/features/mandates/record-next/record-tabs";
 import { windowSelectionOf } from "./window-selection";
+import { MandateStatusBadge } from "@/features/mandates/status/MandateStatusBadge";
+import { MandateStatusControl } from "@/features/mandates/status/MandateStatusControl";
+import { mandateStatusOfRow } from "@/features/mandates/status/mandate-status";
+import { seatCanManageMandate } from "@/features/mandates/status/can-manage";
 
 export interface MandateWindowNextProps {
   isOpen?: boolean;
@@ -90,6 +94,9 @@ function MandateWindowNextInner({
   const userId = useAppSelector(selectUserId);
   const { organizations } = useUserOrganizations();
   const [rows, setRows] = useState<MandateDefinitionRow[] | null>(null);
+  const [bindingsById, setBindingsById] = useState<
+    Record<string, { deleted_at?: string | null }[]>
+  >({});
   const [loadFailed, setLoadFailed] = useState(false);
   const [reloads, setReloads] = useState(0);
   const [selectedKey, setSelectedKey] = useState<string | null>(
@@ -119,6 +126,7 @@ function MandateWindowNextInner({
         .then((next) => {
           if (cancelled) return;
           setRows(next.mandates);
+          setBindingsById(next.bindingsByMandateId);
           setLoadFailed(false);
         })
         .catch((err: unknown) => {
@@ -136,6 +144,9 @@ function MandateWindowNextInner({
       off();
     };
   }, [reloads]);
+
+  const statusOf = (row: MandateDefinitionRow) =>
+    mandateStatusOfRow(row, bindingsById[row.id] ?? []);
 
   const orgNames = new Map(organizations.map((o) => [o.id, o.name]));
   const orgName = (id: string | null) => (id ? (orgNames.get(id) ?? null) : null);
@@ -246,8 +257,15 @@ function MandateWindowNextInner({
                   : "text-foreground hover:bg-accent",
               )}
             >
-              <span className="block truncate text-xs font-medium">
-                {mandateDisplayName(row.mandate_key, row.label)}
+              <span className="flex min-w-0 items-center gap-1">
+                <span className="truncate text-xs font-medium">
+                  {mandateDisplayName(row.mandate_key, row.label)}
+                </span>
+                {/* A draft or disabled job says so in the list itself; an
+                    active one stays quiet so the exceptions stand out. */}
+                {statusOf(row) !== "active" ? (
+                  <MandateStatusBadge status={statusOf(row)} size="sm" className="ml-auto" />
+                ) : null}
               </span>
               <span className="block truncate text-[10px] text-muted-foreground">
                 {feature}
@@ -290,6 +308,23 @@ function MandateWindowNextInner({
       <span className="truncate text-xs font-medium text-foreground">
         {selectedName}
       </span>
+      {selected ? (
+        <span onPointerDown={(event) => event.stopPropagation()} className="inline-flex">
+          <MandateStatusControl
+            mandateId={selected.id}
+            name={selectedName}
+            status={statusOf(selected)}
+            canManage={seatCanManageMandate(selected, {
+              level: isSuperAdmin ? "system" : "person",
+              userId,
+              orgId: null,
+              canManageOrg: false,
+            })}
+            onSetHolder={() => setTab("holder")}
+            size="sm"
+          />
+        </span>
+      ) : null}
       {fullPageHref ? (
         <a
           href={fullPageHref}

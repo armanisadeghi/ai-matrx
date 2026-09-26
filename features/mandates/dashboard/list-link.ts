@@ -27,6 +27,8 @@ export const MANDATE_LIST_COLUMN = {
   coverage: "coverage",
   /** boolean */
   enabled: "isEnabled",
+  /** "draft" | "active" | "disabled" — THE status (features/mandates/status) */
+  status: "status",
   /** "Latest" | "v3" | "None" — the default holder only */
   pin: "pinText",
   /** org names | "Personal" | "Default" */

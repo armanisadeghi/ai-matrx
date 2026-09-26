@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { MandateStatusControl } from "@/features/mandates/status/MandateStatusControl";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { agentHref } from "@/features/mandates/admin/mandate-health";
@@ -35,12 +36,17 @@ export function MandateMemberPeek({
   level,
   hrefFor,
   onClose,
+  canManage,
+  onChanged,
 }: {
   rowId: string;
   rows: MandateMemberRow[];
   level: MandateListLevel;
   hrefFor: (row: MandateMemberRow) => string;
   onClose: () => void;
+  /** May this seat change a row's status? Absent = badge only. */
+  canManage?: (row: MandateMemberRow) => boolean;
+  onChanged?: () => void;
 }) {
   const [currentId, setCurrentId] = useState(rowId);
   const [goalOpen, setGoalOpen] = useState(false);
@@ -112,6 +118,15 @@ export function MandateMemberPeek({
           >
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
+          <MandateStatusControl
+            mandateId={row.id}
+            name={row.name}
+            status={row.status}
+            canManage={canManage?.(row) ?? false}
+            onChanged={onChanged}
+            size="md"
+            className="ml-auto"
+          />
         </div>
         <div className="max-h-[65dvh] divide-y divide-border/60 overflow-y-auto">
           <Field label="Feature">{row.featureLabel}</Field>

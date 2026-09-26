@@ -50,6 +50,7 @@ import { holderOfMandate } from "@/lib/supabase/mandateStorage";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentLineageIndex } from "@/features/agents/redux/agent-definition/selectors";
 import { invalidateMandateAdminList } from "./store";
+import { MandateStatusControl } from "@/features/mandates/status/MandateStatusControl";
 import {
   useMandateAdminListActions,
   useMandateAdminListState,
@@ -345,6 +346,24 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
       ),
     },
   },
+  // THE STATUS, beside the name — draft vs active can never be missed.
+  // A platform admin may change it (the list is admin-only), so the badge is
+  // also the control.
+  facetColumn(
+    "status",
+    "Status",
+    120,
+    (row) => (
+      <MandateStatusControl
+        mandateId={row.id}
+        name={row.name}
+        status={row.status}
+        canManage
+        size="sm"
+      />
+    ),
+    { sortWords: { asc: "drafts first", desc: "active first" } },
+  ),
   facetColumn("featureLabel", "Feature", 150, (row) => (
     <TextCell value={row.featureLabel} />
   )),

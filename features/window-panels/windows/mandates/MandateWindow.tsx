@@ -34,6 +34,8 @@
  *   • it records the surface it was opened from onto any note written here.
  */
 
+import { MandateStatusBadge } from "@/features/mandates/status/MandateStatusBadge";
+import { mandateStatusOfRow } from "@/features/mandates/status/mandate-status";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BrainCircuit, ExternalLink, Loader2, Search, ShieldCheck, UserRound } from "lucide-react";
 
@@ -169,6 +171,14 @@ function MandateWindowInner({
       .sort((a, b) => a.mandateKey.localeCompare(b.mandateKey));
   }, [data, codeTruthByKey]);
 
+  // THE STATUS per job (features/mandates/status/mandate-status.ts).
+  const statusById = new Map(
+    (data?.mandates ?? []).map((m) => [
+      m.id,
+      mandateStatusOfRow(m, data?.bindingsByMandateId[m.id] ?? []),
+    ]),
+  );
+
   const visibleRows = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return rows;
@@ -264,6 +274,7 @@ function MandateWindowInner({
         {visibleRows.map((row) => {
           const { feature, mandate } = splitMandateKey(row.mandateKey);
           const active = row.mandateKey === selected?.mandateKey;
+          const status = statusById.get(row.id);
           return (
             <button
               key={row.id}
@@ -278,8 +289,17 @@ function MandateWindowInner({
                   : "text-foreground hover:bg-accent",
               )}
             >
-              <span className="block truncate text-xs font-medium">
-                {row.label ?? mandate}
+              <span className="flex min-w-0 items-center gap-1">
+                <span className="truncate text-xs font-medium">
+                  {row.label ?? mandate}
+                </span>
+                {status && status !== "active" ? (
+                  <MandateStatusBadge
+                    status={status}
+                    size="sm"
+                    className="ml-auto"
+                  />
+                ) : null}
               </span>
               <span className="block truncate text-[10px] text-muted-foreground">
                 {feature} · {row.agentName}

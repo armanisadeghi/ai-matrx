@@ -52,6 +52,9 @@ import {
 import { useRecordBackHref } from "./useRecordBackHref";
 import { useRecordTitle } from "@/lib/record-title/record-title";
 import { MandateVisibilityControl } from "./MandateVisibilityControl";
+import { MandateStatusControl } from "@/features/mandates/status/MandateStatusControl";
+import { mandateStatusOfRow } from "@/features/mandates/status/mandate-status";
+import { seatCanManageMandate } from "@/features/mandates/status/can-manage";
 
 /**
  * Which seat opens the record. `system` (the default) is the admin route,
@@ -191,13 +194,8 @@ export function recordCanRemove(
   mandate: Pick<MandateWorkspaceData["mandate"], "organization_id" | "created_by" | "origin">,
   seat: { level: RecordLevel; userId: string | null; orgId: string | null; canManageOrg: boolean },
 ): boolean {
-  if (seat.level === "system") return true;
-  if (mandate.origin === "code") return false;
-  if ((mandate.organization_id ?? "").toLowerCase() === SYSTEM_ORGANIZATION_ID.toLowerCase()) {
-    return false;
-  }
-  if (seat.level === "person") return Boolean(seat.userId) && mandate.created_by === seat.userId;
-  return seat.canManageOrg && Boolean(seat.orgId) && mandate.organization_id === seat.orgId;
+  // One rule for removing AND for changing status (features/mandates/status/can-manage.ts).
+  return seatCanManageMandate(mandate, seat);
 }
 
 function RecordHeader({
@@ -277,6 +275,19 @@ function RecordHeader({
       entityLabel={name}
       right={
         <div className="flex items-center gap-1">
+          {/* THE STATUS — big, colour-coded, and the control for a seat that
+              may change it (the same seat that may remove it). */}
+          <MandateStatusControl
+            mandateId={data.mandate.id}
+            name={name}
+            status={mandateStatusOfRow(data.mandate, data.bindings)}
+            canManage={canRemove}
+            onSetHolder={readOnly ? undefined : () => onTabChange("holder")}
+            onChanged={(next) =>
+              next === "archived" ? pushAppHref(router, listHref) : refresh()
+            }
+            className="mr-1"
+          />
           {canShare ? (
             <MandateVisibilityControl mandate={data.mandate} onChanged={refresh} />
           ) : null}

@@ -26,6 +26,7 @@ import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
 
 import { Button } from "@/components/ui/button";
 import { KpiGrid, KpiTile } from "@/components/official/kpi/KpiTile";
+import { MANDATE_STATUS_META } from "@/features/mandates/status/mandate-status";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { SYSTEM_HOME } from "@/features/mandates/list-door";
 import {
@@ -239,12 +240,30 @@ export function MandateDashboard() {
             href={mandateListHref({ [COL.origin]: "soft" })}
             title="No code in our app"
           />
+          {/* THE STATUS counts — the same rule and the same filter as the
+              list's Status column (features/mandates/status). */}
+          <KpiTile
+            label="Active"
+            value={n(defs?.statuses.active)}
+            loading={consoleSlot.loading}
+            href={mandateListHref({ [COL.status]: "active" })}
+            title={MANDATE_STATUS_META.active.meaning}
+          />
+          <KpiTile
+            label="Draft"
+            value={n(defs?.statuses.draft)}
+            tone={defs && defs.statuses.draft > 0 ? "warn" : "neutral"}
+            loading={consoleSlot.loading}
+            href={mandateListHref({ [COL.status]: "draft" })}
+            title={MANDATE_STATUS_META.draft.meaning}
+          />
           <KpiTile
             label="Disabled"
-            value={n(defs?.disabled)}
-            tone={defs && defs.disabled > 0 ? "warn" : "neutral"}
+            value={n(defs?.statuses.disabled)}
+            tone={defs && defs.statuses.disabled > 0 ? "bad" : "neutral"}
             loading={consoleSlot.loading}
-            href={mandateListHref({ [COL.enabled]: false })}
+            href={mandateListHref({ [COL.status]: "disabled" })}
+            title={MANDATE_STATUS_META.disabled.meaning}
           />
           <KpiTile
             label="Held by workflow"

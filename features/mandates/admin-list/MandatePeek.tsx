@@ -7,6 +7,7 @@
 // footer), carrying exactly what a mandate IS: name, feature, inputs, goal,
 // output, and its binding (Mandate Holder, pin, customized by).
 
+import { MandateStatusControl } from "@/features/mandates/status/MandateStatusControl";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
@@ -175,6 +176,14 @@ export function MandatePeek({
           >
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
+          <MandateStatusControl
+            mandateId={row.id}
+            name={row.name}
+            status={row.status}
+            canManage
+            size="md"
+            className="ml-auto"
+          />
         </div>
         <div className="max-h-[65dvh] overflow-y-auto">
           <MandatePeekContent row={row} />
