@@ -61,8 +61,10 @@ try {
   await sleep(3000);
 
   // The Sheet, as admin's look.
-  const sheetButton = page.locator("[role='group'][aria-label='Layout'] button").filter({ hasText: /^Sheet$/ });
-  if ((await sheetButton.getAttribute("aria-pressed")) !== "true") await sheetButton.click();
+  // A table designated a Sheet opens on it; otherwise pick it from the layout chooser.
+  if (!(await page.evaluate(() => Boolean(document.querySelector("[data-sheet-layout]"))))) {
+    await page.locator("[role='group'][aria-label='Layout'] button").filter({ hasText: /^Sheet$/ }).click();
+  }
   await until("the Sheet", () => page.evaluate(() => Boolean(document.querySelector("[data-sheet-layout] tbody tr"))), 120000);
   await sleep(3000);
   walk.sticky = await at(page);

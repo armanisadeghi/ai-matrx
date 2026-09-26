@@ -93,7 +93,7 @@ try {
   pass("the header has a back button and the table name as the switcher; no organization line", f.back && f.switcher === "Coding Accounts" && !f.orgLineInHeader, f);
   pass("no organization notice row in the body", !f.noticeRow, f);
   await page.screenshot({ path: `${OUT}/preview-armans-light-1600.png` });
-  await page.locator("#shell-header-center [data-table-switcher]").click();
+  await page.locator("#shell-header-center [data-table-switcher]:visible").click();
   await page.waitForSelector("[data-table-switcher-content]", { timeout: 30000 });
   await sleep(1500);
   const listed = await page.evaluate(() => ({
@@ -122,7 +122,7 @@ try {
   pass("the shell's organization indicator lights with the table's organization", lit.lit === "admin's Workspace" || /admin's Workspace/.test(lit.lit ?? ""), lit);
   await page.screenshot({ path: `${OUT}/preview-cross-org-lit-light-1600.png` });
   // The switcher moves to another table of that organization.
-  await page.locator("#shell-header-center [data-table-switcher]").click();
+  await page.locator("#shell-header-center [data-table-switcher]:visible").click();
   await page.waitForSelector("[data-table-switcher-item]", { timeout: 30000 });
   const other = await page.evaluate(() => {
     const item = [...document.querySelectorAll("[data-table-switcher-item]")].find((a) => a.getAttribute("aria-current") !== "page");
