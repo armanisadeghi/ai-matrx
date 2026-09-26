@@ -30,7 +30,7 @@
 
 import { isRecord } from "./legacy-bridge-utils";
 import type { MaterializedKind } from "./kind-payload";
-import type { AiUsage, GeneratedImage } from "./generated/kinds.generated";
+import type { AiUsage_AgentResult, GeneratedImage } from "./generated/kinds.generated";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). THE UNIT LAW: the unit is in the name.
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
@@ -87,7 +87,7 @@ export function mediaHandleOf(fields: MediaHandleFields): string | null {
 
 /** Aggregate usage as these outputs report it — display only, never math we own. */
 export type MediaUsage = MaterializedKind<
-  Pick<AiUsage, "cost_usd" | "total_tokens">
+  Pick<AiUsage_AgentResult, "cost_usd" | "total_tokens">
 >;
 
 export function readUsage(value: unknown): MediaUsage | null {

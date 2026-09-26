@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "d79e95ebda8b";
+export const KIND_REGISTRY_FINGERPRINT = "77b5556133ab";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -88,7 +88,7 @@ export interface AgentDefinitionMessage {
    * The registered kind this payload is an instance of, when it is one.
    */
   __kind?: string;
-  content: AgentDefinitionTextBlock[];
+  content: (AgentDefinitionTextBlock | DecisionQuestions | DecisionAnswers | SpeechScript | ImageMediaPart | AudioMediaPart | VideoMediaPart | DocumentMediaPart | YouTubeMediaPart)[];
 }
 
 /**
@@ -126,7 +126,7 @@ export interface AgentDefinitionSettings {
   temperature?: number | null;
   reasoning_effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | null;
   max_output_tokens?: number | null;
-  reasoning_summary?: "auto" | "concise" | "detailed" | "always" | "never" | null;
+  reasoning_summary?: "concise" | "detailed" | "never" | "auto" | "always" | null;
   internal_web_search?: boolean | null;
   internal_url_context?: boolean | null;
 }
@@ -157,6 +157,7 @@ export interface AgentDefinitionVariable {
    * The registered kind this payload is an instance of, when it is one.
    */
   __kind?: string;
+  control?: AgentDefinitionVariableControl | null;
   helpText?: string | null;
   required?: boolean;
   defaultValue?: string;
@@ -180,6 +181,23 @@ export interface AgentDefinitionVariableComponent {
   options?: string[] | null;
   allowOther?: boolean | null;
   toggleValues?: string[] | null;
+}
+
+/**
+ * Binds the variable to a model control (controls as first-class variables):
+ * the variable's value IS the control's value for the run, and its
+ * ``defaultValue`` is the agent's own literal. Whether a caller may change it
+ * is the organization's ``agents.controls / variable_bindable_keys`` knob —
+ * ``agent_catalog list_models`` reports it per model.
+ *  *
+ *  * From kind `agent_definition`.
+ */
+export interface AgentDefinitionVariableControl {
+  key: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
 }
 
 /**
@@ -236,7 +254,7 @@ export interface AiAnswerReference {
  *  * From kind `agent_react_result`.
  */
 export interface AiExecutionResult {
-  usage?: AiUsage;
+  usage?: AiUsage_AgentReactResult;
   /**
    * The registered kind this payload is an instance of, when it is one.
    */
@@ -308,6 +326,44 @@ export interface AiMessage {
 }
 
 /**
+ * ONE model substitution that happened inside this step, and WHY.
+ *
+ * 🚨 THE SUBSTITUTION IS PART OF THE ANSWER'S PROVENANCE. A step names its
+ * model, and when the provider refuses the call (429/529/503, or a
+ * ``billing_error`` — "your credit balance is too low") the executor reroutes:
+ * first to a sibling ``ai.offering`` of the SAME model, then to the model
+ * row's ``retry_fallback_id`` — a DIFFERENT model, usually a different
+ * vendor. That reroute is announced on the stream (``info`` code
+ * ``provider_overload_reroute`` / ``provider_credit_reroute``) and recorded in
+ * the request metadata — but until 2026-09-12 NONE of it reached the step's
+ * stored output. Live runs 843d5847…, 94d48d9c… and 339bb4bf… each authored
+ * ``claude-sonnet-5``, each ran entirely on ``gpt-4.1-2025-04-14`` because the
+ * Anthropic account was out of credit, and the only trace in the workflow was
+ * a usage block naming a model nobody chose. A reader of the run could not
+ * tell a deliberate choice from a silent downgrade. This is that record: it
+ * rides the usage block (:attr:`AiUsage.reroutes`), so the same place that
+ * says WHICH model ran also says which model was ASKED FOR and why it did not.
+ *  *
+ *  * Shared by 2 kinds (agent_react_result, transcription_result).
+ */
+export interface AiModelReroute {
+  kind?: string;
+  scope?: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  reason?: string;
+  to_model?: string;
+  error_type?: string;
+  from_model?: string;
+  status_code?: number | null;
+  to_offering_id?: string | null;
+  from_offering_id?: string | null;
+  attempts_on_model?: number;
+}
+
+/**
  * Per-model token/cost breakdown — one entry in :class:`AiUsage.models`.
  *
  * Closed shape, one canonical key-set across every producer. ``cost_usd``
@@ -341,9 +397,58 @@ export interface AiModelUsage {
  * one canonical key-set (``cost_usd`` everywhere), so this is a precise
  * contract, not an open ``dict[str, JsonValue]``.
  *  *
- *  * Shared by 5 kinds (agent_react_result, agent_result, generated_audio, generated_image_set, …).
+ *  * From kind `agent_react_result`.
  */
-export interface AiUsage {
+export interface AiUsage_AgentReactResult {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * Per-model usage breakdown keyed by canonical model name.
+   */
+  models?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: AiModelUsage | string | undefined;
+  };
+  /**
+   * Total estimated provider cost in US dollars.
+   */
+  cost_usd?: number;
+  /**
+   * Model substitutions that happened during the run, in order — empty on the normal path. A non-empty list means the model the step NAMED did not (fully) run: see AiModelReroute.
+   */
+  reroutes?: AiModelReroute[];
+  /**
+   * Total input tokens billed across the run.
+   */
+  input_tokens?: number;
+  /**
+   * Combined input and output token count across the run.
+   */
+  total_tokens?: number;
+  /**
+   * Total output tokens billed across the run.
+   */
+  output_tokens?: number;
+}
+
+/**
+ * Aggregated token / cost usage for the run.
+ *
+ * Every constructor in the package (``_extract_usage`` below and the
+ * podcast pipeline's stage aggregators) sets only the declared fields, so
+ * the model is closed — no ``extra="allow"``. Per-model breakdown values are
+ * typed as :class:`AiModelUsage`: the two producer shapes were unified onto
+ * one canonical key-set (``cost_usd`` everywhere), so this is a precise
+ * contract, not an open ``dict[str, JsonValue]``.
+ *  *
+ *  * Shared by 4 kinds (agent_result, generated_audio, generated_image_set, generated_video_set).
+ */
+export interface AiUsage_AgentResult {
   /**
    * The registered kind this payload is an instance of, when it is one.
    */
@@ -710,6 +815,34 @@ export interface AssignmentSessionSummary {
    * SHA-256 fingerprint of the plan materialized for this session.
    */
   plan_fingerprint: string;
+}
+
+/**
+ * * From kind `agent_definition`.
+ */
+export interface AudioMediaPart {
+  url?: string | null;
+  kind: "audio";
+  role?: "lip_sync" | null;
+  type: "media";
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  origin?: "matrx" | "external" | null;
+  cdn_url?: string | null;
+  file_id?: string | null;
+  metadata?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  };
+  mime_type?: string | null;
+  size_bytes?: number | null;
+  visibility?: string | null;
+  duration_ms?: number | null;
+  transcription_result?: string | null;
 }
 
 /**
@@ -1532,7 +1665,7 @@ export interface DecisionProvenance {
 /**
  * One question. Not a kind: it has no meaning outside its batch.
  *  *
- *  * From kind `decision_questions`.
+ *  * Shared by 2 kinds (agent_definition, decision_questions).
  */
 export interface DecisionQuestion {
   name: string;
@@ -1555,7 +1688,7 @@ export interface DecisionQuestion {
 /**
  * What the decision call consumed. Zero is a real value, never a stand-in.
  *  *
- *  * From kind `decision_answers`.
+ *  * Shared by 2 kinds (agent_definition, decision_answers).
  */
 export interface DecisionUsage {
   /**
@@ -1679,6 +1812,34 @@ export interface DocStructuredSection {
   summary?: string;
   section_id: string;
   source_chunk_ids?: string[];
+}
+
+/**
+ * * From kind `agent_definition`.
+ */
+export interface DocumentMediaPart {
+  url?: string | null;
+  kind: "document";
+  type: "media";
+  width?: number | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  height?: number | null;
+  origin?: "matrx" | "external" | null;
+  cdn_url?: string | null;
+  file_id?: string | null;
+  metadata?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  };
+  mime_type?: string | null;
+  page_count?: number | null;
+  size_bytes?: number | null;
+  visibility?: string | null;
 }
 
 /**
@@ -2255,6 +2416,35 @@ export interface ImageConceptKind {
 }
 
 /**
+ * * From kind `agent_definition`.
+ */
+export interface ImageMediaPart {
+  url?: string | null;
+  kind: "image";
+  name?: string | null;
+  role?: "subject" | "character" | "style" | "mask" | "edit_target" | "composition_control" | "first_frame" | "last_frame" | "asset" | null;
+  type: "media";
+  width?: number | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  height?: number | null;
+  origin?: "matrx" | "external" | null;
+  cdn_url?: string | null;
+  file_id?: string | null;
+  metadata?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  };
+  mime_type?: string | null;
+  size_bytes?: number | null;
+  visibility?: string | null;
+}
+
+/**
  * Mirrors ``MetadataContainers`` — which metadata blocks the file carries.
  *  *
  *  * From kind `image_metadata_report`.
@@ -2352,9 +2542,9 @@ export interface IngestedChunk {
 }
 
 /**
- * * Shared by 2 kinds (gsc_site_intake_proposal, site_intake_analysis).
+ * * From kind `gsc_site_intake_proposal`.
  */
-export interface IntakeBusinessInference {
+export interface IntakeBusinessInference_GscSiteIntakeProposal {
   /**
    * The registered kind this payload is an instance of, when it is one.
    */
@@ -2369,23 +2559,22 @@ export interface IntakeBusinessInference {
 /**
  * * From kind `site_intake_analysis`.
  */
-export interface IntakeClassifyEstimate_SiteIntakeAnalysis {
+export interface IntakeBusinessInference_SiteIntakeAnalysis {
   /**
    * The registered kind this payload is an instance of, when it is one.
    */
   __kind?: string;
-  batches: number;
-  batch_size: number;
-  est_cost_usd?: number | null;
-  est_input_tokens: number;
-  est_output_tokens: number;
-  unclassified_keywords: number;
+  evidence: string;
+  confidence: "high" | "medium" | "low";
+  business_model: "products" | "services" | "content_publisher" | "marketplace" | "local_service" | "saas" | "nonprofit" | "mixed" | "unknown";
+  what_they_sell: string;
+  money_definition: string;
 }
 
 /**
- * * From kind `site_intake_apply_result`.
+ * * Shared by 2 kinds (site_intake_analysis, site_intake_apply_result).
  */
-export interface IntakeClassifyEstimate_SiteIntakeApplyResult {
+export interface IntakeClassifyEstimate {
   /**
    * The registered kind this payload is an instance of, when it is one.
    */
@@ -2425,16 +2614,30 @@ export interface IntakeProposal {
    */
   __kind?: string;
   term_groups?: IntakeTermGroup_SiteIntakeAnalysis[];
-  key_questions?: IntakeQuestion[];
-  business_inference: IntakeBusinessInference;
+  key_questions?: IntakeQuestion_SiteIntakeAnalysis[];
+  business_inference: IntakeBusinessInference_SiteIntakeAnalysis;
   overall_confidence: "high" | "medium" | "low";
   proposed_brand_aliases?: string[];
 }
 
 /**
- * * Shared by 2 kinds (gsc_site_intake_proposal, site_intake_analysis).
+ * * From kind `gsc_site_intake_proposal`.
  */
-export interface IntakeQuestion {
+export interface IntakeQuestion_GscSiteIntakeProposal {
+  id: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  question: string;
+  why_it_matters: string;
+  suggested_answers?: string[];
+}
+
+/**
+ * * From kind `site_intake_analysis`.
+ */
+export interface IntakeQuestion_SiteIntakeAnalysis {
   id: string;
   /**
    * The registered kind this payload is an instance of, when it is one.
@@ -3643,9 +3846,21 @@ export interface PageRef {
  *  * From kind `pdf_table_extraction`.
  */
 export interface PdfTableBbox {
+  /**
+   * Left edge, in PDF points from the page's left.
+   */
   x0: number;
+  /**
+   * Right edge, in PDF points from the page's left.
+   */
   x1: number;
+  /**
+   * Top edge, in PDF points from the page's top.
+   */
   y0: number;
+  /**
+   * Bottom edge, in PDF points from the page's top.
+   */
   y1: number;
   /**
    * The registered kind this payload is an instance of, when it is one.
@@ -6088,7 +6303,7 @@ export interface SourcedSpec {
 /**
  * One spoken turn. Not a kind: it has no meaning outside its script.
  *  *
- *  * From kind `speech_script`.
+ *  * Shared by 2 kinds (agent_definition, speech_script).
  */
 export interface SpeechTurn {
   /**
@@ -6471,6 +6686,10 @@ export interface TranscriptionUsage {
    */
   cost_usd?: number;
   /**
+   * Model substitutions that happened during the run, in order — empty on the normal path. A non-empty list means the model the step NAMED did not (fully) run: see AiModelReroute.
+   */
+  reroutes?: AiModelReroute[];
+  /**
    * Total input tokens billed across the run.
    */
   input_tokens?: number;
@@ -6622,6 +6841,36 @@ export interface ValueUnknown {
 }
 
 /**
+ * * From kind `agent_definition`.
+ */
+export interface VideoMediaPart {
+  url?: string | null;
+  kind: "video";
+  name?: string | null;
+  role?: "extend" | "restyle" | null;
+  type: "media";
+  width?: number | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  height?: number | null;
+  origin?: "matrx" | "external" | null;
+  cdn_url?: string | null;
+  file_id?: string | null;
+  metadata?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  };
+  mime_type?: string | null;
+  size_bytes?: number | null;
+  visibility?: string | null;
+  duration_ms?: number | null;
+}
+
+/**
  * * From kind `video_prompt_options`.
  */
 export interface VideoPromptVariation {
@@ -6642,6 +6891,30 @@ export interface VideoPromptVariation {
   interpretation?: string;
 }
 
+/**
+ * * From kind `agent_definition`.
+ */
+export interface YouTubeMediaPart {
+  url: string;
+  kind: "youtube";
+  type: "media";
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  origin?: "external";
+  file_id?: string | null;
+  metadata?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  };
+  mime_type?: string | null;
+  size_bytes?: number | null;
+  external_url?: string | null;
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Registered kinds. One interface per active `content_ir.kind_definition`
 // row. A nested registered kind is a REFERENCE to its own interface, never
@@ -6651,14 +6924,14 @@ export interface VideoPromptVariation {
 /**
  * Output of ``ai.agent.assignment_batch`` — the durable session + item results.
  *  *
- *  * Kind `agent_assignment_batch_result` (registry v6).
+ *  * Kind `agent_assignment_batch_result` (registry v7).
  */
 export interface AgentAssignmentBatchResult {
   items?: AssignmentItemResult[];
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "agent_assignment_batch_result";
+  __kind?: "agent_assignment_batch_result";
   session: AssignmentSessionSummary;
 }
 
@@ -6669,7 +6942,7 @@ export interface AgentAssignmentBatchResult {
  * live ``agent.definition`` row (with its v1 snapshot); rendered, it is the
  * agent a person is watching being built.
  *  *
- *  * Kind `agent_definition` (registry v6).
+ *  * Kind `agent_definition` (registry v7).
  */
 export interface AgentDefinition {
   name: string;
@@ -6795,13 +7068,13 @@ export interface AgentMandateSpecification {
 /**
  * Output of ``ai.agent.react`` — final answer plus the step-by-step trace.
  *  *
- *  * Kind `agent_react_result` (registry v6).
+ *  * Kind `agent_react_result` (registry v7).
  */
 export interface AgentReactResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "agent_react_result";
+  __kind?: "agent_react_result";
   final_text?: string;
   iterations?: number;
   underlying: AiExecutionResult;
@@ -6821,7 +7094,7 @@ export interface AgentReactResult {
  *  * Kind `agent_result` (registry v5).
  */
 export interface AgentResult {
-  usage?: AiUsage;
+  usage?: AiUsage_AgentResult;
   /**
    * The registered kind this payload is an instance of.
    */
@@ -6972,13 +7245,13 @@ export interface AiCostSummary {
 /**
  * Output of ``ai.extract`` — model-extracted structured data + raw text.
  *  *
- *  * Kind `ai_extract_result` (registry v6).
+ *  * Kind `ai_extract_result` (registry v7).
  */
 export interface AiExtractResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "ai_extract_result";
+  __kind?: "ai_extract_result";
   raw_response?: string;
   extracted_data?: {
     /**
@@ -7083,14 +7356,14 @@ export interface AiVisibilityPanelRunResult {
  * Output of ``seo.ai_visibility.brand.analyze`` — one buyer question asked
  * across AI answer engines, with brand mentions, claims, and citations.
  *  *
- *  * Kind `ai_visibility_result` (registry v4).
+ *  * Kind `ai_visibility_result` (registry v5).
  */
 export interface AiVisibilityResult {
   query?: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "ai_visibility_result";
+  __kind?: "ai_visibility_result";
   engines?: string[];
   site_id?: string;
   summary?: AiVisibilitySummaryResult;
@@ -7198,13 +7471,13 @@ export interface ArtisanDemoReadingList {
 }
 
 /**
- * Kind `assertion_result` (registry v10).
+ * Kind `assertion_result` (registry v11).
  */
 export interface AssertionResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "assertion_result";
+  __kind?: "assertion_result";
   /**
    * The inputs passed through unchanged, so downstream steps still receive them.
    */
@@ -8122,7 +8395,7 @@ export interface ContentFingerprint {
  * Output of ``content_plan.archetype.preview`` / ``.apply`` — the routes, page
  * counts, concepts, and foundation work an archetype creates (or would create).
  *  *
- *  * Kind `content_plan_archetype_instantiation` (registry v6).
+ *  * Kind `content_plan_archetype_instantiation` (registry v7).
  */
 export interface ContentPlanArchetypeInstantiation {
   label?: string;
@@ -8130,7 +8403,7 @@ export interface ContentPlanArchetypeInstantiation {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "content_plan_archetype_instantiation";
+  __kind?: "content_plan_archetype_instantiation";
   counts?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -8157,14 +8430,14 @@ export interface ContentPlanArchetypeInstantiation {
 /**
  * Output of ``content_plan.archetypes.list`` — the available site-plan archetypes.
  *  *
- *  * Kind `content_plan_archetype_list` (registry v6).
+ *  * Kind `content_plan_archetype_list` (registry v7).
  */
 export interface ContentPlanArchetypeList {
   count?: number;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "content_plan_archetype_list";
+  __kind?: "content_plan_archetype_list";
   archetypes?: ContentPlanArchetype[];
 }
 
@@ -8172,7 +8445,7 @@ export interface ContentPlanArchetypeList {
  * Output of ``content_plan.foundation.check`` — declared vs live counts
  * for an archetype's tokens, components, navigation, assets, and pages.
  *  *
- *  * Kind `content_plan_foundation_checklist` (registry v4).
+ *  * Kind `content_plan_foundation_checklist` (registry v5).
  */
 export interface ContentPlanFoundationChecklist {
   met?: number;
@@ -8181,7 +8454,7 @@ export interface ContentPlanFoundationChecklist {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "content_plan_foundation_checklist";
+  __kind?: "content_plan_foundation_checklist";
   counts?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -8204,7 +8477,7 @@ export interface ContentPlanFoundationChecklist {
 /**
  * Output of ``content_plan.sites.list`` — the sites available to the current user.
  *  *
- *  * Kind `content_plan_site_list` (registry v4).
+ *  * Kind `content_plan_site_list` (registry v5).
  */
 export interface ContentPlanSiteList {
   count?: number;
@@ -8218,13 +8491,13 @@ export interface ContentPlanSiteList {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "content_plan_site_list";
+  __kind?: "content_plan_site_list";
 }
 
 /**
  * Output of ``content_plan.tree.read`` — a site's planned page tree, parent-first.
  *  *
- *  * Kind `content_plan_tree` (registry v4).
+ *  * Kind `content_plan_tree` (registry v5).
  */
 export interface ContentPlanTree {
   count?: number;
@@ -8233,7 +8506,7 @@ export interface ContentPlanTree {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "content_plan_tree";
+  __kind?: "content_plan_tree";
   site_id?: string;
   truncation_notice?: string | null;
 }
@@ -9366,7 +9639,7 @@ export interface GeneratedAudio {
    * TTS model id that produced the audio.
    */
   model: string;
-  usage?: AiUsage;
+  usage?: AiUsage_AgentResult;
   /**
    * The registered kind this payload is an instance of.
    */
@@ -9413,7 +9686,7 @@ export interface GeneratedImageSet {
    * Image model id that produced the images.
    */
   model: string;
-  usage?: AiUsage;
+  usage?: AiUsage_AgentResult;
   /**
    * The registered kind this payload is an instance of.
    */
@@ -9436,7 +9709,7 @@ export interface GeneratedVideoSet {
    * Video model id that produced the videos.
    */
   model: string;
-  usage?: AiUsage;
+  usage?: AiUsage_AgentResult;
   /**
    * The registered kind this payload is an instance of.
    */
@@ -9508,7 +9781,7 @@ export interface GoogleMarketingResult {
 /**
  * Output of ``web.google.search`` — the SerpAPI Google search response.
  *  *
- *  * Kind `google_search_results` (registry v4).
+ *  * Kind `google_search_results` (registry v6).
  */
 export interface GoogleSearchResults {
   ads?: ({
@@ -9522,7 +9795,7 @@ export interface GoogleSearchResults {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "google_search_results";
+  __kind?: "google_search_results";
   answer_box?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -9780,8 +10053,8 @@ export interface GscSiteIntakeProposal {
    */
   __kind: "gsc_site_intake_proposal";
   term_groups?: IntakeTermGroup_GscSiteIntakeProposal[];
-  key_questions?: IntakeQuestion[];
-  business_inference: IntakeBusinessInference;
+  key_questions?: IntakeQuestion_GscSiteIntakeProposal[];
+  business_inference: IntakeBusinessInference_GscSiteIntakeProposal;
   overall_confidence: "high" | "medium" | "low";
   proposed_brand_aliases?: string[];
 }
@@ -11990,13 +12263,13 @@ export interface NewsResult {
  * both NewsAPI-backed nodes share this exact field set (see module
  * docstring).
  *  *
- *  * Kind `news_search_results` (registry v4).
+ *  * Kind `news_search_results` (registry v6).
  */
 export interface NewsSearchResults {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "news_search_results";
+  __kind?: "news_search_results";
   status?: string;
   articles?: ({
     /**
@@ -12960,14 +13233,14 @@ export interface PartyKindVerdict {
 }
 
 /**
- * Kind `pdf_table_extraction` (registry v6).
+ * Kind `pdf_table_extraction` (registry v7).
  */
 export interface PdfTableExtraction {
   pages?: number;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "pdf_table_extraction";
+  __kind?: "pdf_table_extraction";
   tables?: DataTable[];
   detector?: string;
   table_count?: number;
@@ -13714,7 +13987,7 @@ export interface PressSourceRequestIngestResult {
 /**
  * Output of ``seo.press.story_angles.generate`` — mirrors ``StoryAngleGenerateResult``.
  *  *
- *  * Kind `press_story_angle_generation_result` (registry v6).
+ *  * Kind `press_story_angle_generation_result` (registry v7).
  */
 export interface PressStoryAngleGenerationResult {
   kept: number;
@@ -13728,7 +14001,7 @@ export interface PressStoryAngleGenerationResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "press_story_angle_generation_result";
+  __kind?: "press_story_angle_generation_result";
   created?: number;
   dropped: number;
   updated?: number;
@@ -14187,13 +14460,13 @@ export interface QuizSet {
 /**
  * Output of ``rag.chunk`` (and, today, ``rag.enrich`` — see module docstring).
  *  *
- *  * Kind `rag_chunk_set` (registry v6).
+ *  * Kind `rag_chunk_set` (registry v7).
  */
 export interface RagChunkSet {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "rag_chunk_set";
+  __kind?: "rag_chunk_set";
   chunks?: RagChunk[];
   source?: {
     /**
@@ -14231,13 +14504,13 @@ export interface RagClaimVerification {
 /**
  * Output of ``rag.classify`` — the chosen chunker/language for a source.
  *  *
- *  * Kind `rag_classification_result` (registry v6).
+ *  * Kind `rag_classification_result` (registry v7).
  */
 export interface RagClassificationResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "rag_classification_result";
+  __kind?: "rag_classification_result";
   source?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -14251,13 +14524,13 @@ export interface RagClassificationResult {
 /**
  * Output of ``rag.search_cross_doc`` — library and case results, side by side.
  *  *
- *  * Kind `rag_cross_doc_search_result` (registry v4).
+ *  * Kind `rag_cross_doc_search_result` (registry v6).
  */
 export interface RagCrossDocSearchResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "rag_cross_doc_search_result";
+  __kind?: "rag_cross_doc_search_result";
   case_hits?: RetrievedChunk[];
   case_query?: string;
   library_hits?: RetrievedChunk[];
@@ -14269,13 +14542,13 @@ export interface RagCrossDocSearchResult {
 /**
  * Output of ``rag.embed`` — chunks plus their embedding vectors.
  *  *
- *  * Kind `rag_embedded_chunk_set` (registry v6).
+ *  * Kind `rag_embedded_chunk_set` (registry v7).
  */
 export interface RagEmbeddedChunkSet {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "rag_embedded_chunk_set";
+  __kind?: "rag_embedded_chunk_set";
   chunks?: RagChunk[];
   source?: {
     /**
@@ -14298,13 +14571,13 @@ export interface RagEmbeddedChunkSet {
 /**
  * Output of ``rag.audit`` — the ingestion run's closing report.
  *  *
- *  * Kind `rag_ingestion_audit` (registry v6).
+ *  * Kind `rag_ingestion_audit` (registry v7).
  */
 export interface RagIngestionAudit {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "rag_ingestion_audit";
+  __kind?: "rag_ingestion_audit";
   summary?: RagAuditSummary;
 }
 
@@ -14342,13 +14615,13 @@ export interface RagLibraryPdfIngestionResult {
 /**
  * Output of ``rag.parse`` — the source's content converted to plain text.
  *  *
- *  * Kind `rag_parsed_document` (registry v4).
+ *  * Kind `rag_parsed_document` (registry v5).
  */
 export interface RagParsedDocument {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "rag_parsed_document";
+  __kind?: "rag_parsed_document";
   parsed?: RagParsedDocument_RagParsedDocument | null;
   source?: {
     /**
@@ -14362,13 +14635,13 @@ export interface RagParsedDocument {
 /**
  * Output of ``rag.repo.ingest`` — a full-repo walk + ingestion summary.
  *  *
- *  * Kind `rag_repo_ingestion_result` (registry v4).
+ *  * Kind `rag_repo_ingestion_result` (registry v5).
  */
 export interface RagRepoIngestionResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "rag_repo_ingestion_result";
+  __kind?: "rag_repo_ingestion_result";
   failures?: RagRepoIngestFailure[];
   repo_ref?: string;
   repo_path?: string;
@@ -14392,13 +14665,13 @@ export interface RagRepoIngestionResult {
 /**
  * Output of ``rag.resolve`` — a source's current content, ready to parse.
  *  *
- *  * Kind `rag_resolved_source` (registry v4).
+ *  * Kind `rag_resolved_source` (registry v5).
  */
 export interface RagResolvedSource {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "rag_resolved_source";
+  __kind?: "rag_resolved_source";
   source?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -14412,7 +14685,7 @@ export interface RagResolvedSource {
 /**
  * Output of ``rag.search`` — the best matching passages with sources.
  *  *
- *  * Kind `rag_search_result` (registry v4).
+ *  * Kind `rag_search_result` (registry v6).
  */
 export interface RagSearchResult {
   hits?: RetrievedChunk[];
@@ -14420,7 +14693,7 @@ export interface RagSearchResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "rag_search_result";
+  __kind?: "rag_search_result";
   latency_ms?: number;
   reranker_model?: string | null;
   embedding_model?: string;
@@ -14487,13 +14760,13 @@ export interface RagSynthesizeResult {
  * Output of ``rag.upsert`` — the transactional write to ``rag.kg_chunks``
  * plus ``rag.embeddings_*``.
  *  *
- *  * Kind `rag_upsert_result` (registry v4).
+ *  * Kind `rag_upsert_result` (registry v5).
  */
 export interface RagUpsertResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "rag_upsert_result";
+  __kind?: "rag_upsert_result";
   source?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -14626,13 +14899,13 @@ export interface RecipientShortlistVerdict {
  * THE ``record_result`` kind — one model for every node that answers with
  * a single reshaped record (``data.merge``, ``data.pick``, ``data.omit``).
  *  *
- *  * Kind `record_result` (registry v8).
+ *  * Kind `record_result` (registry v9).
  */
 export interface RecordResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "record_result";
+  __kind?: "record_result";
   /**
    * The resulting record.
    */
@@ -15841,7 +16114,7 @@ export interface SeoAuthorityRouteResult {
  * Output of ``seo.backlinks.enrich`` — raw backlink rows turned into
  * assessed, actionable evidence.
  *  *
- *  * Kind `seo_backlink_enrichment_result` (registry v4).
+ *  * Kind `seo_backlink_enrichment_result` (registry v5).
  */
 export interface SeoBacklinkEnrichmentResult {
   items?: SeoBacklinkEnrichItemResult[];
@@ -15855,7 +16128,7 @@ export interface SeoBacklinkEnrichmentResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_backlink_enrichment_result";
+  __kind?: "seo_backlink_enrichment_result";
   failed?: number;
   claimed?: number;
   site_id?: string;
@@ -15882,13 +16155,13 @@ export interface SeoBacklinkRefreshResult {
 /**
  * Output of ``seo.ga4.analytics.sync`` (and sibling provider-sync nodes).
  *  *
- *  * Kind `seo_collection_receipts` (registry v4).
+ *  * Kind `seo_collection_receipts` (registry v5).
  */
 export interface SeoCollectionReceipts {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_collection_receipts";
+  __kind?: "seo_collection_receipts";
   receipts?: ({
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -15901,7 +16174,7 @@ export interface SeoCollectionReceipts {
 /**
  * Output of ``seo.competitors.classification.propose``.
  *  *
- *  * Kind `seo_competitor_classification_proposal` (registry v4).
+ *  * Kind `seo_competitor_classification_proposal` (registry v5).
  */
 export interface SeoCompetitorClassificationProposal {
   rule?: string | null;
@@ -15909,7 +16182,7 @@ export interface SeoCompetitorClassificationProposal {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_competitor_classification_proposal";
+  __kind?: "seo_competitor_classification_proposal";
   posture: string;
   reasons?: {
     /**
@@ -15988,13 +16261,13 @@ export interface SeoFindingFixProposal {
 /**
  * Output of ``seo.finding.fix.draft`` — a reviewable drafted fix, never applied.
  *  *
- *  * Kind `seo_finding_fix_result` (registry v4).
+ *  * Kind `seo_finding_fix_result` (registry v5).
  */
 export interface SeoFindingFixResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_finding_fix_result";
+  __kind?: "seo_finding_fix_result";
   page_id?: string | null;
   site_id?: string;
   proposal?: {
@@ -16030,13 +16303,13 @@ export interface SeoGoogleListingCheckResult {
 /**
  * Output of ``seo.gsc.search_performance.sync`` — the terminal seo.receipt.
  *  *
- *  * Kind `seo_gsc_search_performance_receipt` (registry v4).
+ *  * Kind `seo_gsc_search_performance_receipt` (registry v5).
  */
 export interface SeoGscSearchPerformanceReceipt {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_gsc_search_performance_receipt";
+  __kind?: "seo_gsc_search_performance_receipt";
   receipt?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -16095,14 +16368,14 @@ export interface SeoKeywordRelationshipResearchResult {
  * module docstring) — every other field mirrors
  * ``aidream.services.seo.keyword_serp_intent.SerpIntentAnalysis`` exactly.
  *  *
- *  * Kind `seo_keyword_serp_intent_analysis` (registry v5).
+ *  * Kind `seo_keyword_serp_intent_analysis` (registry v6).
  */
 export interface SeoKeywordSerpIntentAnalysis {
   kind?: "keyword_serp_intent_analysis_v1";
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_keyword_serp_intent_analysis";
+  __kind?: "seo_keyword_serp_intent_analysis";
   phrase?: string;
   changes?: ({
     /**
@@ -16384,13 +16657,13 @@ export interface SeoPackage {
  * Output of ``seo.page.analyze`` — one canonical page's keyword, intent,
  * and content-role understanding.
  *  *
- *  * Kind `seo_page_analysis_result` (registry v5).
+ *  * Kind `seo_page_analysis_result` (registry v6).
  */
 export interface SeoPageAnalysisResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_page_analysis_result";
+  __kind?: "seo_page_analysis_result";
   page_id: string;
   site_id: string;
   summary?: {
@@ -16414,7 +16687,7 @@ export interface SeoPageAnalysisResult {
 /**
  * Output of ``seo.audit.page.run`` — one public page's SEO audit report.
  *  *
- *  * Kind `seo_page_audit_result` (registry v4).
+ *  * Kind `seo_page_audit_result` (registry v5).
  */
 export interface SeoPageAuditResult {
   url?: string;
@@ -16429,7 +16702,7 @@ export interface SeoPageAuditResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_page_audit_result";
+  __kind?: "seo_page_audit_result";
   issues?: SeoPageAuditIssue[];
   fetched_url?: string;
   result_kind?: "public.page_audit";
@@ -16460,13 +16733,13 @@ export interface SeoPageBatchSubmitResult {
  * Output of ``seo.pages.keywords.map`` — a site's pages and keywords
  * mapped for one topic cluster, including roles, priorities, and conflicts.
  *  *
- *  * Kind `seo_page_keyword_map_result` (registry v5).
+ *  * Kind `seo_page_keyword_map_result` (registry v6).
  */
 export interface SeoPageKeywordMapResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_page_keyword_map_result";
+  __kind?: "seo_page_keyword_map_result";
   site_id: string;
   summary?: {
     /**
@@ -16490,7 +16763,7 @@ export interface SeoPageKeywordMapResult {
 /**
  * Output of ``seo.performance.page.read`` — mirrors ``PagePerformanceResponse``.
  *  *
- *  * Kind `seo_page_performance` (registry v4).
+ *  * Kind `seo_page_performance` (registry v5).
  */
 export interface SeoPagePerformance {
   gsc: SeoGscPageSummary;
@@ -16498,7 +16771,7 @@ export interface SeoPagePerformance {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_page_performance";
+  __kind?: "seo_page_performance";
   config: SeoPagePerformanceConfig;
   page_id: string;
   site_id: string;
@@ -16601,13 +16874,13 @@ export interface SeoProspectImportReport {
  * rank-check command run — genuinely open, so it is typed as an explicit
  * ``dict[str, JsonValue]`` rather than forced closed.
  *  *
- *  * Kind `seo_rank_check_result` (registry v4).
+ *  * Kind `seo_rank_check_result` (registry v5).
  */
 export interface SeoRankCheckResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_rank_check_result";
+  __kind?: "seo_rank_check_result";
   run_id: string;
   receipt?: {
     /**
@@ -16899,14 +17172,14 @@ export interface SeoRobotsCheckResult {
  *
  * Mirrors ``SearchPerformanceReadResult`` field-for-field.
  *  *
- *  * Kind `seo_search_performance_daily` (registry v4).
+ *  * Kind `seo_search_performance_daily` (registry v5).
  */
 export interface SeoSearchPerformanceDaily {
   rows?: SeoSearchPerformanceRow[];
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_search_performance_daily";
+  __kind?: "seo_search_performance_daily";
   site_id: string;
   end_date: string;
   provider?: string | null;
@@ -16981,13 +17254,13 @@ export interface SeoSitePerformance {
  * last-run, row-count, failure, and next-due status for every SEO provider
  * on a site.
  *  *
- *  * Kind `seo_site_provider_freshness` (registry v4).
+ *  * Kind `seo_site_provider_freshness` (registry v5).
  */
 export interface SeoSiteProviderFreshness {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_site_provider_freshness";
+  __kind?: "seo_site_provider_freshness";
   site_id: string;
   providers?: SeoProviderScheduleStatus[];
   generated_at: string;
@@ -17018,14 +17291,14 @@ export interface SeoSpendSummary {
  * Output of ``seo.audit.structured_data.validate`` — every JSON-LD/
  * microdata block on a page, validated against Google rich-result rules.
  *  *
- *  * Kind `seo_structured_data_validation_result` (registry v4).
+ *  * Kind `seo_structured_data_validation_result` (registry v5).
  */
 export interface SeoStructuredDataValidationResult {
   url?: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_structured_data_validation_result";
+  __kind?: "seo_structured_data_validation_result";
   blocks?: SeoStructuredDataBlockReport[];
   block_count?: number;
   error_count?: number;
@@ -17205,7 +17478,7 @@ export interface ShiftedDatetime {
 /**
  * Output of ``seo.site.intake.analyze`` — the proposed intake interview.
  *  *
- *  * Kind `site_intake_analysis` (registry v4).
+ *  * Kind `site_intake_analysis` (registry v5).
  */
 export interface SiteIntakeAnalysis {
   usage?: {
@@ -17218,7 +17491,7 @@ export interface SiteIntakeAnalysis {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "site_intake_analysis";
+  __kind?: "site_intake_analysis";
   site_id: string;
   cost_usd?: number | null;
   model_id?: string | null;
@@ -17228,7 +17501,7 @@ export interface SiteIntakeAnalysis {
   data_min_date?: string | null;
   bundle_periods?: string[];
   proposal_doc_id?: string | null;
-  classify_estimate?: IntakeClassifyEstimate_SiteIntakeAnalysis | null;
+  classify_estimate?: IntakeClassifyEstimate | null;
 }
 
 /**
@@ -17244,7 +17517,7 @@ export interface SiteIntakeApplyResult {
   site_id: string;
   result_kind?: string;
   open_questions?: string[];
-  classify_estimate?: IntakeClassifyEstimate_SiteIntakeApplyResult | null;
+  classify_estimate?: IntakeClassifyEstimate | null;
   valuations_written?: number;
   brand_aliases_added?: string[];
   unknown_topic_slugs?: string[];
@@ -17270,13 +17543,13 @@ export interface SiteStrategyResult {
 /**
  * Output of ``seo.site.urls.verify`` — the durable verification sweep summary.
  *  *
- *  * Kind `site_url_verification_result` (registry v4).
+ *  * Kind `site_url_verification_result` (registry v5).
  */
 export interface SiteUrlVerificationResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "site_url_verification_result";
+  __kind?: "site_url_verification_result";
   summary: UrlVerificationSummary;
 }
 
@@ -17506,7 +17779,7 @@ export interface SpokenPracticeSession {
 }
 
 /**
- * Kind `sql_query_result` (registry v6).
+ * Kind `sql_query_result` (registry v7).
  */
 export interface SqlQueryResult {
   rows?: ({
@@ -17519,7 +17792,7 @@ export interface SqlQueryResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "sql_query_result";
+  __kind?: "sql_query_result";
   command?: string | null;
   row_count?: number;
 }
@@ -18457,7 +18730,7 @@ export interface TranscriptUsage {
 /**
  * Output of ``ai.transcribe`` — plain text + timing, no chat shape.
  *  *
- *  * Kind `transcription_result` (registry v6).
+ *  * Kind `transcription_result` (registry v7).
  */
 export interface TranscriptionResult {
   text?: string;
@@ -18466,7 +18739,7 @@ export interface TranscriptionResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "transcription_result";
+  __kind?: "transcription_result";
   language?: string | null;
   duration_seconds?: number;
 }
