@@ -95,6 +95,7 @@ export const agentRolesExtension: DeclarationExtension<Manifest> = {
     }
     return out;
   },
+  mirror: { table: "ui.ui_surface_agent_role", conflict: ["surface_name", "name"] },
   toRows: (m) =>
     (m.agentRoles ?? []).map((r) => ({
       table: "ui.ui_surface_agent_role",
@@ -182,6 +183,7 @@ export const clientToolsExtension: DeclarationExtension<Manifest> = {
     }
     return out;
   },
+  mirror: { table: "ui.ui_surface_client_tool", conflict: ["surface_name", "name"] },
   toRows: (m) =>
     (m.clientTools ?? []).map((t) => ({
       table: "ui.ui_surface_client_tool",

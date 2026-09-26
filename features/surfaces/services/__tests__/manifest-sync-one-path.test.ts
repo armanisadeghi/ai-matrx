@@ -149,4 +149,26 @@ describe("applyManifestSync writes only what the package plan declares", () => {
     // The declared surface's pattern already matches the DB: nothing was "set".
     expect(result.urlPatternsUpdated).toEqual([]);
   });
+
+  it("judges and deletes a stale row by its full key, never an item row's same-named screen twin", async () => {
+    const old = new Date(Date.now() - 48 * 3_600_000).toISOString();
+    const tables = baseTables();
+    tables["ui.ui_surface_value"] = [
+      // Declared screen value — must survive.
+      { surface_name: DECLARED, item_type: "", name: "pickup_address", updated_at: old },
+      // An item value of the same name no declaration carries — stale.
+      { surface_name: DECLARED, item_type: "pickup", name: "pickup_address", updated_at: old },
+    ];
+    const { client, calls } = recordingClient(tables);
+    const result = await applyManifestSync(client as any, { deleteStale: true });
+    const deletes = calls.filter((call) => call.op === "delete" && call.table === "ui.ui_surface_value");
+    expect(deletes.map((call) => call.filters)).toEqual([
+      [
+        ["surface_name", DECLARED],
+        ["item_type", "pickup"],
+        ["name", "pickup_address"],
+      ],
+    ]);
+    expect(result.deleted).toEqual([{ surfaceName: DECLARED, valueName: "pickup_address" }]);
+  });
 });

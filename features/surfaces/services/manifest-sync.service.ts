@@ -41,6 +41,7 @@ import {
   toPackageResolved,
 } from "@/features/surfaces/declare/surface-declare";
 import { executeSyncPlan } from "@/features/surfaces/services/execute-sync-plan";
+import { findStaleRows, type SurfaceSyncPlan } from "@ai-matrx/alchemy/checks";
 import { listRegisteredNamespaces } from "@/features/surfaces/config/namespace-registry";
 import { readAllRows } from "@ai-matrx/data/db";
 import { formatDurationMs } from "@ai-matrx/kit/format";
@@ -1236,6 +1237,11 @@ export interface DeleteMirrorRowArgs {
   surfaceName: string;
   /** The row's `name` — target name, value name, role name or tool name. */
   name: string;
+  /**
+   * Values and write targets are keyed (surface_name, item_type, name); '' is
+   * the screen level. Ignored for roles and tools, which have no item level.
+   */
+  itemType?: string;
   /** Set only after a human has been shown, and accepted, the recency warning. */
   acknowledgeRecent?: boolean;
 }
@@ -1287,16 +1293,22 @@ export async function deleteMirrorRow(
   args: DeleteMirrorRowArgs,
 ): Promise<DeleteMirrorRowResult> {
   const { table, surfaceName, name, acknowledgeRecent = false } = args;
+  const itemKeyed =
+    table === "ui_surface_value" || table === "ui_surface_write_target";
+  const itemType = itemKeyed ? (args.itemType ?? "") : undefined;
+  type Filterable<T> = T & { eq(column: string, value: string): Filterable<T> };
+  const byKey = <T,>(query: T): T => {
+    let q = query as unknown as Filterable<T>;
+    q = q.eq("surface_name", surfaceName).eq("name", name);
+    if (itemType !== undefined) q = q.eq("item_type", itemType);
+    return q as unknown as T;
+  };
 
   // 1. Read the row first. This both proves it exists and gives us the
   //    `updated_at` the recency guard and the result report need.
-  const read = await sb
-    .schema("ui")
-    .from(table)
-    .select("surface_name, name, updated_at")
-    .eq("surface_name", surfaceName)
-    .eq("name", name)
-    .maybeSingle();
+  const read = await byKey(
+    sb.schema("ui").from(table).select("surface_name, name, updated_at"),
+  ).maybeSingle();
   if (read.error) throw read.error;
   if (!read.data) {
     throw new Error(
@@ -1307,6 +1319,11 @@ export async function deleteMirrorRow(
   // 2. Staleness is recomputed from code, never taken from the caller. A row
   //    the manifests still declare is live; deleting it would only create the
   //    drift the next sync re-fixes, and this button is not the tool for it.
+  if (itemType) {
+    throw new Error(
+      `${STILL_DECLARED_REFUSAL_PREFIX} ${surfaceName} · ${itemType}.${name} is an item row; this action removes screen rows only. Run the manifest sync with Delete stale rows to remove stale item rows.`,
+    );
+  }
   if (manifestKeysForTable(table).has(`${surfaceName}::${name}`)) {
     throw new Error(
       `${STILL_DECLARED_REFUSAL_PREFIX} ${surfaceName} · ${name} is still declared in a code manifest, so it is not stale. This action only removes rows the drift report lists as DB-only.`,
@@ -1343,13 +1360,9 @@ export async function deleteMirrorRow(
   // 5. The delete, addressed by the full composite PK, and asserted to have
   //    hit exactly one row. `.select()` makes the affected set observable —
   //    without it a filter that matched two rows would succeed silently.
-  const del = await sb
-    .schema("ui")
-    .from(table)
-    .delete()
-    .eq("surface_name", surfaceName)
-    .eq("name", name)
-    .select("surface_name, name");
+  const del = await byKey(sb.schema("ui").from(table).delete()).select(
+    "surface_name, name",
+  );
   if (del.error) throw del.error;
   const affected = del.data ?? [];
   if (affected.length !== 1) {
@@ -1366,6 +1379,26 @@ export async function deleteMirrorRow(
     updatedAt,
     sweptPrefCount,
   };
+}
+
+/**
+ * Delete ONE stale mirror row filtered by EVERY column of its table's plan key
+ * (`plan.keys`) — never by (surface_name, name) alone, which would also hit an
+ * item row that shares a screen row's name.
+ */
+async function deleteByPlanKey(
+  sb: Sb,
+  plan: SurfaceSyncPlan,
+  table: MirrorTable,
+  row: Record<string, unknown>,
+): Promise<void> {
+  const key = plan.keys[`ui.${table}`];
+  if (!key) throw new Error(`Sync plan declares no key for ui.${table}`);
+  type Filterable = PromiseLike<{ error: unknown }> & { eq(column: string, value: unknown): Filterable };
+  let query = (sb.schema("ui").from(table).delete() as unknown as Filterable);
+  for (const column of key) query = query.eq(column, row[column] ?? "");
+  const del = await query;
+  if (del.error) throw del.error;
 }
 
 /**
@@ -1529,25 +1562,17 @@ export async function applyManifestSync(
         sb
           .schema("ui")
           .from("ui_surface_value")
-          .select("surface_name, name, updated_at", { count: "exact" })
+          .select("surface_name, item_type, name, updated_at", { count: "exact" })
           .order("surface_name", { ascending: true })
           .order("name", { ascending: true })
           .range(from, to),
       { label: "ui.ui_surface_value" },
     );
 
-    const managedSurfaces = new Set(targetManifests.map((m) => m.surfaceName));
-    const manifestKeys = new Set(
-      targetManifests.flatMap((m) =>
-        m.values.map((v) => `${m.surfaceName}::${v.name}`),
-      ),
-    );
-
-    const staleRows = allDb.filter(
-      (r) =>
-        managedSurfaces.has(r.surface_name) &&
-        !manifestKeys.has(`${r.surface_name}::${r.name}`),
-    );
+    // Stale = the package plan's own judgement, by the table's FULL key
+    // (surface_name, item_type, name): a screen value and an item value that
+    // share a name are different rows (ALC-14).
+    const staleRows = findStaleRows(plan, "ui.ui_surface_value", allDb);
     const { toDelete, skipped } = partitionStaleByRecency(
       "ui_surface_value",
       staleRows,
@@ -1555,13 +1580,7 @@ export async function applyManifestSync(
     );
     skippedRecentRows.push(...skipped);
     for (const row of toDelete) {
-      const del = await sb
-        .schema("ui")
-        .from("ui_surface_value")
-        .delete()
-        .eq("surface_name", row.surface_name)
-        .eq("name", row.name);
-      if (del.error) throw del.error;
+      await deleteByPlanKey(sb, plan, "ui_surface_value", row);
       deleted.push({ surfaceName: row.surface_name, valueName: row.name });
     }
   }
@@ -1585,18 +1604,7 @@ export async function applyManifestSync(
       { label: "ui.ui_surface_agent_role" },
     );
 
-    const managedSurfaces = new Set(targetManifests.map((m) => m.surfaceName));
-    const manifestRoleKeys = new Set(
-      targetManifests.flatMap((m) =>
-        (m.agentRoles ?? []).map((r) => `${m.surfaceName}::${r.name}`),
-      ),
-    );
-
-    const staleRoles = allDbRoles.filter(
-      (r) =>
-        managedSurfaces.has(r.surface_name) &&
-        !manifestRoleKeys.has(`${r.surface_name}::${r.name}`),
-    );
+    const staleRoles = findStaleRows(plan, "ui.ui_surface_agent_role", allDbRoles);
     const { toDelete: rolesToDelete, skipped: skippedRoles } =
       partitionStaleByRecency(
         "ui_surface_agent_role",
@@ -1614,13 +1622,7 @@ export async function applyManifestSync(
       if (prefCount.error) throw prefCount.error;
       sweptPrefCount += prefCount.count ?? 0;
 
-      const del = await sb
-        .schema("ui")
-        .from("ui_surface_agent_role")
-        .delete()
-        .eq("surface_name", row.surface_name)
-        .eq("name", row.name);
-      if (del.error) throw del.error;
+      await deleteByPlanKey(sb, plan, "ui_surface_agent_role", row);
       roleDeleted.push({ surfaceName: row.surface_name, roleName: row.name });
     }
   }
@@ -1637,26 +1639,14 @@ export async function applyManifestSync(
         sb
           .schema("ui")
           .from("ui_surface_write_target")
-          .select("surface_name, name, updated_at", { count: "exact" })
+          .select("surface_name, item_type, name, updated_at", { count: "exact" })
           .order("surface_name", { ascending: true })
           .order("name", { ascending: true })
           .range(from, to),
       { label: "ui.ui_surface_write_target" },
     );
 
-    const managedForTargets = new Set(
-      targetManifests.map((m) => m.surfaceName),
-    );
-    const manifestTargetKeys = new Set(
-      targetManifests.flatMap((m) =>
-        (m.writeTargets ?? []).map((t) => `${m.surfaceName}::${t.name}`),
-      ),
-    );
-    const staleTargets = allDbTargets.filter(
-      (t) =>
-        managedForTargets.has(t.surface_name) &&
-        !manifestTargetKeys.has(`${t.surface_name}::${t.name}`),
-    );
+    const staleTargets = findStaleRows(plan, "ui.ui_surface_write_target", allDbTargets);
     const { toDelete: targetsToDelete, skipped: skippedTargets } =
       partitionStaleByRecency(
         "ui_surface_write_target",
@@ -1665,13 +1655,7 @@ export async function applyManifestSync(
       );
     skippedRecentRows.push(...skippedTargets);
     for (const row of targetsToDelete) {
-      const del = await sb
-        .schema("ui")
-        .from("ui_surface_write_target")
-        .delete()
-        .eq("surface_name", row.surface_name)
-        .eq("name", row.name);
-      if (del.error) throw del.error;
+      await deleteByPlanKey(sb, plan, "ui_surface_write_target", row);
       writeTargetDeleted.push({
         surfaceName: row.surface_name,
         targetName: row.name,
@@ -1697,17 +1681,7 @@ export async function applyManifestSync(
       { label: "ui.ui_surface_client_tool" },
     );
 
-    const managedForTools = new Set(targetManifests.map((m) => m.surfaceName));
-    const manifestToolKeys = new Set(
-      targetManifests.flatMap((m) =>
-        (m.clientTools ?? []).map((t) => `${m.surfaceName}::${t.name}`),
-      ),
-    );
-    const staleTools = allDbTools.filter(
-      (t) =>
-        managedForTools.has(t.surface_name) &&
-        !manifestToolKeys.has(`${t.surface_name}::${t.name}`),
-    );
+    const staleTools = findStaleRows(plan, "ui.ui_surface_client_tool", allDbTools);
     const { toDelete: toolsToDelete, skipped: skippedTools } =
       partitionStaleByRecency(
         "ui_surface_client_tool",
@@ -1716,13 +1690,7 @@ export async function applyManifestSync(
       );
     skippedRecentRows.push(...skippedTools);
     for (const row of toolsToDelete) {
-      const del = await sb
-        .schema("ui")
-        .from("ui_surface_client_tool")
-        .delete()
-        .eq("surface_name", row.surface_name)
-        .eq("name", row.name);
-      if (del.error) throw del.error;
+      await deleteByPlanKey(sb, plan, "ui_surface_client_tool", row);
       clientToolDeleted.push({
         surfaceName: row.surface_name,
         toolName: row.name,
