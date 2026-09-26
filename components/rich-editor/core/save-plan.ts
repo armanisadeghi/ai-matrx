@@ -38,6 +38,7 @@ import {
   type SourceIsland,
   type SpliceIntegrity,
 } from "@ai-matrx/content-ir/source";
+import { findTableEnd, tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 export interface SaveRegion {
   /** Range in the stored text (block-aligned). */
@@ -294,6 +295,39 @@ function spliceInSteps(stored: string, current: string, deltas: readonly IslandD
   return steps;
 }
 
+/** Char ranges of the GFM tables in `text` (header through last row), by THE table rule. */
+function tableRanges(text: string): Array<[number, number]> {
+  const lines = text.split("\n");
+  const starts: number[] = [];
+  let offset = 0;
+  for (const line of lines) {
+    starts.push(offset);
+    offset += line.length + 1;
+  }
+  const ranges: Array<[number, number]> = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    if (!tableStartsAt(lines, i)) continue;
+    const end = findTableEnd(lines, i);
+    ranges.push([starts[i] ?? 0, (starts[end - 1] ?? 0) + (lines[end - 1] ?? "").length]);
+    i = end - 1;
+  }
+  return ranges;
+}
+
+const BR_TAG = /^<br\s*\/?>$/i;
+
+/**
+ * A `<br>` inside a table cell is GFM's in-cell line break — ordinary editable
+ * content the person types and deletes (verify-RC-B4 R6-3), never protected
+ * HTML asking for consent. Every other tag, and a `<br>` outside a table, stays
+ * protected.
+ */
+function isCellLineBreak(delta: IslandDelta, stored: string): boolean {
+  if (delta.kind === "swallowed" || delta.before === null || !BR_TAG.test(delta.before)) return false;
+  if (delta.after !== null && !BR_TAG.test(delta.after)) return false;
+  return tableRanges(stored).some(([start, end]) => delta.at >= start && delta.at < end);
+}
+
 interface RegionsBetween {
   storedBlocks: readonly SourceBlock[];
   regions: SaveRegion[];
@@ -378,7 +412,9 @@ export function planSave(
     (delta) =>
       delta.kind !== "added" &&
       delta.kind !== "moved" &&
-      !(delta.kind !== "swallowed" && delta.before !== null && approved.has(delta.before)),
+      !(delta.kind !== "swallowed" && delta.before !== null && approved.has(delta.before)) &&
+      // The splice still carries it as an island edit (proven); it just never asks.
+      !isCellLineBreak(delta, stored),
   );
 
   let error: string | null = null;

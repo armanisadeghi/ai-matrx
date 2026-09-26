@@ -342,7 +342,8 @@ describe("an in-cell <br> is a line break, not protected HTML (verify-RC-B4 R6-3
       return true;
     });
     const text = session.save();
-    expect(text).toBe("| Bay | Note |\n| --- | --- |\n| B3 | Re-scan before 6am |");
+    // The edited cell keeps its column width (trailing padding) — only that cell changed.
+    expect(text).toMatch(/^\| Bay \| Note \|\n\| --- \| --- \|\n\| B3 \| Re-scan before 6am +\|$/);
     const plan = planSave(STORED, text);
     expect(plan.needsConsent).toEqual([]);
     expect(plan.error).toBeNull();
