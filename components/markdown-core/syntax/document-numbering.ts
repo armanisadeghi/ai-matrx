@@ -125,3 +125,26 @@ export function computeDocumentNumbering(source: string): DocumentNumbering {
   }
   return { byLabel, byCaption, footnotes };
 }
+
+/**
+ * Same numbers? Two numberings that assign every label, caption and footnote
+ * the same display are interchangeable. The document root re-computes the
+ * numbering on every edit and every stream chunk; handing every MarkdownCore
+ * leaf a NEW object each time made every leaf of the document re-parse on
+ * every keystroke (the markdown-tester browser crash, 2026-09-26). The
+ * provider keeps the previous object whenever this says nothing changed.
+ */
+export function sameDocumentNumbering(a: DocumentNumbering, b: DocumentNumbering): boolean {
+  if (a === b) return true;
+  if (a.byLabel.size !== b.byLabel.size || a.byCaption.size !== b.byCaption.size || a.footnotes.size !== b.footnotes.size) return false;
+  for (const [k, v] of a.byLabel) {
+    const o = b.byLabel.get(k);
+    if (!o || o.kind !== v.kind || o.display !== v.display) return false;
+  }
+  for (const [k, v] of a.byCaption) {
+    const o = b.byCaption.get(k);
+    if (!o || o.length !== v.length || o.some((d, i) => d !== v[i])) return false;
+  }
+  for (const [k, v] of a.footnotes) if (b.footnotes.get(k) !== v) return false;
+  return true;
+}

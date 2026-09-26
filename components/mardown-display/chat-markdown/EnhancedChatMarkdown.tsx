@@ -11,12 +11,14 @@
 // features/rich-document/FEATURE.md and the `rich-document-actions` skill.
 // ─────────────────────────────────────────────────────────────────────────
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef } from "react";
 import { cn } from "@/styles/themes/utils";
 import { splitContentIntoBlocksV2 } from "../markdown-classification/processors/utils/content-splitter-v2";
 import { renderSettledFromRecord, settledOneShotBlocks } from "./settle-stream-blocks";
 import { expandTextBlocksInList } from "../markdown-classification/processors/utils/expand-text-blocks";
 import { RenderBlock } from "./block-registry/BlockRenderer";
+import { reuseUnchangedBlocks } from "./stable-blocks";
+import { useProgressiveCount } from "./progressive-mount";
 import { renderBlockToContentBlock } from "./render-block-to-content-block";
 import { DocumentNumberingProvider } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
 import { MarkdownSourceEditProvider } from "@/components/markdown-core/syntax/elements/MarkdownSourceEdit";
@@ -917,6 +919,21 @@ export const EnhancedChatMarkdownInternal: React.FC<
     return result;
   }, [blocks, isStreamActive]);
 
+  // THE UNCHANGED-BLOCK LAW (stable-blocks.ts): every re-split makes new
+  // block objects; hand back the previous object for every block whose data
+  // did not change, so only the block that changed renders again.
+  const prevBlocksRef = useRef<RenderBlock[]>([]);
+  const stableBlocks = useMemo(
+    () => reuseUnchangedBlocks(prevBlocksRef.current, processedBlocks),
+    [processedBlocks],
+  );
+  useLayoutEffect(() => {
+    prevBlocksRef.current = stableBlocks;
+  }, [stableBlocks]);
+
+  // A huge document mounts in slices, never in one frozen frame.
+  const mountedBlockCount = useProgressiveCount(stableBlocks.length);
+
   // Find the index of the last reasoning block for animation purposes
   const lastReasoningBlockIndex = useMemo(() => {
     for (let i = processedBlocks.length - 1; i >= 0; i--) {
@@ -935,8 +952,22 @@ export const EnhancedChatMarkdownInternal: React.FC<
    * resolutions, quiz results, etc.). Blocks call this with the original
    * substring and its replacement; the full content string is managed here.
    */
+  // Block callbacks read the LATEST content through this ref, so their
+  // identity never changes with the content (THE UNCHANGED-BLOCK LAW: a new
+  // callback per keystroke re-rendered every block).
+  const latestRef = useRef({ currentContent, onContentChange, applyLocalEdits });
+  useLayoutEffect(() => {
+    latestRef.current = { currentContent, onContentChange, applyLocalEdits };
+  });
+
+  const blockContentChange = useCallback((next: string) => {
+    const { onContentChange: change, currentContent: prev } = latestRef.current;
+    change?.(next, prev);
+  }, []);
+
   const replaceBlockContent = useCallback(
     (original: string, replacement: string) => {
+      const { currentContent, onContentChange, applyLocalEdits } = latestRef.current;
       try {
         const idx = currentContent.indexOf(original);
         if (idx === -1) {
@@ -959,7 +990,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
         console.error("[MarkdownStream] Error in replaceBlockContent:", error);
       }
     },
-    [currentContent, onContentChange, applyLocalEdits],
+    [],
   );
 
   const handleOpenEditor = useCallback(() => {
@@ -1042,11 +1073,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
             block={block}
             index={index}
             isStreamActive={isStreamActive}
-            onContentChange={
-              onContentChange
-                ? (next: string) => onContentChange(next, currentContent)
-                : undefined
-            }
+            onContentChange={onContentChange ? blockContentChange : undefined}
             conversationId={conversationId}
             messageId={messageId}
             requestId={requestId}
@@ -1078,7 +1105,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
       blockKey,
       isStreamActive,
       onContentChange,
-      currentContent,
+      blockContentChange,
       conversationId,
       messageId,
       requestId,
@@ -1464,7 +1491,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
                       renderGroupedSegment(segment, segIdx)
                     ),
                   )
-                : processedBlocks.map((block, index) =>
+                : stableBlocks.slice(0, mountedBlockCount).map((block, index) =>
                     renderBlock(
                       block,
                       index,
