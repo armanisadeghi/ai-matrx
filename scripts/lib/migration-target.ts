@@ -227,18 +227,12 @@ export function loadBranchRef(root: string, overridePath?: string): BranchRef {
     const m = line.match(/^\s*([a-z_]+)\s*=\s*(.+?)\s*$/);
     if (m) bag[m[1]!] = m[2]!;
   }
-  const need = [
-    "branch_ref",
-    "parent_ref",
-    "pooler_host",
-    "pooler_port",
-    "pooler_user",
-    "database",
-    "password_env_var",
-    "system_identifier",
-    "parent_system_identifier",
-  ];
-  const missing = need.filter((k) => !bag[k]);
+  // 🚨 The rehearsal branch was DELETED 2026-09-26. BRANCH-REF now carries PRODUCTION's
+  // identity (every run still needs it) and a pointer to the clone. The branch keys are
+  // required only while a branch is named; with none, the branch is RETIRED: `--target
+  // branch` is an alias of `--target clone` (aliasBranchTargetToClone) and
+  // loadBranchDbEnv refuses.
+  const missing = BRANCH_REF_REQUIRED_KEYS.filter((k) => !bag[k]);
   if (missing.length) {
     fail([
       `BRANCH-REF at ${path} is missing: ${missing.join(", ")}.`,
@@ -246,18 +240,76 @@ export function loadBranchRef(root: string, overridePath?: string): BranchRef {
       `  anything without them. Refusing rather than guessing.`,
     ]);
   }
+  if (bag.branch_ref) {
+    const missingBranch = BRANCH_REF_BRANCH_KEYS.filter((k) => !bag[k]);
+    if (missingBranch.length) {
+      fail([
+        `BRANCH-REF at ${path} names branch ${bag.branch_ref} but is missing: ${missingBranch.join(", ")}.`,
+        `  Refusing rather than guessing.`,
+      ]);
+    }
+  }
   return {
-    branchRef: bag.branch_ref!,
+    branchRef: bag.branch_ref ?? "",
     parentRef: bag.parent_ref!,
-    poolerHost: bag.pooler_host!,
-    poolerPort: Number(bag.pooler_port!),
-    poolerUser: bag.pooler_user!,
-    database: bag.database!,
-    passwordEnvVar: bag.password_env_var!,
-    systemIdentifier: bag.system_identifier!,
+    poolerHost: bag.pooler_host ?? "",
+    poolerPort: Number(bag.pooler_port ?? 0),
+    poolerUser: bag.pooler_user ?? "",
+    database: bag.database ?? "",
+    passwordEnvVar: bag.password_env_var ?? "",
+    systemIdentifier: bag.system_identifier ?? "",
     parentSystemIdentifier: bag.parent_system_identifier!,
     path,
   };
+}
+
+/** Production's identity: what every run reads from BRANCH-REF. */
+export const BRANCH_REF_REQUIRED_KEYS: readonly string[] = ["parent_ref", "parent_system_identifier"];
+/** The branch's own keys — present only while a rehearsal branch exists. */
+export const BRANCH_REF_BRANCH_KEYS: readonly string[] = [
+  "branch_ref",
+  "pooler_host",
+  "pooler_port",
+  "pooler_user",
+  "database",
+  "password_env_var",
+  "system_identifier",
+];
+
+/** True when BRANCH-REF names no branch — it was deleted 2026-09-26. */
+export function branchIsRetired(ref: BranchRef): boolean {
+  return !ref.branchRef;
+}
+
+export const BRANCH_RETIRED_NOTICE =
+  "--target branch now means --target clone: the rehearsal branch unified-data-campaign was " +
+  "deleted 2026-09-26; rehearsals run on the quarantined clone (common-docs/operations/clone/CURRENT.md).";
+
+/**
+ * Rewrite `--target branch` / `--target=branch` to `clone`, announcing it once. The branch
+ * is gone; every caller and doc that says "rehearse with --target branch" keeps working and
+ * lands on the clone, whose identity rule (project ref + quarantine facts) refuses
+ * production. Used by the RUNNER only — never inside `parseTargetFlag`, because other tools
+ * branch on `target === "branch"` and would fall through to production on an unknown value.
+ */
+export function aliasBranchTargetToClone(argv: readonly string[], announce = true): string[] {
+  const out: string[] = [];
+  let aliased = false;
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]!;
+    if (a === "--target" && argv[i + 1] === "branch") {
+      out.push("--target", "clone");
+      aliased = true;
+      i++;
+    } else if (a === "--target=branch") {
+      out.push("--target=clone");
+      aliased = true;
+    } else {
+      out.push(a);
+    }
+  }
+  if (aliased && announce) console.error(`! ${BRANCH_RETIRED_NOTICE}`);
+  return out;
 }
 
 // ── the nightly dev clone: CLONE-REF, its connection, and its two server facts ──
@@ -3179,10 +3231,12 @@ export function assertConfiguredHostMatchesTarget(
       `  nightly refresh throws away.`,
     ], "production-is-the-clone");
   }
+  // A retired BRANCH-REF has an empty branchRef, and "" is in every host — guard it.
   const looksLikeBranch =
-    conn.user === ref.poolerUser ||
-    conn.host.includes(ref.branchRef) ||
-    conn.user.endsWith(`.${ref.branchRef}`);
+    Boolean(ref.branchRef) &&
+    (conn.user === ref.poolerUser ||
+      conn.host.includes(ref.branchRef) ||
+      conn.user.endsWith(`.${ref.branchRef}`));
   if (target === "branch" && !looksLikeBranch) {
     fail([
       `--target branch, but the configured connection is not the rehearsal branch.`,
@@ -3234,7 +3288,7 @@ export async function assertServerMatchesTarget(
         : ref.parentSystemIdentifier;
   if (sysid !== expected) {
     const named =
-      sysid === ref.systemIdentifier
+      ref.systemIdentifier && sysid === ref.systemIdentifier
         ? `the rehearsal branch ${ref.branchRef}`
         : sysid === ref.parentSystemIdentifier
           ? `production ${ref.parentRef} (or a physical copy of it — see below)`
@@ -3423,6 +3477,13 @@ function readEnvFile(path: string): Record<string, string> {
 }
 
 export function loadBranchDbEnv(root: string, ref: BranchRef): BranchDbEnv {
+  if (branchIsRetired(ref)) {
+    fail([
+      `BRANCH-REF at ${ref.path} names no rehearsal branch: it was deleted 2026-09-26.`,
+      `  Rehearse on the quarantined clone with --target clone (the runners treat --target branch`,
+      `  as --target clone). Pointer: common-docs/operations/clone/CURRENT.md.`,
+    ], "branch-retired");
+  }
   const candidates: Array<[string, string | undefined]> = [
     ["the environment", process.env[ref.passwordEnvVar]],
     [".env.local", readEnvFile(resolve(root, ".env.local"))[ref.passwordEnvVar]],

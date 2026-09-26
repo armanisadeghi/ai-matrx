@@ -1,0 +1,12 @@
+{
+  "file": "copywritable_people_test_the_copy_until_the_switch.sql",
+  "sha256": "5bde06e48690fd02f03f31408dde90abee3088095f4fdf0a4b3627805c091f6b",
+  "target": "clone",
+  "firstPolicyDdlToEndMs": 10701,
+  "tables": [
+    "platform.cutover_evaluation_replaced",
+    "platform.cutover_evaluation_write"
+  ],
+  "measuredAt": "2026-09-26T02:53:17.729Z",
+  "note": "First policy statement to the end of the measure-pass transaction, measured on the dev clone by pnpm db:rehearse. That span is the sign-in freeze. Bound to the file's sha256: edit the file and this record stops answering for it."
+}

@@ -160,6 +160,8 @@ import {
   type BranchRef,
   INVERSE_DIRNAME,
   parseTargetFlag,
+  aliasBranchTargetToClone,
+  branchIsRetired,
   readHeader,
   REHEARSAL_DIRNAME,
   CAMPAIGN_DIRNAME,
@@ -3489,6 +3491,13 @@ async function targetSelfTest(statementTimeout: string): Promise<number> {
     );
     return 2;
   }
+  if (branchIsRetired(ref)) {
+    console.log(
+      `${TAG.warn}target-self-test: the branch proofs are RETIRED — BRANCH-REF names no branch ` +
+        `(deleted 2026-09-26); --target branch is an alias of --target clone. Running the clone's proofs.`,
+    );
+    return cloneSelfTest(statementTimeout);
+  }
   let branchEnv;
   try {
     branchEnv = loadBranchDbEnv(ROOT, ref);
@@ -5140,6 +5149,9 @@ async function ledgerRebaseSelfTest(argv: readonly string[]): Promise<number> {
 }
 
 async function main(): Promise<number> {
+  // The rehearsal branch was deleted 2026-09-26: `--target branch` is an announced alias of
+  // `--target clone`, rewritten in process.argv itself so every reader below sees the clone.
+  process.argv = [...process.argv.slice(0, 2), ...aliasBranchTargetToClone(process.argv.slice(2))];
   const argv = process.argv.slice(2);
   const dryRun = argv.includes("--dry-run");
   const reapply = argv.includes("--reapply");

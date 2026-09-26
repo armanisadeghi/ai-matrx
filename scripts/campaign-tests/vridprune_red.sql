@@ -75,7 +75,7 @@ begin
 end $oracle$;
 
 -- ══ R1: THE PRE-FIX BODY, from the inverse's own bytes.
-\i migrations/inverse/vridprune_a_person_is_asked_only_about_organizations_they_have_a_way_into_down.sql
+\i migrations/inverse/vridprune_the_record_set_skips_organizations_a_person_has_no_way_into_down.sql
 
 select set_config('vrid.calls_before',
          coalesce((select calls from pg_stat_xact_user_functions

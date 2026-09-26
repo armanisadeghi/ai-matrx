@@ -2,13 +2,19 @@
 /**
  * `branch-api.ts` — THE REHEARSAL BRANCH'S API LAYER.
  *
+ * 🚨 RETIRED WITH ITS BRANCH. The rehearsal branch `unified-data-campaign` was DELETED
+ * 2026-09-26 and BRANCH-REF now names no branch, so every verb here refuses at
+ * `loadBranchDbEnv` ("branch-retired"). Rehearsals run on the quarantined full-data clone
+ * (common-docs/operations/clone/CURRENT.md), which already carries production's
+ * `pgrst.db_schemas` and grants. The history below is kept for why the verbs existed.
+ *
  * WHY THIS EXISTS (ATTACK-8 finding 2, measured 2026-09-16).
- * BUILD-BOOK §5.9 points the browser, the Chrome extension and the desktop client
- * at `https://ksfhewuxgxwavkpceein.supabase.co`, and every one of them reaches
+ * BUILD-BOOK §5.9 pointed the browser, the Chrome extension and the desktop client
+ * at the (now deleted) branch's own REST URL, and every one of them reaches
  * data through PostgREST. `pg_roles` said:
  *
- *   production `brsgrqvjdzwihsvnfqkf`  authenticator.pgrst.db_schemas = 56 schemas
- *   branch     `ksfhewuxgxwavkpceein`  authenticator.pgrst.db_schemas = ABSENT
+ *   production                   authenticator.pgrst.db_schemas = 56 schemas
+ *   branch (deleted 2026-09-26)  authenticator.pgrst.db_schemas = ABSENT
  *
  * So the branch served the project default and nothing else. `W6-GRID`'s first
  * stated act — walk the existing grid as `test@test.com` — fails on its first
