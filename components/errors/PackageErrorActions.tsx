@@ -41,6 +41,7 @@ export function renderPackageErrorActions(facts: ErrorActionsInput) {
       {...(facts.records ? { records: facts.records } : {})}
       {...(facts.unsavedInput !== undefined ? { unsavedInput: facts.unsavedInput } : {})}
       {...(facts.error !== undefined ? { error: facts.error } : {})}
+      {...(details ? { details } : {})}
     />
   );
 }
