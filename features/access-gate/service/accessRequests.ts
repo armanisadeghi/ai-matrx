@@ -146,6 +146,34 @@ function rpcError(error: { message?: string } | null): Error {
   return new Error(isOurs ? message : "We could not complete that just now.");
 }
 
+/** The one sentence the blind ask answers with, whatever the id is. */
+export const BLIND_ASK_ANSWER = "If it exists, its owner has been asked.";
+
+/**
+ * THE ASK THAT NAMES NOBODY (lane V24-TAILS, chair ruling 2026-09-25). On the not-found page a
+ * signed-in person may ask for access without learning whether the thing exists or whose it is:
+ * `public.access_request_blind` files the ordinary request (and an in-app notice to each person
+ * who can grant it) for a real object and files nothing for a missing id. The answer is the same
+ * sentence either way; only a signed-out caller is refused.
+ */
+export async function askForAccessBlind(args: {
+  resourceType: string;
+  resourceId: string;
+  message?: string;
+  href?: string | null;
+}): Promise<string> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("access_request_blind", {
+    p_type: args.resourceType,
+    p_id: args.resourceId,
+    p_message: args.message?.trim() || undefined,
+    p_href: args.href ?? undefined,
+  });
+  if (error) throw rpcError(error);
+  const says = responseRecord(data).says;
+  return typeof says === "string" && says.trim() !== "" ? says : BLIND_ASK_ANSWER;
+}
+
 /**
  * File a request, then tell the humans who can answer it.
  *

@@ -40,11 +40,22 @@ import pg from "pg";
 
 import { testDbEnvFrom } from "@/scripts/lib/direct-db-env";
 
-/** The resolver's CURRENT body: the newest migration that defines it. */
+/**
+ * The resolver's CURRENT body: the newest migration that defines it (V24-TAILS, 2026-09-25: the
+ * stranger's answer is the missing answer). Only its CREATE FUNCTION statement is executed — the
+ * file also declares the blind ask's door and notice kind, which the clone already holds.
+ */
 const MIGRATION = resolve(
   __dirname,
-  "../../../migrations/access_gate_resolver_every_level_is_a_real_read.sql",
+  "../../../migrations/campaign/v24tails_a_stranger_is_told_what_a_missing_id_is_told.sql",
 );
+function resolverBody(): string {
+  const sql = readFileSync(MIGRATION, "utf8");
+  const start = sql.indexOf("CREATE OR REPLACE FUNCTION public.access_denied_context");
+  const end = sql.indexOf("$function$;", start);
+  if (start < 0 || end < 0) throw new Error(`${MIGRATION} no longer defines public.access_denied_context`);
+  return sql.slice(start, end + "$function$;".length);
+}
 
 const ADMIN = "87a6e699-3622-4869-8843-d0867456c0dd"; // admin@admin.com — a platform admin on live
 const OTHER = "4060701e-706a-4c76-b3ca-0bbc69fa5a14"; // test@test.com — the non-admin seat
@@ -114,7 +125,7 @@ beforeAll(async () => {
     await client.query("begin");
     await client.query("set local statement_timeout = '60s'");
     // The file under test, as written — rolled back below, never committed.
-    await client.query(readFileSync(MIGRATION, "utf8"));
+    await client.query(resolverBody());
 
     // The world, built as the table owner, inside the same rolled-back transaction.
     await client.query(

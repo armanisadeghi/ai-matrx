@@ -75620,6 +75620,15 @@ export type Database = {
         Returns: string
       }
       access_matrix_tree: { Args: { p_store: string }; Returns: Json }
+      access_request_blind: {
+        Args: {
+          p_href?: string
+          p_id: string
+          p_message?: string
+          p_type: string
+        }
+        Returns: Json
+      }
       access_request_create: {
         Args: {
           p_level?: string

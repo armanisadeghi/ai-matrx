@@ -42,6 +42,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { RequestAccessPanel } from "@/features/access-gate/components/RequestAccessPanel";
+import { BlindAccessAsk } from "@/features/access-gate/components/BlindAccessAsk";
 // THE EMERGENCY DOOR'S ONE ENTRANCE (DD-137a). It renders NOTHING unless this
 // viewer can actually get through — see the component's header. The ordinary
 // request panel above it is unchanged and stays for everyone.
@@ -150,7 +151,10 @@ function explanation(context: AccessDeniedContext): string {
     case "deleted":
       return `It was removed, so there's nothing here to open.`;
     case "missing":
-      return `The link may be wrong, or this ${kind} may have been permanently removed.`;
+      // THE SAME SENTENCE FOR A STRANGER AND A RANDOM ID (V24-TAILS, chair ruling 2026-09-25):
+      // the resolver answers a stranger to an unshared object exactly as it answers a missing id,
+      // so this page can never say which it is, whose it is, or where it lives.
+      return `If someone shared a link with you, you can ask for access.`;
     case "anonymous":
       return `We can't tell you anything about it until we know who you are.`;
     case "ok":
@@ -391,6 +395,15 @@ export function AccessDeniedView({
               id={id}
               subjectLabel={context.owner?.displayName ?? undefined}
             />
+          </div>
+        ) : null}
+
+        {/* THE ONE ASK ON THE NOT-FOUND PAGE (V24-TAILS). It files for a real object and files
+            nothing for a missing id, and says the same sentence either way. An absolute door
+            (requestability "absolute") offers no ask here either. */}
+        {context.status === "missing" && requestability !== "absolute" ? (
+          <div className="mt-4">
+            <BlindAccessAsk token={context.entity.token} id={id} href={selfHref} />
           </div>
         ) : null}
 
