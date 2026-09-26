@@ -42,6 +42,9 @@ export function judgeTrashDoorBody({ door, body }: TrashDoorBody): TrashDoorFind
   const code = stripSqlComments(body);
   const bare = door.includes(".") ? door.slice(door.indexOf(".") + 1) : door;
   const out: TrashDoorFinding[] = [];
+  // A TRIGGER never lists anybody's Trash — it reacts to a row being archived (lane STORE-RESTORE-DOORS:
+  // docproc.trash_the_whole_source, a cascade trigger, was judged as a listing door by its name alone).
+  if (/\bRETURNS\s+trigger\b/i.test(code)) return out;
   if (/\bhas_access(_for|_as|_for_base)?\s*\(/i.test(code)) {
     out.push({
       door,

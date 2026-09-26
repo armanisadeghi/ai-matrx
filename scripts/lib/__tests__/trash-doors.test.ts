@@ -111,6 +111,17 @@ describe("Trash timing judgement (judgeTrashTimings)", () => {
  * dev clone under the inverse (store:table, store:record, entity:platform_saved_view not in Trash)
  * and GREEN after the up; these cases pin the judgement itself.
  */
+describe("a trigger is never a Trash listing door (lane STORE-RESTORE-DOORS)", () => {
+  const trigger = "CREATE OR REPLACE FUNCTION docproc.trash_the_whole_source()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $f$ begin update docproc.processed_documents set deleted_at = now(); return null; end $f$";
+  test("GREEN: a cascade trigger named like Trash is not judged as a listing", () => {
+    expect(judgeTrashDoorBody({ door: "docproc.trash_the_whole_source", body: trigger })).toEqual([]);
+  });
+  test("RED: the same body returning rows is still judged (it never reads auth.uid())", () => {
+    const lister = trigger.replace("RETURNS trigger", "RETURNS TABLE(id uuid)");
+    expect(judgeTrashDoorBody({ door: "docproc.trash_the_whole_source", body: lister }).length).toBeGreaterThan(0);
+  });
+});
+
 describe("Trash coverage (judgeTrashCoverage)", () => {
   test("RED: an archived data Table that no Trash lists fails, by name (VERIFIER-25 item 11)", () => {
     const found = judgeTrashCoverage([{ thing: "store:table", covered: false, detail: "not in its owner's Trash" }], {});

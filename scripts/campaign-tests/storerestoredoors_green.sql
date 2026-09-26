@@ -26,7 +26,7 @@
 -- RED under the inverse (F1 fails: no field kind), GREEN after the up.
 
 begin;
-set local statement_timeout = '120s';
+set local statement_timeout = '30s';
 
 select set_config('srd.uid', (select id::text from auth.users where email = 'admin@admin.com'), true);
 select set_config('srd.test', (select id::text from auth.users where email = 'test@test.com'), true);
@@ -48,6 +48,10 @@ select set_config('srd.mandate', coalesce((
   select d.id::text from mandate.definition d
    where d.created_by = current_setting('srd.uid')::uuid and d.origin = 'user' and d.deleted_at is null
      and d.organization_id is distinct from public.system_org_id('system')
+     -- a mandate whose bindings live in its own organization (one bound from another organization is
+     -- refused coming back by the binding guard, in its own sentence — a data problem, not this door's)
+     and not exists (select 1 from mandate.binding b where b.mandate_id = d.id and b.deleted_at is null
+                       and b.organization_id is distinct from d.organization_id)
    order by d.created_at desc limit 1), ''), true);
 
 set local role authenticated;
@@ -105,7 +109,7 @@ begin
   perform custom.field_retire(v_org, v_f_note);
   select r.title into v_title
     from public.trash_list(array['field'], 50, 0) r where r.id = v_f_note;
-  if v_title is distinct from 'spore_test_note (in Sterilizer maintenance log)' and v_title not like '% (in Sterilizer maintenance log)' then
+  if coalesce(v_title, '') not like '% (in Sterilizer maintenance log)' then
     raise warning 'F1 FAIL: removed column not in personal Trash as "<label> (in <table>)" (got %)', v_title; v_fail := v_fail + 1;
   else raise notice 'F1 ok: %', v_title; end if;
 
@@ -114,6 +118,8 @@ begin
   reset role;
   select count(*) into v_n from custom.record r
    where r.organization_id = v_org and r.id in (v_r1, v_r2) and r.data ? 'spore_test_note';
+  raise notice 'F2: % of 2 records carry the removed column''s value envelope', (select count(*) from custom.record r
+   where r.organization_id = v_org and r.id in (v_r1, v_r2) and r.data -> '_values' ? 'spore_test_note');
   set local role authenticated;
   if v_n <> 2 then raise warning 'F2 FAIL: the removed column''s values left % record(s)', 2 - v_n; v_fail := v_fail + 1;
   else raise notice 'F2 ok: both records keep the removed column''s value'; end if;
