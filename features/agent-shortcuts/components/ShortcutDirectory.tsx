@@ -395,7 +395,6 @@ export function ShortcutDirectory({
         getRowHref={(row) => resolveShortcutEditUrl(row, mode)}
         onRowOpen={navigateToShortcut}
         pageSize={0}
-        hidePagination
         coverage={{
           noun: "shortcut",
           loaded: rows.length,
@@ -535,7 +534,6 @@ export function ShortcutDirectory({
         )}
         toolbar={{
           title: hideTitleBar ? undefined : title,
-          titleCount: { value: filteredRows.length, label: "shortcuts" },
           search: false,
           customSearch: (
             <Input

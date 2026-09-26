@@ -958,10 +958,6 @@ export function SourcesPage() {
             searchPlaceholder: "Search Sources",
             searchValue: search,
             onSearchChange: setSearch,
-            titleCount: {
-              value: visibleRows.length,
-              label: savedFilter === "saved" ? "saved" : "captures",
-            },
             facets: [
               {
                 type: "button-group",

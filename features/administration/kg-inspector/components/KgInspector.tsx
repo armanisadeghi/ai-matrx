@@ -531,7 +531,6 @@ function EntitiesTab({
         copy={false}
         toolbar={{
           title: "Entities",
-          titleCount: { value: currentTotal, label: "server matches" },
           search: true,
           searchPlaceholder: "Search canonical names…",
         }}

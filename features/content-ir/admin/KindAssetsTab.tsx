@@ -561,10 +561,6 @@ export default function KindAssetsTab({
           density="condensed"
           toolbar={{
             title: "kind_component rows",
-            titleCount: {
-              value: componentRows.length,
-              label: "components",
-            },
             searchPlaceholder: "Search component rows…",
             actions: (
               <KindAgentButton
@@ -610,10 +606,6 @@ export default function KindAssetsTab({
           density="condensed"
           toolbar={{
             title: "kind_surface rows (detection)",
-            titleCount: {
-              value: detail.surfaces.length,
-              label: "detection surfaces",
-            },
             searchPlaceholder: "Search detection surface rows…",
             actions: (
               <KindAgentButton

@@ -188,7 +188,6 @@ export function CataloguedSourcesList({
                     searchText={(r) => `${r.name} ${r.canonical_identity ?? ""}`}
                     toolbar={{
                         searchPlaceholder: "Search this Library",
-                        titleCount: { value: rows.length, label: "Sources" },
                     }}
                     getRowHref={(r) => sourceHref(r.id)}
                     onRowOpen={(r) => router.push(sourceHref(r.id))}

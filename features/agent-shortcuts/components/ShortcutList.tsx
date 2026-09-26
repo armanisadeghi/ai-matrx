@@ -398,7 +398,6 @@ export function ShortcutList({
           }
           toolbar={{
             title: hideTitleBar ? undefined : "Shortcuts",
-            titleCount: { value: filteredShortcuts.length, label: "shortcuts" },
             search: true,
             searchPlaceholder:
               "Search shortcuts (label, description, keyboard, or ID)…",
