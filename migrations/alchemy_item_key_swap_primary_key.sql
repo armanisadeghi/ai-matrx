@@ -1,4 +1,4 @@
--- draft: alchemy-chair ALC-14 re-key STEP 2 — apply only after step 1 is live and rehearsed; 1–4 AM PT window
+-- chair-step: re-key step 2 — DROP CONSTRAINT *_pkey is immediately re-added as PRIMARY KEY USING the step-1 index (surface_name, item_type, name); no row or column removed; the twin unique index keeps old ON CONFLICT (surface_name, name) upserts matching; rehearsed up/inverse/up on the dev clone 2026-09-26 (Alchemy chair, ALC-14).
 -- Matrx Alchemy ALC-14 — re-key STEP 2 of 3: swap the primary keys (CONTRACT §2.7, ruling N4).
 --
 -- Precondition: migrations/alchemy_declare_columns_and_item_key.sql is applied (the new key index
