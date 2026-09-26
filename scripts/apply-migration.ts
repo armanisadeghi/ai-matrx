@@ -1788,7 +1788,9 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       `set local statement_timeout = '${statementTimeout}';\n` +
       `set local idle_in_transaction_session_timeout = '${IDLE_IN_TRANSACTION_CEILING}';\n` +
       transactionCeiling +
-      `select set_config('matrx.db_apply_t0', clock_timestamp()::text, true);`;
+      // A settings write made by a migration is labelled as one in its history
+      // (platform.knob_override_audit.door, via platform.knob_write_door_label).
+      `select set_config('matrx.db_apply_t0', clock_timestamp()::text, true), set_config('app.write_door', 'migration', true);`;
     // A CONFIRMED CHAIR STEP IS LOGGED TO THE LEDGER (ATTACK-6 finding 4). The
     // column is added idempotently on the one path that writes it, so the record of
     // who waived the additive rule and why outlives the command that named it.
