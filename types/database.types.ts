@@ -31424,51 +31424,7 @@ export type Database = {
   }
   graveyard: {
     Tables: {
-      system_personal_org_failures: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          email: string | null
-          error_code: string | null
-          error_message: string | null
-          id: string
-          metadata: Json
-          organization_id: string
-          resolved_at: string | null
-          resolved_org_id: string | null
-          updated_by: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          email?: string | null
-          error_code?: string | null
-          error_message?: string | null
-          id?: string
-          metadata?: Json
-          organization_id: string
-          resolved_at?: string | null
-          resolved_org_id?: string | null
-          updated_by?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          email?: string | null
-          error_code?: string | null
-          error_message?: string | null
-          id?: string
-          metadata?: Json
-          organization_id?: string
-          resolved_at?: string | null
-          resolved_org_id?: string | null
-          updated_by?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
