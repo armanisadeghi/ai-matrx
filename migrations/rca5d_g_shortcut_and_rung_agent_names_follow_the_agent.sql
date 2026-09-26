@@ -1,4 +1,3 @@
--- draft: rc-a5d-deep timings under review (rungs +280 ms on the clone); remove when finished
 -- RC-A5d round 2, last door — THE AGENT A SHORTCUT (OR A MANDATE RUNG) NAMES IS ASKED TOO.
 -- Register row RC-A5d. Follows rca5d_c (the shortcut loaders asked about the project/task, not the agent).
 --
