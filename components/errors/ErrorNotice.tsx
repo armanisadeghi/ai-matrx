@@ -28,6 +28,9 @@ import {
   type ErrorAlchemyRecord,
 } from "@/components/errors/error-alchemy";
 import { cn } from "@/lib/utils";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { OpenOneMenuButton } from "@/features/rich-document/variants/shared/OpenOneMenuButton";
+import type { ContentSource } from "@/features/rich-document/types";
 
 export type ErrorNoticeProps = {
   /** Short heading ("Not saved"). */
@@ -115,7 +118,12 @@ export function ErrorNotice({
     );
   }
   const compact = size === "compact";
-  return (
+  // The card is an action host like any other content (ALC-15): right-click,
+  // ⋯ (the same menu, opened at the button), the phone's sheet and the palette
+  // (⌘/Ctrl+Shift+K) all show the ONE registry's actions over this sentence.
+  // Read-only: nothing here may change a record.
+  const source: ContentSource = { type: "raw", title: title ?? "Error", readOnly: true };
+  const card = (
     <div
       role="alert"
       data-error-notice=""
@@ -148,7 +156,17 @@ export function ErrorNotice({
           {actions && <div className="mt-1 flex flex-wrap gap-1">{actions}</div>}
         </div>
         <ErrorAlchemyMenu input={input} size={compact ? "xs" : "icon"} />
+        <OpenOneMenuButton source={source} className={compact ? "h-6 w-6" : undefined} />
       </div>
     </div>
+  );
+  return (
+    <NonEditableContextMenu
+      sourceFeature="system"
+      contentSource={source}
+      contextData={{ content: title ? `${title}: ${sentence}` : sentence }}
+    >
+      {card}
+    </NonEditableContextMenu>
   );
 }
