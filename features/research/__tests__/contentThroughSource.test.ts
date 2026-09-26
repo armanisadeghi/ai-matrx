@@ -131,6 +131,22 @@ beforeEach(() => {
 const rsContentWrites = () =>
   calls.filter((c) => c.method === "rs_content.update");
 
+/** The only rs_content write a Source edit may make: retire research's own copy. */
+function expectOnlyResearchCopyRetired() {
+  const writes = rsContentWrites();
+  expect(writes).toHaveLength(1);
+  expect(writes[0].args[0]).toEqual({ original_content: null });
+  expect(
+    calls.some(
+      (c) =>
+        c.method === "rs_content.not" &&
+        c.args[0] === "original_content" &&
+        c.args[1] === "is" &&
+        c.args[2] === null,
+    ),
+  ).toBe(true);
+}
+
 describe("curating a page that is a Source", () => {
   it("saves the edit through POST /sources/{id}/edit and never rewrites rs_content", async () => {
     mockPostJson.mockResolvedValue({ data: landed, meta: {} });
@@ -150,7 +166,7 @@ describe("curating a page that is a Source", () => {
     expect(body.portions[0].locator.heading_path).toEqual([]);
     expect(typeof body.portions[0].locator.text_fragment).toBe("string");
     expect(opts).toMatchObject({ organizationId: "org1" });
-    expect(rsContentWrites()).toHaveLength(0);
+    expectOnlyResearchCopyRetired();
   });
 
   it("restores through POST /sources/{id}/restore and never rewrites rs_content", async () => {
@@ -158,18 +174,16 @@ describe("curating a page that is a Source", () => {
     await restoreOriginalContent(row({ processed_document_id: "pd1" }));
     expect(mockPostJson).toHaveBeenCalledTimes(1);
     expect(mockPostJson.mock.calls[0][0]).toBe("/sources/pd1/restore");
-    expect(rsContentWrites()).toHaveLength(0);
+    expectOnlyResearchCopyRetired();
   });
 
-  it("retires an old research-side curation copy so the row reads its Source again", async () => {
-    mockPostJson.mockResolvedValue({ data: landed, meta: {} });
-    await updateContentCurated(
-      row({ processed_document_id: "pd1", original_content: "old scrape" }),
-      "new text",
-    );
-    const writes = rsContentWrites();
-    expect(writes).toHaveLength(1);
-    expect(writes[0].args[0]).toEqual({ original_content: null });
+  it("refuses in words when the Source cannot be opened, writing nothing", async () => {
+    results.processed_documents = { data: null, error: null };
+    await expect(
+      updateContentCurated(row({ processed_document_id: "pd1" }), "x"),
+    ).rejects.toThrow(/Source could not be opened/);
+    expect(mockPostJson).not.toHaveBeenCalled();
+    expect(rsContentWrites()).toHaveLength(0);
   });
 });
 
@@ -184,6 +198,14 @@ describe("curating a page that is not yet a Source", () => {
       char_count: 7,
       original_content: "# Scraped\n\nOriginal body",
     });
+    expect(
+      calls.some(
+        (c) =>
+          c.method === "rs_content.is" &&
+          c.args[0] === "processed_document_id" &&
+          c.args[1] === null,
+      ),
+    ).toBe(true);
   });
 
   it("restores research's own backup in place", async () => {
@@ -202,7 +224,12 @@ describe("curating a page that is not yet a Source", () => {
 describe("reading the body", () => {
   it("takes the body from the research content route (the Source), never rs_content.content", async () => {
     results.rs_content = {
-      data: [row({ content: undefined, processed_document_id: "pd1" })],
+      data: [
+        {
+          ...row({ content: undefined, processed_document_id: "pd1" }),
+          organization_id: "org1",
+        },
+      ],
       error: null,
     };
     mockGetJson.mockResolvedValue({
@@ -213,12 +240,16 @@ describe("reading the body", () => {
     expect(mockGetJson.mock.calls[0][0]).toBe(
       "/research/topics/t1/sources/s1/content",
     );
-    const select = calls.find((c) => c.method === "rs_content.select");
-    const columns = String(select?.args[0] ?? "").split(",");
+    expect(mockGetJson.mock.calls[0][1]).toEqual({ organizationId: "org1" });
+    const selects = calls.filter((c) => c.method === "rs_content.select");
+    const columns = selects.flatMap((c) =>
+      String(c.args[0] ?? "").split(",").map((x) => x.trim()),
+    );
     expect(columns).not.toContain("content");
     expect(columns).not.toContain("*");
     expect(columns).toContain("processed_document_id");
     expect(versions[0].content).toBe("The Source's current text");
     expect(versions[0].processed_document_id).toBe("pd1");
+    expect(versions[0].char_count).toBe("The Source's current text".length);
   });
 });

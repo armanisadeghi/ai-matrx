@@ -849,7 +849,7 @@ const CONTENT_VERSION_COLUMNS = [
   "id",
   "source_id",
   "topic_id",
-  "original_content",
+  "organization_id",
   "processed_document_id",
   "content_hash",
   "char_count",
@@ -879,29 +879,51 @@ export async function getSourceContent(
   topicId: string,
   sourceId: string,
 ): Promise<ResearchContent[]> {
-  const [versions, bodies] = await Promise.all([
+  const [versions, backups] = await Promise.all([
     supabase
       .schema("research")
       .from("rs_content")
       .select(CONTENT_VERSION_COLUMNS)
       .eq("source_id", sourceId)
       .order("version", { ascending: false })
-      .returns<Omit<ResearchContent, "content">[]>(),
-    getJson<Array<{ id: string; content?: string | null }>>(
-      RESEARCH_ENDPOINTS.topic(topicId).sources.content(sourceId),
-    ),
+      .returns<
+        Array<
+          Omit<ResearchContent, "content" | "original_content"> & {
+            organization_id: string;
+          }
+        >
+      >(),
+    // Research's own backup exists only for a page that is not yet a Source.
+    supabase
+      .schema("research")
+      .from("rs_content")
+      .select("id, original_content")
+      .eq("source_id", sourceId)
+      .is("processed_document_id", null),
   ]);
   if (versions.error) throw versions.error;
+  if (backups.error) throw backups.error;
+  const rows = versions.data ?? [];
+  if (rows.length === 0) return [];
+  // The body route runs in the page's own organization (named, never guessed).
+  const bodies = await getJson<Array<{ id: string; content?: string | null }>>(
+    RESEARCH_ENDPOINTS.topic(topicId).sources.content(sourceId),
+    { organizationId: rows[0].organization_id },
+  );
   const bodyById = new Map(
     (bodies.data ?? []).map((b) => [b.id, b.content ?? null]),
   );
-  return (versions.data ?? []).map((v) => {
+  const backupById = new Map(
+    (backups.data ?? []).map((b) => [b.id, b.original_content]),
+  );
+  return rows.map(({ organization_id: _org, ...v }) => {
     const content = bodyById.get(v.id) ?? null;
     // The size the screen shows is the size of the body it shows (a Source
     // edit changes the text without touching the fetch record's count).
     return {
       ...v,
       content,
+      original_content: backupById.get(v.id) ?? null,
       char_count: content !== null ? content.length : v.char_count,
     };
   });
@@ -1456,14 +1478,19 @@ export async function getContentBodies(
   contentIds: string[],
 ): Promise<Map<string, string>> {
   const out = new Map<string, string>();
-  const landed: Array<{ id: string; source_id: string; topic_id: string }> = [];
+  const landed: Array<{
+    id: string;
+    source_id: string;
+    topic_id: string;
+    organization_id: string;
+  }> = [];
   for (let i = 0; i < contentIds.length; i += BODY_READ_CHUNK) {
     const chunk = contentIds.slice(i, i + BODY_READ_CHUNK);
     const [pointers, ownCopies] = await Promise.all([
       supabase
         .schema("research")
         .from("rs_content")
-        .select("id, source_id, topic_id")
+        .select("id, source_id, topic_id, organization_id")
         .in("id", chunk)
         .not("processed_document_id", "is", null),
       supabase
@@ -1478,18 +1505,26 @@ export async function getContentBodies(
     landed.push(...(pointers.data ?? []));
     for (const r of ownCopies.data ?? []) out.set(r.id, r.content ?? "");
   }
-  const bySource = new Map<string, { topicId: string; ids: string[] }>();
+  const bySource = new Map<
+    string,
+    { topicId: string; organizationId: string; ids: string[] }
+  >();
   for (const r of landed) {
-    const entry = bySource.get(r.source_id) ?? { topicId: r.topic_id, ids: [] };
+    const entry = bySource.get(r.source_id) ?? {
+      topicId: r.topic_id,
+      organizationId: r.organization_id,
+      ids: [],
+    };
     entry.ids.push(r.id);
     bySource.set(r.source_id, entry);
   }
   const queue = [...bySource.entries()];
   const worker = async () => {
     for (let next = queue.shift(); next; next = queue.shift()) {
-      const [sourceId, { topicId, ids }] = next;
+      const [sourceId, { topicId, organizationId, ids }] = next;
       const { data } = await getJson<Array<{ id: string; content?: string | null }>>(
         RESEARCH_ENDPOINTS.topic(topicId).sources.content(sourceId),
+        { organizationId },
       );
       for (const b of data ?? []) {
         if (ids.includes(b.id)) out.set(b.id, b.content ?? "");
@@ -1565,17 +1600,7 @@ export async function updateContentCurated(
       { portions: [editedBodyPortion(newText)] },
       { organizationId },
     );
-    if (content.original_content) {
-      await writeOne(
-        supabase
-          .schema("research")
-          .from("rs_content")
-          .update({ original_content: null })
-          .eq("id", content.id)
-          .select("id"),
-        { action: "save", noun: "research content" },
-      );
-    }
+    await retireResearchCopy(content.id);
     return data;
   }
   // Not yet a Source: research's own copy. Back up the scrape on the first
@@ -1594,10 +1619,29 @@ export async function updateContentCurated(
         original_content: backup,
       })
       .eq("id", content.id)
+      .is("processed_document_id", null)
       .select("id"),
     { action: "save", noun: "research content" },
   );
   return null;
+}
+
+/**
+ * A page research curated in its own copy BEFORE it landed keeps that copy in
+ * front of its Source (the server reads `rs_content` while `original_content`
+ * is set). Once the person edits or restores through the Source, that copy is
+ * retired so the row reads its Source. Zero rows is the ordinary answer:
+ * almost no landed page ever had a research-side curation.
+ */
+async function retireResearchCopy(contentId: string): Promise<void> {
+  const { error } = await supabase
+    .schema("research")
+    .from("rs_content")
+    .update({ original_content: null })
+    .eq("id", contentId)
+    .not("original_content", "is", null)
+    .select("id");
+  if (error) throw error;
 }
 
 /**
@@ -1637,13 +1681,14 @@ export async function restoreOriginalContent(
   content: ResearchContent,
 ): Promise<LandedSource | null> {
   const pointer = content.processed_document_id;
-  if (pointer && !content.original_content) {
+  if (pointer) {
     const organizationId = await sourceOrganizationId(pointer);
     const { data } = await postJson<LandedSource, Record<string, never>>(
       `/sources/${encodeURIComponent(pointer)}/restore`,
       {},
       { organizationId },
     );
+    await retireResearchCopy(content.id);
     return data;
   }
   if (!content.original_content) return null;
@@ -1657,6 +1702,7 @@ export async function restoreOriginalContent(
         original_content: null,
       })
       .eq("id", content.id)
+      .is("processed_document_id", null)
       .select("id"),
     { action: "restore", noun: "research content" },
   );
