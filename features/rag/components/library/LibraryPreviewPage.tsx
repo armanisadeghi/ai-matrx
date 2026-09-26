@@ -391,6 +391,7 @@ export function LibraryPreviewPage({
               <PagesNav
                 documentId={documentId}
                 totalPages={doc?.pagesPersisted ?? 0}
+                docLoading={docLoading}
                 activePageIndex={activePageIndex}
                 onSelect={setActivePageIndex}
                 seedPages={doc?.pages ?? []}
@@ -415,6 +416,7 @@ export function LibraryPreviewPage({
                 documentId={documentId}
                 pageIndex={activePageIndex}
                 totalPages={doc?.pagesPersisted ?? 0}
+                docLoading={docLoading}
                 onPageChange={setActivePageIndex}
                 query={search.activeQuery}
                 onActivePageLoaded={handleActivePageLoaded}
@@ -486,6 +488,7 @@ function EmbeddedFrame({ children }: SurfaceFrameProps) {
 function PagesNav({
   documentId: _documentId,
   totalPages,
+  docLoading,
   activePageIndex,
   onSelect,
   seedPages,
@@ -493,6 +496,8 @@ function PagesNav({
 }: {
   documentId: string;
   totalPages: number;
+  /** True until the document has been read — the count is unknown, not 0. */
+  docLoading: boolean;
   activePageIndex: number;
   onSelect: (idx: number) => void;
   locators: Map<number, PortionLocatorRow>;
@@ -532,7 +537,9 @@ function PagesNav({
           "px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground",
         )}
       >
-        {portionsHeading(locators, totalPages)}
+        {docLoading && totalPages === 0
+          ? "Pages…"
+          : portionsHeading(locators, totalPages)}
       </div>
       <ScrollArea className="flex-1">
         <ul className="divide-y">
@@ -634,10 +641,14 @@ function PageContent({
   query,
   onActivePageLoaded,
   locator = null,
-  docLoading = false,
+  docLoading,
 }: {
-  /** True until the document itself has been read — never report "no pages" before that. */
-  docLoading?: boolean;
+  /**
+   * True until the document itself has been read — never report "no pages"
+   * before that. REQUIRED: an optional flag defaulting to false let the
+   * full-page viewer omit it and flash "ingestion failed" on every open.
+   */
+  docLoading: boolean;
   documentId: string;
   pageIndex: number;
   totalPages: number;
