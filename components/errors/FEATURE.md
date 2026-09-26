@@ -29,7 +29,24 @@ Status: **live**. Owns app-level error boundaries, explicit chunk-load recovery,
 - Toast copy is the Supabase pattern: one sentence, **Refresh** + **Not now**, `duration: Infinity`, deduped by toast id.
 - **Visible Sonner toast cards restore `pointer-events: auto`.** Modal drawers disable body hit-testing; without this override, a toast paints above the sheet while taps pass through it.
 
+## Every error on screen carries the Alchemy Menu (RC-B12, 2026-09-25)
+
+Arman: an error must be copyable for AI with everything needed to act on it. One payload builder, inherited by every error render:
+
+| Render | File | How it gets the menu |
+|---|---|---|
+| Inline error card / one-line field error | `ErrorNotice.tsx` (`size`: `default`, `compact`, `inline`) | built in |
+| Red alert box | `components/ui/alert.tsx` (`variant="destructive"`) | automatic; text read from the rendered alert at the click |
+| Route crash screen | `ErrorBoundaryView.tsx` (every `error.tsx` delegates here) | built in (replaced the old bespoke Copy-for-AI button) |
+| Section crash fallback | `lib/error-boundary/ErrorBoundaryWithCapture.tsx` | default fallback |
+| Error toasts | `lib/toast.ts` decorator registered by `components/ui/sonner.tsx`; legacy `components/ui/toaster.tsx` destructive toasts | automatic; a caller's own action is never displaced |
+
+- **Payload** — `error-alchemy.ts` `buildErrorAlchemyPayload`: the sentence shown, code/status/name/details/hint/stack, operation, records, unsaved input, and the surface with its DECLARED values (`useErrorSurfaceSnapshot.ts`: nearest `AlchemySurfaceBridge`, else the active page surface; secret/non-exportable values never leave; an unregistered page says so). Variant "Error with fix request" wraps it in an instruction.
+- **Guard** — `__tests__/error-renders-carry-alchemy.test.ts`: shrink-only census (`error-render-census.baseline.json`) of hand-drawn `role="alert"` boxes and "Something went wrong" sentences. A new one fails; a fixed one must lower its entry. Move a render onto `ErrorNotice` (`size="inline"` for `<p role="alert" className="text-destructive">`).
+
 ## Change Log
+
+- 2026-09-25 — RC-B12: the Alchemy Menu on every error render (table above); six bespoke core `error.tsx` delegate to `ErrorBoundaryView`; 75 files of one-line field errors moved onto `ErrorNotice size="inline"`; census 297 → 183 renders, guarded shrink-only.
 
 - 2026-09-11 — `refresh_required` off the platform client-directive channel becomes the third prompt path (`refresh-directive.ts`); same toast, same never-on-its-own law; works without a deployment id (local too).
 

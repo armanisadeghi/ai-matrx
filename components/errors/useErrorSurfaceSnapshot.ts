@@ -21,7 +21,6 @@
  * `pickDeclaredSurfaceValues`).
  */
 import { useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
 import { useContentTransferSurface } from "@ai-matrx/design-system/content-transfer";
 import type { SurfaceHandle } from "@ai-matrx/kit/content-transfer";
 import { getManifest } from "@/features/surfaces/manifests/registry";
@@ -172,7 +171,6 @@ export function useErrorSurfaceSnapshot(): {
   read: () => ErrorSurfaceSnapshot;
   refresh: () => void;
 } {
-  const pathname = usePathname();
   const handle = useContentTransferSurface();
   const captured = useRef<CapturedValues | null>(null);
   const inflight = useRef<AbortController | null>(null);
@@ -185,7 +183,15 @@ export function useErrorSurfaceSnapshot(): {
   }, [handle]);
 
   return {
-    read: () => readErrorSurfaceSnapshot(pathname, handle?.surfaceName, captured.current),
+    // The route is read at the click (the error may outlive a client-side
+    // navigation), never from a router hook — so the menu also renders in
+    // any host without the App Router context.
+    read: () =>
+      readErrorSurfaceSnapshot(
+        typeof window !== "undefined" ? window.location.pathname : null,
+        handle?.surfaceName,
+        captured.current,
+      ),
     refresh: () => startCapture(handle, { captured, inflight }),
   };
 }
