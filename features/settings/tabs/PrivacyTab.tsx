@@ -2,26 +2,29 @@
 
 import { ShieldCheck, Eye, Lightbulb, DatabaseZap } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
+import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
 import { SettingsLink } from "@/components/official/settings/primitives/SettingsLink";
-import { useSetting } from "../hooks/useSetting";
+import { settingDoorHref } from "../doors/settingDoorTarget";
 import { useAutoRagPreference } from "@/features/kg-suggestions/hooks/useAutoRagPreference";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 
 /**
- * Privacy-adjacent toggles. Not a dedicated slice — surfaces fields from
- * assistant + messaging that involve data collection or background capture.
+ * Privacy-adjacent controls. Not a dedicated slice — points at the fields
+ * from assistant + messaging that involve data collection or background
+ * capture, each through a door to its one real home so the switch and the
+ * side effect it needs (e.g. the browser notification permission prompt)
+ * never drift apart. Fixed 2026-09-25 (settings-truth-sweep, lane general):
+ * this tab used to carry its own raw "Desktop notifications" switch that set
+ * `messaging.showDesktopNotifications` to true WITHOUT ever requesting the
+ * browser's Notification permission — `showDesktopNotification()` silently
+ * no-ops unless `Notification.permission === "granted"`, so flipping it here
+ * looked like it worked and never showed a notification. Only the Messaging
+ * tab's switch calls `requestNotificationPermission()` first.
  */
 export default function PrivacyTab() {
-  const [alwaysWatching, setAlwaysWatching] = useSetting<boolean>(
-    "userPreferences.assistant.alwaysWatching",
-  );
-  const [showDesktopNotifications, setShowDesktopNotifications] =
-    useSetting<boolean>("userPreferences.messaging.showDesktopNotifications");
-
   const autoRag = useAutoRagPreference();
 
   const handleAutoRagChange = (next: boolean) => {
@@ -56,22 +59,29 @@ export default function PrivacyTab() {
       </SettingsCallout>
 
       <SettingsSection title="Assistant" icon={Eye}>
-        <SettingsSwitch
+        <SettingsLink
           label="Always watching"
-          description="Allow the assistant to observe screen context even when not invoked."
-          warning="Consumes more resources and may share more context with your provider."
-          checked={alwaysWatching}
-          onCheckedChange={setAlwaysWatching}
+          description="Whether the assistant may observe screen context even when not invoked. Set on the Assistant tab, alongside its other activation controls."
+          href={settingDoorHref({
+            scope: "user",
+            tabId: "ai.assistants",
+            controlId: "settings-control-activation-always-watching",
+          })}
+          actionLabel="Assistant"
           last
         />
       </SettingsSection>
 
       <SettingsSection title="Notifications">
-        <SettingsSwitch
+        <SettingsLink
           label="Desktop notifications"
-          description="Show OS-level banners for new messages."
-          checked={showDesktopNotifications}
-          onCheckedChange={setShowDesktopNotifications}
+          description="Whether new-message banners show on your desktop. Set on the Messaging tab, where turning it on also asks your browser for permission."
+          href={settingDoorHref({
+            scope: "user",
+            tabId: "communication.messaging",
+            controlId: "settings-control-desktop-desktop-notifications",
+          })}
+          actionLabel="Messaging"
           last
         />
       </SettingsSection>

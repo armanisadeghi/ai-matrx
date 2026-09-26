@@ -520,18 +520,22 @@ export interface FilterableSurfaceMeta {
   description: string;
 }
 
-/** Surfaces whose default source filter the user can edit in Settings. */
+/**
+ * Surfaces whose default source filter the user can edit in Settings.
+ *
+ * `/code` is deliberately NOT here: `ChatHistorySlot` passes no `surfaceId`
+ * to `ConversationHistorySidebar` (its own `coding.agentFilter` preference,
+ * editable on the "Code Workspace" settings tab, governs it instead), so a
+ * "Code workspace" row here would write a value nothing ever reads. Found
+ * dead 2026-09-25 (settings-truth-sweep, lane general) — removed rather than
+ * left to silently do nothing.
+ */
 export const FILTERABLE_SURFACES: FilterableSurfaceMeta[] = [
   {
     id: "chat",
     label: "Chat",
     description:
       "The /chat history sidebar and search. Defaults to no source filter — the lane toggles decide.",
-  },
-  {
-    id: "code",
-    label: "Code workspace",
-    description: "The /code conversation history.",
   },
   {
     id: "education-tutor",
