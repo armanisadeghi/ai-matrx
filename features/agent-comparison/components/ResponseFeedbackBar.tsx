@@ -121,24 +121,37 @@ function useOtherColumnRanks(currentConversationId: string): Record<string, numb
 export function ResponseFeedbackBar({ conversationId }: Props) {
   const requests = useAppSelector(makeSelectConversationRequests(conversationId));
   const lastRequest = requests[requests.length - 1] ?? null;
-  const requestId = lastRequest?.requestId ?? null;
+  const runRequestId = lastRequest?.requestId ?? null;
+  // Feedback is filed under the SERVER's id for the run (the user_request
+  // id, sent back as X-Request-ID). A live run's own `requestId` is a
+  // client-minted `req_*` that no reload can reproduce — a reloaded run is
+  // keyed by its user_request id — so feedback keyed by it vanished on reload.
+  const feedbackRequestId = lastRequest?.serverRequestId ?? runRequestId;
   const isComplete = lastRequest?.status === "complete";
 
-  if (!requestId || !isComplete) return null;
+  if (!runRequestId || !feedbackRequestId || !isComplete) return null;
   return (
     <ResponseFeedbackBarInner
       conversationId={conversationId}
-      requestId={requestId}
+      requestId={feedbackRequestId}
+      runRequestId={runRequestId}
     />
   );
 }
 
 interface InnerProps {
   conversationId: string;
+  /** The durable id feedback is saved and read under. */
   requestId: string;
+  /** The in-memory run (activeRequests key) its usage numbers come from. */
+  runRequestId: string;
 }
 
-function ResponseFeedbackBarInner({ conversationId, requestId }: InnerProps) {
+function ResponseFeedbackBarInner({
+  conversationId,
+  requestId,
+  runRequestId,
+}: InnerProps) {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
   const setId = useAppSelector(selectMountedBattleSetId);
@@ -392,7 +405,7 @@ function ResponseFeedbackBarInner({ conversationId, requestId }: InnerProps) {
       {blindActive ? (
         <BlindUsageNotice />
       ) : (
-        <ResponseUsageStrip requestId={requestId} />
+        <ResponseUsageStrip requestId={runRequestId} />
       )}
 
       {/* Header */}
