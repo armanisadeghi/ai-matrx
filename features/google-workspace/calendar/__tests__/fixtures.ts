@@ -53,6 +53,10 @@ export function calendarEventRow(
     meeting_url: "https://meet.google.com/abc-defg-hij",
     attendees: { __kind: "calendar_event_attendees", attendees: [] },
     organizer_email: "me@clinic.com",
+    source_calendar_key: null,
+    source_connection_owner_id: null,
+    source_connection_owner_type: null,
+    source_provider_subject: null,
     external_updated_at: fromNow(-DAY),
     // FRESH, so refresh-on-open does NOT fire unless a suite asks for it.
     synced_at: fromNow(-MINUTE),

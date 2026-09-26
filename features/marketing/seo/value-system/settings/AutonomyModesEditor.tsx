@@ -197,6 +197,10 @@ export function AutonomyModesEditor({
                     {mandateKeys.length > 0 ? (
                       mandateKeys.map((mandateKey) => {
                         const assignment = assignments.data?.[mandateKey];
+                        const assignmentError =
+                          assignments.error instanceof Error
+                            ? assignments.error.message
+                            : null;
                         return (
                           <span
                             key={mandateKey}
@@ -243,13 +247,15 @@ export function AutonomyModesEditor({
                               <span
                                 className="font-medium text-warning"
                                 title={
-                                  assignments.error instanceof Error
-                                    ? assignments.error.message
+                                  assignmentError
+                                    ? assignmentError
                                     : "Open the mandate to inspect or repair its Holder."
                                 }
                               >
                                 Assignment unavailable
-                                <ErrorAlchemyMenu error={assignments.error.message} />
+                                {assignmentError ? (
+                                  <ErrorAlchemyMenu error={assignmentError} />
+                                ) : null}
                               </span>
                             )}
                           </span>

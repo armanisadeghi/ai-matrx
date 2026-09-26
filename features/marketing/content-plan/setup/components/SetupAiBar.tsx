@@ -80,7 +80,7 @@ export function SetupAiBar({
     if (!document) return "This topic has no successful final report yet — run Document assembly in Research first.";
     if (!document.content?.trim()) return "The report is empty — regenerate it in Research.";
     const size = Math.round((document.content?.length ?? 0) / 1000);
-    return `Report v${document.version ?? 1} loaded (~${size}k chars).`;
+    return `Report v${document.capture_version ?? 1} loaded (~${size}k chars).`;
   })();
 
   return (
