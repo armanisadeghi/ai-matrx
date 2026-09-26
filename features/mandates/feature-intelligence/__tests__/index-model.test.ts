@@ -51,6 +51,12 @@ const holders = [
     holderType: null,
     status: "draft" as const,
   },
+  {
+    mandateKey: "seo.site_intake",
+    holderName: "Intake Agent",
+    holderType: "agent",
+    status: "active" as const,
+  },
 ];
 
 const dir = buildDirectory(defs, holders);
