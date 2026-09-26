@@ -443,8 +443,24 @@ export function TryItNowPanel({
 
   return (
     <section className="min-w-0 space-y-4">
+      {/* Run sits in the header row, always in view (UX punch list
+          2026-09-26: it was below a screen of input fields — Postman keeps
+          Send beside the request, never under it). */}
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold">Run once</h3>
+        <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          disabled={running || !surface}
+          onClick={() => void run()}
+        >
+          {running ? (
+            <Loader2 className="mr-2 size-4 animate-spin" />
+          ) : (
+            <FlaskConical className="mr-2 size-4" />
+          )}
+          Run test
+        </Button>
         <Button
           size="sm"
           variant="outline"
@@ -460,6 +476,7 @@ export function TryItNowPanel({
           )}
           Agent samples
         </Button>
+        </div>
       </div>
       {sampleError ? (
         <ErrorNotice size="inline" className="text-sm" message={sampleError} />
@@ -728,18 +745,6 @@ export function TryItNowPanel({
           />
         )}
       </div>
-      <Button
-        size="sm"
-        disabled={running || !surface}
-        onClick={() => void run()}
-      >
-        {running ? (
-          <Loader2 className="mr-2 size-4 animate-spin" />
-        ) : (
-          <FlaskConical className="mr-2 size-4" />
-        )}
-        Run test
-      </Button>
       {failure ? <RunFailureCard failure={failure} /> : null}
       {result ? (
         <section className="space-y-3 rounded-lg border border-border p-3">
