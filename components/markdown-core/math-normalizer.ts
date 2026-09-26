@@ -182,7 +182,9 @@ function convertSingleDollar(text: string): string {
       }
       if (close !== -1 && text[close + 1] !== "$") {
         const content = text.slice(i + 1, close);
-        if (isSingleDollarMath(content, text[close + 1])) {
+        // The rule reads the text after the closer (a glued suffix `$n$th`,
+        // or the next shell variable `$USER$HOSTNAME`), not one character.
+        if (isSingleDollarMath(content, text.slice(close + 1, close + 33))) {
           out += `$$${content}$$`;
           i = close + 1;
           continue;
