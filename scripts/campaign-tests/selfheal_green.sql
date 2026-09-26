@@ -206,7 +206,6 @@ begin
   else
     raise exception 'A4 FAILED — batch: error=% answer=% rows %', e, left(coalesce(r::text, 'null'), 300), pg_temp.sh_counts();
   end if;
-  -- leave the kernel as A3 left it (the plant was rolled back with the batch's subtransaction? no — it is outside it)
 end $a4$;
 
 -- B1 (b): a behaviour-changing plant — an arm that opens every internal row to anyone signed in.
