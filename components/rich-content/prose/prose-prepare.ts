@@ -177,6 +177,9 @@ export function preserveIndentation(source: string): string {
  * Math is NOT touched here — the core's math normalizer owns it.
  */
 export function preprocessProse(rawContent: string): string {
+  // A leading byte-order mark is an encoding mark, not content: dropped for
+  // display so `\uFEFF---` front matter is hidden like `---` (RC-B3r round 3, C1).
+  if (rawContent.charCodeAt(0) === 0xfeff) return preprocessProse(rawContent.slice(1));
   // Front matter (YAML/TOML properties at the very top) is data, not prose:
   // it passes through byte for byte (the core hides it and exposes it as
   // document properties) — indentation and `---` rules must not be massaged.

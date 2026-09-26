@@ -15,3 +15,10 @@ describe("inline reasoning aside (RC-B3r R2)", () => {
     expect(out).toContain("`<thinking> x </thinking>`");
   });
 });
+
+describe("front matter behind a byte-order mark (RC-B3r round 3, C1)", () => {
+  it("is passed through as front matter, without the mark", () => {
+    const out = preprocessProse("\uFEFF---\nnote: <artifact> x\n---\n\nBody.");
+    expect(out.startsWith("---\nnote: <artifact> x\n---\n")).toBe(true);
+  });
+});

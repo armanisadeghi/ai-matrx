@@ -33,9 +33,11 @@ const OPEN: Record<string, FrontmatterFormat> = { "---": "yaml", "+++": "toml" }
 /** Cut the front matter off the top of `source`, or null when it has none (or it has not closed yet). */
 export function splitFrontmatter(source: string): FrontmatterSplit | null {
   if (!source) return null;
+  // A leading byte-order mark is an encoding mark, not content (RC-B3r round 3, C1).
+  const bom = source.charCodeAt(0) === 0xfeff ? 1 : 0;
   const firstBreak = source.indexOf("\n");
   if (firstBreak < 0) return null;
-  const opener = source.slice(0, firstBreak).replace(/\r$/, "");
+  const opener = source.slice(bom, firstBreak).replace(/\r$/, "");
   const format = OPEN[opener];
   if (!format) return null;
   let pos = firstBreak + 1;
