@@ -13,6 +13,7 @@ import {
   readPicklistSelection,
 } from "@/features/matrx-envelope/referenceFence";
 import { useStructuredListForSelection } from "@/features/user-lists/hooks/useStructuredListForSelection";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface PicklistVariableInputProps {
   value: unknown;
@@ -52,7 +53,7 @@ export function PicklistVariableInput({
   // unbound case. Below the guard it was a conditional hook
   // (react-hooks/rules-of-hooks): a variable that gained a picklist binding
   // after mount went from 0 hooks to N and React throws.
-  const { items, loading, unavailable } = useStructuredListForSelection(
+  const { items, loading, unavailable, error, retry } = useStructuredListForSelection(
     binding?.listId ?? null,
     binding?.groupName,
   );
@@ -133,6 +134,11 @@ export function PicklistVariableInput({
 
   if (loading) {
     return <Skeleton className={compact ? "h-8 w-full" : "h-9 w-full"} />;
+  }
+  if (error) {
+    return (
+      <ReadFailure error={error} what="this list's options" className="m-0" onRetry={retry} />
+    );
   }
   if (unavailable || options.length === 0) {
     return (

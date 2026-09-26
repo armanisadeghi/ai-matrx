@@ -42,6 +42,7 @@ import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution
 import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
 import { useSkills } from "@/features/skills/hooks/useSkills";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import type { SkillRow } from "@/features/skills/types";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 
@@ -76,7 +77,7 @@ export function RunSkillPicker({
   conversationId: string;
 }) {
   const dispatch = useAppDispatch();
-  const { skills, loading } = useSkills();
+  const { skills, loading, error: skillsError, reload: reloadSkills } = useSkills();
 
   const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
   const agentSkillConfig = useAppSelector((s) =>
@@ -275,6 +276,13 @@ export function RunSkillPicker({
           <p className="px-3 py-2 text-xs text-muted-foreground">
             Loading skills…
           </p>
+        ) : skillsError && skills.length === 0 ? (
+          <ReadFailure
+            error={skillsError}
+            what="the skills"
+            className="m-2"
+            onRetry={() => void reloadSkills()}
+          />
         ) : visible.length === 0 ? (
           <p className="px-3 py-2 text-xs text-muted-foreground">
             {search ? `No skills match "${search}"` : "No skills available."}

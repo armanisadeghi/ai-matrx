@@ -43,7 +43,9 @@ import { cn } from "@/lib/utils";
 import {
   selectAllTools,
   selectToolsStatus,
+  selectToolsError,
 } from "@/features/agents/redux/tools/tools.selectors";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { fetchAvailableTools } from "@/features/agents/redux/tools/tools.thunks";
 import {
   selectAgentTools,
@@ -86,6 +88,7 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
   const dispatch = useAppDispatch();
   const tools = useAppSelector(selectAllTools);
   const status = useAppSelector(selectToolsStatus);
+  const toolsError = useAppSelector(selectToolsError);
   const { serverStates, availabilityStatus } = useMcpCatalog();
   const { connect: connectMcp, connectingSlug } = useConnectMcpServer();
   // What the LAST run actually got. A chip claims nothing the run denies.
@@ -165,7 +168,9 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
   // The registry catalog — needed to resolve the agent's tool UUIDs to names
   // AND to drive the add-picker. Load it once.
   useEffect(() => {
-    if (status !== "succeeded" && status !== "loading") {
+    // Only the first read: a failed read waits for "Try again" instead of
+    // re-reading in a loop.
+    if (status === "idle") {
       void dispatch(fetchAvailableTools());
     }
   }, [status, dispatch]);
@@ -511,6 +516,13 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
               <p className="px-3 py-2 text-xs text-muted-foreground">
                 Loading tools…
               </p>
+            ) : status === "failed" && (tools?.length ?? 0) === 0 ? (
+              <ReadFailure
+                error={toolsError ?? true}
+                what="the tool catalog"
+                className="m-2"
+                onRetry={() => void dispatch(fetchAvailableTools())}
+              />
             ) : visible.length === 0 ? (
               <p className="px-3 py-2 text-xs text-muted-foreground">
                 {search ? `No tools match "${search}"` : "No tools available."}

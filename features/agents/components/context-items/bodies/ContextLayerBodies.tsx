@@ -18,6 +18,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/active-context";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { useContextValues } from "@/features/scopes/hooks/useContextValues";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { ContextValueType } from "@/features/agent-context/types";
@@ -154,7 +155,7 @@ export function ScopeLayerBody({ item, setTitle }: ContextItemBodyProps) {
     if (scopeName) setTitle?.(scopeName);
   }, [scopeName, setTitle]);
 
-  const { values, status } = useContextValues(scopeId);
+  const { values, status, error: valuesError, refresh } = useContextValues(scopeId);
 
   const typeId = found.type?.id ?? null;
   const [itemNames, setItemNames] = useState<Record<string, string>>({});
@@ -217,6 +218,12 @@ export function ScopeLayerBody({ item, setTitle }: ContextItemBodyProps) {
             </div>
           ))}
         </div>
+      ) : status === "error" && valueList.length === 0 ? (
+        <ReadFailure
+          error={valuesError ?? true}
+          what="this scope's context values"
+          onRetry={() => void refresh()}
+        />
       ) : valueList.length === 0 ? (
         <div className="px-4 py-8 text-center text-xs text-muted-foreground">
           No context values set on this scope yet.

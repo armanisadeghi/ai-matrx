@@ -54,7 +54,9 @@ import {
   selectConversationLanes,
   selectSourceFacets,
   selectSourceFacetsStatus,
+  selectSourceFacetsError,
 } from "@/features/agents/redux/conversation-history/selectors";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   EMPTY_SOURCE_KEY,
   FEATURE_GROUPS,
@@ -325,6 +327,7 @@ export const ConversationSourceFilterTree: React.FC<
   const setLanes = useSetConversationLanes();
   const facets = useAppSelector(selectSourceFacets);
   const facetsStatus = useAppSelector(selectSourceFacetsStatus);
+  const facetsError = useAppSelector(selectSourceFacetsError);
 
   // Load facets once (cached on the slice root with a TTL).
   useEffect(() => {
@@ -676,7 +679,15 @@ export const ConversationSourceFilterTree: React.FC<
               Loading sources…
             </div>
           )}
-          {facetsStatus !== "loading" && tree.length === 0 && (
+          {facetsStatus === "failed" && tree.length === 0 && (
+            <ReadFailure
+              error={facetsError ?? true}
+              what="the conversation sources"
+              className="m-2"
+              onRetry={() => void dispatch(fetchSourceFacets({ force: true }))}
+            />
+          )}
+          {facetsStatus === "succeeded" && tree.length === 0 && (
             <div className="px-3 py-3 text-[11px] text-muted-foreground">
               No conversations to filter yet.
             </div>

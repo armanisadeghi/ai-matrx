@@ -3575,7 +3575,10 @@ function McpCatalogPicker({
           />
         ))}
 
-        {filtered.length === 0 && catalogStatus !== "loading" && (
+        {/* A failed catalog read is shown above (catalogError), never as "no match". */}
+        {filtered.length === 0 &&
+          catalogStatus !== "loading" &&
+          !(catalogError && catalog.length === 0) && (
           <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
             <Search className="w-5 h-5 opacity-40" />
             <p className="text-xs">No servers match your search.</p>

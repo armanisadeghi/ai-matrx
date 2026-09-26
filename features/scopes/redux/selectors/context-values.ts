@@ -61,3 +61,9 @@ export const makeSelectScopeValuesStatus = () =>
     (slice, scopeId): ScopeValuesEntry["status"] =>
       (scopeId && slice.byScope[scopeId]?.status) || "idle",
   );
+
+/** The scope's last read failure (null unless status is "error"). Returns a primitive, so no memo. */
+export const selectScopeValuesError = (
+  state: RootState,
+  scopeId: string | null | undefined,
+): string | null => (scopeId && state.contextValues.byScope[scopeId]?.error) || null;

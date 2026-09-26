@@ -12,6 +12,7 @@ import {
   makeSelectScopeDrafts,
   makeSelectScopeValues,
   makeSelectScopeValuesStatus,
+  selectScopeValuesError,
 } from "@/features/scopes/redux/selectors/context-values";
 import { ensureContextValues } from "@/features/scopes/redux/thunks/ensureContextValues";
 import type { ContextItemValue } from "@/features/scopes/types";
@@ -20,6 +21,8 @@ export interface UseContextValuesReturn {
   values: Record<string, ContextItemValue>;
   drafts: Record<string, Partial<ContextItemValue>>;
   status: "idle" | "loading" | "ready" | "error";
+  /** The read's failure while status is "error" — gate an empty view on it. */
+  error: string | null;
   refresh: () => Promise<void>;
 }
 
@@ -34,6 +37,9 @@ export function useContextValues(
   const values = useAppSelector((s) => selectValues(s, scopeId));
   const drafts = useAppSelector((s) => selectDrafts(s, scopeId));
   const status = useAppSelector((s) => selectStatus(s, scopeId));
+  const storedError = useAppSelector((s) => selectScopeValuesError(s, scopeId));
+  const error =
+    status === "error" ? (storedError ?? "The scope's values failed to load") : null;
 
   useEffect(() => {
     if (!scopeId) return;
@@ -45,11 +51,12 @@ export function useContextValues(
       values,
       drafts,
       status,
+      error,
       refresh: () =>
         scopeId
           ? dispatch(ensureContextValues(scopeId, { refresh: true }))
           : Promise.resolve(),
     }),
-    [values, drafts, status, scopeId, dispatch],
+    [values, drafts, status, error, scopeId, dispatch],
   );
 }

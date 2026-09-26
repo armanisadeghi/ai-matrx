@@ -275,7 +275,9 @@ export function CustomDataBindingPicker({
           placeholder={
             tables.loading
               ? "Loading your tables…"
-              : tableOptions.length === 0
+              : tables.error
+                ? "Your tables could not be read"
+                : tableOptions.length === 0
                 ? "No tables yet — make one in Data"
                 : "Choose a table…"
           }
@@ -367,7 +369,9 @@ export function CustomDataBindingPicker({
                 placeholder={
                   records.loading
                     ? "Loading records…"
-                    : recordOptions.length === 0
+                    : records.error
+                      ? "Records could not be read"
+                      : recordOptions.length === 0
                       ? "This table has no records yet"
                       : "Choose a record…"
                 }

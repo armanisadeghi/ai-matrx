@@ -20,6 +20,7 @@ import {
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -132,6 +133,8 @@ export function AgentMemorySidebar({ state }: AgentMemorySidebarProps) {
     memories,
     totalCount,
     loading,
+    error,
+    refresh,
     selectedId,
     setSelectedId,
     deletingId,
@@ -218,7 +221,16 @@ export function AgentMemorySidebar({ state }: AgentMemorySidebarProps) {
             </div>
           )}
 
-          {!loading && memories.length === 0 && (
+          {!loading && error && memories.length === 0 && (
+            <ReadFailure
+              error={error}
+              what="your memories"
+              className="m-1"
+              onRetry={() => void refresh()}
+            />
+          )}
+
+          {!loading && !error && memories.length === 0 && (
             <div className="px-1 py-8 text-center text-xs text-muted-foreground">
               No memories yet.
             </div>

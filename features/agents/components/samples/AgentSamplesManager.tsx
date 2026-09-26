@@ -26,6 +26,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { toast } from "@/lib/toast";
 import {
   approveAgentSample,
@@ -466,16 +467,35 @@ function BorrowFromRunsSection({
   const [runs, setRuns] = useState<CandidateRun[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [finalById, setFinalById] = useState<Record<string, string | null>>({});
+  // A failed response read, per run — shown in place of "No response".
+  const [finalErrorById, setFinalErrorById] = useState<Record<string, unknown>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
+  // The runs read's failure — shown in place of "None".
+  const [loadError, setLoadError] = useState<unknown>(null);
 
   async function load() {
     setLoading(true);
+    setLoadError(null);
     try {
       setRuns(await fetchCandidateRuns(agentId));
     } catch (error: unknown) {
-      toast.error(`Couldn't load runs: ${describeError(error)}`);
+      setLoadError(error ?? true);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadFinal(conversationId: string) {
+    setFinalErrorById((prev) => {
+      const rest = { ...prev };
+      delete rest[conversationId];
+      return rest;
+    });
+    try {
+      const final = await fetchRunFinalResponse(conversationId);
+      setFinalById((prev) => ({ ...prev, [conversationId]: final }));
+    } catch (error: unknown) {
+      setFinalErrorById((prev) => ({ ...prev, [conversationId]: error ?? true }));
     }
   }
 
@@ -483,14 +503,7 @@ function BorrowFromRunsSection({
     const next = expandedId === run.conversationId ? null : run.conversationId;
     setExpandedId(next);
     if (next && finalById[next] === undefined) {
-      try {
-        const final = await fetchRunFinalResponse(next);
-        setFinalById((prev) => ({ ...prev, [next]: final }));
-      } catch (error: unknown) {
-        toast.error(
-          `Couldn't load the run's response: ${describeError(error)}`,
-        );
-      }
+      await loadFinal(next);
     }
   }
 
@@ -517,6 +530,13 @@ function BorrowFromRunsSection({
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading recent runs…
         </div>
+      ) : loadError && runs.length === 0 ? (
+        <ReadFailure
+          error={loadError}
+          what="this agent's recent runs"
+          className="m-0"
+          onRetry={() => void load()}
+        />
       ) : runs.length === 0 ? (
         <p className="text-xs text-muted-foreground">None</p>
       ) : (
@@ -524,6 +544,7 @@ function BorrowFromRunsSection({
           {runs.map((run) => {
             const expanded = expandedId === run.conversationId;
             const final = finalById[run.conversationId];
+            const finalError = finalErrorById[run.conversationId];
             const attachmentParts = run.inputContent.filter(
               isAttachmentMessagePart,
             );
@@ -623,7 +644,14 @@ function BorrowFromRunsSection({
                       <div className="pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
                         What the agent answered
                       </div>
-                      {final === undefined ? (
+                      {finalError ? (
+                        <ReadFailure
+                          error={finalError}
+                          what="the run's response"
+                          className="m-0"
+                          onRetry={() => void loadFinal(run.conversationId)}
+                        />
+                      ) : final === undefined ? (
                         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                       ) : final ? (
                         <p className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded bg-muted/60 p-2 text-[11px] leading-relaxed scrollbar-thin">

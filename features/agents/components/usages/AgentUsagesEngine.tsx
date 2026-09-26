@@ -642,16 +642,16 @@ function StatusLine({
   withheldSentences: string[];
   actions: ReactNode;
 }) {
-  const partial = scanError || mandateError;
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-border bg-muted/10 px-3 py-2 text-sm">
-      {partial ? (
+      {scanError || mandateError ? (
         <span className="inline-flex items-center gap-1.5 text-destructive">
           <AlertTriangle className="h-4 w-4" aria-hidden />
           <span className="font-medium">Partial read.</span>
           <span className="text-xs">
             {scanError ? `Usage scan: ${scanError}. ` : ""}
-            {mandateError ? `Mandates: ${mandateError}.` : ""}
+            {mandateError ? `Mandates: ${mandateError}.` : ""}{" "}
+            <ErrorAlchemyMenu error={scanError ?? mandateError} />
           </span>
         </span>
       ) : flagged > 0 ? (

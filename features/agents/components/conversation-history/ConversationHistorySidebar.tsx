@@ -978,6 +978,8 @@ const ConsumerView: React.FC<
           <AllLanesOffNotice />
         ) : (
           status !== "loading" &&
+          status !== "idle" &&
+          !error &&
           count === 0 &&
           !searchActive && (
             <div className="px-3 py-6 text-center text-xs text-muted-foreground">
