@@ -310,3 +310,10 @@ test("items: a check prints item lines only when the runner asks (MATRX_ITEMS=1)
 test("items: the fingerprint vector is identical to aidream's runner (tests/test_check_runner_items.py)", () => {
   assert.equal(itemFingerprint("visibility-vocabulary", "onlyYouClaim|a.tsx|*"), "997499345e4cd7772cd7aa6b481902bc1c8584f9");
 });
+
+test("items: a self-test row is never asked for items (its planted fixtures are not the repo's items)", () => {
+  const cmd = `${ITEM({ key: "planted" })}; echo "[self-test] PASS planted caught"; exit 0 # --self-test`;
+  const { findings, header } = runWithManifest([`Guard self-test|${cmd}`]);
+  assert.equal(findings.length, 0, JSON.stringify(findings));
+  assert.equal(header.items, undefined);
+});

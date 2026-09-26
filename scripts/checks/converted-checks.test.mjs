@@ -65,6 +65,20 @@ export const CONVERTED = [
     },
     keyShape: /^(lowestTierDefault|activeOrgAccess|handRolledLadder|bareRlsList)\|[^|]+\|(\*|\d+)$/,
   },
+  {
+    // No allowlist or baseline (exemptions are code rules): every item is new, keyed by file.
+    id: "url-state-written-outside-the-canonical-primitive",
+    cmd: "pnpm check:url-state",
+    allowKeys: () => [],
+    keyShape: /^[^|:]+\.tsx?$/,
+  },
+  {
+    // No allowlist or baseline: every item is new, keyed file|table→variable (no line).
+    id: "complete-list-reads-postgrest-silently-caps-at-1000",
+    cmd: "pnpm check:unbounded-reads",
+    allowKeys: () => [],
+    keyShape: /^[^|]+\.tsx?\|[^|]+→[^|]+$/,
+  },
 ];
 
 for (const check of CONVERTED) {

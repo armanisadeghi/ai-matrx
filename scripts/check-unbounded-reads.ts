@@ -104,6 +104,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { emitItem } from "./checks/items.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SCAN_DIRS = ["scripts", "lib", "features", "app", "utils"];
@@ -1292,6 +1293,17 @@ function main(): number {
   if (process.argv.includes("--json")) {
     console.log(JSON.stringify({ findings, unmeasured }, null, 2));
     return 0;
+  }
+  // C5 item line — key: file|table→variable (no line number, so an edit above it never makes the
+  // same read look new). No baseline: every item is new.
+  for (const f of findings) {
+    emitItem({
+      key: `${f.file}|${f.target}→${f.variable}`,
+      title: `${f.file}:${f.line} ${f.target} → ${f.variable} used with ${f.consumer}`,
+      file: f.file,
+      line: f.line,
+      rule: f.shape,
+    });
   }
   if (findings.length === 0) {
     console.log(

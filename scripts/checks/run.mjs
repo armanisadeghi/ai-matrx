@@ -297,6 +297,9 @@ function writeLog(id, text) {
   return path;
 }
 
+// A self-test plants its own violations; only a check's REAL run is asked for items.
+export const wantsItems = (cmd) => !/self-test/.test(cmd);
+
 function runCommand(cmd, timeoutSeconds) {
   return new Promise((resolveRun) => {
     const started = Date.now();
@@ -304,7 +307,7 @@ function runCommand(cmd, timeoutSeconds) {
     try {
       child = spawn("bash", ["-c", cmd], {
         cwd: REPO_ROOT,
-        env: { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1", CI: process.env.CI ?? "", [ITEMS_ENV]: "1" },
+        env: { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1", CI: process.env.CI ?? "", [ITEMS_ENV]: wantsItems(cmd) ? "1" : "0" },
         stdio: ["ignore", "pipe", "pipe"],
         detached: true,
       });

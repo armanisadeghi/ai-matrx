@@ -38,6 +38,7 @@ import { join, resolve } from "node:path";
 import process from "node:process";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 import { repoFiles } from "./lib/repo-files";
+import { emitItem } from "./checks/items.mjs";
 
 const ROOT = resolve(__dirname, "..");
 const SKIP = new Set([
@@ -83,6 +84,11 @@ for (const rel of repoFiles(ROOT, { match: /\.tsx?$/ })) {
 if (process.argv.includes("--json")) {
   console.log(JSON.stringify({ findings }, null, 2));
   exitAfterDrain(0);
+}
+
+// C5 item line: one item per file (the unit a fix converts). No baseline — every item is new.
+for (const f of findings) {
+  emitItem({ key: f.file, title: `${f.file}:${f.line} raw history write${f.dispatches ? "" : " (silent)"}`, file: f.file, line: f.line });
 }
 
 if (findings.length === 0) {
