@@ -28,12 +28,14 @@ jest.mock("@ai-matrx/design-system", () => {
       children,
       onClick,
       disabled,
+      "aria-label": ariaLabel,
     }: {
       children?: ReactNode;
       onClick?: () => void;
       disabled?: boolean;
+      "aria-label"?: string;
     }) => (
-      <button type="button" onClick={onClick} disabled={disabled}>
+      <button type="button" onClick={onClick} disabled={disabled} aria-label={ariaLabel}>
         {children}
       </button>
     ),
