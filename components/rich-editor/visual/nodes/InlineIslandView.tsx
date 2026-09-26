@@ -71,7 +71,7 @@ export function InlineIslandView({ node, updateAttributes, selected, editor }: N
               {info.declared?.type && <span className="ml-0.5 text-[0.8em] opacity-70">{info.declared.type}</span>}
             </span>
           </PopoverTrigger>
-          <PopoverContent className="w-64 p-2" align="start">
+          <PopoverContent sizing="content" className="p-2" align="start">
             <div className="mb-1 text-xs font-medium text-muted-foreground">Variable</div>
             <input
               className="mb-2 h-8 w-full rounded-md border border-border bg-background px-2 text-base sm:text-sm"
@@ -143,7 +143,7 @@ export function InlineIslandView({ node, updateAttributes, selected, editor }: N
               {tex || "equation"}
             </span>
           </PopoverTrigger>
-          <PopoverContent className="w-80 space-y-2 p-2" align="start">
+          <PopoverContent sizing="content" className="space-y-2 p-2" align="start">
             <IslandCodeEditor
               value={tex}
               onChange={(next) => write(`${open$}${next}${close$}`)}

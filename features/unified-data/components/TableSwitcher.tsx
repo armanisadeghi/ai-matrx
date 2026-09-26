@@ -65,7 +65,7 @@ export function TableSwitcher({ tableId, name, allTablesHref, footer }: TableSwi
           <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden="true" />
         </button>
       </PopoverTrigger>
-      <PopoverContent sizing="content" align="start" sideOffset={8} className="w-72 p-1" data-table-switcher-content="">
+      <PopoverContent sizing="content" align="start" sideOffset={8} className="p-1" data-table-switcher-content="">
         <div className="relative px-1 pb-1 pt-0.5">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <input

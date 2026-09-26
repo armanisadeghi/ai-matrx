@@ -71,7 +71,7 @@ function DataBoundChip({
       </PopoverTrigger>
       <PopoverContent
         sizing="content"
-        className="w-[min(24rem,90vw)] rounded-2xl p-3"
+        className="rounded-2xl p-3"
         align="start"
         side="top"
         sideOffset={6}

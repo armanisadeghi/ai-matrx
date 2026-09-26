@@ -265,7 +265,7 @@ export default function RouteHeader({
                 sizing="content"
                 align="end"
                 sideOffset={6}
-                className="w-auto max-w-[calc(100vw-2rem)] p-1"
+                className="p-1"
               >
                 <div
                   data-route-header-overflow-strip

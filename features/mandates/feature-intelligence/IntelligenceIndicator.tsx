@@ -149,7 +149,7 @@ export function IntelligenceIndicator({
         </TooltipTrigger>
         <TooltipContent>Intelligence</TooltipContent>
       </Tooltip>
-      <PopoverContent align="start" className="w-80 p-0">
+      <PopoverContent sizing="content" align="start" className="p-0">
         <div className="border-b border-border px-3 py-2">
           <p className="text-[13px] font-semibold text-foreground">Intelligence</p>
           <p className="text-[11.5px] text-muted-foreground">

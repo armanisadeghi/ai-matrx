@@ -240,7 +240,7 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
                 <span className="hidden sm:inline">Stream</span>
               </button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-[min(26rem,calc(100vw-2rem))] p-3">
+              <PopoverContent sizing="content" align="end" className="p-3">
                 <StreamSimControls
                   settings={simSettings}
                   onSettingsChange={setSimSettings}

@@ -105,7 +105,7 @@ export function KnobHistoryPopover(props: {
           <History className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent sizing="content" align="end" className="w-[22rem] max-w-[90vw] p-0 text-xs">
+      <PopoverContent sizing="content" align="end" className="p-0 text-xs">
         <div className="border-b border-border px-3 py-2 font-medium">History — {label}</div>
         <div className="max-h-80 overflow-y-auto">
           {loading && entries === null ? (

@@ -138,7 +138,7 @@ export function HeldWritesOnTable({
           {count === 1 ? "1 waiting for approval" : `${count} waiting for approval`}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="flex w-[min(28rem,calc(100vw-2rem))] flex-col gap-3 p-3">
+      <PopoverContent sizing="content" align="end" className="flex flex-col gap-3 p-3">
         {held.waits.map((wait) => (
           <RecordChangeApprovalCard
             key={wait.approvalId ?? wait.action}

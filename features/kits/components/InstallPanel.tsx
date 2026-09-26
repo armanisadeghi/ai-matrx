@@ -196,7 +196,7 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
                     change
                   </button>
                 </PopoverTrigger>
-                <PopoverContent align="start" className="w-72 p-0">
+                <PopoverContent sizing="content" align="start" className="p-0">
                   <OrganizationPickerPanel />
                 </PopoverContent>
               </Popover>

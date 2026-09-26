@@ -156,7 +156,7 @@ export function OptionCombobox({
       <PopoverContent
         sizing="content"
         align="start"
-        className="w-[min(var(--radix-popover-trigger-width),20rem)] min-w-56 p-0"
+        className="p-0"
       >
         <Command shouldFilter={false}>
           {searchable && (
