@@ -10,7 +10,7 @@
 
 **Organizations are unlimited and equal** — law: [`common-docs/policies/access-ladder.md`](/Users/armanisadeghi/code/common-docs/policies/access-ladder.md). A person may create and join as many organizations as they want; there is no "personal" or "business" type and no flag marks one; anyone may be invited into any organization, including the one created at signup. Every Organization-level record is open to every member of the organization that owns it. Declared model (one owner, default organization as a display preference): [`common-docs/systems/platform/organizations/DECISIONS.md`](/Users/armanisadeghi/code/common-docs/systems/platform/organizations/DECISIONS.md).
 
-**Live gap — the `is_personal` flag.** `iam.organizations.is_personal` still exists and live code still branches on it: `inv_create` refuses invitations into a flagged organization, `mbr_add` refuses membership changes in one (`personal organization memberships are immutable`), `deleteOrganization` refuses to delete one, and `personal_organization_id` / `current_personal_org_id()` / `iam.personal_org_id()` name it. Each of these is a defect against the law and goes with the flag; never build anything new on it.
+**Live gap — the `is_personal` flag.** `iam.organizations.is_personal` still exists and is being deleted. Anything that still reads it (verified live 2026-09-26: `admin_manage_organization_membership`, `iam.access_request_recipients`, the `*_list_scope_counts` RPCs, `iam.personal_org_id()` / `current_personal_org_id()`, and the client's `personal_organization_id`) is a defect against the law and goes with the flag; never build anything new on it.
 
 
 ## Purpose
@@ -205,7 +205,7 @@ Organizations are the top-level multi-tenant scope in the app — every organiza
 
 Nobody — owner, admin, or super admin — can leave, be removed from, or delete their **last remaining organization**.
 
-The `mbr_*`, `inv_*`, and ownership RPCs enforce these at the database layer against the authenticated actor's exact container role. Mutations serialize per container, preserve the last owner, bind project memberships to the project's authoritative organization, and allow only the narrow zero-member creator bootstrap. (`mbr_add` also refuses membership changes in an `is_personal` organization — a live defect, see the top of this doc.)
+The `mbr_*`, `inv_*`, and ownership RPCs enforce these at the database layer against the authenticated actor's exact container role. Mutations serialize per container, preserve the last owner, bind project memberships to the project's authoritative organization, and allow only the narrow zero-member creator bootstrap.
 
 **ONE OWNER PER ORGANIZATION** (Doctrine R21, Arman 2026-09-10 — [`access/DECISIONS.md`](/Users/armanisadeghi/code/common-docs/systems/platform/access/DECISIONS.md)). Ownership moves ONLY through `transfer_organization_ownership`, which promotes the new owner and demotes the outgoing owner to admin in the same statement; `mbr_update_role` and `admin_manage_organization_membership` both refuse a second owner and name Transfer ownership in the refusal, and a deferrable constraint trigger on `iam.memberships` is the backstop. The UI therefore has no "Make Owner" role item — the members list carries **Transfer ownership…** instead, with a confirmation that says the viewer becomes an admin. Guard: `pnpm check:org-ownership` (real users, real JWTs, real RPCs).
 
