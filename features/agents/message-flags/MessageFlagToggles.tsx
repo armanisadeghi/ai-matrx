@@ -76,18 +76,27 @@ export function MessageFlagToggles({ flags, states, onToggle, className }: Messa
                   onToggle(flag);
                 }}
                 className={cn(
-                  "inline-flex h-5 w-5 items-center justify-center rounded transition-opacity hover:bg-accent",
+                  "inline-flex h-5 items-center justify-center gap-1 rounded transition-opacity",
                   on
-                    ? broken
-                      ? "text-amber-600 dark:text-amber-400"
-                      : "text-primary"
+                    ? // An ON flag names itself — a lone coloured icon said
+                      // nothing about what this message now does.
+                      cn(
+                        "rounded-full px-1.5 text-[11px] font-medium",
+                        broken
+                          ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                          : "bg-primary/10 text-primary hover:bg-primary/15",
+                      )
                     : cn(
-                        "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+                        "w-5 hover:bg-accent",
+                        // Hover reveals the off toggles; a touch screen has no
+                        // hover, so there they always show.
+                        "opacity-0 group-hover:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100",
                         impaired ? "text-muted-foreground/40" : "text-muted-foreground",
                       ),
                 )}
               >
-                <Icon className="h-3.5 w-3.5" />
+                <Icon className="h-3 w-3 shrink-0" />
+                {on && <span className="whitespace-nowrap">{label}</span>}
               </button>
             </TooltipTrigger>
             <TooltipContent side="top" className="z-[9999] max-w-xs text-xs">
