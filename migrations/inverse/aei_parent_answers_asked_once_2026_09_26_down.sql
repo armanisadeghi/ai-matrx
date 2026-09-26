@@ -1,8 +1,8 @@
 -- chair-step: restores iam.accessible_entity_ids(text, permission_level, integer, boolean) to the body live before aei_parent_answers_asked_once_2026_09_26.sql, and re-records the kernel fingerprint for that one member.
 -- aei_parent_answers_asked_once_2026_09_26_down
--- based-on: iam.accessible_entity_ids(text, permission_level, integer, boolean) fba3d0a196eae10e7252fcc814cfc24df1260ce34e89d90942691e4521674224
--- based-on: iam.entity_read_kernel_expected() 948852360bb550c9d875e1233938c559509f4f86d52ceba29c55c9147018c53f
--- based-on: iam.entity_read_kernel_members_expected() 924796fe4d63af036527b7ba693f273d512aadde8b988151f22637aff593603b
+-- based-on: iam.accessible_entity_ids(text, permission_level, integer, boolean) 71c33edd5a1d4e66d5fdac5ab4292075f8c49ac8238f99653b57fcaa6af08971
+-- based-on: iam.entity_read_kernel_expected() ba3f72a09984399e898efa8e6892b7c0e686525affbfdb07200761354f5f90d1
+-- based-on: iam.entity_read_kernel_members_expected() a1aee99a4eadb07b0d05494b95b9d09313c187424a96df0a64e259ba13260eea
 
 CREATE OR REPLACE FUNCTION iam.accessible_entity_ids(p_type text, p_required permission_level, p_depth integer, p_include_public boolean)
  RETURNS uuid[]

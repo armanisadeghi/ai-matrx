@@ -1,4 +1,3 @@
--- draft: perf-lane aei cascade memo; applying after rehearsal
 -- based-on: iam.accessible_entity_ids(text, permission_level, integer, boolean) 0ebad3890b080e8ca44d64fef98226e375831560498290157c73eae0e6eb637c
 -- based-on: iam.entity_read_kernel_expected() 69a02c8a9a58d58a56f4508c6d78a3f5e6bc2fd0ed211dbe1d753fe33ccdc8b6
 -- based-on: iam.entity_read_kernel_members_expected() e55d8223e4ba75c075a68484f0b383c65a26c3daf10a5b14ac4a50ab40c9b252
@@ -18,15 +17,20 @@
 -- containment parent (356 of them — tasks, projects, conversations, files, web pages …) paid the
 -- same duplication.
 --
--- NOW: the depth-0 call opens a memo frame (a transaction-local setting it restores before it
+-- NOW: a depth-0 call that widens to public on a table with visibility (the only shape that asks a
+-- parent twice) opens a memo frame (a transaction-local setting it restores before it
 -- returns); every nested parent question (person, type, level, depth, include_public) is computed
 -- exactly as before the first time and read back after that, under the same snapshot. Nothing
 -- outside the cascade reads it: every policy and door calls depth 0, which always starts empty.
 --
--- SAME ANSWERS, proven on the nightly clone in one rolled-back transaction, the new body as a
--- pg_temp copy beside the live one: every token with a parent (356) x viewer/editor x with/without
--- public x test@test.com, admin@admin.com and two org owners — see the UI-REGISTER done line for
--- the counts — 0 differences, and the frame never left a value behind.
+-- SAME ANSWERS. On the nightly clone, the new body as a pg_temp copy beside the live one: every
+-- token with a parent (356) x viewer/editor x with/without public as test@test.com — 1,424
+-- comparisons, 0 differences, and the frame never left a value behind (the other seats' runs were
+-- cut short by lock timeouts from other lanes' DDL on the shared clone). On production, in one
+-- rolled-back transaction as test@test.com and admin@admin.com: 36 reads (agent.definition,
+-- agent.definition_version, workspace.tasks, agx_list_scoped mine/orgs/shared, agx_list_scope_counts,
+-- agx_list_facets, and every mandate list mode) — md5 identical before/after. Measured there: the
+-- agents read 193 -> 125 ms, agent versions 208 -> 139 ms, the org mandate page 584 -> 445 ms.
 --
 -- The function is a member of iam.entity_read_kernel_fingerprint(), so the expected fingerprint is
 -- re-recorded in THIS transaction (D249 pairing), refusing any drift but this one member.
@@ -329,7 +333,9 @@ begin
   -- table. Ordered so self edges run LAST, over the fully accumulated v_ids.
   -- AEI-MEMO: open the frame (see the declaration). Restored right after the loop, which has no
   -- early return; an error aborts the (sub)transaction and PostgreSQL restores the setting itself.
-  if p_depth = 0 then
+  -- Only a call that widens to public on a table with visibility asks a parent twice, so only
+  -- that call opens a frame; every other call pays nothing.
+  if p_depth = 0 and p_include_public and v_has_vis then
     v_memo_prev := current_setting('iam.aei_cascade_memo', true);
     perform set_config('iam.aei_cascade_memo', '{}', true);
   end if;
@@ -441,7 +447,7 @@ begin
     end if;
   end loop;
   -- AEI-MEMO: close the frame this call opened.
-  if p_depth = 0 then
+  if p_depth = 0 and p_include_public and v_has_vis then
     perform set_config('iam.aei_cascade_memo', coalesce(v_memo_prev, ''), true);
   end if;
 
@@ -471,6 +477,7 @@ begin
   ), '{}'::uuid[]);
 end;
 $function$;
+
 
 DO $rerecord$
 DECLARE
