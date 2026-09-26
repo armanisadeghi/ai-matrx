@@ -7,8 +7,7 @@
 // guardedUpdate on the row's `version`.
 
 import { supabase } from "@/utils/supabase/client";
-import { guardedUpdate } from "@ai-matrx/data/db";
-import { spliceProposal } from "@/features/rich-document/review/proposedEdit";
+import { documentBodyStore, spliceSaveBody } from "./sourceSave";
 
 export interface LoadedDocument {
   id: string;
@@ -55,24 +54,7 @@ export async function readDocumentVersionBody(id: string, contentVersion: number
  * protected island is refused by spliceSave, never forced).
  */
 export async function saveDocumentBody(doc: LoadedDocument, nextBody: string): Promise<void> {
-  const splice = spliceProposal(doc.body, nextBody);
-  if (!splice) return;
-  const result = await guardedUpdate<{ id: string; version: number; body: string }>({
-    expectedVersion: doc.version,
-    applyUpdate: ({ expectedVersion, nextVersion }) =>
-      supabase.schema("content").from("document")
-        .update({ body: splice.text, version: nextVersion })
-        .eq("id", doc.id).eq("version", expectedVersion)
-        .select("id, version, body").maybeSingle(),
-    fetchCurrent: () =>
-      supabase.schema("content").from("document").select("id, version, body").eq("id", doc.id).maybeSingle(),
-    // Only a bump that left the body exactly as this edit's base is phantom.
-    rebase: { isPhantom: (current) => current.body === doc.body },
-  });
-  if (result.status === "conflict") {
-    throw new Error("Someone else changed this document since you opened it. Reload to see their version, then apply again.");
-  }
-  if (result.status === "not_found") throw new Error("This document no longer exists or you can no longer edit it.");
+  await spliceSaveBody({ body: doc.body, version: doc.version }, nextBody, documentBodyStore(doc.id));
 }
 
 /** A new document from text (the studio's "annotate this buffer"). Filed in `organizationId`. */

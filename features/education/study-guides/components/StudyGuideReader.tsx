@@ -60,6 +60,7 @@ import {
 } from "@/features/rich-document/annotations/AnnotationSidecar";
 import { AnnotationPanel } from "@/features/rich-document/annotations/AnnotationPanel";
 import type { AnnotationSource } from "@/features/rich-document/annotations/types";
+import { noteBodyStore, spliceSaveBody } from "@/features/rich-document/annotations/sourceSave";
 
 type InspectorTab = "notes" | "terms";
 
@@ -215,7 +216,7 @@ function ReaderContent({ guide, onRetry, onEdit, getScope, jumpRequest }: { guid
  * (a note has no version store to diff, so the resolver uses exact → same
  * range with full context → quote + context → orphaned).
  */
-function guideSource(guide: Note): AnnotationSource {
+function guideSource(guide: Note, onSaved: () => void): AnnotationSource {
   return {
     token: "note",
     id: guide.id,
@@ -223,6 +224,12 @@ function guideSource(guide: Note): AnnotationSource {
     body: guide.content ?? "",
     contentVersion: Math.max(1, guide.version ?? 1),
     href: `/education/study-guides/${guide.id}`,
+    // An accepted suggestion writes through THE one splice-save adapter every source uses
+    // (only the suggested span's block changes; CAS on the note's version).
+    save: async (nextBody) => {
+      await spliceSaveBody({ body: guide.content ?? "", version: guide.version ?? 1 }, nextBody, noteBodyStore(guide.id));
+      onSaved();
+    },
   };
 }
 
@@ -310,7 +317,7 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
 
   const reader = loading || error || !guide ? <div className="scroll-page-end-space h-full min-h-0 overflow-y-auto">{readerState}</div> : readerState;
 
-  const withSidecar = (node: React.ReactNode) => guide ? <AnnotationSidecarProvider source={guideSource(guide)}>{node}</AnnotationSidecarProvider> : node;
+  const withSidecar = (node: React.ReactNode) => guide ? <AnnotationSidecarProvider source={guideSource(guide, () => { void loadStudyGuide(guide.id).then((next) => { if (next) setGuide(next); }); })}>{node}</AnnotationSidecarProvider> : node;
 
   if (isMobile) return withSidecar(<SurfaceRuntimeProvider surfaceName="matrx-user/education-study-guides" getScope={getScope}><PanelControlProvider initialLayouts={[defaultLayout]}><div className="matrx-touch-targets flex h-full min-h-0 flex-col"><div className="flex items-center justify-between border-b border-border bg-background px-3 py-2"><Button size="sm" variant="ghost" onClick={() => setMobilePanel("guides")}>Study guides</Button><Button size="sm" variant="ghost" onClick={() => setMobilePanel("details")}>Notes & terms</Button></div><div className="min-h-0 flex-1">{reader}</div><Drawer open={mobilePanel === "guides"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study guides</DrawerTitle></DrawerHeader><DrawerBody><GuideList guides={guides} activeLabel={guide?.label} activeId={guide?.id ?? initialGuideId} content={guide?.content ?? ""} onJump={(index) => { setOutlineJump((current) => ({ index, nonce: (current?.nonce ?? 0) + 1 })); setMobilePanel(null); }} loading={guidesLoading} error={guidesError} onRetry={retryIndex} /></DrawerBody></DrawerContent></Drawer><Drawer open={mobilePanel === "details"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study details</DrawerTitle></DrawerHeader><DrawerBody><Inspector guide={guide} mobile tab={tab} onTabChange={setTab} terms={terms} loading={detailsLoading[tab]} error={detailsError[tab]} onRetry={retryDetails} /></DrawerBody></DrawerContent></Drawer></div></PanelControlProvider></SurfaceRuntimeProvider>);
 
