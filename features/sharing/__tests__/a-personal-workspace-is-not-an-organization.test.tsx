@@ -59,6 +59,7 @@ import { getResourceVisibility } from "@/utils/permissions/service";
 import { PublicAccessTab } from "@/features/sharing/components/tabs/PublicAccessTab";
 import { AddEveryoneInOrg } from "@/features/sharing/components/AddEveryoneInOrg";
 import { makeStore } from "@/lib/redux/store";
+import { setPersonalOrganization } from "@/lib/redux/slices/appContextSlice";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -82,13 +83,8 @@ afterEach(() => {
 
 function storeWithPersonalOrg() {
   const store = makeStore();
-  const state = store.getState() as { appContext: Record<string, unknown> };
-  // The reducer's own state is read-only; seed the one field this test needs through a fresh
-  // store whose appContext says which workspace is personal.
-  return makeStore({
-    ...state,
-    appContext: { ...state.appContext, personal_organization_id: PERSONAL },
-  } as never);
+  store.dispatch(setPersonalOrganization(PERSONAL));
+  return store;
 }
 
 describe("1. the share read names the thing's own organization", () => {
