@@ -72,6 +72,19 @@ function seedCapabilityPending() {
   return pending;
 }
 
+function seedProductsPending() {
+  storeGoogleOAuthRedirectPending(window.sessionStorage,
+    buildGoogleOAuthRedirectPending(STATE, {
+      initiatingUserId: USER,
+      owner: { type: "user" },
+      organizationContextId: ORG,
+      connectionPurpose: "google_products",
+      targetConnectionId: "review-mailbox",
+      capabilityKeys: ["gmail_modify"],
+      scopes: ["openid", "https://www.googleapis.com/auth/gmail.modify"],
+    }, window.location.origin));
+}
+
 async function renderCallback() {
   await act(async () => {
     root.render(
@@ -197,6 +210,31 @@ it("passes the stored capability target to the canonical exchange", async () => 
       capabilityKey: "contacts",
     },
   );
+});
+
+it("exchanges the exact product selection and account through the canonical service", async () => {
+  seedProductsPending();
+  mockFetch.mockResolvedValue(jsonResponse({ valid: true, userId: USER }, 200));
+  mockConnectGoogle.mockImplementation(() => new Promise(() => undefined));
+  await renderCallback();
+  expect(mockConnectGoogle).toHaveBeenCalledWith("google-code", { type: "user" },
+    "google_products", expect.objectContaining({
+      targetConnectionId: "review-mailbox",
+      capabilityKeys: ["gmail_modify"],
+      organizationContextId: ORG,
+      expectedUserId: USER,
+      redirectUri: window.location.origin,
+    }));
+});
+
+it("does not exchange a tampered product selection", async () => {
+  seedProductsPending();
+  const key = `mx-google-oauth-redirect:${STATE}`;
+  const pending = JSON.parse(window.sessionStorage.getItem(key)!);
+  window.sessionStorage.setItem(key, JSON.stringify({ ...pending, capabilityKeys: [] }));
+  await renderCallback();
+  expect(host.textContent).toContain("missing or expired");
+  expect(mockConnectGoogle).not.toHaveBeenCalled();
 });
 
 it("consumes a confirmed foreign-user continuation without exchanging", async () => {

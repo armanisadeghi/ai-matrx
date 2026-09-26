@@ -10,6 +10,7 @@ import {
   clearGoogleOAuthRedirectPending,
   assertGoogleOAuthRedirectInitiator,
   readGoogleOAuthRedirectPending,
+  googleProductsRedirectFingerprint,
   returnPathWithGoogleOAuthResult,
   type GoogleOAuthRedirectPending,
 } from "./oauthRedirect";
@@ -63,6 +64,7 @@ export function GoogleOAuthRedirectCallback({
           expectedUserId: pending.initiatingUserId,
           targetConnectionId: pending.targetConnectionId,
           capabilityKey: pending.capabilityKey,
+          capabilityKeys: pending.capabilityKeys,
         });
         window.location.replace(
           returnPathWithGoogleOAuthResult(
@@ -118,7 +120,10 @@ export function GoogleOAuthRedirectCallback({
         validation = await fetch("/api/google/oauth/redirect-state", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ state }),
+          body: JSON.stringify({
+            state,
+            requestFingerprint: googleProductsRedirectFingerprint(pending),
+          }),
         });
       } catch {
         setFailure(

@@ -431,8 +431,49 @@ export function useGoogleConsentRunner() {
     [googleAuth, connectGoogle, userId],
   );
 
+  const runInThisTab = useCallback(
+    async (
+      request: ConsentRequest,
+      options: { owner: ConsentRunOwner; loginHint: string | null },
+    ): Promise<void> => {
+      const gate = googleAuth.beginAuthorization();
+      try {
+        const workspace = await awaitEffectiveOrganizationId();
+        if (workspace.status !== "ready") {
+          throw new Error(
+            `${workspace.reason} Every Google connection is recorded against one organization.`,
+          );
+        }
+        if (!userId) throw new Error("Sign in before connecting Google.");
+        await googleAuth.openAuthorizationRedirect(
+          request.scopes,
+          {
+            returnTo: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+            initiatingUserId: userId,
+            owner:
+              options.owner.type === "organization" && options.owner.organizationId
+                ? { type: "organization", organizationId: options.owner.organizationId }
+                : { type: "user" },
+            organizationContextId: workspace.organizationId,
+            connectionPurpose: "google_products",
+            loginHint: options.loginHint ?? undefined,
+            targetConnectionId: request.targetAccountId ?? undefined,
+            capabilityKeys: request.capabilityKeys,
+            scopes: request.scopes,
+          },
+          gate,
+        );
+      } catch (cause) {
+        gate.release();
+        throw cause;
+      }
+    },
+    [googleAuth, userId],
+  );
+
   return {
     run,
+    runInThisTab,
     /** Google's own script has to be up before any window can open. */
     ready: googleAuth.ready,
   };

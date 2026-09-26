@@ -118,6 +118,28 @@ describe("Google OAuth redirect state route", () => {
     expect(replay.status).toBe(400);
   });
 
+  it("binds product keys and scopes to the HttpOnly state before exchange", async () => {
+    mockGetUser.mockResolvedValue(authenticated());
+    const requestFingerprint = JSON.stringify({
+      owner: { type: "user" }, organizationContextId: "org-1",
+      targetConnectionId: "review-mailbox",
+      capabilityKeys: ["gmail_modify"],
+      scopes: ["openid", "https://www.googleapis.com/auth/gmail.modify"],
+    });
+    const minted = await POST(request("POST", {
+      initiatingUserId: "user-1", requestFingerprint,
+    }));
+    const { state } = (await minted.json()) as { state: string };
+    const cookieValue = minted.cookies.get("mx_google_oauth_redirect_state")?.value;
+    const cookie = `mx_google_oauth_redirect_state=${cookieValue}`;
+    expect((await PUT(request("PUT", { state, requestFingerprint: requestFingerprint.replace(
+      "gmail_modify", "gmail_read"), }, "https://www.aimatrx.com", cookie))).status).toBe(400);
+    expect((await PUT(request("PUT", { state, requestFingerprint: requestFingerprint.replace(
+      "gmail.modify", "gmail.readonly"), }, "https://www.aimatrx.com", cookie))).status).toBe(400);
+    expect((await PUT(request("PUT", { state, requestFingerprint },
+      "https://www.aimatrx.com", cookie))).status).toBe(200);
+  });
+
   it("does not let a changed client initiator rebind the server-bound user", async () => {
     const minted = await mint("user-1");
     const body = (await minted.json()) as { state: string };

@@ -674,7 +674,7 @@ export function ConnectorConsentBody({
     );
   };
 
-  const connect = async () => {
+  const connect = async (inThisTab = false) => {
     if (initialAccountId && accountId === initialAccountId && !account) {
       const sentence = "The selected Google account is no longer available. Choose another account or reopen this connection.";
       setAnswer(sentence);
@@ -704,13 +704,17 @@ export function ConnectorConsentBody({
       if (!disclosed) return;
       const changesDisclosed = await confirmGmailChangesDisclosure(plan.request);
       if (!changesDisclosed) return;
-      const result = await runner.run(plan.request, {
-        owner:
-          !gmailChangesSelected && forOrganization && activeOrganization
-            ? { type: "organization", organizationId: activeOrganization.id }
-            : { type: "user" },
+      const options = {
+        owner: !gmailChangesSelected && forOrganization && activeOrganization
+          ? { type: "organization" as const, organizationId: activeOrganization.id }
+          : { type: "user" as const },
         loginHint: account?.label ?? null,
-      });
+      };
+      if (inThisTab) {
+        await runner.runInThisTab(plan.request, options);
+        return;
+      }
+      const result = await runner.run(plan.request, options);
       setAttemptPlan(plan);
       setAttemptAccountId(result.connectionId);
       setChosenAccountId(result.connectionId);
@@ -1054,6 +1058,15 @@ export function ConnectorConsentBody({
             ) : (
               provider.dialog.cta
             )}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void connect(true)}
+            disabled={busy || !runner.ready}
+            className="h-11 w-full text-sm sm:h-8 sm:w-auto"
+          >
+            Continue in this tab
           </Button>
         </div>
         {answer ? (

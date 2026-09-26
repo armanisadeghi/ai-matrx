@@ -66,9 +66,10 @@ jest.mock("../gmail-read-disclosure", () => ({
 }));
 
 const run = jest.fn();
+const runInThisTab = jest.fn();
 
 jest.mock("../google-adapter", () => ({
-  useGoogleConsentRunner: () => ({ run, ready: true }),
+  useGoogleConsentRunner: () => ({ run, runInThisTab, ready: true }),
   useGoogleConnectorState: () => ({
     accounts: [],
     rollout: [],
@@ -163,6 +164,7 @@ afterEach(() => {
   container.remove();
   toastInfo.mockReset();
   run.mockReset();
+  runInThisTab.mockReset();
 });
 
 describe("D1 — the scope wording opens on a tap", () => {
@@ -316,6 +318,21 @@ describe("D4 + D7 — the account is named, changeable, and can be a new one", (
 });
 
 describe("D8 — a press that would do nothing says so", () => {
+  it("offers a same-tab grant with the selected product and account", async () => {
+    mount({ accounts: [INFO], initialAccountId: INFO.id, initialProductKeys: ["gmail_modify"] });
+    runInThisTab.mockResolvedValue(undefined);
+    await act(async () => {
+      buttonsByText("Continue in this tab")[0]!.click();
+      await Promise.resolve();
+    });
+    expect(runInThisTab).toHaveBeenCalledWith(
+      expect.objectContaining({ targetAccountId: INFO.id,
+        capabilityKeys: expect.arrayContaining(["gmail_modify"]),
+        scopes: expect.arrayContaining(["https://www.googleapis.com/auth/gmail.modify"]) }),
+      expect.objectContaining({ loginHint: INFO.label, owner: { type: "user" } }),
+    );
+    expect(run).not.toHaveBeenCalled();
+  });
   it("keeps Connect pressable with nothing switched on and answers the press", () => {
     mount({ accounts: [] });
     const connect = buttonsByText(provider.dialog.cta)[0]!;

@@ -11,7 +11,8 @@ export type GoogleRedirectConnectionPurpose =
   | "google_ads_isolated"
   | "read_only_sweep"
   | "contacts_import"
-  | "google_capability";
+  | "google_capability"
+  | "google_products";
 
 export type GoogleRedirectCapabilityKey =
   "contacts" | "calendar" | "tasks" | "tag_manager" | "youtube_analytics";
@@ -26,6 +27,8 @@ export interface GoogleOAuthRedirectPending {
   connectionPurpose: GoogleRedirectConnectionPurpose;
   targetConnectionId?: string;
   capabilityKey?: GoogleRedirectCapabilityKey;
+  capabilityKeys?: string[];
+  scopes?: string[];
 }
 
 export interface GoogleOAuthRedirectStartOptions {
@@ -39,6 +42,8 @@ export interface GoogleOAuthRedirectStartOptions {
   forceConsent?: boolean;
   targetConnectionId?: string;
   capabilityKey?: GoogleRedirectCapabilityKey;
+  capabilityKeys?: readonly string[];
+  scopes?: readonly string[];
 }
 
 function pendingKey(state: string): string {
@@ -67,6 +72,10 @@ export function buildGoogleOAuthRedirectPending(
   if (!options.organizationContextId.trim()) {
     throw new Error("Choose an organization before connecting Google.");
   }
+  if (options.connectionPurpose === "google_products" &&
+      (!validSelection(options.capabilityKeys) || !validSelection(options.scopes))) {
+    throw new Error("Choose Google products and permissions before continuing.");
+  }
   return {
     state,
     initiatingUserId,
@@ -79,7 +88,34 @@ export function buildGoogleOAuthRedirectPending(
       ? { targetConnectionId: options.targetConnectionId }
       : {}),
     ...(options.capabilityKey ? { capabilityKey: options.capabilityKey } : {}),
+    ...(options.connectionPurpose === "google_products"
+      ? { capabilityKeys: [...(options.capabilityKeys ?? [])], scopes: [...(options.scopes ?? [])] }
+      : {}),
   };
+}
+
+function validSelection(values: readonly string[] | undefined): values is readonly string[] {
+  return Array.isArray(values) && values.length > 0 &&
+    values.every((value) => typeof value === "string" && value.trim() === value && value.length > 0) &&
+    new Set(values).size === values.length;
+}
+
+/** Bind the exact product grant to the server-held, HttpOnly redirect state. */
+export function googleProductsRedirectFingerprint(
+  options: Pick<GoogleOAuthRedirectStartOptions,
+    "connectionPurpose" | "owner" | "organizationContextId" | "targetConnectionId" | "capabilityKeys" | "scopes">,
+): string | undefined {
+  if (options.connectionPurpose !== "google_products") return undefined;
+  if (!validSelection(options.capabilityKeys) || !validSelection(options.scopes)) {
+    throw new Error("Choose Google products and permissions before continuing.");
+  }
+  return JSON.stringify({
+    owner: options.owner,
+    organizationContextId: options.organizationContextId,
+    targetConnectionId: options.targetConnectionId ?? null,
+    capabilityKeys: options.capabilityKeys,
+    scopes: options.scopes,
+  });
 }
 
 export function storeGoogleOAuthRedirectPending(
@@ -105,6 +141,8 @@ export function readGoogleOAuthRedirectPending(
       typeof value.initiatingUserId !== "string" ||
       !value.initiatingUserId ||
       typeof value.createdAt !== "number" ||
+      !Number.isFinite(value.createdAt) ||
+      value.createdAt > now ||
       now - value.createdAt > GOOGLE_OAUTH_REDIRECT_TTL_MS ||
       typeof value.returnTo !== "string" ||
       typeof value.organizationContextId !== "string" ||
@@ -113,7 +151,8 @@ export function readGoogleOAuthRedirectPending(
         value.connectionPurpose !== "google_ads_isolated" &&
         value.connectionPurpose !== "read_only_sweep" &&
         value.connectionPurpose !== "contacts_import" &&
-        value.connectionPurpose !== "google_capability") ||
+        value.connectionPurpose !== "google_capability" &&
+        value.connectionPurpose !== "google_products") ||
       (value.targetConnectionId !== undefined &&
         (typeof value.targetConnectionId !== "string" ||
           !value.targetConnectionId)) ||
@@ -125,6 +164,10 @@ export function readGoogleOAuthRedirectPending(
         value.capabilityKey !== "youtube_analytics") ||
       (value.connectionPurpose === "google_capability" &&
         (!value.targetConnectionId || !value.capabilityKey)) ||
+      (value.connectionPurpose === "google_products" &&
+        (!validSelection(value.capabilityKeys) || !validSelection(value.scopes))) ||
+      (value.connectionPurpose !== "google_products" &&
+        (value.capabilityKeys !== undefined || value.scopes !== undefined)) ||
       !value.owner ||
       (value.owner.type !== "user" && value.owner.type !== "organization")
     ) {
@@ -151,6 +194,9 @@ export function readGoogleOAuthRedirectPending(
         ? { targetConnectionId: value.targetConnectionId }
         : {}),
       ...(value.capabilityKey ? { capabilityKey: value.capabilityKey } : {}),
+      ...(value.connectionPurpose === "google_products"
+        ? { capabilityKeys: [...(value.capabilityKeys ?? [])], scopes: [...(value.scopes ?? [])] }
+        : {}),
     };
   } catch {
     return null;

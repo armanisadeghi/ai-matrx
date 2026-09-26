@@ -18,6 +18,7 @@ import type {
 import {
   assertGoogleOAuthRedirectInitiator,
   buildGoogleOAuthRedirectPending,
+  googleProductsRedirectFingerprint,
   storeGoogleOAuthRedirectPending,
 } from "./oauthRedirect";
 import type { GoogleOAuthRedirectStartOptions } from "./oauthRedirect";
@@ -590,7 +591,10 @@ export default function GoogleAPIProvider({
       const response = await fetch("/api/google/oauth/redirect-state", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ initiatingUserId: user.id }),
+        body: JSON.stringify({
+          initiatingUserId: user.id,
+          requestFingerprint: googleProductsRedirectFingerprint(options),
+        }),
       });
       const body = (await response.json()) as {
         state?: unknown;

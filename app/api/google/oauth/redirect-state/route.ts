@@ -23,6 +23,7 @@ function stateMatches(expected: string, received: string): boolean {
 interface RedirectStateSession {
   state: string;
   initiatingUserId: string;
+  requestFingerprint?: string;
 }
 
 function encodeStateSession(session: RedirectStateSession): string {
@@ -36,7 +37,13 @@ function decodeStateSession(value: string): RedirectStateSession | null {
     ) as Partial<RedirectStateSession>;
     return typeof parsed.state === "string" &&
       typeof parsed.initiatingUserId === "string"
-      ? { state: parsed.state, initiatingUserId: parsed.initiatingUserId }
+      ? {
+          state: parsed.state,
+          initiatingUserId: parsed.initiatingUserId,
+          ...(typeof parsed.requestFingerprint === "string"
+            ? { requestFingerprint: parsed.requestFingerprint }
+            : {}),
+        }
       : null;
   } catch {
     return null;
@@ -50,12 +57,23 @@ export async function POST(request: NextRequest) {
       { status: 403 },
     );
   }
-  const body = (await request.json()) as { initiatingUserId?: unknown };
+  const body = (await request.json()) as {
+    initiatingUserId?: unknown;
+    requestFingerprint?: unknown;
+  };
   const initiatingUserId =
     typeof body.initiatingUserId === "string" ? body.initiatingUserId : "";
   if (!initiatingUserId) {
     return NextResponse.json(
       { error: "Google authorization requires a signed-in user." },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+  if (body.requestFingerprint !== undefined &&
+      (typeof body.requestFingerprint !== "string" ||
+        body.requestFingerprint.length < 1 || body.requestFingerprint.length > 3000)) {
+    return NextResponse.json(
+      { error: "Google authorization request is invalid." },
       { status: 400, headers: { "Cache-Control": "no-store" } },
     );
   }
@@ -95,7 +113,13 @@ export async function POST(request: NextRequest) {
   );
   response.cookies.set(
     GOOGLE_OAUTH_REDIRECT_STATE_COOKIE,
-    encodeStateSession({ state, initiatingUserId: user.id }),
+    encodeStateSession({
+      state,
+      initiatingUserId: user.id,
+      ...(typeof body.requestFingerprint === "string"
+        ? { requestFingerprint: body.requestFingerprint }
+        : {}),
+    }),
     {
       httpOnly: true,
       sameSite: "lax",
@@ -114,7 +138,10 @@ export async function PUT(request: NextRequest) {
       { status: 403 },
     );
   }
-  const body = (await request.json()) as { state?: unknown };
+  const body = (await request.json()) as {
+    state?: unknown;
+    requestFingerprint?: unknown;
+  };
   const state = typeof body.state === "string" ? body.state : "";
   const expectedCookie = request.cookies.get(
     GOOGLE_OAUTH_REDIRECT_STATE_COOKIE,
@@ -125,7 +152,10 @@ export async function PUT(request: NextRequest) {
   if (
     !state ||
     !expectedSession ||
-    !stateMatches(expectedSession.state, state)
+    !stateMatches(expectedSession.state, state) ||
+    (expectedSession.requestFingerprint !== undefined &&
+      (typeof body.requestFingerprint !== "string" ||
+        !stateMatches(expectedSession.requestFingerprint, body.requestFingerprint)))
   ) {
     return NextResponse.json(
       {

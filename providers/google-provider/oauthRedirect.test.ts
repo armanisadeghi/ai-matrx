@@ -82,6 +82,32 @@ describe("Google OAuth redirect state", () => {
     });
   });
 
+  it("preserves a real product grant and rejects incomplete or expired selections", () => {
+    const storage = new MemoryStorage();
+    const options = {
+      initiatingUserId: "reviewer-user",
+      owner: { type: "user" as const },
+      organizationContextId: "review-org",
+      connectionPurpose: "google_products" as const,
+      targetConnectionId: "review-mailbox",
+      capabilityKeys: ["gmail_modify"],
+      scopes: ["openid", "https://www.googleapis.com/auth/gmail.modify"],
+    };
+    const pending = buildGoogleOAuthRedirectPending("products", options, ORIGIN, 1_000);
+    storeGoogleOAuthRedirectPending(storage, pending);
+    expect(readGoogleOAuthRedirectPending(storage, "products", ORIGIN, 1_001)).toMatchObject(options);
+    expect(readGoogleOAuthRedirectPending(storage, "products", ORIGIN,
+      1_000 + GOOGLE_OAUTH_REDIRECT_TTL_MS + 1)).toBeNull();
+    storage.setItem("mx-google-oauth-redirect:products", JSON.stringify({ ...pending, capabilityKeys: [] }));
+    expect(readGoogleOAuthRedirectPending(storage, "products", ORIGIN, 1_001)).toBeNull();
+    storage.setItem("mx-google-oauth-redirect:products", JSON.stringify({ ...pending, scopes: [""] }));
+    expect(readGoogleOAuthRedirectPending(storage, "products", ORIGIN, 1_001)).toBeNull();
+    storage.setItem("mx-google-oauth-redirect:products", JSON.stringify({ ...pending, createdAt: 2_000 }));
+    expect(readGoogleOAuthRedirectPending(storage, "products", ORIGIN, 1_001)).toBeNull();
+    expect(() => buildGoogleOAuthRedirectPending("products", { ...options, capabilityKeys: [] }, ORIGIN))
+      .toThrow("Choose Google products");
+  });
+
   it("rejects expired, mismatched, and cross-origin continuations", () => {
     const storage = new MemoryStorage();
     const pending = buildGoogleOAuthRedirectPending(
