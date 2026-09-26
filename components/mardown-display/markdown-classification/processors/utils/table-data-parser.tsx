@@ -1,6 +1,6 @@
 import { MarkdownTableData } from "@/components/mardown-display/types";
 import { parseMarkdownTable as parseCanonicalTable } from "@/components/mardown-display/blocks/table/parseMarkdownTable";
-import { findTableEnd, findTableStart } from "./gfm-table-lines";
+import { findTableEnd, findWholeTableStart } from "./gfm-table-lines";
 
 
 
@@ -17,7 +17,7 @@ export const parseMarkdownTable = (content: string): {
 
         // THE table rule (gfm-table-lines) finds the table — pipe-led or pipe-less —
         // and THE parser reads it: an escaped `\|` stays in its cell.
-        const tableStartIndex = findTableStart(lines);
+        const tableStartIndex = findWholeTableStart(lines);
         if (tableStartIndex === -1) return { markdown: null, data: null };
         const tableLines = lines.slice(tableStartIndex, findTableEnd(lines, tableStartIndex));
 

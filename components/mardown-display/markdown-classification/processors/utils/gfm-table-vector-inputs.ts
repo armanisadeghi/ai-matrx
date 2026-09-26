@@ -43,6 +43,9 @@ export const DOCUMENT_INPUTS: ReadonlyArray<{ name: string; text: string }> = [
   { name: "a closing tag alone on its line ends the table", text: `${INTRO}\n\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n</artifact>\n\n${OUTRO}` },
   { name: "a tag with text after it is a row", text: `${INTRO}\n\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n<span>B4</span> clear\n\n${OUTRO}` },
   { name: "an indented line ends the table", text: `${INTRO}\n\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n    B4 clear\n\n${OUTRO}` },
+  { name: "a pipe-led header wider than its delimiter is no table", text: `${INTRO}\n\n| Bay | Status |\n|---|\n| B3 | re-scan |\n\n${OUTRO}` },
+  { name: "a header with no pipe over |---| is a one-column table", text: `${INTRO}\n\nNotes\n|---|\nDock B closed\n\n${OUTRO}` },
+  { name: "a table under a list item's text is that item's text", text: `${INTRO}\n\n- Dock B is closed tonight\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n\n${OUTRO}` },
 ];
 
 export const ROW_INPUTS: readonly string[] = [

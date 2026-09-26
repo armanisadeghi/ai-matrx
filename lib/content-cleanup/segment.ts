@@ -22,7 +22,7 @@ import type {
   ProtectionConfidence,
 } from "./types";
 import { fenceParts, findCodeRanges } from "@ai-matrx/content-ir/source";
-import { continuesTable, isGfmDelimiterRow, isPipeLedRow, startsPipelessTable, tableContainerIndent } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { continuesTable, tableContainerIndent, tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 interface LineInfo {
   start: number;
@@ -141,12 +141,12 @@ function detectTables(
   masked: (offset: number) => boolean,
 ): ProtectedRegion[] {
   const regions: ProtectedRegion[] = [];
+  const texts = lines.map((line) => line.text);
   let i = 1;
   while (i < lines.length) {
-    // Delimiter row by THE GFM table rule (gfm-table-lines), e.g. | --- | :--: |
-    const isDelim =
-      isGfmDelimiterRow(lines[i].text) &&
-      (isPipeLedRow(lines[i - 1].text) || startsPipelessTable(lines[i - 1].text, lines[i].text));
+    // A whole table header over its delimiter row by THE GFM table rule
+    // (gfm-table-lines tableStartsAt: same width, no list item, no lazy line).
+    const isDelim = tableStartsAt(texts, i - 1);
     if (!isDelim || masked(lines[i - 1].start)) {
       i++;
       continue;
@@ -154,7 +154,7 @@ function detectTables(
     const startLine = i - 1;
     let endLine = i;
     let j = i + 1;
-    const container = tableContainerIndent(lines.map((line) => line.text), startLine);
+    const container = tableContainerIndent(texts, startLine);
     while (j < lines.length && continuesTable(lines[j].text, container)) {
       endLine = j;
       j++;

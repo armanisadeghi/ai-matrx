@@ -7,6 +7,7 @@ import {
     isGfmDelimiterRow,
     rowCells,
     tableContainerIndent,
+    tableStartsAt,
 } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 type NormalizedTableData = Array<{ [key: string]: string }>;
@@ -139,7 +140,7 @@ export const parseMarkdownTable = (
 
         // More robust separator validation
         const separatorLine = tableLines[1].trim();
-        if (!isGfmDelimiterRow(separatorLine)) {
+        if (!isGfmDelimiterRow(separatorLine) || !tableStartsAt(lines, tableStartIndex)) {
             if (!isStreamActive && process.env.NODE_ENV === 'development') {
                 console.warn("Invalid table separator format:", separatorLine);
             }
@@ -249,7 +250,8 @@ export const parseMarkdownTables = (
                 continue;
             }
 
-            if (!isGfmDelimiterRow(tableLines[1] ?? "")) {
+            // THE rule: a same-width delimiter row (never a list item), no lazy line.
+            if (!tableStartsAt(lines, globalStartIndex)) {
                 currentIndex = globalStartIndex + 1;
                 continue;
             }

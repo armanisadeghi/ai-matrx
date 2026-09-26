@@ -544,6 +544,64 @@
           "B4 clear\n\nOmar signs off once bay B3 is re-scanned."
         ]
       ]
+    },
+    {
+      "name": "a pipe-led header wider than its delimiter is no table",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\n| Bay | Status |\n|---|\n| B3 | re-scan |\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "text",
+          "| Bay | Status |"
+        ],
+        [
+          "text",
+          "|---|"
+        ],
+        [
+          "text",
+          "| B3 | re-scan |\n\nOmar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "a header with no pipe over |---| is a one-column table",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\nNotes\n|---|\nDock B closed\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "table",
+          "Notes\n|---|\nDock B closed"
+        ],
+        [
+          "text",
+          "Omar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "a table under a list item's text is that item's text",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\n- Dock B is closed tonight\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "tree",
+          "- Dock B is closed tonight\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |"
+        ],
+        [
+          "text",
+          "Omar signs off once bay B3 is re-scanned."
+        ]
+      ]
     }
   ],
   "tableEnds": [
@@ -1039,6 +1097,78 @@
       ],
       "index": 1,
       "opens": true
+    },
+    {
+      "lines": [
+        "Notes",
+        "|---|",
+        "Dock B closed"
+      ],
+      "index": 0,
+      "opens": true
+    },
+    {
+      "lines": [
+        "| Notes",
+        "| -",
+        "| Dock B closed"
+      ],
+      "index": 0,
+      "opens": true
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 0,
+      "opens": false
+    },
+    {
+      "lines": [
+        "| Bay |",
+        "|---|---|",
+        "| B3 |"
+      ],
+      "index": 0,
+      "opens": false
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "- | -",
+        "| B3 | re-scan |"
+      ],
+      "index": 0,
+      "opens": false
+    },
+    {
+      "lines": [
+        "Bay | Status",
+        "- | -",
+        "B3 | re-scan"
+      ],
+      "index": 0,
+      "opens": false
+    },
+    {
+      "lines": [
+        "Bay | Status",
+        "-|-",
+        "B3 | re-scan"
+      ],
+      "index": 0,
+      "opens": true
+    },
+    {
+      "lines": [
+        "    | Bay | Status |",
+        "    |---|---|",
+        "    | B3 | re-scan |"
+      ],
+      "index": 0,
+      "opens": false
     }
   ]
 }

@@ -8,7 +8,7 @@
  *
  * Every table READER in the app goes through here (guard: `pnpm check:table-readers`).
  */
-import { continuesTable } from "@ai-matrx/content-ir/source";
+import { continuesTable, tableStartsAt } from "@ai-matrx/content-ir/source";
 
 export {
   continuesTable,
@@ -26,6 +26,17 @@ export {
   tableStartsAt,
   unescapeCellPipes,
 } from "@ai-matrx/content-ir/source";
+
+/**
+ * Index of the first WHOLE table header at or after `from` (THE rule's
+ * `tableStartsAt`: a same-width delimiter row under it, no lazy line, no indented
+ * code); -1 when none. `findTableStart` is the streaming-lenient twin (a pipe-led
+ * row opens before its delimiter arrives).
+ */
+export function findWholeTableStart(lines: readonly string[], from = 0): number {
+  for (let i = Math.max(0, from); i + 1 < lines.length; i += 1) if (tableStartsAt(lines, i)) return i;
+  return -1;
+}
 
 // ── Streaming: a table still arriving ───────────────────────────────────────
 

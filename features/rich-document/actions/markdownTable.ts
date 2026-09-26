@@ -1,9 +1,8 @@
 import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";
 import {
   findTableEnd,
-  isGfmDelimiterRow,
-  opensTable,
   rowCells,
+  tableStartsAt,
   unescapeCellPipes,
 } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 // features/rich-document/actions/markdownTable.ts
@@ -39,7 +38,7 @@ export function parseFirstMarkdownTable(content: string): ParsedTable | null {
   const lines = content.split("\n");
   for (let i = 0; i + 1 < lines.length; i += 1) {
     // THE table rule: a header (edge pipes optional) over its delimiter row.
-    if (!opensTable(lines, i) || !isGfmDelimiterRow(lines[i + 1] ?? "")) continue;
+    if (!tableStartsAt(lines, i)) continue;
     const headers = splitRow(lines[i]);
     const rows: string[][] = [];
     const end = findTableEnd(lines, i);

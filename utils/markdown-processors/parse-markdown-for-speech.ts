@@ -1,10 +1,9 @@
 import { replaceFences, unwrapCodeSpans } from "@/lib/markdown/code-ranges";
 import {
   findTableEnd,
-  isGfmDelimiterRow,
   isPipeLedRow,
-  opensTable,
   rowCells,
+  tableStartsAt,
   unescapeCellPipes,
 } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
@@ -16,7 +15,7 @@ function speakTables(text: string): string {
   const lines = text.split("\n");
   const out: string[] = [];
   for (let i = 0; i < lines.length; i += 1) {
-    if (!opensTable(lines, i) || !isGfmDelimiterRow(lines[i + 1] ?? "")) {
+    if (!tableStartsAt(lines, i)) {
       out.push(lines[i] ?? "");
       continue;
     }
