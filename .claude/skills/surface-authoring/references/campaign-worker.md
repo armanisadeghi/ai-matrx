@@ -107,6 +107,12 @@ returning name;
      the closest honest product and say so.
    - No write targets unless the page has a genuine user-authored draft. A read-only surface says
      so, with the reason, in the manifest header.
+   - A page with a **"New ___" dialog** is the exception that always gets two targets, both `ask`:
+     a `draft` target that opens the dialog and fills EVERY field (buttons, toggles and added rows
+     too, not just text boxes), and an `entity` target that takes an ARRAY and creates each item
+     through the page's own create function, validating the whole list first. Without them,
+     agents improvise with generic tools and create half-built records (2026-09-26, My Classes:
+     classes with no settings or owner). Worked example: `education-classes.manifest.ts`.
    - Never run a formatter over a whole file you did not create: a formatted file becomes a
      900-line diff that collides with everyone. Format only files you created.
 5. **Readiness:** `partial`, with a note naming exactly what is not proven yet (normally: "no
