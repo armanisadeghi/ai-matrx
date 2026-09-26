@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-26T19:58:20.071Z",
+  "generated_at": "2026-09-26T21:19:04.610Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -2905,6 +2905,18 @@
       "filename": "links2_an_hr_link_names_its_employer.sql",
       "checksum": "783b1c16e02a04ee8bf57960e6085452374579efb7f2214c70a15efe37125dff",
       "applied_at": "2026-09-21 21:54:38.048046+00"
+    },
+    "migrations/campaign/listcopypermissive_b_a_removal_is_named_before_an_invented_choice.sql": {
+      "source": "matrx-frontend",
+      "filename": "listcopypermissive_b_a_removal_is_named_before_an_invented_choice.sql",
+      "checksum": "3844f8928eea39bdef4511e7662f352a192378bef3c794078515efd4e14de28c",
+      "applied_at": "2026-09-26 21:19:03.669558+00"
+    },
+    "migrations/campaign/listcopypermissive_the_copy_never_invents_a_choice.sql": {
+      "source": "matrx-frontend",
+      "filename": "listcopypermissive_the_copy_never_invents_a_choice.sql",
+      "checksum": "7f60b085cb14ee4ec183da25f2613ebe8af4d0189e8027180753c1735a848950",
+      "applied_at": "2026-09-26 21:17:08.337598+00"
     },
     "migrations/campaign/listsafter_a_pick_lists_read_and_are_born_where_the_switch_says.sql": {
       "source": "matrx-frontend",
