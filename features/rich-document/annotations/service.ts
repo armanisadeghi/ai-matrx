@@ -637,3 +637,15 @@ export async function unlinkRecord(source: AnnotationSource, token: string, id: 
   });
   if (!res.ok) throw sentence("detaching the record", res.error);
 }
+
+/**
+ * THE DOOR LAW for the link picker: the kinds of record that CAN be linked to this source —
+ * registered, active association pairs into `targetToken` (labels unset or `anchored_to`), from
+ * `public.association_link_sources`. The picker offers only these, so no choice is dead.
+ */
+export async function linkableKinds(targetToken: string): Promise<string[]> {
+  const { data, error } = await supabase.rpc("association_link_sources", { p_target_type: targetToken, p_label: ANCHORED_TO_ROLE });
+  if (error) throw sentence("finding what can be linked here", error);
+  return (data ?? []).map((r: { source_type: string }) => r.source_type);
+}
+

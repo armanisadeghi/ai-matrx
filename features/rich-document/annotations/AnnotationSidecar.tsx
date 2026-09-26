@@ -337,7 +337,7 @@ function SelectionToolbar({
           </Button>
           {api.state.capabilities.links && <Button size="sm" variant="ghost" className="justify-start" onClick={() => setLinkOpen(true)}>
             <Link2 className="mr-2 h-3.5 w-3.5" aria-hidden />
-            Link a flashcard, task, note…
+            Link a record…
           </Button>}
           {extraActions && (
             <>
