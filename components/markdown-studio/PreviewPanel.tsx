@@ -204,10 +204,10 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
                   )}
                 >
                   <Icon className="h-3 w-3 shrink-0" />
-                  {/* A narrow pane (a phone, or the half-width desktop split):
-                      inactive tabs go icon-only, the active one stays named.
-                      Measured on the PANE (container query), not the screen. */}
-                  <span className={cn(mode !== m && "hidden @3xl:inline")}>
+                  {/* The half-width desktop split: inactive tabs go icon-only, the
+                      active one stays named. A phone-width pane: all icon-only,
+                      so the header stays ONE row. Measured on the PANE. */}
+                  <span className={cn(mode === m ? "hidden @md:inline" : "hidden @3xl:inline")}>
                     {MODE_META[m].label}
                   </span>
                 </button>
