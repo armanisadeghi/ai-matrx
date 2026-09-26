@@ -13,6 +13,8 @@ export const GOOGLE_SCOPE = {
   userinfoEmail: "https://www.googleapis.com/auth/userinfo.email",
   userinfoProfile: "https://www.googleapis.com/auth/userinfo.profile",
   driveFile: "https://www.googleapis.com/auth/drive.file",
+  // Pending restricted whole-Drive Files product; never bundled with Picker consent.
+  driveReadonly: "https://www.googleapis.com/auth/drive.readonly",
   gmailSend: "https://www.googleapis.com/auth/gmail.send",
   gmailReadonly: "https://www.googleapis.com/auth/gmail.readonly",
   gmailModify: "https://www.googleapis.com/auth/gmail.modify",
