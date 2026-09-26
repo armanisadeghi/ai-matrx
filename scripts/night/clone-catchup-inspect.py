@@ -66,9 +66,30 @@ PATTERNS: list[tuple[str, re.Pattern[str]]] = [
 NOT_A_NAME = {"public.if", "public.only", "public.on", "public.as", "public.format", "public.concurrently"}
 
 
+BASED_ON = re.compile(rf"^--\s*based-on:\s*(?:(trigger)\s+{IDENT}\s+on\s+{QNAME}|(view)\s+{QNAME}|{QNAME}\s*\()", re.I | re.M)
+#: Bodies a file writes through a generator, not a written-out statement: `iam.apply_rls(schema, table, …)`
+#: re-emits a table's policies; `execute pg_get_functiondef('x(…)'::regprocedure)`-style rewrites name their target.
+GENERATED = [
+    ("table", re.compile(r"\biam\s*\.\s*apply_rls\s*\(\s*'([a-z_][a-z0-9_]*)'\s*,\s*'([a-z_][a-z0-9_]*)'", re.I)),
+    ("function", re.compile(rf"pg_get_functiondef\s*\(\s*'{QNAME}\s*\(", re.I)),
+]
+
+
 def objects_of(sql: str) -> list[tuple[str, str]]:
-    text = strip_comments(sql)
     out: set[tuple[str, str]] = set()
+    # The file's own `-- based-on:` declarations name what it replaces (read BEFORE comments go).
+    for m in BASED_ON.finditer(sql):
+        if m.group(1):
+            out.add(("table", norm(m.group(2))))
+        elif m.group(3):
+            out.add(("view", norm(m.group(4))))
+        elif m.group(5):
+            out.add(("function", norm(m.group(5))))
+    text = strip_comments(sql)
+    for kind, pat in GENERATED:
+        for m in pat.finditer(text):
+            key = norm(f"{m.group(1)}.{m.group(2)}") if kind == "table" else norm(m.group(1))
+            out.add((kind, key))
     for kind, pat in PATTERNS:
         for m in pat.finditer(text):
             name = m.group(1)
@@ -214,6 +235,11 @@ def self_test() -> int:
         ("view", "platform.v_things"),
     ]
     check("extraction names every object the file writes, and nothing a comment or a format() names", got == want, f"got {got}")
+    gen = objects_of("-- based-on: public.access_denied_context(text, uuid) " + "ab" * 32 + "\n"
+                     "select iam.apply_rls('runtime', 'work_item', 'work_item', 'component');\n"
+                     "v := pg_get_functiondef('custom.f(uuid)'::regprocedure);\n")
+    check("a based-on declaration, iam.apply_rls and a pg_get_functiondef rewrite name what they write",
+          gen == [("function", "custom.f"), ("function", "public.access_denied_context"), ("table", "runtime.work_item")], f"got {gen}")
     sql = catalogue_sql(got)
     check("the catalogue query is one statement with one arm per object", sql.count("union all") == len(got) - 1 and sql.rstrip().endswith(";"))
 
