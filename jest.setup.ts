@@ -209,3 +209,55 @@ if (typeof window !== "undefined" && typeof window.matchMedia !== "function") {
       }) as MediaQueryList,
   });
 }
+
+/**
+ * ── CSS.escape: jsdom has no `CSS` global; every browser does ────────────────
+ *
+ * `WindowPanel` builds `[data-window-id="${CSS.escape(id)}"]` to announce the
+ * front-most layer (ARE-010); under jsdom that threw "CSS is not defined" and
+ * every suite that mounts a window died (2026-09-26: windowPanelMinimize, the
+ * window-header title suite). This is the CSSOM spec's serialize-an-identifier
+ * algorithm, so a selector built here matches exactly what a browser builds.
+ * Defined only when absent, so a suite with its own `CSS` still wins.
+ */
+if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS?.escape !== "function") {
+  const cssEscape = (value: string): string => {
+    const string = String(value);
+    const length = string.length;
+    const first = string.charCodeAt(0);
+    let out = "";
+    for (let i = 0; i < length; i++) {
+      const code = string.charCodeAt(i);
+      if (code === 0x0000) {
+        out += "�";
+      } else if (
+        (code >= 0x0001 && code <= 0x001f) ||
+        code === 0x007f ||
+        (i === 0 && code >= 0x0030 && code <= 0x0039) ||
+        (i === 1 && code >= 0x0030 && code <= 0x0039 && first === 0x002d)
+      ) {
+        out += `\\${code.toString(16)} `;
+      } else if (i === 0 && length === 1 && code === 0x002d) {
+        out += `\\${string.charAt(i)}`;
+      } else if (
+        code >= 0x0080 ||
+        code === 0x002d ||
+        code === 0x005f ||
+        (code >= 0x0030 && code <= 0x0039) ||
+        (code >= 0x0041 && code <= 0x005a) ||
+        (code >= 0x0061 && code <= 0x007a)
+      ) {
+        out += string.charAt(i);
+      } else {
+        out += `\\${string.charAt(i)}`;
+      }
+    }
+    return out;
+  };
+  const existing = (globalThis as { CSS?: object }).CSS ?? {};
+  Object.defineProperty(globalThis, "CSS", {
+    configurable: true,
+    writable: true,
+    value: { ...existing, escape: cssEscape },
+  });
+}
