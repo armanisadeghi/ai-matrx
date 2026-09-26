@@ -1,4 +1,3 @@
--- draft: RC-B6 waiting for the chair's timing (CREATE TRIGGER on iam.memberships takes SHARE ROW EXCLUSIVE — 1–4 AM PT window)
 -- lane: RC-B6
 -- lock: iam
 --
