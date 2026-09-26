@@ -179,7 +179,7 @@ export function IntelligenceIndicator({
           onClick={() => leave(pageHref)}
           className="flex items-center justify-between border-t border-border px-3 py-2 text-[12.5px] font-medium text-primary hover:bg-accent"
         >
-          All {featureName.toLowerCase()} intelligence
+          All {featureName.charAt(0).toLowerCase() + featureName.slice(1)} intelligence
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </PopoverContent>
