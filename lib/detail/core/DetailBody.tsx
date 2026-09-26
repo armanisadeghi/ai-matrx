@@ -9,7 +9,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { cn, Skeleton } from "@ai-matrx/design-system";
+import { cn, ErrorActions, Skeleton } from "@ai-matrx/design-system";
 import {
   ASSOCIATION_TARGET_TYPES,
   isEntityTypeToken,
@@ -33,7 +33,6 @@ import {
   ShieldCheckIcon,
 } from "./icons";
 import type { DetailCore } from "./useDetailCore";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * 🚨 D5 — THE SKELETON HAS A BOUNDED WAIT. A load that never answers used to
@@ -260,7 +259,7 @@ function FieldsSection({ core }: { core: DetailCore }) {
     return (
       <Notice tone="error">
         {`Couldn't load the details for this ${label}. ${core.errorMessage ?? ""}`.trim()}
-        <ErrorAlchemyMenu />
+        <ErrorActions origin="detail/DetailBody" operation={`Load this ${label}`} error={core.errorMessage} />
       </Notice>
     );
   }
@@ -445,7 +444,7 @@ function HistorySection({ core }: { core: DetailCore }) {
           {state.message.toLowerCase().includes("access denied")
             ? "History is only shown to people who can view this record."
             : `History could not be read: ${state.message}`}
-          <ErrorAlchemyMenu />
+          <ErrorActions origin="detail/DetailBody" operation="Read the history" error={state.message} />
         </p>
       ) : state.entries.length === 0 ? (
         <p className="text-xs text-muted-foreground">No recorded changes yet.</p>

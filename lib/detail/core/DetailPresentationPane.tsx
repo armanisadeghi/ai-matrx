@@ -17,13 +17,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { cn } from "@ai-matrx/design-system";
+import { cn, ErrorActions } from "@ai-matrx/design-system";
 
 import { DETAIL_PRESENTATIONS, type DetailPresentation } from "../types";
 import { useDetailHost } from "../host";
 import { CheckIcon, LoaderIcon, Settings2Icon } from "./icons";
 import type { DetailCore } from "./useDetailCore";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const WORD: Record<DetailPresentation, string> = {
   window: "a window",
@@ -155,22 +154,28 @@ export function DetailPresentationPane({ core }: { core: DetailCore }) {
   if (!save) return null;
 
   if (!open) {
+    // An unread setting is an error sentence, not a button label: it is said in
+    // its own line with the host's actions inside it (never a control inside
+    // the row's button), and the row keeps only "Change".
     return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="flex w-full items-center gap-1.5 rounded-md px-1 py-1 text-left text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        data-detail-presentation-pane="collapsed"
-      >
-        <Settings2Icon className="h-3 w-3 shrink-0" />
-        <span>
-          {setting.error
-            ? `Your "open details as" setting could not be read (${setting.error}) — details are opening as ${WORD[core.presentation]}.`
-            : `Details open as ${WORD[effective]}.`}
-          <ErrorAlchemyMenu />
-        </span>
-        <span className="underline underline-offset-2">Change</span>
-      </button>
+      <div className="w-full">
+        {setting.error ? (
+          <p className="px-1 pt-1 text-[11px] text-muted-foreground">
+            {`Your "open details as" setting could not be read (${setting.error}) — details are opening as ${WORD[core.presentation]}.`}
+            <ErrorActions origin="detail/DetailPresentationPane" operation="Read the open-details-as setting" error={setting.error} />
+          </p>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex w-full items-center gap-1.5 rounded-md px-1 py-1 text-left text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          data-detail-presentation-pane="collapsed"
+        >
+          <Settings2Icon className="h-3 w-3 shrink-0" />
+          {setting.error ? null : <span>{`Details open as ${WORD[effective]}.`}</span>}
+          <span className="underline underline-offset-2">Change</span>
+        </button>
+      </div>
     );
   }
 
@@ -255,14 +260,14 @@ export function DetailPresentationPane({ core }: { core: DetailCore }) {
       {state.status === "refused" ? (
         <p className="text-xs text-destructive" data-detail-presentation-refusal>
           {state.reason}
-          <ErrorAlchemyMenu />
+          <ErrorActions origin="detail/DetailPresentationPane" operation="Change how details open" message={state.reason} />
         </p>
       ) : null}
       {setting.error ? (
         <p className="text-xs text-muted-foreground">
           The saved setting could not be read here ({setting.error}), so this shows what this detail
           is actually doing.
-          <ErrorAlchemyMenu />
+          <ErrorActions origin="detail/DetailPresentationPane" operation="Read the open-details-as setting" error={setting.error} />
         </p>
       ) : null}
     </section>
