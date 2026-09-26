@@ -719,7 +719,7 @@ export interface DataBuildOrAskOffer {
   existing_builders?: unknown;
   existing_builders_count?: string;
   member_roster?: unknown;
-  asker_level?: string;
+  asker_level: string;
   change_approval_setting?: string;
   organization_timezone?: string;
   page_route?: string;
