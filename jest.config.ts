@@ -57,6 +57,34 @@ function aiMatrxExportsMap(): Record<string, string> {
     return out;
 }
 
+/**
+ * EVERY PLAYWRIGHT GATE'S `testDir`, READ FROM THE ROOT `playwright*.config.ts` FILES.
+ *
+ * A Playwright gate's `.spec.ts` matches Jest's `testMatch` too, and under Jest its
+ * `@playwright/test` import dies with "Class extends value undefined". Each gate used
+ * to be excluded by hand below; the day one was added without that line
+ * (2026-09-26: playwright.entity-ref-controls.config.ts) the full run went red. The
+ * directories now come from the gates' own configs.
+ */
+function playwrightGateDirs(): string[] {
+    const root = process.cwd();
+    const out: string[] = [];
+    for (const name of readdirSync(root)) {
+        if (!/^playwright.*\.config\.[cm]?[jt]s$/.test(name)) continue;
+        let text: string;
+        try {
+            text = readFileSync(join(root, name), "utf8");
+        } catch {
+            continue;
+        }
+        for (const m of text.matchAll(/testDir:\s*["'`]([^"'`]+)["'`]/g)) {
+            const dir = m[1].replace(/^\.\//, "").replace(/\/+$/, "");
+            if (dir && dir !== ".") out.push(`<rootDir>/${dir}/`);
+        }
+    }
+    return out;
+}
+
 const config: Config = {
     preset: "ts-jest",
     testEnvironment: "jsdom",
@@ -222,6 +250,8 @@ const config: Config = {
         // <rootDir>: a bare "/work/" also matches CI's checkout path
         // (/home/runner/work/ai-matrx/...) and ignored every suite there.
         "<rootDir>/work/",
+        // Every Playwright gate, from its own config (see playwrightGateDirs).
+        ...playwrightGateDirs(),
     ],
     // Parked checkouts must not enter the HASTE MAP either: two aidream clones
     // under work/ (2026-09-22) each carry apps/shared/*/package.json, and a
