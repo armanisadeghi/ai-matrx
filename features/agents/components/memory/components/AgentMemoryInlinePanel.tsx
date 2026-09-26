@@ -11,7 +11,7 @@
  * every piece IS the window's piece.
  */
 
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, AppWindow } from "lucide-react";
 import { useOpenAgentMemoryWindow } from "@/features/overlays/openers/agentMemoryWindow";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -45,7 +45,7 @@ export function AgentMemoryInlinePanel() {
               className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
               title="Open the full Memory window"
             >
-              <ExternalLink className="h-2.5 w-2.5" />
+              <AppWindow className="h-2.5 w-2.5" />
               Open window
             </button>
           </div>

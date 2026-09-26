@@ -112,7 +112,7 @@ export function AgentAppsPanel({
             <div className="text-xs text-muted-foreground flex-1">
               Looking for the platform-wide admin view?
             </div>
-            <AppLink href="/administration/agents/agent-apps/apps">
+            <AppLink href="/administration/agents/agent-apps/apps" target="_blank" rel="noopener noreferrer">
               <Button size="sm" variant="outline">
                 <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
                 Open admin

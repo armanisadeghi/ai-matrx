@@ -11,7 +11,7 @@ import type { AssetPreset, Visibility } from "@/features/files/types";
 import { useOpenImageUploaderWindow } from "@/features/overlays/openers/imageUploaderWindow";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ExternalLink } from "lucide-react";
+import { AppWindow } from "lucide-react";
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
@@ -230,7 +230,7 @@ openUploader({
             size="sm"
             onClick={handleOpenWindow}
           >
-            <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+            <AppWindow className="h-3.5 w-3.5 mr-1.5" />
             Open as floating window
           </Button>
           {result && (

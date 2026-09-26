@@ -521,6 +521,8 @@ export function ShortcutDirectory({
           <Link
             href={resolveShortcutEditUrl(row, mode)}
             onClick={(event) => event.stopPropagation()}
+            target="_blank"
+            rel="noopener noreferrer"
           >
             <Button
               variant="outline"

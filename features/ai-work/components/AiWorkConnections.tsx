@@ -203,7 +203,7 @@ export function AiWorkConnections() {
             </p>
           </div>
           <Button asChild size="sm" variant="outline" className="gap-1.5">
-            <Link href="/agent-connections/plugins">
+            <Link href="/agent-connections/plugins" target="_blank" rel="noopener noreferrer">
               Technical diagnostics
               <ExternalLink className="h-3.5 w-3.5" />
             </Link>

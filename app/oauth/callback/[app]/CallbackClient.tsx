@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Logo } from '@/components/branding/MatrixLogo';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, ExternalLink, AlertTriangle, X } from 'lucide-react';
+import { CheckCircle, ArrowUpRight, AlertTriangle, X } from 'lucide-react';
 import { getAppConfig, buildDeepLinkUrl } from '../app-config';
 
 type PageState =
@@ -154,7 +154,7 @@ function SuccessState({
             </div>
             <div className="flex flex-col gap-2 pt-2">
                 <Button onClick={handleOpenApp} className="w-full gap-2">
-                    <ExternalLink className="h-4 w-4" />
+                    <ArrowUpRight className="h-4 w-4" />
                     Open {appName}
                 </Button>
                 <Button

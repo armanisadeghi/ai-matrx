@@ -185,7 +185,9 @@ export function ListsHubView() {
                   onClick={(e) => e.stopPropagation()}
                   className="text-muted-foreground hover:text-foreground"
                   title="Open conversation"
-                >
+                   target="_blank"
+                   rel="noopener noreferrer"
+                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                 </Link>
               </button>

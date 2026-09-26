@@ -748,7 +748,9 @@ export default function AdminSandboxManagementPage() {
                   <AppLink
                     href="/administration/compute/sandbox-infra"
                     className="flex shrink-0 items-center justify-center gap-1.5 rounded-md border border-input px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent"
-                  >
+                     target="_blank"
+                     rel="noopener noreferrer"
+                   >
                     <Activity className="h-4 w-4" />
                     Fleet health
                     <ExternalLink className="h-3.5 w-3.5" />

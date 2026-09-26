@@ -140,16 +140,18 @@ export function AgentDuplicateOutcomeDialog({
               <span className="flex-1 text-left">Open new agent</span>
             </Button>
 
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={handleOpenInNewTab}
-              disabled={!newAgentPath}
-              className="w-full justify-start gap-2"
-            >
-              <ExternalLink className="h-4 w-4" />
-              <span className="flex-1 text-left">Open in new tab</span>
-            </Button>
+            {newAgentPath ? (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={handleOpenInNewTab}
+                className="w-full justify-start gap-2"
+              >
+                <ExternalLink className="h-4 w-4" />
+                {/* new-tab-icon: handleOpenInNewTab (defined above) calls window.open(newAgentPath, '_blank', ...) */}
+                <span className="flex-1 text-left">Open in new tab</span>
+              </Button>
+            ) : null}
 
             <Button
               size="lg"

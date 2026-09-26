@@ -1,7 +1,7 @@
 "use client";
 
 import { createElement, useState } from "react";
-import { ChevronDown, ExternalLink, FileText, Loader2, X } from "lucide-react";
+import { ChevronDown, FileText, Loader2, X, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -202,7 +202,7 @@ export function AttachedDocumentChip({
             disabled={saving}
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-accent"
           >
-            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <span>See file details</span>
           </button>
         </PopoverContent>

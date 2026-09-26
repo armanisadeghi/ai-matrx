@@ -15,6 +15,7 @@ import {
   User,
   Phone,
   ExternalLink,
+  ArrowUpRight,
   AlertTriangle,
   Loader2,
   CheckCircle,
@@ -572,7 +573,7 @@ function RedirectingState({
       <Button asChild variant="outline">
         <a href={redirectUrl}>
           Continue to application
-          <ExternalLink className="ml-2 h-4 w-4" />
+          <ArrowUpRight className="ml-2 h-4 w-4" />
         </a>
       </Button>
     </div>

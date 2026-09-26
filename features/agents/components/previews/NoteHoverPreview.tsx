@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectNoteById } from "@/features/notes/redux/selectors";
-import { Check, Copy, ExternalLink, Folder, StickyNote } from "lucide-react";
+import { Check, Copy, ExternalLink, Folder, StickyNote, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-service";
 
@@ -114,7 +114,7 @@ export function NotePreviewContent({ noteId, onOpen }: NotePreviewContentProps) 
               className="h-7 px-2.5 text-xs gap-1"
               onClick={onOpen}
             >
-              <ExternalLink />
+              <ArrowUpRight />
               Open
             </Button>
           ) : (

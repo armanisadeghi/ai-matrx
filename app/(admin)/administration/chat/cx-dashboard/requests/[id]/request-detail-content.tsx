@@ -302,7 +302,9 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
         <AppLink
           href={`/administration/chat/cx-dashboard/conversations/${ur.conversation_id}`}
           className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground p-2 rounded border border-border/50 bg-muted/20 transition-colors"
-        >
+           target="_blank"
+           rel="noopener noreferrer"
+         >
           <span>Conversation:</span>
           <span className="font-medium text-foreground">
             {ur.conversation_title || "Untitled"}

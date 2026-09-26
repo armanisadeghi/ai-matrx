@@ -6,7 +6,7 @@ import { experimentalRoutes, searchExperimentalRoutes } from '../experimental-ro
 import { Input } from '@ai-matrx/design-system';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { Search, ExternalLink, Beaker, ChevronRight } from 'lucide-react';
+import { Search, Beaker, ChevronRight, ArrowUpRight } from "lucide-react";
 
 export default function ExperimentalRoutesPage() {
     const router = useRouter();
@@ -154,7 +154,7 @@ export default function ExperimentalRoutesPage() {
                                                     className="w-full px-6 py-3 flex items-center justify-between hover:bg-accent transition-colors group"
                                                 >
                                                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                        <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary flex-shrink-0" />
+                                                        <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-primary flex-shrink-0" />
                                                         <div className="text-left flex-1 min-w-0">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="font-medium">{route.name}</span>

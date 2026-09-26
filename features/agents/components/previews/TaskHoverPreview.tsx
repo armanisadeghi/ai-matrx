@@ -26,6 +26,7 @@ import {
   Copy,
   ExternalLink,
   Flag,
+  ArrowUpRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-service";
@@ -164,7 +165,7 @@ export function TaskPreviewContent({ taskId, onOpen }: TaskPreviewContentProps) 
               className="h-7 px-2.5 text-xs gap-1"
               onClick={onOpen}
             >
-              <ExternalLink />
+              <ArrowUpRight />
               Open
             </Button>
           ) : (

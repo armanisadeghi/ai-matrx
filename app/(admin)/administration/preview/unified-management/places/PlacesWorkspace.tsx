@@ -101,6 +101,7 @@ export function PlacesWorkspace() {
             />
             <Inert what="open the live page in a new tab">
               <Button variant="outline" size="sm" className="h-7 gap-1 text-[11px]">
+                {/* new-tab-icon: wrapped in <Inert> — a not-yet-wired admin preview placeholder, not a live control */}
                 <ExternalLink className="h-3.5 w-3.5" />
                 Open live page
               </Button>

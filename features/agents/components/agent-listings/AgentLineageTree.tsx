@@ -525,7 +525,9 @@ function LineageRow({
         "bg-background hover:bg-accent/50 transition-colors",
         "border border-border/60",
       )}
-    >
+       target="_blank"
+       rel="noopener noreferrer"
+     >
       <div className="flex-1 min-w-0">
         <div className="text-xs font-medium truncate">{title}</div>
         {subtitle ? (

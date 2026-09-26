@@ -6,12 +6,12 @@ import {
   ArrowLeft,
   CheckCircle2,
   Clock,
-  ExternalLink,
   FileJson,
   Info,
   Upload,
   Loader2,
   XCircle,
+  ArrowUpRight,
 } from "lucide-react";
 import {
   Alert as PackageAlert,
@@ -517,7 +517,7 @@ function SuccessBody({
           Close
         </Button>
         <Button onClick={onNavigate}>
-          <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+          <ArrowUpRight className="w-3.5 h-3.5 mr-1.5" />
           Open in Builder
         </Button>
       </div>

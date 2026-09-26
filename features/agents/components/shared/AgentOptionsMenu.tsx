@@ -646,6 +646,7 @@ export function AgentOptionsMenu({
 
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
+              {/* new-tab-icon: this is the submenu trigger; every item inside NEW_TAB_ITEMS renders as <Link target="_blank"> */}
               <ExternalLink className="w-4 h-4 mr-2 text-muted-foreground" />
               Open in New Tab
             </DropdownMenuSubTrigger>

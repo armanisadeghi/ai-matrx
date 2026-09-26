@@ -164,6 +164,7 @@ export default function QuickHtmlShareModal({ isOpen, onClose, markdown, title =
                         onClick={handleOpenInTab}
                         className="flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium text-foreground bg-accent hover:bg-accent/80 transition-colors"
                     >
+                        {/* new-tab-icon: handleOpenInTab (defined above) calls window.open(url, '_blank', 'noopener') */}
                         <ExternalLink className="w-3.5 h-3.5" />
                         Open in tab
                     </button>

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Loader2 } from "lucide-react";
+import { Loader2, ArrowUpRight } from "lucide-react";
 import AiModelDetailPanel from "../components/AiModelDetailPanel";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { aiModelService } from "../service";
@@ -88,7 +88,7 @@ export function OpenDetailButton({ onClick }: { onClick: () => void }) {
       }}
       title="Open full model editor"
     >
-      <ExternalLink className="h-3.5 w-3.5" />
+      <ArrowUpRight className="h-3.5 w-3.5" />
     </Button>
   );
 }

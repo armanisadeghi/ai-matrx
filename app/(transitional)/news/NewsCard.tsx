@@ -86,6 +86,7 @@ const NewsCard = ({ article, index }: { article: Article; index: number }) => {
                     className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
                 >
                     Read More
+                    {/* new-tab-icon: the whole <Card> this Button sits in has onClick={() => window.open(article.url, '_blank')} */}
                     <ExternalLink className="h-4 w-4 ml-2" />
                 </Button>
             </CardFooter>
