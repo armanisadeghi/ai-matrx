@@ -1,7 +1,8 @@
 "use client";
 
 import { effectiveRowLabel, rowLabelText } from "@/features/data-tables/row-label";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AddColumnModal from "./AddColumnModal";
 import AddRowModal from "./AddRowModal";
@@ -162,6 +163,13 @@ interface TableToolbarProps {
    * export control are then absent: the same actions, in one place.
    */
   pageOwnsShareAndExport?: boolean;
+  /**
+   * Drawn in the table page's one toolbar row (lane TABLE-PAGE-CHROME): no bottom margin, the
+   * row's width, never a line of its own.
+   */
+  inPageRow?: boolean;
+  /** The sort's state as one compact control, first in the row (records-ui SortStateControl). */
+  sortState?: ReactNode;
 }
 
 export default function TableToolbar({
@@ -228,6 +236,8 @@ export default function TableToolbar({
   copyControls,
   mobileViewControls,
   pageOwnsShareAndExport = false,
+  inPageRow = false,
+  sortState,
 }: TableToolbarProps) {
   const isMobile = useIsMobile();
   /** An older table always keeps a hand order; a record-store one only once G13's doors answer. */
@@ -267,9 +277,14 @@ export default function TableToolbar({
         // md up the row is nowrap and scrolls sideways when a laptop or tablet
         // runs out of width, so nothing ever wraps into a second line or
         // pushes the grid down (Arman, 2026-09-22).
-        className="mb-0 flex flex-col justify-between gap-0 md:mb-2 md:flex-row md:flex-nowrap md:items-center md:gap-2 md:overflow-x-auto md:overflow-y-hidden md:[scrollbar-width:thin]"
+        className={cn(
+          "mb-0 flex flex-col justify-between gap-0 md:flex-row md:flex-nowrap md:items-center md:gap-2 md:overflow-x-auto md:overflow-y-hidden md:[scrollbar-width:thin]",
+          inPageRow ? "min-w-0 flex-1" : "md:mb-2",
+        )}
+        data-sheet-toolbar={inPageRow ? "in-page-row" : "own-row"}
       >
         <div className="hidden md:flex shrink-0 items-center w-full md:w-auto gap-1">
+          {sortState}
           {isReadOnly ? (
             // Read-only mode: show disabled-style buttons with view icon
             <div className="flex items-center gap-1.5 px-1 text-xs font-medium text-purple-600 dark:text-purple-400">

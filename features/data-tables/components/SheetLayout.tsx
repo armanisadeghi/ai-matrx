@@ -35,9 +35,20 @@ export interface SheetLayoutProps {
    * rail of the page's one menu there, so there is no button to find). Absent on an older page.
    */
   openExport?: (() => void) | undefined;
+  /**
+   * THE TABLE PAGE'S ONE TOOLBAR ROW, handed by records-ui (lane TABLE-PAGE-CHROME): the Sheet's
+   * toolbar and its sort state are drawn into it, never a row of their own. Absent before it.
+   */
+  toolbarSlot?: HTMLElement | null | undefined;
+  /**
+   * Where the view's footer sits: `sticky` (default) — the Sheet fills the page and the pages bar
+   * stays on the bottom edge, as on /data; `inline` — the Sheet is as tall as its rows.
+   */
+  footer?: "sticky" | "inline" | undefined;
 }
 
-export function SheetLayout({ tableId, organizationId, userId, openExport: pageExport }: SheetLayoutProps) {
+export function SheetLayout({ tableId, organizationId, userId, openExport: pageExport, toolbarSlot, footer }: SheetLayoutProps) {
+  const fills = footer !== "inline";
   const placedAlready = (() => {
     const home = recordStoreHomeOf(tableId);
     return !!home && home.organizationId === organizationId && home.userId === userId;
@@ -92,11 +103,16 @@ export function SheetLayout({ tableId, organizationId, userId, openExport: pageE
 
   if (!placed) return null;
   return (
-    <div className="flex h-full min-h-0 flex-col" data-sheet-layout={tableId}>
+    <div
+      className={fills ? "flex h-full min-h-0 flex-1 flex-col" : "flex flex-col"}
+      data-sheet-layout={tableId}
+      data-sheet-footer={fills ? "sticky" : "inline"}
+    >
       <UserTableViewer
         key={`${tableId}:${organizationId}:${userId ?? ""}`}
         tableId={tableId}
-        fillHeight
+        fillHeight={fills}
+        {...(toolbarSlot !== undefined ? { toolbarSlot } : {})}
         hideHeader
         // The same surface scope the /data/<id> route emits (TABLE-PARITY gap 5): agents
         // see the table (columns, rules, choices, row label, actions, the selection) and

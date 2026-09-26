@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import * as RecordsUi from "@ai-matrx/records-ui";
 import {
   Table,
   TableBody,
@@ -450,6 +452,14 @@ interface UserTableViewerProps {
    * and its right-click export items become one "Export this table…" that opens the page's.
    */
   pageOwnsShareAndExport?: { openExport: () => void };
+  /**
+   * THE TABLE PAGE'S ONE TOOLBAR ROW (lane TABLE-PAGE-CHROME; records-ui `HostLayout.render`'s
+   * `toolbarSlot`). Given, the Sheet draws its toolbar — Column, Row, Paste, search, Columns,
+   * Layout, Reorder, Clean, Colors — and its sort state INTO the page's row, as one compact sort
+   * control instead of a sentence row, and draws no row of its own above the grid. `null`: the
+   * row is still mounting (nothing yet). Absent (/data/<id>, every other mount): as always.
+   */
+  toolbarSlot?: HTMLElement | null | undefined;
 }
 
 const DATA_TABLES_SURFACE_NAME = "matrx-user/data-tables" as const;
@@ -471,6 +481,7 @@ const UserTableViewer = ({
   onTablesChange,
   emitSurfaceScope = false,
   pageOwnsShareAndExport,
+  toolbarSlot,
 }: UserTableViewerProps) => {
   const router = useRouter();
   const [scheduleNavigationPending, startScheduleNavigation] = React.useTransition();
@@ -3712,6 +3723,64 @@ const UserTableViewer = ({
       : []),
   ];
 
+  /** The table page's one toolbar row is where the Sheet's toolbar goes, when there is one. */
+  const inPageRow = toolbarSlot !== undefined;
+  const placeInPageRow = (node: React.ReactNode): React.ReactNode =>
+    toolbarSlot === undefined ? node : toolbarSlot ? createPortal(node, toolbarSlot) : null;
+  /**
+   * THE SORT, AS ONE COMPACT CONTROL in the page's row — records-ui's `SortStateControl` (the
+   * grid's own), never a copy. It ships in the same records-ui release that hands the Sheet its
+   * `toolbarSlot`, so it is read off the package by name and is simply absent before it.
+   */
+  const SortControl = (RecordsUi as { SortStateControl?: React.ComponentType<Record<string, unknown>> }).SortStateControl;
+  const sortName = sortField
+    ? fields.find((f) => f.field_name === sortField)?.display_name || sortField
+    : null;
+  const arrow = sortDirection === "asc" ? "↑" : "↓";
+  const sheetSortState: React.ReactNode = !inPageRow || !SortControl
+    ? null
+    : rowOrderingEnabled
+      ? !sortField
+        ? <SortControl mode="manual" label="Manual" line="Manual: the rows are in the order someone set by hand. Sorting by a column sets it aside." />
+        : isReadOnly
+          ? <SortControl mode="column" label={`${sortName} ${arrow}`} line={`Sorted by ${sortName} ${arrow}, so the order set by hand is set aside for now.`} attention />
+          : (
+            <SortControl
+              mode="column"
+              label={`${sortName} ${arrow}`}
+              line={`Sorted by ${sortName} ${arrow}, so the order set by hand is set aside for now.`}
+              attention
+              actions={[
+                { key: "back", label: "Back to manual", title: "Go back to the order set by hand", onPress: clearSort },
+                {
+                  key: "instead",
+                  label: savingSortPreference ? "Saving…" : "Use this sort",
+                  title: "Keep this sort as the table's order. It replaces the hand-set order.",
+                  onPress: saveDefaultSort,
+                  primary: true,
+                  disabled: savingSortPreference,
+                },
+              ]}
+            />
+          )
+      : sortField && !isReadOnly
+        ? (
+          <SortControl
+            mode={isSortSaved ? "saved" : "column"}
+            label={`${sortName} ${arrow}`}
+            line={isSortSaved ? `Sorted by ${sortName} ${arrow}. This is the table's default sort.` : `Sorted by ${sortName} ${arrow} for now. Save it as the table's default sort?`}
+            actions={[
+              ...(isSortSaved
+                ? []
+                : [{ key: "save", label: savingSortPreference ? "Saving…" : "Save as default", onPress: saveDefaultSort, primary: true, disabled: savingSortPreference }]),
+              ...(savedSortField
+                ? [{ key: "clear", label: "Clear saved sort", onPress: clearDefaultSort, disabled: savingSortPreference }]
+                : []),
+            ]}
+          />
+        )
+        : null;
+
   const body = (
     // fillHeight: a three-band column (chrome / grid / pagination) where only
     // the grid scrolls, so the table uses every pixel the route gives it and
@@ -3740,8 +3809,8 @@ const UserTableViewer = ({
         </div>
       )}
 
-      {/* Read-only banner for shared tables */}
-      {isReadOnly && (
+      {/* Read-only banner for shared tables (in the page's row the toolbar says View Only). */}
+      {isReadOnly && !inPageRow && (
         <div
           data-surface-value="is_read_only"
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm"
@@ -3756,7 +3825,7 @@ const UserTableViewer = ({
 
       {/* ORDER-FIX: a hand-set order IS the sort, and the sort control says so (Airtable's
           "Manual"). Shown to every reader: rows in an order nobody explains is a screen that lies. */}
-      {!sortField && rowOrderingEnabled && (
+      {!inPageRow && !sortField && rowOrderingEnabled && (
         <div
           className="hidden shrink-0 items-center gap-1.5 text-xs md:flex"
           data-sort-mode="manual"
@@ -3771,7 +3840,7 @@ const UserTableViewer = ({
       )}
 
       {/* Sort indicator with save option */}
-      {sortField && !isReadOnly && (
+      {!inPageRow && sortField && !isReadOnly && (
         <div className="hidden shrink-0 items-center gap-2 text-xs md:flex" data-sort-mode="column">
           <span className="text-gray-500 dark:text-gray-400">
             Sorted by{" "}
@@ -3835,8 +3904,11 @@ const UserTableViewer = ({
         </div>
       )}
 
-      {/* Toolbar with search */}
+      {/* Toolbar with search — in place, or in the table page's one toolbar row. */}
+      {placeInPageRow(
       <TableToolbar
+        inPageRow={inPageRow}
+        {...(inPageRow && sheetSortState ? { sortState: sheetSortState } : {})}
         pageOwnsShareAndExport={Boolean(pageOwnsShareAndExport)}
         tableId={tableId}
         tableInfo={tableInfo}
@@ -4327,7 +4399,8 @@ const UserTableViewer = ({
           </div>
         }
         toolbarTrailing={toolbarTrailing}
-      />
+      />,
+      )}
 
       {/* A filter that could not read every row must SAY so. Both of these were
           silent before: the cap produced a confident wrong count, and a failed

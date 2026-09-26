@@ -27,14 +27,13 @@ import {
   usePendingTableInvitation,
 } from "@/features/sharing/outside/PendingTableInvitation";
 import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
-import type { HeaderAction } from "@/features/shell/components/header/variants/types";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { TableSwitcher } from "@/features/unified-data/components/TableSwitcher";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { getOrganizationMembers } from "@/features/organizations/service";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { RecordOrganizationSwitchOffer } from "@/features/organizations/components/RecordOrganizationSwitchOffer";
 import { createClient } from "@/utils/supabase/client";
 import { useSharedTable } from "@/features/unified-data/hub/useSharedTable";
 import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
@@ -62,27 +61,75 @@ import { useTableCaptureContribution } from "@/features/unified-data/page-captur
 import { shownViewSelection, type ShownViewLike } from "@/features/unified-data/page-capture/shownViewCapture";
 
 /**
- * THE PAGE'S TITLE IS THE TABLE'S OWN NAME (owner, 2026-09-24: a table he knows must look like
- * the thing he knows, not like "Data"). Read inside the mount, through the same `useTable` every
- * package screen reads, and set through the shell's one header primitive.
+ * THE PAGE'S HEADER — the app's standard one (lane TABLE-PAGE-CHROME, owner 2026-09-25: "Align with
+ * the app's top-tier pages … Add a standard back button. Enable clickable table title to switch
+ * between tables. Remove the bottom border on the header."). Back; the table's own name as the
+ * switcher (the tables of its organization, search, All tables, and where it lives with Move at
+ * the foot); on the right, the table page's own Share and one menu, handed over by records-ui's
+ * `TablePage.header`, then the alchemy capture. No organization line: the shell's organization
+ * indicator lights when the table lives somewhere other than the organization she works in.
+ * `RouteHeader` is the /data/<id> and /agents/<id> composition (glass strip, no border).
  */
-function TableTitle({
+function TableRouteHeader({
   tableId,
-  context,
   actions,
+  allTablesHref,
+  switcherFooter,
+  fallback = false,
+}: {
+  tableId: string;
+  actions?: ReactNode;
+  allTablesHref: string;
+  switcherFooter?: ReactNode;
+  fallback?: boolean;
+}) {
+  const router = useRouter();
+  const table = useTable(tableId);
+  const name = table.data?.name?.trim();
+  // Back is the person's own last page (the app's rule); a link opened cold goes to the tables.
+  const back = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) router.back();
+    else router.push(allTablesHref);
+  };
+  return (
+    <RouteHeader
+      fallback={fallback}
+      left={
+        <>
+          <ChevronLeftTapButton onClick={back} ariaLabel="Back" />
+          {name ? (
+            <TableSwitcher tableId={tableId} name={name} allTablesHref={allTablesHref} footer={switcherFooter} />
+          ) : (
+            <span className="truncate px-1.5 text-sm font-medium text-foreground">Data</span>
+          )}
+        </>
+      }
+      right={
+        <>
+          <span key="capture" className="hidden sm:inline-flex">
+            <PageCaptureButton size="xs" />
+          </span>
+          {actions}
+        </>
+      }
+    />
+  );
+}
+
+/**
+ * The alchemy capture's record-store half: the table's name and declaration, and its records and
+ * open record read at copy time through the grid's own door (lane ALCHEMY-BUTTON). Mounted once.
+ */
+function TableCapture({
+  tableId,
   filter,
   recordId,
 }: {
   tableId: string;
-  context?: ReactNode;
-  actions?: HeaderAction[];
   filter?: RecordFilter | null;
   recordId?: string | null;
 }) {
   const table = useTable(tableId);
-  const name = table.data?.name?.trim();
-  // The alchemy capture's record-store half: the table's name and declaration, and its records
-  // and open record read at copy time through the grid's own door (lane ALCHEMY-BUTTON).
   useTableCaptureContribution({
     tableId,
     table: table.data,
@@ -90,23 +137,7 @@ function TableTitle({
     filter,
     recordId,
   });
-  return (
-    <PageHeader>
-      {/* ONE ROW (lane DATA-V2-FACE-2): the table's whole name, and beside it, quiet, the
-          organization it lives in — Linear's team beside the issue title. On a phone the
-          organization sits under the name so the name keeps the width. */}
-      <HeaderStructured
-        title={name && name !== "" ? name : "Data"}
-        context={
-          <span className="inline-flex min-w-0 items-center gap-1.5">
-            {context}
-            <PageCaptureButton size="xs" />
-          </span>
-        }
-        {...(actions && actions.length > 0 ? { actions } : {})}
-      />
-    </PageHeader>
-  );
+  return null;
 }
 
 export default function UnifiedDataTableRoute({
@@ -299,7 +330,19 @@ export default function UnifiedDataTableRoute({
    */
   useDeclarePageObjectOrganization(
     object.state === "found"
-      ? { organizationId: object.organizationId, name: knownOrganizationName, shownByPage: true }
+      ? {
+          organizationId: object.organizationId,
+          name: knownOrganizationName,
+          // TABLE-PAGE-CHROME: the page no longer names its organization on a line of its own; the
+          // shell's indicator does, lit when it is not the one she works in, and switches on click.
+          shownByPage: false,
+          member:
+            shared.state === "shared"
+              ? false
+              : myOrganizations.some((o) => o.id === object.organizationId)
+                ? true
+                : null,
+        }
       : null,
   );
   /** The organization this page reads as: the TABLE'S. */
@@ -504,26 +547,44 @@ export default function UnifiedDataTableRoute({
     userId: userId ?? null,
   });
   /**
-   * WHICH ORGANIZATION THIS TABLE LIVES IN, NAMED QUIETLY ON THE TABLE'S OWN ROW (owner,
-   * 2026-09-23: "I am not seeing how I can see what org this data is in"; 2026-09-24: no rows of
-   * chrome above the table). The one builder every object page and list row renders, and, for a
-   * table another organization shared in, the level it was shared at — one fact, not a banner.
+   * WHERE THIS TABLE LIVES, AT THE FOOT OF THE TITLE'S OWN LIST (lane TABLE-PAGE-CHROME). It was a
+   * line beside the title; the owner asked for no organization line in the header. The one builder
+   * every object page renders (records-ui's `WhereItLives`, with Move), and, for a table another
+   * organization shared in, the level it was shared at.
    */
   const whereItLives =
     object.state === "found" ? (
-      <span className="inline-flex min-w-0 items-center gap-1.5" data-table-lives-in="">
-        {/* records-ui's own chip (0.85.6), inside the page's RecordsMount (TableTitle is). */}
+      <span className="flex min-w-0 flex-col gap-1" data-table-lives-in="">
         <WhereItLives
           tableId={tableId}
           knownOrganizationName={knownOrganizationName}
           onMoved={() => object.retry()}
-          variant="title"
+          variant="row"
         />
         {shared.state === "shared" ? (
-          <span className="shrink-0 text-muted-foreground">Shared with you &middot; {shared.levelLabel}</span>
+          <span className="text-muted-foreground">Shared with you &middot; {shared.levelLabel}</span>
         ) : null}
       </span>
     ) : null;
+  const allTablesHref = readingOrganizationId
+    ? `/data-v2?org=${encodeURIComponent(readingOrganizationId)}`
+    : "/data-v2";
+  /**
+   * THE HEADER, WITH THE TABLE PAGE'S OWN ACTIONS (records-ui `TablePage.header`, TABLE-PAGE-CHROME).
+   * Passed as a named object until the lockfile carries that records-ui: an installed build without
+   * `header` ignores the key and keeps Share and its menu in its own row, and the fallback header
+   * below still gives the page its back button and title switcher.
+   */
+  const pageHeader: { header?: (chrome: { actions: ReactNode }) => ReactNode } = {
+    header: ({ actions }) => (
+      <TableRouteHeader
+        tableId={tableId}
+        actions={actions}
+        allTablesHref={allTablesHref}
+        switcherFooter={whereItLives}
+      />
+    ),
+  };
   /**
    * THE TABLE MENU'S EXTRA ITEM: "When a row changes, run an agent" — absent unless the store
    * offers it; a refusal says why. The organization rides the page header beside the name, so the
@@ -603,13 +664,31 @@ export default function UnifiedDataTableRoute({
     }),
   );
 
+  /** The table itself is on screen (the store answered, the switch is on). */
+  const mountsTheTable =
+    object.state !== "resolving" &&
+    object.state !== "not-given" &&
+    object.state !== "unavailable" &&
+    !(object.state === "stand-in" && (object.organizationState !== "ready" || shared.state !== "shared" && shared.state !== "none")) &&
+    campaign.state === "on";
+
   return (
     <>
-      {/* "Data" only until the table is open; the open table's own name replaces it. */}
-      <PageHeader fallback>
-        <HeaderStructured title="Data" />
-      </PageHeader>
-      <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
+      {/* THE BODY IS BOUNDED (core-route-headers): the table page fills it, so a sticky footer
+          has a height to sit at the bottom of; the states before the table opens scroll. */}
+      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+        {mountsTheTable ? null : (
+          <RouteHeader
+            fallback
+            left={
+              <>
+                <ChevronLeftTapButton href="/data-v2" ariaLabel="Back to your tables" />
+                <span className="truncate px-1.5 text-sm font-medium text-foreground">Data</span>
+              </>
+            }
+          />
+        )}
+        <div className={mountsTheTable ? "h-full px-3 pb-2 pt-1" : "h-full overflow-y-auto p-4"}>
         {object.state === "resolving" ? (
           <p className="text-sm text-muted-foreground">Opening the table&hellip;</p>
         ) : object.state === "not-given" && pendingInvitation === undefined ? (
@@ -711,36 +790,32 @@ export default function UnifiedDataTableRoute({
                       userId={userId ?? null}
                       // The page's own export, handed over by records-ui 0.85+ (absent before it).
                       openExport={(args as { openExport?: () => void }).openExport}
+                      // TABLE-PAGE-CHROME: the page's one toolbar row and where the view's footer sits,
+                      // handed by the next records-ui (absent before it: the Sheet draws as today).
+                      {...((args as { toolbarSlot?: HTMLElement | null }).toolbarSlot !== undefined
+                        ? { toolbarSlot: (args as { toolbarSlot?: HTMLElement | null }).toolbarSlot }
+                        : {})}
+                      {...((args as { footer?: "sticky" | "inline" }).footer
+                        ? { footer: (args as { footer?: "sticky" | "inline" }).footer }
+                        : {})}
                     />
                   ),
                 },
               ],
             }}
           >
-            {/* WHOSE TABLE THIS IS, SAID OUT LOUD AND ONCE. A person reading
-                somebody else's table must never be left to work out why their
-                own organization's things are not around it. One row, the
-                organization's name, and what they hold. */}
-            <TableTitle
+            {/* The header before records-ui hands over its actions (and, on an older build that
+                never calls `header`, the header itself): back, the title switcher, the capture. */}
+            <TableRouteHeader
+              fallback
               tableId={tableId}
-              context={whereItLives}
-              filter={filter}
-              recordId={activeRecordId}
+              allTablesHref={allTablesHref}
+              switcherFooter={whereItLives}
             />
-            {/* A new record lands in the TABLE'S organization. The table always
-                opens; when it lives somewhere other than the selected
-                organization (or none is selected), the one offer names the
-                table's own organization and switches on one click. A table
-                shared from outside gets no offer — nothing to switch to. */}
-            {object.state === "found" ? (
-              <RecordOrganizationSwitchOffer
-                organizationId={object.organizationId}
-                organizationName={knownOrganizationName}
-                isMember={shared.state === "shared" ? false : undefined}
-                what="table"
-                className="mb-3"
-              />
-            ) : null}
+            <TableCapture tableId={tableId} filter={filter} recordId={activeRecordId} />
+            {/* A new record lands in the TABLE'S organization: the shell's organization indicator
+                lights when the table lives somewhere other than the organization she works in,
+                and switches on one click (TABLE-PAGE-CHROME — no notice row on the page). */}
             {/* SIDE BY SIDE IS A FACT, NOT A BANNER (owner, 2026-09-24): no notice that this table
                 also lives in the older system, and no "shared with you" paragraph — the table's
                 row names its organization and the level it was shared at. */}
@@ -759,13 +834,7 @@ export default function UnifiedDataTableRoute({
                  Archiving calls this; it used to land on the bare list, which reads the ACTIVE
                  organization and, with none picked, said "An organization is needed for data
                  records" about a table that had just named its own. */
-              onLeave={() =>
-                router.push(
-                  readingOrganizationId
-                    ? `/data-v2?org=${encodeURIComponent(readingOrganizationId)}`
-                    : "/data-v2",
-                )
-              }
+              onLeave={() => router.push(allTablesHref)}
               activeDashboardId={activeDashboardId}
               activeRecordId={activeRecordId}
               activeView={activeView}
@@ -777,9 +846,11 @@ export default function UnifiedDataTableRoute({
               activeRail={activeRail}
               activeItemId={activeItemId}
               menuExtras={menuExtras}
+              {...pageHeader}
             />
           </RecordsMount>
         )}
+        </div>
       </div>
     </>
   );
