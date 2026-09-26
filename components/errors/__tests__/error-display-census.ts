@@ -26,7 +26,8 @@
  * Nested matches collapse to the OUTERMOST error-styled box, so one card with a
  * title and a message counts once.
  *
- * A display CARRIES the menu when its box contains `<ErrorAlchemyMenu>`,
+ * A display CARRIES the menu when its box contains `<ErrorAlchemyMenu>`
+ * (or has one as a direct sibling — the heading-and-menu row),
  * `<ErrorNotice>`, `<ErrorBox>` or `<ErrorActions>`, or it sits inside a
  * primitive that draws the menu itself (`ErrorNotice`, `ErrorBox`, a
  * destructive `Alert`, `ErrorBoundaryView`). Distance is structural, never
@@ -177,6 +178,22 @@ function containsCarrier(node: ts.Node): boolean {
   return found;
 }
 
+/**
+ * A bare `<ErrorAlchemyMenu>` placed as a direct sibling of the box — the
+ * heading-and-menu row (`<div><h2>Something went wrong</h2><ErrorAlchemyMenu/></div>`).
+ * Only the menu itself counts here, never an unrelated ErrorNotice beside it
+ * (that is the F9 hole).
+ */
+function hasSiblingMenu(box: JsxLike): boolean {
+  const parent = box.parent;
+  if (!parent || !ts.isJsxElement(parent)) return false;
+  return parent.children.some(
+    (child) =>
+      (ts.isJsxSelfClosingElement(child) || ts.isJsxElement(child)) &&
+      tagName(child) === "ErrorAlchemyMenu",
+  );
+}
+
 function jsxAncestors(node: ts.Node): JsxLike[] {
   const out: JsxLike[] = [];
   let current: ts.Node | undefined = node.parent;
@@ -214,7 +231,7 @@ export function findErrorDisplays(source: string, fileName = "file.tsx"): ErrorD
             line: sf.getLineAndCharacterOfPosition(box.getStart()).line + 1,
             tag: tagName(box),
             reason,
-            carried: containsCarrier(box),
+            carried: containsCarrier(box) || hasSiblingMenu(box),
             errorExpression:
               ownChildren(n).errorLeaves.find((text) => /^[\w$.?!]+$/.test(text)) ?? null,
             insertAt: ts.isJsxElement(box) ? box.closingElement.getStart() : null,

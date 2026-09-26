@@ -18,6 +18,7 @@ import { useOvertimeEvaluation, useOvertimeQueue, useOvertimeRequest } from "../
 import { ApproachingWatchlist } from "./ApproachingWatchlist";
 import { OvertimeQueueTable } from "./OvertimeQueueTable";
 import { OvertimeRequestPanel } from "./OvertimeRequestPanel";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function OvertimeQueuePage() {
   const hr = useHrContext();
@@ -49,6 +50,7 @@ export function OvertimeQueuePage() {
         {queue.failure ? (
           <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] text-destructive">
             {queue.failure.userMessage}
+            <ErrorAlchemyMenu error={queue.failure.userMessage} />
           </p>
         ) : null}
 
@@ -130,6 +132,7 @@ export function OvertimeRequestPage({ requestId }: { requestId: string }) {
         {failure ? (
           <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] text-destructive">
             {failure.userMessage}
+            <ErrorAlchemyMenu error={failure.userMessage} />
           </p>
         ) : null}
 

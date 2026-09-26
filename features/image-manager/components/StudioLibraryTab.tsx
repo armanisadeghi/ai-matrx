@@ -21,6 +21,7 @@ import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { fileHandler } from "@/features/files/handler/handler";
 import { CloudFilesTab } from "@/components/image/cloud/CloudFilesTab";
 import { extractErrorMessage } from "@/utils/errors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function StudioLibraryTab() {
   const [folderId, setFolderId] = useState<string | null>(null);
@@ -80,6 +81,7 @@ export function StudioLibraryTab() {
         <div className="px-4 py-2 text-xs text-destructive flex-shrink-0">
           Couldn't open the Studio folder ({resolveError}). Showing the root
           of your cloud instead.
+          <ErrorAlchemyMenu error={resolveError} />
         </div>
       ) : null}
 

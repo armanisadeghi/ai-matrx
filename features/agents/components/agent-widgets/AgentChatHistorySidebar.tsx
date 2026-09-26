@@ -12,6 +12,7 @@ import { ItemRow } from "@/components/official/item/ItemRow";
 import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
 import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 import type { AppDispatch } from "@/lib/redux/store";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AgentChatHistorySidebarProps {
   conversationId: string;
@@ -61,6 +62,7 @@ export function AgentChatHistorySidebar({
               <AlertCircle className="h-4 w-4 text-destructive" />
               <span className="text-xs text-muted-foreground">
                 {error ?? "Failed to load"}
+                <ErrorAlchemyMenu error={error} />
               </span>
             </div>
           )}

@@ -57,6 +57,7 @@ import type { ToolEventPayload } from "@/types/python-generated/stream-events";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -999,6 +1000,7 @@ export function ToolUiComponentGenerator({
             </p>
             <p className="text-[11px] text-muted-foreground">
               A previous AI generation was not saved. You can restore it.
+              <ErrorAlchemyMenu />
             </p>
           </div>
           <Button
@@ -1041,6 +1043,7 @@ export function ToolUiComponentGenerator({
               The component could not be saved to the database. Your draft is
               preserved in local storage — close this dialog and retry, or copy
               the code manually.
+              <ErrorAlchemyMenu />
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -1059,6 +1062,7 @@ export function ToolUiComponentGenerator({
                   </p>
                 </>
               )}
+              <ErrorAlchemyMenu error={saveError?.title} />
             </div>
 
             {saveError?.raw && (
@@ -1472,6 +1476,7 @@ export function ToolUiComponentGenerator({
             <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-xs text-destructive">
               <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
               {agent.error}
+              <ErrorAlchemyMenu error={agent.error} />
             </div>
           )}
 

@@ -9,6 +9,7 @@ import { getDefaultViewId } from "./markdown-coordinator";
 import { processMarkdownForRenderingWithCoordinator } from "./markdown-processor-util";
 import type { AstNode } from "./processors/types";
 import { isJsonObject } from "@/types/json";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // The coordinator's processor output is genuinely dynamic (each coordinator
 // wires up a different processor with a different result shape) — `extracted`
@@ -112,6 +113,7 @@ const DirectMarkdownRenderer = ({
     return (
       <div className={`text-red-600 dark:text-red-400 ${className}`}>
         {error}
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

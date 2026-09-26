@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils";
 import type { DictationAudio } from "../hooks/useDictationAudio";
 import { questionRecordingOrigin } from "../hooks/useDictationAudio";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface SaveLine {
   tone: "ok" | "warn";
@@ -260,11 +261,13 @@ export function AnswerBar(props: AnswerBarProps) {
                     Try saving the recording again
                   </button>
                 ) : null}
+                <ErrorAlchemyMenu error={audio.error} />
               </p>
             ) : null}
             {draftStorageError ? (
               <p className="mt-2 text-[12.5px] text-warning">
                 {draftStorageError}
+                <ErrorAlchemyMenu error={draftStorageError} />
               </p>
             ) : null}
           </div>

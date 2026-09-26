@@ -21,6 +21,7 @@ import { StandaloneMermaidView } from "../MermaidView";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { useMermaidAgentEdit } from "../hooks/useMermaidAgentEdit";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AgentEditRailProps {
   /** Current diagram source. */
@@ -142,6 +143,7 @@ export function AgentEditRail({
         {error && (
           <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-xs text-destructive">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </p>
         )}
 

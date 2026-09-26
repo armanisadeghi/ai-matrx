@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { recordToast, toast } from "@/lib/toast";
 import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
 import { EntitlementChip } from "@/features/rag/components/library-catalog/EntitlementChip";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const TEASER_LIMIT = 4;
 
@@ -66,7 +67,7 @@ export function LibraryCatalogPane() {
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
         </div>
       ) : error ? (
-        <div className="text-sm text-destructive">{error}</div>
+        <div className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></div>
       ) : items.length === 0 ? (
         <div className="rounded-md border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
           No shared libraries available yet.

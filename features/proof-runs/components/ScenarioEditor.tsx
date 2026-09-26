@@ -53,6 +53,7 @@ import type {
   ProofScenario,
 } from "@/features/proof-runs/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const MARKER_PATTERN = /\{\{marker:([a-zA-Z0-9_]+)\}\}/g;
 
@@ -597,6 +598,7 @@ export function ScenarioEditor({
         {variablesError ? (
           <p className="text-xs text-red-600 dark:text-red-400">
             {variablesError}
+            <ErrorAlchemyMenu error={variablesError} />
           </p>
         ) : null}
         {markers.length > 0 ? (

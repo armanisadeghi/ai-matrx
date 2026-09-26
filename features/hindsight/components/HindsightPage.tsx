@@ -26,6 +26,7 @@ import { FindingEffectivenessPanel } from "./FindingEffectivenessPanel";
 import { HindsightSurfaceEmitter } from "./HindsightSurfaceEmitter";
 import { selectEnrollmentId, type EnrollmentSelection } from "./select-enrollment";
 import { fmtCost, KIND_COLOR, KIND_ICON } from "./tokens";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function HindsightPage() {
   // Assist chips deep-link here: `?enrollment=<id>` (a finding to decide) and
@@ -119,6 +120,7 @@ export function HindsightPage() {
           {enrollments.isError && (
             <Card className="p-4 text-sm text-red-600 dark:text-red-400">
               Could not load enrollments: {(enrollments.error as Error).message}
+              <ErrorAlchemyMenu />
             </Card>
           )}
           {active.map((e) => {

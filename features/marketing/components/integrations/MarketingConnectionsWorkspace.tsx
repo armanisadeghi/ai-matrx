@@ -77,6 +77,7 @@ import {
   canUseGoogleYouTube,
 } from "@/features/marketing/google/youtube-campaign";
 import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function MarketingConnectionsWorkspace({
   reviewMode = false,
@@ -460,6 +461,7 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
               <div className="flex items-center justify-between gap-3 p-3">
                 <p className="text-xs text-destructive">
                   Google connections could not be loaded.
+                  <ErrorAlchemyMenu />
                 </p>
                 <Button
                   size="sm"

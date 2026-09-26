@@ -35,6 +35,7 @@ import { LoadingSpinner } from "@/components/ui/spinner";
 import { ApproachCard } from "./ApproachCard";
 import { useApproachRegistry } from "./useApproachRegistry";
 import { type DistillationApproach } from "./approaches";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ApproachPickerDialogProps {
   open: boolean;
@@ -73,7 +74,7 @@ export function ApproachPickerDialog({
 
         {error ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
-            <p className="text-sm text-destructive">{error}</p>
+            <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
             <Button variant="outline" size="sm" onClick={reload}>
               <RefreshCw className="h-3.5 w-3.5" />
               Try again

@@ -58,6 +58,7 @@ import {
   type SurfaceUsage,
 } from "@/features/surfaces/services/surfaces.service";
 import { Button } from "@/components/ui/button";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const USER_CLIENT_PREFIX = "matrx-user/";
 
@@ -135,6 +136,7 @@ export function SurfaceHubDetailPage({ segments }: { segments: string[] }) {
             {error && (
               <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {error}
+                <ErrorAlchemyMenu error={error} />
               </p>
             )}
 
@@ -582,6 +584,7 @@ function ToolsPanel({ surfaceName }: { surfaceName: string }) {
       {failed && (
         <p className="px-1 text-xs text-destructive">
           Failed to load tools for this surface.
+          <ErrorAlchemyMenu />
         </p>
       )}
       {!usage && !failed && (

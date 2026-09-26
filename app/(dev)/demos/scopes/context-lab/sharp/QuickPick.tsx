@@ -36,6 +36,7 @@ import {
   type PickerData,
   type SelectionApi,
 } from "./engine";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type QPRow =
   | { kind: "header"; key: string; label: string }
@@ -335,6 +336,7 @@ export function QuickPick({
         ) : drill && itemState.error ? (
           <div className="px-3 py-2 text-xs text-destructive">
             {itemState.error}
+            <ErrorAlchemyMenu error={itemState.error} />
           </div>
         ) : rows.length === 0 ? (
           <div className="flex h-full items-center justify-center px-4 text-center text-xs text-muted-foreground">

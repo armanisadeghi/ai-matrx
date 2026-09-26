@@ -44,6 +44,7 @@ import { createSittingStore, type SittingBase } from "../../sitting/sitting";
 import { useDialogSitting } from "../../sitting/useDialogSitting";
 import { SittingResumed } from "../../sitting/SittingResumed";
 import { RunStages } from "../RunStages";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const PAIRWISE_PATH = "/masterworks/audition-pairwise" satisfies keyof paths;
 
@@ -343,7 +344,7 @@ export function CompareTwoDialog({
             <RunStages run={run} />
             <RunStages run={run} />
             {run.error ? (
-              <p className="text-sm text-destructive">{run.error}</p>
+              <p className="text-sm text-destructive">{run.error} <ErrorAlchemyMenu error={run.error} /></p>
             ) : null}
 
             {verdict ? (

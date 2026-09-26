@@ -35,6 +35,7 @@ import { USERS_ADMIN_LOCATION } from "../constants";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildAnnouncementMenuSection } from "./announcement-menu-section";
 import SystemAnnouncementBanner from "@/components/layout/SystemAnnouncementBanner";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const TYPE_CLASS: Record<string, string> = {
   info: "text-sky-600 border-sky-500/40 bg-sky-500/10",
@@ -190,6 +191,7 @@ export function AnnouncementsTableClient() {
       {error ? (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : null}
       <div className="min-h-0 flex-1">

@@ -12,6 +12,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ProInput } from "@/components/official/ProInput";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface StudioDocRenameDialogProps {
   open: boolean;
@@ -79,7 +80,7 @@ export function StudioDocRenameDialog({
             if (e.key === "Enter") void handleSave();
           }}
         />
-        {error ? <p className="text-xs text-destructive">{error}</p> : null}
+        {error ? <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p> : null}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
           <AlertDialogAction disabled={busy} onClick={() => void handleSave()}>

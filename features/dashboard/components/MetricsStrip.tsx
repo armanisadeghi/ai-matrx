@@ -97,6 +97,7 @@ export function MetricsStrip() {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-foreground">
             Dashboard metrics couldn’t load
+            <ErrorAlchemyMenu />
           </p>
           <p className="text-xs text-muted-foreground">
             Your workspace is still available. Try loading the counts again.

@@ -23,6 +23,7 @@ import { DETAIL_PRESENTATIONS, type DetailPresentation } from "../types";
 import { useDetailHost } from "../host";
 import { CheckIcon, LoaderIcon, Settings2Icon } from "./icons";
 import type { DetailCore } from "./useDetailCore";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const WORD: Record<DetailPresentation, string> = {
   window: "a window",
@@ -166,6 +167,7 @@ export function DetailPresentationPane({ core }: { core: DetailCore }) {
           {setting.error
             ? `Your "open details as" setting could not be read (${setting.error}) — details are opening as ${WORD[core.presentation]}.`
             : `Details open as ${WORD[effective]}.`}
+          <ErrorAlchemyMenu />
         </span>
         <span className="underline underline-offset-2">Change</span>
       </button>
@@ -259,6 +261,7 @@ export function DetailPresentationPane({ core }: { core: DetailCore }) {
         <p className="text-xs text-muted-foreground">
           The saved setting could not be read here ({setting.error}), so this shows what this detail
           is actually doing.
+          <ErrorAlchemyMenu />
         </p>
       ) : null}
     </section>

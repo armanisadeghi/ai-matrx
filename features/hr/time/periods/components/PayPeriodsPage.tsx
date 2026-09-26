@@ -27,6 +27,7 @@ import { GeneratePeriodsPanel } from "./GeneratePeriodsPanel";
 import { hrTimePeriodHref } from "@/features/hr/routes";
 import { usePayPeriods } from "../hooks/usePayPeriods";
 import { PayPeriodsTable } from "./PayPeriodsTable";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const CASES = new Set(["happy", "empty", "error", "edge", "edge2"]);
 
@@ -57,6 +58,7 @@ export function PayPeriodsPage() {
           // The server's sentence, verbatim.
           <p className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] text-destructive">
             {failure.userMessage}
+            <ErrorAlchemyMenu error={failure.userMessage} />
           </p>
         ) : null}
 

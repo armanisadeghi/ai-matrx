@@ -12,6 +12,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Download } from "lucide-react";
 import { getSharedAudioContext } from "@ai-matrx/browser-audio/core";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface WavePlayerProps {
   blob: Blob;
@@ -103,7 +104,7 @@ export function WavePlayer({ blob, label, expectedSec }: WavePlayerProps) {
         <span>{sizeLabel}</span>
       </div>
 
-      {error && <p className="mt-1 text-xs text-destructive">Decode error: {error}</p>}
+      {error && <p className="mt-1 text-xs text-destructive">Decode error: {error} <ErrorAlchemyMenu error={error} /></p>}
 
       <audio controls src={url} className="mt-2 h-8 w-full">
         <track kind="captions" />

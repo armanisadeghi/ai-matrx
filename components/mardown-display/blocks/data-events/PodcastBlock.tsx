@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── PodcastCompleteBlock ─────────────────────────────────────────────────────
 
@@ -51,6 +52,7 @@ export const PodcastCompleteBlock: React.FC<PodcastCompleteBlockProps> = ({
         {error && (
           <p className="text-xs text-destructive/80 mt-0.5 leading-relaxed">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </p>
         )}
       </div>
@@ -94,7 +96,7 @@ export const PodcastStageBlock: React.FC<PodcastStageBlockProps> = ({
             </span>
           </div>
           {error && (
-            <p className="text-xs text-destructive/80 mt-0.5">{error}</p>
+            <p className="text-xs text-destructive/80 mt-0.5">{error} <ErrorAlchemyMenu error={error} /></p>
           )}
         </div>
         {resultKeys.length > 0 && (

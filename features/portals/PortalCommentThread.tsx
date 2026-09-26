@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { PortalWriteOutcome } from "@/app/(portal)/portal/c/[slug]/r/[recordId]/actions";
 import { guardedSave } from "@/lib/save/guardedSave";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ThreadComment {
   id: string;
@@ -130,6 +131,7 @@ export function PortalCommentThread({
             {refusal.hint ? (
               <p className="mt-1 text-muted-foreground">{refusal.hint}</p>
             ) : null}
+            <ErrorAlchemyMenu error={refusal.message} />
           </div>
         ) : null}
       </div>

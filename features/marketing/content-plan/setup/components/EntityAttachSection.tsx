@@ -21,6 +21,7 @@ import {
   entityAttachPlanValue,
 } from "../kind-values";
 import { SetupSection } from "./SetupSection";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function EntityAttachSection({
   plan,
@@ -114,6 +115,7 @@ export function EntityAttachSection({
               <X className="h-3 w-3" />
             </button>
           ) : null}
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : null}
 

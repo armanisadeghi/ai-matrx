@@ -80,6 +80,7 @@ import {
   DESCRIPTION_LIMITS,
   TITLE_LIMITS,
 } from "@/features/marketing/seo/serp/metrics";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface PageEditorProps {
   siteId: string;
@@ -1297,6 +1298,7 @@ export default function PageEditor({
                       <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
                         <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                         {versions.error}
+                        <ErrorAlchemyMenu error={versions.error} />
                       </div>
                     )}
                     {versions.isLoading ? (

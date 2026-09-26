@@ -73,6 +73,7 @@ import type { AgentDefinitionSliceState } from "@/features/agents/types/agent-de
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { JsonTreeViewer } from "@/components/official/json-explorer/JsonTreeViewer";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -830,7 +831,7 @@ function ResourcesTab({
             </span>
           </div>
           {r.errorMessage && (
-            <p className="text-sm text-destructive mt-1">{r.errorMessage}</p>
+            <p className="text-sm text-destructive mt-1">{r.errorMessage} <ErrorAlchemyMenu error={r.errorMessage} /></p>
           )}
           <Section title="Full Data" defaultOpen={false}>
             <div className="text-sm">
@@ -975,6 +976,7 @@ function RequestsTab({ requests }: { requests: ActiveRequest[] }) {
             {req.error?.message && (
               <p className="text-sm text-destructive mt-1">
                 {req.error.message}
+                <ErrorAlchemyMenu error={req.error.message} />
               </p>
             )}
             {isExpanded && (

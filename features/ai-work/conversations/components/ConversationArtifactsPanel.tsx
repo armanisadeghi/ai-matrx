@@ -55,6 +55,7 @@ import type {
   CodingSessionArtifactsState,
 } from "../artifacts/useCodingSessionArtifacts";
 import { providerLabel } from "../presentation";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const NO_ARTIFACTS = "No artifacts captured for this session";
 
@@ -179,6 +180,7 @@ export function ConversationArtifactsPanel({
             <p className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               {artifacts.error} What you see below is not the whole set.
+              <ErrorAlchemyMenu error={artifacts.error} />
             </p>
           ) : null}
           {artifacts.groups.map((group) => (

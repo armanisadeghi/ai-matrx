@@ -28,6 +28,7 @@ import type { BackendFailureExplanation } from "@/lib/api/errors";
 // 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
 // 1h 02m. THE UNIT LAW puts the unit in the name.
 import { durationMsBetween, formatDurationMs } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function formatDate(value: string | null): string {
   if (!value) return "—";
@@ -177,6 +178,7 @@ export function QueryError({
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground">
               Could not load this data
+              <ErrorAlchemyMenu />
             </p>
             {/* 🚨 The DETAIL is for whoever can act on it, not for the person
                 reading the screen (2026-08-30). This printed
@@ -255,6 +257,7 @@ export function InlineQueryError({
           Retry
         </Button>
       ) : null}
+      <ErrorAlchemyMenu />
     </div>
   );
 }
@@ -588,6 +591,7 @@ export function BackendFailureDetails({
           </ol>
         </details>
       ) : null}
+      <ErrorAlchemyMenu />
     </div>
   );
 }

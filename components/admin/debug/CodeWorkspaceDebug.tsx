@@ -51,6 +51,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface OverrideEntry {
   conversationId: string;
@@ -373,6 +374,7 @@ export default function CodeWorkspaceDebug() {
           {rawListError && (
             <span className="text-amber-600 dark:text-amber-400">
               {rawListError}
+              <ErrorAlchemyMenu />
             </span>
           )}
         </div>

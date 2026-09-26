@@ -40,6 +40,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { EntityTypeToken } from "@ai-matrx/associations";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The href a uuid CELL in this admin console may carry for `(token, id)`.
@@ -271,6 +272,7 @@ export default function AdminEventsPage() {
       {error && (
         <div className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-500">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 

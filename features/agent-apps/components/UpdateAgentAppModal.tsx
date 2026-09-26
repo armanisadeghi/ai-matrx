@@ -40,6 +40,7 @@ import {
 } from "@/features/agent-apps/format";
 import type { AgentApp, AppStatus, UpdateAgentAppInput } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface UpdateAgentAppModalProps {
   open: boolean;
@@ -130,7 +131,7 @@ export function UpdateAgentAppModal({
           </SelectContent>
         </Select>
       </div>
-      {error && <div className="text-sm text-destructive">{error}</div>}
+      {error && <div className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></div>}
     </div>
   );
 

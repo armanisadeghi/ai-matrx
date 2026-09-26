@@ -45,6 +45,7 @@ import {
   isMicrophonePermissionDenial,
 } from "@/features/audio/utils/microphone-diagnostics";
 import { useFlashcardMandates } from "@/features/flashcards/data/mandate-disclosure";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Phase =
   "setup" | "preparing" | "asking" | "answering" | "grading" | "result";
@@ -503,6 +504,7 @@ function ResultView({
               (skipped
                 ? "I didn't catch an answer that time — give it another go."
                 : "Something went wrong grading that answer.")}
+            <ErrorAlchemyMenu error={error} />
           </p>
         </>
       )}

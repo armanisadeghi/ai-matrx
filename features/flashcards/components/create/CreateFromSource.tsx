@@ -75,6 +75,7 @@ import {
   ASSISTANT_MESSAGE_COLUMN_CLASS,
   ASSISTANT_MESSAGE_COLUMN_INSET_CLASS,
 } from "@/features/agents/components/shared/assistant-message-layout";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -426,7 +427,7 @@ function DocPickerStep({
           ))}
         </div>
       ) : error ? (
-        <p className="py-6 text-center text-sm text-destructive">{error}</p>
+        <p className="py-6 text-center text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
       ) : docs.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-8 text-center">
           <FileText className="h-8 w-8 text-muted-foreground" />
@@ -544,7 +545,7 @@ function CurateStep({
             ))}
           </div>
         ) : error ? (
-          <p className="py-4 text-center text-sm text-destructive">{error}</p>
+          <p className="py-4 text-center text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
         ) : sorted.length === 0 ? (
           <p className="py-4 text-center text-sm text-muted-foreground">
             This document has no chunked passages yet.

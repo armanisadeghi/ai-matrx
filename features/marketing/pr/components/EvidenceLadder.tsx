@@ -53,6 +53,7 @@ import {
   type ProofKind,
   type StoryAngle,
 } from "@/features/marketing/pr/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const KIND_ICON: Record<ProofKind, ComponentType<{ className?: string }>> = {
   document: FileText,
@@ -210,6 +211,7 @@ export function EvidenceLadder({
             payload does not match any shape this surface understands. Counting
             it is not enough, so here it is verbatim: a person can often read
             what a parser cannot.
+            <ErrorAlchemyMenu />
           </p>
           <ul className="mt-1 space-y-0.5">
             {read.malformedRaw.map((raw, index) => (

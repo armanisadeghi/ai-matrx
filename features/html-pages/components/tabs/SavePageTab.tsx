@@ -26,6 +26,7 @@ import {
 } from "@/features/marketing/seo/serp/metrics";
 import { EmbeddedImageStudio } from "@/features/image-studio/components/EmbeddedImageStudio";
 import { confirmResetToOriginal } from "@/features/html-pages/utils/confirm-destructive";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function SavePageTab({ state, actions, user }: HtmlPreviewTabProps) {
   const previewUrl = actions.getCurrentPreviewUrl();
@@ -336,6 +337,7 @@ export function SavePageTab({ state, actions, user }: HtmlPreviewTabProps) {
             <div className="text-red-600 dark:text-red-400 text-sm">
               <strong>Error:</strong> {state.error}
             </div>
+            <ErrorAlchemyMenu error={state.error} />
           </div>
         )}
 

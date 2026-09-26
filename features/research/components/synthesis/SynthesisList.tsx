@@ -56,6 +56,7 @@ import {
   synthesisSummary,
   SYNTHESIS_CSV_COLUMNS,
 } from "@/features/research/copy";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const hasText = (s: string | null | undefined): s is string =>
   !!s && s.trim().length > 0;
@@ -259,6 +260,7 @@ function SynthesisCard({
             <div className="flex items-start gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-2.5 py-1.5 text-xs text-destructive">
               <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
               {synthesis.error}
+              <ErrorAlchemyMenu error={synthesis.error} />
             </div>
           ) : isTerminalStatus(synthesis.status) ? (
             // Terminal but empty — be explicit instead of an endless spinner.

@@ -82,6 +82,7 @@ import { MobilePanelShell, useMobilePanelClose } from "@/features/shell/componen
 import { buildRagDataStoresContextData } from "@/features/rag/agent-context/buildRagDataStoresContextData";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Canonical `ui_surface.name` this page emits. */
 const RAG_DATA_STORES_SURFACE = "matrx-user/knowledge-data-stores";
@@ -172,6 +173,7 @@ export function DataStoresPage() {
         {list.error && (
           <div className="px-3 py-2 flex items-center gap-2 text-xs text-destructive">
             <AlertCircle className="h-3.5 w-3.5" /> {list.error}
+            <ErrorAlchemyMenu error={list.error} />
           </div>
         )}
         {/*
@@ -498,7 +500,7 @@ function CreateStoreInline({ onCreated }: { onCreated: (id: string) => void }) {
           <X className="h-3.5 w-3.5" />
         </Button>
       </div>
-      {err && <div className="text-[10px] text-destructive">{err}</div>}
+      {err && <div className="text-[10px] text-destructive">{err} <ErrorAlchemyMenu error={err} /></div>}
     </form>
   );
 }

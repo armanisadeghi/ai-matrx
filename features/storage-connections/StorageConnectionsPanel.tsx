@@ -26,6 +26,7 @@ import type {
 } from "@/features/storage-connections/types";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ProviderCopy {
   readonly name: string;
@@ -308,6 +309,7 @@ export function StorageConnectionsPanel({
                         {connection.lastError ? (
                           <p className="text-xs text-destructive">
                             {connection.lastError}
+                            <ErrorAlchemyMenu error={connection.lastError} />
                           </p>
                         ) : null}
                         {status === null ? (

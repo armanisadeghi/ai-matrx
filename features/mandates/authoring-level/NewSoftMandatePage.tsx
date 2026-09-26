@@ -53,6 +53,7 @@ import {
   readLevelDraft,
   writeLevelDraft,
 } from "./level-draft";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface NewSoftMandatePageProps {
   level: MandateListLevel;
@@ -440,7 +441,7 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
             </p>
           ) : null}
           {serverError ? (
-            <p className="px-1 text-[12.5px] text-destructive">{serverError}</p>
+            <p className="px-1 text-[12.5px] text-destructive">{serverError} <ErrorAlchemyMenu error={serverError} /></p>
           ) : null}
         </header>
 

@@ -34,6 +34,7 @@ import { AnalyzeStageView } from "./stages/AnalyzeStageView";
 import { SynthesizeStageView } from "./stages/SynthesizeStageView";
 import { ReportStageView } from "./stages/ReportStageView";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   pipeline: UsePipelineProgressResult;
@@ -350,6 +351,7 @@ export function LivePipelineActivity({
           <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2">
             <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
             <span className="text-xs text-destructive">{error}</span>
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
 

@@ -45,6 +45,7 @@ import {
   type ParsedContactSelection,
 } from "../agent-context/parseContactSelection";
 import type { PartyKind } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface SaveContactFromSelectionDialogProps {
   isOpen: boolean;
@@ -210,6 +211,7 @@ export function SaveContactFromSelectionDialog({
         {mandate.error && (
           <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             Saving contacts is unavailable right now: {mandate.error}
+            <ErrorAlchemyMenu error={mandate.error} />
           </p>
         )}
 

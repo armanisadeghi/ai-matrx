@@ -364,6 +364,7 @@ export default function AliasesContainer() {
           {saveError ? (
             <p className="break-words text-xs text-red-600 dark:text-red-400">
               {saveError}
+              <ErrorAlchemyMenu error={saveError} />
             </p>
           ) : null}
           <div className="flex items-center justify-end gap-2">

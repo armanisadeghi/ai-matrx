@@ -20,6 +20,7 @@ import {
   generateSpokenFront,
   getCachedSpokenFrontFileId,
 } from "../spoken-front/generateSpokenFront.thunk";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface VoiceTestAudioSetupProps {
   card: { id: string; front: string };
@@ -99,6 +100,7 @@ export function VoiceTestAudioSetup({
         <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
           <AlertCircle className="h-4 w-4 shrink-0" />
           {startError}
+          <ErrorAlchemyMenu error={startError} />
         </div>
       )}
 

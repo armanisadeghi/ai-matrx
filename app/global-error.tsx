@@ -109,6 +109,7 @@ export default function GlobalError({
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
               A required part of the page failed to load. Refresh to retry.
+              <ErrorAlchemyMenu />
             </p>
             <button
               onClick={() => window.location.reload()}

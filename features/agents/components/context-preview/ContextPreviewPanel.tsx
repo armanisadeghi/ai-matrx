@@ -49,6 +49,7 @@ import {
 } from "./useContextPreview";
 import { AttachedContextSection } from "./AttachedContextSection";
 import { ContextCompareView } from "./ContextCompareView";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type View = "resolved" | "compare" | "attached";
 
@@ -362,6 +363,7 @@ function ResolvedView({
             <div className="mt-1 break-words text-xs text-destructive/90">
               {error}
             </div>
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
 

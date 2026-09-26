@@ -20,6 +20,7 @@ import {
   createGoogleRealtimeClient,
   type GoogleRealtimeConnectionState,
 } from "@/features/voice-agent/transport/googleRealtimeClient";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface PromptChannel {
   id: string;
@@ -332,6 +333,7 @@ export function GoogleMusicMixer() {
         {error ? (
           <p className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </p>
         ) : null}
       </main>

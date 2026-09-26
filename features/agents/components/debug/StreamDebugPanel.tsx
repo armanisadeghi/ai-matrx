@@ -56,6 +56,7 @@ import type {
   CompletionPayload,
 } from "@/types/python-generated/stream-events";
 import type { InstanceStatus } from "@/features/agents/types/instance.types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const DEBUG_PANEL_SHELL =
   "flex flex-col flex-1 min-h-0 h-full w-full bg-background text-foreground";
@@ -801,6 +802,7 @@ function ToolLifecycleRow({ tool }: { tool: ToolLifecycleEntry }) {
       {tool.errorMessage && (
         <div className="text-[9px] text-red-400 ml-2">
           {tool.errorType}: {tool.errorMessage}
+          <ErrorAlchemyMenu error={tool.errorType} />
         </div>
       )}
     </div>

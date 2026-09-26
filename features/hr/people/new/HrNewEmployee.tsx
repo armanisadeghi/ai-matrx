@@ -85,6 +85,7 @@ import {
 import { readWriteAck, type HrWriteRefusal } from "./writeAck";
 import { DuplicatePanel, type HrDuplicateScan } from "./DuplicatePanel";
 import { RehirePanel, type HrPriorEmployment } from "./RehirePanel";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Mode = "new-person" | "link-member" | "link-party" | "convert-candidate";
 
@@ -1575,7 +1576,7 @@ function Field({
         {children}
       </Label>
       {error ? (
-        <p className="text-xs text-destructive">{error}</p>
+        <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
       ) : hint ? (
         <p className="text-xs text-muted-foreground">{hint}</p>
       ) : null}

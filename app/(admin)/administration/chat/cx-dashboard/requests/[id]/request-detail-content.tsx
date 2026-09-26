@@ -51,6 +51,7 @@ import {
   useCxRowMenu,
 } from "@/features/cx-dashboard/components/cx-row-actions";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Detail = {
   user_request: CxUserRequest;
@@ -521,6 +522,7 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
                         {tc.error_type && (
                           <span className="font-medium text-red-500">
                             {tc.error_type}:{" "}
+                            <ErrorAlchemyMenu error={tc.error_type} />
                           </span>
                         )}
                         <span className="text-muted-foreground">

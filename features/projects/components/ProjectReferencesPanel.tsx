@@ -20,6 +20,7 @@ import {
 } from "@/features/scopes/registry/entityRegistry";
 import { useProjectReferences } from "../hooks";
 import type { ProjectReference } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ============================================================================
 // Display resolution — driven ENTIRELY by the canonical entity registry
@@ -264,6 +265,7 @@ export function ProjectReferencesPanel({
       ) : error ? (
         <div className="text-sm text-destructive px-2 py-3 text-center">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : references.length === 0 ? (
         <div className="text-sm text-muted-foreground px-2 py-3 text-center">

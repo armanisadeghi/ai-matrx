@@ -8,6 +8,7 @@ import { toast } from "@/lib/toast";
 import { CmsSiteService } from "../../services/cmsService";
 import type { ClientSite } from "../../types";
 import { activeSiteDomain, clientSiteRootUrl } from "../../utils/pageUrls";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const PROVIDERS = {
   godaddy: {
@@ -146,6 +147,7 @@ export function SiteDomainSettings({ site, onRefresh }: { site: ClientSite; onRe
       {traffic?.last_error && !usingCustom && (
         <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
           <strong>Not connected yet.</strong> {traffic.last_error} All generated traffic is still going to the working Matrx URL.
+          <ErrorAlchemyMenu error={traffic.last_error} />
         </div>
       )}
 

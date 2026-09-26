@@ -28,6 +28,7 @@ import {
 } from "@/features/directive-catalog/components/DirectiveShapePanel";
 import { setEntityTypeAgentWritable } from "@/features/admin/relationships/entityTypeMutations";
 import type { NounDirectives } from "@/features/directive-catalog/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * No polling. The directive catalog is static metadata — the set of registered
@@ -142,6 +143,7 @@ export function DirectiveCatalogClient() {
             <AlertTriangle className="h-8 w-8 text-red-500" />
             <p className="max-w-md text-sm text-foreground">
               Failed to load the directive catalog.
+              <ErrorAlchemyMenu />
             </p>
             <p className="max-w-md font-mono text-xs text-muted-foreground">
               {error}
@@ -173,6 +175,7 @@ export function DirectiveCatalogClient() {
         {error && catalog && (
           <div className="border-t border-border bg-amber-500/10 px-3 py-1 text-xs text-amber-600 dark:text-amber-400">
             Last refresh failed: {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
       </div>

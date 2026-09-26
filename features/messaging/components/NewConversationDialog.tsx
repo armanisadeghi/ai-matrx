@@ -41,6 +41,7 @@ import type { UserSearchCandidate } from "@/features/user-search/types";
 import { getInitials } from "@ai-matrx/kit/format";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface NewConversationDialogProps {
   open: boolean;
@@ -360,6 +361,7 @@ export function NewConversationDialog({
           {error && (
             <div className="text-sm text-destructive mb-3 flex-shrink-0">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
 

@@ -29,6 +29,7 @@ import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorC
 import { usePickerInputFocus } from "./usePickerInputFocus";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ConversationReferenceRow {
   id: string;
@@ -163,6 +164,7 @@ export function ConversationReferencePicker({
       return (
         <div className="px-3 py-8 text-center text-xs text-destructive">
           Couldn&apos;t load your chats: {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       );
     }

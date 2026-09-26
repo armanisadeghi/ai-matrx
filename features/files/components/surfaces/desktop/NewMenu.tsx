@@ -51,6 +51,7 @@ import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useRagUploadPreference } from "@/features/files/handler/hooks/useRagUploadPreference";
 import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIcon";
 import { FileAcquisitionActions } from "@/features/files/components/core/FileAcquisition/FileAcquisitionActions";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface NewMenuProps {
   parentFolderId: string | null;
@@ -279,7 +280,7 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
             }}
           />
           {createError ? (
-            <p className="text-xs text-destructive">{createError}</p>
+            <p className="text-xs text-destructive">{createError} <ErrorAlchemyMenu error={createError} /></p>
           ) : null}
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setCreateError(null)}>

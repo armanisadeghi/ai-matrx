@@ -27,6 +27,7 @@ import {
   type DictImportResult,
 } from "@/features/dictionary/utils/io";
 import type { DictEntryDraft } from "@/features/dictionary/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   open: boolean;
@@ -157,6 +158,7 @@ export function DictionaryImportDialog({ open, onOpenChange, onImport }: Props) 
         {parseError && (
           <p className="flex items-center gap-1.5 text-sm text-destructive">
             <AlertTriangle className="h-4 w-4" /> {parseError}
+            <ErrorAlchemyMenu error={parseError} />
           </p>
         )}
 

@@ -187,6 +187,7 @@ export function CloudBrowserStartFailed({
       <div className="space-y-1">
         <p className="text-sm font-medium text-foreground">
           Your cloud browser could not start
+          <ErrorAlchemyMenu />
         </p>
         <p className="max-w-sm text-xs text-muted-foreground">
           {error.message}

@@ -51,6 +51,7 @@ import {
 import { explainSpliceRefusal, spliceProposal } from "../review/proposedEdit";
 import { maskProtectedSpans, unmaskProtectedSpans } from "../review/protectedSpans";
 import type { ChatAnswerSaveReceipt, ContentSource, RichDocumentActionContext } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface DocumentAgentReviewProps {
   actionId: ProTextareaAgentActionId;
@@ -169,7 +170,7 @@ export function DocumentAgentReview({
 
   let body: React.ReactNode;
   if (prepareError) {
-    body = <p className="text-sm text-destructive">{prepareError}</p>;
+    body = <p className="text-sm text-destructive">{prepareError} <ErrorAlchemyMenu error={prepareError} /></p>;
   } else if (!prepared) {
     body = <p className="text-sm text-muted-foreground">Reading the saved version…</p>;
   } else if (proposal !== null) {
@@ -186,6 +187,7 @@ export function DocumentAgentReview({
         {spliceError ? (
           <p className="text-sm text-destructive">
             {spliceError} Copy the proposal and edit the protected part by hand instead.
+            <ErrorAlchemyMenu error={spliceError} />
           </p>
         ) : splice === null ? (
           <p className="text-sm text-muted-foreground">

@@ -54,6 +54,7 @@ import type { SiteSitemap } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function SitemapsWorkspace() {
   const { site, brandId } = useMarketingSite();
@@ -656,6 +657,7 @@ function SitemapRow({
         {sitemap.fetch_error ? (
           <p className="truncate text-[11px] text-destructive">
             {sitemap.fetch_error}
+            <ErrorAlchemyMenu error={sitemap.fetch_error} />
           </p>
         ) : (
           <p className="text-[11px] text-muted-foreground">

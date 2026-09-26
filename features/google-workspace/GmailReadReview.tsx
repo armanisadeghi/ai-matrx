@@ -23,6 +23,7 @@ import type {
 } from "@/features/marketing/google/types";
 import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Reviewer-sized mailbox read. Nothing is fetched until the user searches. */
 export function GmailReadReview() {
@@ -353,6 +354,7 @@ export function GmailReadReview() {
           <p className="text-xs text-muted-foreground">
             Shows at most 20 matches. Search terms and messages are not saved by
             this screen.
+            <ErrorAlchemyMenu />
           </p>
         </form>
       )}

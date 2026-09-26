@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { ResolvedPreviewEntry } from "@/app/api/admin/system-context/route";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function PreviewDialog({ onClose }: { onClose: () => void }) {
   const [entries, setEntries] = useState<ResolvedPreviewEntry[] | null>(null);
@@ -58,7 +59,7 @@ export function PreviewDialog({ onClose }: { onClose: () => void }) {
         </DialogHeader>
 
         {error ? (
-          <p className="py-6 text-center text-sm text-destructive">{error}</p>
+          <p className="py-6 text-center text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
         ) : entries === null ? (
           <div className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" /> Resolving…

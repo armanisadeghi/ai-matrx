@@ -15,6 +15,7 @@ import {
   updateAssistProducerPolicy,
   type AssistProducerPolicy,
 } from "./service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function AssistProducerControl() {
   const [reason, setReason] = useState("");
@@ -144,6 +145,7 @@ export function AssistProducerControl() {
           {policies.error instanceof Error
             ? policies.error.message
             : "Could not load Assist controls"}
+          <ErrorAlchemyMenu error={policies.error.message} />
         </p>
       )}
 

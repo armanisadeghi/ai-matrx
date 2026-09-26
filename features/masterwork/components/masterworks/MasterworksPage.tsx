@@ -62,6 +62,7 @@ import {
 } from "../../service";
 import type { Masterwork, Rulebook } from "../../types";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function runDuration(run: MasterworkRun): string | null {
   if (!run.started_at || !run.completed_at) return null;
@@ -188,6 +189,7 @@ export function MasterworkRunRow({
         {run.error_message ? (
           <span className="line-clamp-2 pl-3.5 text-destructive">
             {run.error_message}
+            <ErrorAlchemyMenu error={run.error_message} />
           </span>
         ) : preview ? (
           // The preview is the deliverable's own words, and the deliverable is

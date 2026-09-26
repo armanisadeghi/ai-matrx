@@ -32,6 +32,7 @@ import {
 import { LOCAL_ENGINE_PROFILES, LOCAL_ENGINE_SCAN_LABEL } from "./constants";
 import type { LocalEngineDiscovery } from "./discoverLocalEngines";
 import { useAppInstances, type InstanceWithStatus } from "./useAppInstances";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -318,14 +319,14 @@ function InstanceCard({
                   latency={inst.restLatencyMs}
                 />
                 {inst.restError && (
-                  <span className="text-red-500">{inst.restError}</span>
+                  <span className="text-red-500">{inst.restError} <ErrorAlchemyMenu error={inst.restError} /></span>
                 )}
               </span>
               <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
                 WS{" "}
                 <StatusDot status={inst.wsStatus} latency={inst.wsLatencyMs} />
                 {inst.wsError && (
-                  <span className="text-red-500">{inst.wsError}</span>
+                  <span className="text-red-500">{inst.wsError} <ErrorAlchemyMenu error={inst.wsError} /></span>
                 )}
               </span>
             </div>
@@ -673,6 +674,7 @@ export function InstanceSelectorModal({
           {error && (
             <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
 
@@ -765,6 +767,7 @@ export function InstanceSelectorModal({
                     <span className="text-red-500 flex items-center gap-1">
                       <XCircle className="w-3 h-3" />
                       {customResult.restError}
+                      <ErrorAlchemyMenu error={customResult.restError} />
                     </span>
                   )}
                 </span>
@@ -779,6 +782,7 @@ export function InstanceSelectorModal({
                     <span className="text-red-500 flex items-center gap-1">
                       <XCircle className="w-3 h-3" />
                       {customResult.wsError}
+                      <ErrorAlchemyMenu error={customResult.wsError} />
                     </span>
                   )}
                 </span>

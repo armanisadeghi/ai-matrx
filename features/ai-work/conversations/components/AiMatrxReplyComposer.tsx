@@ -41,6 +41,7 @@ import { useCodingReplyResponder } from "./useCodingReplyResponder";
 // request attribution for the continue is the server reply path's
 // (aidream coding_session_bridge), which validates source_app on its side.
 import { CODING_SESSION_REPLY_SOURCE_FEATURE } from "../../lib/providerSource";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 
 type SendState =
@@ -232,6 +233,7 @@ export function AiMatrxReplyComposer({
           <span>
             Who answers here could not be loaded, so this page is not naming
             anyone: {responder.error}
+            <ErrorAlchemyMenu error={responder.error} />
           </span>
         </p>
       ) : label ? (

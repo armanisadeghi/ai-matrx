@@ -49,6 +49,7 @@ import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const STATUS_STYLES: Record<string, string> = {
   completed:
@@ -259,6 +260,7 @@ export function ExtractionCatalogClient() {
           {error ? (
             <div className="m-4 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           ) : (
             <NonEditableContextMenu

@@ -54,6 +54,7 @@ import { STYLE_COLORS, STYLE_COLOR_LABELS, type StyleColor } from "@ai-matrx/des
 import { isServiceFailure } from "../types";
 import { FormatAwareInput, formatHasOwnInput } from "./FormatAwareInput";
 import { FormulaExpressionEditor } from "./FormulaExpressionEditor";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Field = RowActionField & RowLabelField & { metadata?: unknown };
 type Row = { id: string; data: Record<string, unknown> };
@@ -401,7 +402,7 @@ function ActionForm(props: {
               })}
             </ul>
           ) : preview ? (
-            <p className="text-destructive">{preview.error}</p>
+            <p className="text-destructive">{preview.error} <ErrorAlchemyMenu error={preview.error} /></p>
           ) : null}
         </div>
       )}

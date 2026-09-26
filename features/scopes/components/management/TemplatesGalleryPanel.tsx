@@ -27,6 +27,7 @@ import {
   buildScopesDirectoryValues,
   currentSelection,
 } from "@/features/scopes/lib/scopes-surface-scope";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function TemplatesGalleryPanel() {
   const { templates, status, error, refresh } = useTemplates();
@@ -110,7 +111,7 @@ export function TemplatesGalleryPanel() {
       <Card className="p-4 flex items-start gap-3">
         <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
         <div className="text-sm">
-          <div className="font-medium">Couldn't load templates</div>
+          <div className="font-medium">Couldn't load templates <ErrorAlchemyMenu /></div>
           <div className="text-xs text-muted-foreground">{error}</div>
           <button
             onClick={() => void refresh()}

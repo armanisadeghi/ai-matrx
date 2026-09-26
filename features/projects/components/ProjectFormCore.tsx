@@ -55,6 +55,7 @@ import { useDispatchThunk } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { createProjectsScope } from "@/features/surfaces/manifests/projects.manifest";
 import type { Project } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -97,6 +98,7 @@ function SlugIndicator({
       <span className="flex items-center gap-1 text-xs text-destructive">
         <X className="h-3 w-3" />
         {slugValidation.error}
+        <ErrorAlchemyMenu error={slugValidation.error} />
       </span>
     );
   }
@@ -420,6 +422,7 @@ export function ProjectFormCore({
               <p className="text-xs text-destructive flex items-center gap-1">
                 <AlertCircle className="h-3 w-3" />
                 {nameValidation.error}
+                <ErrorAlchemyMenu error={nameValidation.error} />
               </p>
             )}
             <p className="text-xs text-muted-foreground">{name.length}/50</p>
@@ -572,6 +575,7 @@ export function ProjectFormCore({
             <p className="text-xs text-destructive flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />
               {nameValidation.error}
+              <ErrorAlchemyMenu error={nameValidation.error} />
             </p>
           )}
           <p className="text-xs text-muted-foreground">

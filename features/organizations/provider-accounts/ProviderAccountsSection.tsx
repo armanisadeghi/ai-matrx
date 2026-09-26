@@ -20,6 +20,7 @@ import {
   listProviderAccounts,
   type ProviderAccountRegistryRow,
 } from "./service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function label(value: string): string {
   return value
@@ -190,6 +191,7 @@ export function ProviderAccountsSection({
         <Button variant="outline" size="sm" onClick={refresh}>
           <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Retry
         </Button>
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

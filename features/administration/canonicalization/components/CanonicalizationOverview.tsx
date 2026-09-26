@@ -40,6 +40,7 @@ import type {
 } from "../types";
 import { errorMessageFrom, readJsonObject } from "../utils/apiClient";
 import { overviewToAgentInput, overviewToHuman } from "../utils/aiExport";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function isRefreshLogRow(v: unknown): v is RefreshLogRow {
   return (
@@ -214,6 +215,7 @@ export function CanonicalizationOverview() {
       {error ? (
         <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : null}
 

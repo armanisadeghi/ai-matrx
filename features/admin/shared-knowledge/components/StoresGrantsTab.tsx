@@ -39,6 +39,7 @@ import {
 } from "@/features/rag/hooks/useLibraryGrants";
 import { LibraryPublishPanel } from "@/features/rag/components/library/LibraryPublishPanel";
 import type { SharedKnowledgeDirectory } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function grantLabel(g: LibraryGrant): string {
   if (g.audience === "global") return "Everyone";
@@ -191,6 +192,7 @@ export function StoresGrantsTab({
         ) : error ? (
           <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         ) : loading && grants.length === 0 ? (
           <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">

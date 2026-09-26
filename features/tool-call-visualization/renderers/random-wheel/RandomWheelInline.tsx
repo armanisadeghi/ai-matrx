@@ -51,6 +51,7 @@ import type {
   RandomWheelSource,
   ResolvedWheel,
 } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants (behavior tuning — not feature flags)
@@ -763,6 +764,7 @@ const ImageResult: React.FC<{ result: RandomWheelResult }> = ({ result }) => {
           <ImageIcon className="w-4 h-4" />
           <span>
             {imgFailed ? "Image failed to load." : "No image returned."}
+            <ErrorAlchemyMenu />
           </span>
         </div>
       )}

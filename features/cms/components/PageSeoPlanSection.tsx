@@ -20,6 +20,7 @@ import type { ClientPage, ClientSite } from "@/features/cms/types";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { SeoPlanEditor } from "@/features/marketing/seo/plan/SeoPlanEditor";
 import { useCmsPageSeoPlan } from "@/features/marketing/seo/plan/useCmsPageSeoPlan";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function Frame({
   children,
@@ -137,6 +138,7 @@ export function PageSeoPlanSection({
           <p className="flex items-start gap-2 text-destructive">
             <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             {plan.error.message}
+            <ErrorAlchemyMenu error={plan.error.message} />
           </p>
         ) : null}
       </div>

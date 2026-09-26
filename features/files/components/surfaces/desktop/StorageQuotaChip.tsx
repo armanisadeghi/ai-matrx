@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useStorageQuota } from "@/features/files/hooks/useStorageQuota";
 import { formatFileSize } from "@/features/files/utils/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface StorageQuotaChipProps {
   className?: string;
@@ -74,6 +75,7 @@ export function StorageQuotaChip({ className }: StorageQuotaChipProps) {
           />
           Retry
         </button>
+        <ErrorAlchemyMenu />
       </div>
     );
   }

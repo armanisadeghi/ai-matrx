@@ -59,6 +59,7 @@ import {
   peekTableShare,
   type TableSharePeek,
 } from "@/features/sharing/outside/outsideShareService";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Opened = Awaited<ReturnType<typeof acceptOutsideShare>>;
 
@@ -239,7 +240,7 @@ export default function AcceptTableSharePage() {
         <p className="mb-4 text-sm text-muted-foreground">{peek.say}</p>
         {offer(peek)}
         {error ? (
-          <p className="mb-4 text-sm text-destructive">{error}</p>
+          <p className="mb-4 text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
         ) : null}
         <Button onClick={() => void open()} disabled={working}>
           {working ? (

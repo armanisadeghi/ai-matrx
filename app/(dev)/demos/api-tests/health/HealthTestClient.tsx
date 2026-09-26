@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ApiTestConfigPanel } from "@/components/api-test-config/ApiTestConfigPanel";
 import { useApiTestConfig } from "@/components/api-test-config/useApiTestConfig";
 import { TEST_ADMIN_TOKEN } from "../sample-prompt";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface HealthResponse {
     status?: string;
@@ -285,7 +286,7 @@ export default function HealthTestClient() {
                                         <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
                                         <div>
                                             <h4 className="font-semibold text-destructive mb-1">Health Check Failed</h4>
-                                            <p className="text-sm text-destructive/80">{basicError}</p>
+                                            <p className="text-sm text-destructive/80">{basicError} <ErrorAlchemyMenu error={basicError} /></p>
                                         </div>
                                     </div>
                                 ) : basicHealth && (
@@ -325,7 +326,7 @@ export default function HealthTestClient() {
                                         <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
                                         <div>
                                             <h4 className="font-semibold text-destructive mb-1">Detailed Health Check Failed</h4>
-                                            <p className="text-sm text-destructive/80">{detailedError}</p>
+                                            <p className="text-sm text-destructive/80">{detailedError} <ErrorAlchemyMenu error={detailedError} /></p>
                                         </div>
                                     </div>
                                 ) : detailedHealth && (

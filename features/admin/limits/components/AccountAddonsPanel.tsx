@@ -93,6 +93,7 @@ import {
   pointsToUsdLabel,
 } from "../types";
 import { EnforcementBadge } from "./PlanAllowancesPanel";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const dateFmt = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
@@ -634,7 +635,7 @@ export function AccountAddonsPanel() {
   if (error) {
     return (
       <div className="p-6">
-        <p className="text-sm text-destructive">{error}</p>
+        <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
         <Button className="mt-3" variant="outline" onClick={() => void load()}>
           Retry
         </Button>
@@ -683,6 +684,7 @@ export function AccountAddonsPanel() {
             {assignmentsError}). The add-on values below are real; the
             &ldquo;plan gives&rdquo; column cannot be filled in for this
             session.
+            <ErrorAlchemyMenu error={assignmentsError} />
           </p>
         )}
 

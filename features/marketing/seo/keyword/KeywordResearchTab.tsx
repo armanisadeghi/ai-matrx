@@ -54,6 +54,7 @@ import {
   pageKeywordsQueryKey,
 } from "@/features/marketing/data/page-keywords";
 import { toast } from "@/lib/toast";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The surface this tab lives inside — the Keyword Intelligence window owns the
@@ -343,7 +344,7 @@ export function KeywordResearchTab({
         <div className="rounded-lg border border-border p-3">
           <p className="text-[11px] text-muted-foreground">
             {run.status === "error" ? (
-              <span className="text-destructive">{run.error}</span>
+              <span className="text-destructive">{run.error} <ErrorAlchemyMenu error={run.error} /></span>
             ) : (
               (run.stage ?? "Working…")
             )}

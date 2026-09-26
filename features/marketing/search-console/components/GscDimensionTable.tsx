@@ -97,6 +97,7 @@ import type {
   GscResolvedPeriods,
   GscSortKey,
 } from "@/features/marketing/search-console/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const DIMENSION_LABELS: Record<GscDimension, { column: string; noun: string }> =
   {
@@ -725,6 +726,7 @@ export function GscDimensionTable({
               ? breakdown.error.message
               : String(breakdown.error)}
           </p>
+          <ErrorAlchemyMenu error={breakdown.error.message} />
         </div>
       ) : (
         <MatrxDataTable<GscBreakdownRow>

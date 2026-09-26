@@ -30,6 +30,7 @@ import {
   type PodcastSpeakerData,
 } from "@/features/content-ir/kinds/podcast-episode";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface PodcastEpisodeBlockProps {
   serverData?: unknown;
@@ -198,6 +199,7 @@ export default function PodcastEpisodeBlock({
         <p className="flex items-start gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/5 px-2 py-1.5 text-xs text-amber-800 dark:text-amber-200">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           Official video could not be composed: {data.official_video_error}
+          <ErrorAlchemyMenu error={data.official_video_error} />
         </p>
       )}
 

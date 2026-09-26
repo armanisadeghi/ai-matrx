@@ -12,6 +12,7 @@ import {
   type UserSearchCandidate,
 } from "@/features/user-search/types";
 import { emitUserSearchEvent } from "@/features/user-search/callbacks";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface UserSearchWindowProps {
   isOpen: boolean;
@@ -220,6 +221,7 @@ function UserSearchWindowInner({
       {error ? (
         <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : null}
       <div className="min-h-0 flex-1">

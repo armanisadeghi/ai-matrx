@@ -66,6 +66,7 @@ import {
   chunkPdfPageNumbers,
   MAX_PDF_CHUNKS_PER_BATCH,
 } from "@/features/pdf/utils/page-chunks";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -716,7 +717,7 @@ export function CopyPagesOverlay({
           </div>
 
           {errorMsg && (
-            <p className="text-[10px] text-destructive">{errorMsg}</p>
+            <p className="text-[10px] text-destructive">{errorMsg} <ErrorAlchemyMenu error={errorMsg} /></p>
           )}
         </div>
 

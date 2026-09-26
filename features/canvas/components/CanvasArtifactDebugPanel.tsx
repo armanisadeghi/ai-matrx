@@ -13,6 +13,7 @@ import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import type { CanvasItem } from "@/features/canvas/redux/canvasSlice";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CanvasArtifactDebugPanelProps {
   item: CanvasItem;
@@ -101,6 +102,7 @@ export function CanvasArtifactDebugPanel({
           <div className="border-t border-amber-500/20 pt-1">
             <div className="text-amber-700 dark:text-amber-300 font-semibold mb-0.5">
               DB row {loading ? "(loading…)" : error ? `(error: ${error})` : ""}
+              <ErrorAlchemyMenu />
             </div>
             {row ? (
               <>
@@ -156,6 +158,7 @@ export function CanvasArtifactDebugPanel({
                 {debug.errors.map((e, i) => (
                   <li key={`e-${i}`} className="text-destructive">
                     {e}
+                    <ErrorAlchemyMenu error={e} />
                   </li>
                 ))}
               </ul>
@@ -249,6 +252,7 @@ export function InlineArtifactDebugStrip({
             {lastErrors?.map((e, i) => (
               <li key={`e-${i}`} className="text-destructive">
                 {e}
+                <ErrorAlchemyMenu error={e} />
               </li>
             ))}
           </ul>

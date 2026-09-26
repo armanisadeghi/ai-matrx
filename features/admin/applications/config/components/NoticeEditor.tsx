@@ -22,6 +22,7 @@ import {
   NOTICE_LEVELS,
   type NoticeDraft,
 } from "@/features/admin/applications/config/schema";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface NoticeEditorProps {
   notice: NoticeDraft;
@@ -88,6 +89,7 @@ export function NoticeEditor({ notice, onChange, errors }: NoticeEditorProps) {
             {errors["notice.title"] ? (
               <p className="text-xs text-destructive">
                 {errors["notice.title"]}
+                <ErrorAlchemyMenu />
               </p>
             ) : null}
           </div>
@@ -105,6 +107,7 @@ export function NoticeEditor({ notice, onChange, errors }: NoticeEditorProps) {
             {errors["notice.body"] ? (
               <p className="text-xs text-destructive">
                 {errors["notice.body"]}
+                <ErrorAlchemyMenu />
               </p>
             ) : null}
           </div>
@@ -124,7 +127,7 @@ export function NoticeEditor({ notice, onChange, errors }: NoticeEditorProps) {
               autoComplete="off"
             />
             {errors["notice.url"] ? (
-              <p className="text-xs text-destructive">{errors["notice.url"]}</p>
+              <p className="text-xs text-destructive">{errors["notice.url"]} <ErrorAlchemyMenu /></p>
             ) : null}
           </div>
         </div>

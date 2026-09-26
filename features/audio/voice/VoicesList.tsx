@@ -17,6 +17,7 @@ import { FilterModal } from "./components/FilterModal";
 import { VoiceSelectionModal } from "./components/VoiceSelectionModal";
 import { cn } from "@/lib/utils";
 import { matchesSearch } from "@ai-matrx/kit/search-scoring";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const VoicesList: React.FC = () => {
   const { loading, error, getOneData, setOneData, setLoading, setError } =
@@ -123,7 +124,7 @@ const VoicesList: React.FC = () => {
     console.log("VoicesList encountered an error:", error);
     return (
       <div className="flex justify-center items-center h-full">
-        <p className="text-red-500">{error}</p>
+        <p className="text-red-500">{error} <ErrorAlchemyMenu error={error} /></p>
       </div>
     );
   }

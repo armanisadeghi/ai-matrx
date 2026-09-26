@@ -121,6 +121,7 @@ import {
 } from "@/components/official/mobile-table/mobileTable";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { replaceAppHref } from "@/lib/deployment/navigate";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const NONE = "__none__";
 
@@ -568,6 +569,7 @@ export function SurfaceAdminDetailPage({
             <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
               <AlertCircle className="h-3.5 w-3.5" />
               {loadError}
+              <ErrorAlchemyMenu error={loadError} />
             </div>
           )}
 
@@ -1755,6 +1757,7 @@ function JsonRecordEditor({
                 {errors[key] && (
                   <span className="text-[10px] text-destructive">
                     JSON error: {errors[key]}
+                    <ErrorAlchemyMenu />
                   </span>
                 )}
                 <Button
@@ -2118,6 +2121,7 @@ function RolesSection({
                 {bindingsError && autoRunIsWritable && (
                   <p className="text-[10px] text-destructive">
                     Auto-run answer unreadable: {bindingsError}
+                    <ErrorAlchemyMenu error={bindingsError} />
                   </p>
                 )}
                 <div className="flex items-center gap-2 flex-wrap text-[11px]">

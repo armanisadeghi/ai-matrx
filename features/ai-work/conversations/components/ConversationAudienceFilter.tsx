@@ -37,6 +37,7 @@ import {
   type ConversationAudienceId,
   type ConversationBrowseRow,
 } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const BUCKET_ICONS: Record<ConversationAudienceId, typeof Cpu> = {
   chat: MessageSquare,
@@ -227,6 +228,7 @@ export function ConversationAudienceFilter({
             >
               Retry
             </button>
+            <ErrorAlchemyMenu />
           </div>
         )}
         {active === "custom" && (

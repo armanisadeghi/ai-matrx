@@ -69,6 +69,7 @@ import { useOpenImageAnnotationWindow } from "@/features/overlays/openers/imageA
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import type { FeedbackSubject } from "@/features/overlays/openers/feedbackDialog";
 import { describeSubject, subjectMetadata } from "./feedback-subject";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1267,7 +1268,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
       </div>
 
       {error && (
-        <p className="text-[11px] text-destructive leading-snug">{error}</p>
+        <p className="text-[11px] text-destructive leading-snug">{error} <ErrorAlchemyMenu error={error} /></p>
       )}
     </div>
   );

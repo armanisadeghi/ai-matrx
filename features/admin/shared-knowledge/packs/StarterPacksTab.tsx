@@ -32,6 +32,7 @@ import {
 } from "./data";
 import { PackDetail } from "./PackDetail";
 import { ProposePackDialog } from "./ProposePackDialog";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const STATUS_ORDER: Record<string, number> = { draft: 0, proposed: 1, ratified: 2, retired: 3 };
 
@@ -171,6 +172,7 @@ export function StarterPacksTab({ directory }: { directory: SharedKnowledgeDirec
         ) : catalog.isError ? (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
             {extractErrorMessage(catalog.error)}
+            <ErrorAlchemyMenu />
           </div>
         ) : packs.length === 0 ? (
           <div className="rounded-md border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">

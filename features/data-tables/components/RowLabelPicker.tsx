@@ -31,6 +31,7 @@ import {
   type RowLabelField,
 } from "../row-label";
 import { FormulaExpressionEditor } from "./FormulaExpressionEditor";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const MERGE = "__merge__";
 const DEFAULT = "__default__";
@@ -150,6 +151,7 @@ export function RowLabelPicker({ tableId, metadata, fields, sampleRow, disabled,
               {stored?.kind === "formula" && stored.expression === draftExpression
                 ? "Saved."
                 : "Not saved yet."}
+              <ErrorAlchemyMenu />
             </p>
             <button
               type="button"

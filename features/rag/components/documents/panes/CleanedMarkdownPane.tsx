@@ -12,6 +12,7 @@
 
 import MarkdownCore from "@/components/markdown-core/MarkdownCore";
 import type { PageDetail } from "@/features/rag/types/documents";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface CleanedMarkdownPaneProps {
   page: PageDetail | null;
@@ -46,7 +47,7 @@ export function CleanedMarkdownPane({
           <div className="text-sm text-muted-foreground">Loading…</div>
         )}
         {error && (
-          <div className="text-sm text-destructive">Error: {error}</div>
+          <div className="text-sm text-destructive">Error: {error} <ErrorAlchemyMenu error={error} /></div>
         )}
         {!loading &&
           !error &&

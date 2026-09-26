@@ -38,6 +38,7 @@ import {
   useGscClassRollup,
   type GscClassRollupEntry,
 } from "./useGscClassRollup";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface GscClassBarProps {
   siteId: string | null;
@@ -124,6 +125,7 @@ export function GscClassBar({
           Search performance unavailable:{" "}
           {error instanceof Error ? error.message : String(error)}
         </p>
+        <ErrorAlchemyMenu error={error.message} />
       </div>
     );
   }

@@ -127,6 +127,7 @@ import { AttributesEditor } from "./AttributesEditor";
 import { BriefEditor } from "./BriefEditor";
 import { hasKeywordAssignment } from "../plan-assists-producer";
 import type { NodePipelineProgress } from "../lib/pipeline-progress";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function NodePanel({
   node,
@@ -1507,6 +1508,7 @@ export function NodePanel({
                       <p className="text-xs text-destructive">
                         {nodeSeoPlan.error?.message ??
                           "The SEO plan record could not be loaded."}
+                        <ErrorAlchemyMenu error={nodeSeoPlan.error?.message} />
                       </p>
                     ) : (
                       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -1517,6 +1519,7 @@ export function NodePanel({
                     {nodeSeoPlan.error && nodeSeoPlan.state === "creatable" ? (
                       <p className="mt-1.5 text-xs text-destructive">
                         {nodeSeoPlan.error.message}
+                        <ErrorAlchemyMenu error={nodeSeoPlan.error.message} />
                       </p>
                     ) : null}
                   </div>

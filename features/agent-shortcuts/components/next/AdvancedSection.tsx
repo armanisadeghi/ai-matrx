@@ -22,6 +22,7 @@ import type { AgentShortcut } from "@/features/agents/redux/agent-shortcuts/type
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { StoredModelOverridesField } from "@/features/agents/components/run-controls/StoredModelOverridesField";
 import type { RunConfigOverridesWords } from "@/features/agents/components/run-controls/RunConfigOverrides";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The stored blob, or null when it is absent / not an object. */
 const asJsonObject = (value: unknown): Record<string, unknown> | null =>
@@ -594,7 +595,7 @@ function JsonFieldRow({
         className="text-xs font-mono resize-y"
         style={{ fontSize: "16px" }}
       />
-      {error && <p className="text-[11px] text-destructive mt-1">{error}</p>}
+      {error && <p className="text-[11px] text-destructive mt-1">{error} <ErrorAlchemyMenu error={error} /></p>}
     </FieldRow>
   );
 }

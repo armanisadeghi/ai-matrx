@@ -75,6 +75,7 @@ import {
   type FacetBackfillResult,
   type FacetCoverage as Coverage,
 } from "./data";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function share(part: number, whole: number): number {
   return whole > 0 ? (part / whole) * 100 : 0;
@@ -509,6 +510,7 @@ export function FacetCoverage({ siteId }: { siteId: string }) {
       {pass.error || result?.error ? (
         <p className="border-t border-border px-3 py-2 text-[11px] text-destructive">
           {pass.error ?? result?.error}
+          <ErrorAlchemyMenu error={pass.error} />
         </p>
       ) : null}
       {running && pass.stage ? (

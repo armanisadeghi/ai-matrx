@@ -46,6 +46,7 @@ import { buildNodePipelineProgress } from "@/features/marketing/content-plan/lib
 import { bridgeAdopt } from "@/features/marketing/content-plan/setup/bridge";
 import { useSite } from "@/features/marketing/data/hooks";
 import type { ClientPage, ClientSite } from "@/features/cms/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface PagePlanTabProps {
   page: ClientPage;
@@ -178,6 +179,7 @@ function EditablePlanNode({
             </Link>
           </Button>
         </div>
+        <ErrorAlchemyMenu />
       </div>
     );
   }

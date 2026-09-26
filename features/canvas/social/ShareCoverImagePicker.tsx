@@ -28,6 +28,7 @@ import { cn } from "@/utils/cn";
 import { uploadAsset } from "@/features/files/api/assets";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { InlineMediaRef } from "@ai-matrx/media/react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ShareCoverImagePickerProps {
   value: string | null;
@@ -291,6 +292,7 @@ export function ShareCoverImagePicker({
         <p className="text-xs text-destructive flex items-center gap-1">
           <AlertCircle className="w-3 h-3 shrink-0" />
           {uploadError}
+          <ErrorAlchemyMenu error={uploadError} />
         </p>
       )}
     </div>

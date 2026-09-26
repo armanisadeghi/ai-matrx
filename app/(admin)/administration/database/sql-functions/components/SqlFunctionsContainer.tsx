@@ -27,6 +27,7 @@ import {
   useUrlState,
 } from "@ai-matrx/kit/url-state";
 import type { SqlFunctionFilter, SqlFunctionSort } from "@/types/sql-functions";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SqlFunctionsContainerProps {
   initialFunctions?: SqlFunction[];
@@ -406,6 +407,7 @@ export default function SqlFunctionsContainer({
                   {error ? (
                     <div className="bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-3 m-2 text-red-800 dark:text-red-300 text-sm">
                       {error.message}
+                      <ErrorAlchemyMenu error={error.message} />
                     </div>
                   ) : (
                     <SqlFunctionsList
@@ -449,6 +451,7 @@ export default function SqlFunctionsContainer({
                   {error ? (
                     <div className="bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-3 m-2 text-red-800 dark:text-red-300 text-sm">
                       {error.message}
+                      <ErrorAlchemyMenu error={error.message} />
                     </div>
                   ) : (
                     <SqlFunctionsList

@@ -22,6 +22,7 @@ import { ShieldCheck, ShieldAlert } from "lucide-react";
 
 import { supabase } from "@/utils/supabase/client";
 import { schedulerDb } from "@/utils/supabase/schedulerDb";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Seeded by matrx-frontend/migrations/campaign/paritynightly_*.sql. */
 export const CONTEXT_PARITY_TASK_ID = "a7c1e2d3-0000-4e5f-9a00-000000000973";
@@ -78,6 +79,7 @@ export function ContextParityLine({ state }: { state: State }) {
     return (
       <p className="text-sm text-destructive">
         The last context parity run could not be read: {state.message}
+        <ErrorAlchemyMenu />
       </p>
     );
   }

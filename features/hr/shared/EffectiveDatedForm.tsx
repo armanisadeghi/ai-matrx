@@ -50,6 +50,7 @@ import { cn } from "@/lib/utils";
 import { HR_CHANGE_INTENTS } from "../constants";
 import { fetchHrKnobs } from "../service";
 import { useHrContext } from "./useHrContext";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── The vocabulary ──────────────────────────────────────────────────────────
 
@@ -417,7 +418,7 @@ export function EffectiveDatedForm({
       />
 
       {knobError ? (
-        <p className="text-xs text-destructive">{knobError}</p>
+        <p className="text-xs text-destructive">{knobError} <ErrorAlchemyMenu /></p>
       ) : null}
 
       {children}

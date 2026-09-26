@@ -137,6 +137,7 @@ import { createNotesEditorExtraSections } from "@/features/notes/agent-context/n
 import { DemoProTextarea } from "../_components/DemoProTextarea";
 
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Heavy: CodeMirror + tree explorer + JSON tabs. Don't ship on first paint.
 const JsonInspector = dynamic(
@@ -1066,6 +1067,7 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
                 {parsedContextData.error && (
                   <div className="text-[10px] text-destructive">
                     {parsedContextData.error}
+                    <ErrorAlchemyMenu error={parsedContextData.error} />
                   </div>
                 )}
               </div>
@@ -1190,6 +1192,7 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
                 apiError ? (
                   <span className="text-[10px] text-destructive">
                     {apiError}
+                    <ErrorAlchemyMenu error={apiError} />
                   </span>
                 ) : apiResponse ? (
                   <span className="text-[10px] font-mono text-muted-foreground">

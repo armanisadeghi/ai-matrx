@@ -31,6 +31,7 @@ import { fetchEntityMentions } from "../service/kgGraphService";
 import { fetchSourceNames } from "../service/sourceNames";
 import type { GraphNode, MentionRow } from "../types";
 import { colorForKind } from "../constants";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface KgGraphSidePanelProps {
   node: GraphNode;
@@ -330,7 +331,7 @@ export function KgGraphSidePanel({ node, onClose }: KgGraphSidePanelProps) {
               <Skeleton className="h-20 w-full" />
             </>
           ) : status === "error" ? (
-            <div className="text-xs text-destructive">{error}</div>
+            <div className="text-xs text-destructive">{error} <ErrorAlchemyMenu /></div>
           ) : groups.length === 0 ? (
             <div className="text-xs text-muted-foreground">
               No accessible source mentions for this entity yet. NER mentions

@@ -40,6 +40,7 @@ import type {
   OutreachListRow,
 } from "@/features/crm/outreach-lists/types";
 import type { InboxRow } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface InboxReplyDialogProps {
   /** The reply being answered, or null when the dialog is closed. */
@@ -149,6 +150,7 @@ export function InboxReplyDialog({ row, onClose, onSent }: InboxReplyDialogProps
                 </EntityRef>
               </div>
             )}
+            <ErrorAlchemyMenu error={error} />
           </div>
         ) : (
           <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">

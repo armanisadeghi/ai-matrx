@@ -35,6 +35,7 @@ import {
   StatusDotRowsDemo,
   TapTargetDemo,
 } from "./triggers";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /* ── gallery card chrome ───────────────────────────────────────────────── */
 
@@ -247,6 +248,7 @@ export default function SharpContextLabPage() {
               <RotateCw className="mr-1.5 h-3.5 w-3.5" />
               Retry
             </Button>
+            <ErrorAlchemyMenu error={data.error} />
           </div>
         ) : data.orgs.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">

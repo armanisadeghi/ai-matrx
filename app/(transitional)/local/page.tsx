@@ -28,6 +28,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import type { LocalInstance } from "@/app/api/local-instances/route";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** THE relative-time voice: @ai-matrx/kit/format owns "3m ago". */
 function formatLastSeen(lastSeen: string): string {
@@ -98,6 +99,7 @@ export default function LocalDevicesPage() {
         <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           <AlertCircle className="h-4 w-4 shrink-0" />
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 

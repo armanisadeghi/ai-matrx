@@ -59,6 +59,7 @@ import {
   type InterruptQuestionView,
   coerceAnswerValues,
 } from "./interrupt-view";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Where the host is drawing questions.
@@ -352,6 +353,7 @@ function AnswerControl({
         <p className="flex items-start gap-1.5 text-[11px] text-red-700 dark:text-red-300">
           <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
           {kindError}
+          <ErrorAlchemyMenu error={kindError} />
         </p>
       ) : null}
 

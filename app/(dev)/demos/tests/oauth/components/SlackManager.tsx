@@ -8,6 +8,7 @@ import {
 } from '../utils/slackUtils';
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { ExternalLink, RotateCcw, X } from 'lucide-react';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SlackManagerProps {
   tokenData: SlackTokenResponse | { access_token: string };
@@ -448,6 +449,7 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
                   {error && (
                       <div className="text-sm text-red-600">
                         {error}
+                        <ErrorAlchemyMenu />
                       </div>
                   )}
                 </div>

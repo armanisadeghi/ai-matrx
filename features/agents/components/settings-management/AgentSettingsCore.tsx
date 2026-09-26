@@ -114,6 +114,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── Tab type ─────────────────────────────────────────────────────────────────
 type SettingsTab =
@@ -1875,6 +1876,7 @@ export function AgentSettingsCore({
       return (
         <div className="text-xs text-red-600 dark:text-red-400 px-1 py-2">
           Error loading model controls: {registryError}
+          <ErrorAlchemyMenu error={registryError} />
         </div>
       );
     }
@@ -1890,6 +1892,7 @@ export function AgentSettingsCore({
     return (
       <div className="text-xs text-red-600 dark:text-red-400 px-1 py-2">
         Error loading model controls: {error}
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

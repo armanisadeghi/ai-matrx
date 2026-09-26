@@ -25,6 +25,7 @@ import {
   fmtStamp,
   fmtUsd,
 } from "./presentation";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** `escalation_state` is NULL on every batch that never needed rescuing. */
 function escalationLabel(row: ProviderBatch): string {
@@ -88,6 +89,7 @@ export function ProviderBatchesPanel({
       <section className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-4 text-xs text-destructive">
         <p className="font-semibold">The provider batches could not be read.</p>
         <p className="mt-1 font-mono">{error}</p>
+        <ErrorAlchemyMenu />
       </section>
     );
   }

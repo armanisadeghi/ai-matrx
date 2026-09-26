@@ -40,6 +40,7 @@ import { OrgAvailabilityNote } from "./OrgAvailabilityNote";
 import { WhoCanSeeThis } from "./WhoCanSeeThis";
 import { PublicAccessTab } from "./tabs/PublicAccessTab";
 import { useToast } from "@/components/ui/use-toast";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -291,7 +292,7 @@ export function ShareModal({
           Couldn&apos;t confirm whether you may change sharing on this{" "}
           {resourceLabel.toLowerCase()}
         </p>
-        <p className="text-xs text-destructive/80 mt-0.5">{ownerError}</p>
+        <p className="text-xs text-destructive/80 mt-0.5">{ownerError} <ErrorAlchemyMenu error={ownerError} /></p>
       </div>
     </div>
   ) : (
@@ -556,6 +557,7 @@ export function ShareModal({
         {error && (
           <div className="mt-3 p-2.5 bg-destructive/10 border border-destructive/20 rounded-md flex-shrink-0">
             <p className="text-sm text-destructive">{error}</p>
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
       </DialogContent>

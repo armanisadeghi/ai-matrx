@@ -68,6 +68,7 @@ import type {
   AudioSession,
   AudioSessionStatus,
 } from "@/features/audio/session/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AudioControlWindowProps {
   isOpen: boolean;
@@ -452,6 +453,7 @@ function HistoryList({
                 {item.status === "error" && item.error && (
                   <p className="truncate text-[10px] text-destructive">
                     {item.error}
+                    <ErrorAlchemyMenu error={item.error} />
                   </p>
                 )}
               </div>

@@ -30,6 +30,7 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 import { SEVERITY_LABELS, type RulebookRule } from "../../types";
 import { diffRules, FIELD_LABELS, type RulebookDiff } from "../../rulebookDiff";
 import { getRulebookSnapshotRules } from "../../service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function RuleLine({ rule }: { rule: RulebookRule }) {
   return (
@@ -145,7 +146,7 @@ export function MasterworkDriftDialog({
             <LoadingSpinner />
           </div>
         ) : error ? (
-          <p className="py-6 text-center text-sm text-destructive">{error}</p>
+          <p className="py-6 text-center text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
         ) : noSnapshot ? (
           <p className="py-6 text-center text-sm text-muted-foreground">
             No record of version {masterworkVersion} was kept — this Rulebook

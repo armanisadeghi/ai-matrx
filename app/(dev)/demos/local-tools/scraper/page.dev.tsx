@@ -29,6 +29,7 @@ import type {
   SearchMetadata,
   SearchResult,
 } from "../_lib/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -214,7 +215,7 @@ function ScrapePanel({ local }: { local: UseMatrxLocalReturn }) {
               <p className="text-[11px] font-mono text-muted-foreground truncate">
                 {r.url}
               </p>
-              {r.error && <p className="text-[11px] text-red-500">{r.error}</p>}
+              {r.error && <p className="text-[11px] text-red-500">{r.error} <ErrorAlchemyMenu error={r.error} /></p>}
             </div>
           ))}
           {/* Single URL card */}
@@ -406,6 +407,7 @@ function SearchPanel({ local }: { local: UseMatrxLocalReturn }) {
       {error && (
         <div className="border border-destructive/50 rounded-lg p-3 bg-destructive/10 text-sm text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 

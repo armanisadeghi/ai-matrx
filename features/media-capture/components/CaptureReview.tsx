@@ -33,6 +33,7 @@ import { useMediaElementPlaybackSession } from "@/features/audio/session/useMedi
 import { transcribeCloudFile } from "@/features/audio/services/speechApi";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { toast } from "@/lib/toast";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface CaptureReviewProps {
   /** Which artifact kind is under review. */
@@ -205,7 +206,7 @@ export function CaptureReview({
         </p>
       )}
       {uploadError && (
-        <p className="mt-2 text-xs text-destructive">{uploadError}</p>
+        <p className="mt-2 text-xs text-destructive">{uploadError} <ErrorAlchemyMenu error={uploadError} /></p>
       )}
 
       <div className="mt-2 flex shrink-0 items-center gap-2 pb-safe">
@@ -294,7 +295,7 @@ export function CaptureReview({
             <div className="flex items-start gap-1.5">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
               <div className="min-w-0">
-                <p className="text-xs text-destructive">{transcriptError}</p>
+                <p className="text-xs text-destructive">{transcriptError} <ErrorAlchemyMenu error={transcriptError} /></p>
                 <Button
                   variant="outline"
                   size="sm"

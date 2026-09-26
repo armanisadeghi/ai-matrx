@@ -39,6 +39,7 @@ import {
   broadcastRemoveContextEntry,
 } from "../redux/thunks";
 import { selectBattleColumns } from "../redux/selectors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SharedContextWindowProps {
   id: string;
@@ -242,7 +243,7 @@ function SharedContextComposerFooter({
         </Button>
       </div>
       {error && (
-        <div className="mt-1 text-[10px] text-destructive">{error}</div>
+        <div className="mt-1 text-[10px] text-destructive">{error} <ErrorAlchemyMenu error={error} /></div>
       )}
     </div>
   );

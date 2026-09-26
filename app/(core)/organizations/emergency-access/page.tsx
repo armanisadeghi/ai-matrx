@@ -24,6 +24,7 @@ import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { PendingDoorQueue } from "@/features/emergency-access/components/PendingDoorQueue";
 import { listPendingEmergencyDoorRequests } from "@/features/emergency-access/service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default async function EmergencyAccessPage() {
   const { isAuthenticated, user } = await getSessionVerdict();
@@ -91,6 +92,7 @@ export default async function EmergencyAccessPage() {
                 waiting on you and this page cannot see it. Reload, and if it
                 keeps happening tell us.
               </p>
+              <ErrorAlchemyMenu />
             </div>
           )}
 

@@ -50,6 +50,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Pull sessionId from activeChatSlice — activeChat slice has been removed, stubbed here.
 const selectSessionId = (_state: RootState): string | null => null;
@@ -174,7 +175,7 @@ export default function ChatDebug() {
           {serverHealth.error && (
             <Row
               label="Health Error"
-              value={<span className="text-red-400">{serverHealth.error}</span>}
+              value={<span className="text-red-400">{serverHealth.error} <ErrorAlchemyMenu error={serverHealth.error} /></span>}
             />
           )}
           {serverHealth.lastCheckedAt && (
@@ -290,7 +291,7 @@ export default function ChatDebug() {
               <Row
                 label="Error"
                 value={
-                  <span className="text-red-400">{String(session.error)}</span>
+                  <span className="text-red-400">{String(session.error)} <ErrorAlchemyMenu /></span>
                 }
               />
             )}

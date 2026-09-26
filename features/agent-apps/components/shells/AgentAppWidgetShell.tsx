@@ -37,6 +37,7 @@ import type {
 import { SlotRenderer } from "./SlotRenderer";
 import type { UseAgentAppReturn } from "@/features/agent-apps/hooks/useAgentApp";
 import type { AgentAppSurfaceBinding } from "@/features/agent-apps/surface/agent-app-surface";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AgentAppWidgetShellProps {
   app: PublicAgentApp;
@@ -162,7 +163,7 @@ export function AgentAppWidgetShell({
           {(ctx.isStreaming || hasResponse || ctx.error) && (
             <div className="rounded-md border border-border bg-card p-3 min-h-[80px]">
               {ctx.error && (
-                <div className="text-xs text-destructive mb-2">{ctx.error}</div>
+                <div className="text-xs text-destructive mb-2">{ctx.error} <ErrorAlchemyMenu error={ctx.error} /></div>
               )}
               {(ctx.isStreaming || hasResponse) && (
                 <SlotRenderer

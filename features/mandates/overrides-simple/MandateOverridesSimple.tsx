@@ -102,6 +102,7 @@ import {
   type ResolvedHolderForOverrides,
 } from "./binding-lookup";
 import { agentSettingDisplay } from "./format-setting-value";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type {
   OverridesLevel,
@@ -744,6 +745,7 @@ function OverridesBody({
           {saveError ? (
             <span className="mr-auto text-sm text-destructive">
               {saveError}
+              <ErrorAlchemyMenu error={saveError} />
             </span>
           ) : refusal ? (
             <span className="mr-auto text-sm text-muted-foreground">

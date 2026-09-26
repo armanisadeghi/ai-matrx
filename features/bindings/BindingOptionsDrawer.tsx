@@ -51,6 +51,7 @@ import {
   JOB_SETTINGS_WORDS,
   JOB_TREATMENT_OVERRIDE_WORDS,
 } from "./words";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const LAUNCH_SCOPE_COLUMNS = [
   { key: "defaults", label: "Preferences for" },
@@ -587,6 +588,7 @@ export function BindingOptionsDrawer({
                   value={
                     <span className="text-destructive break-words">
                       {saveError}
+                      <ErrorAlchemyMenu error={saveError} />
                     </span>
                   }
                 />

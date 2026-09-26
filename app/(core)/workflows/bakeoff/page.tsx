@@ -12,6 +12,7 @@ import { Loader2, FlaskConical, Search } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import type { Tables } from "@/types/database.types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const VARIANTS = [
   { slug: "sharp", label: "Sharp" },
@@ -108,6 +109,7 @@ export default function BakeoffPickerPage() {
             {error ? (
               <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
                 {error}
+                <ErrorAlchemyMenu error={error} />
               </div>
             ) : rows === null ? (
               <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">

@@ -28,6 +28,7 @@ import { usd } from "@/features/admin/spend/format";
 import { recordDismissed } from "@/features/admin/spend/dailySpendPopoverState";
 import { useSpendPopoverKnobs } from "@/features/admin/spend/useSpendPopoverKnobs";
 import type { SpendHeadlineSnapshot } from "@/features/admin/spend/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface DailySpendWindowProps {
   isOpen: boolean;
@@ -89,7 +90,7 @@ function DailySpendWindowInner({ onClose }: DailySpendWindowProps) {
         <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <div>
-            <div className="font-medium">Today&apos;s spend could not be read.</div>
+            <div className="font-medium">Today&apos;s spend could not be read. <ErrorAlchemyMenu /></div>
             <p className="mt-1 text-xs">
               {error.message} — so no number is shown rather than a wrong one.
               Open the dashboard below to retry.
@@ -102,6 +103,7 @@ function DailySpendWindowInner({ onClose }: DailySpendWindowProps) {
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-2 text-[11px] text-destructive">
           The alarm threshold setting could not be read, so the figure below will
           not change colour however high today runs.
+          <ErrorAlchemyMenu />
         </div>
       ) : null}
 

@@ -123,6 +123,7 @@ import {
   type RecordTab,
   type RecordTabId,
 } from "./record-tabs";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Tabs `BindingSection` renders — one mounted draft owner across them. */
 const BINDING_TABS: readonly string[] = [
@@ -828,6 +829,7 @@ function LadderSection({
       <p className="flex items-start gap-1.5 px-1 text-[12px] leading-relaxed text-destructive">
         <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         The rungs behind this job could not be read: {ladder.error}
+        <ErrorAlchemyMenu error={ladder.error} />
       </p>
     );
   }

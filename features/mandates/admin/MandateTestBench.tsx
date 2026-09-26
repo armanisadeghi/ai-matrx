@@ -108,6 +108,7 @@ import {
 import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * 🚨 WIRE ENUM — `"mandate_pinned"` is aidream's literal, not ours, and it is NOT a
@@ -296,6 +297,7 @@ function ResultRow({
         {result.error ? (
           <div className="rounded bg-destructive/10 p-2 text-[11px] text-destructive">
             {result.error}
+            <ErrorAlchemyMenu error={result.error} />
           </div>
         ) : (
           <>

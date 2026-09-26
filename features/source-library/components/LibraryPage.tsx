@@ -53,6 +53,7 @@ import { sourceVocabulary } from "../vocabulary";
 import { JobPanel } from "./JobPanel";
 import { LibraryMetricsHeader } from "./LibraryMetricsHeader";
 import { SourceDetailPanel } from "./SourceDetailPanel";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function LibraryPage({ libraryId }: { libraryId: string }) {
     const dispatch = useAppDispatch();
@@ -430,6 +431,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                             <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
                                 <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
                                 {loadError}
+                              <ErrorAlchemyMenu error={loadError} />
                             </p>
                         )}
 

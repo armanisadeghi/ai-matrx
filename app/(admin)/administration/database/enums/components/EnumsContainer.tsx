@@ -33,6 +33,7 @@ import {
   useUrlState,
 } from "@ai-matrx/kit/url-state";
 import type { EnumFilter, EnumSort } from "@/types/enum-types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface EnumsContainerProps {
   initialEnums?: DatabaseEnum[];
@@ -400,6 +401,7 @@ export default function EnumsContainer({
             {error ? (
               <div className="bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4 text-red-800 dark:text-red-300">
                 {error.message}
+                <ErrorAlchemyMenu error={error.message} />
               </div>
             ) : (
               <>

@@ -13,6 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useKgSuggestions } from "@/features/kg-suggestions/hooks/useKgSuggestions";
 import { KgSuggestionRowItem } from "./KgSuggestionRowItem";
 import type { KgSuggestionsFilter } from "@/features/kg-suggestions/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface KgSuggestionsPopoverProps {
   filter: KgSuggestionsFilter;
@@ -48,6 +49,7 @@ export function KgSuggestionsPopover({
           {status === "error" ? (
             <div className="px-1 py-3 text-xs text-destructive">
               Couldn&apos;t load suggestions{error ? `: ${error}` : "."}
+              <ErrorAlchemyMenu />
             </div>
           ) : null}
 

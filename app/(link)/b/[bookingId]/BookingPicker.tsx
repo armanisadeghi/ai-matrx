@@ -25,6 +25,7 @@ import { useEffect, useMemo, useState } from "react";
 import { coerceTypedAnswer, fieldKindFor, type Field, type FieldKind } from "@ai-matrx/records";
 
 import type { BookingSlot, PublicBooking } from "@/features/booking/service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** What the two route handlers answer. Declared so a fallback cannot narrow the union. */
 interface HoldAnswer {
@@ -294,7 +295,7 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
                 }}
               />
               {shapeRefusal ? (
-                <span className="text-xs text-destructive">{shapeRefusal}</span>
+                <span className="text-xs text-destructive">{shapeRefusal} <ErrorAlchemyMenu error={shapeRefusal} /></span>
               ) : q.help ? (
                 <span className="text-xs text-muted-foreground">{q.help}</span>
               ) : null}

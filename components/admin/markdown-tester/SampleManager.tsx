@@ -37,6 +37,7 @@ import type { MarkdownSample } from "./samples-service";
 // `formatRelativeTime` is THE package formatter (`@ai-matrx/kit/format`,
 // census H1 2026-09-07). This surface previously carried a local copy.
 import { formatRelativeTime } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SampleManagerProps {
   /** The current textarea content. Used as the source-of-truth for saves. */
@@ -332,6 +333,7 @@ export function SampleManager({
           {error && (
             <div className="px-3 py-2 text-[11px] text-destructive border-b border-destructive/20 bg-destructive/5">
               {error}
+              <ErrorAlchemyMenu />
             </div>
           )}
 

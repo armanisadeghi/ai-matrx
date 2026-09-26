@@ -16,6 +16,7 @@ import type { ToolRendererProps } from "../../types";
 import { parsePicklist } from "./parsePicklist";
 import { usePicklistDetail } from "./usePicklistDetail";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Inline renderer for the `picklist` tool — a polished entity card (glossy
@@ -114,7 +115,7 @@ export function PicklistInline({ entry, onOpenOverlay , expanded, onToggleExpand
         ) : (
           <div className="flex flex-col items-center justify-center gap-2 py-10 text-center text-sm text-muted-foreground">
             <AlertTriangle className="h-5 w-5 text-warning" />
-            <span>{summary.message ?? "Couldn't load this list's items."}</span>
+            <span>{summary.message ?? "Couldn't load this list's items."} <ErrorAlchemyMenu /></span>
           </div>
         )}
       </div>

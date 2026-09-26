@@ -31,6 +31,7 @@ import PageBriefBlock, {
 import type { PageBriefData } from "@/features/content-ir/kinds/page-brief";
 
 import type { BriefDraft, BriefRunSummary } from "../hooks/useBriefWriter";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The persisted draft in the shape the canonical component consumes. */
 function draftAsPageBrief(draft: BriefDraft): PageBriefData {
@@ -202,6 +203,7 @@ export function BriefEditor({
             ) : runsError ? (
               <p className="text-xs text-destructive">
                 Could not load this page&apos;s run history: {runsError}
+                <ErrorAlchemyMenu error={runsError} />
               </p>
             ) : runs.length === 0 ? (
               <p className="text-xs text-muted-foreground">
@@ -242,6 +244,7 @@ export function BriefEditor({
                     {run.error ? (
                       <p className="mt-0.5 text-[11px] text-destructive">
                         {run.error}
+                        <ErrorAlchemyMenu error={run.error} />
                       </p>
                     ) : null}
                   </div>

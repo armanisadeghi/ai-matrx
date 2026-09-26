@@ -22,6 +22,7 @@ import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-displa
 import { listSurfaceOptions } from "@/features/surfaces/services/surfaces.service";
 import type { SurfaceManifest } from "@/features/surfaces/types";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const USER_CLIENT_PREFIX = "matrx-user/";
 
@@ -116,6 +117,7 @@ export function SurfacesHubPage() {
             {error && (
               <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {error}
+                <ErrorAlchemyMenu error={error} />
               </p>
             )}
             {!rows && !error && (

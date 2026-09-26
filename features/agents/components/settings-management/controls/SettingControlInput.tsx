@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/tooltip";
 import type { ControlDefinition } from "@/lib/redux/slices/agent-settings/types";
 import { NumberInput } from "./NumberInput";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface SettingControlInputProps {
   /** Setting key (snake_case) — used for ids and response_format handling. */
@@ -307,6 +308,7 @@ function JsonValueInput({
       {jsonError && (
         <p className="text-[11px] text-amber-600 dark:text-amber-400">
           {jsonError}
+          <ErrorAlchemyMenu error={jsonError} />
         </p>
       )}
     </div>

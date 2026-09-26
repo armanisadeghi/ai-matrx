@@ -78,6 +78,7 @@ import {
 } from "@/features/pdf-extractor/studio/hooks/usePdfStudioDocs";
 import { usePickerInputFocus } from "./usePickerInputFocus";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Same cap as `buildRows` recents filter in the files list. */
 /** Two viewports worth of rows; never mount a 100-item thumbnail fan-out. */
@@ -1097,6 +1098,7 @@ export function FilesResourcePicker({
             ) : error ? (
               <div className="text-xs text-destructive text-center py-8 px-3">
                 {studioDocs.error ?? "Error loading files"}
+                <ErrorAlchemyMenu error={studioDocs.error} />
               </div>
             ) : isPdfExtractorFilter ? (
               visibleProcessedFiles.length === 0 ? (

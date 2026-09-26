@@ -58,6 +58,7 @@ import {
 import { formatRelativeTime } from "@/utils/datetime";
 import { ConnectMailboxDialog } from "./ConnectMailboxDialog";
 import { OutreachBringUpSection } from "./OutreachBringUpSection";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function StatusBadge({ status }: { status: SendingIdentityView["status"] }) {
   const copy = STATUS_COPY[status];
@@ -259,7 +260,7 @@ function CorrespondenceRow({
         </Button>
       </div>
       {failure ? (
-        <p className="mt-2 text-xs text-destructive">{failure}</p>
+        <p className="mt-2 text-xs text-destructive">{failure} <ErrorAlchemyMenu error={failure} /></p>
       ) : null}
     </div>
   );
@@ -371,7 +372,7 @@ export function SendingIdentitiesPage() {
         ) : null}
 
         {policyError ? (
-          <p className="text-sm text-destructive">{policyError}</p>
+          <p className="text-sm text-destructive">{policyError} <ErrorAlchemyMenu error={policyError} /></p>
         ) : null}
 
         {/*
@@ -398,7 +399,7 @@ export function SendingIdentitiesPage() {
         ) : error ? (
           <Card className="border-destructive/40">
             <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-destructive">{error}</p>
+              <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
               <Button size="sm" variant="outline" onClick={reload}>
                 Try again
               </Button>
@@ -471,6 +472,7 @@ export function SendingIdentitiesPage() {
                 <CardContent className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs text-destructive">
                     {correspondence.error}
+                    <ErrorAlchemyMenu error={correspondence.error} />
                   </p>
                   <Button size="sm" variant="outline" onClick={correspondence.reload}>
                     Try again

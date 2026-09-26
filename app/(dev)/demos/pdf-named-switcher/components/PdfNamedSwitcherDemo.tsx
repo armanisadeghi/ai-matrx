@@ -25,6 +25,7 @@ import {
   SearchTapButton,
 } from "@ai-matrx/tap-target/buttons";
 import { PdfNamedSurfaceSwitcher } from "@/features/pdf/components/PdfNamedSurfaceSwitcher";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface PdfRow {
   id: string;
@@ -126,6 +127,7 @@ export function PdfNamedSwitcherDemo() {
         ) : error ? (
           <p className="text-sm text-destructive">
             Failed to load PDFs: {error}
+            <ErrorAlchemyMenu error={error} />
           </p>
         ) : rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">

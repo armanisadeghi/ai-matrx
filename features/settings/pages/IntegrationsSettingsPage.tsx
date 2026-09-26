@@ -84,6 +84,7 @@ import {
   type ManualHeaderInput,
 } from "./manual-mcp-credentials";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -506,6 +507,7 @@ export default function IntegrationsPage({
           <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
 

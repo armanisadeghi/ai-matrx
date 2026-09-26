@@ -76,6 +76,7 @@ import { BudgetMeter } from "./BudgetMeter";
 import { BundleBar } from "./BundleBar";
 import { VariablePreview } from "./VariablePreview";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** What the agent is asked to do when the user does not say otherwise. */
 /** The research surface, for agent-surface binding value mappings. */
@@ -308,6 +309,7 @@ export default function ContextBuilder() {
           >
             Try again
           </Button>
+          <ErrorAlchemyMenu />
         </div>
       </div>
     );

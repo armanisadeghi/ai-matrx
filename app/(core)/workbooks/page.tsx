@@ -53,6 +53,7 @@ import {
   ensureOrganizationContext,
   isOrganizationSelectionCancelled,
 } from "@/lib/organization/organization-gate";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Pre-flight import file check. We deliberately do NOT use the `accept`
@@ -548,6 +549,7 @@ export default function WorkbooksLandingPage() {
             <Card>
               <CardContent className="p-4 text-sm text-destructive">
                 {error}
+                <ErrorAlchemyMenu error={error} />
               </CardContent>
             </Card>
           )}

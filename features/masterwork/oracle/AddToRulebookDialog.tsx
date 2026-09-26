@@ -33,6 +33,7 @@ import {
   listMyRulebooks,
   type OracleRulebookOption,
 } from "./service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface AddToRulebookDialogProps {
   isOpen: boolean;
@@ -155,7 +156,7 @@ export function AddToRulebookDialog({
         </div>
 
         {loadError ? (
-          <p className="text-sm text-destructive">{loadError}</p>
+          <p className="text-sm text-destructive">{loadError} <ErrorAlchemyMenu error={loadError} /></p>
         ) : rulebooks === null ? (
           <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />

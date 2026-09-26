@@ -37,6 +37,7 @@ import {
   type DecisionAnswersView,
 } from "@/features/agents/decision-answers/read";
 import type { RootState } from "@/lib/redux/store";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function percent(value: number | null): string {
   return value == null ? "—" : `${Math.round(value * 100)}%`;
@@ -84,6 +85,7 @@ function ColumnAnswerCell({
       return (
         <span className="text-[11px] text-amber-600 dark:text-amber-400">
           refused — {refusal.reason}
+          <ErrorAlchemyMenu error={refusal.reason} />
         </span>
       );
     }

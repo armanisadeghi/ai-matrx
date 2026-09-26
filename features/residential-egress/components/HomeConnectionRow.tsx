@@ -39,6 +39,7 @@ import {
   type EgressDeviceRow,
   type HomeConnectionStatus,
 } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const STATUS_CLASS: Record<HomeConnectionStatus, string> = {
   connected: "border-primary/40 text-primary",
@@ -90,6 +91,7 @@ export function HomeConnectionRow({
         <span>
           Home connection status could not be read: {readError}. Nothing has
           changed on this computer.
+          <ErrorAlchemyMenu error={readError} />
         </span>
       </div>
     );
@@ -227,6 +229,7 @@ export function HomeConnectionRow({
       {device?.last_error ? (
         <p className="w-full text-[11px] text-amber-600 dark:text-amber-400">
           {device.last_error}
+          <ErrorAlchemyMenu error={device.last_error} />
         </p>
       ) : null}
 

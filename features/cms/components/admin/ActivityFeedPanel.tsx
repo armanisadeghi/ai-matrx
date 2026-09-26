@@ -19,6 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Workflow, User, Cog, RefreshCw, Loader2, AlertCircle, Activity } from 'lucide-react';
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { openFilePreview } from '@/features/files/components/preview/openFilePreview';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ACTOR_META = {
     agent: { label: 'Agent', icon: Workflow, className: 'bg-primary/15 text-primary border-primary/30' },
@@ -141,6 +142,7 @@ export default function ActivityFeedPanel({ sites }: { sites: ClientSiteSummary[
                 <div className="flex-none flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md bg-destructive/10 text-destructive text-xs">
                     <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                     {error}
+                  <ErrorAlchemyMenu error={error} />
                 </div>
             )}
 

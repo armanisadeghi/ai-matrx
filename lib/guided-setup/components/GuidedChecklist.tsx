@@ -45,6 +45,7 @@ import type {
   ResolvedStep,
 } from "../types";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function StepIcon({ step }: { step: ResolvedStep }) {
   const base = "h-4 w-4 shrink-0";
@@ -404,6 +405,7 @@ export function GuidedChecklist<Ctx>({
       {error ? (
         <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </p>
       ) : null}
 

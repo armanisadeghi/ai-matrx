@@ -27,6 +27,7 @@ import {
 } from "../audio/continuousCapture";
 import { AudioCaptureDebugPanel } from "../debug/AudioCaptureDebugPanel";
 import { WavePlayer } from "./WavePlayer";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** ~PAD_BEFORE + ~PAD_AFTER baked into each clip by the capture core (display only). */
 const CLIP_PADDING_SEC = 5;
@@ -287,6 +288,7 @@ export function CaptureTestSurface() {
         {error && (
           <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </p>
         )}
 

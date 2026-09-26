@@ -14,6 +14,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface EditTableModalProps {
   isOpen: boolean;
@@ -113,6 +114,7 @@ export default function EditTableModal({
           {error && (
             <div className="bg-red-50 dark:bg-red-900/20 p-2 rounded-md text-red-500 dark:text-red-400 text-sm border border-red-200 dark:border-red-800">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
 

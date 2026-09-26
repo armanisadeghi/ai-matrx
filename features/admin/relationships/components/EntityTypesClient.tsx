@@ -43,6 +43,7 @@ import {
   useUrlState,
 } from "@ai-matrx/kit/url-state";
 import { extractErrorMessage } from "@ai-matrx/data/net";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type EntityTypeFacet = "all" | "active" | "inactive";
 
@@ -172,6 +173,7 @@ function DataClassPanel({ row }: { row: EntityTypeRow }) {
         the same commit, so it goes through a migration with a per-identity access delta that refuses
         any change letting somebody read a row they could not read before. Where a list opens is the
         harmless half and is shown beside it so the two stay visibly separate.
+        <ErrorAlchemyMenu />
       </p>
     </div>
   );

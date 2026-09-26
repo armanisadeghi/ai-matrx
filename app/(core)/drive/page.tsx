@@ -18,6 +18,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Mic } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface DriveTarget {
   id: string;
@@ -82,6 +83,7 @@ export default function DriveShortLinkRoute() {
         {error ? (
           <p className="text-lg text-amber-300">
             We couldn&apos;t load your rulebooks: {error}
+            <ErrorAlchemyMenu />
           </p>
         ) : targets === null ? (
           <p className="text-xl text-white/50">One moment…</p>

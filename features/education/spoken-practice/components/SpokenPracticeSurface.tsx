@@ -41,6 +41,7 @@ import { SpokenPracticeHome } from "./SpokenPracticeHome";
 import { PracticeSetup } from "./PracticeSetup";
 import { PracticeRunner } from "./PracticeRunner";
 import { PracticeSummary } from "./PracticeSummary";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SURFACE_NAME = "matrx-user/education-practice-oral";
 
@@ -107,6 +108,7 @@ export function SpokenPracticeSurface({
         </div>
         <p className="text-sm text-foreground">
           {practice.error ?? "Something went wrong."}
+          <ErrorAlchemyMenu error={practice.error} />
         </p>
         <Button onClick={practice.reset}>Try again</Button>
       </div>

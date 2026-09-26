@@ -37,6 +37,7 @@ import {
   type SavedKeywordResearch,
 } from "@/features/marketing/seo/keyword-research/data/queries";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The list's cache key. Omitting `archiveFilter` yields the PREFIX, which is
@@ -151,6 +152,7 @@ export default function SavedResearchLibrary({
               {saved.error instanceof Error
                 ? saved.error.message
                 : String(saved.error)}
+              <ErrorAlchemyMenu error={saved.error.message} />
             </p>
           ) : !saved.data?.length ? (
             <p className="px-3 py-4 text-xs text-muted-foreground">

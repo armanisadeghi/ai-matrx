@@ -45,6 +45,7 @@ import {
   type EscrowedSessionSummary,
 } from "./escrow";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface RestoreDialogProps {
   fileId: string;
@@ -254,6 +255,7 @@ export function RestoreDialog({ fileId, open, onOpenChange }: RestoreDialogProps
           {error ? (
             <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           ) : null}
         </div>

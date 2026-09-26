@@ -795,6 +795,7 @@ export function ConnectorConsentBody({
           >
             We could not reach {provider.name}&apos;s availability list, so no row
             can be switched on right now. Nothing you have connected is affected.
+            <ErrorAlchemyMenu />
           </div>
         ) : null}
 
@@ -982,6 +983,7 @@ export function ConnectorConsentBody({
         {resultAccountUnavailable ? (
           <p role="alert" className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
             {provider.name} approval finished, but we could not confirm this account in your connections. Refresh Settings → Connectors before trying again.
+            <ErrorAlchemyMenu />
           </p>
         ) : null}
 

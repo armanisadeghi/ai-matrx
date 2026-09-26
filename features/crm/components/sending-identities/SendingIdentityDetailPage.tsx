@@ -47,6 +47,7 @@ import type {
 import { DnsRecordCard } from "./DnsRecordCard";
 import { HealthPanel } from "./HealthPanel";
 import { IssueList } from "./IssueList";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function AuthRow({
   name,
@@ -331,6 +332,7 @@ export function SendingIdentityDetailPage({ identityId }: { identityId: string }
         {error ? (
           <p className="rounded-md border border-destructive/30 bg-destructive/5 p-2.5 text-sm text-destructive">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </p>
         ) : null}
 

@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { FileText, Loader2, RefreshCw, Copy, Check } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { SandboxFilesystemAdapter } from "@/features/code/adapters/SandboxFilesystemAdapter";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SandboxFileViewerProps {
   /** sandbox_instances.id (the row UUID). */
@@ -138,6 +139,7 @@ export function SandboxFileViewer({
         ) : error ? (
           <div className="p-3 text-xs text-destructive break-words">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         ) : content != null ? (
           <pre className="p-3 text-xs leading-relaxed text-foreground whitespace-pre-wrap break-words font-mono">

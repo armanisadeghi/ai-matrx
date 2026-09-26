@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { Loader2, BrainCircuit, Tag } from "lucide-react";
 import * as Api from "@/features/file-analysis/api/file-analysis";
 import type { EntityOut } from "@/features/file-analysis/api/file-analysis";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   fileId: string;
@@ -62,6 +63,7 @@ export function EntitiesContent({ fileId }: Props) {
     return (
       <div className="p-4 text-xs text-destructive">
         Couldn&apos;t load entities: {error}
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

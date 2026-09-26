@@ -6,6 +6,7 @@ import { registerDatabaseFunctions } from '@/utils/ts-function-registry/register
 import { registerUtilityFunctions } from '@/utils/ts-function-registry/register-utility-functions';
 import { FunctionDependencies, getAllRegisteredFunctions } from '@/utils/ts-function-registry/function-registry';
 import FunctionButton from '@/components/ts-function-registry/FunctionButton';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function FunctionButtonDemo() {
   const [isInitialized, setIsInitialized] = useState(false);
@@ -154,6 +155,7 @@ export default function FunctionButtonDemo() {
             {error && (
               <div className="mt-2 text-sm text-red-600 dark:text-red-400">
                 {error}
+                <ErrorAlchemyMenu error={error} />
               </div>
             )}
           </div>

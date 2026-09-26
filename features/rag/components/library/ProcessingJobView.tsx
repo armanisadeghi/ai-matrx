@@ -56,6 +56,7 @@ import { STAGE_META, StageHero } from "./StageAnimations";
 // 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
 // 1h 02m. THE UNIT LAW puts the unit in the name.
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 const formatDuration = (sec: number): string =>
   formatDurationSeconds(sec, { style: "compact" });
@@ -653,21 +654,16 @@ function ResultPanel({
 
 function ErrorPanel({ error }: { error: string }) {
   return (
-    <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4">
-      <div className="flex items-start gap-3">
-        <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-        <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold text-destructive">
-            Processing failed
-          </div>
-          <p className="text-xs break-words mt-0.5">{error}</p>
-          <p className="text-[10px] text-muted-foreground mt-2">
-            Re-run the stage from the document detail panel — it's idempotent
-            and will replace partial output.
-          </p>
-        </div>
-      </div>
-    </div>
+    <ErrorNotice
+      title="Processing failed"
+      message={error}
+      operation="Process this document for search"
+    >
+      <p className="mt-2 text-[10px] text-muted-foreground">
+        Re-run the stage from the document detail panel — it's idempotent and
+        will replace partial output.
+      </p>
+    </ErrorNotice>
   );
 }
 

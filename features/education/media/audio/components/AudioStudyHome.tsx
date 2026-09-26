@@ -41,6 +41,7 @@ import {
 import { authenticatedStudyMediaLoadKey } from "../../authLoad";
 import { useStudyMediaLibrary } from "../../useStudyMediaLibrary";
 import type { StudyMediaRow } from "../../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SURFACE_NAME = "matrx-user/education-audio-study";
 
@@ -147,6 +148,7 @@ function LibraryError({ onRetry }: { error: string; onRetry: () => void }) {
       <AlertCircle className="h-8 w-8 text-destructive" />
       <p className="text-sm text-muted-foreground">Could not load audio studies right now.</p>
       <Button size="sm" onClick={onRetry}>Try again</Button>
+      <ErrorAlchemyMenu />
     </div>
   );
 }

@@ -68,6 +68,7 @@ import {
   RESPONSE_FEEDBACK_METRICS,
   type FeedbackMetricDefinition,
 } from "../shared/feedbackMetrics";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   conversationId: string;
@@ -444,7 +445,7 @@ function ResponseFeedbackBarInner({ conversationId, requestId }: InnerProps) {
         ) : savedRequestId === requestId ? (
           <span className="text-[10px] text-emerald-500/80">saved</span>
         ) : (
-          <span className="text-[10px] text-muted-foreground/60">not saved</span>
+          <span className="text-[10px] text-muted-foreground/60">not saved <ErrorAlchemyMenu /></span>
         )}
       </div>
 

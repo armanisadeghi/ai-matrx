@@ -51,6 +51,7 @@ import { StepEmptyState } from "./StepEmptyState";
 import { realityVerdictSummary } from "../format";
 import type { CmsPageMapEntry } from "../setup/bridge";
 import type { PlanNodeRow } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const STATE_TONE: Record<RealityState, string> = {
     "no-cms-site":
@@ -304,6 +305,7 @@ export function NodeRealityCard({
             {reality.pageError ? (
                 <p className="text-[11px] leading-snug text-destructive">
                     Could not read the live page: {reality.pageError.message}
+                  <ErrorAlchemyMenu error={reality.pageError.message} />
                 </p>
             ) : null}
 
@@ -314,6 +316,7 @@ export function NodeRealityCard({
                 <div className="space-y-1.5">
                     <p className="text-[11px] leading-snug text-destructive">
                         {reality.failure}
+                      <ErrorAlchemyMenu error={reality.failure} />
                     </p>
                     {/* A problem we can detect ships with its one-click fix. */}
                     {isWritePolicyBlocked(reality.failure) ? (

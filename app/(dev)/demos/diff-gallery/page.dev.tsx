@@ -29,6 +29,7 @@ import { NoteDiffViewer } from "@/features/notes/components/diff/NoteDiffViewer"
 // Legacy utils — rendered faithfully below
 import { generateUnifiedDiff } from "@/features/code-editor/utils/generateDiff";
 import { analyzeDiff } from "@/features/notes/utils/diffAnalysis";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── Scenarios ────────────────────────────────────────────────────────────────
 
@@ -150,6 +151,7 @@ class CardBoundary extends React.Component<
       return (
         <div className="flex h-full items-center justify-center p-3 text-center text-xs text-destructive">
           Failed to render: {this.state.error}
+          <ErrorAlchemyMenu error={this.state.error} />
         </div>
       );
     }

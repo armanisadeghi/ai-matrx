@@ -13,6 +13,7 @@ import { AGENT_CONFIG_KEYS, type AgentConfigKey } from "../../admin/types";
 import { AgentRoleCard } from "./AgentRoleCard";
 import { useResearchAgentRoles } from "./useResearchAgentRoles";
 import { GoogleBackgroundAgentCard } from "./GoogleBackgroundAgentCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Reads the JSONB agent_config off a topic and returns the override UUID for
@@ -161,6 +162,7 @@ export default function TopicAgentsPage() {
       {rolesError ? (
         <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 text-[13px] text-destructive">
           Failed to load the system agent registry: {rolesError}
+          <ErrorAlchemyMenu error={rolesError} />
         </div>
       ) : null}
       <div className="space-y-3.5">

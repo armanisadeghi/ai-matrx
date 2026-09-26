@@ -50,6 +50,7 @@ import {
   ensureOrganizationContext,
   isOrganizationSelectionCancelled,
 } from "@/lib/organization/organization-gate";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Style prefs for this hub (synced across devices via `userPreferences`).
@@ -274,6 +275,7 @@ export default function DocumentsLandingPage() {
             <Card>
               <CardContent className="p-4 text-sm text-destructive">
                 {error}
+                <ErrorAlchemyMenu error={error} />
               </CardContent>
             </Card>
           )}

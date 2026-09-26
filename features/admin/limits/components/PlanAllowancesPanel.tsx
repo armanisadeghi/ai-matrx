@@ -40,6 +40,7 @@ import {
   limitToStored,
   pointsToUsdLabel,
 } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The one honest word for `billing.capability.enforced`. "Tracking only" is
@@ -154,7 +155,7 @@ export function PlanAllowancesPanel() {
   if (error) {
     return (
       <div className="p-6">
-        <p className="text-sm text-destructive">{error}</p>
+        <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
         <Button className="mt-3" variant="outline" onClick={() => void load()}>
           Retry
         </Button>

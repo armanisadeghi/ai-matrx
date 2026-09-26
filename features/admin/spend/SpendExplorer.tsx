@@ -47,6 +47,7 @@ import { ADMIN_BILLING_SPEND_SURFACE_NAME } from "@/features/surfaces/manifests/
 import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildBillingSpendExplorerScope } from "./spend-surface-scope";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Mirrors the database's cap in `admin_spend_breakdown`. */
 const DATABASE_WINDOW_DAY_CAP = 92;
@@ -253,6 +254,7 @@ function MountedSpendExplorer({ refreshKey }: { refreshKey: number }) {
           refuses to guess where a line sits. Seed the five
           <span className="font-mono"> platform.spend_explorer.* </span>
           knobs to restore it.
+          <ErrorAlchemyMenu />
         </div>
       ) : null}
 

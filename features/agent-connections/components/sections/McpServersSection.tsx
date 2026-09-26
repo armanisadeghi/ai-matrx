@@ -19,6 +19,7 @@ import {
   mcpConnectionRouteFor,
 } from "../../mcp-connection-route";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type McpStatusTone = "stopped" | "running" | "error";
 
@@ -99,6 +100,7 @@ export function McpServersSection() {
         ) : error ? (
           <div className="px-4 py-10 text-center text-sm text-destructive">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         ) : groups.length === 0 ? (
           <div className="px-4 py-10 text-center text-sm text-muted-foreground">

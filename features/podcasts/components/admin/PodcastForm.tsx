@@ -29,6 +29,7 @@ import type {
   PcDisplayMode,
 } from "../../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── Show Form ─────────────────────────────────────────────────────────────────
 
@@ -122,6 +123,7 @@ export function ShowForm({ show, isNew, onSaved, onCancel }: ShowFormProps) {
       {error && (
         <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </p>
       )}
 
@@ -412,6 +414,7 @@ export function EpisodeForm({
       {error && (
         <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </p>
       )}
 

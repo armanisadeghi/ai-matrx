@@ -22,6 +22,7 @@ import { apiPost, buildPath } from "@/lib/api/typed-client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { components } from "@/types/python-generated/api-types";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Search hit — DERIVED from the generated contract (never hand-mirrored).
 type ApiHit = components["schemas"]["LibraryTestSearchHit"];
@@ -129,6 +130,7 @@ export function QuickSearchDialog({
             {error && (
               <div className="border border-destructive/50 bg-destructive/5 rounded-md p-3 text-sm text-destructive">
                 <strong>Error:</strong> {error}
+                <ErrorAlchemyMenu error={error} />
               </div>
             )}
             {!loading && hits === null && !error && (

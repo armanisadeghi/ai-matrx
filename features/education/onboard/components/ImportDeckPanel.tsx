@@ -25,6 +25,7 @@ import {
   type LibraryImportOutcome,
 } from "../import/importDeck";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Filename check only — kept here so the heavy Anki decoder (jszip + sql.js
  * WASM) is loaded LAZILY, only when an .apkg is actually chosen. */
@@ -216,6 +217,7 @@ export function ImportDeckPanel() {
           {libResult.failed.map((f) => (
             <p key={f.name} className="text-xs text-destructive">
               {f.name}: {f.error}
+              <ErrorAlchemyMenu error={f.error} />
             </p>
           ))}
         </div>

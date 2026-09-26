@@ -27,6 +27,7 @@ import type {
   TelemetryMetric,
   TelemetrySnapshot,
 } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function formatValue(m: TelemetryMetric): string {
   if (!m.measured || m.value === null) return "—";
@@ -67,6 +68,7 @@ function EgressLine({
         <span>
           {unavailable.message ??
             "A site blocked our servers and we could not open it another way."}
+          <ErrorAlchemyMenu />
         </span>
         {/* A detected problem ships its own fix — a door, never a dead end. */}
         <Link

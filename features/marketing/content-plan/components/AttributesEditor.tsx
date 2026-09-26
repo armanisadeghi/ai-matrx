@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { Json } from "@/types/database.types";
 
 import type { PlanProfileRow } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SchemaProperty {
   type?: string;
@@ -143,6 +144,7 @@ export function AttributesEditor({
           {rawError ? (
             <p className="mt-1 text-xs text-destructive">
               Not saved yet — {rawError}
+              <ErrorAlchemyMenu error={rawError} />
             </p>
           ) : null}
         </div>

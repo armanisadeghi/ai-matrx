@@ -71,6 +71,7 @@ import {
   type LiveTranscriptArrival,
   type LiveTranscriptStatus,
 } from "../hooks/useLiveProviderTranscript";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Tool activity page loaded per request — a mirror can hold thousands. */
 const TOOL_ACTIVITY_PAGE_SIZE = 200;
@@ -524,12 +525,14 @@ export function ProviderConversationTranscript({
             <p className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
               <CircleAlert className="h-3.5 w-3.5 shrink-0" />
               {earlierError}
+              <ErrorAlchemyMenu error={earlierError} />
             </p>
           ) : null}
           {activity.state === "error" ? (
             <p className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-foreground">
               <CircleAlert className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
               Tool activity could not be loaded: {activity.error}
+              <ErrorAlchemyMenu error={activity.error} />
             </p>
           ) : null}
 
@@ -658,6 +661,7 @@ function LiveTranscriptIndicator({ status }: { status: LiveTranscriptStatus }) {
         <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
           <CircleAlert className="h-3 w-3 shrink-0" />
           Live updates stopped: {status.error}
+          <ErrorAlchemyMenu error={status.error} />
         </span>
       ) : null}
     </div>

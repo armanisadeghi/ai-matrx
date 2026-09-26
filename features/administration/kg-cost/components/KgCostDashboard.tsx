@@ -78,6 +78,7 @@ import {
   type UnitEconomicsBySourceKindRow,
   type UnitEconomicsRecentRun,
 } from "../service/kgCostService";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -636,7 +637,7 @@ function OrgAutoIngestControls({ orgId }: { orgId: string }) {
           )}
         </div>
 
-        {pref.error && <p className="text-xs text-destructive">{pref.error}</p>}
+        {pref.error && <p className="text-xs text-destructive">{pref.error} <ErrorAlchemyMenu error={pref.error} /></p>}
       </div>
     </section>
   );
@@ -703,6 +704,7 @@ function OrgDetailDialog({
         {error && (
           <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
 
@@ -954,6 +956,7 @@ function BatchDetailDialog({
         {error && (
           <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
 

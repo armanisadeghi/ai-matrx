@@ -7,6 +7,7 @@ import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
 import { useServerBrokerSync } from "@/lib/redux/brokerSlice/hooks/useTempBroker";
 import type { BrokerIdentifier } from "@/lib/redux/brokerSlice/types";
 import { SlackChannel } from "@/app/(dev)/demos/tests/slack/slackClientUtils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Define broker identifiers
 export const SLACK_BROKER_IDS = {
@@ -144,6 +145,7 @@ export function BrokerSlackClient({ children }: BrokerSlackClientProps) {
       {error && (
         <div className="p-3 mb-4 rounded-md bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-200">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
       

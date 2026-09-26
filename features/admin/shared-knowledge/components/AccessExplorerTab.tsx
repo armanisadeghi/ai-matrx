@@ -57,6 +57,7 @@ import type { StarterPackSummary } from "@/features/marketing/seo/value-system/t
 import { fetchAdminPackCatalog } from "../packs/data";
 import type { SharedKnowledgeDirectory } from "../types";
 import { UserSearchField } from "@/features/user-search/UserSearchField";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type ExplorerMode = "organization" | "user" | "resource";
 
@@ -292,6 +293,7 @@ export function AccessExplorerTab({
       return (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {grantsError}
+          <ErrorAlchemyMenu error={grantsError} />
         </div>
       );
     }

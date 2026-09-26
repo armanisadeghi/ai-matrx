@@ -56,6 +56,7 @@ import {
   PathTrigger,
   TapTrigger,
 } from "./triggers";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /* ── shared demo plumbing ────────────────────────────────────────────────── */
 
@@ -514,6 +515,7 @@ export default function RefineContextLabPage() {
                 <span className="min-w-0 flex-1 text-xs text-muted-foreground">
                   Projects and tasks failed to load — scope selection still
                   works; the bottom sections are empty until retry succeeds.
+                  <ErrorAlchemyMenu />
                 </span>
                 <Button size="sm" variant="outline" onClick={data.retryEngagement}>
                   Retry

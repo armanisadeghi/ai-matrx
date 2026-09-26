@@ -59,6 +59,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
 import type { PdfRedactionPatternCatalog } from "../types";
 import type { PdfPaneEditMode } from "../studio/PdfStudioReader";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -171,6 +172,7 @@ function ResultBar({
       {saveState.error && (
         <p className="text-[10px] text-destructive w-full leading-snug">
           {saveState.error}
+          <ErrorAlchemyMenu error={saveState.error} />
         </p>
       )}
     </div>
@@ -251,6 +253,7 @@ function OpCard({
           {op.error && (
             <p className="text-[10px] text-destructive leading-snug">
               {op.error}
+              <ErrorAlchemyMenu error={op.error} />
             </p>
           )}
         </div>

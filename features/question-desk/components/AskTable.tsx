@@ -21,6 +21,7 @@ import {
   type DecisionQuestionRow,
   type Verdict,
 } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface AskTableProps {
   interviewId: string;
@@ -255,7 +256,7 @@ export function AskTable({
                     Cancel
                   </Mini>
                 </div>
-                {wordsError ? <p className="mt-1 font-mono text-[10.5px] text-warning">{wordsError}</p> : null}
+                {wordsError ? <p className="mt-1 font-mono text-[10.5px] text-warning">{wordsError} <ErrorAlchemyMenu error={wordsError} /></p> : null}
               </div>
             ) : null}
             {line ? (

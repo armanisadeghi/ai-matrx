@@ -21,6 +21,7 @@ import type { ReportSortKey } from "@/features/agents/redux/usages/usages.select
 import { AgentUsagesEngine } from "@/features/agents/components/usages/AgentUsagesEngine";
 import { RollupTable } from "./RollupTable";
 import { AgentDriftReportHeader } from "./AgentDriftReportHeader";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function AgentDriftReport({
   mode = "user",
@@ -52,6 +53,7 @@ export function AgentDriftReport({
         <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
           <p className="text-sm text-muted-foreground">
             {error ?? "Could not load the report."}
+            <ErrorAlchemyMenu error={error} />
           </p>
           <Button variant="outline" size="sm" onClick={refresh}>
             Retry

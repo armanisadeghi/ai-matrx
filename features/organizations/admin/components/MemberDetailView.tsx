@@ -29,6 +29,7 @@ import { formatMcents, formatRelativeTime } from "../utils";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { MemberControlsForm } from "./MemberControlsForm";
 import { RemoveMemberDialog } from "./RemoveMemberDialog";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function Metric({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
@@ -65,6 +66,7 @@ export function MemberDetailView({ orgId, organization, userId }: Props) {
       <div className="p-4 md:p-6">
         <Card className="mx-auto max-w-lg border-destructive/30 bg-destructive/5 p-6 text-center text-sm text-destructive">
           {error ?? recordUnavailableMessage("member", "unknown")}
+          <ErrorAlchemyMenu error={error} />
         </Card>
       </div>
     );

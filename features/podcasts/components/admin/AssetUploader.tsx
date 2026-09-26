@@ -23,6 +23,7 @@ import {
 } from '@/components/official/ImageAssetUploader';
 import { folderForPodcast } from "@/features/files/utils/folder-conventions";
 import type { components } from '@/types/python-generated/api-types';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Shape returned by the Python podcast-video upload endpoint
@@ -270,6 +271,7 @@ export function AssetUploader({ onComplete, currentImageUrl, currentVideoUrl, sh
                     {videoSection.error && (
                         <p className="text-xs text-destructive flex items-center gap-1">
                             <AlertCircle className="h-3 w-3" /> {videoSection.error}
+                          <ErrorAlchemyMenu error={videoSection.error} />
                         </p>
                     )}
                 </div>

@@ -35,6 +35,7 @@ import { upsertIndustry } from "@/features/industries/service";
 import { searchAdminSites, type AdminPackRecord, type AdminSiteOption } from "./data";
 import { useProposePack, type ProposeStage } from "./useProposePack";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const NEW = "__new__";
 const NONE = "__none__";
@@ -238,7 +239,7 @@ export function ProposePackDialog({
         {stage !== "idle" ? (
           <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs">
             {busy ? <Loader2 className="size-3.5 animate-spin text-primary" /> : null}
-            <span className={stage === "error" ? "text-destructive" : "text-muted-foreground"}>{stage === "error" ? (error ?? STAGE_LABEL.error) : STAGE_LABEL[stage]}</span>
+            <span className={stage === "error" ? "text-destructive" : "text-muted-foreground"}>{stage === "error" ? (error ?? STAGE_LABEL.error) : STAGE_LABEL[stage]} <ErrorAlchemyMenu error={error} /></span>
           </div>
         ) : null}
 

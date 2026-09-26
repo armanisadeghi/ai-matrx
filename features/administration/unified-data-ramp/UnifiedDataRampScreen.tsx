@@ -35,6 +35,7 @@ import { getUserOrganizations } from "@/features/organizations/service";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setOrganization } from "@/lib/redux/slices/appContextSlice";
 import { createClient } from "@/utils/supabase/client";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface RampConsumer {
   consumer_id: string;
@@ -389,6 +390,7 @@ export function UnifiedDataRampScreen() {
       {error && (
         <div className="rounded-md border border-destructive p-3 text-sm text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 

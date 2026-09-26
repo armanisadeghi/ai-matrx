@@ -67,6 +67,7 @@ import { PDF_EXTRACTOR_SURFACE_NAME as PDF_EXTRACTOR_SURFACE } from "@/features/
 // census H1 2026-09-07). This surface previously carried a local copy.
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Sub-tab type for per-extraction view ────────────────────────────────────
 
@@ -700,6 +701,7 @@ function ExtractionTabContent({
         <AlertCircle className="w-8 h-8 text-destructive/40" />
         <p className="text-sm font-medium text-destructive">
           Could not load this document
+          <ErrorAlchemyMenu />
         </p>
         <p className="text-xs text-muted-foreground text-center max-w-[280px]">
           {tab.error}

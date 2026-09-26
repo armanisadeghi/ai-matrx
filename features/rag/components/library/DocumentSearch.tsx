@@ -34,6 +34,7 @@ import type {
   DocSearchHit,
   DocSearchSummary,
 } from "@/features/rag/hooks/useDocumentSearch";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------------------------------------------------------------------------
 // Toolbar
@@ -156,6 +157,7 @@ export function DocumentSearchSummary({
     return (
       <div className="border-b bg-destructive/5 px-3 py-2 text-xs text-destructive">
         <strong>Search failed:</strong> {error}
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }
@@ -282,6 +284,7 @@ export function DocumentSearchResultsList({
         {error && (
           <p className="text-sm text-destructive">
             <strong>Error:</strong> {error}
+            <ErrorAlchemyMenu error={error} />
           </p>
         )}
         {!loading && !error && hits && hits.length === 0 && (

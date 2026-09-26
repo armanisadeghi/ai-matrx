@@ -79,6 +79,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
 import { formatRelativeTime } from "@/utils/datetime";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const MATCH_LABEL: Partial<Record<KgMatchKind, string>> = {
   exact: "Exact match",
@@ -1115,6 +1116,7 @@ function SourceItemPreview({
             {doc?.notFound
               ? "This source couldn’t be loaded — it may have been deleted."
               : "No inline preview for this item. Open the source to read it."}
+            <ErrorAlchemyMenu />
           </p>
         )}
       </div>

@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { BatchFieldDef } from "./batchModel";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ScalarControlProps {
   def: BatchFieldDef;
@@ -180,6 +181,7 @@ function JsonControl({
         <p className="text-[10px] text-destructive flex items-center gap-1">
           <AlertTriangle className="h-2.5 w-2.5" />
           {error}
+          <ErrorAlchemyMenu error={error} />
         </p>
       )}
     </div>

@@ -30,6 +30,7 @@ import {
   type FailedPrinterGate,
 } from "../useFailedPrinterGate";
 import { formatCertificationStatus } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const CONFIG_PATH = "settings/configuration";
 
@@ -114,6 +115,7 @@ export function PrinterCertificationNotice({
             {gate.listError}. Printing is still available — nothing is blocked
             — but this organization&apos;s record of which printers work with{" "}
             {stockName} could not be read. Reload the page to try again.
+            <ErrorAlchemyMenu error={gate.listError} />
           </AlertDescription>
         </Alert>
       )}
@@ -192,7 +194,7 @@ export function PrinterCertificationNotice({
       {gate.knobProblem && (
         <Alert variant="warning">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Failed-printer setting could not be read</AlertTitle>
+          <AlertTitle>Failed-printer setting could not be read <ErrorAlchemyMenu /></AlertTitle>
           <AlertDescription>{gate.knobProblem}</AlertDescription>
         </Alert>
       )}

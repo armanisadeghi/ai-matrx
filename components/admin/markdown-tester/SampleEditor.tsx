@@ -38,6 +38,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { TagInput } from "@/features/notes/components/TagInput";
 import { detectRenderBlocks } from "./utils/detect-render-blocks";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface SampleEditorInitialValues {
   name: string;
@@ -125,7 +126,7 @@ function SampleEditorForm({
           className="text-base"
           aria-invalid={!!error}
         />
-        {error ? <p className="text-xs text-destructive">{error}</p> : null}
+        {error ? <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu /></p> : null}
       </div>
 
       <div className="space-y-1">

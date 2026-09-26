@@ -46,6 +46,7 @@ import {
   AgentAppMarkdownStream,
   AgentAppStreamProvider,
 } from "@/features/agent-apps/components/shells/AgentAppMarkdownStreamBridge";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const HtmlPreviewModal = dynamic(
   () => import("@/features/html-pages/components/HtmlPreviewModal"),
@@ -400,7 +401,7 @@ function DefaultFallback({
           <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-sm font-medium text-destructive mb-1">Error</p>
-            <p className="text-sm text-destructive/80">{error}</p>
+            <p className="text-sm text-destructive/80">{error} <ErrorAlchemyMenu error={error} /></p>
           </div>
         </div>
       )}

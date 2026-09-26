@@ -43,6 +43,7 @@ import {
   type KindCatalogSource,
 } from "@/features/content-ir/registry/kind-catalog";
 import type { FieldSchema } from "@ai-matrx/content-ir";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SOURCE_STYLES: Record<KindCatalogSource, string> = {
   system: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200",
@@ -362,6 +363,7 @@ export default function KindRegistryAdminClient() {
           <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
           flexible_data Block Schemas unavailable — showing compiled system
           kinds only. {loadError}
+          <ErrorAlchemyMenu error={loadError} />
         </div>
       )}
 

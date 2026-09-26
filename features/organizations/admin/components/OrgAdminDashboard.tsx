@@ -26,6 +26,7 @@ import { formatMcents } from "../utils";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { MemberRosterTable } from "./MemberRosterTable";
 import { OrgAdminAuditTable } from "./OrgAdminAuditTable";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function StatTile({
   icon: Icon,
@@ -130,6 +131,7 @@ export function OrgAdminDashboard({ orgId, organization, role }: Props) {
       {error && (
         <Card className="border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </Card>
       )}
 

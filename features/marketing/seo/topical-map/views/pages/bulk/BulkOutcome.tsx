@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 
 import type { SetPageIntentsOutcome } from "../seams";
 import { keptExistingSentence, setPageIntentsOutcomeLine } from "./setPageIntentsOutcome";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** How long a result with nothing to read stays up. A dwell time, not a taste. */
 const CLEAN_OUTCOME_DWELL_MS = 6000;
@@ -135,6 +136,7 @@ export function BulkOutcome({ outcome, sentence, onDismiss }: BulkOutcomeProps) 
                         person making the change. */}
                     <span className="whitespace-pre-wrap text-destructive">
                       {row.error}
+                      <ErrorAlchemyMenu error={row.error} />
                     </span>
                   </li>
                 ))}

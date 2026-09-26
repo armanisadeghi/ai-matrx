@@ -30,6 +30,7 @@ import { cn } from "@/styles/themes/utils";
 import { extractErrorMessage } from "@/utils/errors";
 import { searchOfferingTemplates, type CatalogOffering, type OfferingTemplate } from "./data";
 import { OFFERING_KIND_META, offeringKindLabel, type OfferingKindValue } from "./vocabulary";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type AddOfferingChoice =
   | { mode: "template"; templateId: string; name: string; reason: string }
@@ -172,6 +173,7 @@ export function AddOfferingDialog({
                 <p className="rounded border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
                   Could not look up suggestions: {extractErrorMessage(suggestions.error)}. You can still
                   add “{typed}” above.
+                  <ErrorAlchemyMenu />
                 </p>
               ) : matches.length === 0 && debounced ? (
                 <p className="px-1 text-xs text-muted-foreground">

@@ -48,6 +48,7 @@ import {
 import { DELIVERY, fmtInt, fmtPct, fmtUsd } from "./presentation";
 import { WorkItemsPanel } from "./WorkItemsPanel";
 import { ProviderBatchesPanel } from "./ProviderBatchesPanel";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const WINDOWS: { key: SavingsWindow; label: string }[] = [
   { key: "7d", label: "7 days" },
@@ -527,6 +528,7 @@ export function BatchDashboard() {
                 Nothing on this screen below is complete while that stands. Use
                 Refresh once the cause is cleared.
               </p>
+              <ErrorAlchemyMenu />
             </div>
           )}
 

@@ -66,6 +66,7 @@ import { toast } from "@/lib/toast";
 import MarkdownStream from "@/components/MarkdownStream";
 import { AgentStreamingResponse } from "./AgentJsonDisplay";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // =============================================================================
 // Error Boundary — crash-proof fallback to raw MarkdownStream
@@ -113,6 +114,7 @@ class GeneratorErrorBoundary extends Component<
               {this.state.error?.message ?? "Unknown rendering error"}. Showing
               raw response below.
             </span>
+            <ErrorAlchemyMenu error={this.state.error?.message} />
           </div>
           <div className="flex-1 overflow-y-auto p-3">
             <MarkdownStream imagePolicy="ai"

@@ -109,6 +109,7 @@ import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-displa
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { useMandateSet } from "@/features/mandates/useMandateSet";
 import { mandateRoute } from "@/features/mandates/browse/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Canonical entity_type for agent↔surface binding edges rows in the scope-assignments
@@ -388,6 +389,7 @@ export function AgentSurfacesPanel({ agent }: Props) {
         <div className="mx-3 mt-2 rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-xs text-destructive flex items-center gap-2">
           <AlertCircle className="h-3.5 w-3.5" />
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 

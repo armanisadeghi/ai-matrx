@@ -25,6 +25,7 @@ import { slugify } from "../archetypes";
 import type { PlanReviewFinding, PlanReviewResult, ReviewSeverity } from "../ai";
 import { PLAN_REVIEW_FINDINGS_KIND, planReviewValue } from "../kind-values";
 import { SetupSection } from "./SetupSection";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SEVERITY_LABEL: Record<ReviewSeverity, string> = {
   gap: "missing",
@@ -177,6 +178,7 @@ export function PlanReviewSection({
               <X className="h-3 w-3" />
             </button>
           ) : null}
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : null}
       {busy ? (

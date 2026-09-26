@@ -57,6 +57,7 @@ import {
   type DiscoveryStepKey,
   type DiscoveryStepStatus,
 } from "./data";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * `requires` is the rung's REAL prerequisite list, not its position.
@@ -215,6 +216,7 @@ export function DiscoveryLadder({ siteId, brandId }: DiscoveryLadderProps) {
       <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
         Could not read discovery status —{" "}
         {status.error instanceof Error ? status.error.message : "unknown error"}
+        <ErrorAlchemyMenu error={status.error.message} />
       </div>
     );
   }

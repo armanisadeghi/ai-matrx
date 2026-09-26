@@ -78,6 +78,7 @@ import {
   updateCategoryThunk,
 } from "../redux/skillsThunks";
 import type { CategoryRow } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SkillCategoryTreeEditorProps {
   onBack: () => void;
@@ -312,6 +313,7 @@ export function SkillCategoryTreeEditor({
         ) : error ? (
           <div className="px-4 py-10 text-center text-sm text-destructive">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         ) : categories.length === 0 && !creatingUnder ? (
           <div className="px-4 py-10 text-center text-sm text-muted-foreground">

@@ -36,6 +36,7 @@ import type {
   IntelligenceContext,
   IntelligenceLevel,
 } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface FeatureIntelligenceProps {
   /** Mandate-key prefix of the feature (`flashcards`, `research`). */
@@ -202,6 +203,7 @@ export function FeatureIntelligence({
         {state.placesError ? (
           <p className="mt-1 text-[11px] text-destructive">
             Some places could not be read: {state.placesError}
+            <ErrorAlchemyMenu error={state.placesError} />
           </p>
         ) : null}
       </section>
@@ -209,6 +211,7 @@ export function FeatureIntelligence({
       {state.error ? (
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 text-[13px] text-destructive">
           The jobs could not be read: {state.error}
+          <ErrorAlchemyMenu error={state.error} />
         </div>
       ) : state.loading ? (
         <div className="flex min-h-[30dvh] items-center justify-center">

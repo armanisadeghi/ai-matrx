@@ -21,6 +21,7 @@ import {
   extractTitleFromHTML,
 } from "@/features/html-pages/utils/html-preview-utils";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * HtmlInlinePreview — auto-renders previewable HTML as a live, inline webpage
@@ -224,6 +225,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
           {showError && errorMessage && (
             <div className="mt-1 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
               {errorMessage}
+              <ErrorAlchemyMenu error={errorMessage} />
             </div>
           )}
         </div>

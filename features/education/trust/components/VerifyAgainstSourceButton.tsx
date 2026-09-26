@@ -34,6 +34,7 @@ import {
   useVerifyAgainstSource,
   excerptFromCitations,
 } from "../useVerifyAgainstSource";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface VerifyAgainstSourceButtonProps {
   trust: TrustEnvelope | null | undefined;
@@ -124,7 +125,7 @@ export function VerifyAgainstSourceButton({
         />
       )}
       {verify.error && (
-        <p className="text-xs text-amber-600 dark:text-amber-400">{verify.error}</p>
+        <p className="text-xs text-amber-600 dark:text-amber-400">{verify.error} <ErrorAlchemyMenu error={verify.error} /></p>
       )}
     </div>
   );

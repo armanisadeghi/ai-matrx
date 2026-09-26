@@ -41,6 +41,7 @@ import {
   useProcessedDocumentPages,
   type PdfPageRow,
 } from "../hooks/useProcessedDocumentPages";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SyncedPdfTextViewProps {
   doc: PdfDocument;
@@ -102,6 +103,7 @@ export function SyncedPdfTextView({
         <div className="shrink-0 mx-3 my-2 text-[10px] text-destructive border border-destructive/30 bg-destructive/10 rounded px-2 py-1.5 flex items-center gap-1.5">
           <AlertCircle className="w-3 h-3" />
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 

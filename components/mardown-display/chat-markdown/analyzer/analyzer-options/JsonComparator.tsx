@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { extractErrorMessage } from "@/utils/errors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type JsonDifference = {
   path: string;
@@ -239,6 +240,7 @@ export default function JsonComparator() {
           {leftError && (
             <div className="p-2 bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-300 text-sm border-t">
               Error: {leftError}
+              <ErrorAlchemyMenu />
             </div>
           )}
         </div>
@@ -254,6 +256,7 @@ export default function JsonComparator() {
           {rightError && (
             <div className="p-2 bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-300 text-sm border-t">
               Error: {rightError}
+              <ErrorAlchemyMenu />
             </div>
           )}
         </div>
@@ -271,7 +274,7 @@ export default function JsonComparator() {
         {comparison && (
           <div className="mt-4">
             {comparison.error ? (
-              <div className="text-red-600">{comparison.error}</div>
+              <div className="text-red-600">{comparison.error} <ErrorAlchemyMenu /></div>
             ) : comparison.identical ? (
               <div className="text-green-600 font-medium">
                 JSON objects are identical

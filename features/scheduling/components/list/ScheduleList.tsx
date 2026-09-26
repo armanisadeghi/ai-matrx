@@ -91,13 +91,13 @@ function ScheduleListBody() {
       <Alert variant="destructive" data-surface-value="schedules_load_status">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Couldn&apos;t load schedules</AlertTitle>
-        <AlertDescription className="flex items-center justify-between gap-3">
-          <span>{error ?? "Unknown error"}</span>
+        <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+          <span className="min-w-0 break-words">{error ?? "Unknown error"}</span>
           <Button
             variant="outline"
             size="sm"
             onClick={() => refetch()}
-            className="gap-1.5"
+            className="shrink-0 gap-1.5"
           >
             <RefreshCw className="h-3.5 w-3.5" /> Retry
           </Button>

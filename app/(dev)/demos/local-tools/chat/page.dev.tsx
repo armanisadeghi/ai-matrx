@@ -7,6 +7,7 @@ import { Loader2, MessageSquare, Play, RefreshCw } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { LocalToolsPageShell } from "../_lib/LocalToolsPageShell";
 import { useMatrxLocalContext } from "../_lib/MatrxLocalContext";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type StreamMode = "openai" | "matrx";
 
@@ -308,6 +309,7 @@ function RunOutput({ run, request }: { run: RunState; request: unknown }) {
         {run.error ? (
           <pre className="text-xs text-red-600 whitespace-pre-wrap break-words">
             {run.error}
+            <ErrorAlchemyMenu error={run.error} />
           </pre>
         ) : (
           <pre className="text-xs whitespace-pre-wrap break-words">

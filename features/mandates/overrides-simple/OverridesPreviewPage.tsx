@@ -16,6 +16,7 @@ import {
   mandateRecordPreviewHref,
 } from "@/features/mandates/record-next/record-tabs";
 import { MandateOverridesSimple } from "./MandateOverridesSimple";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function OverridesPreviewPage({ mandateKey }: { mandateKey: string }) {
   const { data, loading, error, failure, refresh } =
@@ -61,6 +62,7 @@ export function OverridesPreviewPage({ mandateKey }: { mandateKey: string }) {
               {failure && failure.kind !== "load-failed"
                 ? "Mandate not found"
                 : (failure?.message ?? error ?? "This mandate could not be read.")}
+              <ErrorAlchemyMenu error={failure?.message} />
             </span>
             {failure?.retryable ? (
               <Button size="sm" variant="outline" onClick={refresh}>

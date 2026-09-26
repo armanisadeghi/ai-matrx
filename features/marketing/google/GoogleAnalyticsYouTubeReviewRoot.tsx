@@ -23,6 +23,7 @@ import { parseSiteIntegrations } from "@/features/marketing/data/integrations-sc
 import { useSiteCrawlActivity } from "@/features/marketing/data/useSiteCrawlActivity";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type ReviewSegment = "analytics" | "youtube";
 
@@ -54,6 +55,7 @@ export function GoogleAnalyticsYouTubeReviewRoot() {
         {sites.isError
           ? "AI Matrx could not load the managed sites available to this reviewer."
           : "Loading the Google OAuth reviewer surface…"}
+        <ErrorAlchemyMenu />
       </main>
     );
   }

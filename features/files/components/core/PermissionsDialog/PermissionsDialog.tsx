@@ -33,6 +33,7 @@ import type {
   PermissionLevel,
   ResourceType,
 } from "@/features/files/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface PermissionsDialogProps {
   open: boolean;
@@ -205,7 +206,7 @@ export function PermissionsDialogBody({
             />
           </label>
         </div>
-        {error ? <p className="text-xs text-destructive">{error}</p> : null}
+        {error ? <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p> : null}
         <button
           type="button"
           onClick={handleGrant}

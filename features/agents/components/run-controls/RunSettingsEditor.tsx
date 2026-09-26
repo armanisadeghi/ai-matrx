@@ -65,6 +65,7 @@ import {
   selectIsMemoryEnabledForConversation,
   selectMemoryDegraded,
 } from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface RunSettingsEditorProps {
   conversationId: string;
@@ -473,7 +474,7 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
                 className="font-mono text-xs"
               />
               {overridesError && (
-                <p className="text-[11px] text-destructive">Invalid JSON — {overridesError}</p>
+                <p className="text-[11px] text-destructive">Invalid JSON — {overridesError} <ErrorAlchemyMenu error={overridesError} /></p>
               )}
               <Button
                 variant="outline"

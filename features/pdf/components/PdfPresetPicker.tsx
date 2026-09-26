@@ -21,6 +21,7 @@ import { usePdfClient } from "@/features/pdf/api/client";
 import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
 import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
 import type { PdfStudioCatalog } from "@/features/pdf-extractor/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface PdfPresetPickerProps {
   fileId: string;
@@ -78,6 +79,7 @@ export function PdfPresetPicker({ fileId, className }: PdfPresetPickerProps) {
     return (
       <p className="px-2 py-1.5 text-[10px] text-destructive">
         Couldn't load the preset catalog: {loadError}
+        <ErrorAlchemyMenu error={loadError} />
       </p>
     );
   }
@@ -149,6 +151,7 @@ export function PdfPresetPicker({ fileId, className }: PdfPresetPickerProps) {
       {runError ? (
         <p className="px-0.5 pt-1 text-[10px] leading-snug text-destructive">
           {runError}
+          <ErrorAlchemyMenu error={runError} />
         </p>
       ) : null}
     </div>

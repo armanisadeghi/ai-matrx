@@ -100,6 +100,7 @@ import {
 } from "./constants";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createKnowledgeScope } from "@/features/surfaces/manifests/knowledge.manifest";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const PAGE_SIZES = [50, 100, 250, 1000] as const;
 
@@ -1067,6 +1068,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
           ) : error ? (
             <div className="m-4 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           ) : (
             <MatrxDataTable<PageExtractionResult>

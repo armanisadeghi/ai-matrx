@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { AlertCircle, RotateCcw, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function TopicError({
   error,
@@ -22,7 +23,7 @@ export default function TopicError({
         <div className="mx-auto h-12 w-12 rounded-2xl bg-destructive/10 flex items-center justify-center">
           <AlertCircle className="h-6 w-6 text-destructive" />
         </div>
-        <h2 className="text-lg font-semibold">Failed to load topic</h2>
+        <h2 className="text-lg font-semibold">Failed to load topic <ErrorAlchemyMenu /></h2>
         <p className="text-sm text-muted-foreground">
           There was a problem loading this research topic. The data may be
           temporarily unavailable.

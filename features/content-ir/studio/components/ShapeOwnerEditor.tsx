@@ -30,6 +30,7 @@ import {
   updateOwnedShapeProfile,
   type ShapeVisibility,
 } from "@/features/content-ir/studio/shape-authoring-service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SHAPE_VISIBILITIES: ReadonlyArray<{
   value: ShapeVisibility;
@@ -364,6 +365,7 @@ export default function ShapeOwnerEditor({
             <div className="flex items-start gap-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-700 dark:text-red-300">
               <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               {profileError}
+              <ErrorAlchemyMenu error={profileError} />
             </div>
           )}
           <div className="flex justify-end">

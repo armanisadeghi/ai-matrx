@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { useFileAnalysis } from "@/features/file-analysis/hooks/useFileAnalysis";
 import * as Api from "@/features/file-analysis/api/file-analysis";
 import type { FileAnalysisResultRow } from "@/features/file-analysis/api/file-analysis";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   fileId: string;
@@ -239,7 +240,7 @@ function DetectorPrefsSection({ knownKinds }: { knownKinds: string[] }) {
             </p>
           ) : null}
           {error ? (
-            <p className="text-[10px] text-destructive">{error}</p>
+            <p className="text-[10px] text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
           ) : null}
         </div>
       ) : null}

@@ -43,6 +43,7 @@ import { useAgentNames } from "@/features/surfaces/hooks/useAgentNames";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const RECENT_COUNT = 2;
 /**
@@ -257,6 +258,7 @@ export function SurfaceConversationsSection({
           ) : status === "failed" ? (
             <p className="px-2 py-2 text-xs text-destructive">
               Could not load conversations{error ? ` — ${error}` : ""}.
+              <ErrorAlchemyMenu />
             </p>
           ) : visible.length === 0 ? (
             <p className="px-2 py-2 text-xs text-muted-foreground">
@@ -311,6 +313,7 @@ export function SurfaceConversationsSection({
       ) : feature && status === "failed" ? (
         <p className="px-2 py-1 text-xs text-destructive">
           Could not load recent conversations{error ? ` — ${error}` : ""}.
+          <ErrorAlchemyMenu />
         </p>
       ) : visible.length > 0 ? (
         <ConversationRows

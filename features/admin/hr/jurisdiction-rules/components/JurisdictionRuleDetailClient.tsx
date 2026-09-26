@@ -51,6 +51,7 @@ import {
   formatDateRange,
 } from "./rule-chrome";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function Section({
   title,
@@ -344,6 +345,7 @@ export function JurisdictionRuleDetailClient({ ruleId }: { ruleId: string }) {
               {refusal.detail}
             </pre>
           ) : null}
+          <ErrorAlchemyMenu />
         </div>
       ) : null}
 

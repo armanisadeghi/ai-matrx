@@ -18,6 +18,7 @@ import { Check, ChevronDown, LayoutGrid, Search } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { useTables } from "@ai-matrx/records/react";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface TableSwitcherProps {
   tableId: string;
@@ -82,6 +83,7 @@ export function TableSwitcher({ tableId, name, allTablesHref, footer }: TableSwi
           ) : tables.error ? (
             <p className="px-2 py-1.5 text-xs text-muted-foreground">
               The list of tables could not be read right now. All tables still opens it.
+              <ErrorAlchemyMenu />
             </p>
           ) : listed.length === 0 ? (
             <p className="px-2 py-1.5 text-xs text-muted-foreground">No table is called that.</p>

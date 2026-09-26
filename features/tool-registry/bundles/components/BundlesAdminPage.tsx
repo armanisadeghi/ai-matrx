@@ -69,6 +69,7 @@ import {
 } from "./BundlesSurfaceRuntime";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Filter = "active" | "all";
 
@@ -244,6 +245,7 @@ function BundlesAdminPageInner() {
               <div className="m-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
                 <AlertCircle className="h-3.5 w-3.5" />
                 {error}
+                <ErrorAlchemyMenu error={error} />
               </div>
             )}
             <div className="flex-1 overflow-auto">
@@ -696,6 +698,7 @@ function BundleDetail({
           <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
             <AlertCircle className="h-3.5 w-3.5" />
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
           <MatrxDataTable<BundleMemberWithTool>

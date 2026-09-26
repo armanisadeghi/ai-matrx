@@ -19,6 +19,7 @@ import { ItemRow } from "@/components/official/item/ItemRow";
 import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
 import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AgentRunsSidebarProps {
   agentId: string;
@@ -123,6 +124,7 @@ export function AgentRunsSidebar({
           {conversationSectionFailed && (
             <p className="px-3 pb-2 text-[10px] text-destructive">
               {convError ?? "Failed to load conversations"}
+              <ErrorAlchemyMenu error={convError} />
             </p>
           )}
           {convStatus === "succeeded" && conversations.length === 0 && (

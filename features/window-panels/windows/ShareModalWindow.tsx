@@ -30,6 +30,7 @@ import {
 } from "@/features/surfaces/manifests/share.manifest";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { ExternalLink } from "lucide-react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ShareModalWindowProps {
   isOpen: boolean;
@@ -321,6 +322,7 @@ export default function ShareModalWindow({
         {error && (
           <div className="mt-3 p-2.5 bg-destructive/10 border border-destructive/20 rounded-md flex-shrink-0">
             <p className="text-sm text-destructive">{error}</p>
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
       </div>

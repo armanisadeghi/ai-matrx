@@ -64,6 +64,7 @@ import {
   type LogUrgency,
 } from "@/features/server-logs/log-rules";
 import { replaceAppHref } from "@/lib/deployment/navigate";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── App registry ─────────────────────────────────────────────────────────────
 
@@ -1400,6 +1401,7 @@ export default function CoolifyLogViewer({
           <div className="shrink-0 flex items-center gap-3 px-4 py-2 bg-destructive/10 border-b border-destructive/30 text-destructive text-xs">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
 

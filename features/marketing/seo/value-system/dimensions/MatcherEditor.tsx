@@ -87,6 +87,7 @@ import {
   type FacetValue,
   type ValueMatcher,
 } from "./data";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The kinds this editor's "add" form writes. Every other kind is authored
  * by its own screen (see file header) and only lists/toggles here. */
@@ -518,6 +519,7 @@ function AddMatcherForm({
       ) : reachError ? (
         <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-[11px] text-destructive">
           {reachError}
+          <ErrorAlchemyMenu error={reachError} />
         </p>
       ) : null}
 
@@ -639,6 +641,7 @@ export function MatcherEditor({
           ) : matchers.isError ? (
             <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-xs text-destructive">
               {extractErrorMessage(matchers.error)}
+              <ErrorAlchemyMenu />
             </p>
           ) : rows.length === 0 ? (
             <p className="text-xs text-muted-foreground">

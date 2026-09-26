@@ -24,6 +24,7 @@ import { toast } from "@/lib/toast";
 import { useSiteOptions } from "@/features/marketing/data/hooks";
 import { copySiteKeywords } from "../data/queries";
 import { savedKeywordResearchListQueryKey } from "./SavedResearchLibrary";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function CopyKeywordsFromSite({ siteId }: { siteId: string }) {
   const qc = useQueryClient();
@@ -70,6 +71,7 @@ export function CopyKeywordsFromSite({ siteId }: { siteId: string }) {
     return (
       <p className="text-[11px] text-destructive">
         Could not load the sites you could copy from.
+        <ErrorAlchemyMenu />
       </p>
     );
   }

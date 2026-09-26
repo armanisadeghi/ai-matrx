@@ -57,6 +57,7 @@ import {
   pairKindFieldsWithVariables,
   type KindInputPair,
 } from "./kind-input-values";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface KindInputFormProps {
   /** Canonical kind slug — the form resolves everything else from it. */
@@ -223,6 +224,7 @@ export default function KindInputForm({
       <div className="flex items-start gap-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-700 dark:text-red-300">
         <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         Failed to load the input contract for &quot;{kind}&quot;: {state.message}
+        <ErrorAlchemyMenu />
       </div>
     );
   }
@@ -386,6 +388,7 @@ export default function KindInputForm({
             <p className="flex items-start gap-1.5 text-[11px] text-red-700 dark:text-red-300">
               <CircleAlert className="mt-0.5 h-3 w-3 shrink-0" />
               Not valid JSON: {jsonParseError}
+              <ErrorAlchemyMenu error={jsonParseError} />
             </p>
           )}
         </div>

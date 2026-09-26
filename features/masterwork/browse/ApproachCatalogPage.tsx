@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { approachState, type DistillationApproach } from "./approaches";
 import { useApproachRegistry } from "./useApproachRegistry";
 import { ApproachCard } from "./ApproachCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function Section({
   title,
@@ -64,7 +65,7 @@ export function ApproachCatalogPage() {
   if (error)
     return (
       <div className="mx-auto max-w-5xl space-y-3 px-4 py-8">
-        <p className="text-sm text-destructive">{error}</p>
+        <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
         <Button variant="outline" size="sm" onClick={reload}>
           <RefreshCw className="h-3.5 w-3.5" />
           Try again

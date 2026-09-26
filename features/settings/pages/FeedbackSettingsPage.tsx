@@ -58,6 +58,7 @@ import {
 } from "@/features/feedback/screenshot-refs";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { guardedSave } from "@/lib/save/guardedSave";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ──────────────────────────────────────────────────
 // Progress Stepper - User-facing stage definitions
@@ -892,7 +893,7 @@ export default function UserFeedbackPage() {
   if (error) {
     return (
       <div className="p-6 text-center">
-        <p className="text-destructive">{error}</p>
+        <p className="text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
       </div>
     );
   }

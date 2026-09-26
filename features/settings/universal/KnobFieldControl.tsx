@@ -77,6 +77,7 @@ import { getSystemShortcut } from "@/features/agents/constants/system-shortcuts"
 import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentCustomExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The control kinds this file renders. Anything else keeps the row's own editor. */
 const RENDERED: ReadonlySet<KnobControl> = new Set<KnobControl>([
@@ -239,7 +240,7 @@ function JsonField({
           setError(null);
         }}
       />
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>}
       <div className="flex gap-2">
         <Button
           size="sm"
@@ -654,6 +655,7 @@ function VoiceChooser({
       {sample.error && (
         <p className="shrink-0 px-2 py-1 text-[11px] text-destructive">
           The sample could not play: {sample.error}
+          <ErrorAlchemyMenu error={sample.error} />
         </p>
       )}
     </div>

@@ -29,6 +29,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { buildAdminUserMenuSection } from "./admin-user-menu-section";
 import { USERS_ADMIN_LOCATION } from "../constants";
 import { pushAppHref } from "@/lib/deployment/navigate";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── drift dashboard ────────────────────────────────────────────────────────
 
@@ -200,6 +201,7 @@ function DriftDashboard() {
       {error ? (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : null}
 
@@ -445,6 +447,7 @@ function UserPreferencesView({ userId }: { userId: string }) {
       {error ? (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : !loading && !meta.exists ? (
         <div className="rounded-lg border border-border bg-card p-8 text-center text-sm text-muted-foreground">

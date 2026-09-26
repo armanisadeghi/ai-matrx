@@ -21,6 +21,7 @@ import { DoorLink } from "./DoorLink";
 import { useDoorAudience } from "./door-audience";
 import { ReplaysTable } from "./ReplaysTable";
 import { fmtCost, fmtDate } from "./tokens";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function ReviewRow({
   review,
@@ -158,6 +159,7 @@ export function ReviewRow({
               </div>
               <pre className="mt-1 max-h-40 overflow-auto rounded-md bg-red-500/10 p-2 text-xs text-red-600 dark:text-red-400">
                 {JSON.stringify(review.error, null, 2)}
+                <ErrorAlchemyMenu />
               </pre>
             </div>
           )}

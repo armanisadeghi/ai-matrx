@@ -18,6 +18,7 @@ import {
   type GoogleBackgroundInteractionView,
   type GoogleBackgroundModel,
 } from "../../service/google-background";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const TERMINAL = new Set(["completed", "failed", "cancelled"]);
 
@@ -268,6 +269,7 @@ export function GoogleBackgroundAgentCard({ topicId }: { topicId: string }) {
           {view.error ? (
             <pre className="overflow-x-auto rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
               {JSON.stringify(view.error, null, 2)}
+              <ErrorAlchemyMenu />
             </pre>
           ) : null}
           {TERMINAL.has(view.status) ? (
@@ -283,7 +285,7 @@ export function GoogleBackgroundAgentCard({ topicId }: { topicId: string }) {
         </div>
       ) : null}
 
-      {error ? <p className="mt-3 text-xs text-destructive">{error}</p> : null}
+      {error ? <p className="mt-3 text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p> : null}
     </section>
   );
 }

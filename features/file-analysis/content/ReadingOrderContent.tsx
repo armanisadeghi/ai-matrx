@@ -28,6 +28,7 @@ import type {
   PdfReadingOrderCompleteData,
   PdfReadingOrderPageData,
 } from "@/types/python-generated/stream-events";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   fileId: string;
@@ -100,7 +101,7 @@ export function ReadingOrderContent({ fileId, onJumpToPage }: Props) {
           {running ? "Extracting…" : "Extract reading order"}
         </Button>
         {running && progress ? <PdfStreamProgress text={progress} /> : null}
-        {error ? <p className="text-[11px] text-destructive">{error}</p> : null}
+        {error ? <p className="text-[11px] text-destructive">{error} <ErrorAlchemyMenu error={error} /></p> : null}
       </div>
     );
   }

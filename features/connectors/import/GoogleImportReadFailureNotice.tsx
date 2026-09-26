@@ -22,6 +22,7 @@ import {
   GOOGLE_CONNECTIONS_HREF,
   type GoogleImportReadFailure,
 } from "./read-failure";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface GoogleImportReadFailureNoticeProps {
   failure: GoogleImportReadFailure;
@@ -47,6 +48,7 @@ export function GoogleImportReadFailureNotice({
       <p className="flex items-start gap-2 text-xs text-amber-600 dark:text-amber-400">
         <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         {failure.sentence}
+        <ErrorAlchemyMenu error={failure.sentence} />
       </p>
       {failure.kind === "several_accounts" && failure.accounts.length > 0 ? (
         // THE REMEDY IS THE PRESS: the accounts the server named ARE the

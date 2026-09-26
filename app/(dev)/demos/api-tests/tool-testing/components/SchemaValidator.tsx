@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { toast } from "@/lib/toast";
 import type { SchemaValidationResult } from '@/features/tool-call-visualization/testing/types';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ajv = new Ajv({ allErrors: true, strict: false });
 
@@ -148,7 +149,7 @@ export function SchemaValidator({ output, schema, success, schemaOnly, outputOnl
               {validation.errors.map((err, idx) => (
                 <div key={idx} className="flex items-start gap-2 text-xs">
                   <XCircle className="h-3 w-3 text-destructive flex-shrink-0 mt-0.5" />
-                  <span className="font-mono text-destructive">{err}</span>
+                  <span className="font-mono text-destructive">{err} <ErrorAlchemyMenu error={err} /></span>
                 </div>
               ))}
             </div>

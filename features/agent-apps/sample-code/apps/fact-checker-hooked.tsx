@@ -27,6 +27,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import MarkdownStream from "@/components/MarkdownStream";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface FactCheckerHookedProps {
   variables: Record<string, unknown>;
@@ -109,7 +110,7 @@ export default function FactCheckerHooked({
           {error && (
             <div className="flex items-start gap-2 px-1">
               <AlertCircle className="w-3.5 h-3.5 text-destructive mt-0.5 shrink-0" />
-              <p className="text-xs text-destructive leading-snug">{error.message}</p>
+              <p className="text-xs text-destructive leading-snug">{error.message} <ErrorAlchemyMenu /></p>
             </div>
           )}
 

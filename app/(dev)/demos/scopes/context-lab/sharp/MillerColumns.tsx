@@ -15,6 +15,7 @@ import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
 import type { OrgNode, ScopeNode, ScopeTypeNode } from "@/features/scopes/types";
 import { useTypeItems, type PickerData, type SelectionApi } from "./engine";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface MillerColumnsProps {
   data: PickerData;
@@ -198,6 +199,7 @@ export function MillerColumns({ data, sel, footer }: MillerColumnsProps) {
           ) : itemState.error ? (
             <div className="px-2 py-1 text-[11px] text-destructive">
               {itemState.error}
+              <ErrorAlchemyMenu error={itemState.error} />
             </div>
           ) : (itemState.items ?? []).length === 0 ? (
             <div className={HINT}>

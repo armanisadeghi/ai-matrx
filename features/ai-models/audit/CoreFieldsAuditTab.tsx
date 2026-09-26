@@ -18,6 +18,7 @@ import {
   StatusBadge,
 } from "./AuditTableShell";
 import ModelDetailSheet, { OpenDetailButton } from "./ModelDetailSheet";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CoreFieldsAuditTabProps {
   results: ModelAuditResult[];
@@ -243,6 +244,7 @@ export default function CoreFieldsAuditTab({
           {errors[r.model.id] && (
             <span className="text-[10px] text-destructive">
               {errors[r.model.id]}
+              <ErrorAlchemyMenu />
             </span>
           )}
         </>

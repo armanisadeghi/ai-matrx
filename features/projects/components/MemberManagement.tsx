@@ -22,6 +22,7 @@ import type {
   MembershipRole,
   MembershipRoleOption,
 } from "@/components/membership/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface MemberManagementProps {
   projectId: string;
@@ -87,6 +88,7 @@ export function MemberManagement({
         <Button onClick={refresh} variant="outline" size="sm" className="mt-2">
           Retry
         </Button>
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

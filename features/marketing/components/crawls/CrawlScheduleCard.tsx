@@ -34,6 +34,7 @@ import {
 import type { CrawlSchedule } from "@/features/marketing/types";
 import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
 import { formatRelativeTime } from "@/utils/datetime";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Absolute local time, with the relative distance a human actually reads. */
 function formatNextRun(value: string | null): string | null {
@@ -193,6 +194,7 @@ export function CrawlScheduleCard({
         <p className="text-[10px] leading-4 text-destructive">
           Could not load this site’s schedule:{" "}
           {extractErrorMessage(scheduleQuery.error)}
+          <ErrorAlchemyMenu />
         </p>
       ) : null}
 
@@ -204,6 +206,7 @@ export function CrawlScheduleCard({
           </span>
           . {storedRefusal} It is switched off automatically; choose a frequency
           below to replace it.
+          <ErrorAlchemyMenu error={storedRefusal} />
         </p>
       ) : null}
 
@@ -295,6 +298,7 @@ export function CrawlScheduleCard({
       {schedule?.last_outcome === "failed" && schedule.last_error ? (
         <p className="text-[10px] leading-4 text-destructive">
           Last automatic run failed: {humanizeBackendError(schedule.last_error)}
+          <ErrorAlchemyMenu />
         </p>
       ) : null}
     </section>

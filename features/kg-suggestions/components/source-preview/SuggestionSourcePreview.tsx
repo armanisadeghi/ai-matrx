@@ -35,6 +35,7 @@ import {
   sourceKindLabel,
   type SourcePreviewDoc,
 } from "@/features/kg-suggestions/service/sourcePreviewService";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface SuggestionSourcePreviewProps {
   kind: string;
@@ -222,6 +223,7 @@ function PreviewBody({
           : snippet
             ? "No inline preview for this source yet. The excerpt above is what the suggestion was drawn from."
             : "No preview available for this source."}
+        <ErrorAlchemyMenu />
       </p>
       {doc?.href ? (
         <a

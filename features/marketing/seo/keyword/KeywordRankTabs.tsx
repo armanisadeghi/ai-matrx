@@ -53,6 +53,7 @@ import { SerpResult } from "@/features/marketing/seo/serp/SerpResult";
 
 import { normalizeKeywordPhrase } from "./data";
 import { useKeywordSerpIntentAnalysis } from "./hooks";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The portfolio rows tracking THIS keyword (id match first, phrase fallback). */
 function matchingTargets(
@@ -145,7 +146,7 @@ export function KeywordRankingsTab({
     );
   }
   if (portfolio.error) {
-    return <p className="p-4 text-xs text-destructive">{portfolio.error}</p>;
+    return <p className="p-4 text-xs text-destructive">{portfolio.error} <ErrorAlchemyMenu error={portfolio.error} /></p>;
   }
 
   return (
@@ -287,6 +288,7 @@ export function KeywordRankingsTab({
             {state?.status === "error" ? (
               <p className="mt-1.5 text-[10px] text-destructive">
                 {state.error}
+                <ErrorAlchemyMenu error={state.error} />
               </p>
             ) : null}
           </div>
@@ -381,7 +383,7 @@ export function KeywordSerpTab({
     );
   }
   if (portfolio.error) {
-    return <p className="p-4 text-xs text-destructive">{portfolio.error}</p>;
+    return <p className="p-4 text-xs text-destructive">{portfolio.error} <ErrorAlchemyMenu error={portfolio.error} /></p>;
   }
   if (!target) {
     return (
@@ -435,7 +437,7 @@ export function KeywordSerpTab({
     return (
       <div className="grid gap-3">
         {resultPageHeader}
-        <p className="p-4 text-xs text-destructive">{history.error}</p>
+        <p className="p-4 text-xs text-destructive">{history.error} <ErrorAlchemyMenu error={history.error} /></p>
       </div>
     );
   }
@@ -491,6 +493,7 @@ export function KeywordSerpTab({
         {intentAnalysis.state.status === "error" ? (
           <p className="w-full text-[10px] text-destructive">
             {intentAnalysis.state.error}
+            <ErrorAlchemyMenu error={intentAnalysis.state.error} />
           </p>
         ) : null}
       </div>

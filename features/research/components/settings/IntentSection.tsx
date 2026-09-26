@@ -23,6 +23,7 @@ import type {
   ResearchTopic,
   TopicQuotaFields,
 } from "../../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface IntentApplyResult {
   intent_key: string;
@@ -113,6 +114,7 @@ export function IntentSection({
       {loadError && (
         <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
           {loadError}
+          <ErrorAlchemyMenu error={loadError} />
         </div>
       )}
 

@@ -52,6 +52,7 @@ import {
   type DomainFoldReport,
   type FoldSource,
 } from "../../outreach-start/service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** How many folded organizations get an inline door — see the comment below. */
 const FOLDED_DOORS_SHOWN = 12;
@@ -223,6 +224,7 @@ export function CrmFoldControl({
           >
             <RefreshCw className="h-3 w-3" /> Retry
           </Button>
+          <ErrorAlchemyMenu error={loadError} />
         </div>
       )}
 

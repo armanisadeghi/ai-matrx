@@ -50,6 +50,7 @@ import type {
   ScopeProps,
 } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface CategoryFormProps extends ScopeProps {
   isOpen: boolean;
@@ -241,6 +242,7 @@ export function CategoryForm({
             <p className="text-xs text-destructive mt-0.5 flex items-center gap-1">
               <AlertCircle className="w-3 h-3" />
               {errors.label}
+              <ErrorAlchemyMenu error={errors.label} />
             </p>
           )}
         </div>
@@ -352,7 +354,7 @@ export function CategoryForm({
             showLucideLink
           />
           {errors.iconName && (
-            <p className="text-xs text-destructive mt-0.5">{errors.iconName}</p>
+            <p className="text-xs text-destructive mt-0.5">{errors.iconName} <ErrorAlchemyMenu error={errors.iconName} /></p>
           )}
         </div>
         <div>
@@ -363,7 +365,7 @@ export function CategoryForm({
             disabled={saving}
           />
           {errors.color && (
-            <p className="text-xs text-destructive mt-0.5">{errors.color}</p>
+            <p className="text-xs text-destructive mt-0.5">{errors.color} <ErrorAlchemyMenu error={errors.color} /></p>
           )}
         </div>
         <div>

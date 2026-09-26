@@ -27,6 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { acceptOutreachPolicy } from "@/features/crm/compliance/service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const SENDING_RULES_TEXT = `The sending rules
 
@@ -93,7 +94,7 @@ export function AcceptSendingRulesDialog({
             ))}
         </ol>
 
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {error ? <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p> : null}
 
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>

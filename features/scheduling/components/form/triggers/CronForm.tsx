@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import cronstrue from "cronstrue";
 import { nextNCronFires, validateCron } from "@/lib/scheduler-client/next-due";
 import { humanizeRelative } from "../../../utils/triggerHumanize";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   value: { expression?: string; tz?: string };
@@ -101,7 +102,7 @@ export function CronForm({ value, onChange, error }: Props) {
       </div>
 
       {(error || validationError) && (
-        <p className="text-xs text-destructive">{error || validationError}</p>
+        <p className="text-xs text-destructive">{error || validationError} <ErrorAlchemyMenu /></p>
       )}
 
       {humanReadable && (

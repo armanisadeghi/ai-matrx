@@ -25,6 +25,7 @@ import { Input } from "@ai-matrx/design-system";
 import { AdminPageCapture } from "@/components/agent-copy/page-capture/AdminPageCapture";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import type { AdminOrganizationDirectory, AdminOrganizationRow } from "@/features/admin/users/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface OrganizationScopeSummary {
   /** `null` while loading, `undefined` if the fetch failed. */
@@ -178,6 +179,7 @@ export function ScopesContextOrganizationsIndex({
       {error ? (
         <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : organizations === null ? (
         <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">

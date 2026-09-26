@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import {useDynamicGateway} from "@/app/(dev)/demos/tests/dynamic-gateway-concept/hooks/useDynamicGateway";
 import { DataProvider } from './DataProvider';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const TestInterface: React.FC = () => {
     const gateway = useDynamicGateway();
@@ -114,6 +115,7 @@ export const TestInterface: React.FC = () => {
                         {error && (
                             <div className="p-4 mb-4 rounded-md bg-destructive/10 text-destructive border border-destructive/20">
                                 Error: {error}
+                              <ErrorAlchemyMenu error={error} />
                             </div>
                         )}
 

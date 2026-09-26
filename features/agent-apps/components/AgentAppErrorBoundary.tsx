@@ -3,6 +3,7 @@
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Code2, ChevronDown, ChevronUp } from 'lucide-react';
 import { captureReactRenderError } from '@/lib/diagnostics/captureReactError';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AgentAppErrorBoundaryProps {
     children: ReactNode;
@@ -195,6 +196,7 @@ export class AgentAppErrorBoundary extends Component<AgentAppErrorBoundaryProps,
                                         <div className="mt-3 p-3 bg-muted/50 rounded-lg overflow-auto max-h-48">
                                             <p className="text-xs font-mono text-destructive break-all">
                                                 {error.name}: {error.message}
+                                              <ErrorAlchemyMenu error={error.name} />
                                             </p>
                                             {this.state.errorInfo?.componentStack && (
                                                 <pre className="mt-2 text-[10px] font-mono text-muted-foreground whitespace-pre-wrap break-all">

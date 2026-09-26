@@ -27,6 +27,7 @@ import {
   listSavedRequests,
   type SavedRequest,
 } from "../savedRequests";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function SavedRequestsList() {
   const { userId } = useUser();
@@ -101,6 +102,7 @@ export function SavedRequestsList() {
       {error && (
         <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </p>
       )}
 
@@ -114,6 +116,7 @@ export function SavedRequestsList() {
           <BookmarkCheck className="mx-auto h-6 w-6 text-muted-foreground" />
           <p className="mt-2 text-sm text-foreground">
             You have not saved a request yet.
+            <ErrorAlchemyMenu />
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             Compose one on Start work and press Save in the Timing step.

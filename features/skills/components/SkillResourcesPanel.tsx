@@ -54,6 +54,7 @@ import {
   updateSkillResourceThunk,
 } from "../redux/skillsThunks";
 import type { ResourceRow } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SkillResourcesPanelProps {
   skillId: string;
@@ -156,6 +157,7 @@ export function SkillResourcesPanel({
       ) : status === "error" ? (
         <div className="text-xs text-destructive">
           Failed to load resources for this skill.
+          <ErrorAlchemyMenu />
         </div>
       ) : resources.length === 0 && !creating ? (
         <div className="text-xs text-muted-foreground/80">

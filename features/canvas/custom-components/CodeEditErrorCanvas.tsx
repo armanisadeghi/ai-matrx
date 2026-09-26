@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Copy, Check, X } from 'lucide-react';
 import { useState } from 'react';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface CodeEditErrorCanvasProps {
   errors: string[];
@@ -85,6 +86,7 @@ export function CodeEditErrorCanvas({
                   <pre className="text-[10px] whitespace-pre-wrap font-mono text-destructive/80">
                     {error}
                   </pre>
+                  <ErrorAlchemyMenu error={error} />
                 </div>
               ))}
             </div>

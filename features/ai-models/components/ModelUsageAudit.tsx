@@ -21,6 +21,7 @@ import type { SettingSwap } from "@/features/ai-models/server/replace-model-refe
 import { usageSettingsList } from "./unionUsageSettings";
 import { cn } from "@/lib/utils";
 import { MOBILE_TABLE_FROZEN } from "@/components/official/mobile-table/mobileTable";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ModelUsageAuditProps {
   model: AiModel;
@@ -275,6 +276,7 @@ export default function ModelUsageAudit({
       ) : !usage ? (
         <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
           Failed to load usage data
+          <ErrorAlchemyMenu />
         </div>
       ) : (
         <div className="flex-1 overflow-auto p-3 space-y-4">

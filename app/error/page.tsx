@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { AlertTriangle } from "lucide-react";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function ErrorPage() {
   const loginHref = useLoginHref();
@@ -29,6 +30,7 @@ export default function ErrorPage() {
 
         <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">
           Oops! Something went wrong
+          <ErrorAlchemyMenu />
         </h1>
 
         <p className="text-gray-600 dark:text-gray-400 mb-8">

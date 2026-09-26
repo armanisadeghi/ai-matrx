@@ -7,6 +7,7 @@ import HeaderStructured from "@/features/shell/components/header/variants/varian
 import { useRouter } from "next/navigation";
 import { KIT_ROUTES, KIT_WORD } from "../constants";
 import { ErrorNotice } from "./ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** A kit address that names no published kit — said plainly, with the way back. */
 export function KitMissing({ kitKey, error, inactive }: { kitKey: string; error: string | null; inactive?: boolean }) {
@@ -26,6 +27,7 @@ export function KitMissing({ kitKey, error, inactive }: { kitKey: string; error:
                 : inactive
                   ? `This ${KIT_WORD.oneLower} is not available right now — it has been taken out of the gallery, so it cannot be installed.`
                   : `There is no published ${KIT_WORD.oneLower} called “${kitKey}”.`}
+              <ErrorAlchemyMenu />
             </p>
             {inactive && (
               <p className="mt-1 text-xs text-muted-foreground">

@@ -27,6 +27,7 @@ import {
   VOICE_COMMUNICATOR_MANDATE_KEY,
 } from "./useVoiceRelaySession";
 import type { QuestionPacing } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface VoiceRelayDockProps {
   /** The brain — the agent this conversation belongs to. */
@@ -108,6 +109,7 @@ export function VoiceRelayDock(props: VoiceRelayDockProps) {
         did not resolve
         {communicator.error ? ` — ${communicator.error}` : ""}. Typing works as
         normal.
+        <ErrorAlchemyMenu />
       </div>
     );
   }

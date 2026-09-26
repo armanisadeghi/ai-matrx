@@ -38,6 +38,7 @@ import { OUTLINE_TREE_INCLUDE } from "./OutlineView";
 import { buildMapMarkdown } from "./outline/text/mapMarkdown";
 import { TextFocusPicker } from "./outline/text/TextFocusPicker";
 import { TextOverridesPopover, type OutlineOverrides } from "./outline/text/TextOverridesPopover";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SURFACE_NAME = "matrx-user/marketing-topical-map";
 
@@ -78,6 +79,7 @@ export function TextView({ mapId, siteId }: MapViewProps) {
       {knobsError ? (
         <span className="text-[11px] text-destructive" title={knobsError.message}>
           Agent sizing overrides unavailable: the map settings could not be read.
+          <ErrorAlchemyMenu />
         </span>
       ) : knobs ? (
         <TextOverridesPopover knobs={knobs} overrides={overrides} onChange={setOverrides} />

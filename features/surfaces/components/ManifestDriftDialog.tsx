@@ -44,6 +44,7 @@ import type {
   BrokenMapping,
   UnknownNamespace,
 } from "@/features/surfaces/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   onClose: () => void;
@@ -142,6 +143,7 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
             <div className="rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-xs text-destructive flex items-center gap-2">
               <AlertCircle className="h-3.5 w-3.5" />
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
 

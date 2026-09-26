@@ -11,6 +11,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { selectExplorerRootOverride } from "../../redux/codeWorkspaceSlice";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { parsePyprojectScripts, pyprojectEntrypointCommand } from "./pyprojectScripts";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface RunPanelProps {
   className?: string;
@@ -154,6 +155,7 @@ export const RunPanel: React.FC<RunPanelProps> = ({ className }) => {
         {error && (
           <div className="mx-2 mt-2 rounded border border-red-300 bg-red-50 px-2 py-1 text-[11px] text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
         {scripts !== null && scripts.length === 0 && !error && (

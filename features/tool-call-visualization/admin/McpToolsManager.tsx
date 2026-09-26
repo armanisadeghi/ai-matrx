@@ -106,6 +106,7 @@ import {
 } from "@/features/surfaces/manifests/admin-tool-registry.manifest";
 import { MOBILE_TABLE } from "@/components/official/mobile-table/mobileTable";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const PAGE_LOCATION =
   "AI Matrx Admin — Tool Registry · MCP Tools (/administration/agents/mcp-tools)";
@@ -1028,6 +1029,7 @@ export function McpToolsManager() {
       <div className="flex items-center gap-2 text-destructive py-8 px-4">
         <X className="h-5 w-5" />
         Error loading tools: {error}
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

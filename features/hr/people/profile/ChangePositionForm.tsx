@@ -49,6 +49,7 @@ import { recordHrPositionChange } from "../../service";
 import { hrSettingsHref } from "../../routes";
 import { activeStructure, useHrStructure } from "../shared/useHrStructure";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Row = Record<string, unknown>;
 
@@ -478,7 +479,7 @@ function Field({
     <div className="min-w-0 space-y-1.5">
       <Label className="text-xs font-medium">{label}</Label>
       {children}
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {error ? <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p> : null}
     </div>
   );
 }

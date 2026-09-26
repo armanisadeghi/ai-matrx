@@ -44,6 +44,7 @@ import type { PlanNodeRow } from "@/features/marketing/content-plan/types";
 import { buildNodePipelineProgress } from "@/features/marketing/content-plan/lib/pipeline-progress";
 import { NodeStepRail } from "@/features/marketing/content-plan/components/NodeStepRail";
 import { planStatusColor } from "@/features/marketing/content-plan/constants";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The plan workspace href for a node — the door every section falls back to. */
 export function planNodeHref(siteId: string, nodeId?: string): string {
@@ -119,6 +120,7 @@ export function PlanContextPanel({
             </Button>
           ) : null}
         </div>
+        <ErrorAlchemyMenu />
       </div>
     );
   }

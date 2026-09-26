@@ -20,6 +20,7 @@ import { writeClipboard } from "@/components/agent-copy/clipboard";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import type { useProTextareaAgentAction } from "./useProTextareaAgentAction";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function ProTextAgentActionPopoverBody({
   title,
@@ -123,6 +124,7 @@ export function ProTextAgentActionPopoverBody({
           {isError ? (
             <p className="text-xs text-destructive">
               {error ?? "Something went wrong. Please try again."}
+              <ErrorAlchemyMenu error={error} />
             </p>
           ) : hasResult ? (
             <div className="flex items-start gap-2">

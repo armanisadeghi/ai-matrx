@@ -49,6 +49,7 @@ export default function ConsentError({
                         <p className="text-sm text-gray-500 dark:text-neutral-400">
                             An unexpected error occurred while processing this authorization
                             request. Please try again.
+                          <ErrorAlchemyMenu />
                         </p>
                     </div>
                     <Button onClick={reset} variant="outline">

@@ -33,6 +33,7 @@ import type {
   PageExtractionJob,
   SourceVariationKind,
 } from "@/features/page-extraction/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ChunksTabProps {
   fileId: string;
@@ -145,6 +146,7 @@ export function ChunksTab({
     return (
       <div className="p-4 text-[11px] text-destructive">
         Couldn't load pages: {error}
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

@@ -7,6 +7,7 @@ import { selectPdfPages } from "@/features/files/api/pdf-pages";
 import type { PdfPageSelectionResult } from "@/features/files/api/pdf-pages";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const selectedPdfCache = new Map<string, Promise<PdfPageSelectionResult>>();
 
@@ -94,6 +95,7 @@ export function SelectedPdfPages({
       >
         <p className="max-w-sm text-center text-xs text-destructive">
           {current.error}
+          <ErrorAlchemyMenu error={current.error} />
         </p>
       </div>
     );

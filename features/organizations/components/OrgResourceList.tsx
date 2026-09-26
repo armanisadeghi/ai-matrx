@@ -41,6 +41,7 @@ import {
   type ResourceType,
 } from "@/utils/permissions/registry";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ResourceCardData {
   id: string;
@@ -185,7 +186,7 @@ export function OrgResourceList({
   if (error) {
     return (
       <Card className="p-8 text-center">
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        <p className="text-sm text-red-600 dark:text-red-400">{error} <ErrorAlchemyMenu error={error} /></p>
       </Card>
     );
   }

@@ -57,6 +57,7 @@ import {
 import type { SharedKnowledgeDirectory } from "../types";
 import { IndustryCuratorsPanel } from "./IndustryCuratorsPanel";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface IndustryFormState {
   slug: string;
@@ -251,6 +252,7 @@ export function IndustriesTab({
         {error ? (
           <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         ) : loading && industries.length === 0 ? (
           <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">

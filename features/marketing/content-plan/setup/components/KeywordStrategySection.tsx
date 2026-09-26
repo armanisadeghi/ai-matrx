@@ -31,6 +31,7 @@ import {
   keywordStrategyValue,
 } from "../kind-values";
 import { SetupSection } from "./SetupSection";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ROLE_LABEL: Record<PageRole, string> = {
   money: "money",
@@ -186,6 +187,7 @@ export function KeywordStrategySection({
               <X className="h-3 w-3" />
             </button>
           ) : null}
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : null}
 

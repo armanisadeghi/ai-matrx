@@ -11,6 +11,7 @@ import { Code2, Eye, Loader2, AlertTriangle, Boxes } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 import { compileReactComponent } from "./compileReactComponent";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * ReactCodeBlock — auto-renders a ```jsx / ```tsx / ```react code block as a
@@ -181,6 +182,7 @@ const ReactCodeBlock: React.FC<ReactCodeBlockProps> = ({
             {showError && (
               <div className="mt-1 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive whitespace-pre-wrap">
                 {errorMessage}
+                <ErrorAlchemyMenu error={errorMessage} />
               </div>
             )}
           </div>

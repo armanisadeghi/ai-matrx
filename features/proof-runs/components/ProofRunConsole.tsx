@@ -33,6 +33,7 @@ import {
   type ProofAttestation,
   type ProofResultKind,
 } from "@/features/proof-runs/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ProofRunConsoleState {
   isRunning: boolean;
@@ -190,6 +191,7 @@ export function ProofRunConsole({ state }: { state: ProofRunConsoleState }) {
       {state.error ? (
         <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-800 dark:text-red-200">
           {state.error}
+          <ErrorAlchemyMenu error={state.error} />
         </div>
       ) : null}
 

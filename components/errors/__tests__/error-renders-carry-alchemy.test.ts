@@ -103,6 +103,9 @@ describe("the error-display detector (self-test — each RC-B12 verify hole, red
   });
   it("does not count a box that carries the menu, or a render inside a primitive", () => {
     expect(count('<div role="alert">{error}<ErrorAlchemyMenu error={error} /></div>')).toBe(0);
+    expect(count('<div className="flex"><h2>Something went wrong</h2><ErrorAlchemyMenu input={i} /></div>')).toBe(0);
+    // …but an ErrorNotice beside a raw box is not the box's menu (F9).
+    expect(count('<div><ErrorNotice message="x" /><p role="alert">{error}</p></div>')).toBe(1);
     expect(count('<ErrorNotice title="Not saved" message={error} />')).toBe(0);
     expect(count('<Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>')).toBe(0);
     expect(count('<ErrorNotice title="t"><p className="text-destructive">{error}</p></ErrorNotice>')).toBe(0);

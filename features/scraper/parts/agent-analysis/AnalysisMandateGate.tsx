@@ -13,6 +13,7 @@ import { Card } from "@/components/official/PageTemplate";
 import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import { useMandateDisplayName } from "@/features/mandates/useMandateDisplayName";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function AnalysisMandateGate({
   mandateKey,
@@ -40,7 +41,7 @@ export function AnalysisMandateGate({
             yet. Bind one to turn this tab on.
           </span>
         </p>
-        <p className="text-xs text-destructive">{error}</p>
+        <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
         <div className="flex flex-wrap items-center gap-2">
           <MandateAgentPicker mandateKey={mandateKey} />
           <MandateDoorLink

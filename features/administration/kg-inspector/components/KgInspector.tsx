@@ -73,6 +73,7 @@ import {
   type KgMentionRow,
   type KgEdgeRow,
 } from "../service/kgInspectorService";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const PAGE_SIZE = 50;
 const FETCH_MAX = 200;
@@ -483,6 +484,7 @@ function EntitiesTab({
       {currentError ? (
         <div className="rounded-md border border-border bg-card p-4 text-sm text-destructive">
           {currentError}
+          <ErrorAlchemyMenu error={currentError} />
         </div>
       ) : null}
 
@@ -661,6 +663,7 @@ function MentionsTab({ entity }: { entity: SelectedEntity | null }) {
       {error ? (
         <div className="rounded-md border border-border bg-card p-4 text-sm text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : null}
 
@@ -867,6 +870,7 @@ function EdgesTab({
       {error ? (
         <div className="rounded-md border border-border bg-card p-4 text-sm text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : null}
 

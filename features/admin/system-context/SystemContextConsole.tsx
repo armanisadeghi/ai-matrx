@@ -53,6 +53,7 @@ import {
   itemSummary,
   valueTypeTone,
 } from "./shared";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function feedTarget(
   item: SystemContextItem,
@@ -111,6 +112,7 @@ function FeedCell({ item }: { item: SystemContextItem }) {
       {item.feed_error && (
         <div className="max-w-[180px] truncate text-[10px] text-destructive">
           {item.feed_error}
+          <ErrorAlchemyMenu error={item.feed_error} />
         </div>
       )}
     </div>

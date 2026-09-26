@@ -40,6 +40,7 @@ import { GenericRenderer } from "../../registry/GenericRenderer";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { ToolResultCard } from "../_shared-entity/ToolResultCard";
 import type { ToolResultCardProps } from "../_shared-entity/ToolResultCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** How much output the collapsed view shows before offering the rest. */
 export const TAIL_LINES = 12;
@@ -134,6 +135,7 @@ export const DurableVfsWarning: React.FC = () => (
       can differ from the container. Re-attach a running sandbox from the chat
       input&apos;s sandbox control and run the command again.
     </span>
+    <ErrorAlchemyMenu />
   </div>
 );
 

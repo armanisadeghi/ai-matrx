@@ -54,6 +54,7 @@ import {
 } from "@/features/source-library/api";
 import type { LibraryRow, VideoRow } from "@/features/source-library/types";
 import { fetchAgentSamples } from "@/features/agents/samples/service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The action reads transcripts (`requires_transcripts: true` in its server
@@ -454,6 +455,7 @@ export function LoadFromLibraryDialog({
             <p className="flex items-start gap-2 text-sm text-destructive">
               <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
               {error}
+              <ErrorAlchemyMenu error={error} />
             </p>
           ) : null}
         </div>

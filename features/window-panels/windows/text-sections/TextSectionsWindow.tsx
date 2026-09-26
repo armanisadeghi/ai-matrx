@@ -37,6 +37,7 @@ import { ContentActionBar } from "@/components/content-actions/ContentActionBar"
 import { formatChars } from "@/lib/tokens/estimate";
 import type { OverlayId } from "@/features/overlays/catalogue";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 // context-menu-exempt: entity — a generic "labeled chunks of text" primitive with no identity of its own; each consumer's sections carry whatever record they came from, which is the consumer's menu to wire
 
 /** Synthetic rail key for the all-sections view. */
@@ -243,6 +244,7 @@ export function TextSectionsWindow({
               <div className="m-3 flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/[0.06] p-3 text-xs text-destructive">
                 <AlertTriangle className="mt-px h-4 w-4 shrink-0" />
                 {error}
+                <ErrorAlchemyMenu error={error} />
               </div>
             )}
 

@@ -38,6 +38,7 @@ import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-recor
 import { updateParty } from "../../service";
 import type { PartyRow } from "../../types";
 import { SectionCard, SectionEmpty } from "./SectionCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The three provenance roles the SEO→CRM bridge writes. */
 const PROVENANCE_ROLES = new Set([
@@ -330,6 +331,7 @@ export function PartyProvenanceCard({
             >
               <RefreshCw className="h-3 w-3" /> Retry
             </Button>
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
 

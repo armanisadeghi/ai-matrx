@@ -21,6 +21,7 @@ import {
 } from "./service";
 import type { YouTubeVideoLibraryRecord } from "./types";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ANALYSIS_PHASE_LABELS: Record<string, string> = {
   connected: "Connected. Preparing the video…",
@@ -346,6 +347,7 @@ function YouTubeAnalysis({ record }: { record: YouTubeVideoLibraryRecord }) {
         {record.processing_error && (
           <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
             {record.processing_error}
+            <ErrorAlchemyMenu error={record.processing_error} />
           </p>
         )}
         {record.analysis_text && (

@@ -50,6 +50,7 @@ import type {
 } from "./health";
 import { ProductPermissionsDisclosure, relativeTime } from "./ProductPermissions";
 import type { SharedConnectorManagement } from "./shared-account-level";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const STATE_STYLE: Record<
   ConnectorProductHealth["state"],
@@ -279,6 +280,7 @@ export function ConnectedAccountHealth({
               <p className="mt-1 text-xs text-warning">
                 Last refusal recorded on this account:{" "}
                 {account.lastRefusalSentence}
+                <ErrorAlchemyMenu error={account.lastRefusalSentence} />
               </p>
             ) : account.lastRefusalSentence ? null : (
               <p className="mt-1 text-xs text-muted-foreground">

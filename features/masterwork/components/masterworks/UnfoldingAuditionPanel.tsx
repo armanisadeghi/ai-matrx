@@ -50,6 +50,7 @@ import {
 import { listMasterworksForRulebook } from "../../service";
 import type { Masterwork } from "../../types";
 import { RunStages } from "../RunStages";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const AUDITION_PATH = "/masterworks/audition" satisfies keyof paths;
 
@@ -383,7 +384,7 @@ export function UnfoldingAuditionPanel({
           Which sealed cases?
         </Label>
         {casesError ? (
-          <p className="text-xs text-destructive">{casesError}</p>
+          <p className="text-xs text-destructive">{casesError} <ErrorAlchemyMenu error={casesError} /></p>
         ) : cases === null ? (
           <p className="text-xs text-muted-foreground">
             Reading the cases this Rulebook holds back…
@@ -457,7 +458,7 @@ export function UnfoldingAuditionPanel({
           moment the run ended. `run.stages` is the full list and it stays. */}
       <RunStages run={run} />
       {run.error ? (
-        <p className="text-sm text-destructive">{run.error}</p>
+        <p className="text-sm text-destructive">{run.error} <ErrorAlchemyMenu error={run.error} /></p>
       ) : null}
 
       {verdict ? (

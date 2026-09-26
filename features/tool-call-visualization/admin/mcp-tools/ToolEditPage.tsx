@@ -35,6 +35,7 @@ import type { Database } from "@/types/database.types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toolApiErrorMessage } from "./tool-definition.service";
 import { parseSemver } from "@/features/admin/applications/version";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -336,6 +337,7 @@ export function ToolEditPage({ tool }: Props) {
         {jsonErrors.parameters && (
           <span className="text-xs text-destructive">
             JSON Error: {jsonErrors.parameters}
+            <ErrorAlchemyMenu error={jsonErrors.parameters} />
           </span>
         )}
       </div>
@@ -355,6 +357,7 @@ export function ToolEditPage({ tool }: Props) {
         {jsonErrors.output_schema && (
           <span className="text-xs text-destructive">
             JSON Error: {jsonErrors.output_schema}
+            <ErrorAlchemyMenu error={jsonErrors.output_schema} />
           </span>
         )}
       </div>
@@ -374,6 +377,7 @@ export function ToolEditPage({ tool }: Props) {
         {jsonErrors.annotations && (
           <span className="text-xs text-destructive">
             JSON Error: {jsonErrors.annotations}
+            <ErrorAlchemyMenu error={jsonErrors.annotations} />
           </span>
         )}
       </div>

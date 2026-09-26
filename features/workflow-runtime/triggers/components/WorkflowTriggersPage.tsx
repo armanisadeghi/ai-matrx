@@ -31,6 +31,7 @@ import { useWorkflowTriggers } from "../useWorkflowTriggers";
 import { CopyableValue } from "./CopyableValue";
 import { NewTriggerForm } from "./NewTriggerForm";
 import { TriggerCard } from "./TriggerCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface LoadedWorkflow {
   id: string;
@@ -215,6 +216,7 @@ export function WorkflowTriggersPage({
         {triggersError ? (
           <p className="rounded-lg border border-destructive/40 bg-destructive/5 p-2.5 text-xs text-destructive">
             {triggersError}
+            <ErrorAlchemyMenu error={triggersError} />
           </p>
         ) : loading ? (
           <div className="space-y-2">

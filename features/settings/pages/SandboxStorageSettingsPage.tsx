@@ -46,6 +46,7 @@ import { useUserPersistence } from "@/hooks/sandbox/use-user-persistence";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
 import type { SandboxTier, UserPersistenceInfo } from "@/types/sandbox";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const TIER_DESCRIPTIONS: Record<SandboxTier, string> = {
   ec2: "Each EC2 sandbox keeps its own retained home directory. Manage that sandbox individually.",
@@ -281,6 +282,7 @@ export default function SandboxStoragePage() {
                 {tier.status !== "available" && (
                   <p className="mt-3 text-xs text-muted-foreground">
                     {tier.error ?? "This storage tier could not be read."}
+                    <ErrorAlchemyMenu error={tier.error} />
                   </p>
                 )}
               </CardContent>
@@ -320,6 +322,7 @@ export default function SandboxStoragePage() {
           {deleteError && (
             <div className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
               {deleteError}
+              <ErrorAlchemyMenu error={deleteError} />
             </div>
           )}
           <AlertDialogFooter>

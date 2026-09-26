@@ -41,6 +41,7 @@ import {
   restoredDraftSentence,
   writeDraft,
 } from "./draft";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The three pieces a mandate cannot be created without, in the words the page
@@ -354,7 +355,7 @@ export function NewMandatePage() {
             </p>
           ) : null}
           {serverError ? (
-            <p className="px-1 text-[12.5px] text-destructive">{serverError}</p>
+            <p className="px-1 text-[12.5px] text-destructive">{serverError} <ErrorAlchemyMenu error={serverError} /></p>
           ) : null}
         </header>
 

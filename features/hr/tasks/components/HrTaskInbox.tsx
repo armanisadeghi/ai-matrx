@@ -41,6 +41,7 @@ import {
     inboxRowLine,
     isRefusal,
 } from "@/features/hr/tasks/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SCOPES: { key: HrInboxScope; label: string; hint: string }[] = [
     { key: "mine", label: "Mine", hint: "Waiting on you" },
@@ -206,6 +207,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                     <Button className="mt-3" size="sm" variant="outline" onClick={() => reload()}>
                         Try again
                     </Button>
+                  <ErrorAlchemyMenu />
                 </div>
             </div>
         );

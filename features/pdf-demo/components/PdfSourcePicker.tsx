@@ -30,6 +30,7 @@ import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import dynamic from "next/dynamic";
 import { toast } from "@/lib/toast";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // THE one canonical file picker. Lazy — WindowPanel must never be parsed in
 // a route/boot bundle (features/window-panels FEATURE.md → Bundle invariant).
@@ -172,7 +173,7 @@ export function PdfSourcePicker({ value, onChange }: Props) {
               </p>
             )}
             {uploadError ? (
-              <p className="text-xs text-destructive">{uploadError.message}</p>
+              <p className="text-xs text-destructive">{uploadError.message} <ErrorAlchemyMenu error={uploadError.message} /></p>
             ) : null}
           </TabsContent>
 

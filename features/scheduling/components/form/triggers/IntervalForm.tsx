@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   value: { every_seconds?: number };
@@ -81,7 +82,7 @@ export function IntervalForm({
           </SelectContent>
         </Select>
       </div>
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu /></p>}
       <p className="text-xs text-muted-foreground">
         Minimum 60 seconds.
         {heartbeat &&

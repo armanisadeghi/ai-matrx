@@ -60,6 +60,7 @@ import { HubListing, type HubListingState } from "./HubListing";
 import { AllOrganizationsTables, OrganizationScopeStrip } from "./OrganizationScope";
 import * as doors from "./doors";
 import type { TableFactRow } from "./doors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 
 export interface OrganizationHubProps {
@@ -413,6 +414,7 @@ export function OrganizationHub({
         <p className="text-xs text-muted-foreground">
           Who can see each table, and which are yours, could not be read, so only everything is
           shown. {facts.why}
+          <ErrorAlchemyMenu error={facts.why} />
         </p>
       ) : null
   );

@@ -35,6 +35,7 @@ import {
 } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { SectionCard } from "./SectionCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   partyId: string;
@@ -242,6 +243,7 @@ export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
             <p className="text-xs text-muted-foreground">
               We could not reach the service that works this out just now, so we
               cannot say whether we know their beat. Try again shortly.
+              <ErrorAlchemyMenu />
             </p>
           )}
 

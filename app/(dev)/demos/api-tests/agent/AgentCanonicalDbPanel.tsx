@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 // Legacy CX canonical panel — stubbed during Redux unification.
 import type { RootState } from "@/lib/redux/store";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const selectAgentId = (_state: RootState, _sessionId: string): string | null =>
   null;
 const selectConversationId = (
@@ -125,6 +126,7 @@ export function AgentCanonicalDbPanel({
         {sessionStatus === "error" && sessionError ? (
           <p className="text-[9px] font-mono text-destructive shrink-0 break-all px-0.5">
             selectSessionError | {sessionError}
+            <ErrorAlchemyMenu error={sessionError} />
           </p>
         ) : null}
 

@@ -39,6 +39,7 @@ import type {
   DictOwner,
   DictSelection,
 } from "@/features/dictionary/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const OVERLAY_ID = "dictionarySelectorWindow";
 const WINDOW_ID = "dictionary-selector";
@@ -319,6 +320,7 @@ function CustomEntriesSection({
       <p className="text-[11px] text-muted-foreground">
         One-off pronunciations for this surface only — not saved to your
         dictionary.
+        <ErrorAlchemyMenu />
       </p>
 
       {entries.length > 0 && (

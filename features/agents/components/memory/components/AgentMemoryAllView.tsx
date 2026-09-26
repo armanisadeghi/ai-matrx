@@ -16,6 +16,7 @@ import {
   importanceTier,
 } from "../types";
 import type { UseAgentMemoriesReturn } from "../hooks/useAgentMemories";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const TIER_BADGE_CLASS: Record<ReturnType<typeof importanceTier>, string> = {
   high: "bg-primary/15 text-primary",
@@ -43,6 +44,7 @@ export function AgentMemoryAllView({ state }: AgentMemoryAllViewProps) {
     return (
       <div className="flex h-full items-center justify-center px-6 text-center text-sm text-destructive">
         {error}
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

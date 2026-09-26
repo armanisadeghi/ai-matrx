@@ -57,6 +57,7 @@ import { PackTopicsSection } from "./PackTopicsSection";
 import { PackBandsSection } from "./PackBandsSection";
 import { PackGuidelinesSection } from "./PackGuidelinesSection";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function PackDetail({
   packId,
@@ -141,6 +142,7 @@ export function PackDetail({
         {detail.isError
           ? extractErrorMessage(detail.error)
           : "This pack could not be loaded."}
+        <ErrorAlchemyMenu />
       </div>
     );
   }

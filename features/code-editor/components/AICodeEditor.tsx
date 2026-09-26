@@ -37,6 +37,7 @@ import {
   type UseAICodeEditorProps,
 } from "@/features/code-editor/hooks/useAICodeEditor";
 import { CODE_EDITOR_AGENTS } from "@/features/code-editor/agent-code-editor/agents";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type AICodeEditorProps = UseAICodeEditorProps & {
   title?: string;
@@ -372,6 +373,7 @@ export function AICodeEditor({
                   <pre className="text-[10px] whitespace-pre-wrap font-mono text-destructive/80">
                     {errorMessage}
                   </pre>
+                  <ErrorAlchemyMenu error={errorMessage} />
                 </div>
 
                 <div className="border rounded flex flex-col overflow-hidden">

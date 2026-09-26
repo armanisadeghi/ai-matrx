@@ -11,6 +11,7 @@ import {
   SheetTitle,
 } from "@ai-matrx/design-system";
 import type { YouTubeSearchHistoryEntry } from "./service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface YouTubeSearchHistoryProps {
   entries: YouTubeSearchHistoryEntry[];
@@ -50,6 +51,7 @@ function HistoryList({
           {error && (
             <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-3 text-xs leading-5 text-red-700 dark:text-red-200">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
           {entries.map((entry) => {

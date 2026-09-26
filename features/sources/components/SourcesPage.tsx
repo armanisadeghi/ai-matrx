@@ -603,6 +603,7 @@ export function SourcesPage() {
         ) : (
           <Badge variant="outline" className="text-muted-foreground">
             Not saved
+            <ErrorAlchemyMenu />
           </Badge>
         ),
       filter: "select",
@@ -785,6 +786,7 @@ export function SourcesPage() {
         {factsError ? (
           <p className="text-xs text-amber-600 dark:text-amber-400">
             {factsError}
+            <ErrorAlchemyMenu error={factsError} />
           </p>
         ) : null}
         {scopeChoice === "org" && !activeOrgId ? (
@@ -921,6 +923,7 @@ export function SourcesPage() {
                     )}
                   >
                     {isSourceSaved(r) ? "Saved" : "Not saved"}
+                    <ErrorAlchemyMenu />
                   </span>
                   {f ? (
                     <>

@@ -39,6 +39,7 @@ import type { SurfaceValue } from "@/features/surfaces/types";
 import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface Props {
   surface: SurfaceWithStats;
   onClose: () => void;
@@ -448,7 +449,7 @@ export function SurfaceDetailPanel({
             <div className="text-xs text-muted-foreground">Loading…</div>
           )}
           {tabError && (
-            <div className="text-xs text-destructive">{tabError}</div>
+            <div className="text-xs text-destructive">{tabError} <ErrorAlchemyMenu error={tabError} /></div>
           )}
           {!loadingTab && !tabError && agentBindings.length === 0 && (
             <div className="text-xs text-muted-foreground">
@@ -525,7 +526,7 @@ export function SurfaceDetailPanel({
             <div className="text-xs text-muted-foreground">Loading…</div>
           )}
           {tabError && (
-            <div className="text-xs text-destructive">{tabError}</div>
+            <div className="text-xs text-destructive">{tabError} <ErrorAlchemyMenu error={tabError} /></div>
           )}
           {!loadingTab && !tabError && toolBindings.length === 0 && (
             <div className="text-xs text-muted-foreground">

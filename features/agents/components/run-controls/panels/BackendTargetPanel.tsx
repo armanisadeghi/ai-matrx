@@ -37,6 +37,7 @@ import {
   selectEditorMode,
 } from "@/features/code/redux/codeWorkspaceSlice";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface BackendTargetPanelProps {
   conversationId: string;
@@ -248,6 +249,7 @@ export function BackendTargetPanel({
           <Row label="Mint error">
             <span className="text-amber-600 dark:text-amber-400 break-words">
               {overrideTokenError}
+              <ErrorAlchemyMenu error={overrideTokenError} />
             </span>
           </Row>
         )}

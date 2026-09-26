@@ -85,6 +85,7 @@ import {
 } from "@/features/marketing/lib/copy-payloads";
 import { cn } from "@/lib/utils";
 import { humanizeBackendError } from "@/utils/errors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function scoreCell(row: LinkGapDomainRow) {
   return (
@@ -267,6 +268,7 @@ function SeedCard({ prospects }: { prospects: LinkGapProspects }) {
         >
           Try again
         </button>
+        <ErrorAlchemyMenu error={seedError} />
       </div>
     );
   }
@@ -541,6 +543,7 @@ export function BacklinkProspectsTab({
             {run.status === "error" && run.error ? (
               <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive">
                 {humanizeBackendError(run.error)}
+                <ErrorAlchemyMenu />
               </p>
             ) : null}
             {run.status === "done" && run.receipt ? (

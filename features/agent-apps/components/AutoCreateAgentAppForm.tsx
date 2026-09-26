@@ -53,6 +53,7 @@ import {
 import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
 import MarkdownStream from "@/components/MarkdownStream";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AutoCreateAgentAppFormProps {
   agent?: any;
@@ -1630,6 +1631,7 @@ function ErrorCard({
             <AlertTriangle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
             <p className="text-destructive font-semibold text-sm leading-snug">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">

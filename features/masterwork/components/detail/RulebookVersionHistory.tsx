@@ -25,6 +25,7 @@ import {
   listRulebookVersions,
   type RulebookVersionEntry,
 } from "@/features/masterwork/service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** What actually happened, in Expert words rather than DB words. */
 const OPERATION_LABELS: Record<string, string> = {
@@ -105,7 +106,7 @@ export function RulebookVersionHistory({
               Reading the history…
             </p>
           ) : error ? (
-            <p className="py-2 text-xs text-destructive">{error}</p>
+            <p className="py-2 text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
           ) : entries && entries.length > 0 ? (
             <ul className="space-y-1.5">
               {entries.map((entry) => (

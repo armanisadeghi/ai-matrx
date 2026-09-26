@@ -51,6 +51,7 @@ import {
   type PlanBranchRef,
   type PlanIndexView,
 } from "../hooks/usePlanIndex";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Byte budget for one monospace block. Above this we still render everything
  * — a payload preview that silently truncates would repeat the original sin —
@@ -419,6 +420,7 @@ export function AgentPayloadSheet({
               <p className="mt-0.5 text-muted-foreground">
                 {extractErrorMessage(query.error)}
               </p>
+              <ErrorAlchemyMenu />
             </div>
           ) : view ? (
             <>

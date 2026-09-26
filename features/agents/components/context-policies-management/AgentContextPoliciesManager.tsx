@@ -73,6 +73,7 @@ import { AgentContextInjectionSwitch } from "@/features/agents/components/contex
 import { SCOPE_ITEM_DEFAULT_SAVE_MODE } from "@/features/agents/utils/agent-edit-access";
 import { cn } from "@/lib/utils";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const CONTEXT_TYPES: ContextObjectType[] = [
   "text",
@@ -634,6 +635,7 @@ function PolicyEditorFields({
       {formError && (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
           {formError}
+          <ErrorAlchemyMenu error={formError} />
         </div>
       )}
     </div>

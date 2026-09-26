@@ -9,6 +9,7 @@
 
 import { useMemo } from "react";
 import type { PageDetail } from "@/features/rag/types/documents";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface RawTextPaneProps {
   page: PageDetail | null;
@@ -45,7 +46,7 @@ export function RawTextPane({ page, loading, error }: RawTextPaneProps) {
           <div className="text-sm text-muted-foreground">Loading…</div>
         )}
         {error && (
-          <div className="text-sm text-destructive">Error: {error}</div>
+          <div className="text-sm text-destructive">Error: {error} <ErrorAlchemyMenu error={error} /></div>
         )}
         {!loading && !error && page && (
           <pre className="text-xs leading-relaxed whitespace-pre-wrap font-mono text-foreground">

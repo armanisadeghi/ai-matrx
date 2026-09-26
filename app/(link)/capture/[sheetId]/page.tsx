@@ -42,6 +42,7 @@ import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { uploadCaptureFile } from "@/features/capture/uploadCaptureFile";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function CrewCaptureRoute({
   params,
@@ -80,7 +81,7 @@ export default function CrewCaptureRoute({
         </div>
       ) : sheet.state === "unavailable" ? (
         <div className="space-y-2 p-4">
-          <p className="text-sm font-medium">We could not open this capture sheet</p>
+          <p className="text-sm font-medium">We could not open this capture sheet <ErrorAlchemyMenu /></p>
           <p className="text-xs text-muted-foreground">
             The record store did not answer, so nothing was opened. This is not an answer about
             your access. {sheet.why}

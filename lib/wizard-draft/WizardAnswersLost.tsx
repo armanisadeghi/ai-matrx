@@ -9,6 +9,7 @@
 
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface WizardAnswersLostProps {
   /** What the person was in the middle of, in their words ("your answers"). */
@@ -33,6 +34,7 @@ export function WizardAnswersLost({
         <div className="space-y-1">
           <h2 className="text-base font-semibold text-foreground">
             We could not find {what}
+            <ErrorAlchemyMenu />
           </h2>
           <p className="text-sm text-muted-foreground">
             {/* Number-agnostic on purpose: callers pass singular subjects
@@ -50,6 +52,7 @@ export function WizardAnswersLost({
         <ArrowLeft className="h-4 w-4" />
         {startOverLabel}
       </Button>
+      <ErrorAlchemyMenu />
     </div>
   );
 }

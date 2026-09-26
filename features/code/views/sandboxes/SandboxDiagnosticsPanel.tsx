@@ -65,6 +65,7 @@ import {
 import { cn } from "@/lib/utils";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { SandboxVersionHealthCard } from "./SandboxVersionHealthCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type DiagCheck = {
   ok?: boolean;
@@ -913,6 +914,7 @@ export const SandboxDiagnosticsPanel = forwardRef<
               {fsRootError && (
                 <div className="text-destructive text-xs font-mono mb-2 break-all shrink-0">
                   {fsRootError}
+                  <ErrorAlchemyMenu error={fsRootError} />
                 </div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:flex-1 md:min-h-0">
@@ -970,6 +972,7 @@ export const SandboxDiagnosticsPanel = forwardRef<
                         ) : fileError ? (
                           <pre className="text-destructive whitespace-pre-wrap font-mono">
                             {fileError}
+                            <ErrorAlchemyMenu error={fileError} />
                           </pre>
                         ) : (
                           <pre className="font-mono whitespace-pre-wrap leading-tight">
@@ -1033,6 +1036,7 @@ export const SandboxDiagnosticsPanel = forwardRef<
               {agentEnvError && (
                 <div className="text-destructive text-xs font-mono mb-2 break-all shrink-0">
                   {agentEnvError}
+                  <ErrorAlchemyMenu error={agentEnvError} />
                 </div>
               )}
               {agentEnv?.[`${envView}_error` as keyof AgentEnvResponse] && (
@@ -1040,6 +1044,7 @@ export const SandboxDiagnosticsPanel = forwardRef<
                   {String(
                     agentEnv[`${envView}_error` as keyof AgentEnvResponse],
                   )}
+                  <ErrorAlchemyMenu />
                 </div>
               )}
               <ScrollArea className="h-96 md:h-auto md:flex-1 md:min-h-0 border border-border rounded-md">

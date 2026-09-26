@@ -77,6 +77,7 @@ import {
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { RecordingOriginRef } from "./RecordingOriginRef";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── Surface write-target validation ─────────────────────────────────────────
 // Agent-supplied values arrive as `unknown`. Every handler validates its own
@@ -988,6 +989,7 @@ export function TranscriptViewer() {
                     <div className="text-xs text-red-500 flex items-center shrink-0">
                       <X className="h-3 w-3 mr-1" />
                       Failed to load audio
+                      <ErrorAlchemyMenu />
                     </div>
                   )}
               </div>

@@ -14,6 +14,7 @@ import type {
 import { WorkflowFilterBar } from "./WorkflowFilterBar";
 import { WorkflowListTabs } from "./WorkflowListTabs";
 import { WorkflowRow } from "./WorkflowRow";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface WorkflowListContentProps {
   workflows: WorkflowListRecord[];
@@ -128,6 +129,7 @@ export function WorkflowListContent({
             <CircleAlert className="h-5 w-5 text-destructive" />
             <p className="text-xs leading-relaxed text-destructive">
               Workflows could not be read: {readError}
+              <ErrorAlchemyMenu error={readError} />
             </p>
             <Button
               variant="outline"

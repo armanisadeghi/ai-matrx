@@ -28,6 +28,7 @@ import {
   type PickNode,
   type SelectionEngine,
 } from "./engine";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /* ── glyphs ──────────────────────────────────────────────────────────────── */
 
@@ -140,6 +141,7 @@ export function ErrorPane({
       <AlertTriangle className="h-4 w-4 text-destructive" />
       <div className="text-xs text-destructive">
         {message ?? "Something went wrong loading your context."}
+        <ErrorAlchemyMenu />
       </div>
       <button
         type="button"

@@ -43,6 +43,7 @@ import {
   LayoutPanelLeft,
   Rows3,
 } from "lucide-react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Public types (exported so consumers can reference them) ─────────────────
 
@@ -1460,6 +1461,7 @@ function InputPanel({
       {parseError && (
         <div className="px-2 py-1 bg-destructive/10 border-t border-destructive/30 text-destructive text-[10px] flex items-center gap-1 flex-shrink-0">
           <AlertCircle size={10} /> {parseError}
+          <ErrorAlchemyMenu error={parseError} />
         </div>
       )}
       {parsed && !parseError && (

@@ -36,6 +36,7 @@ import type { CodeEditorAgentConfig } from "../../types";
 import { ItemRow } from "@/components/official/item/ItemRow";
 import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
 import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CodeEditorHistoryPanelProps {
   agents: CodeEditorAgentConfig[];
@@ -119,6 +120,7 @@ export function CodeEditorHistoryPanel({
         {pickerError && (
           <p className="text-[10px] text-destructive leading-snug">
             {pickerError}
+            <ErrorAlchemyMenu error={pickerError} />
           </p>
         )}
       </div>
@@ -134,6 +136,7 @@ export function CodeEditorHistoryPanel({
         {errorMessages.length > 0 && (
           <div className="px-3 py-2 text-[10px] text-destructive">
             {errorMessages[0]}
+            <ErrorAlchemyMenu />
           </div>
         )}
 

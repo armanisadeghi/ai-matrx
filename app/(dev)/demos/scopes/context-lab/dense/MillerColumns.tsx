@@ -32,6 +32,7 @@ import {
   fakeCreate,
   type DenseData,
 } from "./shared";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function Column({
   title,
@@ -193,6 +194,7 @@ export function MillerColumns({
     return (
       <div className="rounded-md border border-destructive/40 p-3 text-xs text-destructive">
         Couldn&apos;t load the tree: {data.treeError}
+        <ErrorAlchemyMenu error={data.treeError} />
       </div>
     );
   }

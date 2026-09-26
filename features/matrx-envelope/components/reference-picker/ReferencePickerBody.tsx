@@ -60,6 +60,7 @@ import {
   type ReferencePick,
 } from "./referencePickerTypes";
 import { useCommonReferenceTypes } from "./useCommonReferenceTypes";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // THE one canonical file picker — lazy, WindowPanel never enters a boot bundle.
 const FilePickerWindow = dynamic(
@@ -620,7 +621,7 @@ function ActionRow({
               <Loader2 className="h-3 w-3 animate-spin" /> Loading actions…
             </p>
           )}
-          {error && <p className="text-amber-700 dark:text-amber-300">{error}</p>}
+          {error && <p className="text-amber-700 dark:text-amber-300">{error} <ErrorAlchemyMenu error={error} /></p>}
           {options?.map((o) => (
             <button
               key={o.directiveClass}
@@ -719,7 +720,7 @@ function InlineCreate({
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Create"}
         </Button>
       </div>
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>}
     </div>
   );
 }

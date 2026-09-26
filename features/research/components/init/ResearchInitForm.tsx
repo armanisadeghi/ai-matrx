@@ -2540,6 +2540,7 @@ export default function ResearchInitForm() {
       {error && (
         <div className="w-full max-w-2xl mt-4 rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 

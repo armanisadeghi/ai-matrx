@@ -56,6 +56,7 @@ import type {
   TaskListViewPending,
   TaskListingResultPending,
 } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** What an outcome action means, in words a person reads (Law 10). */
 const TASK_ACTION_COPY: Record<string, string> = {
@@ -423,6 +424,7 @@ export function GoogleTasksImportPanel({
         <p className="flex items-start gap-2 border-b border-border bg-destructive/10 px-4 py-2 text-xs text-destructive">
           <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           {error}
+          <ErrorAlchemyMenu error={error} />
         </p>
       ) : null}
       {/* THE FOURTH STATE. One posture, both import panels. */}

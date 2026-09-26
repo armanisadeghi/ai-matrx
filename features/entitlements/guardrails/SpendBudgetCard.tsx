@@ -48,6 +48,7 @@ import {
   type SpendGuardrail,
 } from "./service";
 import { useSpendBudget } from "./useSpendBudget";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SpendBudgetCardProps {
   organizationId: string | null | undefined;
@@ -126,6 +127,7 @@ export function SpendBudgetCard({
         >
           Try again
         </Button>
+        <ErrorAlchemyMenu />
       </div>
     );
   }

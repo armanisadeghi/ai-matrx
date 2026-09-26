@@ -15,6 +15,7 @@ import ActivityFeedPanel from './ActivityFeedPanel';
 import SitePageTreePanel from './SitePageTreePanel';
 import PolicyEditorPanel from './PolicyEditorPanel';
 import AssetsPanel from './AssetsPanel';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function CmsAgentsAdminClient() {
     const [sites, setSites] = useState<ClientSiteSummary[]>([]);
@@ -59,6 +60,7 @@ export default function CmsAgentsAdminClient() {
             <div className="flex flex-col items-center justify-center h-full gap-2 text-destructive text-sm">
                 <AlertCircle className="h-6 w-6" />
                 {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
         );
     }

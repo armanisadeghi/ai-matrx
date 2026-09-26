@@ -94,6 +94,7 @@ import { keywordLibraryCopyRow } from "../format";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function usMarket(row: KeywordWithMarket): KeywordMarketRow | null {
   return (
@@ -1138,7 +1139,7 @@ export default function KeywordResearchWorkbench() {
 
         <div className="min-h-0 flex-1 overflow-auto p-3">
           {loadError ? (
-            <p className="px-4 py-6 text-sm text-destructive">{loadError}</p>
+            <p className="px-4 py-6 text-sm text-destructive">{loadError} <ErrorAlchemyMenu error={loadError} /></p>
           ) : (
             <>
               {keywordSurfaces.node}

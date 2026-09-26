@@ -71,6 +71,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Arman's ceiling: one keyword, optionally a second. Never a third. */
 export const PAGE_RESEARCH_MAX_KEYWORDS = 2;
@@ -588,6 +589,7 @@ function PageResearchWindowInner({
               data-surface-value="stream_error"
             >
               {stream.error}
+              <ErrorAlchemyMenu error={stream.error} />
             </p>
           ) : null}
           {topicId ? (
@@ -605,6 +607,7 @@ function PageResearchWindowInner({
                   data-surface-value="attachment_error"
                 >
                   {attachment.error}{" "}
+                  <ErrorAlchemyMenu error={attachment.error} />
                 </span>
               ) : null}
               <Link

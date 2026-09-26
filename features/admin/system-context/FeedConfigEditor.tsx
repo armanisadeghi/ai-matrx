@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/select";
 import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
 import type { Database as DB, Json } from "@/types/database.types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type FeedType = DB["public"]["Enums"]["context_feed_type"];
 export type FeedConfig = Record<string, unknown>;
@@ -222,7 +223,7 @@ function DatasetFeedConfig({
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading library catalog…
         </div>
       ) : error ? (
-        <p className="text-xs text-destructive">Could not load datasets: {error}</p>
+        <p className="text-xs text-destructive">Could not load datasets: {error} <ErrorAlchemyMenu error={error} /></p>
       ) : items.length === 0 ? (
         <p className="text-xs text-muted-foreground">
           No published knowledge libraries found. Publish one from{" "}

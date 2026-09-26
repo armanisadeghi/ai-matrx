@@ -67,6 +67,7 @@ import {
   type EgressPairingByCode,
   type EgressStatus,
 } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function OsIcon({ os }: { os: string }) {
   const className = "h-4 w-4 shrink-0";
@@ -226,6 +227,7 @@ function ExistingComputers() {
       <p className="text-[11px] text-amber-600 dark:text-amber-400">
         We could not check which of your computers are already connected:{" "}
         {error}. The steps below still work.
+        <ErrorAlchemyMenu error={error} />
       </p>
     );
   }

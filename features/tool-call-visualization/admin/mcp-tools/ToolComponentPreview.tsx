@@ -46,6 +46,7 @@ import type {
 import type { ToolEventPayload } from "@/types/python-generated/stream-events";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -401,6 +402,7 @@ export function ToolComponentPreview({
               The revision could not be saved. The generated code is still
               visible in the panel below — copy it manually into the Edit Code
               tab if needed.
+              <ErrorAlchemyMenu />
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -419,6 +421,7 @@ export function ToolComponentPreview({
                   </p>
                 </>
               )}
+              <ErrorAlchemyMenu error={saveError?.title} />
             </div>
             {agent.accumulatedText && (
               <div className="space-y-2">
@@ -677,6 +680,7 @@ export function ToolComponentPreview({
             <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-xs text-destructive">
               <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
               {agent.error}
+              <ErrorAlchemyMenu error={agent.error} />
             </div>
           )}
 

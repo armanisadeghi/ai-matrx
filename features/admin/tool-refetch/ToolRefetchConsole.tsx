@@ -61,6 +61,7 @@ import {
   type ToolRefetchDetailRow,
   type ToolRefetchSummaryRow,
 } from "./service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /* ── formatters that refuse to invent a number ─────────────────────────────── */
 
@@ -497,6 +498,7 @@ export function ToolDetail({
         <Button size="sm" variant="outline" onClick={() => void detail.refetch()}>
           Retry
         </Button>
+        <ErrorAlchemyMenu error={detail.error.message} />
       </div>
     );
   }

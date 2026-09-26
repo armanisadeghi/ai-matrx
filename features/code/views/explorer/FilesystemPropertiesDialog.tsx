@@ -22,6 +22,7 @@ import {
   type FilesystemProperties,
 } from "../../utils/filesystem-properties";
 import { extractErrorMessage } from "@/utils/errors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface FilesystemPropertiesDialogProps {
   node: FilesystemNode | null;
@@ -197,7 +198,7 @@ export function FilesystemPropertiesDialog({
           </div>
         )}
 
-        {sizeError && <p className="text-sm text-destructive">{sizeError}</p>}
+        {sizeError && <p className="text-sm text-destructive">{sizeError} <ErrorAlchemyMenu error={sizeError} /></p>}
       </DialogContent>
     </Dialog>
   );

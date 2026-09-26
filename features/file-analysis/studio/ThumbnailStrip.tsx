@@ -23,6 +23,7 @@ import {
 import { usePageThumbnail } from "@/features/file-analysis/hooks/usePageThumbnail";
 import * as Api from "@/features/file-analysis/api/file-analysis";
 import type { FilePageOut } from "@/features/file-analysis/api/file-analysis";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   fileId: string;
@@ -55,7 +56,7 @@ export function ThumbnailStrip({
     if (error) {
       return (
         <div className="space-y-2 px-2 py-4 text-center text-[11px] text-muted-foreground">
-          <p>The page list could not be loaded.</p>
+          <p>The page list could not be loaded. <ErrorAlchemyMenu /></p>
           <button
             type="button"
             onClick={refetch}

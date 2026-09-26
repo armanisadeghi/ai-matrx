@@ -30,6 +30,7 @@ import { PendingExamplesPanel } from "./PendingExamplesPanel";
 import { ReviewProgress } from "./ReviewProgress";
 import { ReviewRow } from "./ReviewRow";
 import { fmtCost, fmtDate, KIND_COLOR, KIND_ICON, KIND_LABEL } from "./tokens";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function EnrollmentDetailPanel({
   enrollmentId,
@@ -71,6 +72,7 @@ export function EnrollmentDetailPanel({
     return (
       <Card className="p-4 text-sm text-red-600 dark:text-red-400">
         Could not load this enrollment: {(detail.error as Error).message}
+        <ErrorAlchemyMenu />
       </Card>
     );
   }

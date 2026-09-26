@@ -28,6 +28,7 @@ import { loadShapeReadiness } from "@/features/content-ir/studio/shape-readiness
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ConvertToShapeWindowProps {
   isOpen: boolean;
@@ -216,12 +217,14 @@ function ConvertToShapeWindowContent({
         {!analysis.isValidJson && (
           <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
             This sample is not valid JSON: {analysis.errorMessage}
+            <ErrorAlchemyMenu error={analysis.errorMessage} />
           </div>
         )}
 
         {readinessError && (
           <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
             Shape readiness could not be checked: {readinessError}
+            <ErrorAlchemyMenu error={readinessError} />
           </div>
         )}
 
@@ -229,6 +232,7 @@ function ConvertToShapeWindowContent({
           <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
             The Shape Creator mandate could not resolve
             {mandateError ? `: ${mandateError}` : "."}
+            <ErrorAlchemyMenu />
           </div>
         )}
 

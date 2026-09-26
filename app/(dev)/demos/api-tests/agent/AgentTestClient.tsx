@@ -49,6 +49,7 @@ const loadConversationHistory = createAsyncThunk(
 );
 import { AgentWireFoldComparison } from "./AgentWireFoldComparison";
 import { AgentCanonicalDbPanel } from "./AgentCanonicalDbPanel";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─────────────────────────────────────────────────────
 // Types
@@ -198,6 +199,7 @@ function RunLogCard({
           {log.error && (
             <div className="p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive">
               {log.error}
+              <ErrorAlchemyMenu error={log.error} />
             </div>
           )}
           {log.textOutput && (

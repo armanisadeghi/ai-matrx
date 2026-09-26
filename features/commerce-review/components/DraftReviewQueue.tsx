@@ -41,6 +41,7 @@ import type { DraftItem, ReviewVerdict } from "../types";
 import { listDraftQueue, reviewDraft } from "../service";
 import { ConfidenceChip, confidenceBand } from "./ConfidenceChip";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function DraftReviewQueue() {
   // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE — this read the
@@ -159,7 +160,7 @@ export function DraftReviewQueue() {
   if (loadError)
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3">
-        <p className="px-6 text-center text-sm text-destructive">{loadError}</p>
+        <p className="px-6 text-center text-sm text-destructive">{loadError} <ErrorAlchemyMenu error={loadError} /></p>
         <Button variant="outline" size="sm" onClick={retryLoad}>
           Try again
         </Button>

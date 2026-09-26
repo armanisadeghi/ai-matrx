@@ -17,6 +17,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, Pause, Play, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SOURCES = [
   { value: "all", label: "All" },
@@ -198,6 +199,7 @@ export const SandboxLogsView: React.FC<SandboxLogsViewProps> = ({
         {error ? (
           <span className="text-red-600 dark:text-red-400">
             Failed to load logs: {error}
+            <ErrorAlchemyMenu error={error} />
           </span>
         ) : text ? (
           text

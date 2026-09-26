@@ -134,6 +134,7 @@ import { ProInput } from "@/components/official/ProInput";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ===========================================================================
 // Agent Chat surface — the "Agent Chat" tab embeds the canonical agent system
@@ -1250,6 +1251,7 @@ function SearchTab({
         {error && (
           <div className="m-4 flex items-center gap-2 text-sm text-destructive">
             <AlertCircle className="h-4 w-4" /> {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
 
@@ -1475,6 +1477,7 @@ function AgentToolResultBlock({
       {result.error && (
         <div className="px-3 py-2 text-xs text-destructive flex items-center gap-2">
           <AlertCircle className="h-3.5 w-3.5" /> {result.error}
+          <ErrorAlchemyMenu error={result.error} />
         </div>
       )}
 
@@ -1575,7 +1578,7 @@ function AgentToolResultBlock({
                     </span>
                   )}
                   {out.error && (
-                    <span className="text-destructive">{out.error}</span>
+                    <span className="text-destructive">{out.error} <ErrorAlchemyMenu error={out.error} /></span>
                   )}
                   {out.data && out.data.status !== "ok" && (
                     <span className="text-amber-600 dark:text-amber-400">
@@ -1756,6 +1759,7 @@ function AgentToolPanel({ scope }: { scope: Scope }) {
         {error && (
           <div className="flex items-center gap-2 text-xs text-destructive">
             <AlertCircle className="h-4 w-4" /> {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
         {resp?.notes.map((n, i) => (
@@ -1992,6 +1996,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
           {error && (
             <div className="flex items-center gap-2 text-sm text-destructive">
               <AlertCircle className="h-4 w-4" /> {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
 
@@ -2505,6 +2510,7 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
           {error && (
             <div className="flex items-center gap-2 text-sm text-destructive">
               <AlertCircle className="h-4 w-4" /> {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
 

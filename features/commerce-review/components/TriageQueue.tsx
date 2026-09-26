@@ -36,6 +36,7 @@ import type { TriageItem, ValueBucket } from "../types";
 import { VALUE_BUCKETS } from "../types";
 import { decideValueBucket, listTriageQueue } from "../service";
 import { ConfidenceChip } from "./ConfidenceChip";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const BUCKET_LABELS: Record<ValueBucket, string> = {
   definite_value: "Definite value",
@@ -151,7 +152,7 @@ export function TriageQueue() {
   if (loadError)
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3">
-        <p className="px-6 text-center text-sm text-destructive">{loadError}</p>
+        <p className="px-6 text-center text-sm text-destructive">{loadError} <ErrorAlchemyMenu error={loadError} /></p>
         <Button variant="outline" size="sm" onClick={retryLoad}>
           Try again
         </Button>

@@ -55,6 +55,7 @@ import { VariablesEditor } from "./VariablesEditor";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface FormState {
   title: string;
@@ -804,7 +805,7 @@ function Field({
         )}
       </Label>
       {children}
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu /></p>}
     </div>
   );
 }

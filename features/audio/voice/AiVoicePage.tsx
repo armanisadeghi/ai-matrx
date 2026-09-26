@@ -10,6 +10,7 @@ import VoicePlayground from "./VoicePlayground";
 import { HandsFreeVoiceChat } from "./HandsFreeVoiceChat";
 import { createUseModuleHook } from "@/lib/hooks/useModule";
 import { AiAudioSchema } from "@/types/aiAudioTypes";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const useAiAudio = createUseModuleHook<AiAudioSchema>("aiAudio", aiAudioInitialState);
 
@@ -88,6 +89,7 @@ const AiVoicePage: React.FC = () => {
         return (
             <div className="flex h-full items-center justify-center p-6 text-center text-sm text-destructive">
                 {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
         );
     }

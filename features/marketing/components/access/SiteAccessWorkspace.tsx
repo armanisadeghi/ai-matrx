@@ -29,6 +29,7 @@ import {
   type AccessPanelView,
   type SharingCopyContext,
 } from "@/features/sharing/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The label for the active view, for the copy/agent payloads only — the SITE
@@ -317,6 +318,7 @@ export function SiteAccessWorkspace({
                     Could not determine whether you own this site:{" "}
                     {ownership.error}
                   </p>
+                  <ErrorAlchemyMenu error={ownership.error} />
                 </div>
               )}
               {!ownership.loading && !ownership.error && !isOwner && (
@@ -402,6 +404,7 @@ export function SiteAccessWorkspace({
                       agent={blockersVariant}
                     />
                   </span>
+                  <ErrorAlchemyMenu error={error} />
                 </div>
               )}
             </div>

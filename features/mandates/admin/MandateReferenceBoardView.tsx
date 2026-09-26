@@ -413,6 +413,7 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
                     : patrol.enabled
                       ? "No run recorded yet. The first one appears here after the next due time."
                       : "The patrol is disabled, so there are no runs and nothing re-scans on its own."}
+                  <ErrorAlchemyMenu />
                 </td>
               </tr>
             )}
@@ -534,7 +535,7 @@ export function MandateReferenceBoardView() {
             aria-hidden="true"
           />
           <div>
-            <strong>The board failed to load.</strong> Nothing below is a
+            <strong>The board failed to load. <ErrorAlchemyMenu /></strong> Nothing below is a
             report of health — it is unknown. {error}
           </div>
           <ErrorAlchemyMenu className="ml-auto" />

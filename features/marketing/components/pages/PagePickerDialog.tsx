@@ -29,6 +29,7 @@ import { useDebounce } from "@/hooks/usehooks/useDebounce";
 import { cn } from "@/lib/utils";
 import { searchPagesForMetaApply } from "@/features/marketing/data/service";
 import type { MetaApplyTarget } from "@/features/marketing/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Host of a page URL — the site it belongs to, without a second query. */
 function siteLabel(url: string): string {
@@ -166,7 +167,7 @@ export function PagePickerDialog({
               Loading pages…
             </div>
           ) : loadError ? (
-            <div className="px-3 py-6 text-sm text-destructive">{loadError}</div>
+            <div className="px-3 py-6 text-sm text-destructive">{loadError} <ErrorAlchemyMenu error={loadError} /></div>
           ) : pages.length === 0 ? (
             <div className="px-3 py-6 text-sm text-muted-foreground">
               {debouncedTerm.trim()

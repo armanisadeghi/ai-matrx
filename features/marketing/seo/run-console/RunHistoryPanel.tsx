@@ -80,6 +80,7 @@ import {
   type StatusGroup,
 } from "./runHistoryFilters";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const formatDuration = (ms: number | null): string =>
   formatDurationMs(ms, { style: "compact" });
@@ -272,6 +273,7 @@ function AiCallCard({ call, index }: { call: RunAiCall; index: number }) {
                   extractErrorMessage(call.error),
                   "That run failed. The full detail is in the logs.",
                 )}
+                <ErrorAlchemyMenu />
               </p>
             </div>
           ) : null}
@@ -343,6 +345,7 @@ function RunDetail({
       {run.error_text ? (
         <p className="mx-2 mt-2 rounded border border-destructive/50 bg-destructive/10 px-2 py-1 text-[11px] text-destructive">
           {run.error_text}
+          <ErrorAlchemyMenu error={run.error_text} />
         </p>
       ) : null}
       {run.summary ? (
@@ -359,6 +362,7 @@ function RunDetail({
           <p className="text-xs text-destructive">
             Could not read this run's AI calls:{" "}
             {extractErrorMessage(calls.error)}
+            <ErrorAlchemyMenu />
           </p>
         ) : (calls.data?.length ?? 0) === 0 ? (
           <p className="text-xs text-muted-foreground">
@@ -814,6 +818,7 @@ export function RunHistoryPanel() {
           {linkedRun.isError
             ? `Could not read run ${selectedRef.id.slice(0, 8)}: ${extractErrorMessage(linkedRun.error)}`
             : `No ${RUN_KIND_LABEL[selectedRef.kind].toLowerCase()} run has the id ${selectedRef.id}.`}
+          <ErrorAlchemyMenu />
         </p>
         <Button
           size="sm"
@@ -886,6 +891,7 @@ export function RunHistoryPanel() {
             <p className="mb-2 text-[11px] text-destructive">
               Could not count the runs this view groups:{" "}
               {extractErrorMessage(facets.error)}
+              <ErrorAlchemyMenu />
             </p>
           ) : (
             <QuietGroups
@@ -904,6 +910,7 @@ export function RunHistoryPanel() {
         ) : runs.isError ? (
           <p className="text-xs text-destructive">
             Could not read run history: {extractErrorMessage(runs.error)}
+            <ErrorAlchemyMenu />
           </p>
         ) : rows.length === 0 ? (
           <p className="text-xs text-muted-foreground">

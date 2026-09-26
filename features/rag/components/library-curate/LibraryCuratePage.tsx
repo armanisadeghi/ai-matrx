@@ -59,6 +59,7 @@ import {
 } from "@/features/admin/shared-knowledge/packs/data";
 import type { StarterPackSummary } from "@/features/marketing/seo/value-system/types";
 import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function LibraryCuratePage() {
   const router = useRouter();
@@ -167,6 +168,7 @@ export function LibraryCuratePage() {
         <div className="h-full overflow-y-auto p-6 pt-[calc(var(--shell-header-h)+1.5rem)]">
           <div className="max-w-2xl rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             {extractErrorMessage(curatorships.error)}
+            <ErrorAlchemyMenu />
           </div>
         </div>
       </>
@@ -226,6 +228,7 @@ export function LibraryCuratePage() {
             ) : packs.isError ? (
               <div className="m-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
                 {extractErrorMessage(packs.error)}
+                <ErrorAlchemyMenu />
               </div>
             ) : (
               industries.map((ind) => {

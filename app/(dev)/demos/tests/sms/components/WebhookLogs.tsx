@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, RefreshCw, AlertCircle, Webhook, CheckCircle2, XCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface WebhookLog {
   id: string;
@@ -142,6 +143,7 @@ export default function WebhookLogs() {
                   {log.processing_error && (
                     <div className="text-xs text-red-500 mb-1">
                       Error: {log.processing_error}
+                      <ErrorAlchemyMenu error={log.processing_error} />
                     </div>
                   )}
                   <div className="text-xs text-muted-foreground">

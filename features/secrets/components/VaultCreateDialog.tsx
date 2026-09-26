@@ -102,6 +102,7 @@ import {
   type VaultItemCreateRequest,
   type VaultPrincipal,
 } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type DestinationFeedback = {
   tone: "checking" | "success" | "warning" | "error";
@@ -1564,7 +1565,7 @@ function DefinitionForm({
                 can leave this blank, save the login now, and add it later.
               </p>
               {totpDecodeError && (
-                <p className="text-xs text-destructive">{totpDecodeError}</p>
+                <p className="text-xs text-destructive">{totpDecodeError} <ErrorAlchemyMenu error={totpDecodeError} /></p>
               )}
             </div>
           )}

@@ -20,6 +20,7 @@ import {
   resolveAgentRunRoute,
   type AgentRunRoute,
 } from "./agent-run-route";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AgentRunSidebarMenuProps {
   expanded: boolean;
@@ -164,6 +165,7 @@ export default function AgentRunSidebarMenu({
         {convStatus === "failed" && (
           <p className="px-2 py-2 text-[10px] text-destructive">
             {convError ?? "Failed to load conversations"}
+            <ErrorAlchemyMenu error={convError} />
           </p>
         )}
         {convStatus === "succeeded" && conversations.length === 0 && (

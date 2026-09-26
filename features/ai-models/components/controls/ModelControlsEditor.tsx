@@ -54,6 +54,7 @@ import { buildControlRows } from "../../controls/resolveControls";
 import ControlRuleRow, { type RuleDestination } from "./ControlRuleRow";
 import PendingChangesBar from "./PendingChangesBar";
 import JsonFieldEditor from "../JsonFieldEditor";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type ModelConfigRow = Database["ai"]["Views"]["model_config"]["Row"];
 
@@ -437,6 +438,7 @@ export default function ModelControlsEditor({
         {loadError && (
           <p className="text-xs text-red-600 dark:text-red-400 break-words">
             Failed to load rule sources: {loadError}
+            <ErrorAlchemyMenu error={loadError} />
           </p>
         )}
       </div>

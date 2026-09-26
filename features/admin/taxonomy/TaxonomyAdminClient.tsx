@@ -31,6 +31,7 @@ import {
   type TaxonomyStatus,
   type TaxonomyTreeNode,
 } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function TaxonomyAdminClient() {
   const { toast } = useToast();
@@ -194,6 +195,7 @@ export default function TaxonomyAdminClient() {
       {loadError && (
         <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
           Failed to load the registry: {loadError}
+          <ErrorAlchemyMenu error={loadError} />
         </div>
       )}
       {!rows && !loadError && (

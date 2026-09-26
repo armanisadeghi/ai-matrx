@@ -28,6 +28,7 @@ import type { KioskDeviceRow } from "@/features/hr/time/api/types";
 import { DeviceFleetTable } from "./DeviceFleetTable";
 import { PairingCodeDialogBody } from "./PairingCodePanel";
 import type { KioskDeviceAdminSource } from "./deviceAdminSource";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function KioskDevicesPanel({ source }: { source: KioskDeviceAdminSource }) {
   const [rows, setRows] = useState<KioskDeviceRow[] | null>(null);
@@ -83,6 +84,7 @@ export function KioskDevicesPanel({ source }: { source: KioskDeviceAdminSource }
       {error && (
         <p className="rounded-lg border border-destructive/40 bg-card p-4 text-sm text-foreground">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </p>
       )}
 

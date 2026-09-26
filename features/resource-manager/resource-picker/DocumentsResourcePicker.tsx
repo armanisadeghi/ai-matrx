@@ -11,6 +11,7 @@ import {
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { usePickerInputFocus } from "./usePickerInputFocus";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface DocumentsResourcePickerProps {
   onBack: () => void;
@@ -83,6 +84,7 @@ export function DocumentsResourcePicker({
         ) : error ? (
           <div className="text-xs text-destructive text-center py-8 px-3">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         ) : filteredDocuments.length === 0 ? (
           <div className="text-xs text-muted-foreground text-center py-8">

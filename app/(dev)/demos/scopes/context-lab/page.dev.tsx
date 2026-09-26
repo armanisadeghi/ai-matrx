@@ -106,6 +106,7 @@ import type {
   ContextItemRow,
   ContextItemValue,
 } from "@/features/scopes/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface DemoFile {
   id: string;
@@ -1594,6 +1595,7 @@ export default function ContextLabPage() {
             <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300">
               <AlertTriangle className="h-4 w-4" />
               {filesErr}
+              <ErrorAlchemyMenu error={filesErr} />
             </div>
           ) : filesLoading ? (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -32,6 +32,7 @@ import { kindPhrase } from "../provision-shapes";
 import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
 import { useMandateLadder, type MandateRung } from "../workspace/useMandateLadder";
 import type { FeatureIntelligenceRow, ResolvedPlace } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface RunOverride {
   holderId: string;
@@ -267,7 +268,7 @@ export function IntelligenceJobCard({
           );
         })}
         {runOverride ? <span className={cn("rounded-full border px-2 py-0.5 font-medium", runOverride.health === "unavailable" ? "border-destructive/40 bg-destructive/5 text-destructive" : runOverride.health === "unknown" ? "border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-300" : "border-primary/40 bg-primary/5 text-primary")}>This topic: {runOverride.health === "unavailable" ? "Agent unavailable" : runOverride.health === "unknown" ? "Status unavailable" : runOverride.health === "checking" ? "Checking agent" : runOverride.matchesMandate ? "Same agent" : "Active"}</span> : null}
-        {ladder.error ? <span className="text-destructive">Could not read the mandate layers: {ladder.error}</span> : null}
+        {ladder.error ? <span className="text-destructive">Could not read the mandate layers: {ladder.error} <ErrorAlchemyMenu error={ladder.error} /></span> : null}
       </div>
 
       <dl className="mt-3 grid gap-x-6 gap-y-2.5 text-[13px] sm:grid-cols-[7.5rem_1fr]">

@@ -31,6 +31,7 @@ import type {
   KeywordSelectionUiState,
   KeywordSelectionWrite,
 } from "./KeywordResearchBlock";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface KeywordClassificationBatchBlockProps {
   serverData?: unknown;
@@ -141,6 +142,7 @@ function ClassificationCard({
         <p className="mt-1 inline-flex items-center gap-1 text-[10px] text-destructive">
           <AlertTriangle className="h-3 w-3" />
           {card.error}
+          <ErrorAlchemyMenu error={card.error} />
         </p>
       )}
     </div>

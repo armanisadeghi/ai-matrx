@@ -24,6 +24,7 @@ import type { ImageMetadata, StudioSourceFile } from "../types";
 import { DESCRIPTION_LIMITS } from "@/features/marketing/seo/serp/metrics";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Textarea } from "@/components/ui/textarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface MetadataPanelProps {
   file: StudioSourceFile;
@@ -60,6 +61,7 @@ export function MetadataPanel({
             <p className="text-[11px] text-destructive mt-1 flex items-center gap-1">
               <AlertCircle className="h-3 w-3 shrink-0" />
               {file.metadataError}
+              <ErrorAlchemyMenu error={file.metadataError} />
             </p>
           )}
         </div>

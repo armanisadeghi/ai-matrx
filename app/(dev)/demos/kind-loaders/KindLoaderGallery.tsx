@@ -24,6 +24,7 @@ import {
 import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
 import type { KindLoadingProps } from "@/features/content-ir/react/loading/kind-loading.types";
 import type { RealKindRow } from "./real-kinds";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Early keys shaped like a real streaming payload's first arrivals. */
 const EARLY: KindLoadingProps = {
@@ -133,6 +134,7 @@ export default function KindLoaderGallery({
           <p className="mt-4 flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
             <TriangleAlert className="h-4 w-4 shrink-0" />
             Could not read the kind registry: {loadError}
+            <ErrorAlchemyMenu error={loadError} />
           </p>
         ) : realKinds.length === 0 ? (
           <p className="mt-4 text-sm text-muted-foreground">

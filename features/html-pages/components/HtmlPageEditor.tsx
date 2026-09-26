@@ -50,6 +50,7 @@ import {
   TITLE_LIMITS,
 } from "@/features/marketing/seo/serp/metrics";
 import { fenceOpenerOf } from "@ai-matrx/content-ir/source";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type EditorTab = "meta" | "html" | "preview";
 
@@ -754,6 +755,7 @@ export default function HtmlPageEditor({
           <div className="shrink-0 px-4 sm:px-6 py-2 bg-destructive/10 text-destructive text-xs flex items-center gap-2">
             <AlertCircle className="h-3.5 w-3.5 shrink-0" />
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
 

@@ -33,6 +33,7 @@ import {
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@/components/official/mobile-table/mobileTable";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type MemoryCostByEventType = components["schemas"]["MemoryCostByEventType"];
 
@@ -111,6 +112,7 @@ export function MemoryCostCard({
       {fetchState?.status === "error" && (
         <div className="text-[11px] bg-destructive/5 border border-destructive/20 text-destructive rounded p-2">
           {fetchState.error ?? "Failed to load memory cost."}
+          <ErrorAlchemyMenu error={fetchState.error} />
         </div>
       )}
 

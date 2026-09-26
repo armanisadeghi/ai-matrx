@@ -81,6 +81,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_PROOF_RUNS_SURFACE_NAME, createAdminProofRunsScope } from "@/features/surfaces/manifests/admin-proof-runs.manifest";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const MODES: { value: ProofRunMode; label: string; hint: string }[] = [
   {
@@ -687,6 +688,7 @@ export default function ProofRunsClient() {
               {openRun.failure_reason ? (
                 <div className="rounded-md border border-red-500/30 bg-red-500/10 p-2 text-xs text-red-800 dark:text-red-200">
                   {openRun.failure_reason}
+                  <ErrorAlchemyMenu error={openRun.failure_reason} />
                 </div>
               ) : null}
               <KindInstanceRender

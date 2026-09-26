@@ -51,6 +51,7 @@ import {
 import { packReviewHref } from "@/features/marketing/seo/value-system/lib";
 import { EntitlementChip } from "@/features/rag/components/library-catalog/EntitlementChip";
 import type { LibraryResource } from "@/features/rag/hooks/useLibraryResources";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Pack status, in the tenant's words. Mirrors the industry-packs screen. */
 const STATUS_META: Record<string, { label: string; hint: string; tone: string }> = {
@@ -286,6 +287,7 @@ export function PackDetailPanel({
               {detail.error instanceof Error
                 ? detail.error.message
                 : "Could not load this pack."}
+              <ErrorAlchemyMenu error={detail.error.message} />
             </div>
           ) : (
             <>

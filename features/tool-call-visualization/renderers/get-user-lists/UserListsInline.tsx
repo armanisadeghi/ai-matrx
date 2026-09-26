@@ -6,6 +6,7 @@ import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface UserList {
     id: string;
@@ -124,7 +125,7 @@ export const UserListsInline: React.FC<ToolRendererProps> = ({
         return (
             <div className="flex items-center gap-2 text-sm text-muted-foreground py-3">
                 <List className="w-4 h-4" />
-                <span>{data.isError ? "Failed to fetch lists." : "No lists found."}</span>
+                <span>{data.isError ? "Failed to fetch lists." : "No lists found."} <ErrorAlchemyMenu /></span>
             </div>
         );
     }

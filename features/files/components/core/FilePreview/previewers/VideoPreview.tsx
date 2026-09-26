@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useMediaLoadRecovery } from "@ai-matrx/media/core";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface VideoPreviewProps {
   url: string | null;
@@ -69,7 +70,7 @@ export function VideoPreview({
         )}
       >
         <AlertCircle className="h-6 w-6" />
-        <span className="text-xs">This video failed to load.</span>
+        <span className="text-xs">This video failed to load. <ErrorAlchemyMenu /></span>
       </div>
     );
   }

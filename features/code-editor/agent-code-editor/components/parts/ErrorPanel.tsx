@@ -9,6 +9,7 @@ import React from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Copy, Check } from "lucide-react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ErrorPanelProps {
   errorMessage: string;
@@ -37,9 +38,19 @@ export function ErrorPanel({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 flex-1 min-h-0">
         <div className="border rounded p-2 overflow-auto bg-destructive/5">
-          <h4 className="font-semibold text-destructive mb-1 text-xs">
-            Error Details
-          </h4>
+          <div className="mb-1 flex items-center gap-1">
+            <h4 className="flex-1 font-semibold text-destructive text-xs">
+              Error Details
+            </h4>
+            <ErrorAlchemyMenu
+              input={{
+                title: summary,
+                message: errorMessage,
+                operation: "Apply the AI's code edit",
+                details: rawAIResponse ? { raw_ai_response: rawAIResponse.slice(0, 4000) } : undefined,
+              }}
+            />
+          </div>
           <pre className="text-[10px] whitespace-pre-wrap font-mono text-destructive/80">
             {errorMessage}
           </pre>

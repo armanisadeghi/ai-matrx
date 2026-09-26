@@ -40,6 +40,7 @@ import { selectCodeTabs } from "../redux/tabsSlice";
 import { fileIdentityToTabId } from "../utils/fileIdentity";
 import { parseHistoryTripleTabId } from "./historyTripleTab";
 import type { EditorFile } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface TripleDiffViewProps {
   tab: EditorFile;
@@ -174,6 +175,7 @@ export const TripleDiffView: React.FC<TripleDiffViewProps> = ({ tab }) => {
             <span className="ml-auto inline-flex items-center gap-1 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-900 dark:bg-red-900/40 dark:text-red-200">
               <AlertTriangle className="h-3 w-3" />
               Could not read current file ({diskError})
+              <ErrorAlchemyMenu error={diskError} />
             </span>
           )}
         </div>

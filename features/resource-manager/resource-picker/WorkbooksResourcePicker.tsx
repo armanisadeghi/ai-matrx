@@ -8,6 +8,7 @@ import { isServiceFailure, type Workbook } from "@/features/data-tables/types";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { usePickerInputFocus } from "./usePickerInputFocus";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface WorkbooksResourcePickerProps {
   onBack: () => void;
@@ -80,6 +81,7 @@ export function WorkbooksResourcePicker({
         ) : error ? (
           <div className="text-xs text-destructive text-center py-8 px-3">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         ) : filteredWorkbooks.length === 0 ? (
           <div className="text-xs text-muted-foreground text-center py-8">

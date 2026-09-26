@@ -34,6 +34,7 @@ import {
   buildDirectiveOptions,
   groupDirectiveOptions,
 } from "./directiveOptions";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Policy = "default" | "auto" | "ask" | "off";
 
@@ -207,6 +208,7 @@ export function MatrxDirectivesTab({ agentId }: MatrxDirectivesTabProps) {
           <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
             Couldn&apos;t load the live directive catalog ({error}). Built-in
             actions are still available below.
+            <ErrorAlchemyMenu error={error} />
           </div>
         ) : null}
 

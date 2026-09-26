@@ -120,6 +120,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { CRM_SURFACE_NAME } from "@/features/surfaces/manifests/crm.manifest";
 import { buildCrmListContextData } from "../agent-context/buildCrmListContextData";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SURFACE_KEY = "crm-parties";
 const SURFACE_DEFAULTS = {
@@ -1202,6 +1203,7 @@ export function CrmListPage({
           {list.error && (
             <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
               {list.error}
+              <ErrorAlchemyMenu error={list.error} />
             </div>
           )}
           {/* Dedup assists: runs the once-per-session scan and shows the

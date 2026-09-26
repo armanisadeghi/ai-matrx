@@ -23,6 +23,7 @@ import {
 } from "../utils/compute-crop";
 import { formatDimensions } from "../utils/format-dimensions";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CropPreviewProps {
     sourceUrl: string | null;
@@ -375,6 +376,7 @@ export function CropPreview({
                     {imgError && (
                         <p className="text-xs text-destructive flex items-center gap-1">
                             <AlertCircle className="h-3 w-3" /> {imgError}
+                          <ErrorAlchemyMenu error={imgError} />
                         </p>
                     )}
                     {smartCrop && (

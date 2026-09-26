@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatScraperDiagnosticsJson } from "@/utils/scraper-diagnostics-json";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // =============================================================================
 // ERROR BOUNDARY
@@ -516,6 +517,7 @@ export function ResponseViewer({
               <div className="shrink-0 border-b border-border p-2 bg-amber-950/20">
                 <p className="text-[10px] font-mono text-amber-700 dark:text-amber-300 break-all">
                   Render fault: {renderFailure.message}
+                  <ErrorAlchemyMenu error={renderFailure.message} />
                 </p>
               </div>
             )}

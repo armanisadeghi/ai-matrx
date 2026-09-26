@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { PIPELINE_STEPS } from '../../constants';
 import type { ResearchStreamStep } from '../../types';
 import type { StreamMessage } from '../../hooks/useResearchStream';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface LiveStats {
     sourcesFound: number;
@@ -148,6 +149,7 @@ export function ProgressPanel({ isStreaming, currentStep, messages, error, liveS
                     <div className="flex items-start gap-2 text-xs text-destructive">
                         <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                         {error}
+                      <ErrorAlchemyMenu error={error} />
                     </div>
                 )}
             </div>

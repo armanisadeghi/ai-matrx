@@ -24,6 +24,7 @@ import type {
   PdfExtractCompleteData,
   PdfPageExtractedData,
 } from "@/types/python-generated/stream-events";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function PdfExtractClient() {
   const apiConfig = useApiTestConfig({
@@ -216,6 +217,7 @@ export default function PdfExtractClient() {
             <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded text-sm">
               <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
               <span className="text-destructive">{error}</span>
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
 

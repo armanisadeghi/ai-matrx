@@ -49,6 +49,7 @@ import {
   CHUNK_CUSTOM_OPTIONS,
   type ChunkScope,
 } from "@/features/rag/chunk-copy";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The structural shape ChunkCard needs. Any endpoint chunk row that carries
  *  these fields renders without adaptation. */
@@ -412,7 +413,7 @@ export function ChunksOnPage({
           />
         )}
         {loading && <ChunkListSkeleton rows={3} />}
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>}
         {!loading && !error && chunks.length === 0 && (
           <p className="text-sm text-muted-foreground italic">
             No {RAG_VOCAB.segmentsShort.toLowerCase()} for page {pageNumber}.
@@ -528,6 +529,7 @@ export function DerivativeChunkList({
     return (
       <p className="text-[11px] text-destructive px-0.5 py-1">
         Couldn&apos;t load results: {error}
+        <ErrorAlchemyMenu error={error} />
       </p>
     );
   }

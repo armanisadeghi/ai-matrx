@@ -94,6 +94,7 @@ import {
   selectDisplayMode,
   selectAutoRun,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AgentExecutionDebugPanelProps {
   instanceId: string;
@@ -497,6 +498,7 @@ export const AgentExecutionDebugPanel: React.FC<
                     {latestError.user_message}
                   </p>
                 )}
+                <ErrorAlchemyMenu error={latestError.error_type} />
               </div>
             )}
             {!instanceReadyCheck.ready &&
@@ -721,6 +723,7 @@ export const AgentExecutionDebugPanel: React.FC<
                       {latestError.user_message}
                     </p>
                   )}
+                  <ErrorAlchemyMenu error={latestError.message} />
                 </div>
               )}
 

@@ -99,6 +99,7 @@ import {
   HOVER_ROW,
   PANE_BORDER,
 } from "../../styles/tokens";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SandboxesPanelProps {
   className?: string;
@@ -548,6 +549,7 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
         {error && (
           <div className="mx-3 mb-1 rounded border border-red-300 bg-red-50 px-2 py-1 text-[11px] text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
         {loading && instances === null && (

@@ -66,6 +66,7 @@ import {
   MANDATE_WORKSPACE_SURFACE_NAME,
   createMandateWorkspaceScope,
 } from "@/features/surfaces/manifests/mandate-workspace.manifest";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface AdminMandateWorkspacePageProps {
   /** Mandate key ("podcast.multihost_script") or the row uuid — both open. */
@@ -303,6 +304,7 @@ function AdminControls({
           <Button variant="outline" size="sm" onClick={load}>
             Retry
           </Button>
+          <ErrorAlchemyMenu error={loadError} />
         </div>
       ) : !data ? (
         <div

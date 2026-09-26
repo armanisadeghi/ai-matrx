@@ -45,6 +45,7 @@ import { CmsSiteService, CmsPageService } from "@/features/cms/services/cmsServi
 import type { ClientSiteSummary, PromoteFromHtmlPageResult } from "@/features/cms/types";
 import { clientPageUrl } from "@/features/cms/utils/pageUrls";
 import { slugifyTitle, SLUG_RE } from "@/features/html-pages/utils/promoteConvert";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface PromoteTargetPage {
   id: string;
@@ -211,6 +212,7 @@ export function PromoteToSiteDialog({
                 <p className="text-xs text-destructive flex items-center gap-1.5">
                   <AlertCircle className="h-3.5 w-3.5" />
                   {sitesError}
+                  <ErrorAlchemyMenu error={sitesError} />
                 </p>
               ) : sites === null ? (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground h-9">

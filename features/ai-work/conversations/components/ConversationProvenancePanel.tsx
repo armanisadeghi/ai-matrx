@@ -79,6 +79,7 @@ import {
   mostRecentlyDelivered,
   NO_DELIVERY_FROM_ANY_TOOL,
 } from "../bindingPlurality";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** A field the source did not report. Never rendered as an empty cell. */
 const NOT_REPORTED = "Not reported";
@@ -514,6 +515,7 @@ export function ConversationProvenancePanel({
         <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : null}
 

@@ -42,6 +42,7 @@ import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function fact(label: string, value: ReactNode) {
   return (
@@ -924,12 +925,14 @@ export function BacklinkEnrichmentDetail({
                 {jsonText(capture.failure_reason) ? (
                   <p className="rounded border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
                     {jsonText(capture.failure_reason)}
+                    <ErrorAlchemyMenu />
                   </p>
                 ) : null}
                 {jsonText(capture.screenshot_failure_reason) ? (
                   <p className="rounded border border-warning/30 bg-warning/5 p-2 text-xs text-warning-foreground">
                     Screenshot unavailable:{" "}
                     {jsonText(capture.screenshot_failure_reason)}
+                    <ErrorAlchemyMenu />
                   </p>
                 ) : null}
                 {captureExcerpt ? (

@@ -28,6 +28,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SURFACE_KEY = "agent-advanced-editor-history-tab";
 
@@ -332,6 +333,7 @@ export function AgentContentHistoryPanel({
             {status === "failed" && (
               <p className="px-3 py-2 text-[10px] text-destructive">
                 {error ?? "Failed to load"}
+                <ErrorAlchemyMenu error={error} />
               </p>
             )}
 

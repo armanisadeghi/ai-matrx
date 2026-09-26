@@ -51,6 +51,7 @@ import {
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@/components/official/mobile-table/mobileTable";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface DerivativePageGroup {
   key: string;
@@ -830,6 +831,7 @@ export function RagPageReferences({
           <span className="text-[10px] text-amber-700 dark:text-amber-400">
             {loaded.partialFailures} reference source
             {loaded.partialFailures === 1 ? "" : "s"} unavailable
+            <ErrorAlchemyMenu error={loaded.partialFailures} />
           </span>
         ) : null}
         <div className="ml-auto flex flex-wrap justify-end gap-1.5">
@@ -985,7 +987,7 @@ export function RagPageReferences({
                 </p>
               ) : null}
               {error || pageError ? (
-                <p className="text-xs text-destructive">{error ?? pageError}</p>
+                <p className="text-xs text-destructive">{error ?? pageError} <ErrorAlchemyMenu error={error} /></p>
               ) : null}
             </div>
           </section>

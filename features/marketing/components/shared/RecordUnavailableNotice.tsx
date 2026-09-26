@@ -30,6 +30,7 @@ import { OrganizationPickerPanel } from "@/features/organizations/components/Org
 import { useOpenFeedbackWindow } from "@/features/overlays/openers/feedbackDialog";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { RecordUnavailableError } from "@/lib/records/recordUnavailable";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function RecordUnavailableNotice({
   error,
@@ -68,6 +69,7 @@ export function RecordUnavailableNotice({
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground">
               {`We couldn't open this ${error.entity}`}
+              <ErrorAlchemyMenu />
             </p>
             {/* ONE authored sentence per reason, and it lives with the throw
                 (`recordUnavailableMessage`). A second copy here is how the two

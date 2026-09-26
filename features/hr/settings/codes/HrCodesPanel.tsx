@@ -62,6 +62,7 @@ import {
   type ContextMenuExtraSection,
 } from "@/features/context-menu-v3/types";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The three switches, with the sentence that keeps them from being flipped together. */
 const INCLUSION_SWITCHES = [
@@ -216,7 +217,7 @@ function SeedStartingCodes({
             ) : null}
           </ul>
         ) : null}
-        {refusal ? <p className="text-sm text-destructive">{refusal}</p> : null}
+        {refusal ? <p className="text-sm text-destructive">{refusal} <ErrorAlchemyMenu /></p> : null}
         <Button
           type="button"
           size="sm"

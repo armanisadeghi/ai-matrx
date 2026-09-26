@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils";
 import type { DescendInput, DescendOut } from "../types";
 import type { AssistantPart, ConversationTurn } from "../turns";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── expand state ────────────────────────────────────────────────────────────
 
@@ -541,6 +542,7 @@ function AssistantPartCard({
               {row?.error_message && (
                 <div className="mb-1 rounded border border-red-500/30 bg-red-500/5 px-2 py-1 text-[11px] text-red-700 dark:text-red-300">
                   {row.error_message}
+                  <ErrorAlchemyMenu error={row.error_message} />
                 </div>
               )}
               {output == null ? (

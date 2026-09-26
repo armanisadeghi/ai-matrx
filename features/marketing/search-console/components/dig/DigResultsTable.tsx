@@ -51,6 +51,7 @@ import type {
   GscRangeKey,
   GscResolvedPeriods,
 } from "@/features/marketing/search-console/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function toBreakdownShape(row: GscDigResultRow): GscBreakdownRow {
   return {
@@ -284,6 +285,7 @@ export function DigResultsTable({
         <p className="max-w-lg text-center text-xs text-destructive">
           {error instanceof Error ? error.message : String(error)}
         </p>
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

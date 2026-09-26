@@ -40,6 +40,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/SurfaceRoleAgentButton";
 import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
 import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function maskKey(key: string): string {
   if (key.length <= 8) return "••••••••";
@@ -343,6 +344,7 @@ export default function CollectionsPage() {
           <div className="text-sm text-destructive flex items-center gap-2 p-3 rounded-md bg-destructive/10">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
 

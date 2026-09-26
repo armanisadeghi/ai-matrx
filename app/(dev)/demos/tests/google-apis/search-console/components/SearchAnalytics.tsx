@@ -10,6 +10,7 @@ import { PerformanceMetrics } from "./PerformanceMetrics";
 import { DataTable } from "./DataTable";
 import { DateRangeSelector } from "./DateRangeSelector";
 import type { SiteProperty, SearchAnalyticsResponse, PerformanceSummary, Dimension } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SearchAnalyticsProps {
     token: string;
@@ -140,7 +141,7 @@ export function SearchAnalytics({ token, property }: SearchAnalyticsProps) {
             {error && (
                 <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
                     <CardContent className="pt-6">
-                        <p className="text-red-800 dark:text-red-200">{error}</p>
+                        <p className="text-red-800 dark:text-red-200">{error} <ErrorAlchemyMenu error={error} /></p>
                     </CardContent>
                 </Card>
             )}

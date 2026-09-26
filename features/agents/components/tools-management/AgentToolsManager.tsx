@@ -130,6 +130,7 @@ import {
   runtimeInfoForExecutors,
   TOOL_AVAILABILITY_LABELS,
 } from "@/features/tool-registry/shared/toolRuntimes.service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type ToolsTab = "server" | "custom" | "client" | "mcp";
 
@@ -2045,7 +2046,7 @@ function CustomToolForm({
             style={{ fontSize: "16px" }}
           />
           {nameError && (
-            <p className="text-[10px] text-destructive mt-0.5">{nameError}</p>
+            <p className="text-[10px] text-destructive mt-0.5">{nameError} <ErrorAlchemyMenu error={nameError} /></p>
           )}
         </div>
         <div>
@@ -3037,6 +3038,7 @@ export function BearerTokenForm({ entry }: { entry: McpCatalogEntry }) {
         <p className="text-[10px] text-destructive flex items-center gap-1">
           <AlertTriangle className="w-3 h-3 shrink-0" />
           {error}
+          <ErrorAlchemyMenu error={error} />
         </p>
       )}
       <Button
@@ -3156,6 +3158,7 @@ export function ApiKeyForm({ entry }: { entry: McpCatalogEntry }) {
         <p className="text-[10px] text-destructive flex items-center gap-1">
           <AlertTriangle className="w-3 h-3 shrink-0" />
           {error}
+          <ErrorAlchemyMenu error={error} />
         </p>
       )}
       <Button
@@ -3382,6 +3385,7 @@ export function EnvVarForm({ entry }: { entry: McpCatalogEntry }) {
         <p className="text-[10px] text-destructive flex items-center gap-1">
           <AlertTriangle className="w-3 h-3 shrink-0" />
           {error}
+          <ErrorAlchemyMenu error={error} />
         </p>
       )}
 
@@ -3487,6 +3491,7 @@ function McpCatalogPicker({
         <div className="mx-4 mt-3 p-2.5 rounded border border-destructive/30 bg-destructive/5 text-[11px] text-destructive flex items-center gap-2">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
           {catalogError}
+          <ErrorAlchemyMenu error={catalogError} />
         </div>
       )}
 

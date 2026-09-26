@@ -57,6 +57,7 @@ import {
   isValidCmsSiteDomain,
   isValidCmsSiteSlug,
 } from "@/features/cms/utils/siteSlug";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function SitesListPage() {
   const router = useRouter();
@@ -297,6 +298,7 @@ export default function SitesListPage() {
             <Button variant="outline" size="sm" onClick={fetchSites}>
               Retry
             </Button>
+            <ErrorAlchemyMenu />
           </div>
         </div>
       </>

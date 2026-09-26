@@ -107,6 +107,7 @@ import {
 } from "@/features/capture-ladder/ladderOutcome";
 import { sendUrlsToOwnBrowser } from "@/features/capture-ladder/sendToOwnBrowser";
 import { NEEDS_YOU_ROUTE } from "@/features/capture-ladder/route";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type RowStatus = "pending" | "success" | "failed";
 
@@ -502,6 +503,7 @@ export default function BatchScrapePage() {
           return (
             <span className="text-xs text-destructive">
               {row.failureMessage ?? "We could not read that page."}
+              <ErrorAlchemyMenu error={row.failureMessage} />
             </span>
           );
         }

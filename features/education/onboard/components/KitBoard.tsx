@@ -35,6 +35,7 @@ import type { useKitGeneration } from "../useKitGeneration";
 import type { KitTargetState } from "../types";
 import { KitAudioRunner } from "./KitAudioRunner";
 import { formatElapsed } from "./elapsed";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Student-facing words for the agent's stream phase. Never raw enum text. */
 const PHASE_COPY: Partial<Record<Phase, string>> = {
@@ -315,7 +316,7 @@ function TargetRow({
             {t.title || t.label}
           </p>
           {t.status === "error" ? (
-            <p className="truncate text-xs text-destructive">{t.error}</p>
+            <p className="truncate text-xs text-destructive">{t.error} <ErrorAlchemyMenu error={t.error} /></p>
           ) : running ? (
             <RunningLine target={t} />
           ) : producing ? (

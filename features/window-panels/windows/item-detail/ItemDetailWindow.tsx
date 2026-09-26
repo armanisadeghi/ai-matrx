@@ -62,6 +62,7 @@ import { isEntityTypeToken } from "@ai-matrx/associations";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { toast } from "@/lib/toast";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ItemDetailWindowProps {
   isOpen: boolean;
@@ -473,6 +474,7 @@ function ItemDetailWindowInner({
                   <AlertCircle className="h-6 w-6 text-destructive" />
                   <p className="text-sm text-muted-foreground">
                     {`Couldn't load the details for this ${config.label.toLowerCase()}.`}
+                    <ErrorAlchemyMenu />
                   </p>
                 </div>
               )}

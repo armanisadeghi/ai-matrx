@@ -69,6 +69,7 @@ import {
   type DirectiveVerb,
   type NounDirectives,
 } from "@/features/directive-catalog/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -525,7 +526,7 @@ export function DirectiveBuilderPanel({
               placeholder={writePayloadPlaceholder}
             />
             {payloadError && (
-              <p className="text-xs text-red-500">{payloadError}</p>
+              <p className="text-xs text-red-500">{payloadError} <ErrorAlchemyMenu error={payloadError} /></p>
             )}
           </div>
 
@@ -571,7 +572,7 @@ export function DirectiveBuilderPanel({
             </p>
           )}
 
-          {execError && <p className="text-xs text-red-500">{execError}</p>}
+          {execError && <p className="text-xs text-red-500">{execError} <ErrorAlchemyMenu error={execError} /></p>}
 
           {result && (
             <div className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
@@ -598,7 +599,7 @@ export function DirectiveBuilderPanel({
                         id: {r.resource_ids.join(", ")}
                       </span>
                     )}
-                  {r.error && <span className="text-red-500">{r.error}</span>}
+                  {r.error && <span className="text-red-500">{r.error} <ErrorAlchemyMenu error={r.error} /></span>}
                 </div>
               ))}
             </div>

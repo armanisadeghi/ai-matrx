@@ -82,6 +82,7 @@ import type {
 } from "@/features/admin/applications/catalogs/types";
 import type { Json } from "@/types/database.types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CatalogEntryEditorProps {
   app: string;
@@ -618,7 +619,7 @@ export function CatalogEntryEditor({
             autoComplete="off"
           />
           {fieldErrors.key ? (
-            <p className="text-xs text-destructive">{fieldErrors.key}</p>
+            <p className="text-xs text-destructive">{fieldErrors.key} <ErrorAlchemyMenu error={fieldErrors.key} /></p>
           ) : null}
         </div>
         <div className="space-y-1.5">
@@ -637,6 +638,7 @@ export function CatalogEntryEditor({
           {fieldErrors.schema_version ? (
             <p className="text-xs text-destructive">
               {fieldErrors.schema_version}
+              <ErrorAlchemyMenu error={fieldErrors.schema_version} />
             </p>
           ) : null}
         </div>
@@ -660,6 +662,7 @@ export function CatalogEntryEditor({
           {fieldErrors.min_app_version ? (
             <p className="text-xs text-destructive">
               {fieldErrors.min_app_version}
+              <ErrorAlchemyMenu error={fieldErrors.min_app_version} />
             </p>
           ) : (
             <p className="text-xs text-muted-foreground">
@@ -682,7 +685,7 @@ export function CatalogEntryEditor({
             autoComplete="off"
           />
           {fieldErrors.sort_order ? (
-            <p className="text-xs text-destructive">{fieldErrors.sort_order}</p>
+            <p className="text-xs text-destructive">{fieldErrors.sort_order} <ErrorAlchemyMenu error={fieldErrors.sort_order} /></p>
           ) : null}
         </div>
         <div className="space-y-1.5">
@@ -731,6 +734,7 @@ export function CatalogEntryEditor({
             {fieldErrors.artifact_sha256 ? (
               <p className="text-xs text-destructive">
                 {fieldErrors.artifact_sha256}
+                <ErrorAlchemyMenu error={fieldErrors.artifact_sha256} />
               </p>
             ) : null}
           </div>
@@ -751,6 +755,7 @@ export function CatalogEntryEditor({
             {fieldErrors.artifact_size_bytes ? (
               <p className="text-xs text-destructive">
                 {fieldErrors.artifact_size_bytes}
+                <ErrorAlchemyMenu error={fieldErrors.artifact_size_bytes} />
               </p>
             ) : artifactSizeBytes.trim().length > 0 &&
               Number.isInteger(Number(artifactSizeBytes.trim())) ? (
@@ -803,7 +808,7 @@ export function CatalogEntryEditor({
           </div>
         ) : null}
         {fieldErrors.payload ? (
-          <p className="text-xs text-destructive">{fieldErrors.payload}</p>
+          <p className="text-xs text-destructive">{fieldErrors.payload} <ErrorAlchemyMenu error={fieldErrors.payload} /></p>
         ) : null}
         <p className="text-xs text-muted-foreground">
           Validated against the kind schema — unknown keys round-trip unchanged

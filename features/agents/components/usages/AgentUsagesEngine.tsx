@@ -80,6 +80,7 @@ import {
   rowFromVerdict,
   type UnifiedUsageRow,
 } from "./unified-rows";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AgentUsagesEngineProps {
   agentId: string;
@@ -378,6 +379,7 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
         <AlertTriangle className="h-7 w-7 text-destructive" aria-hidden />
         <p className="text-sm text-muted-foreground">
           {scan.error ?? mandates.error ?? "Could not load usages."}
+          <ErrorAlchemyMenu error={scan.error} />
         </p>
         <Button
           variant="outline"

@@ -74,6 +74,7 @@ import {
   EntityModeHeader,
   type EntityHeaderAction,
 } from "@/features/shell/components/header/templates/EntityModeHeader";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const DEFAULT_CWD = "/home/agent";
 
@@ -681,7 +682,7 @@ export default function SandboxDetailPage() {
                     onChange={(event) => setNameDraft(event.target.value)}
                   />
                   {nameError && (
-                    <p className="mt-1 text-xs text-destructive">{nameError}</p>
+                    <p className="mt-1 text-xs text-destructive">{nameError} <ErrorAlchemyMenu error={nameError} /></p>
                   )}
                 </div>
                 <Button type="submit" size="sm" disabled={nameSaving}>
@@ -703,7 +704,7 @@ export default function SandboxDetailPage() {
             <Card className="border-destructive">
               <CardContent className="flex items-center gap-2 p-4">
                 <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0" />
-                <p className="text-sm text-destructive">{error}</p>
+                <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
               </CardContent>
             </Card>
           )}

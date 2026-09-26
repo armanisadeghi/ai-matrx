@@ -33,6 +33,7 @@ import type { UserMarkdownSample } from "./user-samples-service";
 // census H1 2026-09-07). This surface previously carried a local copy.
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Note: the trigger lives in the route header (a `HeaderAction`), so this
 // component is fully controlled from outside — no internal open state or
@@ -147,6 +148,7 @@ export function SampleLibrarySheet({
         {error && (
           <div className="mx-4 mt-3 rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
             {error}
+            <ErrorAlchemyMenu />
           </div>
         )}
 

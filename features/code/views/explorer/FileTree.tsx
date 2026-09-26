@@ -28,6 +28,7 @@ import {
   normalizeExplorerPath,
   validateFilesystemEntryName,
 } from "./fileTreePaths";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SEARCH_DEBOUNCE_MS = 200;
 const SEARCH_MAX_RESULTS = 200;
@@ -317,7 +318,7 @@ const FileTreeBody: React.FC<{
         className="min-h-0 flex-1 overflow-y-auto py-1"
       >
         {error && (
-          <div className="px-3 py-1 text-[11px] text-red-500">{error}</div>
+          <div className="px-3 py-1 text-[11px] text-red-500">{error} <ErrorAlchemyMenu error={error} /></div>
         )}
 
         {searchActive ? (

@@ -58,6 +58,7 @@ import type {
   SituationalRunOutcome,
 } from "./types";
 import { formatRelativeTime } from "@/utils/datetime";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** "3 hours ago" / "never" — an as-of only means something as an age. */
 function age(iso: string | null): string {
@@ -397,6 +398,7 @@ export function SituationalRefreshConsole({
               {sitesError ? (
                 <p className="p-3 text-xs text-destructive">
                   Could not read the brand list.
+                  <ErrorAlchemyMenu />
                 </p>
               ) : (
                 <NonEditableContextMenu
@@ -493,6 +495,7 @@ export function SituationalRefreshConsole({
                     // nothing (KI-044).
                     <span className="text-[11px] text-warning">
                       {outcome.refusal}
+                      <ErrorAlchemyMenu error={outcome.refusal} />
                     </span>
                   ) : outcome.matchers === 0 ? (
                     <span className="text-[11px] text-muted-foreground">
@@ -548,6 +551,7 @@ export function SituationalRefreshConsole({
                         {segment.error ? (
                           <span className="text-destructive">
                             {segment.error}
+                            <ErrorAlchemyMenu error={segment.error} />
                           </span>
                         ) : (
                           <span className="tabular-nums">
@@ -561,6 +565,7 @@ export function SituationalRefreshConsole({
                     ))}
                   </ul>
                 ) : null}
+                <ErrorAlchemyMenu error={outcome.error} />
               </li>
             ))}
           </ul>

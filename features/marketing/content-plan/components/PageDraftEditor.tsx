@@ -89,6 +89,7 @@ import {
   type PageDraftSection,
 } from "../lib/page-draft";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The guided AI actions offered over content that already exists. Each runs the
@@ -834,10 +835,10 @@ export function PageDraftEditor({
           </p>
         ) : null}
         {stepRun.run.status === "error" && stepRun.run.error ? (
-          <p className="text-[11px] text-destructive">{stepRun.run.error}</p>
+          <p className="text-[11px] text-destructive">{stepRun.run.error} <ErrorAlchemyMenu error={stepRun.run.error} /></p>
         ) : null}
         {saver.state.status === "error" && saver.state.error ? (
-          <p className="text-[11px] text-destructive">{saver.state.error}</p>
+          <p className="text-[11px] text-destructive">{saver.state.error} <ErrorAlchemyMenu error={saver.state.error} /></p>
         ) : null}
 
         {/* The AI's own output streams in the FLOATING window — never as a

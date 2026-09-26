@@ -34,6 +34,7 @@ import {
 import { toast } from "@/lib/toast";
 import { useServerConfig } from "../_shared/useServerConfig";
 import { ServerBar } from "../_shared/ServerBar";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -382,9 +383,11 @@ export default function ToolsDemoClient() {
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-destructive">
                   Failed to load tools
+                  <ErrorAlchemyMenu />
                 </p>
                 <p className="text-[11px] text-destructive/80 mt-0.5 break-words">
                   {loadError}
+                  <ErrorAlchemyMenu error={loadError} />
                 </p>
               </div>
               <Button
@@ -617,6 +620,7 @@ export default function ToolsDemoClient() {
                 <div className="flex-shrink-0 mb-2 p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive font-mono">
                   <CircleX className="mr-1 inline size-3.5" aria-hidden="true" />
                   {errorMessage}
+                  <ErrorAlchemyMenu error={errorMessage} />
                 </div>
               )}
 

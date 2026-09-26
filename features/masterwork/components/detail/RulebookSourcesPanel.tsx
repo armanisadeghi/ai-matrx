@@ -101,6 +101,7 @@ import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { RunStages } from "../RunStages";
 import { useLaunchGate } from "@/lib/launch-gate/useLaunchGate";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The registered source→rulebook pairs live in ONE place — `../../sourceLinks`
@@ -1564,6 +1565,7 @@ export function SourceRows({
     return (
       <p className="p-3 text-xs text-destructive">
         Couldn&apos;t load the attached sources: {error}
+        <ErrorAlchemyMenu error={error} />
       </p>
     );
   }
@@ -1783,6 +1785,7 @@ function FailedUploadRow({
           <p className="mt-0.5 whitespace-pre-line break-words text-[11px] text-destructive">
             {upload.error ||
               "The server refused the upload and gave no reason."}
+            <ErrorAlchemyMenu error={upload.error} />
           </p>
         </div>
         {canEdit ? (

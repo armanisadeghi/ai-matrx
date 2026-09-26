@@ -86,6 +86,7 @@ import type {
 import type { EduSection } from "../../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { guardedSave } from "@/lib/save/guardedSave";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   initialDocs: LearnDocRecord[];
@@ -1014,7 +1015,7 @@ function Field({
         ) : null}
       </div>
       {children}
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {error ? <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p> : null}
     </div>
   );
 }

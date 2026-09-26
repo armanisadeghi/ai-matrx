@@ -29,6 +29,7 @@ import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer"
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface CreateTableModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -217,6 +218,7 @@ export default function CreateTableModal({
           {error && (
             <div className="bg-red-50 p-2 rounded-md text-red-500 text-sm">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
 

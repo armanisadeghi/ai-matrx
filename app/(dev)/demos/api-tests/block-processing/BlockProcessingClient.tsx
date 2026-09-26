@@ -29,6 +29,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─────────────────────────────────────────────────────
 // Types
@@ -417,6 +418,7 @@ export default function BlockProcessingClient() {
           {error && (
             <div className="p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
         </div>

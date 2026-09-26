@@ -3,6 +3,7 @@ import React, { useState, useMemo } from "react";
 import { TriangleAlert } from "lucide-react";
 import ProcessorExtractor from "./ProcessorExtractor";
 import { useDebounce } from "@/hooks/usehooks";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Type for a processing function that takes content and returns JSON
 type ProcessingFunction = {
@@ -64,6 +65,7 @@ const ParseExtractorOptions = ({ content, processors, configKey }: ParseExtracto
             return (
                 <div className="p-4 text-red-500 dark:text-red-400">
                     Error processing content: {result.error}
+                  <ErrorAlchemyMenu error={result.error} />
                 </div>
             );
         }
@@ -127,6 +129,7 @@ const ParseExtractorOptions = ({ content, processors, configKey }: ParseExtracto
                                 <p className="text-red-600 dark:text-red-400 text-sm">
                                     {result.error}
                                 </p>
+                              <ErrorAlchemyMenu error={result.error} />
                             </div>
                         ) : (
                             <ProcessorExtractor 

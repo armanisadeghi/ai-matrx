@@ -29,6 +29,7 @@ import { useShare } from "@/features/sharing/hooks/useShare";
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 import { cn } from "@/lib/utils";
 import type { components } from "@/types/python-generated/api-types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type RobotsCheckResult = components["schemas"]["RobotsCheckResult"];
 type RobotsPathCheck = components["schemas"]["RobotsPathCheck"];
@@ -254,7 +255,7 @@ export function RobotsTesterTool() {
                   : `${stage}…`}
               </p>
             ) : null}
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+            {error ? <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p> : null}
           </div>
         </CardContent>
       </Card>

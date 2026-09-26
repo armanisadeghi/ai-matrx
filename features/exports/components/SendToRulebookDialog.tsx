@@ -39,6 +39,7 @@ import { sendExportItemsToRulebook } from "../api";
 import { buildConfirmedSentence } from "../consent";
 import { listRulebookChoices, rulebookHref, type RulebookChoice } from "../rulebooks";
 import type { ExportItemFilter } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** One pending "send these" request, captured when the bulk button was pressed. */
 export interface PendingSend {
@@ -227,6 +228,7 @@ export function SendToRulebookDialog({
                 <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>Your Rulebooks could not be read: {loadError}</span>
+                  <ErrorAlchemyMenu error={loadError} />
                 </p>
               )}
 

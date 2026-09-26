@@ -26,6 +26,7 @@ import type {
   MembershipRole,
   MembershipRoleOption,
 } from "@/components/membership/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface InvitationManagerProps {
   projectId: string;
@@ -139,6 +140,7 @@ export function InvitationManager({
     return (
       <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
         <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

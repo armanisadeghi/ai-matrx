@@ -31,6 +31,7 @@ import {
 } from "@/features/data-tables/relation-knob";
 import { defaultFormatForBase } from '@ai-matrx/design-system/field-formats';
 import type { FieldFormatConfig } from '@ai-matrx/design-system/field-formats';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AddColumnModalProps {
   tableId: string;
@@ -172,6 +173,7 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
           {error && (
             <div className="bg-red-50 p-2 rounded-md text-red-500 text-sm">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
           

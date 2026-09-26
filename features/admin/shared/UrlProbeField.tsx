@@ -24,6 +24,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type ProbeState =
   | { status: "idle" }
@@ -148,7 +149,7 @@ export function UrlProbeField({
           Probe
         </Button>
       </div>
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {error ? <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p> : null}
       {probe.status === "ok" ? (
         <p className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
           <CheckCircle2 className="h-3.5 w-3.5" />{" "}

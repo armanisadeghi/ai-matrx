@@ -86,6 +86,7 @@ import { useLocalMutes } from "./useLocalMutes";
 import { useProviderOutageSource } from "./sources/useProviderOutageSource";
 import { useScheduleAlarmSource } from "./sources/useScheduleAlarmSource";
 import type { AttentionAction, AttentionItem } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Every source's React Query key starts with this, so one invalidation wakes all. */
 export const ATTENTION_QUERY_PREFIX = ["admin-attention"] as const;
@@ -424,6 +425,7 @@ export default function AdminAttentionDock() {
           />
           <p className="min-w-0 flex-1 text-sm font-medium text-foreground" data-testid="attention-title">
             {notice?.title ?? "Some checks could not be read."}
+            <ErrorAlchemyMenu />
           </p>
           <div className="flex shrink-0 items-center gap-0.5">
             {dragHandle}
@@ -452,6 +454,7 @@ export default function AdminAttentionDock() {
               <span className="min-w-0 flex-1">
                 {source.label} could not be read: {source.error ?? "unknown error"}. Treat this
                 as unknown, not healthy.
+                <ErrorAlchemyMenu error={source.error} />
               </span>
               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={source.refetch}>
                 <RefreshCw className="mr-1 h-3 w-3" aria-hidden />

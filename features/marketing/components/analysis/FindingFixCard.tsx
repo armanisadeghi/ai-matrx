@@ -52,6 +52,7 @@ import {
   useFindingFixer,
   type FindingFixProposal,
 } from "@/features/marketing/components/analysis/useFindingFixer";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Checks whose fix this card can actually land on the page today. */
 const FIXABLE_ITEM_KEYS = new Set([
@@ -354,7 +355,7 @@ export function FindingFixCard({
               </Button>
             )}
             {fixer.state.status === "error" ? (
-              <p className="text-xs text-destructive">{fixer.state.error}</p>
+              <p className="text-xs text-destructive">{fixer.state.error} <ErrorAlchemyMenu error={fixer.state.error} /></p>
             ) : null}
           </div>
         ) : null}

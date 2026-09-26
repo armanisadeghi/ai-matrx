@@ -83,6 +83,7 @@ import { ChunksOnPage } from "./ChunkList";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { KnowledgeAssetPanel } from "./KnowledgeAssetPanel";
 import { PageContentHeader } from "./PageContentHeader";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Full-page payload — DERIVED from the generated contract (never hand-mirrored).
 type ApiFullPage = components["schemas"]["LibraryFullPage"];
@@ -821,6 +822,7 @@ function PageContent({
         {error && (
           <div className="text-sm text-destructive">
             <strong>Error:</strong> {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
         {!loading && !error && page && (

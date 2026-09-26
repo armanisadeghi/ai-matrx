@@ -33,6 +33,7 @@ import {
   KeywordTable,
   type KeywordTableSurface,
 } from "@/features/marketing/seo/keyword-table/KeywordTable";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ASSIGN_TOPICS_PATH = "/seo/keywords/assign-topics";
 
@@ -117,6 +118,7 @@ export function UnplacedQueue({
       {assigner.error ? (
         <p className="border-b border-border bg-destructive/10 px-3 py-1.5 text-[11px] text-destructive">
           {assigner.error}
+          <ErrorAlchemyMenu error={assigner.error} />
         </p>
       ) : null}
       {assigner.result ? (

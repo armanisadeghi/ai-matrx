@@ -15,6 +15,7 @@ import {
   type AgentVersionHistoryItem,
 } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const LATEST_VALUE = "__latest__";
 
@@ -148,7 +149,7 @@ export function CompactVersionPicker({
         </SelectContent>
       </Select>
 
-      {error && <p className="text-[11px] text-destructive">{error}</p>}
+      {error && <p className="text-[11px] text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>}
 
       {useLatest && (
         <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-400 flex items-start gap-2">

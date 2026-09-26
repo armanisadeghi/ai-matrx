@@ -9,6 +9,7 @@ import { ListDetailClient } from "@/features/user-lists/components/ListDetailCli
 import type { ToolRendererProps } from "../../types";
 import { parsePicklist } from "./parsePicklist";
 import { usePicklistDetail } from "./usePicklistDetail";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Overlay renderer for the `picklist` tool — the full interactive list editor
@@ -42,7 +43,7 @@ export function PicklistOverlay({ entry }: ToolRendererProps) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-sm text-muted-foreground">
         <AlertTriangle className="h-6 w-6 text-warning" />
-        <span>{summary.message ?? "Couldn't load this list."}</span>
+        <span>{summary.message ?? "Couldn't load this list."} <ErrorAlchemyMenu /></span>
         <Button asChild variant="outline" size="sm" className="gap-1.5">
           <a
             href={`/lists/${listId}`}

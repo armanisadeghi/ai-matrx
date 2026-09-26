@@ -126,6 +126,7 @@ import {
 import type { CmsFacts } from "../readiness";
 import { SetupSection } from "./SetupSection";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type BridgeAction =
   | "link"
@@ -1555,6 +1556,7 @@ function FillStatusSummary({ status }: { status: FillStatus }) {
           …and {status.problems.length - 30} more rows with the same treatment.
         </p>
       ) : null}
+      <ErrorAlchemyMenu error={status.error} />
     </div>
   );
 }

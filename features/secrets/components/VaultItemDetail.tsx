@@ -116,6 +116,7 @@ import {
   type VaultItem,
   type VaultPrincipal,
 } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface VaultItemDetailProps {
   item: VaultItem;
@@ -2671,6 +2672,7 @@ function SharePanel({
             ) : error ? (
               <p className="rounded border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
                 {error}
+                <ErrorAlchemyMenu error={error} />
               </p>
             ) : grants.length === 0 ? (
               <p className="rounded border border-dashed border-border p-2 text-xs text-muted-foreground">

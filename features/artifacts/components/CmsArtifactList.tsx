@@ -67,6 +67,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { ARTIFACTS_SURFACE_NAME } from "@/features/surfaces/manifests/artifacts.manifest";
 import { buildArtifactListScope } from "@/features/artifacts/lib/artifacts-scope";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ARTIFACT_ICONS: Record<ArtifactType, React.FC<{ className?: string }>> = {
   html_page: Globe,
@@ -460,7 +461,7 @@ export function CmsArtifactList() {
         <div className="flex flex-col items-start gap-2 py-10 text-destructive">
           <div className="flex items-center gap-2">
             <AlertCircle className="size-4" />
-            <p className="text-sm font-medium">Could not load your content</p>
+            <p className="text-sm font-medium">Could not load your content <ErrorAlchemyMenu /></p>
           </div>
           <p className="text-xs text-muted-foreground">{fetchError}</p>
           <Button

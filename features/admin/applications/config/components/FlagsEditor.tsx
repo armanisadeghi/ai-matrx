@@ -12,6 +12,7 @@ import { AlertTriangle, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface FlagsEditorProps {
   flags: Record<string, boolean>;
@@ -152,7 +153,7 @@ export function FlagsEditor({
           <Plus className="mr-1 h-3.5 w-3.5" /> Add flag
         </Button>
       </div>
-      {addError ? <p className="text-xs text-destructive">{addError}</p> : null}
+      {addError ? <p className="text-xs text-destructive">{addError} <ErrorAlchemyMenu error={addError} /></p> : null}
     </div>
   );
 }

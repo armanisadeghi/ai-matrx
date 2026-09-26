@@ -40,6 +40,7 @@ import { studyMediaService } from "../../service";
 import { useAudioStudyRunPersistence } from "../useAudioStudyRunPersistence";
 import { AudioPlayback } from "./AudioPlayback";
 import type { StudyMediaRow } from "../../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SURFACE_NAME = "matrx-user/education-audio-study";
 
@@ -359,6 +360,7 @@ function LiveAudioRun({
               </Link>
             </Button>
           )}
+          <ErrorAlchemyMenu error={state.error} />
         </div>
       )}
 

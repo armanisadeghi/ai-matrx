@@ -146,6 +146,7 @@ import { SetupWorkOrderColumn } from "./SetupWorkOrderColumn";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { isRecordUnavailableError } from "@/lib/records/recordUnavailable";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The status every generated node starts in (same default aidream uses). */
 const DEFAULT_STATUS_SLUG = "planned";
@@ -2109,6 +2110,7 @@ export function SetupView() {
                 <div className="p-4 text-sm text-destructive">
                   This site shape is malformed and cannot be expanded:{" "}
                   {expansion.error}
+                  <ErrorAlchemyMenu error={expansion.error} />
                 </div>
               ) : expanded && readiness && preview ? (
                 <SetupWorkOrderColumn

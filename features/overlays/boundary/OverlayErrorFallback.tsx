@@ -53,6 +53,7 @@ import {
   type OverlayErrorContext,
 } from "@/features/overlays/boundary/overlayErrorReport";
 import { collectOverlayDiagnostics } from "@/features/overlays/boundary/overlayDiagnostics";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface OverlayErrorFallbackProps {
   modulePath: string | null;
@@ -130,11 +131,13 @@ export function OverlayErrorFallback({
           <div className="min-w-0 flex-1">
             <h2 className="text-sm font-semibold text-foreground">
               This panel failed to load
+              <ErrorAlchemyMenu />
             </h2>
             <p className="mt-1 text-xs text-muted-foreground">
               {e.isChunkLoadError
                 ? "A required part of the panel did not finish loading. Try again, or reload the page if retrying fails."
                 : "Something went wrong while rendering this panel."}
+              <ErrorAlchemyMenu />
             </p>
           </div>
         </div>
@@ -178,7 +181,7 @@ export function OverlayErrorFallback({
           )}
 
           <div className="rounded-lg bg-muted px-3 py-2 font-mono text-xs text-foreground">
-            <span className="text-destructive">{e.name}</span>: {e.message}
+            <span className="text-destructive">{e.name} <ErrorAlchemyMenu error={e.name} /></span>: {e.message}
           </div>
           {modulePath && (
             <p

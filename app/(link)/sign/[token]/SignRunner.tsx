@@ -31,6 +31,7 @@ import { Check, PenLine, Type as TypeIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@ai-matrx/design-system";
 import type { PublicSignRequest } from "@/features/esign/service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Mark = "typed" | "drawn";
 
@@ -156,7 +157,7 @@ export function SignRunner({
             className="text-base"
             placeholder="Whoever sent this will see exactly what you write."
           />
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {error ? <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p> : null}
           <div className="flex gap-2">
             <Button
               variant="destructive"
@@ -206,7 +207,7 @@ export function SignRunner({
             <DrawPad name={name} onName={setName} onChange={setDrawn} />
           )}
 
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {error ? <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p> : null}
           {/* ABSENT OR HONEST: the button says what is missing instead of
               sitting there greyed with no explanation. */}
           {!ready ? (

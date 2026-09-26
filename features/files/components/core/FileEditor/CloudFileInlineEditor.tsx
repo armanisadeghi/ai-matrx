@@ -29,6 +29,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useFileViewerControls } from "@/features/files/components/surfaces/FileViewerControlsContext";
 import type { StandaloneCodeEditor } from "@/features/code/editor/MonacoEditor";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Lazy — Monaco is ~600 KB. Only pulled in when the user actually opens
 // the Edit tab.
@@ -229,6 +230,7 @@ export function CloudFileInlineEditor({
         )}
       >
         Couldn&apos;t load file: {loadError}
+        <ErrorAlchemyMenu error={loadError} />
       </div>
     );
   }
@@ -294,6 +296,7 @@ export function CloudFileInlineEditor({
       {saveError ? (
         <div className="border-b border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
           {saveError}
+          <ErrorAlchemyMenu error={saveError} />
         </div>
       ) : null}
       <div className="min-h-0 flex-1">

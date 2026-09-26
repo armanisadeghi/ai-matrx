@@ -7,6 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import MarkdownStream from '@/components/MarkdownStream';
 import type { AgentAppComponentProps } from '../../types';
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function FlashcardGenerator({ onExecute, response, isExecuting, isStreaming, error, rateLimitInfo }: AgentAppComponentProps) {
   const [variables, setVariables] = useState({
@@ -139,6 +140,7 @@ export default function FlashcardGenerator({ onExecute, response, isExecuting, i
             <div className="p-4 bg-destructive/10 border border-destructive rounded-lg">
               <p className="font-semibold text-destructive">{error.type}</p>
               <p className="text-sm text-destructive/80 mt-1">{error.message}</p>
+              <ErrorAlchemyMenu />
             </div>
           )}
 

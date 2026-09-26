@@ -6,6 +6,7 @@
 import { TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDocumentProperties } from "../useDocumentProperties";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function show(value: unknown): string {
   if (value === null || value === undefined) return "—";
@@ -32,6 +33,7 @@ export function DocumentPropertiesPanel({ source, className }: { source: string;
         <p className="flex items-center gap-1.5 text-amber-700 dark:text-amber-300">
           <TriangleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
           {error}
+          <ErrorAlchemyMenu error={error} />
         </p>
       ) : entries.length === 0 ? (
         <p className="text-muted-foreground">The properties block is empty.</p>

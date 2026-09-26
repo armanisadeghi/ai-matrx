@@ -103,6 +103,7 @@ import {
   competitorOpportunityCopyRow,
   competitorOpportunityHuman,
 } from "./copy";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Artifact = {
   executive_verdict?: string;
@@ -1217,6 +1218,7 @@ export default function CompetitorAutopsyWorkspace({
         {activeView === "run" && run.error ? (
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             {run.error}
+            <ErrorAlchemyMenu error={run.error} />
           </div>
         ) : null}
 

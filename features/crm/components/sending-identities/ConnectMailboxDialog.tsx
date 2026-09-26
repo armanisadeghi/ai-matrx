@@ -68,6 +68,7 @@ import {
   connectableStateOf,
 } from "@/features/crm/sending-identities/purpose";
 import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ConnectMailboxDialogProps {
   open: boolean;
@@ -266,7 +267,7 @@ function ConnectMailboxDialogBody({
             <Skeleton className="h-14 w-full rounded-lg" />
           </div>
         ) : error ? (
-          <p className="text-sm text-destructive">{error}</p>
+          <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
         ) : (
           <div className="space-y-2">
             {usable.map((row) => pickable(row.mailbox, false))}
@@ -325,7 +326,7 @@ function ConnectMailboxDialogBody({
           </div>
         )}
 
-        {failure ? <p className="text-sm text-destructive">{failure}</p> : null}
+        {failure ? <p className="text-sm text-destructive">{failure} <ErrorAlchemyMenu error={failure} /></p> : null}
       </DialogContent>
     </Dialog>
   );

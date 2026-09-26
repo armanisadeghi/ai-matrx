@@ -30,6 +30,7 @@ import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { useSkillsIngest } from "../hooks/useSkillsIngest";
 import { useSkillCategories } from "../hooks/useSkillCategories";
 import type { IngestSkillStatus } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SkillIngestPanelProps {
   onBack: () => void;
@@ -241,6 +242,7 @@ export function SkillIngestPanel({
           {error && (
             <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
 

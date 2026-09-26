@@ -38,6 +38,7 @@ import { GENERATED_CONTRACT_FAMILY_VALUES } from "@/features/content-ir/registry
 import type { Json } from "@/types/database.types";
 import type { ExamplesState } from "@/features/content-ir/studio/kind-examples";
 import { Textarea } from "@/components/ui/textarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const PASTED = "__pasted__";
 
@@ -270,6 +271,7 @@ export default function KindGateTab({
         <div className="flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-700 dark:text-red-300">
           <CircleAlert className="h-3.5 w-3.5 shrink-0" />
           {inputError}
+          <ErrorAlchemyMenu error={inputError} />
         </div>
       )}
 

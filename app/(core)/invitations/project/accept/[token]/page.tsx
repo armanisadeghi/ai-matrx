@@ -17,6 +17,7 @@ import type { ProjectRole } from '@/features/projects/types';
 import PageHeader from '@/features/shell/components/header/PageHeader';
 import { ChevronLeftTapButton } from '@ai-matrx/tap-target/buttons';
 import { invitationSignUpHref } from "@/utils/auth/invitation-links";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type InvitationWithProject = ProjectInvitation & { project: Project };
 
@@ -197,7 +198,7 @@ export default function AcceptProjectInvitationPage() {
                 <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-300" />
               </div>
               <h2 className="text-2xl font-bold text-red-900 dark:text-red-100">Invalid Invitation</h2>
-              <p className="text-red-700 dark:text-red-300">{error}</p>
+              <p className="text-red-700 dark:text-red-300">{error} <ErrorAlchemyMenu error={error} /></p>
               <div className="flex gap-3 justify-center pt-4">
                 <Button onClick={() => router.push('/settings/projects')} variant="outline">
                   My Projects

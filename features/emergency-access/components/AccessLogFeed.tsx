@@ -41,6 +41,7 @@ import {
   recordKindLabel,
   whenLabel,
 } from "../presentation";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** One page of history. Deeper history is a later pagination control, never a
  *  cap somebody silently hits — the footer says plainly when more exists. */
@@ -76,6 +77,7 @@ export async function AccessLogFeed() {
           showing nothing at all. Reload the page, and if it keeps happening
           tell us, because this record is not optional.
         </p>
+        <ErrorAlchemyMenu />
       </div>
     );
   }

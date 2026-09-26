@@ -104,6 +104,7 @@ import { PlanNodesTable } from "./PlanNodesTable";
 import { PlanTree } from "./PlanTree";
 import { SetupView } from "../setup/components/SetupView";
 import { useCmsLink } from "../setup/hooks";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // The map chunk loads only when the user switches to it (the conditional
 // render below is the deferral; ssr:false keeps the split shape unchanged).
@@ -752,6 +753,7 @@ export function ContentPlanWorkbench({
     return (
       <div className="p-6 text-sm text-destructive">
         Could not load sites: {extractErrorMessage(sites.error)}
+        <ErrorAlchemyMenu />
       </div>
     );
   }
@@ -914,6 +916,7 @@ export function ContentPlanWorkbench({
           ) : nodes.isError ? (
             <p className="p-6 text-sm text-destructive">
               Could not load the plan: {extractErrorMessage(nodes.error)}
+              <ErrorAlchemyMenu />
             </p>
           ) : view === "setup" ? (
             // Keyed by site: a site switch must never carry one site's staged

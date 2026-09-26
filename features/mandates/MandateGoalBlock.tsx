@@ -22,6 +22,7 @@ import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 
 import { useMandateGoal } from "./useMandateGoal";
 import type { AnyMandateKey } from "./mandate-key";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function MandateGoalBlock({
   mandateKey,
@@ -63,6 +64,7 @@ export function MandateGoalBlock({
       ) : error ? (
         <p className="text-xs text-amber-700 dark:text-amber-400">
           The goal could not be read: <TextWithDoors text={error} />
+          <ErrorAlchemyMenu />
         </p>
       ) : loaded ? (
         <p className="text-xs italic text-muted-foreground">

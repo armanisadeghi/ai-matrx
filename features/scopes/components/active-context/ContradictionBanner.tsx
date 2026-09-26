@@ -14,6 +14,7 @@
 
 import { AlertTriangle, X } from "lucide-react";
 import type { ScopeContradiction } from "@/features/scopes/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ContradictionBannerProps {
   contradictions: ScopeContradiction[];
@@ -88,6 +89,7 @@ export function ContradictionBanner({
           </button>
         )}
       </div>
+      <ErrorAlchemyMenu />
     </div>
   );
 }

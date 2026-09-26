@@ -48,6 +48,7 @@ import { toast } from "@/lib/toast";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { useServerConfig } from "../_shared/useServerConfig";
 import { ServerBar } from "../_shared/ServerBar";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1141,6 +1142,7 @@ export default function DynamicApiClient() {
                 <div className="flex-shrink-0 mb-2 p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive font-mono">
                   <CircleX className="mr-1 inline size-3.5" aria-hidden="true" />
                   {errorMessage}
+                  <ErrorAlchemyMenu error={errorMessage} />
                 </div>
               )}
 

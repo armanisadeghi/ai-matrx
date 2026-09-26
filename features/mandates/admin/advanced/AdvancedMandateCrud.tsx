@@ -47,6 +47,7 @@ import {
   findRelation,
   relationKey,
 } from "./tables";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Row = Record<string, unknown>;
 
@@ -252,6 +253,7 @@ export function AdvancedMandateCrud() {
       {error && (
         <div className="shrink-0 border-b border-destructive/40 bg-destructive/10 px-4 py-2 font-mono text-xs text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 

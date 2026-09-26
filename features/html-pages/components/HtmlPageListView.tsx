@@ -59,6 +59,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface HtmlPageListViewProps {
   pages: HtmlPageSummary[];
@@ -297,6 +298,7 @@ export default function HtmlPageListView({
           <Button variant="outline" size="sm" onClick={onRefresh}>
             Retry
           </Button>
+          <ErrorAlchemyMenu />
         </div>
       </div>
     );

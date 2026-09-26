@@ -61,6 +61,7 @@ import {
   type MandateCoverageStateRow,
 } from "@/features/mandates/coverage";
 import { useMandateCoverageStates } from "@/features/mandates/browse/CoverageBadge";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * WHAT THE BANNER SAYS, as a value. Every one of these is a way to get honesty
@@ -261,6 +262,7 @@ export function MandateCoverageAlert({
           {BIND_ACTION_LABEL}
         </Button>
       ) : null}
+      <ErrorAlchemyMenu />
     </div>
   );
 }

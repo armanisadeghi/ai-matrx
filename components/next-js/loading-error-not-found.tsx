@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Loading Skeleton Component
 const LoadingSkeleton = () => {
@@ -66,7 +67,7 @@ export function Error({
         <CardHeader>
           <CardTitle className="flex items-center justify-center space-x-2">
             <AlertCircle className="h-6 w-6 text-destructive" />
-            <span>Something went wrong</span>
+            <span>Something went wrong <ErrorAlchemyMenu /></span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">

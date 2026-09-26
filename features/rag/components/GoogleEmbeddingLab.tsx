@@ -10,6 +10,7 @@ import {
   type GoogleEmbeddingResponse,
 } from "@/features/rag/api/google-embeddings";
 import { Textarea } from "@/components/ui/textarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function GoogleEmbeddingLab() {
   const [model, setModel] =
@@ -188,6 +189,7 @@ export function GoogleEmbeddingLab() {
           {error ? (
             <p className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </p>
           ) : null}
 

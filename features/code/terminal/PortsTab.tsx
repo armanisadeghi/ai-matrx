@@ -20,6 +20,7 @@ import {
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@/components/official/mobile-table/mobileTable";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface PortsTabProps {
   className?: string;
@@ -154,6 +155,7 @@ export const PortsTab: React.FC<PortsTabProps> = ({ className }) => {
       {error && (
         <div className="mx-2 mt-2 rounded border border-red-300 bg-red-50 px-2 py-1 text-[11px] text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
       <div className="flex-1 overflow-y-auto">

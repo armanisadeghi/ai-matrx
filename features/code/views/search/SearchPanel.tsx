@@ -22,6 +22,7 @@ import { useCodeWorkspace } from "../../CodeWorkspaceProvider";
 import { useOpenFile } from "../../hooks/useOpenFile";
 import type { FilesystemNode, FilesystemSearchHit } from "../../types";
 import { SidePanelHeader } from "../SidePanelChrome";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SearchPanelProps {
   className?: string;
@@ -360,7 +361,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ className }) => {
         )}
       </div>
       <div className="flex-1 overflow-y-auto">
-        {error && <div className="p-3 text-[11px] text-red-500">{error}</div>}
+        {error && <div className="p-3 text-[11px] text-red-500">{error} <ErrorAlchemyMenu error={error} /></div>}
         {!query && !error && (
           <div className="p-3 text-[11px] text-neutral-500">
             {mode === "paths"

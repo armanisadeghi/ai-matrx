@@ -50,6 +50,7 @@ import * as Api from "@/features/file-analysis/api/file-analysis";
 import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   fileId: string;
@@ -289,6 +290,7 @@ export function PagesPanel({ fileId, activePageNumber, onSelectPage }: Props) {
       {error ? (
         <div className="flex shrink-0 items-center gap-1.5 border-b border-destructive/30 bg-destructive/5 px-2 py-1 text-[11px] text-destructive">
           <AlertCircle className="h-3 w-3" /> {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : null}
 

@@ -11,6 +11,7 @@ import {
 import { registerDatabaseFunctions } from "@/utils/ts-function-registry/register-functions";
 import { FunctionDependencies } from "@/utils/ts-function-registry/function-registry";
 import { supabase } from "@/utils/supabase/client";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type AvailableFunction = ReturnType<typeof getAvailableFunctions>[number];
 
@@ -359,6 +360,7 @@ export default function AppletBuilder() {
       {error && (
         <div className="mt-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-700 dark:text-red-300">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
     </div>

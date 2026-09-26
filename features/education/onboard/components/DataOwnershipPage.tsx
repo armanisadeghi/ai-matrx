@@ -38,6 +38,7 @@ import { totalSpineCount } from "../data/dataRightsService";
 import { EXPORT_LABEL, type DeckExportFormat } from "../export/deckFormats";
 import { ImportDeckPanel } from "./ImportDeckPanel";
 import { AgeBandPrivacyCard } from "@/features/education/compliance/components/AgeBandPrivacyCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const FORMAT_ICON: Record<DeckExportFormat, typeof FileJson> = {
   json: FileJson,
@@ -301,7 +302,7 @@ export function DataOwnershipPage() {
             <Loader2 className="h-5 w-5 animate-spin" />
           </div>
         ) : error ? (
-          <p className="text-sm text-destructive">{error}</p>
+          <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
         ) : decks.length === 0 ? (
           <p className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
             No decks yet.{" "}

@@ -38,6 +38,7 @@ import {
 import { usePagesWithoutTopic } from "../../hooks";
 import { useMapLinks } from "../../links";
 import type { PageWithoutTopic } from "../../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface PagesOnNoTopicTableProps {
   mapId: string;
@@ -136,6 +137,7 @@ function columnsFor(): MatrxColumnDef<PageWithoutTopic>[] {
             title={row.last_error}
           >
             {row.last_error}
+            <ErrorAlchemyMenu error={row.last_error} />
           </span>
         ),
     },

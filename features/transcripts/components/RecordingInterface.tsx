@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { useSimpleRecorder } from "@/features/audio/hooks/useSimpleRecorder";
 import { recordingLimits, type ResolvedLimit } from "@/features/audio/limits";
 import { ESTIMATED_BYTES_PER_SECOND } from "../constants/recording";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The LIVE BROWSER RECORDING lane. Its ceilings are its own knobs
@@ -185,6 +186,7 @@ export function RecordingInterface({
                 Recording is still allowed, but nothing will stop it
                 automatically — stop it yourself before the tab runs out of
                 memory.
+                <ErrorAlchemyMenu />
               </AlertDescription>
             </Alert>
           )}

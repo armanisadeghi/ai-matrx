@@ -58,6 +58,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import type { components } from "@/types/python-generated/api-types";
 import { usePageCaptureContribution } from "@/components/agent-copy/page-capture/usePageCapture";
 import { useContextPreview, type ContextSelection } from "./useContextPreview";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type ContextCompare = components["schemas"]["ContextCompare"];
 type CompareSide = components["schemas"]["ContextCompareSide"];
@@ -777,6 +778,7 @@ function AnswerBoth({
       {error && (
         <div className="mt-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
       {result && (
@@ -798,7 +800,7 @@ function AnswerBoth({
                     </span>
                   </div>
                   {a?.error ? (
-                    <p className="mt-1 text-xs text-destructive">{a.error}</p>
+                    <p className="mt-1 text-xs text-destructive">{a.error} <ErrorAlchemyMenu error={a.error} /></p>
                   ) : (
                     // The platform's markdown renderer — the one a chat answer goes through — so an
                     // answer reads as it would in chat, never as raw text with asterisks.
@@ -987,6 +989,7 @@ export function ContextCompareView({
               Comparison unavailable
             </div>
             <div className="mt-1 break-words text-xs text-destructive/90">{error}</div>
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
         {data && !compare && (

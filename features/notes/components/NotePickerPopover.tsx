@@ -33,6 +33,7 @@ import {
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { getFolderIconAndColor } from "@/features/notes/utils/folderUtils";
 import { noteFolderIdentityKey, type NoteListItem } from "@/features/notes/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── Shared list cache (names only — invalidated after creates/deletes) ───────
 
@@ -194,6 +195,7 @@ function NotePickerBody({
     return (
       <div className="px-3 py-6 text-center text-xs text-destructive">
         {error}
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

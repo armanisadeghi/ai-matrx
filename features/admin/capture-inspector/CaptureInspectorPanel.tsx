@@ -24,6 +24,7 @@ import {
   useCapturedExchanges,
 } from "@/lib/diagnostics/stream-capture/useCapturedExchanges";
 import type { CapturedExchange } from "@/lib/diagnostics/stream-capture/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function StatusDot({ exchange }: { exchange: CapturedExchange }) {
   const tone =
@@ -187,6 +188,7 @@ export default function CaptureInspectorPanel({
                 {selected.error && (
                   <p className="mb-1 text-[11px] text-destructive">
                     {selected.error}
+                    <ErrorAlchemyMenu error={selected.error} />
                   </p>
                 )}
                 {selected.truncated && (

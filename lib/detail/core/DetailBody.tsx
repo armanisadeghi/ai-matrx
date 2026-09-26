@@ -33,6 +33,7 @@ import {
   ShieldCheckIcon,
 } from "./icons";
 import type { DetailCore } from "./useDetailCore";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * 🚨 D5 — THE SKELETON HAS A BOUNDED WAIT. A load that never answers used to
@@ -443,6 +444,7 @@ function HistorySection({ core }: { core: DetailCore }) {
           {state.message.toLowerCase().includes("access denied")
             ? "History is only shown to people who can view this record."
             : `History could not be read: ${state.message}`}
+          <ErrorAlchemyMenu />
         </p>
       ) : state.entries.length === 0 ? (
         <p className="text-xs text-muted-foreground">No recorded changes yet.</p>

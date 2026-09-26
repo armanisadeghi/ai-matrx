@@ -15,6 +15,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import type { ChunkRow } from "@/features/rag/types/documents";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ChunksPaneProps {
   chunks: ChunkRow[];
@@ -66,7 +67,7 @@ export function ChunksPane({
           <div className="p-3 text-sm text-muted-foreground">Loading…</div>
         )}
         {error && (
-          <div className="p-3 text-sm text-destructive">Error: {error}</div>
+          <div className="p-3 text-sm text-destructive">Error: {error} <ErrorAlchemyMenu error={error} /></div>
         )}
         {!loading && !error && chunks.length === 0 && (
           <div className="p-3 text-sm text-muted-foreground">

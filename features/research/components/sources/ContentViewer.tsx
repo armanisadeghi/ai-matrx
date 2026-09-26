@@ -7,6 +7,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { Badge } from "@/components/ui/badge";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import type { ResearchContent } from "../../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ContentViewerProps {
   topicId: string;
@@ -120,6 +121,7 @@ export function ContentViewer({
         <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
           <span className="font-medium">Failure reason: </span>
           {content.failure_reason}
+          <ErrorAlchemyMenu error={content.failure_reason} />
         </div>
       )}
     </div>

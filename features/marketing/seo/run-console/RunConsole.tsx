@@ -101,6 +101,7 @@ import {
   useKeywordMenuSection,
 } from "@/features/marketing/seo/keyword/keyword-actions";
 import { unavailableHere } from "@/features/context-menu-v3/utils/availability";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function pct(part: number, whole: number): number {
   return whole > 0 ? (part / whole) * 100 : 0;
@@ -834,6 +835,7 @@ function TopicPlacementConsole({
       {pass.error ? (
         <p className="rounded-md border border-destructive/50 bg-destructive/10 px-2.5 py-1 text-[11px] text-destructive">
           {pass.error}
+          <ErrorAlchemyMenu error={pass.error} />
         </p>
       ) : null}
 
@@ -907,6 +909,7 @@ function TopicPlacementConsole({
                 {sites.isError ? (
                   <p className="p-3 text-xs text-destructive">
                     Could not read the brand list.
+                    <ErrorAlchemyMenu />
                   </p>
                 ) : (
                   <NonEditableContextMenu
@@ -1031,6 +1034,7 @@ function TopicPlacementConsole({
                           // as a broken engine.
                           <span className="text-[11px] text-warning">
                             {outcome.autonomyRefusal}
+                            <ErrorAlchemyMenu error={outcome.autonomyRefusal} />
                           </span>
                         ) : outcome.claimed === 0 && !outcome.error ? (
                           // A zero-claim pass is a real answer, not a failure —
@@ -1110,6 +1114,7 @@ function TopicPlacementConsole({
                           />
                         </div>
                       ) : null}
+                      <ErrorAlchemyMenu error={outcome.error} />
                     </li>
                   ))}
                 </ul>
@@ -1241,6 +1246,7 @@ function RunDecisions({
     return (
       <p className="px-1 py-2 text-xs text-destructive">
         {extractErrorMessage(decisions.error)}
+        <ErrorAlchemyMenu />
       </p>
     );
 

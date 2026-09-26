@@ -9,6 +9,7 @@ import { Check } from "lucide-react";
 
 import type { PortalLook } from "./look";
 import type { Timeline } from "./timeline";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Resolved on the server and sent as a string, so server and client never disagree. */
 const WHEN = new Intl.DateTimeFormat("en-US", {
@@ -86,6 +87,7 @@ export function PortalStatusTimeline({
                         : step.state === "current"
                           ? "Now"
                           : "Done"}
+                    <ErrorAlchemyMenu />
                   </p>
                 ) : null}
               </div>

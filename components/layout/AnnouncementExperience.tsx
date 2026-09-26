@@ -36,6 +36,7 @@ import type {
   SystemAnnouncement,
 } from "@/types/feedback.types";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const TYPE_CONFIG: Record<
   AnnouncementType,
@@ -282,7 +283,7 @@ export function AnnouncementExperience({
         <AlertCircle className="h-6 w-6 text-destructive" />
       </span>
       <div>
-        <p className="font-semibold">Announcements could not be loaded</p>
+        <p className="font-semibold">Announcements could not be loaded <ErrorAlchemyMenu /></p>
         <p className="mt-1 max-w-sm text-sm text-muted-foreground">{error}</p>
       </div>
     </div>

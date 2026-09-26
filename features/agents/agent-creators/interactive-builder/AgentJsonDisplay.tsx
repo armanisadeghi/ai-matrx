@@ -54,6 +54,7 @@ import {
   AiModelRef,
   AiToolRef,
 } from "@/components/official/entity-ref/AiIdentityRef";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface AgentJsonDisplayProps {
   /** Raw streamed text — may contain pre/post markdown around the json block. */
@@ -97,6 +98,7 @@ class AgentJsonErrorBoundary extends Component<
             </p>
             <p className="text-xs text-red-600 dark:text-red-400 mt-1">
               {this.state.error?.message ?? "Failed to render agent JSON"}
+              <ErrorAlchemyMenu error={this.state.error?.message} />
             </p>
           </div>
         </div>

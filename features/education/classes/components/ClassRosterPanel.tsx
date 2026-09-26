@@ -16,6 +16,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useClassRoster } from "../hooks/useClassRoster";
 import { InviteStudentsSheet } from "./InviteStudentsSheet";
 import type { ClassRosterMember } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Owner sees the email; a co-member sees the display name (peer emails are
 // nulled server-side — D56). Fall back to the id only if neither is present.
@@ -122,7 +123,7 @@ export function ClassRosterPanel({
           <Skeleton className="h-11 w-full" />
         </div>
       ) : roster.error ? (
-        <p className="text-xs text-destructive">{roster.error}</p>
+        <p className="text-xs text-destructive">{roster.error} <ErrorAlchemyMenu error={roster.error} /></p>
       ) : (
         <div className="space-y-3">
           {/* Pending requests — owner only. */}

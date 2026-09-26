@@ -62,6 +62,7 @@ import {
 } from "@/features/mandates/test-run";
 import { runMandateTry, type MandateTryCandidate } from "./owner-service";
 import { MandateTryResultView } from "./MandateTryResultView";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type CandidateMode = "current" | "candidate";
 
@@ -392,7 +393,7 @@ function TryResult({ result }: { result: MandateTestResponse }) {
         ) : null}
       </div>
       {result.error ? (
-        <p className="text-sm text-destructive">{result.error}</p>
+        <p className="text-sm text-destructive">{result.error} <ErrorAlchemyMenu error={result.error} /></p>
       ) : null}
       {result.structural.checked && result.structural.ok === false ? (
         <div className="rounded border border-warning/50 bg-warning/5 p-2 text-xs">

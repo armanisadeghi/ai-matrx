@@ -67,6 +67,7 @@ import type {
   PageExtractionJob,
   PageExtractionResult,
 } from "@/features/page-extraction/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ResultsTableProps {
   /**
@@ -277,6 +278,7 @@ function SingleJobResultsTable({
     return (
       <div className="p-4 text-sm text-destructive">
         Failed to load results: {error}
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }
@@ -640,6 +642,7 @@ function AllResultsTable({
     return (
       <div className="p-4 text-sm text-destructive">
         Failed to load results: {error}
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

@@ -31,6 +31,7 @@ import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
 import { LibraryCatalogPane } from "@/features/rag/components/data-stores/LibraryCatalogPane";
 import { EntitlementChip } from "@/features/rag/components/library-catalog/EntitlementChip";
 import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function RagHomePage() {
   const { summary, loading, error } = useLibrarySummary();
@@ -97,6 +98,7 @@ export function RagHomePage() {
                   The endpoint is /knowledge/library/summary/totals. If you just
                   deployed, give the backend a minute to restart, then refresh.
                 </p>
+                <ErrorAlchemyMenu error={error} />
               </div>
             )}
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">

@@ -20,6 +20,7 @@ import type {
   RenderBlockEvent,
   TypedStreamEvent,
 } from "@/types/python-generated/stream-events";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type BlockProcessingMode = "json" | "stream";
 
@@ -217,6 +218,7 @@ export function BlockProcessingPanel({
         <div className="rounded border border-destructive/20 bg-destructive/10 p-2 text-xs text-destructive">
           The block processor refused this request: {error}. Check the server
           selection in the API test config, then Re-run.
+          <ErrorAlchemyMenu />
         </div>
       )}
       {!isProcessing && !error && events.length === 0 && (

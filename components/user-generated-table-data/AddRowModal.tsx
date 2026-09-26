@@ -35,6 +35,7 @@ import {
 import { columnRuleRefusal, type ColumnRuleRefusal } from '@/features/data-tables/validation-refusal';
 import { FieldRuleRefusal } from '@/features/data-tables/components/FieldRuleRefusal';
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AddRowModalProps {
   tableId: string;
@@ -396,6 +397,7 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess, relat
           {error && (
             <div className="bg-red-50 p-2 rounded-md text-red-500 text-sm">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
           

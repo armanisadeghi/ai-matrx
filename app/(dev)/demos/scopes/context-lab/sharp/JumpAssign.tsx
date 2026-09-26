@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
 import { useTypeItems, type FlatScope, type PickerData } from "./engine";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface JumpAssignResult {
   scope: FlatScope;
@@ -191,6 +192,7 @@ export function JumpAssign({
         ) : itemState.error ? (
           <div className="px-3 py-2 text-xs text-destructive">
             {itemState.error}
+            <ErrorAlchemyMenu error={itemState.error} />
           </div>
         ) : (
           <>

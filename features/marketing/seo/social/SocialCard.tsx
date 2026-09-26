@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ImageOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * SocialCard — the canonical "how this link renders when shared" visual.
@@ -82,6 +83,7 @@ function CardImage({
     >
       <ImageOff className="h-4 w-4" />
       {image ? "Image failed to load" : "No share image"}
+      <ErrorAlchemyMenu />
     </div>
   );
 }

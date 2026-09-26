@@ -35,6 +35,7 @@ import {
 } from "@/features/files/redux/thunks";
 import { formatAbsoluteDate } from "@/features/files/utils/format";
 import type { ResourceType } from "@/features/files/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ShareLinkDialogProps {
   open: boolean;
@@ -231,7 +232,7 @@ export function ShareLinkDialogBody({
           </label>
         </div>
         {error ? (
-          <p className="text-xs text-destructive">{error}</p>
+          <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
         ) : null}
         <button
           type="button"

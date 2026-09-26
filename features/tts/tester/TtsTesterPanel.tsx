@@ -16,6 +16,7 @@ import {
   type TtsRunPhase,
   type TtsTestConfig,
 } from "./cartesiaTestEngine";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface TtsTesterPanelProps {
   title: string;
@@ -344,7 +345,7 @@ export function TtsTesterPanel({
         <span>{metrics.chunkCount} chunks</span>
       </div>
       {metrics.error && (
-        <p className="mt-1 text-xs text-destructive">{metrics.error}</p>
+        <p className="mt-1 text-xs text-destructive">{metrics.error} <ErrorAlchemyMenu error={metrics.error} /></p>
       )}
     </div>
   );

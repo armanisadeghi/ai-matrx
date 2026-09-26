@@ -39,6 +39,7 @@ import { selectAllFoldersMap } from "@/features/files/redux/selectors";
 import { useFolderContents } from "@/features/files/hooks/useFolderContents";
 import { FileBreadcrumbs } from "@/features/files/components/core/FileBreadcrumbs/FileBreadcrumbs";
 import { FileIcon } from "@ai-matrx/media/react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------------------------------------------------------------------------
 // Declarative component
@@ -251,7 +252,7 @@ function SaveAsBody({
         <p className="text-[11px] text-muted-foreground truncate">
           Saving to <span className="font-mono">{targetPath}</span>
         </p>
-        {error ? <p className="text-xs text-destructive">{error}</p> : null}
+        {error ? <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p> : null}
       </div>
 
       <Footer>

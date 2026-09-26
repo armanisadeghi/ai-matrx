@@ -33,6 +33,7 @@ import {
 } from "@/utils/user-table-utls/type-inference";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface JsonToTableDialogProps {
   open: boolean;
@@ -213,6 +214,7 @@ export const JsonToTableDialog: React.FC<JsonToTableDialogProps> = ({
           {error && (
             <div className="bg-red-50 dark:bg-red-950 p-3 rounded-md text-red-600 dark:text-red-400 text-sm">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
 

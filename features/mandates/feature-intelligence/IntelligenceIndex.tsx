@@ -22,6 +22,7 @@ import {
   featureForKey,
   isFixtureFeature,
 } from "./registry";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface IndexRow {
   feature: string;
@@ -123,6 +124,7 @@ export function IntelligenceIndex() {
       {error ? (
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 text-[13px] text-destructive">
           The features could not be read: {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : rows === null ? (
         <div className="flex min-h-[30dvh] items-center justify-center">

@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 import { createRegressionCaseFromFinding, listRegressionCases } from "../api";
 import type { Finding, RegressionCase } from "../types";
 import { fmtCost, fmtDate } from "./tokens";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * `error` is NOT `fail` — "the check could not run" and "the unit regressed"
@@ -75,6 +76,7 @@ function CaseRow({ item }: { item: RegressionCase }) {
       {(item.consecutive_failures ?? 0) > 0 && (
         <span className="text-red-600 dark:text-red-400">
           {item.consecutive_failures}× failing in a row
+          <ErrorAlchemyMenu error={item.consecutive_failures} />
         </span>
       )}
       <span className="text-muted-foreground">
@@ -135,6 +137,7 @@ export function RegressionCasesFromFinding({ finding }: { finding: Finding }) {
         <p className="mt-1 text-xs text-red-600 dark:text-red-400">
           Could not load this finding&apos;s cases:{" "}
           {(cases.error as Error).message}
+          <ErrorAlchemyMenu />
         </p>
       )}
       {(cases.data ?? []).length > 0 && (

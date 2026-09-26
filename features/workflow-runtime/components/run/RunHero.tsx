@@ -38,6 +38,7 @@ import {
   humanizeKind,
   type RunStepPresentation,
 } from "./node-presentation";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Run status → the one word the reader gets, plus how the surface feels. */
 const STATUS_COPY: Record<
@@ -249,6 +250,7 @@ export function RunHero({
             : live && current
               ? headline
               : (workflowDescription ?? (terminal ? "" : headline))}
+        <ErrorAlchemyMenu error={readFailure} />
       </p>
 
       <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">

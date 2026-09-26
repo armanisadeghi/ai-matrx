@@ -60,6 +60,7 @@ import {
 import type { LibraryMetrics, LibraryRow } from "../types";
 import { sourceVocabulary, type SourceVocabulary } from "../vocabulary";
 import type { SyncState } from "../redux/sourceLibrarySlice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Fixed number of "top by views" slots, so the list never changes height. */
 const TOP_SLOTS = 5;
@@ -407,6 +408,7 @@ function CadenceChart({
                         {unreadable
                             ? "The numbers behind this chart could not be read, so there is nothing honest to draw."
                             : "Nothing has been catalogued yet, so there is no cadence to chart."}
+                      <ErrorAlchemyMenu />
                     </div>
                 ) : (
                     <svg
@@ -540,6 +542,7 @@ function TopByViews({
                                 className="flex h-11 items-center px-1 text-xs text-muted-foreground"
                             >
                                 These could not be read from the server.
+                              <ErrorAlchemyMenu />
                             </li>
                         ) : (
                             <li key={index} className="h-11" aria-hidden="true" />

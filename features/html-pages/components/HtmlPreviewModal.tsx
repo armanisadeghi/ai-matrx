@@ -47,6 +47,7 @@ import {
   DESCRIPTION_LIMITS,
   TITLE_LIMITS,
 } from "@/features/marketing/seo/serp/metrics";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface HtmlPreviewModalProps {
   isOpen: boolean;
@@ -1101,6 +1102,7 @@ ${wordPressCSS}
                           <div className="flex items-start gap-3">
                             <div className="text-red-600 dark:text-red-400 text-sm">
                               <strong>Error:</strong> {error}
+                              <ErrorAlchemyMenu error={error} />
                             </div>
                           </div>
                         </div>
@@ -1421,6 +1423,7 @@ ${wordPressCSS}
                         <div className="flex items-start gap-3">
                           <div className="text-red-600 dark:text-red-400 text-sm">
                             <strong>Error:</strong> {error}
+                            <ErrorAlchemyMenu error={error} />
                           </div>
                         </div>
                       </div>

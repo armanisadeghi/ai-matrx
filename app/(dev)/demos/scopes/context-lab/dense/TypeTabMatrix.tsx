@@ -35,6 +35,7 @@ import {
   fakeCreate,
   type DenseData,
 } from "./shared";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Tab =
   | { kind: "type"; orgId: string; typeId: string }
@@ -95,6 +96,7 @@ export function TypeTabMatrix({
     return (
       <div className="rounded-md border border-destructive/40 p-2 text-xs text-destructive">
         {data.treeError}
+        <ErrorAlchemyMenu error={data.treeError} />
       </div>
     );
 

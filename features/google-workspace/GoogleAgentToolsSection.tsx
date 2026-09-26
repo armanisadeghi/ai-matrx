@@ -42,6 +42,7 @@ import {
   selectToolsError,
   selectToolsStatus,
 } from "@/features/agents/redux/tools/tools.selectors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The authenticated AI Dream MCP resource server, not the outbound MCP catalog. */
 const AI_DREAM_MCP_URL = "https://server.app.matrxserver.com/api/mcp";
@@ -216,6 +217,7 @@ function GoogleAgentToolsSectionContent() {
           >
             <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Retry
           </Button>
+          <ErrorAlchemyMenu error={toolsError} />
         </div>
       ) : !googleMarketingTool ? (
         <p className="mt-4 text-sm text-muted-foreground">
@@ -458,7 +460,7 @@ function AgentToolAssignment({
         </div>
       ) : null}
       {assignmentError ? (
-        <p className="mt-3 text-sm text-destructive">{assignmentError}</p>
+        <p className="mt-3 text-sm text-destructive">{assignmentError} <ErrorAlchemyMenu error={assignmentError} /></p>
       ) : null}
     </div>
   );

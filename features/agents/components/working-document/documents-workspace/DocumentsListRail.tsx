@@ -33,6 +33,7 @@ import {
   type CxWorkingDocumentSummary,
   type WorkingDocumentKind,
 } from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface DocumentsRailSelection {
   conversationId: string;
@@ -164,7 +165,7 @@ export function DocumentsListRail({
           </div>
         )}
         {error && (
-          <div className="px-2 py-4 text-xs text-destructive">{error}</div>
+          <div className="px-2 py-4 text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></div>
         )}
         {docs !== null && ordered.length === 0 && (
           <div className="px-2 py-8 text-center text-xs text-muted-foreground">

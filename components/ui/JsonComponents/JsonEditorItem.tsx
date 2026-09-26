@@ -6,6 +6,7 @@ import { Input } from "@ai-matrx/design-system";
 import type { JsonEditorItemProps } from "./types";
 import { jsonUtils } from './newUitls';
 import type { JsonValue, JsonObject } from '@/types/json';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Hoisted to module scope: a component defined inside another component is a
@@ -263,6 +264,7 @@ const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
                     </motion.div>
                 </AnimatePresence>
             )}
+          <ErrorAlchemyMenu />
         </div>
     );
 };

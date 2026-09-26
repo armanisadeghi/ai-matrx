@@ -64,6 +64,7 @@ import type {
   GscRangeKey,
   GscResolvedPeriods,
 } from "@/features/marketing/search-console/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface LaunchRow extends TrackedPageRow {
   firstDates: GscPageFirstDatesRow | null;
@@ -433,6 +434,7 @@ export function NewPagesTab({
           <p className="max-w-lg text-center text-xs text-destructive">
             {error instanceof Error ? error.message : String(error)}
           </p>
+          <ErrorAlchemyMenu error={error.message} />
         </div>
       ) : (
         <div className="min-h-0 flex-1">

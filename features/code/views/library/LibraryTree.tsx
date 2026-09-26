@@ -53,6 +53,7 @@ import {
 import { listLibrarySources } from "../../library-sources/registry";
 import { SourceFolderNode } from "./SourceFolderNode";
 import { useCodeWorkspace } from "../../CodeWorkspaceProvider";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const selectRootFiles = makeSelectFilesInFolder(null);
 
@@ -118,7 +119,7 @@ export const LibraryTree: React.FC<LibraryTreeProps> = ({
   if (listError) {
     return (
       <div className="flex flex-col gap-1 px-3 py-2 text-[11px]">
-        <span className="text-red-500">Failed to load library</span>
+        <span className="text-red-500">Failed to load library <ErrorAlchemyMenu /></span>
         <span className="text-neutral-500">{listError}</span>
         <button
           type="button"

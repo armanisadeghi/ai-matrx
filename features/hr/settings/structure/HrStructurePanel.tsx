@@ -197,7 +197,7 @@ function FieldRefusal({
   field: string;
 }) {
   if (!refusal || refusal.field !== field) return null;
-  return <p className="text-sm text-destructive">{refusal.message}</p>;
+  return <p className="text-sm text-destructive">{refusal.message} <ErrorAlchemyMenu /></p>;
 }
 
 function invalidFor(refusal: WriteRefusal | null, field: string): boolean {

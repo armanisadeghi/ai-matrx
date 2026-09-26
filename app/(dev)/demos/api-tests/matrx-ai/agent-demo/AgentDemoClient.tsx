@@ -55,6 +55,7 @@ import { ENDPOINTS } from "@/lib/api/endpoints";
 import { useServerConfig } from "../_shared/useServerConfig";
 import { ServerBar } from "../_shared/ServerBar";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -821,6 +822,7 @@ export default function AgentDemoClient() {
                 <div className="flex-shrink-0 mb-2 p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive font-mono">
                   <CircleX className="mr-1 inline size-3.5" aria-hidden="true" />
                   {errorMessage}
+                  <ErrorAlchemyMenu error={errorMessage} />
                 </div>
               )}
 

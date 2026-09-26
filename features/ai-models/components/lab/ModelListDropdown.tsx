@@ -110,6 +110,7 @@ import {
   SERVICE_LABEL_PLURAL,
   serviceCountLabel,
 } from "@/features/ai-models/constants/service-label";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const PANEL_HEIGHT = 640;
 /**
@@ -2051,6 +2052,7 @@ export function ModelListDropdown({
                 role (super admin required).
               </div>
             )}
+            <ErrorAlchemyMenu />
           </div>
         ) : isLoading ? (
           <div className="p-4 text-center text-xs text-muted-foreground">

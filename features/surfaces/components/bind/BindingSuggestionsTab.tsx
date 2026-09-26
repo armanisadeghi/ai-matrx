@@ -43,6 +43,7 @@ import type {
 } from "@/features/surfaces/types";
 import { cn } from "@/lib/utils";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const BINDING_MAPPER_MANDATE_KEY = MANDATE_KEYS.surfaces_client__binding_mapper;
 
@@ -318,6 +319,7 @@ export function BindingSuggestionsTab({
               available, and nothing here is blocked by this.
             </span>
           </div>
+          <ErrorAlchemyMenu error={runFailure.message} />
         </div>
       )}
 

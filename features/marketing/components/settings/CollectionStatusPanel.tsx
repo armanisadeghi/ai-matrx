@@ -57,6 +57,7 @@ import {
   assertGoogleAnalyticsCampaignActive,
   canUseGoogleAnalytics,
 } from "@/features/marketing/google/ga4-campaign";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function CollectionStatusPanel({
   site,
@@ -247,6 +248,7 @@ export function CollectionStatusPanel({
             >
               Retry
             </Button>
+            <ErrorAlchemyMenu />
           </div>
         ) : null}
         <MatrxDataTable

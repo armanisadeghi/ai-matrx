@@ -37,6 +37,7 @@ import type {
   PermissionLevel,
   ShareActionResult,
 } from "@/utils/permissions/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** One current member of the chosen organization, as the dialog shows them. */
 export interface OrgMemberPerson {
@@ -219,6 +220,7 @@ export function AddEveryoneInOrg({
       {orgId && loadError ? (
         <p className="text-xs text-destructive">
           The people in {orgName} could not be listed: {loadError}
+          <ErrorAlchemyMenu error={loadError} />
         </p>
       ) : null}
       {orgId && !loadError && members === null ? (

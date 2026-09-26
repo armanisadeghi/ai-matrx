@@ -51,6 +51,7 @@ import {
   rememberGoogleConnection,
 } from "@/features/google-workspace/connection";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface GmailReviewCardProps {
   ask: PendingAsk;
@@ -383,6 +384,7 @@ export function GmailReviewCard({ ask, preflight, plan }: GmailReviewCardProps) 
         {error ? (
           <p className="text-sm text-red-600 dark:text-red-400">
             {error} Nothing was sent.
+            <ErrorAlchemyMenu error={error} />
           </p>
         ) : null}
         {refusal ? (

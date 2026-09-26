@@ -59,6 +59,7 @@ import {
   type HrSeparationReasonCategory,
 } from "./types";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -265,6 +266,7 @@ export function OffboardEmployeeDialog({
                 <p className="text-xs text-muted-foreground">
                   This person&apos;s corrective actions could not be loaded, so none can be
                   linked here. The separation can still be recorded.
+                  <ErrorAlchemyMenu />
                 </p>
               ) : basisOptions.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
@@ -302,6 +304,7 @@ export function OffboardEmployeeDialog({
             {reasonsFailed ? (
               <p className="text-xs text-destructive">
                 The reason list could not be loaded. Reload the page and try again.
+                <ErrorAlchemyMenu />
               </p>
             ) : (
               <Select value={reasonId} onValueChange={setReasonId}>

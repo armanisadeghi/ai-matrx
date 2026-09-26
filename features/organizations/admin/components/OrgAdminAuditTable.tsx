@@ -20,6 +20,7 @@ import {
   buildAuditListPayload,
   buildAuditRowPayload,
 } from "../copy";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ACTION_LABEL: Record<string, string> = {
   "member.suspend": "Suspended",
@@ -73,7 +74,7 @@ export function OrgAdminAuditTable({ orgId }: { orgId: string }) {
       </div>
     );
   }
-  if (error) return <p className="py-4 text-sm text-destructive">{error}</p>;
+  if (error) return <p className="py-4 text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>;
   if (entries.length === 0)
     return (
       <p className="py-4 text-sm text-muted-foreground">

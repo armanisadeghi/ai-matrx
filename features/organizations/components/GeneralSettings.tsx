@@ -26,6 +26,7 @@ import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree"
 import { useOrgSettingsLayoutRefresh } from "./OrgSettingsLayoutContext";
 import { OrganizationAbbreviation } from "./OrganizationAbbreviation";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface GeneralSettingsProps {
   organization: Organization;
@@ -226,6 +227,7 @@ export function GeneralSettings({
                   className="text-xs text-red-600 dark:text-red-400"
                 >
                   {nameValidation.error}
+                  <ErrorAlchemyMenu error={nameValidation.error} />
                 </p>
               )}
               <p className="text-xs text-muted-foreground">
@@ -279,6 +281,7 @@ export function GeneralSettings({
                   className="text-xs text-red-600 dark:text-red-400"
                 >
                   {abbreviationValidation.error}
+                  <ErrorAlchemyMenu error={abbreviationValidation.error} />
                 </p>
               )}
             </>

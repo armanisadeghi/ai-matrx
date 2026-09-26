@@ -23,6 +23,7 @@ import { Zap } from "lucide-react";
 
 import { recordChangeActions } from "@/features/data-tables/data-source/record-store-grid";
 import { toRecordSourceKey } from "@/features/scheduling/utils/recordSourceKey";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Answer =
   | { state: "asking" }
@@ -97,7 +98,7 @@ export function RowChangeAgentLink({
 
   if (offer.state === "asking" || offer.state === "absent") return null;
   if (offer.state === "refused") {
-    return <span className="text-destructive">Running an agent when a row changes is not available: {offer.why}</span>;
+    return <span className="text-destructive">Running an agent when a row changes is not available: {offer.why} <ErrorAlchemyMenu error={offer.why} /></span>;
   }
   return (
     <button

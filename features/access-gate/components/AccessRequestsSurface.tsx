@@ -65,6 +65,7 @@ import type {
   AccessRequestStatus,
   RequestedLevel,
 } from "@/features/access-gate/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Box = "inbox" | "sent";
 
@@ -411,6 +412,7 @@ export function AccessRequestsSurface() {
           {error && (
             <div className="mb-3 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
 

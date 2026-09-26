@@ -41,6 +41,7 @@ import type {
   PartyMergeWithParties,
 } from "../../types";
 import { CandidatePairCard } from "./CandidatePairCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function DuplicateReviewPage() {
   const router = useRouter();
@@ -161,6 +162,7 @@ export function DuplicateReviewPage() {
           {error && (
             <div className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
 

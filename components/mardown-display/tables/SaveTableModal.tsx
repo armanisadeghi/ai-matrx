@@ -51,6 +51,7 @@ import {
   type SaveToTableResult,
 } from "@/features/data-tables/save-to-table";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Public response shape — kept stable so parents (`SavedTableInfo` in
 // MarkdownTable / StreamingTableRenderer) and downstream consumers continue
@@ -633,7 +634,7 @@ const SaveTableModal: React.FC<SaveTableModalProps> = ({
                       tables…
                     </div>
                   ) : tablesError ? (
-                    <div className="text-sm text-red-500">{tablesError}</div>
+                    <div className="text-sm text-red-500">{tablesError} <ErrorAlchemyMenu error={tablesError} /></div>
                   ) : tables.length === 0 ? (
                     <div className="text-sm text-muted-foreground">
                       You don&apos;t have any data tables yet. Use the create
@@ -674,7 +675,7 @@ const SaveTableModal: React.FC<SaveTableModalProps> = ({
                         table format…
                       </div>
                     ) : fieldsError ? (
-                      <div className="text-sm text-red-500">{fieldsError}</div>
+                      <div className="text-sm text-red-500">{fieldsError} <ErrorAlchemyMenu error={fieldsError} /></div>
                     ) : reconciliation ? (
                       <div className="space-y-3">
                         {/* Reconciliation summary */}

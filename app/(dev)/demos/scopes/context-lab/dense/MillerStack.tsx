@@ -30,6 +30,7 @@ import {
   fakeCreate,
   type DenseData,
 } from "./shared";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Level =
   | { at: "root" }
@@ -200,7 +201,7 @@ export function MillerStack({
             ))}
           </div>
         ) : data.treeError && data.organizations.length === 0 ? (
-          <div className="p-3 text-xs text-destructive">{data.treeError}</div>
+          <div className="p-3 text-xs text-destructive">{data.treeError} <ErrorAlchemyMenu error={data.treeError} /></div>
         ) : level.at === "root" ? (
           <>
             {data.organizations.map((o) => (

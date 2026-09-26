@@ -23,6 +23,7 @@
 import { AlertTriangle, CheckCircle2, CircleDashed, XCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type ScoredChecklistState = "pass" | "warn" | "fail" | "not_measured";
 
@@ -89,6 +90,7 @@ export function ScoredChecklist({
       {refusal ? (
         <p className="rounded-md border border-dashed border-warning/50 bg-warning/5 px-2.5 py-2 text-xs leading-5 text-foreground">
           {refusal}
+          <ErrorAlchemyMenu error={refusal} />
         </p>
       ) : score !== null ? (
         <div className="flex flex-wrap items-baseline gap-2">

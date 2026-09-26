@@ -141,7 +141,7 @@ function FieldRefusal({
 }) {
   if (!refusal || refusal.field !== field) return null;
   return (
-    <p className="text-sm text-destructive">{refusal.message}</p>
+    <p className="text-sm text-destructive">{refusal.message} <ErrorAlchemyMenu /></p>
   );
 }
 

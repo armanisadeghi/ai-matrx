@@ -32,6 +32,7 @@ import {
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
 import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SETTINGS_SECTIONS = [
   ["general", "General"],
@@ -253,7 +254,7 @@ export default function SiteSettingsPage() {
                   </span>
                 )}
                 {error && (
-                  <span className="text-xs text-destructive">{error}</span>
+                  <span className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></span>
                 )}
                 <Button
                   onClick={handleSave}

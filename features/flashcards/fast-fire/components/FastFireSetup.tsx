@@ -61,6 +61,7 @@ import {
 import { FastFireSetPicker } from "./FastFireSetPicker";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { loadFastFireSets } from "./fastfire-initial-load";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function FastFireSetup() {
   const dispatch = useAppDispatch();
@@ -268,6 +269,7 @@ export function FastFireSetup() {
               >
                 Retry
               </Button>
+              <ErrorAlchemyMenu />
             </div>
           ) : sets.length === 0 ? (
             <div className="rounded-lg border border-dashed border-border bg-background px-3 py-8 text-center text-xs text-muted-foreground">
@@ -610,6 +612,7 @@ export function FastFireSetup() {
           <div className="mb-3 flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {startError}
+            <ErrorAlchemyMenu />
           </div>
         )}
 

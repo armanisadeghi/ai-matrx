@@ -55,6 +55,7 @@ import {
 import { cn } from "@/lib/utils";
 import { PlainTextMetricsBar } from "@/components/text/PlainTextMetricsBar";
 import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const MarkdownAnalyzer = lazy(() => import("./analyzer/MarkdownAnalyzer"));
 
@@ -678,6 +679,7 @@ function TabErrorFallback({
               <span className="font-medium text-foreground">{tabLabel}</span>{" "}
               tab encountered an unexpected error and could not be displayed.
               Other tabs are unaffected.
+              <ErrorAlchemyMenu />
             </p>
           </div>
         </div>
@@ -752,6 +754,7 @@ function TabErrorFallback({
                     <p className="font-mono text-sm text-destructive break-all">
                       {error.name}: {error.message}
                     </p>
+                    <ErrorAlchemyMenu error={error.name} />
                   </div>
                 </AdminSection>
               )}

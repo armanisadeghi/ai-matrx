@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import type { SandboxAccessResponse } from "@/types/sandbox";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SshAccessPanelProps {
   /** Supabase row UUID — used for API calls only. */
@@ -120,6 +121,7 @@ export function SshAccessPanel({
           {error && (
             <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-2 mb-3">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
           <Button

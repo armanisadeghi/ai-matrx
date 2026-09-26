@@ -407,6 +407,7 @@ function UnavailableCard({
         <p className="text-[10px] text-muted-foreground/70">
           Couldn't read the document index. Likely a transient network hiccup —
           try again.
+          <ErrorAlchemyMenu />
         </p>
       </div>
       <button

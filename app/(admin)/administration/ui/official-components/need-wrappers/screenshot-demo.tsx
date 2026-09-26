@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useScreenshot } from '@/hooks/useScreenshot';
 import { Loader2, Download } from 'lucide-react';
 import type { ProcessedScreenshotData } from '@/types/screenshot';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function ScreenshotDemo() {
     const [preview, setPreview] = useState<ProcessedScreenshotData | null>(null);
@@ -56,6 +57,7 @@ export default function ScreenshotDemo() {
                     {error && (
                         <div className="text-sm text-destructive">
                             Error: {error.message}
+                          <ErrorAlchemyMenu error={error.message} />
                         </div>
                     )}
 

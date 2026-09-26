@@ -25,6 +25,7 @@ import {
   type GscRangeKey,
 } from "@/features/marketing/search-console/types";
 import { useGscPortfolioRollup } from "./useGscPortfolioRollup";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const CLASS_BG: Record<string, string> = {
   money: "bg-success",
@@ -77,6 +78,7 @@ export function GscPortfolioClassBar({
           Search performance unavailable:{" "}
           {error instanceof Error ? error.message : String(error)}
         </p>
+        <ErrorAlchemyMenu error={error.message} />
       </div>
     );
   }

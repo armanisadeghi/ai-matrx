@@ -51,6 +51,7 @@ import {
   type BlockSchemaEntry,
 } from "@/features/content-ir/registry/schema-source-flexible-data";
 import { SchemaConvertTab } from "./SchemaConvertTab";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const FlashcardsBlock = dynamic(
   () =>
@@ -978,7 +979,7 @@ export default function JsonBlockDetectorPage() {
                 </SelectContent>
               </Select>
               {samplesError && (
-                <p className="text-xs text-destructive">{samplesError}</p>
+                <p className="text-xs text-destructive">{samplesError} <ErrorAlchemyMenu error={samplesError} /></p>
               )}
 
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -1039,7 +1040,7 @@ export default function JsonBlockDetectorPage() {
                 </SelectContent>
               </Select>
               {schemasError && (
-                <p className="text-xs text-destructive">{schemasError}</p>
+                <p className="text-xs text-destructive">{schemasError} <ErrorAlchemyMenu error={schemasError} /></p>
               )}
 
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden">

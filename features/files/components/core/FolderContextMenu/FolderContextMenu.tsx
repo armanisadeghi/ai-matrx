@@ -61,6 +61,7 @@ import { openFolderPicker } from "@/features/files/components/pickers/CloudFiles
 import { useFolderActions } from "@/features/files/components/core/FileActions/useFolderActions";
 import { setClipboard } from "@/features/files/utils/clipboard";
 import type { Visibility } from "@/features/files/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface FolderContextMenuProps {
   folderId: string;
@@ -347,7 +348,7 @@ export function FolderContextMenu({
             </AlertDialogDescription>
           </AlertDialogHeader>
           {deleteError ? (
-            <p className="text-xs text-destructive">{deleteError}</p>
+            <p className="text-xs text-destructive">{deleteError} <ErrorAlchemyMenu error={deleteError} /></p>
           ) : null}
           <AlertDialogFooter>
             <AlertDialogCancel className="max-lg:min-h-11" disabled={deleting}>

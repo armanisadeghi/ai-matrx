@@ -37,6 +37,7 @@ import {
   type BinaryNode,
 } from "../hooks/useDocumentLineage";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface LineageTreeViewProps {
   doc: PdfDocument;
@@ -73,6 +74,7 @@ export function LineageTreeView({ doc }: LineageTreeViewProps) {
       {error && (
         <div className="text-[10px] text-destructive border border-destructive/30 bg-destructive/10 rounded px-2 py-1.5">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 

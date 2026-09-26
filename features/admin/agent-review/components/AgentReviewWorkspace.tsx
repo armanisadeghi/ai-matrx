@@ -55,6 +55,7 @@ import {
   type ReviewQueueRow,
   type ReviewStatus,
 } from "@/features/admin/agent-review/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const STAGES: Array<{ label: string; statuses: ReviewStatus[] }> = [
   { label: "Submitted", statuses: ["submitted"] },
@@ -265,6 +266,7 @@ export default function AgentReviewWorkspace({
           <Button className="mt-4" size="sm" onClick={() => void refresh()}>
             Try again
           </Button>
+          <ErrorAlchemyMenu />
         </div>
       </div>
     );
@@ -634,6 +636,7 @@ export default function AgentReviewWorkspace({
           {raisedError ? (
             <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
               Notes raised from this review could not be read: {raisedError}
+              <ErrorAlchemyMenu error={raisedError} />
             </div>
           ) : null}
 

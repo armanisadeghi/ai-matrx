@@ -67,6 +67,7 @@ import {
 } from "./types";
 import { YouTubeResearchActions } from "./YouTubeResearchActions";
 import { YouTubeSearchHistory } from "./YouTubeSearchHistory";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type FormState = YouTubeSearchRequest & {
   published_after: string;
@@ -547,6 +548,7 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
           {error && (
             <div className="mb-7 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-200">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
 

@@ -76,6 +76,7 @@ import {
   validateFieldName,
 } from "@/utils/user-table-utls/field-name-sanitizer";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface TableField {
   id: string;
@@ -1217,6 +1218,7 @@ export default function TableConfigModal({
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
             <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
 

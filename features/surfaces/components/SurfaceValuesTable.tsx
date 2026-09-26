@@ -4,6 +4,7 @@ import React, { useMemo } from "react";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { SurfaceManifest, SurfaceValue } from "@/features/surfaces/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * View-only merged manifest/DB SurfaceValue list with per-row drift chips.
@@ -142,6 +143,7 @@ export function SurfaceValuesTable({ manifest, dbValues, loading, error }: Props
         <div className="text-xs text-destructive flex items-center gap-1.5">
           <AlertCircle className="h-3.5 w-3.5" />
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
       {!loading && !error && mergedValues.length > 0 && (

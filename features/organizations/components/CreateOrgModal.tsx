@@ -29,6 +29,7 @@ import { useSlugAvailability } from "../hooks";
 import { ImageAssetUploader } from "@/components/official/ImageAssetUploader";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CreateOrgModalProps {
   isOpen: boolean;
@@ -198,6 +199,7 @@ export function CreateOrgModal({
         <div className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
           <X className="h-3 w-3" />
           {slugValidation.error}
+          <ErrorAlchemyMenu error={slugValidation.error} />
         </div>
       );
     }
@@ -273,6 +275,7 @@ export function CreateOrgModal({
               >
                 <AlertCircle className="h-3 w-3" />
                 {nameValidation.error}
+                <ErrorAlchemyMenu error={nameValidation.error} />
               </p>
             )}
             <p className="text-xs text-muted-foreground">
@@ -317,6 +320,7 @@ export function CreateOrgModal({
               >
                 <AlertCircle className="h-3 w-3" />
                 {abbreviationValidation.error}
+                <ErrorAlchemyMenu error={abbreviationValidation.error} />
               </p>
             )}
             <p

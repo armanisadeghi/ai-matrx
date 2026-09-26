@@ -36,6 +36,7 @@ import type {
 } from "../types";
 import type { Database } from "@/types/database.types";
 import ConstraintsEditor from "./ConstraintsEditor";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type ModelConfigRow = Database["ai"]["Views"]["model_config"]["Row"];
 
@@ -193,6 +194,7 @@ export default function ModelRulesEditor({
         {loadError && (
           <p className="text-xs text-red-600 dark:text-red-400 break-words">
             Failed to load rule sources: {loadError}
+            <ErrorAlchemyMenu error={loadError} />
           </p>
         )}
       </div>

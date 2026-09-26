@@ -50,6 +50,7 @@ import type { SiteKeywordPerformanceRow } from "@/features/marketing/seo/keyword
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import type { MarketingPage } from "@/features/marketing/types";
 import { GscClassBar } from "@/features/marketing/search-console/components/ambassador/GscClassBar";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** hostname+path, lowercased, www/trailing-slash stripped — URL identity. */
 function normalizeUrlForMatch(value: string | null | undefined): string | null {
@@ -325,6 +326,7 @@ export function PageTargetPerformanceCard({ page }: { page: MarketingPage }) {
             {evidence.error instanceof Error
               ? evidence.error.message
               : "unknown error"}
+            <ErrorAlchemyMenu error={evidence.error.message} />
           </p>
         ) : (
           <div className="grid gap-3 md:grid-cols-3">

@@ -28,6 +28,7 @@ import {
   stringUrlCodec,
   useUrlState,
 } from "@ai-matrx/kit/url-state";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const nodeTypes = {
   schemaNode: SchemaNode,
@@ -101,6 +102,7 @@ export default function SchemaVisualizer() {
           <p className="text-sm text-muted-foreground mt-1">
             {error instanceof Error ? error.message : "Unknown error"}
           </p>
+          <ErrorAlchemyMenu />
         </div>
       </div>
     );

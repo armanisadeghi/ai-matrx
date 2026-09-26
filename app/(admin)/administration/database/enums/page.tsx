@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { getDatabaseEnums } from "@/actions/admin/enum-functions";
 import EnumsContainer from "./components/EnumsContainer";
 import { DatabaseEnum } from "@/types/enum-types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const metadata = {
   title: "Database Enums",
@@ -27,6 +28,7 @@ export default async function EnumsPage() {
         {errorMessage ? (
           <div className="bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-800 dark:text-red-200">
             {errorMessage}
+            <ErrorAlchemyMenu />
           </div>
         ) : (
           <Suspense

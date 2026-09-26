@@ -11,6 +11,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import MarkdownStream from "@/components/MarkdownStream";
 import type { AgentAppComponentProps } from "../../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function FactCheckerApp({
   onExecute,
@@ -91,6 +92,7 @@ export default function FactCheckerApp({
               <p className="text-xs text-destructive leading-snug">
                 <span className="font-semibold">{error.type}: </span>
                 {error.message}
+                <ErrorAlchemyMenu />
               </p>
             </div>
           )}
@@ -164,8 +166,8 @@ export default function FactCheckerApp({
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <p className="font-semibold text-destructive">{error.type}</p>
-                <p className="text-sm text-destructive/80">{error.message}</p>
+                <p className="font-semibold text-destructive">{error.type} <ErrorAlchemyMenu /></p>
+                <p className="text-sm text-destructive/80">{error.message} <ErrorAlchemyMenu /></p>
               </div>
             </div>
           </CardContent>

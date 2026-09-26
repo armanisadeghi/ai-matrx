@@ -40,6 +40,7 @@ import { useDirectoryVersion, useInvalidateDirectory } from "./FileTreeWatcher";
 import { Button } from "@/components/ui/button";
 import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
 import { validateFilesystemEntryName } from "./fileTreePaths";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface FileTreeNodeProps {
   node: FilesystemNode;
@@ -679,6 +680,7 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
               style={childIndentStyle}
             >
               {loadError}
+              <ErrorAlchemyMenu error={loadError} />
             </div>
           )}
           {children === null && !loadError && (

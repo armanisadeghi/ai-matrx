@@ -47,6 +47,7 @@ import {
 import { formatVariableDisplayLines } from "@/features/agents/utils/variable-display-lines";
 import { toast } from "@/lib/toast";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function formatTimestamp(ts: number): string {
   return new Date(ts).toLocaleString(undefined, {
@@ -250,6 +251,7 @@ export default function RecoveryWindowImpl() {
           <DialogTitle>Recovered submissions</DialogTitle>
           <DialogDescription>
             Submissions that failed to send. Retry, edit, copy, or delete.
+            <ErrorAlchemyMenu />
           </DialogDescription>
         </DialogHeader>
 

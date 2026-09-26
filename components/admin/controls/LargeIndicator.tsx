@@ -42,6 +42,7 @@ import {
   type ServerEnvironment,
 } from "@/lib/redux/slices/apiConfigSlice";
 import { useRequestLedger } from "@/lib/diagnostics/stream-capture/useRequestLedger";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface LargeIndicatorProps {
   onSizeDown: () => void;
@@ -244,6 +245,7 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
               <div className="flex items-center gap-1 text-xs text-red-400 mt-1">
                 <AlertCircle size={12} />
                 {activeHealth.error}
+                <ErrorAlchemyMenu />
               </div>
             )}
           </div>
@@ -469,6 +471,7 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-[10px] text-red-400 font-semibold">
                           {err.source}
+                          <ErrorAlchemyMenu />
                         </span>
                         <span className="text-[10px] text-slate-500">
                           {new Date(err.capturedAt).toLocaleTimeString()}

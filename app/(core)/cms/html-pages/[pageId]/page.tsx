@@ -19,6 +19,7 @@ import {
   htmlPagesListHrefFromReturn,
   saveHtmlPagesListReturn,
 } from "@/features/html-pages/utils/list-url-state";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function HtmlPageEditBody() {
   const { pageId } = useParams() as { pageId: string };
@@ -154,6 +155,7 @@ function HtmlPageEditBody() {
                 Back to list
               </Button>
             </div>
+            <ErrorAlchemyMenu />
           </div>
         </div>
       </>

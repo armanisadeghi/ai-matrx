@@ -41,6 +41,7 @@ import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 import { uploadFiles as uploadFilesThunk } from "@/features/files/redux/thunks";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Monaco is ~2MB; lazy-load so this dialog only pulls it in on demand.
 const MonacoEditor = dynamic(
@@ -261,6 +262,7 @@ export function CloudFileEditor({
         {saveError ? (
           <p className="border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-xs text-destructive">
             {saveError}
+            <ErrorAlchemyMenu error={saveError} />
           </p>
         ) : null}
 
@@ -268,6 +270,7 @@ export function CloudFileEditor({
           {loadError ? (
             <div className="flex h-full w-full items-center justify-center p-6 text-sm text-destructive">
               Failed to load file: {loadError}
+              <ErrorAlchemyMenu error={loadError} />
             </div>
           ) : loading || text === null ? (
             <div className="flex h-full w-full items-center justify-center bg-muted/20">

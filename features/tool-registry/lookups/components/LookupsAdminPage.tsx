@@ -59,6 +59,7 @@ import {
   usePublishUiSurfaces,
 } from "./LookupsSurfaceRuntime";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type TabKey = "clients" | "surfaces" | "executors";
 
@@ -599,6 +600,7 @@ function UiSurfaceCrud() {
           <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
             <AlertCircle className="h-3.5 w-3.5" />
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
         <MatrxDataTable<UiSurfaceRow>
@@ -1068,7 +1070,7 @@ function ToolExecutorDialog({
               this row.
             </div>
           )}
-          {jsonErr && <p className="text-[11px] text-destructive">{jsonErr}</p>}
+          {jsonErr && <p className="text-[11px] text-destructive">{jsonErr} <ErrorAlchemyMenu error={jsonErr} /></p>}
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>

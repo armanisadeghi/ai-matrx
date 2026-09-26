@@ -20,6 +20,7 @@ import { useEffect, useState, type ComponentProps } from "react";
 import UserTableViewer from "@/components/user-generated-table-data/UserTableViewer";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { locateTable } from "@/features/data-tables/data-source/locate-table";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type ViewerProps = ComponentProps<typeof UserTableViewer>;
 
@@ -60,6 +61,7 @@ export function LocatedTableViewer(props: ViewerProps) {
     return (
       <div className="flex h-full min-h-24 items-center justify-center p-4 text-sm text-muted-foreground" role="status">
         {located.why}
+        <ErrorAlchemyMenu error={located.why} />
       </div>
     );
   }

@@ -43,6 +43,7 @@ import type {
 } from "../../types";
 import { AI_PROVIDER_DEEP_LINK_PARAM } from "../../doors";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function rowToFormData(row: AiProvider): ProviderFormData {
   return {
@@ -298,6 +299,7 @@ function ProviderDetailPanel({
             >
               This provider changed elsewhere. Your unsaved edits are preserved;
               review the newer record before saving.
+              <ErrorAlchemyMenu />
             </div>
           ) : null}
           <ProviderForm

@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { interpolateQuery } from "./utils/interpolate";
 import { ResultPreview } from "./ResultPreview";
 import type { QueryBlockState, Variable } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface QueryBlockProps {
   block: QueryBlockState;
@@ -316,6 +317,7 @@ export function QueryBlock({
           <pre className="text-xs font-mono text-red-700 dark:text-red-400 whitespace-pre-wrap break-words">
             {block.error}
           </pre>
+          <ErrorAlchemyMenu error={block.error} />
         </div>
       )}
 

@@ -25,6 +25,7 @@ import {
   type ImportRuleCheck,
 } from "@/features/data-tables/import-rule-check";
 import { FieldRuleRefusal } from "@/features/data-tables/components/FieldRuleRefusal";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface PasteRowsField {
   id: string;
@@ -275,7 +276,7 @@ export default function PasteRowsDialog({
                 className="font-mono text-sm"
               />
               {parseError && (
-                <p className="text-sm text-red-500">{parseError}</p>
+                <p className="text-sm text-red-500">{parseError} <ErrorAlchemyMenu error={parseError} /></p>
               )}
               <p className="text-xs text-muted-foreground">
                 The first row must be a header. Tab- and comma-separated values
@@ -515,6 +516,7 @@ export default function PasteRowsDialog({
                     : uncheckedColumns.length > 0
                       ? `${uncheckedColumns.map((v) => v.fieldDisplayName).join(", ")} carries rules this screen could not read, so nothing was checked against them. Leave that column out and the rest can be imported.`
                       : "Every row you pasted breaks a column's rules. Fix them in the file and paste again, or leave the refusing column out."}
+                  <ErrorAlchemyMenu />
                 </p>
               )}
             </div>

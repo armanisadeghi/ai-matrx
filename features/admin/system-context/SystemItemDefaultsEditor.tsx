@@ -22,6 +22,7 @@ import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
 import { setFeatureKnob } from "@/features/admin/limits/service";
 import type { FeatureKnobSetResult } from "@/features/admin/limits/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const SYSTEM_ITEM_DEFAULTS_KNOB = { feature: "context", key: "system_item_defaults" } as const;
 
@@ -130,6 +131,7 @@ export function SystemItemDefaultsEditor({
       <div className="rounded-lg border border-border bg-card px-4 py-3">
         <p className="text-sm text-destructive">
           The System items every agent receives could not be read: {state.message}
+          <ErrorAlchemyMenu />
         </p>
       </div>
     );

@@ -115,6 +115,7 @@ import type {
 import type { ChunkingConfigDraft } from "@/features/page-extraction/redux/pageExtractionSlice";
 import { normalizeExtraInputs } from "@/features/page-extraction/utils/extra-inputs";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ChunkingConfigFormProps {
   fileId: string;
@@ -1141,6 +1142,7 @@ function TemplateEditor({
               {rangeError && (
                 <p className="mt-1 text-[10px] text-destructive flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" /> {rangeError}
+                  <ErrorAlchemyMenu error={rangeError} />
                 </p>
               )}
             </Field>

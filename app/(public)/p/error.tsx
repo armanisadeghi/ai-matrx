@@ -53,6 +53,7 @@ export default function PromptAppError({ error, reset }: ErrorPageProps) {
                 <p className="text-sm text-muted-foreground mb-8 max-w-sm mx-auto">
                     We encountered an unexpected error while loading this app. 
                     This can happen when app code has an issue or the service is temporarily unavailable.
+                  <ErrorAlchemyMenu />
                 </p>
 
                 {/* Actions */}

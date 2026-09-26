@@ -13,6 +13,7 @@ import type {
   SystemContextItem,
   SystemItemClass,
 } from "@/app/api/admin/system-context/route";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type ValueType = DB["public"]["Enums"]["context_value_type"];
 export type Sensitivity = DB["public"]["Enums"]["context_sensitivity"];
@@ -157,7 +158,7 @@ export function Field({
       <span className="text-xs font-medium text-foreground">{label}</span>
       {children}
       {error ? (
-        <span className="block text-[11px] text-destructive">{error}</span>
+        <span className="block text-[11px] text-destructive">{error} <ErrorAlchemyMenu error={error} /></span>
       ) : hint ? (
         <span className="block text-[11px] text-muted-foreground">{hint}</span>
       ) : null}

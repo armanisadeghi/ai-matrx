@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { getSqlFunctions } from "@/actions/admin/sql-functions";
 import SqlFunctionsContainer from "./components/SqlFunctionsContainer";
 import { SqlFunction } from "@/types/sql-functions";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const metadata = {
   title: "SQL Functions",
@@ -26,6 +27,7 @@ export default async function SQLFunctionsPage() {
       {errorMessage ? (
         <div className="bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 m-3 text-red-800 dark:text-red-200">
           {errorMessage}
+          <ErrorAlchemyMenu />
         </div>
       ) : (
         <Suspense

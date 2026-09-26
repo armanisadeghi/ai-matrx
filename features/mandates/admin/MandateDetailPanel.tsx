@@ -129,6 +129,7 @@ import {
   type ImpactVerdict,
 } from "./impact";
 import { VerdictDetail } from "./impact-cells";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -544,7 +545,7 @@ function DriftPanel({
         <div className="rounded-md border border-border bg-card">
           {diffError ? (
             <div className="space-y-1 p-3 text-xs">
-              <p className="text-destructive">{diffError}</p>
+              <p className="text-destructive">{diffError} <ErrorAlchemyMenu error={diffError} /></p>
               <a
                 href={getAgentModeHref("versions", agentId, SYSTEM_AGENT_BASE)}
                 target="_blank"
@@ -1557,7 +1558,7 @@ function FactsPanel({
                 agent…
               </span>
             ) : verdictsError ? (
-              <span className="text-rose-600">{verdictsError}</span>
+              <span className="text-rose-600">{verdictsError} <ErrorAlchemyMenu error={verdictsError} /></span>
             ) : variableVerdicts.length > 0 ? (
               <VariableVerdictList items={variableVerdicts} />
             ) : (
@@ -1645,6 +1646,7 @@ function MandateProvisionPanel({ row }: { row: MandateRow }) {
         ) : error ? (
           <p className="text-xs text-rose-600">
             The Provision could not be read: <TextWithDoors text={error} />
+            <ErrorAlchemyMenu />
           </p>
         ) : offer ? (
           <>

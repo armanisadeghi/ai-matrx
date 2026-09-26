@@ -45,6 +45,7 @@ import { isValidShortcutContext } from "@/features/agents/utils/shortcut-context
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 import { agentShortcutRecordSummary } from "../format";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ShortcutListProps extends ScopeProps {
   onEdit?: (shortcut: AgentShortcutRecord) => void;
@@ -374,6 +375,7 @@ export function ShortcutList({
         {error && (
           <div className="border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
             Unable to load shortcuts: {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
         <MatrxDataTable<AgentShortcutRecord>

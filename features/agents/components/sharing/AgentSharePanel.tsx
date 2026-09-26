@@ -11,6 +11,7 @@ import { OrgAvailabilityNote } from "@/features/sharing/components/OrgAvailabili
 import { WhoCanSeeThis } from "@/features/sharing/components/WhoCanSeeThis";
 import { PublicAccessTab } from "@/features/sharing/components/tabs/PublicAccessTab";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type ShareSubTab = "users" | "public";
 
@@ -167,6 +168,7 @@ export function AgentSharePanel({
           {error && (
             <div className="p-2.5 bg-destructive/10 border border-destructive/20 rounded-md">
               <p className="text-xs text-destructive">{error}</p>
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
         </div>

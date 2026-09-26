@@ -24,6 +24,7 @@ import {
 import { Shapes } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { kindMarkdown } from "../core/commands";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface KindRow {
   id: string;
@@ -132,6 +133,7 @@ export function KindPicker({
             {state === "error" && (
               <div className="px-4 py-3 text-sm text-destructive">
                 The kind list could not load: {message}. Close this and try again.
+                <ErrorAlchemyMenu />
               </div>
             )}
             <CommandEmpty>{state === "loading" ? "Searching the shape registry…" : "No kind matches that search."}</CommandEmpty>

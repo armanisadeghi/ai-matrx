@@ -43,6 +43,7 @@ import { PdfPresetPicker } from "@/features/pdf/components/PdfPresetPicker";
 import type { PdfBinaryResult as BinaryResult } from "@/features/pdf/api/client";
 import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   fileId: string;
@@ -226,6 +227,7 @@ export function DocumentOpsPanel({ fileId }: Props) {
         {error ? (
           <div className="rounded border border-destructive/40 bg-destructive/5 p-2 text-[11px] text-destructive">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         ) : null}
 

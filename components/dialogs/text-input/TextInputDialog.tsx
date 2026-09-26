@@ -55,6 +55,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { isPointOnOpener } from "./opener-reclick";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface TextInputDialogProps {
   open: boolean;
@@ -216,6 +217,7 @@ export function TextInputDialog({
       {error ? (
         <p id="text-input-dialog-error" className="text-sm text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </p>
       ) : null}
       {/* Hidden submit so Enter key submits the form. */}

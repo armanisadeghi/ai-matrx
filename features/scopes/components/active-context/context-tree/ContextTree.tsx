@@ -40,6 +40,7 @@ import {
   InlineSpinner,
   type ContextTreeData,
 } from "./shared";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type ContextTreeCreateLevel =
   "scope type" | "scope" | "context item" | "project" | "task";
@@ -650,6 +651,7 @@ export function ContextTree({
         ) : data.treeError && data.organizations.length === 0 ? (
           <div className="p-2 text-xs text-destructive">
             Couldn&apos;t load your tree: {data.treeError}
+            <ErrorAlchemyMenu error={data.treeError} />
           </div>
         ) : rows.length === 0 ? (
           <div className="p-2 text-xs text-muted-foreground">

@@ -2,6 +2,7 @@ import {useState, useEffect} from 'react';
 import {SlackChannel, SlackClient, SlackMessage} from '../slackClientUtils';
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { X } from 'lucide-react';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SlackManager: React.FC = () => {
   const [token, setToken] = useState('');
@@ -282,6 +283,7 @@ const SlackManager: React.FC = () => {
             <div
                 className="p-3 bg-red-100 border border-red-400 text-red-700 rounded mb-4 dark:bg-red-900 dark:border-red-800 dark:text-red-300">
               {error}
+              <ErrorAlchemyMenu />
             </div>
         )}
 

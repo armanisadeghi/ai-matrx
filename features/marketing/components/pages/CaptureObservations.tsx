@@ -53,6 +53,7 @@ import {
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Note tag stamped on every capture observation (for /notes filtering). */
 const OBSERVATION_TAG = "observation";
@@ -318,6 +319,7 @@ function CaptureObservationsDialog({
               {links.status === "error" && links.error ? (
                 <p className="p-3 text-xs text-destructive">
                   Could not load attached observations: {links.error}
+                  <ErrorAlchemyMenu error={links.error} />
                 </p>
               ) : notes.isError ? (
                 <QueryError

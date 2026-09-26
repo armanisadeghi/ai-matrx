@@ -45,6 +45,7 @@ import {
   createTableRowMenuDescriptor,
 } from "@/features/context-menu-v3/table-row-context-registry";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ShortcutDirectoryProps {
   mode: ShortcutDirectoryMode;
@@ -377,6 +378,7 @@ export function ShortcutDirectory({
       {error && (
         <div className="border-b border-destructive/30 px-4 py-2 text-sm text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
       <MatrxDataTable<ShortcutDirectoryRow>

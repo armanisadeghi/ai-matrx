@@ -5,6 +5,7 @@ import { LoaderCircle } from "lucide-react";
 import { getYouTubeVideo } from "./service";
 import type { YouTubeVideoCandidate } from "./types";
 import { YouTubeVideoPreviewSurface } from "./YouTubeVideoPreview";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function YouTubeVideoPreviewPage({ videoId }: { videoId: string }) {
   const [video, setVideo] = useState<YouTubeVideoCandidate | null>(null);
@@ -34,6 +35,7 @@ export function YouTubeVideoPreviewPage({ videoId }: { videoId: string }) {
       <main className="grid min-h-dvh place-items-center bg-background p-6 text-foreground dark:bg-[#07090d] dark:text-zinc-100">
         <div className="max-w-lg rounded-3xl border border-red-500/30 bg-red-500/10 p-7 text-center text-red-700 dark:text-red-200">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       </main>
     );

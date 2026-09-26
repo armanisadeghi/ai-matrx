@@ -47,6 +47,7 @@ import { ListKindBadge, ListStatusBadge } from "./badges";
 import { OutreachListCreateDialog } from "./OutreachListCreateDialog";
 import { OrgOutreachReportPanel } from "../../analytics/OrgOutreachReportPanel";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function memberCount(row: OutreachListWithCount): number {
   return row.members?.[0]?.count ?? 0;
@@ -345,6 +346,7 @@ export function OutreachListsPage() {
           {error && (
             <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
           {/* Outreach assists (producers write platform.assists rows keyed to

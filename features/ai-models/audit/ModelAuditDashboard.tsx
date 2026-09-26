@@ -28,6 +28,7 @@ import {
   createAdminAiModelAuditScope,
 } from "@/features/surfaces/manifests/admin-ai-model-audit.manifest";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type TabId = AuditCategory | "overview" | "settings";
 
@@ -199,6 +200,7 @@ export default function ModelAuditDashboard() {
         {error && (
           <div className="px-4 py-2 bg-destructive/10 border-b text-destructive text-xs shrink-0">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
 

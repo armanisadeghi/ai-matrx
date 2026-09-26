@@ -23,6 +23,7 @@ import { chatConversationsActions } from "./_legacy-stubs";
 import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { MessageTimestamp } from "@/features/agents/components/messages-display/MessageTimestamp";
 import type { ConversationMessage } from "./_legacy-stubs";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ============================================================================
 // PROPS
@@ -191,6 +192,7 @@ export function AssistantMessage({
             <div className="text-sm text-destructive">
               {message.content || "An error occurred"}
             </div>
+            <ErrorAlchemyMenu />
           </div>
         )}
 

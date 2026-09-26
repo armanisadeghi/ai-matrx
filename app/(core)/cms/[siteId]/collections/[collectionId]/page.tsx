@@ -84,6 +84,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const FILTERS: { value: CollectionItemFilter; label: string }[] = [
   { value: "all", label: "All" },
@@ -486,6 +487,7 @@ export default function CollectionItemsPage() {
           <AlertCircle className="h-8 w-8" />
           <p className="text-sm font-medium">Failed to load collection</p>
           <p className="text-xs text-muted-foreground">{error}</p>
+          <ErrorAlchemyMenu />
         </div>
       </div>
     );
@@ -659,6 +661,7 @@ export default function CollectionItemsPage() {
           <div className="text-sm text-destructive flex items-center gap-2 p-3 rounded-md bg-destructive/10">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
 

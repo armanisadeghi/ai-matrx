@@ -25,6 +25,7 @@ import {
   parsePublicVisibilityResult,
   type PublicVisibilityResult,
 } from "../ai-visibility/AiVisibilityReport";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ENGINES = [
   ["chat_gpt", "ChatGPT"],
@@ -384,6 +385,7 @@ export function AiVisibilityTool() {
           <div className="mt-4 flex gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         ) : null}
       </section>

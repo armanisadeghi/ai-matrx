@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 import { parseYouTubeUrl } from "@/lib/media/youtube";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface FileUrlResourcePickerProps {
     onBack: () => void;
@@ -271,6 +272,7 @@ export function FileUrlResourcePicker({ onBack, onSelect, onSwitchTo, initialUrl
                         <div className="flex items-start gap-2 p-2 border border-destructive/20 bg-destructive/10 rounded">
                             <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
                             <p className="text-xs text-destructive">{error}</p>
+                          <ErrorAlchemyMenu error={error} />
                         </div>
                         {suggestedType && onSwitchTo && (
                             <Button

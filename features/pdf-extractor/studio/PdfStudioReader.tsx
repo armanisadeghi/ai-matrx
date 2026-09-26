@@ -163,6 +163,7 @@ import type { UseDocumentSearch } from "@/features/rag/hooks/useDocumentSearch";
 
 export type { PaneKey } from "../state/types";
 import type { PaneKey } from "../state/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export type PdfPaneEditMode = "crop" | "reorder" | null;
 
 export interface PdfStudioReaderProps {
@@ -299,6 +300,7 @@ export function PdfStudioReader({
     return (
       <div className="flex-1 flex items-center justify-center p-6 text-sm text-destructive">
         {error}
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }
@@ -821,7 +823,7 @@ function CropOverlay({
             </Button>
           )}
           {saveError && (
-            <p className="text-[11px] text-destructive w-full">{saveError}</p>
+            <p className="text-[11px] text-destructive w-full">{saveError} <ErrorAlchemyMenu error={saveError} /></p>
           )}
         </div>
       )}
@@ -829,6 +831,7 @@ function CropOverlay({
       {error && (
         <div className="absolute bottom-2 left-2 right-2 pointer-events-auto bg-destructive/10 border border-destructive/30 rounded px-2 py-1.5">
           <p className="text-[11px] text-destructive">{error}</p>
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
     </div>
@@ -1014,6 +1017,7 @@ function PageReorderView({
       {saveError && (
         <p className="shrink-0 px-3 py-1 text-[11px] text-destructive bg-destructive/5 border-b border-destructive/20">
           {saveError}
+          <ErrorAlchemyMenu error={saveError} />
         </p>
       )}
 
@@ -1051,7 +1055,7 @@ function PageReorderView({
           ))}
         </div>
 
-        {error && <p className="mt-2 text-[11px] text-destructive">{error}</p>}
+        {error && <p className="mt-2 text-[11px] text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>}
 
         {totalPages > 20 && !result && (
           <p className="mt-2 text-[10px] text-muted-foreground/60 text-center">
@@ -1803,7 +1807,7 @@ function PageBlock({
       </div>
 
       {saveError && (
-        <p className="mx-2 mb-1 text-[10px] text-destructive">{saveError}</p>
+        <p className="mx-2 mb-1 text-[10px] text-destructive">{saveError} <ErrorAlchemyMenu error={saveError} /></p>
       )}
 
       {/* Body */}

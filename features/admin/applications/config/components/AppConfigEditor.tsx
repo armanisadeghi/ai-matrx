@@ -52,6 +52,7 @@ import type {
   AppConfigHistoryRow,
   AppConfigRow,
 } from "@/features/admin/applications/config/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AppConfigEditorProps {
   /** null = creating a new app row. */
@@ -345,7 +346,7 @@ export function AppConfigEditor({
             autoComplete="off"
           />
           {fieldErrors.app ? (
-            <p className="text-xs text-destructive">{fieldErrors.app}</p>
+            <p className="text-xs text-destructive">{fieldErrors.app} <ErrorAlchemyMenu error={fieldErrors.app} /></p>
           ) : null}
         </div>
         <div className="space-y-1.5">
@@ -364,6 +365,7 @@ export function AppConfigEditor({
           {fieldErrors.schema_version ? (
             <p className="text-xs text-destructive">
               {fieldErrors.schema_version}
+              <ErrorAlchemyMenu error={fieldErrors.schema_version} />
             </p>
           ) : null}
           {showSchemaVersionWarning ? (
@@ -392,6 +394,7 @@ export function AppConfigEditor({
           {fieldErrors.min_supported_app_version ? (
             <p className="text-xs text-destructive">
               {fieldErrors.min_supported_app_version}
+              <ErrorAlchemyMenu error={fieldErrors.min_supported_app_version} />
             </p>
           ) : null}
         </div>

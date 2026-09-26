@@ -38,6 +38,7 @@ import {
   type ImportConnector,
 } from "../../import/connectors/service";
 import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ConnectorSourcesProps {
   orgId: string | null;
@@ -109,6 +110,7 @@ export function ConnectorSources({ orgId, kind, onLoaded }: ConnectorSourcesProp
       {loadError && (
         <p className="text-xs text-destructive">
           Could not list import sources: {loadError}
+          <ErrorAlchemyMenu error={loadError} />
         </p>
       )}
       {connectors === null && !loadError && (

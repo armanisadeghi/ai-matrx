@@ -84,6 +84,7 @@ import {
   type RepresentationState,
 } from "./knowledgeAssetStatus";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------------------------------------------------------------------------
 // Per-kind presentation metadata
@@ -428,6 +429,7 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
           <span className="flex-1 text-amber-700 dark:text-amber-400">
             Couldn&apos;t verify existing work ({loadError}). Processing actions
             are paused so nothing is accidentally reprocessed.
+            <ErrorAlchemyMenu error={loadError} />
           </span>
           <Button
             size="sm"

@@ -42,6 +42,7 @@ import { codeDb } from "@/utils/supabase/codeDb";
 import type { components } from "@/types/python-generated/api-types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildKnowledgeRepositoriesContextData } from "@/features/rag/agent-context/buildKnowledgeRepositoriesContextData";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const KNOWLEDGE_REPOSITORIES_SURFACE = "matrx-user/knowledge-repositories";
 
@@ -345,6 +346,7 @@ export function RepositoriesPage() {
           {error && (
             <div className="m-6 p-4 border border-destructive/50 bg-destructive/5 rounded-md text-sm text-destructive">
               <strong>Could not load repositories:</strong> {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
 

@@ -22,6 +22,7 @@ import { StageHeader } from "../ui/StageHeader";
 import { WorkItemCard } from "../ui/WorkItemCard";
 import { CaptureLevelChip } from "../ui/CaptureLevelChip";
 import { FoldableSection } from "../ui/FoldableSection";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   state: PipelineState;
@@ -155,6 +156,7 @@ function ScrapeCard({
         title={item.metadata.last_failure_reason}
       >
         {item.metadata.last_failure_reason}
+        <ErrorAlchemyMenu error={item.metadata.last_failure_reason} />
       </span>,
     );
   }

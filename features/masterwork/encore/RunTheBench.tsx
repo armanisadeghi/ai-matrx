@@ -69,6 +69,7 @@ import {
   type BenchRunFormWire,
   type BenchVerdictWire,
 } from "./benchProof";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * WHAT EACH ARM IS, IN PLAIN WORDS. The server sends its own `label`, and it
@@ -151,6 +152,7 @@ function ArmRow({ arm }: { arm: BenchArmWire }) {
         // not run can never quietly become a win.
         <span className="shrink-0 text-xs text-destructive">
           did not run{arm.error ? ` — ${arm.error}` : ""}
+          <ErrorAlchemyMenu />
         </span>
       )}
       {arm.ran && arm.note ? (

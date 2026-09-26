@@ -44,6 +44,7 @@ import {
 } from "@/features/scraper/constants/analysis-agents";
 import { useMandate } from "@/features/mandates/useMandate";
 import { AnalysisMandateGate } from "./AnalysisMandateGate";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface FactCheckerPageProps {
   value: string;
@@ -166,7 +167,7 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
     if (error && !hasLiveRun) {
       return (
         <Card title="Error">
-          <div className="text-destructive p-4">Error: {error}</div>
+          <div className="text-destructive p-4">Error: {error} <ErrorAlchemyMenu error={error} /></div>
         </Card>
       );
     }
@@ -275,7 +276,7 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
     if (error && !hasLiveRun) {
       return (
         <Card title="Error">
-          <div className="text-destructive p-4">Error: {error}</div>
+          <div className="text-destructive p-4">Error: {error} <ErrorAlchemyMenu error={error} /></div>
         </Card>
       );
     }

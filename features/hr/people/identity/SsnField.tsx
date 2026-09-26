@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 
 import { SsnRevealDoor } from "./SsnRevealDoor";
 import { storeHrSsn } from "./storeSsn";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function SsnField({
   employeeId,
@@ -159,7 +160,7 @@ export function SsnField({
           )}
         </Button>
       </div>
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p> : null}
       <p className="text-[0.6875rem] text-muted-foreground">
         Sealed on the server the moment you save. Afterwards only the last four
         digits are shown, and seeing the whole number takes a recorded reason.

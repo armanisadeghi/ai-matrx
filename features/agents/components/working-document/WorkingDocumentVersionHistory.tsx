@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectWorkingDocBinding } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { useWorkingDocumentVersions } from "./useWorkingDocumentVersions";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const NoteVersionHistoryPanel = dynamic(
   () =>
@@ -148,6 +149,7 @@ function DbVersionPanel({
     return (
       <div className="flex h-full items-center justify-center p-6 text-center text-sm text-destructive">
         {error}
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

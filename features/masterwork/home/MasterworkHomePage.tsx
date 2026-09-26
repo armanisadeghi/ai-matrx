@@ -80,6 +80,7 @@ import { MASTERWORK_RULEBOOK_SURFACE } from "../assists";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import { formatRelativeTime } from "@/utils/datetime";
 import { masterworkHref } from "../masterworkDoors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function when(iso: string): string {
   return formatRelativeTime(iso, { style: "short" });
@@ -287,7 +288,7 @@ export function MasterworkHomePage() {
   if (error) {
     return (
       <div className="flex h-full items-center justify-center px-6 text-center">
-        <p className="text-sm text-destructive">{error}</p>
+        <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
       </div>
     );
   }

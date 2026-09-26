@@ -34,6 +34,7 @@ import {
 import { NEW_SESSION_DEFAULT_TITLE } from "../constants";
 import type { StudioSession } from "../types";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface StudioSidebarProps {
   className?: string;
@@ -194,7 +195,7 @@ export function StudioSidebar({
           </div>
         ) : fetchStatus === "error" ? (
           <div className="px-3 py-4 text-xs text-muted-foreground">
-            <p>Could not load sessions.</p>
+            <p>Could not load sessions. <ErrorAlchemyMenu /></p>
             <button
               type="button"
               onClick={handleRetry}

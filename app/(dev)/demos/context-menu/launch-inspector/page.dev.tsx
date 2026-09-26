@@ -405,6 +405,7 @@ export default function LaunchInspectorDemoPage() {
             {idError && (
               <p className="flex items-center gap-1 text-[11px] text-destructive">
                 <AlertTriangle className="h-3 w-3 shrink-0" /> {idError}
+                <ErrorAlchemyMenu error={idError} />
               </p>
             )}
             {/* The shortcut came out of `selectAllShortcutsArray` — a real
@@ -463,6 +464,7 @@ export default function LaunchInspectorDemoPage() {
             {scopeJsonError ? (
               <p className="flex items-center gap-1 text-[11px] text-destructive">
                 <AlertTriangle className="h-3 w-3 shrink-0" /> {scopeJsonError}
+                <ErrorAlchemyMenu error={scopeJsonError} />
               </p>
             ) : (
               <p className="text-[11px] text-muted-foreground">
@@ -529,6 +531,7 @@ export default function LaunchInspectorDemoPage() {
             {launchError && (
               <p className="flex items-center gap-1 text-[11px] text-destructive">
                 <AlertTriangle className="h-3 w-3 shrink-0" /> {launchError}
+                <ErrorAlchemyMenu error={launchError} />
               </p>
             )}
           </section>

@@ -25,6 +25,7 @@
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The store this feature reads; named in the remedy below. */
 const STORE = "platform.assists";
@@ -67,6 +68,7 @@ export function ApprovalLoadError({
           {missingStore
             ? `The approval queue's store is not answering, so ${what} cannot be shown.`
             : `Could not load ${what}. Nothing was decided.`}
+          <ErrorAlchemyMenu />
         </p>
         <p className="break-words text-[11px] text-muted-foreground">
           {missingStore

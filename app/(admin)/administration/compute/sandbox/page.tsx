@@ -69,6 +69,7 @@ import {
   type AdminSandboxExpandedInstance,
   type AdminSandboxInstanceEntry,
 } from "@/features/surfaces/manifests/admin-sandbox.manifest";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const STATUS_BADGE_MAP: Record<
   string,
@@ -613,7 +614,7 @@ export default function AdminSandboxManagementPage() {
             >
               <CardContent className="flex items-center gap-2 p-4">
                 <AlertCircle className="w-4 h-4 text-destructive" />
-                <p className="text-sm text-destructive">{error}</p>
+                <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
               </CardContent>
             </Card>
           )}
@@ -923,6 +924,7 @@ export default function AdminSandboxManagementPage() {
             {sshError && (
               <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-3">
                 {sshError}
+                <ErrorAlchemyMenu error={sshError} />
               </div>
             )}
 

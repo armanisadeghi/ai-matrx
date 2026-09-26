@@ -25,6 +25,7 @@ import {
 import { registerAskResolver } from "@/features/agents/ui-first-tools/redux/ask-resolver-registry";
 import type { AskUserResponse } from "@/features/agents/ui-first-tools/tools/schemas";
 import type { ApprovalChange } from "@/features/agents/ui-first-tools/ui/approval-types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const CONV = "demo-agent-cards";
 
@@ -435,6 +436,7 @@ export default function AgentCardGalleryPage() {
               <RefreshCw className="size-3.5" />
               Try again
             </Button>
+            <ErrorAlchemyMenu />
           </div>
         )}
 

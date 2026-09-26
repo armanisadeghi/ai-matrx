@@ -45,6 +45,7 @@ import {
 import { formatCount } from "@/features/marketing/search-console/types";
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 import type { TopicPlacementPassResult, TopicPlacementStatus } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // 🚨 THIS PATH SHIPS AHEAD OF THE DEPLOYED BACKEND, ON PURPOSE.
 // `POST /seo/keywords/topics/backfill` lives on aidream main (service
@@ -223,7 +224,7 @@ export function TopicPlacementStrip({
         <p className="text-[10px] text-foreground">{pass.stage}</p>
       ) : null}
       {pass.error ? (
-        <p className="text-[10px] text-destructive">{pass.error}</p>
+        <p className="text-[10px] text-destructive">{pass.error} <ErrorAlchemyMenu error={pass.error} /></p>
       ) : null}
       {lastPass ? (
         <p className="text-[10px] text-muted-foreground">{lastPass}</p>

@@ -94,6 +94,7 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const PAGE_LOCATION =
   "AI Matrx Admin — Tool Registry · MCP Servers (/administration/agents/mcp-servers)";
@@ -412,6 +413,7 @@ export function McpServersAdminPage() {
               <div className="m-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
                 <AlertCircle className="h-3.5 w-3.5" />
                 {error}
+                <ErrorAlchemyMenu error={error} />
               </div>
             )}
             <div className="flex-1 overflow-auto">
@@ -756,6 +758,7 @@ function ServerDetail({
         {fresh.state === "errored" && (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
             <strong>Sync error:</strong> {fresh.lastError}
+            <ErrorAlchemyMenu error={fresh.lastError} />
           </div>
         )}
         {latestTest && <TestResultPanel result={latestTest} />}

@@ -44,6 +44,7 @@ import {
   type StudyKit,
 } from "../kitService";
 import { MakeMoreFromKit } from "./MakeMoreFromKit";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface StudyStage {
   number: string;
@@ -292,6 +293,7 @@ export function KitHub({
             <div>
               <h2 className="font-semibold text-foreground">
                 This study kit could not be loaded
+                <ErrorAlchemyMenu />
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Your material is still safe. Try the read again.

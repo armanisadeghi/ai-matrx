@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Loader2, Globe, Check, ChevronsUpDown } from "lucide-react";
 import { useSearchConsoleAPI } from "../hooks/useSearchConsole";
 import type { SiteProperty } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface PropertySelectorProps {
     token: string;
@@ -76,6 +77,7 @@ export function PropertySelector({ token, selectedProperty, onSelectProperty }: 
         return (
             <div className="text-sm text-red-600 dark:text-red-400">
                 {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
         );
     }

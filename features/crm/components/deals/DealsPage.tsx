@@ -69,6 +69,7 @@ import type { DealViewDefinition } from "../../deals/views";
 import { buildDealColumns } from "./columns";
 import { DealCreateDialog } from "./DealCreateDialog";
 import { DealsBoard } from "./DealsBoard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SURFACE_KEY = "crm-deals";
 const SURFACE_DEFAULTS = {
@@ -493,6 +494,7 @@ export function DealsPage() {
       {(list.error || pipelinesError) && (
         <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
           {list.error ?? pipelinesError}
+          <ErrorAlchemyMenu error={list.error} />
         </div>
       )}
 
@@ -501,6 +503,7 @@ export function DealsPage() {
           board.error ? (
             <div className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
               {board.error}
+              <ErrorAlchemyMenu error={board.error} />
             </div>
           ) : boardPipeline ? (
             <DealsBoard
@@ -532,6 +535,7 @@ export function DealsPage() {
               {pipelinesLoading || board.isLoading
                 ? "Loading the pipeline…"
                 : "No pipeline exists yet — the default Sales pipeline is seeded platform-wide, so this usually means categories failed to load."}
+              <ErrorAlchemyMenu />
             </div>
           )
         ) : (

@@ -44,6 +44,7 @@ import {
   payGroupOptions,
   useHrStructure,
 } from "../shared/useHrStructure";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Radix `Select` refuses an empty-string item value, and "no pay group" is a real
@@ -234,7 +235,7 @@ export function PayGroupCard({
 
           {refusal ? (
             <div className="space-y-2">
-              <p className="text-sm text-destructive">{refusal.sentence}</p>
+              <p className="text-sm text-destructive">{refusal.sentence} <ErrorAlchemyMenu error={refusal.sentence} /></p>
               {refusal.door ? (
                 <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-9">
                   <Link href={refusal.door}>Go and fix it</Link>

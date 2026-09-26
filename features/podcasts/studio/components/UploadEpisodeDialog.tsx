@@ -60,6 +60,7 @@ import type {
   PcDisplayMode,
 } from "@/features/podcasts/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ACCEPT_AUDIO = "audio/*,.mp3,.m4a,.wav,.aac,.ogg";
 
@@ -349,6 +350,7 @@ export function UploadEpisodeDialog({
             {audioError && (
               <p className="flex items-center gap-1 text-xs text-destructive">
                 <AlertCircle className="h-3 w-3" /> {audioError}
+                <ErrorAlchemyMenu error={audioError} />
               </p>
             )}
           </div>

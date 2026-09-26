@@ -29,6 +29,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { useAppSelector } from '@/lib/redux/hooks';
 import { selectIsAdmin } from '@/lib/redux/selectors/userSelectors';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CreateTemplateModalProps {
   isOpen: boolean;
@@ -272,6 +273,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess }: Crea
           {error && (
             <div className="bg-red-50 p-2 rounded-md text-red-500 text-sm">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
           

@@ -16,6 +16,7 @@ import { GitCompare, Loader2 } from "lucide-react";
 
 import { AnimatedDiffReveal } from "@ai-matrx/diff/react";
 import { useWorkingDocumentVersions } from "./useWorkingDocumentVersions";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface WorkingDocumentLatestVersionDiffProps {
   documentId: string | null;
@@ -75,6 +76,7 @@ export function WorkingDocumentLatestVersionDiff({
     return (
       <div className="flex h-full min-h-0 items-center justify-center px-6 text-center text-sm text-destructive">
         {error}
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

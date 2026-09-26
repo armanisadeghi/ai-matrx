@@ -26,6 +26,7 @@ import {
   type Recurrence,
   type RecurrenceMode,
 } from "../recurrence";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const MODE_LABELS: Record<RecurrenceMode, string> = {
   daily: "Every day",
@@ -396,6 +397,7 @@ export function RecurrenceEditor({
             {recurrence.mode === "advanced"
               ? `That expression isn't valid: ${cronError}`
               : cronError}
+            <ErrorAlchemyMenu error={cronError} />
           </p>
         ) : (
           <>

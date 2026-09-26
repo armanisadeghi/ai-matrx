@@ -25,6 +25,7 @@ import {
 } from "@/lib/usage/originClass";
 import { pushAppHref } from "@/lib/deployment/navigate";
 import { formatCount, formatUsd } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Timeframe = "all" | "30d" | "7d" | "24h";
 
@@ -319,6 +320,7 @@ export function UsageTableClient() {
       {error ? (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : null}
 

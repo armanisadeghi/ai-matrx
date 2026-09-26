@@ -52,6 +52,7 @@ import { useSpendPopoverKnobs } from "./useSpendPopoverKnobs";
 import { staleness, timestamp, usd, usdPrecise } from "./format";
 import type { SpendLedger, SpendLedgerRole, SpendOverview } from "./types";
 import { formatCount } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ROLE_LABEL: Record<SpendLedgerRole, string> = {
   primary: "Headline",
@@ -365,6 +366,7 @@ export function SpendDashboard() {
             platform.spend_popover.scare_threshold_usd{" "}
           </span>
           to restore it.
+          <ErrorAlchemyMenu />
         </div>
       ) : null}
 

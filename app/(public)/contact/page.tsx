@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Mail, Send, Loader2, CheckCircle } from "lucide-react";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -172,6 +173,7 @@ export default function ContactPage() {
             {error && (
               <div className="bg-destructive/10 border border-destructive/20 text-destructive rounded-lg px-4 py-3 text-sm">
                 {error}
+                <ErrorAlchemyMenu error={error} />
               </div>
             )}
 

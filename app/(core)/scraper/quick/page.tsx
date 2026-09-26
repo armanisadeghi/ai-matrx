@@ -32,6 +32,7 @@ import { ScraperSurfaceMount } from "@/features/scraper/agent-context/ScraperSur
 // `scrape_command` write handler use, so an agent can never stage a URL this
 // page's own Scrape buttons would reject.
 import { normalizeUrl } from "@/features/scraper/utils/scraper-floating-helpers";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function QuickScrapePage() {
   const searchParams = useSearchParams();
@@ -283,6 +284,7 @@ export default function QuickScrapePage() {
           {urlError && (
             <p className="text-xs text-destructive mt-1 max-w-5xl mx-auto">
               {urlError}
+              <ErrorAlchemyMenu error={urlError} />
             </p>
           )}
           {activeStatus && isAnyLoading && (

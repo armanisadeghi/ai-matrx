@@ -47,6 +47,7 @@ import {
 import { formatLocalDate } from "../../shared/format";
 import { HrRpcError } from "../../api/rpc";
 import { generatePayPeriods, type GeneratePeriodsResult } from "../api/periodReads";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface GeneratePeriodsPanelProps {
   /** The employer whose pay groups these are. HR is strictly single-employer. */
@@ -201,6 +202,7 @@ export function GeneratePeriodsPanel({
       {refusal ? (
         <p className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] leading-relaxed text-destructive">
           {refusal.userMessage}
+          <ErrorAlchemyMenu error={refusal.userMessage} />
         </p>
       ) : null}
 

@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/lib/toast";
 import { SourceKindBadge } from "@/features/tool-call-visualization/admin/mcp-tools/source-kind-badge";
 import type { Database } from "@/types/database.types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * One searchable row. `name` is the only required field — everything else
@@ -195,6 +196,7 @@ export function ToolSearchDialog({
           {error && (
             <div className="py-4 text-center text-xs text-destructive">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
           {!loading && !error && filtered.length === 0 && (

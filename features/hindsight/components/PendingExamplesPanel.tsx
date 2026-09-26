@@ -32,6 +32,7 @@ import { exampleDoor, type DoorAudience } from "../subject-doors";
 import type { PendingExample, SubjectKind } from "../types";
 import { DoorLink } from "./DoorLink";
 import { fmtDate } from "./tokens";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The server's focused-review door (`example_ids`) exists only for these
@@ -115,6 +116,7 @@ export function PendingExamplesPanel({
       <p className={cn("text-xs text-destructive", className)}>
         Could not load what the next review would read — the settle-window
         warning is unavailable right now.
+        <ErrorAlchemyMenu />
       </p>
     );
   }

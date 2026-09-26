@@ -94,6 +94,7 @@ import {
 } from "../service";
 import type { ChannelAnalyticsLane, YouTubeVideoRow } from "../types";
 import { PreUploadCheck } from "./PreUploadCheck";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function integer(value: number): string {
   return Intl.NumberFormat().format(Math.round(value));
@@ -605,6 +606,7 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
                 "YouTube Analytics is still in internal testing here, so these numbers are only available to a reviewer."}{" "}
               {analyticsCapability?.remedy?.trim() ?? ""} The videos below do not
               depend on it and are shown either way.
+              <ErrorAlchemyMenu />
             </p>
           ) : null}
 

@@ -43,6 +43,7 @@ import {
   type IngestedSourcesData,
 } from "@/features/content-ir/kinds/ingested-sources";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Accepts either the bridge output (already coerced, with `isComplete`) or a
@@ -108,6 +109,7 @@ export function IngestedSourcesShortfall({
           {data.errors.map((error, i) => (
             <li key={i} className="text-xs leading-relaxed text-destructive/90">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </li>
           ))}
         </ul>
@@ -115,6 +117,7 @@ export function IngestedSourcesShortfall({
       <p className="mt-1.5 text-xs text-muted-foreground">
         Everything below was built from what we could read.
       </p>
+      <ErrorAlchemyMenu />
     </div>
   );
 }

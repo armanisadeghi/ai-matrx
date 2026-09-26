@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface DeleteRowModalProps {
   /** The row's table — the data seam decides which store deletes it. */
@@ -87,6 +88,7 @@ export default function DeleteRowModal({
         {error && (
           <div className="bg-red-50 p-2 rounded-md text-red-500 text-sm">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
 

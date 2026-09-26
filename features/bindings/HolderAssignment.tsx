@@ -77,6 +77,7 @@ import {
 import { WorkflowListDropdown } from "@/features/workflow-runtime/listings/WorkflowListDropdown";
 import { listWorkflowVersionChoices, type WorkflowVersionChoice } from "./workflow-versions";
 import type { HolderDraft } from "./ScopeHolderBar";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** "Latest" as a select value. `null` is the stored form; this is the option. */
 export const LATEST_VERSION_VALUE = "latest";
@@ -395,6 +396,7 @@ export function HolderAssignment({
       {refusal ? (
         <p className="rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-[11.5px] leading-relaxed text-destructive">
           {refusal}
+          <ErrorAlchemyMenu error={refusal} />
         </p>
       ) : null}
     </div>
@@ -480,6 +482,7 @@ function VersionSelect({
       {state === "failed" ? (
         <span className="text-[11px] text-destructive">
           This agent&apos;s versions could not be read — reload to choose one.
+          <ErrorAlchemyMenu />
         </span>
       ) : null}
     </>
@@ -556,6 +559,7 @@ function WorkflowVersionSelect({
       {failed ? (
         <span className="text-[11px] text-destructive">
           This workflow&apos;s versions could not be read — reload to choose one.
+          <ErrorAlchemyMenu />
         </span>
       ) : null}
     </>

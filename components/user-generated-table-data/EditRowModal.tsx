@@ -52,6 +52,7 @@ import {
 import { columnRuleRefusal, type ColumnRuleRefusal } from "@/features/data-tables/validation-refusal";
 import { FieldRuleRefusal } from "@/features/data-tables/components/FieldRuleRefusal";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface TableField {
   id: string;
@@ -573,6 +574,7 @@ export default function EditRowModal({
           {error && (
             <div className="bg-red-50 p-2 rounded-md text-red-500 text-sm">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
 

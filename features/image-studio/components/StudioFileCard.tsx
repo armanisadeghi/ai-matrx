@@ -25,6 +25,7 @@ import {
 } from "./StudioVariantTile";
 import { MetadataPanel } from "./MetadataPanel";
 import { MousePointerClick } from "lucide-react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface StudioFileCardProps {
     file: StudioSourceFile;
@@ -320,6 +321,7 @@ export function StudioFileCard({
                         <p className="mb-3 rounded-md bg-destructive/10 border border-destructive/30 px-3 py-2 text-xs text-destructive flex items-center gap-1.5">
                             <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                             {file.error}
+                          <ErrorAlchemyMenu error={file.error} />
                         </p>
                     )}
                     {variantList.length === 0 && pendingPresetIds.length === 0 && !isProcessing && (
@@ -405,6 +407,7 @@ function SourceSaveIndicator({ file }: { file: StudioSourceFile }) {
             <span className="text-muted-foreground">·</span>
             <AlertCircle className="h-3 w-3" />
             Not saved
+          <ErrorAlchemyMenu />
         </span>
     );
 }

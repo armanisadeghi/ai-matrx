@@ -56,6 +56,7 @@ import type {
 } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Textarea } from "@/components/ui/textarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AiModelDetailPanelProps {
   model: AiModel | null;
@@ -135,6 +136,7 @@ function OfferingPricingReadOnly({
       {error && (
         <p className="text-xs text-destructive">
           Could not load this model&apos;s offerings ({error}).
+          <ErrorAlchemyMenu error={error} />
         </p>
       )}
       {!error && loading && (

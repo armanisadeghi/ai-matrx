@@ -21,6 +21,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const CLASSIFY_PATH = "/seo/keywords/classify";
 /**
@@ -123,7 +124,7 @@ function ClassifyCard() {
           ) : null}
         </div>
         {command.error ? (
-          <p className="text-[11px] text-destructive">{command.error}</p>
+          <p className="text-[11px] text-destructive">{command.error} <ErrorAlchemyMenu error={command.error} /></p>
         ) : null}
         {result ? (
           <div className="grid grid-cols-2 gap-2 rounded-md border border-border bg-muted/30 p-3 text-xs sm:grid-cols-4">
@@ -234,7 +235,7 @@ function AssignTopicsCard() {
           ) : null}
         </div>
         {command.error ? (
-          <p className="text-[11px] text-destructive">{command.error}</p>
+          <p className="text-[11px] text-destructive">{command.error} <ErrorAlchemyMenu error={command.error} /></p>
         ) : null}
         {result ? (
           <div className="grid gap-2 rounded-md border border-border bg-muted/30 p-3 text-xs">

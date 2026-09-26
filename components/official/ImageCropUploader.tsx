@@ -55,6 +55,7 @@ import {
 } from "@/features/image-studio/components/InitialCropPanel";
 import { cropFileToFile } from "@/features/image-studio/utils/crop-file";
 import type { ImageUploaderResult } from "@/components/official/ImageAssetUploader";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -602,6 +603,7 @@ export function ImageCropUploader({
         <div className="flex items-center gap-2">
           <p className="text-xs text-destructive flex items-center gap-1 flex-1">
             <AlertCircle className="h-3 w-3 shrink-0" /> {errorMsg}
+            <ErrorAlchemyMenu error={errorMsg} />
           </p>
           <button
             type="button"

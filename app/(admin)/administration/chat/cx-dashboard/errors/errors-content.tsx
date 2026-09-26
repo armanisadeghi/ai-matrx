@@ -36,6 +36,7 @@ import {
   ADMIN_CX_DASHBOARD_SURFACE_NAME,
   createAdminCxDashboardScope,
 } from "@/features/surfaces/manifests/admin-cx-dashboard.manifest";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type ErrorsData = {
   error_requests: CxUserRequest[];
@@ -135,6 +136,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
           r.error ? (
             <span className="block max-w-[220px] truncate text-xs text-red-500">
               {r.error}
+              <ErrorAlchemyMenu />
             </span>
           ) : (
             <span className="text-muted-foreground">—</span>
@@ -497,6 +499,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
                         <pre className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">
                           {r.error_message}
                         </pre>
+                        <ErrorAlchemyMenu />
                       </div>
                     )}
                     <CxJsonViewer

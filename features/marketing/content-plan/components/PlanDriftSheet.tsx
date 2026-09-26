@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import type { DriftItem } from "../lib/drift";
 import { driftItemCsvRow, driftItemSummary } from "../format";
 import type { DriftRepair, RepairOutcome, usePlanDrift } from "../hooks/usePlanDrift";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Big crawls can surface thousands of orphans — cap the synchronous DOM and
  * say so, rather than pretending the list is complete. */
@@ -251,6 +252,7 @@ export function PlanDriftSheet({
                 {model.unreadable.length} record
                 {model.unreadable.length === 1 ? "" : "s"} could not be read and
                 {model.unreadable.length === 1 ? " was" : " were"} skipped:
+                <ErrorAlchemyMenu />
               </p>
               <ul className="mt-1 space-y-0.5">
                 {model.unreadable.slice(0, 5).map((line, index) => (

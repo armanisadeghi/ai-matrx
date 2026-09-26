@@ -58,6 +58,7 @@ import {
   type VaultExpectedActor,
 } from "../vault-service";
 import type { VaultPrincipal } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SOURCES = [
   ["generic", "CSV export"],
@@ -1103,7 +1104,7 @@ export function VaultCsvImportDialog({
               import.
             </p>
           )}
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>}
           {result && (
             <div className="space-y-2 text-sm">
               <p>

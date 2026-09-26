@@ -100,6 +100,7 @@ import {
 } from "./TestBenchChrome";
 import type { RouteFact, RoutesInThisBuild } from "./routeFacts";
 import { organizationSavedViews } from "./savedViewsPort";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The organization setting section 2 flips, at its one registry address. */
 const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" } as const;
@@ -1316,6 +1317,7 @@ function MemberVisibilityControl({
         return (
             <Refusal>
                 This organization’s visibility setting could not be read — {doorProblem}
+              <ErrorAlchemyMenu />
             </Refusal>
         );
     }
@@ -1397,7 +1399,7 @@ function CrmContactTry({ organizationId }: { organizationId: string }) {
         };
     }, [organizationId]);
 
-    if (problem) return <Refusal>Could not read this organization’s contacts — {problem}</Refusal>;
+    if (problem) return <Refusal>Could not read this organization’s contacts — {problem} <ErrorAlchemyMenu /></Refusal>;
     if (contacts === null) return <p className="text-sm text-muted-foreground">Finding a contact…</p>;
     if (contacts.length === 0) {
         return (

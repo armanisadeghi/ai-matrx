@@ -27,6 +27,7 @@ import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 
 import { usePlanAiRun, usePlanAiRuns } from "../hooks/usePlanAiRuns";
 import { planAiRunSummary } from "../format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const STATUS_TONE: Record<string, string> = {
   completed: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
@@ -181,6 +182,7 @@ export function PlanAiRunsView({
             Could not load this site&apos;s AI runs:{" "}
             {runs.error instanceof Error ? runs.error.message : "unknown error"}
           </span>
+          <ErrorAlchemyMenu error={runs.error.message} />
         </div>
       ) : null}
 
@@ -281,6 +283,7 @@ export function PlanAiRunsView({
                       {detail.error instanceof Error
                         ? detail.error.message
                         : "unknown error"}
+                      <ErrorAlchemyMenu error={detail.error.message} />
                     </span>
                   ) : detail.data ? (
                     <div className="flex flex-col gap-3">

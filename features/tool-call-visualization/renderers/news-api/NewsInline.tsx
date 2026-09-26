@@ -4,6 +4,7 @@ import React, { useMemo } from "react";
 import { Newspaper, Calendar, ExternalLink, Loader2, AlertCircle } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
 import { getArg, resultAsObject, isTerminal } from "../_shared";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface NewsArticle {
     source: { id: string | null; name: string };
@@ -108,6 +109,7 @@ export const NewsInline: React.FC<ToolRendererProps> = ({
             <div className="flex items-center gap-2 text-sm text-destructive py-3">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>Failed to fetch news articles.</span>
+              <ErrorAlchemyMenu />
             </div>
         );
     }

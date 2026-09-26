@@ -33,6 +33,7 @@ import {
   MemberEmployeeSeam,
   useMemberEmployeeCopyDetails,
 } from "@/features/hr/entry-points/MemberEmployeeSeam";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface MemberManagementProps {
   organizationId: string;
@@ -119,6 +120,7 @@ export function MemberManagement({
         <Button onClick={refresh} variant="outline" size="sm" className="mt-2">
           Retry
         </Button>
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

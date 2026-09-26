@@ -77,6 +77,7 @@ import { UserSearchField } from "@/features/user-search/UserSearchField";
 // A caller with no name passes the email, whose single token yields its
 // first character: exactly what these copies did by hand.
 import { getInitials } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface PanelInvitation {
   id: string;
@@ -440,6 +441,7 @@ export function InvitationsPanel({
               {email && !emailValidation.valid && (
                 <p className="text-xs text-red-600 dark:text-red-400 mt-1">
                   {emailValidation.error}
+                  <ErrorAlchemyMenu error={emailValidation.error} />
                 </p>
               )}
             </div>
@@ -538,6 +540,7 @@ export function InvitationsPanel({
               </button>
             )}
           </div>
+          <ErrorAlchemyMenu />
         </div>
       )}
 

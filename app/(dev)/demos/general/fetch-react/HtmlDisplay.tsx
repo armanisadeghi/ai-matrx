@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface HtmlDisplayProps {
   htmlId: string;
@@ -32,7 +33,7 @@ function HtmlDisplay({ htmlId }: HtmlDisplayProps) {
     }
   }, [htmlId]);
 
-  if (error) return <div className="p-4 text-red-600 dark:text-red-400">Error: {error}</div>;
+  if (error) return <div className="p-4 text-red-600 dark:text-red-400">Error: {error} <ErrorAlchemyMenu error={error} /></div>;
   if (isLoading) return <div className="p-4 flex justify-center items-center h-[400px] text-gray-600 dark:text-gray-400">Loading...</div>;
   if (!html && !isLoading) return <div className="p-4 flex justify-center items-center h-[400px] text-gray-600 dark:text-gray-400">No content to display</div>;
 

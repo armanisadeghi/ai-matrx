@@ -41,6 +41,7 @@ import { ShadowInboxDialog } from "../components/detail/ShadowInboxDialog";
 import { DailyDripDialog } from "@/features/masterwork/drip/DailyDripDialog";
 import { PredictionLedgerDialog } from "../prediction/PredictionLedgerDialog";
 import type { Rulebook } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Where a lane lives, for a host that has to mount it or go to it. */
 export type SessionDoor =
@@ -234,6 +235,7 @@ export function OpenSessionButton({
       <p className="text-sm text-amber-700 dark:text-amber-400">
         This session cannot be opened. {why} It will be replaced at the next
         re-plan.
+        <ErrorAlchemyMenu error={why} />
       </p>
     );
   }

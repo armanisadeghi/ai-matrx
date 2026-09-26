@@ -45,6 +45,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -201,6 +202,7 @@ function TierCard({ tier }: { tier: TierStatus }) {
                 <div className="rounded border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
                     <AlertCircle className="w-3 h-3 inline mr-1" />
                     {tier.error}
+                  <ErrorAlchemyMenu error={tier.error} />
                 </div>
             )}
 
@@ -405,6 +407,7 @@ export default function SandboxInfraPage() {
                         <div className="rounded border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
                             <AlertCircle className="w-4 h-4 inline mr-1" />
                             Couldn&apos;t load tier status: {tiersError}
+                          <ErrorAlchemyMenu error={tiersError} />
                         </div>
                     )}
                     {tiersLoading && tiers.length === 0 && (
@@ -452,6 +455,7 @@ export default function SandboxInfraPage() {
                         <div className="rounded border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
                             <AlertCircle className="w-4 h-4 inline mr-1" />
                             Couldn&apos;t load deploy runs: {runsError}
+                          <ErrorAlchemyMenu error={runsError} />
                         </div>
                     )}
                     <div className="rounded-lg border border-border bg-card overflow-hidden">

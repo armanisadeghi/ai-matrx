@@ -293,6 +293,7 @@ export function ListChangeProposalView({
             </span>
             {readRefusal}
           </span>
+          <ErrorAlchemyMenu />
         </p>
       ) : null}
 

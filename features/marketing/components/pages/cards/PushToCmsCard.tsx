@@ -53,6 +53,7 @@ import { SectionCard } from "@/features/marketing/components/shared/MarketingUi"
 import type { MarketingPage, MarketingSite } from "@/features/marketing/types";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const pushKeys = {
   cms: (siteId: string) => ["marketing", "push-to-cms", siteId] as const,
@@ -298,6 +299,7 @@ export function PushToCmsCard({
           <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-2.5 text-xs text-destructive">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span>Could not read the CMS: {extractErrorMessage(facts.error)}</span>
+            <ErrorAlchemyMenu />
           </div>
         ) : !link?.linked ? (
           <div className="grid gap-2 rounded-lg border border-border bg-muted/30 p-3">

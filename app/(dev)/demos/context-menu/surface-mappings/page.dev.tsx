@@ -468,6 +468,7 @@ export default function SurfaceMappingsDemoPage() {
             {scopeJsonError ? (
               <p className="flex items-center gap-1 text-[11px] text-destructive">
                 <AlertTriangle className="h-3 w-3 shrink-0" /> {scopeJsonError}
+                <ErrorAlchemyMenu error={scopeJsonError} />
               </p>
             ) : (
               <p className="text-[11px] text-muted-foreground">
@@ -498,6 +499,7 @@ export default function SurfaceMappingsDemoPage() {
           {resolveError && (
             <span className="flex items-center gap-1 text-xs text-destructive">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> {resolveError}
+              <ErrorAlchemyMenu error={resolveError} />
             </span>
           )}
         </div>
@@ -683,6 +685,7 @@ export default function SurfaceMappingsDemoPage() {
                 {output.mapping.errors.map((e) => (
                   <p key={e} className="text-[11px] text-destructive">
                     error: {e}
+                    <ErrorAlchemyMenu error={e} />
                   </p>
                 ))}
                 {output.mapping.warnings.map((w) => (

@@ -48,6 +48,7 @@ import type {
   TopicQuotaFields,
 } from "../../types";
 import { searchProviderFromDb, topicStatusFromDb } from "../../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const TOPIC_STATUSES: { value: TopicStatus; label: string }[] = [
   { value: "draft", label: "Draft" },
@@ -499,6 +500,7 @@ export function TopicSettingsForm({
       {error && (
         <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 

@@ -39,6 +39,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface MaskDialogProps {
   fileId: string;
@@ -221,6 +222,7 @@ export function MaskDialog({ fileId, open, onOpenChange }: MaskDialogProps) {
             {error ? (
               <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
                 {error}
+                <ErrorAlchemyMenu error={error} />
               </div>
             ) : null}
           </div>

@@ -45,6 +45,7 @@ import { durableRunDialogOnOpenChange } from "@/lib/durable-run/durableRunDialog
 import { useRunOutcome } from "../durable-run/useRunOutcome";
 import { useTriageRun } from "./useTriageRun";
 import { triageSummary } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface TriageDraftsDialogProps {
   open: boolean;
@@ -225,7 +226,7 @@ export function TriageDraftsDialog({
             <p className="text-sm text-muted-foreground">{run.stage}</p>
           ) : null}
           {run.error ? (
-            <p className="text-sm text-destructive">{run.error}</p>
+            <p className="text-sm text-destructive">{run.error} <ErrorAlchemyMenu error={run.error} /></p>
           ) : null}
           {result ? (
             <div className="rounded-md border border-border bg-muted/40 p-3">

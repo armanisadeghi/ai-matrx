@@ -22,6 +22,7 @@ import { useToast } from "@/components/ui/use-toast";
 import type { ToolUiIncidentRow } from "@/features/tool-call-visualization/admin/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -314,6 +315,7 @@ function IncidentCard({
               </Label>
               <pre className="text-[11px] bg-red-50 dark:bg-red-950/20 p-2 rounded overflow-auto max-h-32 whitespace-pre-wrap text-red-800 dark:text-red-300">
                 {incident.error_message}
+                <ErrorAlchemyMenu error={incident.error_message} />
               </pre>
             </div>
 

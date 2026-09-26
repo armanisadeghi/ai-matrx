@@ -30,6 +30,7 @@ import { EditableJsonViewerProps, ValidationError } from "@/components/ui/JsonCo
 import JsonEditorItem from "./JsonEditorItem";
 import jsonUtils from "./newUitls";
 import type { JsonValue } from "@/types/json";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SAMPLE_ENTRY = {
   YourKey: "YourValue",
@@ -395,6 +396,7 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
             {validationErrors.map((error, index) => (
               <li key={index} className="text-destructive">
                 Line {error.line}, Column {error.column}: {error.message}
+                <ErrorAlchemyMenu error={error.line} />
               </li>
             ))}
           </ul>

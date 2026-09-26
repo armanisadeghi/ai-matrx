@@ -63,6 +63,7 @@ import { splitMandateKey } from "@/features/mandates/mandate-key";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { cn } from "@/lib/utils";
 import type { MandateWindowView } from "@/features/overlays/openers/mandateWindow";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface MandateWindowProps {
   isOpen?: boolean;
@@ -384,6 +385,7 @@ function MandateWindowInner({
           {loadError ? (
             <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
               {loadError}
+              <ErrorAlchemyMenu error={loadError} />
             </p>
           ) : !data ? (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">

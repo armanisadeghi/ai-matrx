@@ -52,6 +52,7 @@ import type { Database } from "@/types/database.types";
 import { UserSearchField } from "@/features/user-search/UserSearchField";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const PAGE_LOCATION =
   "AI Matrx Admin — Admins & Levels (/administration/users/admins)";
@@ -605,6 +606,7 @@ function AdminsManagementPageContent() {
             <p className="mt-2 flex items-center gap-1.5 text-sm text-destructive">
               <ShieldAlert className="h-4 w-4" />
               {lookupError}
+              <ErrorAlchemyMenu error={lookupError} />
             </p>
           )}
         </section>

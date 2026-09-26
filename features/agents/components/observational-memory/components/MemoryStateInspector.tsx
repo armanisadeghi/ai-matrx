@@ -32,6 +32,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/utils/supabase/client";
 import type { Tables } from "@/types/database.types";
 import { formatDateTime, formatRelativeTime, formatTokens } from "./format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type MemoryRow = Tables<{ schema: "chat" }, "observational_memory">;
 
@@ -148,6 +149,7 @@ export function MemoryStateInspector({
         {state.status === "error" && (
           <div className="text-xs bg-destructive/5 border border-destructive/20 text-destructive rounded p-2">
             {state.error}
+            <ErrorAlchemyMenu error={state.error} />
           </div>
         )}
 

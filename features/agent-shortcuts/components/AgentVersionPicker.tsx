@@ -45,6 +45,7 @@ import {
 } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { CopyableUuid } from "./CopyableUuid";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AgentVersionPickerProps {
   /**
@@ -444,6 +445,7 @@ export function AgentVersionPicker({
         <div className="flex items-center gap-2 px-2 py-1.5 rounded-md border border-destructive/40 bg-destructive/5">
           <AlertCircle className="h-3.5 w-3.5 text-destructive shrink-0" />
           <span className="text-[11px] text-destructive">{fetchError}</span>
+          <ErrorAlchemyMenu error={fetchError} />
         </div>
       )}
     </div>

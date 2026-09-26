@@ -3,6 +3,7 @@
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import React, { useState } from "react";
 import { Terminal, CheckCircle2, XCircle, ChevronDown, ChevronUp, Clock } from "lucide-react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface FunctionResultBlockProps {
   functionName: string;
@@ -46,7 +47,7 @@ const FunctionResultBlock: React.FC<FunctionResultBlockProps> = ({
             )}
           </div>
           {error && (
-            <p className="text-xs text-destructive/80 mt-1 leading-relaxed">{error}</p>
+            <p className="text-xs text-destructive/80 mt-1 leading-relaxed">{error} <ErrorAlchemyMenu error={error} /></p>
           )}
         </div>
         {hasResult && (

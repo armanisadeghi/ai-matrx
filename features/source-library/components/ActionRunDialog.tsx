@@ -52,6 +52,7 @@ import type { ActionDeclaration, EstimateResult } from "../types";
 import { sourceVocabulary, speakMediaNouns, type SourceVocabulary } from "../vocabulary";
 import { RulebookParamPicker } from "./RulebookParamPicker";
 import { AgentParamPicker } from "./AgentParamPicker";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ActionRunDialogProps {
     open: boolean;
@@ -494,6 +495,7 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                     <p className="flex items-start gap-2 text-sm text-destructive">
                         <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
                         {speakMediaNouns(submitError, vocabulary)}
+                      <ErrorAlchemyMenu />
                     </p>
                 )}
 

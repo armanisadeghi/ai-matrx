@@ -59,6 +59,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { KnobScopeKindName, ScopedKnob } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The text a row's editor STARTS IN. An absent value is an EMPTY box, never a
@@ -532,6 +533,7 @@ export function KnobOverrideRow(props: {
       <span>
         What is in force for you could not be read, so this may not be the value
         running for you: {viewerUnknown}
+        <ErrorAlchemyMenu />
       </span>
     ) : undefined;
 
@@ -717,7 +719,7 @@ export function KnobOverrideRow(props: {
                     {viewer.originName}
                   </p>
                 ) : viewerUnknown ? (
-                  <p>In effect for you: could not be read ({viewerUnknown})</p>
+                  <p>In effect for you: could not be read ({viewerUnknown}) <ErrorAlchemyMenu /></p>
                 ) : null}
                 {!hideKey && <p>Key: {knob.full_key}</p>}
                 <p>

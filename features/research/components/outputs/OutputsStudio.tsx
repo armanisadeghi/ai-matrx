@@ -68,6 +68,7 @@ import {
 import { getBundleBySlug, getResourceManifest } from "../../service/resources";
 import { resolveBundle } from "../../resources/resolve";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Research content-engine generators run through AGENT MANDATES — the mandate is the
  *  identity, never a hardcoded agent id. The system default is managed in the
@@ -639,6 +640,7 @@ function PodcastOutputCard({
               <span className="inline-flex items-center gap-1 text-[11px] text-destructive">
                 <AlertCircle className="h-3.5 w-3.5" />
                 {state.error}
+                <ErrorAlchemyMenu error={state.error} />
               </span>
             )}
           </div>
@@ -992,6 +994,7 @@ function BlogOutputCard({
           <span className="inline-flex items-center gap-1 text-[11px] text-destructive">
             <AlertCircle className="h-3.5 w-3.5" />
             {error}
+            <ErrorAlchemyMenu error={error} />
           </span>
         )}
 
@@ -1247,6 +1250,7 @@ function SlidesOutputCard({
         <span className="inline-flex items-center gap-1 text-[11px] text-destructive">
           <AlertCircle className="h-3.5 w-3.5" />
           {error}
+          <ErrorAlchemyMenu error={error} />
         </span>
       )}
       {/* THE FLOATING LAW: the run streams in a floating window, so this card
@@ -1436,6 +1440,7 @@ function SeoOutputCard({
         <span className="inline-flex items-center gap-1 text-[11px] text-destructive">
           <AlertCircle className="h-3.5 w-3.5" />
           {error}
+          <ErrorAlchemyMenu error={error} />
         </span>
       )}
 

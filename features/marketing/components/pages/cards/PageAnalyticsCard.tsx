@@ -39,6 +39,7 @@ import {
   assertGoogleAnalyticsCampaignActive,
   canUseGoogleAnalytics,
 } from "@/features/marketing/google/ga4-campaign";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // THE NAMING LAW: canonical labels for every declared surface value + group —
 // section titles and field labels below render these byte-identically.
@@ -205,7 +206,7 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
           </div>
         ) : null}
         {loadError ? (
-          <p className="text-xs text-destructive">{loadError}</p>
+          <p className="text-xs text-destructive">{loadError} <ErrorAlchemyMenu error={loadError} /></p>
         ) : null}
         {visibleFailure ? (
           <BackendFailureDetails

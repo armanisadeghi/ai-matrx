@@ -16,6 +16,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { createEducationGameScope } from "@/features/surfaces/manifests/education-game.manifest";
 import { gameService } from "../../data/gameService";
 import { ENGAGE_ROUTES } from "../../constants";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SURFACE_NAME = "matrx-user/education-game";
 
@@ -83,7 +84,7 @@ export function JoinRoomImpl() {
           className="text-center text-2xl font-bold uppercase tracking-[0.4em]"
           // font-size ≥ 16px avoids iOS zoom; the class above is >16px.
         />
-        {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+        {error && <p className="mt-2 text-sm text-destructive">{error} <ErrorAlchemyMenu /></p>}
         <Button
           className="mt-4 w-full gap-2"
           disabled={joining}

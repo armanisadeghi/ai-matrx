@@ -23,6 +23,7 @@ import {
   type EmbeddedImagesPayload,
 } from "./utils";
 import type { FileAnalysisResultRow } from "@/features/file-analysis/api/file-analysis";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   fileId: string;
@@ -134,6 +135,7 @@ function ImageCard({
         ) : error ? (
           <div className="px-2 text-center text-[10px] text-destructive">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         ) : (
           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />

@@ -43,6 +43,7 @@ import type {
   StudyAttemptRow,
   StudySessionRow,
 } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The only mode wired to a topic join today — see the header note above. */
 type TopicSource = "fc_card";
@@ -267,6 +268,7 @@ export function StudyTrends({
           ) : loadError ? (
             <p className="py-8 text-center text-xs text-destructive">
               {loadError}
+              <ErrorAlchemyMenu error={loadError} />
             </p>
           ) : !hasAnyActivity ? (
             <p className="py-8 text-center text-xs text-muted-foreground">
@@ -327,6 +329,7 @@ export function StudyTrends({
           ) : loadError ? (
             <p className="py-8 text-center text-xs text-destructive">
               {loadError}
+              <ErrorAlchemyMenu error={loadError} />
             </p>
           ) : !hasAnyActivity ? (
             <p className="py-8 text-center text-xs text-muted-foreground">

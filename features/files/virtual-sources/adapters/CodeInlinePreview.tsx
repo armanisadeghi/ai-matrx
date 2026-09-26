@@ -24,6 +24,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { readAny, writeAny } from "@/features/files/redux/virtual-thunks";
 import { makeSyntheticId } from "@/features/files/virtual-sources/path";
 import type { InlinePreviewProps } from "@/features/files/virtual-sources/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const MonacoEditor = dynamic(
   () =>
@@ -170,6 +171,7 @@ function CodeInlinePreview({ adapterId, id, fieldId, name }: Props) {
     return (
       <div className="flex h-full w-full items-center justify-center p-6 text-sm text-destructive">
         {error}
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }
@@ -226,6 +228,7 @@ function CodeInlinePreview({ adapterId, id, fieldId, name }: Props) {
       {saveError ? (
         <div className="border-b border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
           {saveError}
+          <ErrorAlchemyMenu error={saveError} />
         </div>
       ) : null}
       <div className="min-h-0 flex-1">

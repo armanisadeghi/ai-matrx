@@ -18,6 +18,7 @@ import type {
   FileSearchHitItem,
   FileSearchPageData,
 } from "@/types/python-generated/stream-events";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   fileId: string;
@@ -116,7 +117,7 @@ export function SearchPanel({ fileId, onJumpToPage }: Props) {
             case sensitive
           </label>
         </div>
-        {error ? <div className="text-[10px] text-destructive">{error}</div> : null}
+        {error ? <div className="text-[10px] text-destructive">{error} <ErrorAlchemyMenu error={error} /></div> : null}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-2">
         {hits.length === 0 && !loading ? (

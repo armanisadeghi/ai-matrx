@@ -68,6 +68,7 @@ import {
   agentHolderOfBinding,
   contractOfMandate,
 } from "@/lib/supabase/mandateStorage";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Externally-owned override store (e.g. research's per-topic
  * `rs_topic.agent_config`). When provided, picking a candidate still runs the
@@ -389,6 +390,7 @@ export function MandateAgentPicker({
           <p className="flex items-start gap-1.5 text-[12px] text-destructive">
             <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0" />
             {loadError}
+            <ErrorAlchemyMenu error={loadError} />
           </p>
         ) : !data ? (
           <div className="flex items-center justify-center py-6 text-xs text-muted-foreground">

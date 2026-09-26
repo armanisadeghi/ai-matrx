@@ -16,6 +16,7 @@ import { UserSearchField } from "@/features/user-search/UserSearchField";
 // A caller with no name passes the email, whose single token yields its
 // first character: exactly what these copies did by hand.
 import { getInitials } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface OrgEmailTabProps {
   organizationId: string;
@@ -110,6 +111,7 @@ export function OrgEmailTab({
     return (
       <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-700 dark:text-red-400">
         {error}
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

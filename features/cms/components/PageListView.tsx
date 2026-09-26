@@ -47,6 +47,7 @@ import {
   Mail,
   Briefcase,
 } from "lucide-react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface PageListViewProps {
   site: ClientSite;
@@ -320,6 +321,7 @@ export default function PageListView({
           <Button variant="outline" size="sm" onClick={onRefresh}>
             Retry
           </Button>
+          <ErrorAlchemyMenu />
         </div>
       </div>
     );

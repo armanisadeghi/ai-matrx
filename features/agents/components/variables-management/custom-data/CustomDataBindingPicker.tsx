@@ -60,6 +60,7 @@ import {
   type CustomDataShape,
 } from "./customDataBinding";
 import { CustomDataBindingPreview } from "./CustomDataBindingPreview";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** How many records the record picker lists. Search narrows within them. */
 const RECORD_PICKER_PAGE = 200;
@@ -311,6 +312,7 @@ export function CustomDataBindingPicker({
             >
               Try again
             </button>
+            <ErrorAlchemyMenu error={tables.error.message} />
           </p>
         )}
         {storedTableMissing && (
@@ -400,6 +402,7 @@ export function CustomDataBindingPicker({
               {records.error && (
                 <p className="text-[11px] text-destructive">
                   Records could not be read: {records.error.message}
+                  <ErrorAlchemyMenu error={records.error.message} />
                 </p>
               )}
             </div>

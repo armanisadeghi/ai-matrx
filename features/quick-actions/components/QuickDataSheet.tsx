@@ -26,6 +26,7 @@ import {
   QUICK_DATA_SURFACE_NAME,
   createQuickDataScope,
 } from "@/features/surfaces/manifests/quick-data.manifest";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface QuickDataSheetProps {
   onClose?: () => void;
@@ -148,7 +149,7 @@ export function QuickDataSheet({
           className,
         )}
       >
-        <div className="text-sm text-red-500">{error}</div>
+        <div className="text-sm text-red-500">{error} <ErrorAlchemyMenu error={error} /></div>
         <Button variant="outline" size="sm" onClick={loadTables}>
           Try Again
         </Button>

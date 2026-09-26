@@ -26,6 +26,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { autoMapColumns, SKIP } from "@/features/data-tables/reconcile";
 import { appendToTable } from "@/features/data-tables/save-to-table";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface UserTableSummary {
   id: string;
@@ -240,6 +241,7 @@ export const AppendToTableDialog: React.FC<AppendToTableDialogProps> = ({
           {error && (
             <div className="bg-red-50 dark:bg-red-950 p-3 rounded-md text-red-600 dark:text-red-400 text-sm">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
 
@@ -251,7 +253,7 @@ export const AppendToTableDialog: React.FC<AppendToTableDialogProps> = ({
                 <Loader2 className="h-4 w-4 animate-spin" /> Loading tables…
               </div>
             ) : tablesError ? (
-              <div className="text-sm text-red-500">{tablesError}</div>
+              <div className="text-sm text-red-500">{tablesError} <ErrorAlchemyMenu error={tablesError} /></div>
             ) : tables.length === 0 ? (
               <div className="text-sm text-muted-foreground">
                 You don't have any data tables yet. Use "Save as new table"
@@ -302,7 +304,7 @@ export const AppendToTableDialog: React.FC<AppendToTableDialogProps> = ({
                   <Loader2 className="h-4 w-4 animate-spin" /> Loading fields…
                 </div>
               ) : fieldsError ? (
-                <div className="text-sm text-red-500">{fieldsError}</div>
+                <div className="text-sm text-red-500">{fieldsError} <ErrorAlchemyMenu error={fieldsError} /></div>
               ) : fields ? (
                 <div className="rounded-md border border-border overflow-hidden">
                   <table className="w-full text-sm">

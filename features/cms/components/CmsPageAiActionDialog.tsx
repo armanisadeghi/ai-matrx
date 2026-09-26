@@ -47,6 +47,7 @@ import { usePlanDeepen } from "@/features/marketing/content-plan/hooks/useConten
 import { isWritePolicyBlocked } from "@/features/marketing/content-plan/lib/page-reality";
 import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type CmsPageAiIntent = "build-edit" | "review";
 
@@ -415,11 +416,11 @@ export function CmsPageAiActionDialog({
                 }
               />
               {planContext.error ? (
-                <p className="text-xs text-destructive">{planContext.error}</p>
+                <p className="text-xs text-destructive">{planContext.error} <ErrorAlchemyMenu error={planContext.error} /></p>
               ) : null}
               {reality.failure ? (
                 <div className="space-y-2">
-                  <p className="text-xs text-destructive">{reality.failure}</p>
+                  <p className="text-xs text-destructive">{reality.failure} <ErrorAlchemyMenu error={reality.failure} /></p>
                   {isWritePolicyBlocked(reality.failure) ? (
                     <Button
                       variant="outline"

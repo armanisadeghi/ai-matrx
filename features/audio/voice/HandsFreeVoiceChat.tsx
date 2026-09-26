@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useVoiceChat, type VoiceChatPhase } from "@/hooks/tts/useVoiceChat";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createVoiceChatScope, VOICE_CHAT_SURFACE } from "@/features/surfaces/manifests/voice-chat.manifest";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const PHASE_COPY: Record<VoiceChatPhase, string> = {
   starting: "Getting the microphone ready", listening: "Listening — just speak",
@@ -40,7 +41,7 @@ export function HandsFreeVoiceChat() {
           </div>
           {canStart ? <Button size="lg" onClick={() => void chat.start()}><Mic className="mr-2 h-4 w-4" /> Start listening</Button> : <Button size="lg" variant="outline" onClick={() => void chat.sleep()}><Moon className="mr-2 h-4 w-4" /> Sleep now</Button>}
         </div>
-        {chat.error ? <p className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{chat.error}</p> : null}
+        {chat.error ? <p className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{chat.error} <ErrorAlchemyMenu error={chat.error} /></p> : null}
         <p className="mt-4 text-xs text-muted-foreground">On iPhone and iPad, the first tap also unlocks microphone and audio playback. Returning from another tab requires another tap.</p>
       </div>
       <div className="space-y-4" aria-label="Voice conversation">

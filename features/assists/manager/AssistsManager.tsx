@@ -68,6 +68,7 @@ import {
   projectAssistRow,
 } from "../format";
 import { createAssistsScope } from "@/features/surfaces/manifests/assists.manifest";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The registered `matrx-user/assists` surface — this IS its manager. */
 const ASSISTS_SURFACE_NAME = "matrx-user/assists";
@@ -683,6 +684,7 @@ export function AssistsManager() {
       {error && (
         <p className="border-b border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </p>
       )}
 

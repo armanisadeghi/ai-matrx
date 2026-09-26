@@ -8,6 +8,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Props = {
   /** What failed to load, e.g. "usage analytics". */
@@ -27,6 +28,7 @@ export function CxErrorPanel({ what, message }: Props) {
         <div>
           <p className="text-sm font-semibold text-destructive">
             Failed to load {what}
+            <ErrorAlchemyMenu />
           </p>
           <p className="text-xs text-muted-foreground mt-1 max-w-xl break-words font-mono">
             {message}

@@ -35,6 +35,7 @@ import { InlineMediaRef } from "@ai-matrx/media/react";
 import { fileIdToMediaRef } from "@/features/files/redux/converters";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Accept Invitation Page
@@ -270,6 +271,7 @@ export default function AcceptInvitationPage() {
               <p className="text-gray-600 dark:text-gray-400 mb-6">
                 {error ??
                   "We couldn't open this invitation. Check the link, or ask whoever invited you to send a new one."}
+                <ErrorAlchemyMenu error={error} />
               </p>
               <Button
                 onClick={() => router.push("/settings/organizations")}

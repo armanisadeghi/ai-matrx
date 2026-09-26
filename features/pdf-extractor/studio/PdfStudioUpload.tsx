@@ -41,6 +41,7 @@ import { PdfBatchExtractDebugTrigger } from "../components/PdfBatchExtractDebugT
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 import { useExistingPdfExtraction } from "@/features/pdf/hooks/useExistingPdfExtraction";
 import { toast } from "@/lib/toast";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Extractor = ReturnType<typeof usePdfExtractor>;
 
@@ -396,6 +397,7 @@ export function PdfStudioUpload({
                   ready
                 </span>
               )}
+              <ErrorAlchemyMenu error={t.error} />
             </div>
           ))}
         </div>

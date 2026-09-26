@@ -3,6 +3,7 @@
 import React from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Props = { children: React.ReactNode; fallbackMessage?: string };
 type State = { hasError: boolean; error: Error | null };
@@ -40,6 +41,7 @@ export class CxDashboardErrorBoundary extends React.Component<Props, State> {
             <RefreshCw className="w-3 h-3 mr-1" />
             Retry
           </Button>
+          <ErrorAlchemyMenu />
         </div>
       );
     }

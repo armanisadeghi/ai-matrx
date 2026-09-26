@@ -17,6 +17,7 @@ import {
   type AdminOrganizationTreeResult,
 } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ScopeManagerPageProps {
   organizationId: string;
@@ -88,6 +89,7 @@ export function ScopeManagerPage({
             {adminResult.status === "not_found"
               ? "This organization was not found."
               : "This organization's scopes could not be loaded."}
+            <ErrorAlchemyMenu />
           </p>
           <p className="mt-1 text-muted-foreground">
             {adminResult.status === "error"

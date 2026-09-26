@@ -46,6 +46,7 @@ import {
   type PlanEntityRow,
   type PlanNodeEntityRole,
 } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ROLE_LABELS: Record<PlanNodeEntityRole, string> = {
   about: "About",
@@ -104,6 +105,7 @@ export function NodeAssociations({
     return (
       <p className="text-xs text-destructive">
         {extractErrorMessage(edges.error)}
+        <ErrorAlchemyMenu />
       </p>
     );
   }
@@ -217,6 +219,7 @@ function TopicSection({
                   {topics.error instanceof Error
                     ? topics.error.message
                     : "Could not load topics."}
+                  <ErrorAlchemyMenu error={topics.error.message} />
                 </p>
               ) : (
                 <>

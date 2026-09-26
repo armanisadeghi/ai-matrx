@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/button";
 import { BLOCKED_COLUMNS, CONNECTED_COLUMNS, HAVE_COLUMNS } from "./columns";
 import { loadConsole, type ConsoleData } from "./service";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const EMPTY: ConsoleData = {
   have: [],
@@ -201,6 +202,7 @@ export function AcquisitionConsolePage() {
         {failure && (
           <p className="max-w-prose rounded-md border border-rose-500/40 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
             {failure}
+            <ErrorAlchemyMenu error={failure} />
           </p>
         )}
 

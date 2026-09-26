@@ -40,6 +40,7 @@ import { useUnsplashSearch } from "@/hooks/images/useUnsplashSearch";
 import { openImageViewer } from "@/features/overlays/openers/imageViewer";
 import { toast } from "@/lib/toast";
 import { InlineMediaRef } from "@ai-matrx/media/react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -590,6 +591,7 @@ export function GalleryFloatingWorkspace() {
               </div>
               <p className="text-xs text-foreground">
                 Could not load images
+                <ErrorAlchemyMenu />
               </p>
               <p className="text-[10px] text-muted-foreground mt-0.5 max-w-[240px]">
                 {photoError}

@@ -34,6 +34,7 @@ import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { readAgentRunOutput } from "@/features/workflow-runtime/agent-run-output";
 import { cn } from "@/lib/utils";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const MODES: Array<{
   value: AssignmentDemoMode;
@@ -257,6 +258,7 @@ export function AgentAssignmentsDemo() {
                 {state.error && (
                   <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
                     {state.error}
+                    <ErrorAlchemyMenu error={state.error} />
                   </div>
                 )}
               </CardContent>
@@ -628,7 +630,7 @@ function ResultsPanel() {
               <div className="whitespace-pre-wrap text-sm">{finalText(item.output)}</div>
             )}
             {item.error && (
-              <p className="text-sm text-destructive">{item.error.message}</p>
+              <p className="text-sm text-destructive">{item.error.message} <ErrorAlchemyMenu error={item.error.message} /></p>
             )}
           </article>
         ))}

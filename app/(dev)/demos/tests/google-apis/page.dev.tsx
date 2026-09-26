@@ -3,6 +3,7 @@
 import { GOOGLE_SEARCH_CONSOLE_SCOPES } from "@/lib/googleScopes";
 import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
 import { useEffect } from "react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const hasClientId = Boolean(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
 
@@ -99,7 +100,7 @@ export default function GoogleAccessPage() {
                     : "Sign in first, then authorize each scope card"}
               </p>
               {error && (
-                <p className="text-sm text-destructive mt-1">{error}</p>
+                <p className="text-sm text-destructive mt-1">{error} <ErrorAlchemyMenu error={error} /></p>
               )}
               {isAuthenticated && getGrantedScopes().length > 0 && (
                 <p className="text-xs text-muted-foreground mt-2 font-mono break-all">

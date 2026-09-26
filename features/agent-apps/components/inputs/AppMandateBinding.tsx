@@ -23,6 +23,7 @@ import { BrainCircuit, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { AppHolder } from "@/features/agent-apps/lib/appHolder";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * One label per RUNG the server verdict can name. `global` and `system` are
@@ -77,7 +78,7 @@ export function AppMandateBinding({
         {holder.loading ? (
           <span className="text-muted-foreground">resolving…</span>
         ) : holder.error ? (
-          <span className="text-destructive">{holder.error}</span>
+          <span className="text-destructive">{holder.error} <ErrorAlchemyMenu error={holder.error} /></span>
         ) : (
           <span className="font-medium">
             {agentName ?? holder.agentId ?? "—"}

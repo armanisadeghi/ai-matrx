@@ -25,6 +25,7 @@ import {
 } from "./decision-form";
 import { loadDecision, runDecision } from "./decision-api";
 import type { DecisionResultView } from "./decision-result";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function DecisionPlayground() {
   const dispatch = useAppDispatch();
@@ -244,6 +245,7 @@ export function DecisionPlayground() {
           {error && (
             <section className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </section>
           )}
           <Button

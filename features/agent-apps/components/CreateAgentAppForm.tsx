@@ -25,6 +25,7 @@ import {
 } from "../services/slug-service";
 import type { AppDisplayMode, CreateAgentAppInput } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CreateAgentAppFormProps {
   onSubmit: (input: CreateAgentAppInput) => Promise<void> | void;
@@ -248,7 +249,7 @@ export function CreateAgentAppForm({
         )}
       </div>
 
-      {error && <div className="text-sm text-destructive">{error}</div>}
+      {error && <div className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></div>}
 
       <div className="flex items-center justify-end gap-2 pt-2">
         {missing.length > 0 && (

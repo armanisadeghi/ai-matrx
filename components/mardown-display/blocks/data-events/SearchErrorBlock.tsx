@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface SearchErrorBlockProps {
   error: string;
@@ -27,7 +28,7 @@ const SearchErrorBlock: React.FC<SearchErrorBlockProps> = ({ error, metadata }) 
               </button>
             )}
           </div>
-          <p className="text-xs text-destructive/80 mt-0.5 leading-relaxed">{error}</p>
+          <p className="text-xs text-destructive/80 mt-0.5 leading-relaxed">{error} <ErrorAlchemyMenu error={error} /></p>
           {showDetail && metadata && (
             <pre className="mt-2 text-xs bg-muted/50 rounded p-2 overflow-auto max-h-40 text-muted-foreground">
               {JSON.stringify(metadata, null, 2)}

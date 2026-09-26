@@ -43,6 +43,7 @@ import { refreshKindComponents } from "../../registry/component-registry";
 import DbKindComponent from "../db-component/DbKindComponent";
 import type { KindComponentUiOptions } from "../db-component/dbKindComponentCache";
 import { useKindRequest } from "./useKindRequest";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The result, rendered LIVE from the streaming request — the whole point of
@@ -380,7 +381,7 @@ export function KindRequestDialog({
               </label>
             ))}
             {error ? (
-              <p className="text-xs text-destructive">{error}</p>
+              <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
             ) : null}
             <DialogFooter>
               <Button onClick={submit} disabled={!canSubmit} className="gap-1.5">

@@ -27,6 +27,7 @@ import {
   createDeleteRequest,
 } from "@/features/access-gate/service/accessRequests";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type RequestChoice = "delete" | "full";
 
@@ -134,6 +135,7 @@ export function GovernedActionDialog({
           <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
             We couldn't find the right person to contact. Try again after
             refreshing.
+            <ErrorAlchemyMenu />
           </div>
         ) : sent ? (
           <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">

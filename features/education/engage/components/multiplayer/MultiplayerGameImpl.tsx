@@ -49,6 +49,7 @@ import {
 import { PlaySurface } from "../play/PlaySurface";
 import { ResultsSummary } from "../results/ResultsSummary";
 import type { BadgeKey } from "../../engine/badges";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function MultiplayerGameImpl({
   roomId,
@@ -334,7 +335,7 @@ function Lobby({
         </ul>
       </div>
 
-      {queueError && <p className="text-sm text-destructive">{queueError}</p>}
+      {queueError && <p className="text-sm text-destructive">{queueError} <ErrorAlchemyMenu /></p>}
 
       {isHost ? (
         <Button

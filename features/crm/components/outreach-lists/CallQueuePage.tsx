@@ -69,6 +69,7 @@ import {
   isTenantSuppressed,
 } from "../../reachability";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Labels come from the ONE reachability map (features/crm/reachability.ts);
 // the dialer only overrides the two that should say "number" on a phone screen.
@@ -467,6 +468,7 @@ export function CallQueuePage({ listId }: { listId: string }) {
                 </Link>
               </Button>
             </div>
+            <ErrorAlchemyMenu error={error} />
           </div>
         ) : phase === "drained" ? (
           <div className="mx-auto mt-8 flex max-w-lg flex-col items-center rounded-md border border-border bg-card px-6 py-8 text-center">

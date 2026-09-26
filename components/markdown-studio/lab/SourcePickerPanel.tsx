@@ -36,6 +36,7 @@ import {
   type StudioSourceKind,
   type StudioSourceListItem,
 } from "./content-sources";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ICONS: Record<string, LucideIcon> = {
   FileText,
@@ -187,6 +188,7 @@ export function SourcePickerPanel({
           {!loading && error && (
             <p className="px-2 py-4 text-xs text-destructive">
               {error} Paste an id above to open one directly.
+              <ErrorAlchemyMenu />
             </p>
           )}
           {!loading && !error && items.length === 0 && (

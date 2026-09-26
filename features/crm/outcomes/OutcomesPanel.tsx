@@ -44,6 +44,7 @@ import {
   listOutcomeEvents,
   type OutcomeCounts,
 } from "./service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const PAGE_SIZE = 25;
 
@@ -337,6 +338,7 @@ export function OutcomesPanel({ campaignId }: { campaignId: string }) {
       {error && (
         <div className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
       <MatrxDataTable<OutcomeEventRow>

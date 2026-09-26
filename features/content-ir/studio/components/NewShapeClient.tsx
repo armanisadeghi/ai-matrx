@@ -67,6 +67,7 @@ import {
 } from "@/features/content-ir/studio/new-shape-options";
 import { cn } from "@/lib/utils";
 import AppLink from "@/components/navigation/AppLink";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // The result pane is this tall from first paint, empty state included, so the
 // page geometry never changes when a run starts (see the floating-law note).
@@ -252,6 +253,7 @@ function ShapeBuilderRun({
         <CircleAlert className="h-6 w-6 text-destructive" aria-hidden />
         <p className="mt-2 text-sm font-medium text-foreground">
           The Shape builder could not start.
+          <ErrorAlchemyMenu />
         </p>
         <p className="mt-1 max-w-xs text-xs text-muted-foreground">{error}</p>
       </div>

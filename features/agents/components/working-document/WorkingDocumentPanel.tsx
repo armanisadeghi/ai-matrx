@@ -64,6 +64,7 @@ import {
   setWorkingDocSeenPatch,
   useWorkingDocViewState,
 } from "./workingDocumentViewStore";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Stable RichDocument action-surface id for a conversation's document. Shared
@@ -478,6 +479,7 @@ export function WorkingDocumentPanel({
           {error && (
             <div className="shrink-0 px-3 pt-1 text-[11px] text-destructive">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
           {conflict && (

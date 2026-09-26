@@ -35,6 +35,7 @@ import type {
   ValueMapping,
   ValueMappingMap,
 } from "@/features/surfaces/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * A target the editor can bind. Used for both agent variables/context policies
@@ -762,6 +763,7 @@ function DirectValueInput({
         <p className="text-[10px] text-destructive flex items-center gap-1">
           <AlertTriangle className="h-2.5 w-2.5" />
           {parseError}
+          <ErrorAlchemyMenu error={parseError} />
         </p>
       )}
       <p className="text-[10px] text-muted-foreground">

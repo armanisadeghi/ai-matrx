@@ -6,6 +6,7 @@ import { registerDatabaseFunctions } from '@/utils/ts-function-registry/register
 import { registerUtilityFunctions } from '@/utils/ts-function-registry/register-utility-functions';
 import { AppletLogic, executeAppletLogic, validateApplet } from '@/utils/ts-function-registry/applet-utils';
 import { FunctionDependencies } from '@/utils/ts-function-registry/function-registry';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AppletRunnerProps {
   applet: AppletLogic;
@@ -119,6 +120,7 @@ export default function AppletRunner({
               Error: {error}
             </div>
           )}
+          <ErrorAlchemyMenu error={error} />
         </div>
       );
     });
@@ -174,6 +176,7 @@ export default function AppletRunner({
       {error && !currentStep && (
         <div className="mt-4 p-4 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-md text-red-800 dark:text-red-300">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
     </div>

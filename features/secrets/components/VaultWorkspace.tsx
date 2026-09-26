@@ -90,6 +90,7 @@ import { VaultLoginExportDialog } from "./VaultLoginExportDialog";
 import { VaultBackupDialog } from "./VaultBackupDialog";
 import { VaultItemDetail } from "./VaultItemDetail";
 import { orgNameDistinguisher } from "@/features/scopes/utils/formatOrgDisplayName";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface VaultWorkspaceProps {
   principal: VaultPrincipal;
@@ -164,7 +165,8 @@ export function VaultWorkspace({
     from: "aside" | "bar" | "compact",
   ): string | null => {
     if (scopeSwitchOrganizationId) return scopeSwitchOrganizationId;
-    if (availableOrganizations.length === 1) return availableOrganizations[0]!.id;
+    if (availableOrganizations.length === 1)
+      return availableOrganizations[0]!.id;
     setOrganizationChooser(from);
     return null;
   };
@@ -173,11 +175,14 @@ export function VaultWorkspace({
     setUserScope({ kind: "organization", organizationId });
     setSelectedId(null);
   };
-  const [localUncontrolledScope, setLocalUncontrolledScope] = useState<VaultScope>({
-    kind: "mine",
-  });
-  const uncontrolledScope = routeWorkspaceState?.scope ?? localUncontrolledScope;
-  const setUncontrolledScope = routeWorkspaceState?.setScope ?? setLocalUncontrolledScope;
+  const [localUncontrolledScope, setLocalUncontrolledScope] =
+    useState<VaultScope>({
+      kind: "mine",
+    });
+  const uncontrolledScope =
+    routeWorkspaceState?.scope ?? localUncontrolledScope;
+  const setUncontrolledScope =
+    routeWorkspaceState?.setScope ?? setLocalUncontrolledScope;
   const requestedUserScope =
     parseVaultScopeKey(controlledScope) ?? uncontrolledScope;
   const userScope: VaultScope =
@@ -218,7 +223,9 @@ export function VaultWorkspace({
   const defsByKey = new Map(definitions.map((d) => [d.key, d]));
 
   const [localSearch, setLocalSearch] = useState("");
-  const [localFamily, setLocalFamily] = useState<"all" | CredentialFamily>("all");
+  const [localFamily, setLocalFamily] = useState<"all" | CredentialFamily>(
+    "all",
+  );
   const [localSort, setLocalSort] = useState<VaultListSort>("newest");
   const [localFavoritesOnly, setLocalFavoritesOnly] = useState(false);
   const search = routeWorkspaceState?.search ?? localSearch;
@@ -227,8 +234,10 @@ export function VaultWorkspace({
   const setFamily = routeWorkspaceState?.setFamily ?? setLocalFamily;
   const sort = routeWorkspaceState?.sort ?? localSort;
   const setSort = routeWorkspaceState?.setSort ?? setLocalSort;
-  const favoritesOnly = routeWorkspaceState?.favoritesOnly ?? localFavoritesOnly;
-  const setFavoritesOnly = routeWorkspaceState?.setFavoritesOnly ?? setLocalFavoritesOnly;
+  const favoritesOnly =
+    routeWorkspaceState?.favoritesOnly ?? localFavoritesOnly;
+  const setFavoritesOnly =
+    routeWorkspaceState?.setFavoritesOnly ?? setLocalFavoritesOnly;
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
@@ -274,9 +283,12 @@ export function VaultWorkspace({
     sort,
     stateById: vaultItemState.stateById,
   });
-  const filtered = favoritesOnly && vaultItemState.status === "ready"
-    ? listed.filter((item) => vaultItemState.stateById.get(item.id)?.isFavorite)
-    : listed;
+  const filtered =
+    favoritesOnly && vaultItemState.status === "ready"
+      ? listed.filter(
+          (item) => vaultItemState.stateById.get(item.id)?.isFavorite,
+        )
+      : listed;
 
   const selected = selectedId
     ? (vault.items.find((i) => i.id === selectedId) ?? null)
@@ -309,13 +321,20 @@ export function VaultWorkspace({
     routedHomeScope?.kind !== "organization" ||
     availableOrganizations.some((org) => org.id === routedHomeOrganizationId);
   useEffect(() => {
-    if (principal.type !== "user" || !selectedItemId || !routedHomeScope) return;
+    if (principal.type !== "user" || !selectedItemId || !routedHomeScope)
+      return;
     if (carriedTo.current === selectedItemId) return;
     if (!homeListable) return;
     carriedTo.current = selectedItemId;
     if (routedHomeKey !== viewedScopeKey) setUserScope(routedHomeScope);
     // setUserScope is a fresh closure each render; the id + keys decide.
-  }, [principal.type, selectedItemId, routedHomeKey, viewedScopeKey, homeListable]);
+  }, [
+    principal.type,
+    selectedItemId,
+    routedHomeKey,
+    viewedScopeKey,
+    homeListable,
+  ]);
   const selectedIdentity = detailItem
     ? credentialIdentity(detailItem, defsByKey.get(detailItem.definition_key))
     : null;
@@ -326,11 +345,23 @@ export function VaultWorkspace({
   useEffect(() => {
     if (!selectedItemId || !selected) return;
     const touchKey = `${actorId ?? ""}\u0000${selectedOrganizationId ?? ""}\u0000${vaultScopeKey(scope)}\u0000${selectedItemId}`;
-    if (!touchKey || vaultItemState.status !== "ready" || deepLinkTouch.current === touchKey) return;
+    if (
+      !touchKey ||
+      vaultItemState.status !== "ready" ||
+      deepLinkTouch.current === touchKey
+    )
+      return;
     void vaultItemState.touch(selectedItemId, touchKey).then((touched) => {
       if (touched) deepLinkTouch.current = touchKey;
     });
-  }, [actorId, selectedItemId, selected, selectedOrganizationId, scope, vaultItemState]);
+  }, [
+    actorId,
+    selectedItemId,
+    selected,
+    selectedOrganizationId,
+    scope,
+    vaultItemState,
+  ]);
   const openItem = (itemId: string) => {
     setSelectedId(itemId);
     void vaultItemState.touch(itemId);
@@ -398,9 +429,13 @@ export function VaultWorkspace({
                     active={favoritesOnly}
                     icon={Star}
                     label="Favorites"
-                    count={vaultItemState.status === "ready"
-                      ? [...vaultItemState.stateById.values()].filter((state) => state.isFavorite).length
-                      : null}
+                    count={
+                      vaultItemState.status === "ready"
+                        ? [...vaultItemState.stateById.values()].filter(
+                            (state) => state.isFavorite,
+                          ).length
+                        : null
+                    }
                     onClick={() => setFavoritesOnly((value) => !value)}
                   />
                   <VaultNavButton
@@ -425,7 +460,8 @@ export function VaultWorkspace({
                             : null
                         }
                         onClick={() => {
-                          const organizationId = switchToOrganizationScope("aside");
+                          const organizationId =
+                            switchToOrganizationScope("aside");
                           if (!organizationId) return;
                           setUserScope({
                             kind: "organization",
@@ -437,10 +473,16 @@ export function VaultWorkspace({
                       {(scope.kind === "organization" ||
                         organizationChooser === "aside") && (
                         <OrganizationVaultChooser
-                          value={scope.kind === "organization" ? scope.organizationId : null}
+                          value={
+                            scope.kind === "organization"
+                              ? scope.organizationId
+                              : null
+                          }
                           organizations={availableOrganizations}
                           open={organizationChooser === "aside"}
-                          onOpenChange={(next) => setOrganizationChooser(next ? "aside" : null)}
+                          onOpenChange={(next) =>
+                            setOrganizationChooser(next ? "aside" : null)
+                          }
                           onPick={chooseOrganizationVault}
                           className="h-8 w-full"
                         />
@@ -539,7 +581,8 @@ export function VaultWorkspace({
                         role="tab"
                         aria-selected={scope.kind === "organization"}
                         onClick={() => {
-                          const organizationId = switchToOrganizationScope("bar");
+                          const organizationId =
+                            switchToOrganizationScope("bar");
                           if (!organizationId) return;
                           setUserScope({
                             kind: "organization",
@@ -560,16 +603,23 @@ export function VaultWorkspace({
                   </div>
                 )}
                 {principal.type === "user" &&
-                  (scope.kind === "organization" || organizationChooser === "bar") && (
-                  <OrganizationVaultChooser
-                    value={scope.kind === "organization" ? scope.organizationId : null}
-                    organizations={availableOrganizations}
-                    open={organizationChooser === "bar"}
-                    onOpenChange={(next) => setOrganizationChooser(next ? "bar" : null)}
-                    onPick={chooseOrganizationVault}
-                    className="h-8 w-auto min-w-40"
-                  />
-                )}
+                  (scope.kind === "organization" ||
+                    organizationChooser === "bar") && (
+                    <OrganizationVaultChooser
+                      value={
+                        scope.kind === "organization"
+                          ? scope.organizationId
+                          : null
+                      }
+                      organizations={availableOrganizations}
+                      open={organizationChooser === "bar"}
+                      onOpenChange={(next) =>
+                        setOrganizationChooser(next ? "bar" : null)
+                      }
+                      onPick={chooseOrganizationVault}
+                      className="h-8 w-auto min-w-40"
+                    />
+                  )}
                 {familiesPresent.length > 1 && (
                   <Select
                     value={family}
@@ -595,7 +645,13 @@ export function VaultWorkspace({
                   </Select>
                 )}
                 <VaultSortControl sort={sort} onSortChange={setSort} />
-                <Button variant={favoritesOnly ? "secondary" : "outline"} size="sm" className="h-8 shrink-0" onClick={() => setFavoritesOnly((value) => !value)} aria-pressed={favoritesOnly}>
+                <Button
+                  variant={favoritesOnly ? "secondary" : "outline"}
+                  size="sm"
+                  className="h-8 shrink-0"
+                  onClick={() => setFavoritesOnly((value) => !value)}
+                  aria-pressed={favoritesOnly}
+                >
                   <Star className="mr-1 h-3.5 w-3.5" /> Favorites
                 </Button>
               </div>
@@ -703,17 +759,24 @@ export function VaultWorkspace({
               <div className="m-3 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 {vault.error}
+                <ErrorAlchemyMenu error={vault.error} />
               </div>
             )}
             {vaultItemState.status === "error" && !favoritesOnly && (
-              <VaultItemStateUnavailable error={vaultItemState.error} onRetry={vaultItemState.retry} />
+              <VaultItemStateUnavailable
+                error={vaultItemState.error}
+                onRetry={vaultItemState.retry}
+              />
             )}
 
             <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
-            {vault.loading ? (
-              <VaultWorkspaceListSkeleton />
-            ) : favoritesOnly && vaultItemState.status !== "ready" ? (
-              <VaultItemStateUnavailable error={vaultItemState.error} onRetry={vaultItemState.retry} />
+              {vault.loading ? (
+                <VaultWorkspaceListSkeleton />
+              ) : favoritesOnly && vaultItemState.status !== "ready" ? (
+                <VaultItemStateUnavailable
+                  error={vaultItemState.error}
+                  onRetry={vaultItemState.retry}
+                />
               ) : filtered.length === 0 ? (
                 <VaultEmptyState
                   filtering={filtering}
@@ -728,21 +791,25 @@ export function VaultWorkspace({
                   onCreate={() => setCreateOpen(true)}
                 />
               ) : (
-                <div
-                  className="space-y-1"
-                  role="list"
-                  aria-label="Credentials"
-                >
+                <div className="space-y-1" role="list" aria-label="Credentials">
                   {filtered.map((item) => (
                     <VaultWorkspaceListRow
                       key={item.id}
                       item={item}
                       definition={defsByKey.get(item.definition_key)}
                       selected={detailItem?.id === item.id}
-                      favorite={vaultItemState.stateById.get(item.id)?.isFavorite ?? false}
-                      stateReady={vaultItemState.status === "ready" && !vaultItemState.pendingItemIds.has(item.id)}
+                      favorite={
+                        vaultItemState.stateById.get(item.id)?.isFavorite ??
+                        false
+                      }
+                      stateReady={
+                        vaultItemState.status === "ready" &&
+                        !vaultItemState.pendingItemIds.has(item.id)
+                      }
                       onOpen={() => openItem(item.id)}
-                      onToggleFavorite={() => void vaultItemState.toggleFavorite(item.id)}
+                      onToggleFavorite={() =>
+                        void vaultItemState.toggleFavorite(item.id)
+                      }
                     />
                   ))}
                 </div>
@@ -946,16 +1013,21 @@ export function VaultWorkspace({
           </div>
         )}
         {principal.type === "user" &&
-          (scope.kind === "organization" || organizationChooser === "compact") && (
-          <OrganizationVaultChooser
-            value={scope.kind === "organization" ? scope.organizationId : null}
-            organizations={availableOrganizations}
-            open={organizationChooser === "compact"}
-            onOpenChange={(next) => setOrganizationChooser(next ? "compact" : null)}
-            onPick={chooseOrganizationVault}
-            className="h-8 w-auto min-w-40"
-          />
-        )}
+          (scope.kind === "organization" ||
+            organizationChooser === "compact") && (
+            <OrganizationVaultChooser
+              value={
+                scope.kind === "organization" ? scope.organizationId : null
+              }
+              organizations={availableOrganizations}
+              open={organizationChooser === "compact"}
+              onOpenChange={(next) =>
+                setOrganizationChooser(next ? "compact" : null)
+              }
+              onPick={chooseOrganizationVault}
+              className="h-8 w-auto min-w-40"
+            />
+          )}
 
         <div className="relative min-w-0 flex-1 basis-56">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -1076,17 +1148,24 @@ export function VaultWorkspace({
         <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           {vault.error}
+          <ErrorAlchemyMenu error={vault.error} />
         </div>
       )}
       {vaultItemState.status === "error" && !favoritesOnly && (
-        <VaultItemStateUnavailable error={vaultItemState.error} onRetry={vaultItemState.retry} />
+        <VaultItemStateUnavailable
+          error={vaultItemState.error}
+          onRetry={vaultItemState.retry}
+        />
       )}
 
       {/* List */}
       {vault.loading ? (
         <VaultListSkeleton />
       ) : favoritesOnly && vaultItemState.status !== "ready" ? (
-        <VaultItemStateUnavailable error={vaultItemState.error} onRetry={vaultItemState.retry} />
+        <VaultItemStateUnavailable
+          error={vaultItemState.error}
+          onRetry={vaultItemState.retry}
+        />
       ) : filtered.length === 0 ? (
         <VaultEmptyState
           filtering={filtering}
@@ -1108,10 +1187,17 @@ export function VaultWorkspace({
                 key={item.id}
                 item={item}
                 definition={defsByKey.get(item.definition_key)}
-                favorite={vaultItemState.stateById.get(item.id)?.isFavorite ?? false}
-                stateReady={vaultItemState.status === "ready" && !vaultItemState.pendingItemIds.has(item.id)}
+                favorite={
+                  vaultItemState.stateById.get(item.id)?.isFavorite ?? false
+                }
+                stateReady={
+                  vaultItemState.status === "ready" &&
+                  !vaultItemState.pendingItemIds.has(item.id)
+                }
                 onOpen={() => openItem(item.id)}
-                onToggleFavorite={() => void vaultItemState.toggleFavorite(item.id)}
+                onToggleFavorite={() =>
+                  void vaultItemState.toggleFavorite(item.id)
+                }
               />
             ))}
           </div>
@@ -1302,7 +1388,8 @@ function credentialSupportingLine(
   item: VaultItem,
   identity: ReturnType<typeof credentialIdentity>,
 ): string | null {
-  if (item.fields.length === 0 && item.attachments.length === 0) return "Nothing saved in it yet";
+  if (item.fields.length === 0 && item.attachments.length === 0)
+    return "Nothing saved in it yet";
   return identity.subtitle ?? identity.host ?? identity.kindLabel;
 }
 
@@ -1341,13 +1428,27 @@ function VaultWorkspaceListRow({
           : "border-transparent hover:border-border hover:bg-accent/50",
       )}
     >
-      <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-start gap-2.5 text-left" aria-label={`Open ${item.display_name}`}>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="flex min-w-0 flex-1 items-start gap-2.5 text-left"
+        aria-label={`Open ${item.display_name}`}
+      >
         <span className={cn(IDENTITY_TILE_CLASS, "mt-0.5 h-9 w-9")}>
           <Icon className={cn("h-4.5 w-4.5", identity.iconClass)} />
         </span>
         <div className="min-w-0 flex-1 overflow-hidden">
-          <p className="whitespace-normal break-words text-sm font-semibold leading-5 text-foreground">{item.display_name}</p>
-          {supportingLine && <p className="mt-0.5 truncate text-xs leading-4 text-muted-foreground" title={supportingLine}>{supportingLine}</p>}
+          <p className="whitespace-normal break-words text-sm font-semibold leading-5 text-foreground">
+            {item.display_name}
+          </p>
+          {supportingLine && (
+            <p
+              className="mt-0.5 truncate text-xs leading-4 text-muted-foreground"
+              title={supportingLine}
+            >
+              {supportingLine}
+            </p>
+          )}
         </div>
       </button>
       {item.status !== "active" && (
@@ -1358,8 +1459,17 @@ function VaultWorkspaceListRow({
           {item.status.replaceAll("_", " ")}
         </Badge>
       )}
-      <button type="button" onClick={onToggleFavorite} disabled={!stateReady} aria-pressed={favorite} aria-label={`${favorite ? "Remove" : "Add"} ${item.display_name} ${favorite ? "from" : "to"} favorites`} className="rounded p-1 text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50">
-        <Star className={cn("h-4 w-4", favorite && "fill-current text-warning")} />
+      <button
+        type="button"
+        onClick={onToggleFavorite}
+        disabled={!stateReady}
+        aria-pressed={favorite}
+        aria-label={`${favorite ? "Remove" : "Add"} ${item.display_name} ${favorite ? "from" : "to"} favorites`}
+        className="rounded p-1 text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <Star
+          className={cn("h-4 w-4", favorite && "fill-current text-warning")}
+        />
       </button>
     </div>
   );
@@ -1485,7 +1595,12 @@ function VaultItemCard({
       className="group relative flex w-full min-w-0 items-start gap-2.5 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-accent/30"
       data-vault-item-id={item.id}
     >
-      <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-start gap-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Open ${item.display_name}`}>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="flex min-w-0 flex-1 items-start gap-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label={`Open ${item.display_name}`}
+      >
         <span className={cn(IDENTITY_TILE_CLASS, "mt-0.5 h-9 w-9")}>
           <Icon className={cn("h-4.5 w-4.5", identity.iconClass)} />
         </span>
@@ -1518,18 +1633,37 @@ function VaultItemCard({
           </Badge>
         )}
       </button>
-      <button type="button" onClick={onToggleFavorite} disabled={!stateReady} aria-pressed={favorite} aria-label={`${favorite ? "Remove" : "Add"} ${item.display_name} ${favorite ? "from" : "to"} favorites`} className="rounded p-1 text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50">
-        <Star className={cn("h-4 w-4", favorite && "fill-current text-warning")} />
+      <button
+        type="button"
+        onClick={onToggleFavorite}
+        disabled={!stateReady}
+        aria-pressed={favorite}
+        aria-label={`${favorite ? "Remove" : "Add"} ${item.display_name} ${favorite ? "from" : "to"} favorites`}
+        className="rounded p-1 text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <Star
+          className={cn("h-4 w-4", favorite && "fill-current text-warning")}
+        />
       </button>
     </div>
   );
 }
 
-function VaultItemStateUnavailable({ error, onRetry }: { error: string | null; onRetry: () => void }) {
-  return <div className="m-3 flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-    <span>{error ?? "Favorites are unavailable. Retry."}</span>
-    <Button type="button" size="sm" variant="outline" onClick={onRetry}>Retry</Button>
-  </div>;
+function VaultItemStateUnavailable({
+  error,
+  onRetry,
+}: {
+  error: string | null;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="m-3 flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+      <span>{error ?? "Favorites are unavailable. Retry."}</span>
+      <Button type="button" size="sm" variant="outline" onClick={onRetry}>
+        Retry
+      </Button>
+    </div>
+  );
 }
 
 function VaultListSkeleton() {
@@ -1624,7 +1758,11 @@ function OrganizationVaultChooser({
   className,
 }: {
   value: string | null;
-  organizations: ReadonlyArray<{ id: string; name: string; slug?: string | null }>;
+  organizations: ReadonlyArray<{
+    id: string;
+    name: string;
+    slug?: string | null;
+  }>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onPick: (organizationId: string) => void;
@@ -1651,7 +1789,9 @@ function OrganizationVaultChooser({
             <SelectItem key={org.id} value={org.id}>
               {org.name}
               {distinguisher ? (
-                <span className="ml-1.5 text-xs text-muted-foreground">{distinguisher}</span>
+                <span className="ml-1.5 text-xs text-muted-foreground">
+                  {distinguisher}
+                </span>
               ) : null}
             </SelectItem>
           );

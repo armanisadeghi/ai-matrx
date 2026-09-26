@@ -72,6 +72,7 @@ import {
   type TablesPayload,
   type TextExtractionPayload,
 } from "@/features/file-analysis/content/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AnalysisTabProps {
   fileId: string;
@@ -291,6 +292,7 @@ export function AnalysisTab({ fileId, className }: AnalysisTabProps) {
         {analysis.error ? (
           <div className="mt-2 flex items-center gap-2 rounded border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-xs text-destructive">
             <AlertCircle className="h-3 w-3" /> {analysis.error}
+            <ErrorAlchemyMenu error={analysis.error} />
           </div>
         ) : null}
       </div>

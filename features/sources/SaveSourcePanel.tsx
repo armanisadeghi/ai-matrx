@@ -65,6 +65,7 @@ import {
   writeRememberedLibrary,
   type StagedTarget,
 } from "@/features/sources/saveSourceLogic";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface SaveSourceItem {
   processedDocumentId: string;
@@ -320,7 +321,7 @@ export function SaveSourcePanel({
             optional)
           </Label>
           {librariesError ? (
-            <p className="text-xs text-destructive">{librariesError}</p>
+            <p className="text-xs text-destructive">{librariesError} <ErrorAlchemyMenu error={librariesError} /></p>
           ) : (
             <Select
               value={libraryId ?? NO_LIBRARY}

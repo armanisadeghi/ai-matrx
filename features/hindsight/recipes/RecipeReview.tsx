@@ -25,6 +25,7 @@ import {
   type RecipeActivationStore,
   type ReviewRecipe,
 } from "./activation";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const RECIPE_COLUMNS =
   "id,normalized_origin,match_pattern,provider_key,recipe_version,field_map,submit,success_signals,failure_signals,challenge_signals,notes,provenance,source_finding_id,status,confidence_floor,version,deleted_at";
@@ -275,7 +276,7 @@ export function RecipeReview({ id }: { id: string }) {
             </Link>
           </p>
         ) : null}
-        {refusal ? <p className="text-destructive">{refusal}</p> : null}
+        {refusal ? <p className="text-destructive">{refusal} <ErrorAlchemyMenu error={refusal} /></p> : null}
         <Button disabled={!canActivate} onClick={() => setIsConfirming(true)}>
           {isActivating ? "Activating…" : "Activate shared recipe"}
         </Button>

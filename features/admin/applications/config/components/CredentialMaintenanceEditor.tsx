@@ -22,6 +22,7 @@ import {
 } from "@/features/admin/applications/config/credential-maintenance";
 import { formatText } from "@ai-matrx/kit/text-case";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CredentialMaintenanceEditorProps {
   entries: Record<string, CredentialMaintenanceEntry>;
@@ -233,6 +234,7 @@ export function CredentialMaintenanceEditor({
                 {errors[`${errorPrefix}.label`] ? (
                   <p className="text-xs text-destructive">
                     {errors[`${errorPrefix}.label`]}
+                    <ErrorAlchemyMenu />
                   </p>
                 ) : null}
               </div>
@@ -294,6 +296,7 @@ export function CredentialMaintenanceEditor({
                 {errors[`${errorPrefix}.generated_at`] ? (
                   <p className="text-xs text-destructive">
                     {errors[`${errorPrefix}.generated_at`]}
+                    <ErrorAlchemyMenu />
                   </p>
                 ) : null}
               </div>
@@ -312,6 +315,7 @@ export function CredentialMaintenanceEditor({
                 {errors[`${errorPrefix}.expires_at`] ? (
                   <p className="text-xs text-destructive">
                     {errors[`${errorPrefix}.expires_at`]}
+                    <ErrorAlchemyMenu />
                   </p>
                 ) : null}
               </div>
@@ -329,6 +333,7 @@ export function CredentialMaintenanceEditor({
                 {errors[`${errorPrefix}.source_url`] ? (
                   <p className="text-xs text-destructive">
                     {errors[`${errorPrefix}.source_url`]}
+                    <ErrorAlchemyMenu />
                   </p>
                 ) : null}
               </div>
@@ -348,6 +353,7 @@ export function CredentialMaintenanceEditor({
                 {errors[`${errorPrefix}.deployment_url`] ? (
                   <p className="text-xs text-destructive">
                     {errors[`${errorPrefix}.deployment_url`]}
+                    <ErrorAlchemyMenu />
                   </p>
                 ) : null}
               </div>
@@ -389,7 +395,7 @@ export function CredentialMaintenanceEditor({
             className="font-mono"
           />
           {newIdError ? (
-            <p className="text-xs text-destructive">{newIdError}</p>
+            <p className="text-xs text-destructive">{newIdError} <ErrorAlchemyMenu error={newIdError} /></p>
           ) : null}
         </div>
         <Button type="button" variant="outline" onClick={addCredential}>

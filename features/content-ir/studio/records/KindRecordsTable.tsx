@@ -520,7 +520,7 @@ export default function KindRecordsTable({
         >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
           <span>
-            <strong>These records could not be read.</strong> {error}
+            <strong>These records could not be read. <ErrorAlchemyMenu /></strong> {error}
           </span>
           <ErrorAlchemyMenu className="ml-auto" />
         </div>

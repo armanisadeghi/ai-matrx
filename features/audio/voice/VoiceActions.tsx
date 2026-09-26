@@ -8,6 +8,7 @@ import { useAiAudio } from "@/features/audio/voice/AiVoicePage";
 import { Language } from "@/lib/cartesia/cartesia.types";
 import { useState } from "react";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const VoiceActions = () => {
     const { loading, error, setLoading, setError, smartSetData, smartGetData } = useAiAudio();
@@ -111,7 +112,7 @@ const VoiceActions = () => {
                 </Button>
             </div>
 
-            {error && <div className="p-3 bg-destructive/10 text-destructive rounded-md">{error}</div>}
+            {error && <div className="p-3 bg-destructive/10 text-destructive rounded-md">{error} <ErrorAlchemyMenu error={error} /></div>}
 
             {smartGetData("clonedVoice") && (
                 <div className="text-center">

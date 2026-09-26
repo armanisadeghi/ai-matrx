@@ -31,6 +31,7 @@ import { useBrandBySegment } from "@/features/marketing/data/keys-hooks";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { normalizeWebsiteUrl } from "@/features/marketing/lib/website-url";
 import { extractErrorMessage } from "@/utils/errors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function NewSiteForm() {
   const router = useRouter();
@@ -250,6 +251,7 @@ export function NewSiteForm() {
                   <span className="text-xs text-destructive">
                     The target brand could not be loaded — creation is blocked
                     so the site can't attach to the wrong brand.
+                    <ErrorAlchemyMenu />
                   </span>
                 )}
               </div>
@@ -329,6 +331,7 @@ export function NewSiteForm() {
                     manage organizations
                   </Link>
                   .
+                  <ErrorAlchemyMenu />
                 </p>
               ) : !orgs.loading && orgs.organizations.length === 0 ? (
                 <p className="text-[11px] text-muted-foreground">

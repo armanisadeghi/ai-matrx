@@ -37,6 +37,7 @@ import { AlertTriangle, RotateCcw } from "lucide-react";
 
 import { isChunkLoadError } from "@/components/errors/chunk-load-recovery";
 import { captureReactRenderError } from "@/lib/diagnostics/captureReactError";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Is this the "it was slow / it did not arrive" shape, rather than an unknown
@@ -102,12 +103,14 @@ export default function LinkError({
           {transient
             ? "This is taking longer than it should"
             : "We couldn’t open this link"}
+          <ErrorAlchemyMenu />
         </h1>
 
         <p className="mx-auto mt-3 max-w-sm text-sm text-muted-foreground">
           {transient
             ? "The page didn’t finish loading this time. This is usually temporary."
             : "Something went wrong on our side while opening this page. Nothing you did caused it."}
+          <ErrorAlchemyMenu />
         </p>
 
         <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">

@@ -81,6 +81,7 @@ export function ScrapeFailureNotice({
             }
           >
             {failure.title}
+            <ErrorAlchemyMenu error={failure.title} />
           </p>
           <p className={isPage ? "text-sm text-muted-foreground" : "text-xs text-muted-foreground"}>
             {failure.remedy}

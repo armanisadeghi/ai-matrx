@@ -94,6 +94,7 @@ import {
   INTAKE_INSTANT_ANALYSIS_MANDATE_KEY,
   useInstantIntakeAnalysis,
 } from "../hooks/useInstantIntakeAnalysis";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const PHOTO_JPEG_QUALITY = 0.92;
 
@@ -883,6 +884,7 @@ export function IntakeCaptureScreen({
                 {session.errorCount} upload
                 {session.errorCount === 1 ? "" : "s"} failed — tap the red
                 thumbnail.
+                <ErrorAlchemyMenu error={session.errorCount} />
               </span>
             )}
           </p>

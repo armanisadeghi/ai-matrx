@@ -37,6 +37,7 @@ import {
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@/components/official/mobile-table/mobileTable";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface NoteVersionHistoryPanelProps {
   noteId: string;
@@ -252,6 +253,7 @@ export function NoteVersionHistoryPanel({
         )}
       >
         {error}
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }
@@ -366,6 +368,7 @@ export function NoteVersionHistoryPanel({
           <>
             <span className="text-destructive">
               Could not load the current note — {currentNoteError}
+              <ErrorAlchemyMenu error={currentNoteError} />
             </span>
             <Button
               variant="outline"

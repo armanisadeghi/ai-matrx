@@ -68,6 +68,7 @@ import type {
   StorageImportSelection,
 } from "@/features/files/storage-sources/types";
 import { attachChildToFolder, upsertFiles } from "@/features/files/redux/slice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface GoogleWorkspaceConnectBodyProps {
   onClose: () => void;
@@ -712,7 +713,7 @@ function GoogleWorkspaceConnectBodyContent({
                   </div>
                 ))}
                 {driveRetryError ? (
-                  <p className="mt-1 text-destructive">{driveRetryError}</p>
+                  <p className="mt-1 text-destructive">{driveRetryError} <ErrorAlchemyMenu error={driveRetryError} /></p>
                 ) : null}
                 <Button
                   size="sm"

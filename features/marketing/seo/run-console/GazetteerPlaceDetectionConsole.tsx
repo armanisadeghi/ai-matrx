@@ -52,6 +52,7 @@ import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import type { RunConsoleLiveState } from "./run-console-scope";
 import type { PlaceDetectionRunOutcome } from "./types";
 import { formatRelativeTime } from "@/utils/datetime";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function age(iso: string | null): string {
   if (!iso) return "never";
@@ -230,6 +231,7 @@ export function GazetteerPlaceDetectionConsole({
               <p className="rounded-md border border-destructive/50 bg-destructive/10 px-2.5 py-1.5 text-[11px] text-destructive">
                 Could not read the place-detection scoreboard:{" "}
                 {extractErrorMessage(status.error)}
+                <ErrorAlchemyMenu />
               </p>
             ) : status.isLoading || !row ? (
               <p className="text-xs text-muted-foreground">
@@ -364,6 +366,7 @@ export function GazetteerPlaceDetectionConsole({
                     {outcome.error}
                   </p>
                 ) : null}
+                <ErrorAlchemyMenu error={outcome.error} />
               </li>
             ))}
           </ul>

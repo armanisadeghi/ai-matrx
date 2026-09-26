@@ -13,6 +13,7 @@ import {
   Layers,
 } from "lucide-react";
 import type { AgentAppComponentProps } from "../../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function LSIKeywordGenerator({
   onExecute,
@@ -176,9 +177,11 @@ export default function LSIKeywordGenerator({
                 <div className="flex-1">
                   <p className="font-semibold text-destructive text-lg">
                     {error.type}
+                    <ErrorAlchemyMenu />
                   </p>
                   <p className="text-sm text-destructive/80 mt-1">
                     {error.message}
+                    <ErrorAlchemyMenu />
                   </p>
                 </div>
               </div>

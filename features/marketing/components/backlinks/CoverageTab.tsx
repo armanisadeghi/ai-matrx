@@ -61,6 +61,7 @@ import {
 } from "@/features/marketing/lib/copy-payloads";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** `?mention=` — the exact row an assist chip is talking about. */
 const MENTION_PARAM = "mention";
@@ -536,6 +537,7 @@ export function CoverageTab({ siteId }: { siteId: string }) {
           {incomplete.length === 1
             ? `“${incomplete[0].name}”: ${incomplete[0].last_error}`
             : `${incomplete.length} trackers could not see everything on their last pass, so this feed may be missing stories.`}
+          <ErrorAlchemyMenu />
         </div>
       ) : null}
 

@@ -43,6 +43,7 @@ import {
   type MovePreviewTable,
 } from "@/features/marketing/data/move-site-org";
 import { orgNameDistinguisher } from "@/features/scopes/utils/formatOrgDisplayName";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const BRAND_CHOICES: { value: BrandAction; label: string; detail: string }[] = [
   {
@@ -253,6 +254,7 @@ export function MoveSiteOrganizationCard({ site }: { site: MarketingSite }) {
             ) : preview.isError ? (
               <p className="text-destructive">
                 Could not read what would move: {extractErrorMessage(preview.error)}
+                <ErrorAlchemyMenu />
               </p>
             ) : preview.data ? (
               <>

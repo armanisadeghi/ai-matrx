@@ -49,6 +49,7 @@ import { SHAPES_SURFACE_NAME, SHAPE_COMPONENT_ROLE } from "@/features/content-ir
 import { composeKindAgentIntent } from "@/features/content-ir/studio/kind-agent-intents";
 import { useKindAgentLaunch } from "@/features/content-ir/studio/useKindAgentLaunch";
 import type { Json } from "@/types/database.types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ShapeRenderStatusStripProps {
   kind: string;
@@ -247,7 +248,7 @@ export default function ShapeRenderStatusStrip({
             </ul>
           )}
           {candidatesError && (
-            <p className="mt-1.5 text-xs text-destructive">{candidatesError}</p>
+            <p className="mt-1.5 text-xs text-destructive">{candidatesError} <ErrorAlchemyMenu error={candidatesError} /></p>
           )}
         </div>
 

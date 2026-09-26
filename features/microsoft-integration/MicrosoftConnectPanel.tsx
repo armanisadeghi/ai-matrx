@@ -30,6 +30,7 @@ import {
 import type { MicrosoftConnection } from "@/features/microsoft-integration/types";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Connect a Microsoft work account.
@@ -238,6 +239,7 @@ export function MicrosoftConnectPanel({
                 {connection.lastError ? (
                   <p className="text-xs text-destructive">
                     {connection.lastError}
+                    <ErrorAlchemyMenu error={connection.lastError} />
                   </p>
                 ) : null}
               </div>

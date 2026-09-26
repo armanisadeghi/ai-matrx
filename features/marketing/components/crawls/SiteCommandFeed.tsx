@@ -30,6 +30,7 @@ import {
   formatDurationMs,
   formatDurationSeconds,
 } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** A long run must not degrade the tab: render only the newest rows. */
 const MAX_RENDERED_ROWS = 150;
@@ -221,6 +222,7 @@ export function SiteCommandFeed({
           )}
         >
           {run.error ? humanizeBackendError(run.error) : run.message}
+          <ErrorAlchemyMenu />
         </p>
       </div>
 

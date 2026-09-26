@@ -9,6 +9,7 @@ import { useOrgProjects, usePersonalProjects } from '../hooks';
 import { ProjectCard } from './ProjectCard';
 import { CreateProjectModal } from './CreateProjectModal';
 import { filterAndSortBySearch } from '@ai-matrx/kit/search-scoring';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ProjectListProps {
   organizationId?: string | null;
@@ -48,8 +49,9 @@ export function ProjectList({ organizationId, orgSlug, canCreate = false }: Proj
         <div className="text-center">
           <h3 className="text-lg font-semibold text-red-900 dark:text-red-100 mb-2">
             Failed to Load Projects
+            <ErrorAlchemyMenu />
           </h3>
-          <p className="text-red-700 dark:text-red-300 mb-4">{error}</p>
+          <p className="text-red-700 dark:text-red-300 mb-4">{error} <ErrorAlchemyMenu error={error} /></p>
           <Button onClick={refresh} variant="outline">
             Try Again
           </Button>

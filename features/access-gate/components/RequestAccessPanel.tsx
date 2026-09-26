@@ -29,6 +29,7 @@ import type {
   RequestedLevel,
 } from "@/features/access-gate/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface RequestAccessPanelProps {
   context: AccessDeniedContext;
@@ -145,6 +146,7 @@ export function RequestAccessPanel({
             : delivered === 0
               ? "We couldn't reach them with a message, but your request is saved and they'll see it."
               : "They’ve been messaged. You’ll get a message back the moment they answer, and this page will open."}
+          <ErrorAlchemyMenu />
         </p>
         <Button
           className="mt-3 h-8"

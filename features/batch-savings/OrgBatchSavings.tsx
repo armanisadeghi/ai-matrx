@@ -17,6 +17,7 @@ import { usdPrecise } from "@/features/admin/spend/format";
 
 import { fetchBatchSavings } from "./service";
 import type { BatchSavingsSummary } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const WINDOW_DAYS = 30;
 
@@ -47,7 +48,7 @@ export function OrgBatchSavings({ organizationId }: { organizationId: string }) 
       <div className="min-w-0">
         <div className="text-xs font-medium text-foreground">Batch AI work · last {WINDOW_DAYS} days</div>
         {error ? (
-          <div className="text-xs text-destructive">Batch spend could not be read: {error}</div>
+          <div className="text-xs text-destructive">Batch spend could not be read: {error} <ErrorAlchemyMenu /></div>
         ) : !data ? (
           <div className="h-4 w-48 animate-pulse rounded bg-muted" />
         ) : data.items === 0 ? (

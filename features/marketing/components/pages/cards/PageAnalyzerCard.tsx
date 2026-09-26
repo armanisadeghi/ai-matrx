@@ -12,6 +12,7 @@ import {
   CondensedFieldGrid,
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // THE NAMING LAW: canonical labels for every declared surface value + group —
 // section titles and field labels below render these byte-identically.
@@ -130,7 +131,7 @@ export function PageAnalyzerCard({
           </p>
         ) : null}
         {state.status === "error" ? (
-          <p className="text-xs text-destructive">{state.error}</p>
+          <p className="text-xs text-destructive">{state.error} <ErrorAlchemyMenu error={state.error} /></p>
         ) : null}
         {artifact ? (
           <>

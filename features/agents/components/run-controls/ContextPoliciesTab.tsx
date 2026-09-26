@@ -42,6 +42,7 @@ import {
 } from "@/features/agents/hooks/useBuilderContextSeed";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // =============================================================================
 // Selectors
@@ -641,6 +642,7 @@ function ValueEditorCard({
             {jsonError ? (
               <span className="text-destructive truncate" title={jsonError}>
                 JSON error: {jsonError}
+                <ErrorAlchemyMenu error={jsonError} />
               </span>
             ) : isEmpty ? (
               <span className="text-muted-foreground/60">not set</span>
@@ -748,7 +750,7 @@ function AddAdHocRow({
         </button>
       </div>
       {error && (
-        <div className="mt-1 text-[10px] text-destructive">{error}</div>
+        <div className="mt-1 text-[10px] text-destructive">{error} <ErrorAlchemyMenu error={error} /></div>
       )}
     </div>
   );

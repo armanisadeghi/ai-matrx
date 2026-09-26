@@ -20,6 +20,7 @@ import { selectSelectedItemId, setSelectedItemId } from "../../redux/ui/slice";
 import type { CategoryTreeNode } from "../../redux/skl/selectors";
 import type { SklRenderDefinition } from "../../redux/skl/types";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Classification badges — surfaces the block_type / visibility fidelity the
@@ -97,6 +98,7 @@ export function RenderBlocksSection() {
           ) : error ? (
             <div className="px-4 py-10 text-center text-sm text-destructive">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           ) : (
             <ScrollArea className="h-full">

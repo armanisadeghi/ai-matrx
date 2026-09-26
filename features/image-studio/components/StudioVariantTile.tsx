@@ -24,6 +24,7 @@ import { formatFileSize } from "@ai-matrx/kit/format";
 import { downloadSingleVariant } from "../utils/download-bundle";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function fitIcon(fit: ImageFit): React.ReactNode {
   switch (fit) {
@@ -283,6 +284,7 @@ export function StudioVariantTile({
           {copyError ? (
             <span className="text-destructive truncate max-w-[120px]">
               {copyError}
+              <ErrorAlchemyMenu error={copyError} />
             </span>
           ) : sharing ? (
             <>
@@ -367,7 +369,7 @@ export function StudioVariantTileError({
         <p className="font-medium text-sm truncate">
           {preset?.name ?? presetId}
         </p>
-        <p className="text-[11px] text-destructive mt-1">{error}</p>
+        <p className="text-[11px] text-destructive mt-1">{error} <ErrorAlchemyMenu error={error} /></p>
         {onRetry && (
           <button
             type="button"

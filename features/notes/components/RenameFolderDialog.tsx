@@ -14,6 +14,7 @@ import { Input } from '@ai-matrx/design-system';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { FolderOpen } from 'lucide-react';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface RenameFolderDialogProps {
     open: boolean;
@@ -104,6 +105,7 @@ export function RenameFolderDialog({
                         {error && (
                             <p className="text-sm text-destructive">
                                 {error}
+                              <ErrorAlchemyMenu error={error} />
                             </p>
                         )}
                     </div>

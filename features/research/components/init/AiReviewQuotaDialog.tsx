@@ -13,6 +13,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { updateTopic } from "../../service";
 import type { TopicQuotaFields } from "../../types";
 import { QuotaSettingsSection } from "../overview/QuotaSettingsSection";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AiReviewQuotaDialogProps {
   open: boolean;
@@ -85,6 +86,7 @@ export function AiReviewQuotaDialog({
       {error && (
         <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
       <div className="flex items-center justify-end gap-2 pt-2">

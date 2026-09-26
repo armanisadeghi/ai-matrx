@@ -30,6 +30,7 @@ import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
 import { fetchRulebookPage } from "@/features/masterwork/browse/service";
 import { createDraftRulebook } from "@/features/masterwork/service";
 import type { RulebookListRow } from "@/features/masterwork/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function RulebookParamPicker({
     label,
@@ -201,6 +202,7 @@ export function RulebookParamPicker({
                 <p className="flex items-start gap-2 text-xs text-destructive">
                     <CircleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden />
                     {error}
+                  <ErrorAlchemyMenu error={error} />
                 </p>
             )}
         </div>

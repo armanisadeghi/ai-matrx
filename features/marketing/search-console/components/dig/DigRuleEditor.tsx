@@ -41,6 +41,7 @@ import { getValueVocabulary } from "@/features/marketing/seo/value-system/data";
 import { CreatablePicker } from "@/components/ui/creatable-picker";
 import { AddLevelDialog } from "@/features/marketing/seo/value-system/pickers/AddLevelDialog";
 import { AddDimensionDialog } from "@/features/marketing/seo/value-system/pickers/AddDimensionDialog";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface DigRuleDraft {
   name: string;
@@ -423,6 +424,7 @@ export function DigRuleEditor({
           {errors.map((error) => (
             <li key={error} className="text-[11px] text-destructive">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </li>
           ))}
         </ul>

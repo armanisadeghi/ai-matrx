@@ -12,6 +12,7 @@ import { StageHeader } from "../ui/StageHeader";
 import { StatusDot, STATUS_TEXT_CLASS, STATUS_LABELS } from "../ui/StatusDot";
 import { ModelBadge } from "../ui/ModelBadge";
 import { StreamingTextPanel } from "../ui/StreamingTextPanel";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   state: PipelineState;
@@ -73,6 +74,7 @@ function SynthCard({ item }: { item: WorkItem }) {
         {item.metadata.error && (
           <span className="text-[10px] text-destructive truncate max-w-[200px]">
             {item.metadata.error}
+            <ErrorAlchemyMenu error={item.metadata.error} />
           </span>
         )}
       </div>

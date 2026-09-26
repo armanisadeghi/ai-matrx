@@ -72,6 +72,7 @@ import {
   startComparison,
 } from "../service";
 import { parseArms, type ArmDraft, type ComparisonArm, type ComparisonRow } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const MAX_ARMS = 6;
 const ROW_POLL_MS = 5_000;
@@ -713,6 +714,7 @@ function ArmColumn({
       {arm.error && (
         <div className="border-b border-border bg-destructive/10 px-3 py-2 text-xs text-destructive">
           {arm.error}
+          <ErrorAlchemyMenu error={arm.error} />
         </div>
       )}
 

@@ -60,6 +60,7 @@ import {
   type AttachableResource,
   type PendingAttachment,
 } from "./attachable-resources";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** How long a keystroke waits before a live provider search leaves the browser. */
 const LIVE_SEARCH_DEBOUNCE_MS = 300;
@@ -456,6 +457,7 @@ function ResourceAttachPickerBody({
           <p className="flex items-start gap-1.5 text-xs text-destructive">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             {saveError}
+            <ErrorAlchemyMenu error={saveError} />
           </p>
         )}
 

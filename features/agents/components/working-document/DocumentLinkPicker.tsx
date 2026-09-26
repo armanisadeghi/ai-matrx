@@ -30,6 +30,7 @@ import {
   type DocumentListScope,
   type WorkingDocumentKind,
 } from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface DocumentLinkPickerProps {
   kind: WorkingDocumentKind;
@@ -137,7 +138,7 @@ function DocumentLinkPickerBody({
             Loading {noun}s…
           </div>
         ) : error ? (
-          <div className="px-3 py-6 text-center text-destructive">{error}</div>
+          <div className="px-3 py-6 text-center text-destructive">{error} <ErrorAlchemyMenu error={error} /></div>
         ) : filtered.length === 0 ? (
           <div className="px-3 py-6 text-center text-muted-foreground">
             {search.trim()

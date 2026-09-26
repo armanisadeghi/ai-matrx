@@ -50,6 +50,7 @@ import {
   type SyncStateSnapshot,
 } from "../syncState";
 import { MATRX_LOCAL_DOWNLOAD_PATH } from "@/features/matrx-local-download/release";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Exact, verified statement of why the web app cannot start a sync itself. */
 export const SYNC_NOW_UNAVAILABLE_REASON =
@@ -260,6 +261,7 @@ export function SyncStatePanel() {
         <div className="mt-3 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : state.accounts.length === 0 ? (
         <p className="mt-3 rounded-lg border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
@@ -308,6 +310,7 @@ export function SyncStateIndicator() {
         <span className="flex items-center gap-1.5 text-destructive">
           <AlertTriangle className="h-3 w-3" />
           {error}
+          <ErrorAlchemyMenu error={error} />
         </span>
       ) : (
         <>

@@ -33,6 +33,7 @@ import { isTerminal, resultAsObject } from "../_shared";
 import { ResultValue, type ResultDensity } from "../../result-fields/ResultValue";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { CtxItemCard, type CtxItem } from "./CtxItemCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const INLINE_ITEM_CAP = 4;
 
@@ -185,7 +186,7 @@ export const CtxBatchInline: React.FC<Props> = ({
               <div className="min-w-0">
                 <span className="font-mono font-medium">{r.key}</span>
                 {r.errorText && (
-                  <span className="text-destructive/80"> — {r.errorText}</span>
+                  <span className="text-destructive/80"> — {r.errorText} <ErrorAlchemyMenu error={r.errorText} /></span>
                 )}
               </div>
             </div>

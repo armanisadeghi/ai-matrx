@@ -60,6 +60,7 @@ import { cn } from "@/lib/utils";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface UserTable {
   id: string;
   table_name: string;
@@ -918,6 +919,7 @@ export default function TableCards() {
               <div className="text-center py-8 border border-dashed border-border rounded-lg bg-muted/30">
                 <p className="text-muted-foreground">
                   The example tables could not be loaded: {examplesError}
+                  <ErrorAlchemyMenu error={examplesError} />
                 </p>
               </div>
             ) : (

@@ -31,6 +31,7 @@ import {
 } from "@/features/surfaces/manifests/education-memory.manifest";
 import { authenticatedStudyMediaLoadKey } from "@/features/education/media/authLoad";
 import { useStudyMediaLibrary } from "@/features/education/media/useStudyMediaLibrary";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SURFACE_NAME = "matrx-user/education-memory";
 
@@ -162,6 +163,7 @@ function LibraryError({ onRetry }: { error: string; onRetry: () => void }) {
       <AlertCircle className="h-8 w-8 text-destructive" />
       <p className="text-sm text-muted-foreground">Could not load memory aids right now.</p>
       <Button size="sm" onClick={onRetry}>Try again</Button>
+      <ErrorAlchemyMenu />
     </div>
   );
 }

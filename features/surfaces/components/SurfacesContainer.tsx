@@ -60,6 +60,7 @@ import { SURFACE_CANDIDATES } from "@/features/surfaces/data/surface-candidates"
 import { listParentFilterOptions } from "@/features/surfaces/utils/surface-hierarchy";
 import { surfaceCheckState } from "@/features/surfaces/utils/surface-check-ledger";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function SurfacesContainer() {
   const router = useRouter();
@@ -377,6 +378,7 @@ export function SurfacesContainer() {
         <div className="mx-3 mt-2 rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-xs text-destructive flex items-center gap-2">
           <AlertCircle className="h-3.5 w-3.5" />
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 

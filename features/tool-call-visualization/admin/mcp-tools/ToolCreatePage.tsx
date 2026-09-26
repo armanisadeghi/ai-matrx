@@ -37,6 +37,7 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toolApiErrorMessage } from "./tool-definition.service";
 import { parseSemver } from "@/features/admin/applications/version";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface NewTool {
   name: string;
@@ -358,6 +359,7 @@ export function ToolCreatePage() {
         {jsonErrors.parameters && (
           <span className="text-xs text-destructive">
             JSON Error: {jsonErrors.parameters}
+            <ErrorAlchemyMenu error={jsonErrors.parameters} />
           </span>
         )}
       </div>
@@ -377,6 +379,7 @@ export function ToolCreatePage() {
         {jsonErrors.output_schema && (
           <span className="text-xs text-destructive">
             JSON Error: {jsonErrors.output_schema}
+            <ErrorAlchemyMenu error={jsonErrors.output_schema} />
           </span>
         )}
       </div>

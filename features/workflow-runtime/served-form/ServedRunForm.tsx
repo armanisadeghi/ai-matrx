@@ -50,6 +50,7 @@ import {
   useServedRunStart,
   type ServedRunFormState,
 } from "./useServedRunForm";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ServedRunFormProps {
   definitionId: string;
@@ -240,7 +241,7 @@ export function ServedRunForm({
         )}
 
         {startError && (
-          <p className="mt-2 text-xs text-destructive">{startError}</p>
+          <p className="mt-2 text-xs text-destructive">{startError} <ErrorAlchemyMenu error={startError} /></p>
         )}
       </div>
     </div>

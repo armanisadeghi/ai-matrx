@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { SandboxGitAdapter } from "../../adapters/SandboxGitAdapter";
 import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnectionCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CredentialsModalProps {
   adapter: SandboxGitAdapter;
@@ -185,6 +186,7 @@ export const CredentialsModal: React.FC<CredentialsModalProps> = ({
           {error && (
             <div className="rounded border border-red-300 bg-red-50 px-2 py-1 text-[11px] text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
           {message && !error && (

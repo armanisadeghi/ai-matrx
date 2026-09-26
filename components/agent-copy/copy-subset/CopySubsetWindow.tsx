@@ -69,6 +69,7 @@ import {
   type CopySubsetFormat,
   type CopySubsetState,
 } from "@/components/agent-copy/copy-subset/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Size estimate refresh delay while the user is still shaping. */
 const SIZE_ESTIMATE_DEBOUNCE_MS = 150;
@@ -430,6 +431,7 @@ function CopySubsetWindowBody<T>({
           <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
             <p className="max-w-xl text-sm text-destructive">
               Couldn&apos;t load the rows: {loadError}
+              <ErrorAlchemyMenu error={loadError} />
             </p>
             <Button type="button" variant="outline" onClick={() => void load()}>
               <RotateCcw className="h-4 w-4" /> Retry

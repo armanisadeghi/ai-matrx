@@ -40,6 +40,7 @@ import { deletePodcastRun } from "@/features/podcasts/studio/runs/runsRepository
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { toast } from "@/lib/toast";
 import { RunHistoryCard, runEditHref, runHistoryHref } from "./RunHistoryCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type FilterKey = "all" | "active" | "completed" | "failed" | "draft";
 
@@ -282,6 +283,7 @@ export function RunsManageView({
       {error && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-600 dark:text-red-400">
           Couldn&apos;t load your runs: {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 

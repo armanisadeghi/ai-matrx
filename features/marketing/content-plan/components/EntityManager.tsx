@@ -109,6 +109,7 @@ import {
   parseOpenEntityEditorWrite,
   parseSourceTypeIdWrite,
 } from "../lib/entity-write-targets";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SURFACE_NAME = "matrx-user/content-plan-entities";
 
@@ -824,6 +825,7 @@ export function EntityManager({
                     {item.error ? (
                       <p className="mt-1 text-xs text-destructive">
                         {item.error}
+                        <ErrorAlchemyMenu error={item.error} />
                       </p>
                     ) : null}
                   </div>
@@ -921,6 +923,7 @@ export function EntityManager({
           ) : parties.isError ? (
             <p className="py-2 text-sm text-destructive">
               {extractErrorMessage(parties.error)}
+              <ErrorAlchemyMenu />
             </p>
           ) : partyRows.length === 0 ? (
             <p className="rounded-lg border border-dashed border-border px-3 py-3 text-xs text-muted-foreground">
@@ -1032,6 +1035,7 @@ export function EntityManager({
           ) : entities.isError ? (
             <p className="py-4 text-sm text-destructive">
               {extractErrorMessage(entities.error)}
+              <ErrorAlchemyMenu />
             </p>
           ) : rows.length === 0 ? (
             <div className="rounded-lg border border-dashed border-border px-6 py-10 text-center">
@@ -1276,7 +1280,7 @@ function LinkExistingPartyPopover({
         />
         <div className="max-h-56 overflow-y-auto">
           {error ? (
-            <p className="px-2 py-2 text-xs text-destructive">{error}</p>
+            <p className="px-2 py-2 text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
           ) : results === null ? (
             <p className="px-2 py-2 text-xs text-muted-foreground">
               Searching…

@@ -39,6 +39,7 @@ import {
   fetchAgentAppCategories,
   type AgentAppCategoryRow,
 } from "@/lib/services/agent-apps-admin-service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AgentAppCategoryPickerProps {
   value: string | null;
@@ -173,7 +174,7 @@ export function AgentAppCategoryPicker({
               </div>
             )}
             {error && (
-              <div className="px-3 py-2 text-sm text-destructive">{error}</div>
+              <div className="px-3 py-2 text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></div>
             )}
             {!loading && filteredSystem.length === 0 && !showCreate && (
               <CommandEmpty>

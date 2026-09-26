@@ -38,6 +38,7 @@ import { EntitlementChip } from "@/features/rag/components/library-catalog/Entit
 import { LibraryLabelChip } from "@/features/rag/components/library-catalog/LibraryLabelChip";
 import type { LibraryResource } from "@/features/rag/hooks/useLibraryResources";
 import type { RulebookRule } from "@/features/masterwork/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Rulebook status in the tenant's words. */
 const STATUS_META: Record<string, { label: string; hint: string; tone: string }> = {
@@ -321,7 +322,7 @@ export function RulebookDetailPanel({
             What it carries
           </h2>
           {rulesError ? (
-            <div className="text-xs text-destructive">{rulesError}</div>
+            <div className="text-xs text-destructive">{rulesError} <ErrorAlchemyMenu error={rulesError} /></div>
           ) : rules == null ? (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading the rules…

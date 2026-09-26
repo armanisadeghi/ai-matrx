@@ -8,6 +8,7 @@ import { AgentAppErrorBoundary } from "../components/AgentAppErrorBoundary";
 import { AgentAppPublicRenderer } from "../components/AgentAppPublicRenderer";
 import type { PublicAgentApp, AgentApp } from "../types";
 import type { RenderPreviewerProps } from "@/features/code/preview/renderPreviewRegistry";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Render-preview component for `aga-app:` source tabs. Loads the full
@@ -47,6 +48,7 @@ export function AgentAppRenderPreview({ rowId, code }: RenderPreviewerProps) {
     return (
       <div className="flex h-full w-full items-center justify-center p-6 text-sm text-destructive">
         Failed to load agent app: {error}
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

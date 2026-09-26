@@ -20,6 +20,7 @@ import {
   ScorePill,
 } from "./assignmentDisplay";
 import type { AssignmentProgress } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function AssignedToYouPanel({ classId }: { classId: string }) {
   const router = useRouter();
@@ -49,7 +50,7 @@ export function AssignedToYouPanel({ classId }: { classId: string }) {
           <Skeleton className="h-14 w-full" />
         </div>
       ) : assignments.error ? (
-        <p className="text-xs text-destructive">{assignments.error}</p>
+        <p className="text-xs text-destructive">{assignments.error} <ErrorAlchemyMenu error={assignments.error} /></p>
       ) : assignments.assignments.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           Nothing assigned yet. When your teacher assigns a deck or quiz, it shows

@@ -40,6 +40,7 @@ import { asJsonObject } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 type DraftStatus =
   "generating" | "verifying" | "ready" | "failed" | "published";
 
@@ -471,7 +472,7 @@ export function ExamContentPipeline() {
                 Loading sources…
               </p>
             ) : sourceError ? (
-              <p className="p-3 text-sm text-destructive">{sourceError}</p>
+              <p className="p-3 text-sm text-destructive">{sourceError} <ErrorAlchemyMenu error={sourceError} /></p>
             ) : shownSources.length === 0 ? (
               <p className="p-3 text-sm text-muted-foreground">
                 No matching processed sources. Add the official material through
@@ -538,6 +539,7 @@ export function ExamContentPipeline() {
                 <p className="mt-3 flex gap-2 text-xs text-destructive">
                   <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
                   {draft.error}
+                  <ErrorAlchemyMenu error={draft.error} />
                 </p>
               ) : null}
               <div className="mt-4 flex flex-wrap gap-2">

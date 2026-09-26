@@ -34,6 +34,7 @@ import { isServiceFailure } from "@/features/data-tables/types";
 
 import type { EventConfig } from "../../../types";
 import { isRecordSourceKey, toRecordSourceKey } from "../../../utils/recordSourceKey";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const ROW_EVENT_ACTIONS: readonly { value: string; label: string }[] = [
   { value: "row.created", label: "A row is added" },
@@ -220,7 +221,7 @@ export function EventForm({ value, onChange, error }: Props) {
             ))}
           </SelectContent>
         </Select>
-        {tablesError && <p className="text-xs text-destructive">Could not load your tables: {tablesError}</p>}
+        {tablesError && <p className="text-xs text-destructive">Could not load your tables: {tablesError} <ErrorAlchemyMenu error={tablesError} /></p>}
         {cannotFire && <p className="text-xs text-destructive">{cannotFire}</p>}
         {tables && tables.length === 0 && (
           <p className="text-xs text-muted-foreground">You have no data tables yet; the schedule will fire for any table you create.</p>
@@ -247,7 +248,7 @@ export function EventForm({ value, onChange, error }: Props) {
             Pick a table above to choose its columns. With any table, every change counts.
           </p>
         ) : columnsError ? (
-          <p className="text-xs text-destructive">Could not load this table&apos;s columns: {columnsError}</p>
+          <p className="text-xs text-destructive">Could not load this table&apos;s columns: {columnsError} <ErrorAlchemyMenu error={columnsError} /></p>
         ) : !columns ? (
           <p className="text-xs text-muted-foreground">Loading this table&apos;s columns…</p>
         ) : (
@@ -265,7 +266,7 @@ export function EventForm({ value, onChange, error }: Props) {
         </p>
       </div>
 
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>}
     </div>
   );
 }

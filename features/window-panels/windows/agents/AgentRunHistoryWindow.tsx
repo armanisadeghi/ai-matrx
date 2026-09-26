@@ -40,6 +40,7 @@ import {
   readSelectedRunTranscript,
   type AgentRunHistorySnapshot,
 } from "./agent-run-history-scope";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SURFACE_KEY = "agent-run-history-window";
 
@@ -339,6 +340,7 @@ function RunHistorySidebar({
         {agentId && status === "failed" && (
           <p className="px-3 py-2 text-[10px] text-destructive">
             {error ?? "Failed to load"}
+            <ErrorAlchemyMenu error={error} />
           </p>
         )}
 

@@ -54,6 +54,7 @@ import type {
   GscResolvedPeriods,
   GscWatchRow,
 } from "@/features/marketing/search-console/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function WatchlistTab({
   siteId,
@@ -318,6 +319,7 @@ export function WatchlistTab({
         <p className="max-w-lg text-center text-xs text-destructive">
           {error instanceof Error ? error.message : String(error)}
         </p>
+        <ErrorAlchemyMenu error={error.message} />
       </div>
     );
   }

@@ -15,6 +15,7 @@ import {
 } from "@/lib/extension-bridge/chrome-rpc";
 import { DEFAULT_PAYLOADS, RPC_ACTIONS, type RpcAction } from "./constants";
 import { JsonViewer } from "./JsonViewer";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Substrate = "direct" | "broadcast";
 
@@ -283,7 +284,7 @@ export function RpcTestPanel({
             className="font-mono text-xs"
           />
           {parseError && (
-            <p className="text-xs text-destructive">JSON error: {parseError}</p>
+            <p className="text-xs text-destructive">JSON error: {parseError} <ErrorAlchemyMenu error={parseError} /></p>
           )}
           {action === "callTool" &&
             capabilitiesCache &&

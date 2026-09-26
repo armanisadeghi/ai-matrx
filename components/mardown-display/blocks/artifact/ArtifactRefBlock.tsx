@@ -7,6 +7,7 @@ import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-r
 import { kindServerDataFromStoredValue } from "@/features/content-ir/react/kind-route";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import ArtifactBlock from "./ArtifactBlock";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const MermaidBlock = lazy(() => import("../mermaid/MermaidBlock"));
 
@@ -148,6 +149,7 @@ const ArtifactRefBlock: React.FC<ArtifactRefBlockProps> = ({
           <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />
           <span className="truncate">
             {serverData?.title || "Artifact"} — couldn't load saved artifact
+            <ErrorAlchemyMenu />
           </span>
         </div>
       </div>

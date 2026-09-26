@@ -22,6 +22,7 @@ import Link from "next/link";
 
 import type { TriggerFire } from "../types";
 import { formatInZone } from "./RecurrenceEditor";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function TriggerFireHistory({
   triggerId,
@@ -104,6 +105,7 @@ export function TriggerFireHistory({
               <AlertTriangle className="h-3 w-3" />
               Didn&apos;t start
               {fire.errorMessage ? `: ${fire.errorMessage}` : ""}
+              <ErrorAlchemyMenu />
             </span>
           ) : fire.runId ? (
             <>

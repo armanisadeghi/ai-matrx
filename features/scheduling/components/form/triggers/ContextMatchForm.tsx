@@ -5,6 +5,7 @@
 import { Info } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   value: { kind?: string; url_pattern?: string; hostname?: string };
@@ -70,7 +71,7 @@ export function ContextMatchForm({ value, onChange, error }: Props) {
           other fields via AND.
         </p>
       </div>
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu /></p>}
     </div>
   );
 }

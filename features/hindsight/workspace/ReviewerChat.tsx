@@ -34,6 +34,7 @@ import { discussFinding, discussReview, getReviewThread } from "../api";
 import type { Finding, Review } from "../types";
 import { ThreadMessageRow } from "../components/ThreadMessageRow";
 import { fmtCost, fmtDate, fmtElapsed } from "../components/tokens";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function Elapsed({ startedAt }: { startedAt: number }) {
   const [elapsed, setElapsed] = useState(0);
@@ -221,6 +222,7 @@ export function ReviewerChat({
         {failure && !send.isPending && (
           <div className="mb-2 rounded-md border border-red-500/40 bg-red-500/10 p-2 text-xs text-red-600 dark:text-red-400">
             {failure} Your message is still below — edit it and try again.
+            <ErrorAlchemyMenu error={failure} />
           </div>
         )}
 

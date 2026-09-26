@@ -19,6 +19,7 @@ import {
 import type { SurfaceWithStats } from "@/features/surfaces/services/surfaces.service";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { useSurfacesAdminSelection } from "../useSurfacesAdminSelection";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function splitSurfaceName(fullName: string): { client: string; local: string } {
   const idx = fullName.indexOf("/");
@@ -376,6 +377,7 @@ export function SurfacesListColumn({
         {error && (
           <div className="mx-4 my-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
         {status !== "loading" && groups.length === 0 && (

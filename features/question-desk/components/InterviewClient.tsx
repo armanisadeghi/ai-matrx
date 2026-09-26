@@ -69,6 +69,7 @@ import { AskTable } from "./AskTable";
 import { QuestionDeskRail } from "./QuestionDeskRail";
 import { QuestionScreen } from "./QuestionScreen";
 import { ReviewTriage } from "./ReviewTriage";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface InterviewClientProps {
   interviewId: string;
@@ -662,6 +663,7 @@ export function InterviewClient({
               database unless it holds an editor grant on this interview — switch
               accounts before answering.
             </span>
+            <ErrorAlchemyMenu />
           </p>
         ) : null}
 

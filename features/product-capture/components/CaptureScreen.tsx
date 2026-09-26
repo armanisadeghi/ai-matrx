@@ -80,6 +80,7 @@ import { InstantProcessSheet } from "./InstantProcessSheet";
 import { NotesPanel } from "./NotesPanel";
 import { VoiceNoteButton } from "./VoiceNoteButton";
 import { ItemsSheet } from "./ItemsSheet";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const QR_MODE_STORAGE_KEY = "product-capture:qr-auto";
 
@@ -552,6 +553,7 @@ export function CaptureScreen({
                       {session.errorCount} upload
                       {session.errorCount === 1 ? "" : "s"} failed — tap the red
                       thumbnail.
+                      <ErrorAlchemyMenu error={session.errorCount} />
                     </span>
                   )}
                 </p>

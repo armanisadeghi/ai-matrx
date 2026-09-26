@@ -47,6 +47,7 @@ import { cn } from "@/lib/utils";
 import { ENHANCE_LABELS } from "../../enhance";
 import type { ScanItem } from "../../types";
 import type { UseScanSessionResult } from "../../useScanSession";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface DesktopReviewProps {
   session: UseScanSessionResult;
@@ -200,6 +201,7 @@ export function DesktopReview({
           <p className="mt-2 text-xs text-destructive">
             {session.errorCount} upload{session.errorCount === 1 ? "" : "s"}{" "}
             failed — retry or remove them before saving.
+            <ErrorAlchemyMenu error={session.errorCount} />
           </p>
         )}
       </div>

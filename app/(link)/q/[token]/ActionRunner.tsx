@@ -35,6 +35,7 @@ import type {
   OneTimeCodeRender,
   PickTimeRender,
 } from "@/features/action-requests/service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** What the page hands to `/api/q/<token>`. `origin` is the ECHO of the site
  *  this page displayed — aidream compares it to the origin on the row. */
@@ -141,7 +142,7 @@ export function ActionRunner({
 
   const problem = refusal ? (
     <div className="flex flex-col gap-1">
-      <p className="text-sm text-destructive">{refusal.message}</p>
+      <p className="text-sm text-destructive">{refusal.message} <ErrorAlchemyMenu error={refusal.message} /></p>
       {refusal.remedy ? (
         <p className="text-sm text-muted-foreground">{refusal.remedy}</p>
       ) : null}

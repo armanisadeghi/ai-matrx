@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToastManager } from "@/hooks/useToastManager";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface DiffHistoryProps {
   noteId: string;
@@ -147,6 +148,7 @@ export function DiffHistory({
       <Card className={cn("p-6", className)}>
         <div className="text-center text-red-600 text-sm">
           Error loading versions: {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       </Card>
     );

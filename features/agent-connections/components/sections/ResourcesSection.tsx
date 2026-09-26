@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { SectionToolbar } from "../SectionToolbar";
 import { SectionFooter } from "../SectionFooter";
 import { useResources } from "../../hooks/useResources";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type ResourceItem = ReturnType<typeof useResources>["resources"][number];
 
@@ -75,6 +76,7 @@ export function ResourcesSection() {
         ) : error ? (
           <div className="px-4 py-10 text-center text-sm text-destructive">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center gap-2 px-8 py-12 text-center">

@@ -219,6 +219,7 @@ export function RecordAdminPanels({
           <p className="mb-2 text-xs text-muted-foreground">
             The agent&apos;s output contract could not be read, so the contract
             check below is incomplete.
+            <ErrorAlchemyMenu />
           </p>
         ) : null}
         <MandateDetailView

@@ -16,6 +16,7 @@ import { SettingAnchor } from "@/features/settings/doors/SettingAnchor";
 import { useVoiceSamplePlayer } from "@/features/podcasts/generator/useVoiceSamplePlayer";
 import { useVoices } from "@/features/podcasts/generator/useVoices";
 import type { Voice } from "@/features/podcasts/generator/voiceCatalog";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const PROVIDER_LABELS: Record<string, string> = {
   google: "Google Gemini",
@@ -87,6 +88,7 @@ export function VoiceLibrary() {
         {rendered.error && (
           <p className="py-1 text-xs text-destructive">
             The sample could not play: {rendered.error}
+            <ErrorAlchemyMenu error={rendered.error} />
           </p>
         )}
         {[...byProvider.entries()].map(([provider, list]) => (

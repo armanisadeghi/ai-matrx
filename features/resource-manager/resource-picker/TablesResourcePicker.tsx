@@ -32,6 +32,7 @@ import {
 import { getTableMetadata, getTablePage, listTablesEverywhere } from "@/features/data-tables/service";
 import { locateTable } from "@/features/data-tables/data-source/locate-table";
 import { isServiceFailure } from "@/features/data-tables/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Types
 type UserTable = UserTableListRow;
@@ -357,6 +358,7 @@ export function TablesResourcePicker({
         ) : error ? (
           <div className="text-xs text-destructive text-center py-8">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         ) : viewMode === "tables" ? (
           // Show tables list

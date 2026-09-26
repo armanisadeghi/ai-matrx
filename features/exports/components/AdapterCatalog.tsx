@@ -26,6 +26,7 @@ import { extractErrorMessage } from "@ai-matrx/data/net";
 import { cn } from "@/lib/utils";
 import { fetchExportAdapters } from "../api";
 import type { ExportAdapter, ExportAdapterCatalog } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function AdapterRow({ adapter }: { adapter: ExportAdapter }) {
   return (
@@ -98,6 +99,7 @@ export function AdapterCatalog({ className }: { className?: string }) {
             server decides what it is from the bytes.
           </span>
         </p>
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

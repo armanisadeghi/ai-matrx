@@ -28,6 +28,7 @@ import {
   useDataStores,
   useDocumentDataStores,
 } from "@/features/rag/hooks/useDataStores";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface DataStoreBindPanelProps {
   processedDocumentId: string;
@@ -130,6 +131,7 @@ export function DataStoreBindPanel({
       {error && (
         <div className="text-[10px] text-destructive border border-destructive/30 bg-destructive/10 rounded px-2 py-1.5">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 

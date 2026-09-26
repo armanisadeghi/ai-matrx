@@ -352,7 +352,7 @@ function RelatedChildList({
         >
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
           <span className="min-w-0">
-            <strong>These records could not be read.</strong> {state.message}
+            <strong>These records could not be read. <ErrorAlchemyMenu /></strong> {state.message}
             <Button
               size="sm"
               variant="outline"

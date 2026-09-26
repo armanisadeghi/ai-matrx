@@ -80,6 +80,7 @@ import { sampleInputsForMandate } from "./sample-inputs";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CompletedRun {
   result: MandateTestResponse;
@@ -875,6 +876,7 @@ export function TryItNowPanel({
           {result.error ? (
             <div className="whitespace-pre-wrap break-words text-sm text-destructive">
               {result.error}
+              <ErrorAlchemyMenu error={result.error} />
             </div>
           ) : (
             <>

@@ -8,6 +8,7 @@ import { Copy, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { fetchAuthenticatorCode } from "../../authenticator-service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function AuthenticatorCode({
   credentialItemId,
@@ -94,7 +95,7 @@ export function AuthenticatorCode({
   if (error) {
     return (
       <div className="flex min-h-11 items-center gap-2">
-        <p className="text-sm text-destructive">{error}</p>
+        <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
         <Button
           variant="ghost"
           size="sm"

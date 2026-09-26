@@ -102,6 +102,7 @@ import type {
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type InitPhase = "idle" | "connecting" | "running" | "failed";
 
@@ -1682,7 +1683,7 @@ function InitializeCard({
             </div>
           ) : null}
           {error ? (
-            <p className="mt-2 text-xs text-destructive">{error}</p>
+            <p className="mt-2 text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
           ) : null}
         </div>
         <Button

@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Loader2, RefreshCw, Play, Pause, Square } from "lucide-react";
 import { Emotion, EmotionName, EmotionLevel, VoiceSpeed, Language, ModelId, VoiceOptions } from "@/lib/cartesia/cartesia.types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const emotions: Emotion[] = ["anger", "sadness", "positivity", "curiosity", "surprise"];
 
@@ -237,7 +238,7 @@ export default function PlaygroundPage() {
                         </Button>
                     </div>
                 </div>
-                {error && <p className="text-red-500">{error.message}</p>}
+                {error && <p className="text-red-500">{error.message} <ErrorAlchemyMenu error={error.message} /></p>}
             </div>
 
             <motion.div

@@ -69,6 +69,7 @@ import {
   type FlagsApi,
 } from "./TurnDiagnosis";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ReviewWalkWindowProps {
   onClose: () => void;
@@ -606,6 +607,7 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
                   {typeof current.out.unit.error === "string"
                     ? current.out.unit.error
                     : JSON.stringify(current.out.unit.error)}
+                  <ErrorAlchemyMenu error={current.out.unit.error} />
                 </div>
               )}
 

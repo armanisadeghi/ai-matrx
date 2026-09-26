@@ -25,6 +25,7 @@ import { WhereItLives } from "@ai-matrx/records-ui";
 
 import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
 import * as doors from "./doors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function OrganizationScopeStrip({
   organizationName,
@@ -132,6 +133,7 @@ export function AllOrganizationsTables({ dataSource }: { dataSource: RecordsData
       <p className="text-xs text-muted-foreground">
         The tables across your organizations could not be read, so nothing is listed &mdash; this is not an answer
         about your access. {state.why}
+        <ErrorAlchemyMenu error={state.why} />
       </p>
     );
   }

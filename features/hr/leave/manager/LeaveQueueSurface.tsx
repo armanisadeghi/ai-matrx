@@ -88,6 +88,7 @@ import { LeaveDeskShell } from "./LeaveDeskShell";
 import { leaveQueueHref } from "./routes";
 import { useLeaveQueue, type LeaveQueueRow } from "./useLeaveQueue";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** THE VIEW LAW: every list declares its scope in words. */
 const SCOPES: { key: HrInboxScope; label: string; sentence: string }[] = [
@@ -472,6 +473,7 @@ export function LeaveQueueSurface() {
             <p className="text-xs text-amber-600 dark:text-amber-500">
               Some rows below could not load their leave details — the dates, hours and checks
               are not readable to you for those people. The decision itself still works.
+              <ErrorAlchemyMenu />
             </p>
           ) : null}
 

@@ -24,6 +24,7 @@ import {
   useVoiceRelaySession,
   VOICE_COMMUNICATOR_MANDATE_KEY,
 } from "./useVoiceRelaySession";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface VoiceRelayBarProps {
   /** The brain — the surface's primary agent. */
@@ -123,6 +124,7 @@ export function VoiceRelayBar(props: VoiceRelayBarProps) {
         // An unresolvable mandate REFUSES loudly — no fallback persona, ever.
         <span className="text-xs text-destructive">
           Voice is unavailable: {communicator.error ?? "no Communicator bound"}
+          <ErrorAlchemyMenu error={communicator.error} />
         </span>
       ) : (
         <ActiveVoiceRelay

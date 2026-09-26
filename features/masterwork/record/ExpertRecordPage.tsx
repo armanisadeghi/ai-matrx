@@ -60,6 +60,7 @@ import {
   corpusAgentPayload,
   corpusHuman,
 } from "./copy";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // The canonical message renderer is heavy and client-only — one front-door
 // dynamic for the whole surface (THE FRAGMENTATION LAW), not one per item.
@@ -386,6 +387,7 @@ export function ExpertRecordPage({
           {refusal.retryIsPointless
             ? refusal.text
             : `We couldn't load your words right now. Nothing is lost. ${refusal.text}`}
+          <ErrorAlchemyMenu error={refusal.text} />
         </p>
         {/* A retry the server has already refused is not offered. */}
         {refusal.retryIsPointless ? null : (

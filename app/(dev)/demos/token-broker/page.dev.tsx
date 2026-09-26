@@ -39,6 +39,7 @@ import {
   type TierPolicy,
 } from "@/lib/api/broker/types";
 import { extractErrorMessage } from "@/utils/errors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const TIER_POLICIES: TierPolicy[] = ["none", "guest", "mid"];
 
@@ -270,7 +271,7 @@ export default function TokenBrokerDemoPage() {
           </button>
         </div>
         {mintError && (
-          <p className="text-sm text-destructive">{mintError}</p>
+          <p className="text-sm text-destructive">{mintError} <ErrorAlchemyMenu error={mintError} /></p>
         )}
         {lastCredential && (
           <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm md:grid-cols-4">

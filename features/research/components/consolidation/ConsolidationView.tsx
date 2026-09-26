@@ -14,6 +14,7 @@ import { ContentActionBar } from '@/components/content-actions/ContentActionBar'
 import { StoppedEarlyNote } from '../shared/StoppedEarlyNote';
 import { ResearchUsedBy } from '../shared/ResearchUsedBy';
 import type { ResearchSynthesis, ResearchDataEvent } from '../../types';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ConsolidationViewProps {
     topicId: string;
@@ -192,6 +193,7 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
                         <div className="flex items-start gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-2.5 py-1.5 text-xs text-destructive">
                             <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                             {consolidation.error}
+                          <ErrorAlchemyMenu error={consolidation.error} />
                         </div>
                     ) : consolidation ? (
                         <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-2.5 py-2 text-xs text-amber-700 dark:text-amber-400">

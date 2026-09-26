@@ -58,6 +58,7 @@ import {
 } from "@/features/scopes/registry/entityRegistry";
 import { cn } from "@/lib/utils";
 import type { EntityTypeToken } from "@ai-matrx/associations";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const DELETABLE_TOKENS = new Set<string>(["file", "udt_document", "note"]);
 
@@ -313,6 +314,7 @@ export function WarRoomResourcesList({
           >
             Retry
           </button>
+          <ErrorAlchemyMenu error={adapter.error} />
         </div>
       )}
 

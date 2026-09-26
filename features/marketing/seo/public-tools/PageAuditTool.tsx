@@ -9,6 +9,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface PageAuditIssue {
   severity: "error" | "warning" | "info" | string;
@@ -98,7 +99,7 @@ export function PageAuditTool() {
                 : `${stage}…`}
             </p>
           ) : null}
-          {error ? <p className="text-xs text-destructive">{error}</p> : null}
+          {error ? <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p> : null}
         </CardContent>
       </Card>
 

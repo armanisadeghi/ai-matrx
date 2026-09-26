@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Loader2, Mail } from "lucide-react";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface EmailDialogWindowProps {
   isOpen: boolean;
@@ -132,7 +133,7 @@ function useEmailDialogForm({ onClose }: { onClose: () => void }) {
 function EmailDialogFooterLeft({ form }: { form: EmailDialogFormState }) {
   if (!form.error) return null;
   return (
-    <span className="text-destructive leading-snug">{form.error}</span>
+    <span className="text-destructive leading-snug">{form.error} <ErrorAlchemyMenu error={form.error} /></span>
   );
 }
 

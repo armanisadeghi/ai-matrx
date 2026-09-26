@@ -72,6 +72,7 @@ import {
 import { preflightGmailRecipients } from "./preflight";
 import { assessGmailRecipientIntegrity } from "./recipient-integrity";
 import type { GmailDraftedBy } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface GmailComposePanelProps {
   partyId: string;
@@ -386,6 +387,7 @@ export function GmailComposePanel({
       <div className="p-3 text-sm text-muted-foreground">
         <p className="text-foreground">
           This record could not be loaded, so there is nobody to write to.
+          <ErrorAlchemyMenu />
         </p>
         <p className="mt-1">{error}</p>
       </div>
@@ -579,6 +581,7 @@ export function GmailComposePanel({
         <p className="rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-2 text-xs text-foreground">
           The outbound checks could not be read, so this message is not offered
           for sending. Nothing has been sent — try again in a moment.
+          <ErrorAlchemyMenu />
         </p>
       ) : null}
       {verdict && !verdict.allowed ? (

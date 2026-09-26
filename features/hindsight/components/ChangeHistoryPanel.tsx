@@ -38,6 +38,7 @@ import type { ActorTier, ChangeHistoryRow, ChangeRole, UnitToken } from "../type
 import { versionFromIsInferred } from "../types";
 import { DoorLink } from "./DoorLink";
 import { fmtDate, KIND_COLOR, KIND_ICON, LEVER_LABEL } from "./tokens";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const PAGE_SIZE = 25;
 
@@ -173,6 +174,7 @@ export function ChangeHistoryPanel({
       {history.isError && (
         <p className="text-sm text-red-600 dark:text-red-400">
           Could not load change history: {(history.error as Error).message}
+          <ErrorAlchemyMenu />
         </p>
       )}
 

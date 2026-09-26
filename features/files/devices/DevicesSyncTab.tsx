@@ -30,6 +30,7 @@ import {
   owningOrganizationIds,
 } from "./components/SyncStorageMeters";
 import { useDevicesAndSync } from "./useDevicesAndSync";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function DevicesSyncTab() {
   const { devices, mappings, loading, error, liveStatus, refresh } =
@@ -112,6 +113,7 @@ export function DevicesSyncTab() {
             Your devices could not be read: {error}. Nothing has changed — try
             Refresh, and if it keeps failing the sync service is unreachable
             from this browser.
+            <ErrorAlchemyMenu error={error} />
           </SettingsCallout>
         ) : null}
 

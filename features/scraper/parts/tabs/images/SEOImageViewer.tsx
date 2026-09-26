@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "@ai-matrx/design-system";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SEOImageMetadata {
   url: string;
@@ -115,7 +116,7 @@ export function SEOImageViewer({
             <Skeleton className="w-full h-full absolute inset-0" />
           ) : imageError ? (
             <div className="text-center p-8">
-              <p className="text-muted-foreground">Image failed to load</p>
+              <p className="text-muted-foreground">Image failed to load <ErrorAlchemyMenu /></p>
               <p className="text-sm text-muted-foreground break-all mt-2">{currentImageUrl}</p>
             </div>
           ) : (

@@ -57,6 +57,7 @@ import {
   withAvailability,
 } from "@/features/context-menu-v3/utils/availability";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface MemberDisplayRow extends AdminOrganizationMembershipRow {
   email: string | null;
@@ -497,6 +498,7 @@ export function OrganizationsAdminClient() {
       {error ? (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : null}
 

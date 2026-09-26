@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { Image, Upload, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ImageUploadFieldProps {
   value?: string;
@@ -130,7 +131,7 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
       </div>
 
       {error && (
-        <p className="text-red-500 text-xs mt-1">{error.message}</p>
+        <p className="text-red-500 text-xs mt-1">{error.message} <ErrorAlchemyMenu /></p>
       )}
 
       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">

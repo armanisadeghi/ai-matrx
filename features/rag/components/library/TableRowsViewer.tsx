@@ -25,6 +25,7 @@ import {
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@/components/official/mobile-table/mobileTable";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface TableRowMeta {
   page_number?: number;
@@ -213,6 +214,7 @@ export function TableRowsViewer({
         {error ? (
           <p className="px-1 py-2 text-xs text-destructive">
             Couldn&apos;t load tables: {error}
+            <ErrorAlchemyMenu error={error} />
           </p>
         ) : loading && rows.length === 0 ? (
           <div className="flex items-center gap-2 px-1 py-6 text-xs text-muted-foreground">

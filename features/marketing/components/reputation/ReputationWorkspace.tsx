@@ -66,6 +66,7 @@ import { useMarketingSubView } from "@/features/marketing/lib/useMarketingSubVie
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { useReputationAnalysis } from "./useReputationAnalysis";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SURFACE = "matrx-user/marketing-reputation";
 
@@ -771,6 +772,7 @@ export function ReputationWorkspace({
               <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 {analysis.run.error}
+                <ErrorAlchemyMenu error={analysis.run.error} />
               </div>
             ) : null}
             <KpiBand data={data} />

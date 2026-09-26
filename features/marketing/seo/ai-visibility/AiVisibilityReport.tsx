@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useShare } from "@/features/sharing/hooks/useShare";
 import { isJsonObject } from "@/types/json";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface PublicVisibilityProvider {
   engine: string;
@@ -293,7 +294,7 @@ export function AiVisibilityReport({
               </summary>
               <div className="space-y-5 border-t border-border px-5 pb-5 pt-4">
                 {provider.error ? (
-                  <p className="text-sm text-destructive">{provider.error}</p>
+                  <p className="text-sm text-destructive">{provider.error} <ErrorAlchemyMenu error={provider.error} /></p>
                 ) : null}
                 <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>

@@ -78,6 +78,7 @@ import {
   stalenessTitle,
   type StepStaleness,
 } from "../lib/pipeline-staleness";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const EMPTY_STEPS: ReadonlyMap<string, never> = new Map<string, never>();
 
@@ -726,7 +727,7 @@ export function NodeStepRail({
         </p>
       ) : null}
       {stepRun.run.status === "error" && stepRun.run.error ? (
-        <p className="text-[11px] text-destructive">{stepRun.run.error}</p>
+        <p className="text-[11px] text-destructive">{stepRun.run.error} <ErrorAlchemyMenu error={stepRun.run.error} /></p>
       ) : null}
       {!anyRun && !tabMode ? (
         <p className="text-[11px] text-muted-foreground">

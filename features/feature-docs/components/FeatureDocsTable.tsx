@@ -33,6 +33,7 @@ import {
   buildPathFilterRules,
   matchesPathFilter,
 } from "@/features/feature-docs/utils/path-filter";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ColumnFilters {
   pathInclude: string;
@@ -233,6 +234,7 @@ export default function FeatureDocsTable({
       {error && (
         <div className="border-b border-border px-4 py-2 text-sm text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
       <MatrxDataTable<FeatureDocListRow>

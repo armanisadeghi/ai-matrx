@@ -18,6 +18,7 @@ import {
 } from "@/features/scopes/hooks/useContainerLinks";
 import type { MarketingPage } from "@/features/marketing/types";
 import { toast } from "@/lib/toast";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const VISUAL_FEEDBACK_KIND = "visual_feedback";
 
@@ -172,6 +173,7 @@ export function PageVisualFeedback({ page }: { page: MarketingPage }) {
       ) : feedback.links.status === "error" ? (
         <p className="mt-3 text-xs text-destructive">
           Could not load visual feedback: {feedback.links.error}
+          <ErrorAlchemyMenu error={feedback.links.error} />
         </p>
       ) : feedback.visualLinks.length === 0 ? (
         <p className="mt-3 text-xs text-muted-foreground">

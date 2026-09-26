@@ -23,6 +23,7 @@ import {
   type OrganizationArchiveState,
 } from "../service/organizationArchive";
 import type { Organization } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ArchivedOrganizationBannerProps {
   organization: Organization;
@@ -165,6 +166,7 @@ export function ArchivedOrganizationBanner({
                       className="text-sm text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-800 rounded p-3"
                     >
                       {refusal}
+                      <ErrorAlchemyMenu error={refusal} />
                     </p>
                   )}
                   <div className="space-y-2">

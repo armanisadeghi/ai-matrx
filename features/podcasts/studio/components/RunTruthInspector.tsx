@@ -35,6 +35,7 @@ import {
 import { supabase } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface RunTruthInspectorProps {
   /** The durable agent_run id (source of truth). */
@@ -204,6 +205,7 @@ function StageCard({ stage }: { stage: Row }) {
               <pre className="max-h-60 overflow-auto text-[11px] text-red-700 dark:text-red-300">
                 {pretty(stage.error)}
               </pre>
+              <ErrorAlchemyMenu />
             </div>
           )}
           <div className="flex items-center justify-between">

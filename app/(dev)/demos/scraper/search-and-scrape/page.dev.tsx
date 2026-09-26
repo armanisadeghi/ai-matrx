@@ -24,6 +24,7 @@ import {
   ScraperResult,
 } from "@/features/scraper/hooks/useScraperApi";
 import { ScrapedContentPretty } from "@/features/scraper/parts/ScrapedContentPretty";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -131,6 +132,7 @@ function SidebarItem({
           {scrapeState?.error && (
             <p className="text-xs text-destructive mt-1 text-center">
               {scrapeState.error}
+              <ErrorAlchemyMenu error={scrapeState.error} />
             </p>
           )}
         </div>

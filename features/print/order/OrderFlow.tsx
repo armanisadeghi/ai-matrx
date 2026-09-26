@@ -43,6 +43,7 @@ import {
   type PrintOrder,
 } from "./order-api";
 import type { LuluFetchState } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** A publicly fetchable PDF so the sandbox flow can be exercised end to end. */
 const SAMPLE_PDF = "https://assets.lulu.com/media/guides/en/lulu-book-creation-guide.pdf";
@@ -506,7 +507,7 @@ export function OrderFlow({
             </span>
           ) : null}
           {submitError ? (
-            <span className="text-xs text-destructive">{submitError}</span>
+            <span className="text-xs text-destructive">{submitError} <ErrorAlchemyMenu error={submitError} /></span>
           ) : null}
         </div>
       </div>

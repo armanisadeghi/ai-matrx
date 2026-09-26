@@ -22,6 +22,7 @@ import { supabase } from "@/utils/supabase/client";
 import type { Finding } from "../types";
 import { canRevert, RevertButton } from "../components/RevertButton";
 import { fmtDate } from "../components/tokens";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SHOWN = 8;
 
@@ -95,6 +96,7 @@ export function VersionLadder({
       {versions.isError && (
         <p className="text-xs text-muted-foreground">
           Could not load versions: {(versions.error as Error).message}
+          <ErrorAlchemyMenu />
         </p>
       )}
       {versions.data && versions.data.length === 0 && (

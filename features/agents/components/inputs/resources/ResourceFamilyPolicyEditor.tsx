@@ -24,6 +24,7 @@ import {
   setFamilyRepresentationEnabled,
   updateFamilyPromotion,
 } from "@/features/agents/components/inputs/resources/resource-family-policy";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ResourceFamilyPolicyEditorProps {
   fileId: string | null;
@@ -141,7 +142,7 @@ export function ResourceFamilyPolicyEditor({
         </div>
       ) : null}
       {family.error ? (
-        <p className="text-xs text-destructive">{family.error}</p>
+        <p className="text-xs text-destructive">{family.error} <ErrorAlchemyMenu error={family.error} /></p>
       ) : null}
 
       {family.data ? (

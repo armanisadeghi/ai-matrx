@@ -72,6 +72,7 @@ import {
   type GeneratedImageFile,
 } from "@/features/image-studio/api/python";
 import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "@/features/image-studio/constants/backend-capabilities";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -485,6 +486,7 @@ function LibraryTabContent({
       {state === "error" && errorMsg && (
         <p className="text-xs text-destructive flex items-center gap-1">
           <AlertCircle className="h-3 w-3 shrink-0" /> {errorMsg}
+          <ErrorAlchemyMenu error={errorMsg} />
         </p>
       )}
     </div>
@@ -591,6 +593,7 @@ function UrlTabContent({
       {state === "error" && errorMsg && (
         <p className="text-xs text-destructive flex items-center gap-1">
           <AlertCircle className="h-3 w-3 shrink-0" /> {errorMsg}
+          <ErrorAlchemyMenu error={errorMsg} />
         </p>
       )}
     </div>
@@ -797,6 +800,7 @@ function GenerateTabContent({
       {genState === "error" && errorMsg && (
         <p className="text-xs text-destructive flex items-center gap-1">
           <AlertCircle className="h-3 w-3 shrink-0" /> {errorMsg}
+          <ErrorAlchemyMenu error={errorMsg} />
         </p>
       )}
     </div>
@@ -1199,6 +1203,7 @@ export function ImageAssetUploader({
         {section.error && (
           <p className="text-xs text-destructive flex items-center gap-1">
             <AlertCircle className="h-3 w-3" /> {section.error}
+            <ErrorAlchemyMenu error={section.error} />
           </p>
         )}
       </div>
@@ -1271,6 +1276,7 @@ export function ImageAssetUploader({
       {section.error && (
         <p className="text-xs text-destructive flex items-center gap-1">
           <AlertCircle className="h-3 w-3" /> {section.error}
+          <ErrorAlchemyMenu error={section.error} />
         </p>
       )}
 

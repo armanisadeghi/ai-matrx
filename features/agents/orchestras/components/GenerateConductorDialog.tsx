@@ -26,6 +26,7 @@ import { Input } from "@ai-matrx/design-system";
 import { useCreateConductor } from "../conductor/useCreateConductor";
 import { accentClasses } from "./accents";
 import { DEFAULT_ORCHESTRA_ACCENT, ORCHESTRA_ACCENTS, type OrchestraAccent } from "../constants";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface GenerateConductorDialogProps {
   open: boolean;
@@ -126,7 +127,7 @@ export function GenerateConductorDialog({ open, onOpenChange }: GenerateConducto
             </div>
           </div>
 
-          {error && <p className="text-xs text-destructive">{error}</p>}
+          {error && <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu /></p>}
         </div>
 
         <DialogFooter>

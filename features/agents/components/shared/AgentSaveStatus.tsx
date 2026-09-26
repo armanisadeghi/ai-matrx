@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AgentSettingsModal } from "@/features/agents/components/settings-management/AgentSettingsModal";
 import { useAgentSaveAction } from "./useAgentSaveAction";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function AgentSaveStatus({
   agentId,
@@ -70,6 +71,7 @@ export function AgentSaveStatus({
           <>
             <span className="text-[10px] font-medium text-amber-500 px-1.5 py-0.5 rounded bg-amber-500/10">
               {isNewRoute ? "Not saved" : "Unsaved"}
+              <ErrorAlchemyMenu />
             </span>
             {!isNewRoute && (
               <button

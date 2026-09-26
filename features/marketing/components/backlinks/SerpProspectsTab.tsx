@@ -107,6 +107,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { humanizeBackendError } from "@/utils/errors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const BACKLINKS_SURFACE_NAME = "matrx-user/marketing-backlinks";
 const KEYWORD_EXPANDER_ROLE = "keyword_expander";
@@ -454,7 +455,7 @@ function ImportListDialog({
         </div>
 
         {state.status === "error" ? (
-          <p className="text-xs text-destructive">{state.error}</p>
+          <p className="text-xs text-destructive">{state.error} <ErrorAlchemyMenu error={state.error} /></p>
         ) : null}
 
         {previewed && state.preview ? (
@@ -812,6 +813,7 @@ function SerpSetupPanel({ prospects }: { prospects: SerpProspects }) {
         {prospects.volumesError ? (
           <p className="text-[11px] text-destructive">
             {prospects.volumesError}
+            <ErrorAlchemyMenu error={prospects.volumesError} />
           </p>
         ) : null}
         {prospects.keywords.length &&
@@ -866,12 +868,14 @@ function SerpSetupPanel({ prospects }: { prospects: SerpProspects }) {
         {prospects.previewError ? (
           <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive">
             {prospects.previewError}
+            <ErrorAlchemyMenu error={prospects.previewError} />
           </p>
         ) : null}
         <PreviewCard prospects={prospects} />
         {run.inputError ? (
           <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive">
             {run.inputError}
+            <ErrorAlchemyMenu error={run.inputError} />
           </p>
         ) : null}
         {run.status === "running" ? (
@@ -883,6 +887,7 @@ function SerpSetupPanel({ prospects }: { prospects: SerpProspects }) {
         {run.status === "error" && run.error ? (
           <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive">
             {humanizeBackendError(run.error)}
+            <ErrorAlchemyMenu />
           </p>
         ) : null}
         {run.status === "done" && run.receipt ? (
@@ -1211,6 +1216,7 @@ export function SerpProspectsTab({
         {prospects.brokenLinkRun.status === "error" ? (
           <span className="text-[11px] text-destructive">
             {prospects.brokenLinkRun.error}
+            <ErrorAlchemyMenu error={prospects.brokenLinkRun.error} />
           </span>
         ) : null}
       </div>

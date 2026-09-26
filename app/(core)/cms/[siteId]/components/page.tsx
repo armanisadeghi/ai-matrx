@@ -38,6 +38,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── Surface write-target input validation ──────────────────────────────
 // The writeback seam (`features/surfaces/runtime/surface-writeback.ts`)
@@ -333,6 +334,7 @@ export default function ComponentsPage() {
             <div className="text-sm text-destructive flex items-center gap-2 p-3 rounded-md bg-destructive/10">
               <AlertCircle className="h-4 w-4" />
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
 

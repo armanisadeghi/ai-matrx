@@ -35,6 +35,7 @@ import {
   StatusBadge,
 } from "./AuditTableShell";
 import ModelDetailSheet, { OpenDetailButton } from "./ModelDetailSheet";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CapabilitiesAuditTabProps {
   results: ModelAuditResult[];
@@ -172,7 +173,7 @@ function InlineCapabilitiesEditor({
           )}
           Save capabilities
         </Button>
-        {error && <span className="text-[10px] text-destructive">{error}</span>}
+        {error && <span className="text-[10px] text-destructive">{error} <ErrorAlchemyMenu error={error} /></span>}
         {requiredKeys.length > 0 && (
           <span className="text-[10px] text-muted-foreground">
             Required:{" "}

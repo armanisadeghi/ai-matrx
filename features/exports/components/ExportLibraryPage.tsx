@@ -38,6 +38,7 @@ import {
   SendToRulebookDialog,
   type PendingSend,
 } from "./SendToRulebookDialog";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The picked-yourself identity, per library, on this device. */
 function ownerOverrideKey(libraryId: string): string {
@@ -339,6 +340,7 @@ export function ExportLibraryPage({ libraryId }: { libraryId: string }) {
                 The summary of this export could not be read ({readError}). The
                 items below are a separate read and are real; only the
                 breakdown above them is missing.
+                <ErrorAlchemyMenu error={readError} />
               </span>
             </p>
           )}

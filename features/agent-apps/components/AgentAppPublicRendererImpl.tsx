@@ -45,6 +45,7 @@ import {
   AgentAppMarkdownStream,
   AgentAppStreamProvider,
 } from "@/features/agent-apps/components/shells/AgentAppMarkdownStreamBridge";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const HtmlPreviewModal = dynamic(
   () => import("@/features/html-pages/components/HtmlPreviewModal"),
@@ -716,6 +717,7 @@ function CustomComponentRenderer({
                     </p>
                     <p className="text-sm text-destructive/80">
                       {error.message}
+                      <ErrorAlchemyMenu error={error.message} />
                     </p>
                   </div>
                 </div>

@@ -16,6 +16,7 @@ import {
   importBookmarks,
 } from "../utils/json-path-navigation-util";
 import { Textarea } from "@/components/ui/textarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface PathBookmark {
   path: string;
@@ -78,7 +79,7 @@ const BookmarkViewer = ({ pageData }: { pageData: unknown }) => {
         );
       }
     } catch (e) {
-      return <div className="text-red-500">Error: {extractErrorMessage(e)}</div>;
+      return <div className="text-red-500">Error: {extractErrorMessage(e)} <ErrorAlchemyMenu /></div>;
     }
   };
 

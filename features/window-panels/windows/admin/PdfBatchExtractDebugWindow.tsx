@@ -27,6 +27,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { toast } from "@/lib/toast";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 // context-menu-exempt: entity — an in-memory Redux debug session (the raw NDJSON stream of one batch-extract call), not a persisted record
 
 function useCopyText(text: string) {
@@ -215,7 +216,7 @@ function ResponseBlock({ session }: { session: BatchExtractDebugSession }) {
           )}
         </div>
       )}
-      {session.error && <p className="text-destructive">{session.error}</p>}
+      {session.error && <p className="text-destructive">{session.error} <ErrorAlchemyMenu error={session.error} /></p>}
     </div>
   );
 }

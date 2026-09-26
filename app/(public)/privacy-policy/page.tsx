@@ -1,5 +1,6 @@
 import React from "react";
 import { siteConfig } from "@/config/extras/site";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const PrivacyPolicyPage = () => {
   return (
@@ -319,6 +320,7 @@ const PrivacyPolicyPage = () => {
           be saved as a CRM interaction with its subject, message identifiers,
           classification, and up to 20,000 characters of body text. Unmatched
           messages are not saved as CRM interactions.
+          <ErrorAlchemyMenu />
         </p>
         <p>
           Google Workspace content is used to provide the feature you request.

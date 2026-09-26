@@ -43,6 +43,7 @@ import {
   formatRelativeTime,
   formatTokens,
 } from "./format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface MemoryEventTimelineProps {
   conversationId: string;
@@ -241,6 +242,7 @@ function MemoryEventRow({ event }: { event: MemoryEventEntry }) {
           {event.error && (
             <div className="text-[11px] text-amber-600 dark:text-amber-400 font-mono whitespace-pre-wrap break-words">
               {event.error}
+              <ErrorAlchemyMenu error={event.error} />
             </div>
           )}
         </div>

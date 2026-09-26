@@ -29,6 +29,7 @@ import type {
   TargetKind,
 } from "@/features/education/convert/types";
 import type { ConvertOrigin } from "@/features/education/convert/ConvertContentDialog";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The recovered material, held so a second target costs no second re-read. */
 interface Recovered {
@@ -127,6 +128,7 @@ export function MakeMoreFromKit({
         <p className="flex w-full items-start gap-1.5 text-xs text-destructive">
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           {error}
+          <ErrorAlchemyMenu error={error} />
         </p>
       )}
 

@@ -31,6 +31,7 @@ import {
   selectConversationMessages,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { useLiveRunStatus } from "./useLiveRunStatus";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const selectNoConversationMessages = () => EMPTY_CONVERSATION_MESSAGES;
 
@@ -122,7 +123,7 @@ export function LiveRunDisplay({
     return (
       <div className={cn("h-full min-h-0", className)}>
         {errorMessage ? (
-          <p className="pb-2 text-xs text-destructive">{errorMessage}</p>
+          <p className="pb-2 text-xs text-destructive">{errorMessage} <ErrorAlchemyMenu error={errorMessage} /></p>
         ) : null}
         {!requestId && !errorMessage ? (
           // A bound run with no stream handle yet is still a run: say so.
@@ -199,7 +200,7 @@ export function LiveRunDisplay({
         ) : null}
       </div>
       {errorMessage ? (
-        <p className="px-2.5 py-2 text-xs text-destructive">{errorMessage}</p>
+        <p className="px-2.5 py-2 text-xs text-destructive">{errorMessage} <ErrorAlchemyMenu error={errorMessage} /></p>
       ) : null}
       {requestId ? (
         <div

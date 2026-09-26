@@ -30,6 +30,7 @@ import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/Surface
 
 import { fetchBatchSavings } from "./service";
 import type { BatchSavingsRow, BatchSavingsSummary } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface BatchSavingsPanelProps {
   from: Date | null;
@@ -209,6 +210,7 @@ export function BatchSavingsPanel({
       {error ? (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
           The batch savings read failed — no batch numbers are shown. {error.message}
+          <ErrorAlchemyMenu />
         </div>
       ) : !data ? (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">

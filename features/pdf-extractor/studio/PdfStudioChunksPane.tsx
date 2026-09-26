@@ -36,6 +36,7 @@ import {
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { fetchChunksForPage } from "../state/thunks";
 import type { ApiChunkRow } from "../state/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface PdfStudioChunksPaneProps {
   docId: string;
@@ -318,6 +319,7 @@ function ErrorState({
         <span className="text-xs font-medium">
           Couldn't load {RAG_VOCAB.segmentsShort.toLowerCase()}
         </span>
+        <ErrorAlchemyMenu />
       </div>
       {error && (
         <p className="text-[11px] text-muted-foreground leading-snug">

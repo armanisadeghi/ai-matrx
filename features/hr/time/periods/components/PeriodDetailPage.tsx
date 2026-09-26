@@ -36,6 +36,7 @@ import { WorkflowHealthPanel } from "./WorkflowHealthPanel";
 import { useMockCase } from "./PayPeriodsPage";
 import { PeriodStatePanel } from "./PeriodStatePanel";
 import { PostLockAdjustments } from "./PostLockAdjustments";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Re-exported from the pure module so existing importers keep working. The DEFINITION lives in
@@ -89,6 +90,7 @@ export function PeriodDetailPage({ payPeriodId }: { payPeriodId: string }) {
         {failure ? (
           <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] text-destructive">
             {failure.userMessage}
+            <ErrorAlchemyMenu error={failure.userMessage} />
           </p>
         ) : null}
 

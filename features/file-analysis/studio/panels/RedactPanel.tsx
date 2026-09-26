@@ -19,6 +19,7 @@ import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
 import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type { RepeatedRegionsReport } from "@/features/pdf-extractor/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   fileId: string;
@@ -251,7 +252,7 @@ function RepeatedRegionsRedactSection({ fileId }: { fileId: string }) {
         ))}
 
       {error ? (
-        <p className="text-[10px] text-destructive leading-snug">{error}</p>
+        <p className="text-[10px] text-destructive leading-snug">{error} <ErrorAlchemyMenu error={error} /></p>
       ) : null}
     </div>
   );

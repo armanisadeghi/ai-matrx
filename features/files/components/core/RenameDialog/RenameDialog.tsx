@@ -41,6 +41,7 @@ import {
   selectFileById,
   selectFolderById,
 } from "@/features/files/redux/selectors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type RenameKind = "file" | "folder";
 
@@ -384,7 +385,7 @@ export function RenameDialog({
           will change.
         </p>
       ) : null}
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {error ? <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p> : null}
     </>
   );
 

@@ -17,6 +17,7 @@ import {
 import { Play, Copy, Check, AlertCircle, Loader2 } from "lucide-react";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { Textarea } from "@/components/ui/textarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SqlFunctionTesterProps {
   func: SqlFunction;
@@ -362,6 +363,7 @@ function ResultDisplay({ result }: { result: ExecuteResult }) {
               </p>
               <p className="text-xs text-red-700 dark:text-red-300 font-mono whitespace-pre-wrap">
                 {error}
+                <ErrorAlchemyMenu error={error} />
               </p>
             </div>
           </div>

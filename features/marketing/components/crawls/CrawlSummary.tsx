@@ -33,6 +33,7 @@ import {
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function CrawlSummary({ crawlId }: { crawlId: string }) {
   const { site, brandId } = useMarketingSite();
@@ -310,6 +311,7 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
             {row.error ? (
               <p className="border-t border-border bg-destructive/5 p-3 text-xs text-destructive">
                 {humanizeBackendError(row.error)}
+                <ErrorAlchemyMenu />
               </p>
             ) : null}
           </div>

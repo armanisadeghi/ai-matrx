@@ -82,6 +82,7 @@ import { CampaignPerformancePanel } from "../../analytics/CampaignPerformancePan
 import { SingleSendDialog } from "./SingleSendDialog";
 import { listSendingIdentities } from "../../sending-identities/service";
 import type { SendingIdentityView } from "../../sending-identities/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const PAGE_SIZE = 50;
 
@@ -854,6 +855,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
         {error && (
           <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
       </div>

@@ -44,6 +44,7 @@ import {
   listSurfaceOptions,
   type SurfaceOption,
 } from "@/features/surfaces/services/surfaces.service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Module-level cache — the surface catalog (~100 rows) changes rarely, so we
 // fetch it once per session instead of on every panel open.
@@ -163,6 +164,7 @@ export function SurfaceSimulatorSelect({
               {error && (
                 <div className="py-4 text-center text-xs text-destructive">
                   {error}
+                  <ErrorAlchemyMenu error={error} />
                 </div>
               )}
               {!loading && !error && (

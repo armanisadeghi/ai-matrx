@@ -85,6 +85,7 @@ import {
   ensureOrganizationContext,
   isOrganizationSelectionCancelled,
 } from "@/lib/organization/organization-gate";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface MessageTemplateManagerProps {
   className?: string;
@@ -1189,6 +1190,7 @@ export function MessageTemplateManager({
                             {processError && (
                               <div className="p-2 rounded bg-destructive/10 border border-destructive/20 text-xs text-destructive">
                                 {processError}
+                                <ErrorAlchemyMenu error={processError} />
                               </div>
                             )}
                             {!isProcessing &&

@@ -92,6 +92,7 @@ import type {
 } from "@/types/python-generated/stream-events";
 import { useApiTestConfig } from "@/components/api-test-config/useApiTestConfig";
 import { isJsonObject } from "@/types/json";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Narrow an unknown error-response body (FastAPI-style `{detail}` or `{message}`) without `any`.
 function extractApiErrorMessage(body: unknown, fallback: string): string {
@@ -1749,6 +1750,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                             {processError && (
                               <div className="p-2 rounded bg-destructive/10 border border-destructive/20 text-xs text-destructive">
                                 {processError}
+                                <ErrorAlchemyMenu error={processError} />
                               </div>
                             )}
                             {!isProcessing &&

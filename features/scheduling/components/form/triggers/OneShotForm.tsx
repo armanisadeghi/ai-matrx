@@ -4,6 +4,7 @@
 
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   value: { at?: string };
@@ -22,7 +23,7 @@ export function OneShotForm({ value, onChange, error }: Props) {
         onChange={(e) => onChange({ at: fromLocalInput(e.target.value) })}
         className="max-w-xs"
       />
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu /></p>}
       <p className="text-xs text-muted-foreground">
         Task auto-disables after this fires.
       </p>

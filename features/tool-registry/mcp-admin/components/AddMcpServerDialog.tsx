@@ -29,6 +29,7 @@ import {
   type ProvisionMcpServerResult,
 } from "@/features/tool-registry/mcp-admin/services/mcpAdmin.service";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The authored half of the identity step. It lives in `McpServersAdminPage`
@@ -218,6 +219,7 @@ export function AddMcpServerDialog({
                   {" "}— but the refresh hit an error:{" "}
                   <code className="bg-destructive/10 text-destructive px-1 rounded">
                     {refreshError}
+                    <ErrorAlchemyMenu error={refreshError} />
                   </code>
                 </>
               )}

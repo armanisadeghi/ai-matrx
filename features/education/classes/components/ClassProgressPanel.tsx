@@ -30,6 +30,7 @@ import type {
   AssignmentProgress,
   ClassProgressStudent,
 } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function ClassProgressPanel({ classId }: { classId: string }) {
   const { overview, loading, error, reload } = useClassProgressOverview(classId);
@@ -81,7 +82,7 @@ export function ClassProgressPanel({ classId }: { classId: string }) {
       {loading ? (
         <Skeleton className="h-32 w-full" />
       ) : error ? (
-        <p className="text-xs text-destructive">{error}</p>
+        <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
       ) : assignments.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           Assign a deck or quiz above to start tracking who has completed what.

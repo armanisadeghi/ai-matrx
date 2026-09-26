@@ -17,6 +17,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { USERS_ADMIN_LOCATION } from "../constants";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface EntitlementRow {
   capability: string;
@@ -199,6 +200,7 @@ export function EntitlementsTableClient() {
       {error ? (
         <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-600 dark:text-amber-400">
           Usage rollup unavailable: {error} (registry still shown.)
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : null}
       <div className="min-h-0 flex-1">

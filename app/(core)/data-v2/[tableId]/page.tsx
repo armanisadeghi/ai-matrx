@@ -60,6 +60,7 @@ import { tablePageCapture } from "@/components/agent-copy/page-capture/pageCaptu
 import { PageCaptureButton } from "@/components/agent-copy/page-capture/PageCaptureButton";
 import { useTableCaptureContribution } from "@/features/unified-data/page-capture/useTableCaptureContribution";
 import { shownViewSelection, type ShownViewLike } from "@/features/unified-data/page-capture/shownViewCapture";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * THE PAGE'S HEADER — the app's standard one (lane TABLE-PAGE-CHROME, owner 2026-09-25: "Align with
@@ -752,7 +753,7 @@ export default function UnifiedDataTableRoute({
           />
         ) : object.state === "unavailable" ? (
           <div className="flex flex-col items-start gap-2 rounded-md border border-dashed p-6">
-            <p className="text-sm font-medium">We could not find out where this table is</p>
+            <p className="text-sm font-medium">We could not find out where this table is <ErrorAlchemyMenu /></p>
             <p className="max-w-prose text-xs text-muted-foreground">
               The record store did not answer, so nothing was opened. This is not an answer about
               your access. {object.why}

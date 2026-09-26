@@ -13,6 +13,7 @@ import {
 } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // =============================================================================
 // Shared settings panel used by both the sidebar and widget-invoker testers.
@@ -463,6 +464,7 @@ export function TesterSettingsPanel({
       {c.jsonError && (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 px-1.5 py-1 text-[10.5px] text-destructive leading-tight">
           {c.jsonError}
+          <ErrorAlchemyMenu />
         </div>
       )}
     </div>

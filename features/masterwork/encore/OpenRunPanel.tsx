@@ -35,6 +35,7 @@ import KindInstanceRender from "@/features/content-ir/studio/components/KindInst
 import { MASTERWORK_RESULT_KIND } from "@/features/content-ir/kinds/masterwork-result";
 import { formatRelativeTime } from "@/utils/datetime";
 import type { EncoreRun, EncoreRunResultRead } from "./service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface OpenRunState {
   runId: string;
@@ -132,6 +133,7 @@ export function OpenRunPanel({
             That usually means it belongs to a different workspace than the one
             you have selected, or your access to it changed since it ran. Pick
             the workspace it was run in, or run this one again below.
+            <ErrorAlchemyMenu />
           </p>
         ) : (
           <p className="text-xs text-muted-foreground">

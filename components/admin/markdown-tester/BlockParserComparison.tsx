@@ -34,6 +34,7 @@ import {
   type DiffReport,
 } from "./utils/diff-blocks";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const CURRENT_INPUT = "__current__";
 
@@ -401,6 +402,7 @@ export function BlockParserComparison({
       {error && (
         <div className="flex-shrink-0 p-2 rounded bg-destructive/10 border border-destructive/20 text-xs text-destructive">
           {error}
+          <ErrorAlchemyMenu />
         </div>
       )}
 

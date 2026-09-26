@@ -29,6 +29,7 @@ import { KeyRound, Loader2, ShieldCheck } from "lucide-react";
 
 import { recordCaptureOutcome, submitCredentialCapture } from "../service";
 import type { CredentialCaptureRequest } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface CredentialCaptureCardProps {
   runId: string;
@@ -198,7 +199,7 @@ export function CredentialCaptureCard({
         </p>
       ) : null}
       {error ? (
-        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+        <p className="text-xs text-red-600 dark:text-red-400">{error} <ErrorAlchemyMenu error={error} /></p>
       ) : null}
 
       <div className="flex items-center justify-end gap-2">

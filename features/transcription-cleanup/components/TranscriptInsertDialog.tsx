@@ -26,6 +26,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type TranscriptInsertTarget = "start" | "end";
 
@@ -92,7 +93,7 @@ export function TranscriptInsertDialog({
         )}
         aria-invalid={!!error}
       />
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p> : null}
       <button type="submit" className="hidden" tabIndex={-1} aria-hidden />
     </form>
   );

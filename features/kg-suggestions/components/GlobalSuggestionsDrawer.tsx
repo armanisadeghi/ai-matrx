@@ -37,6 +37,7 @@ import type {
   KgGlobalFilter,
   KgSuggestionRow,
 } from "@/features/kg-suggestions/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface GlobalSuggestionsDrawerProps {
   isOpen: boolean;
@@ -126,6 +127,7 @@ export function GlobalSuggestionsDrawer({
         {status === "error" ? (
           <div className="text-sm text-destructive">
             Couldn&apos;t load suggestions{error ? `: ${error}` : "."}
+            <ErrorAlchemyMenu />
           </div>
         ) : null}
 

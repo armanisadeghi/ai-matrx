@@ -49,6 +49,7 @@ import type {
   PageIntentState,
 } from "../../types";
 import { hasAnyPageFilter } from "./pageRows";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Radix `Select` cannot hold an empty string as a value, so "no filter" needs a
@@ -223,6 +224,7 @@ export function PagesFilterBar({
                     {topicHits.error instanceof Error
                       ? topicHits.error.message
                       : "The topic search refused."}
+                    <ErrorAlchemyMenu error={topicHits.error.message} />
                   </div>
                 ) : topicHits.isPending ? (
                   <div className="p-2 text-xs text-muted-foreground">
@@ -305,6 +307,7 @@ export function PagesFilterBar({
                   {regionValues.error instanceof Error
                     ? regionValues.error.message
                     : "The region values could not be read."}
+                  <ErrorAlchemyMenu error={regionValues.error.message} />
                 </p>
               ) : (regionValues.data ?? []).length === 0 ? (
                 <p className="text-xs text-muted-foreground">

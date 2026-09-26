@@ -25,6 +25,7 @@ import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { invitationSignUpHref } from "@/utils/auth/invitation-links";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function AcceptClassInvitationPage() {
   const params = useParams();
@@ -170,6 +171,7 @@ export default function AcceptClassInvitationPage() {
             <p className="mb-6 text-sm text-muted-foreground">
               {error ??
                 "We couldn't open this invitation. Check the link, or ask your teacher to send a new one."}
+              <ErrorAlchemyMenu error={error} />
             </p>
             <Button
               variant="outline"

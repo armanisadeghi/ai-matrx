@@ -35,6 +35,7 @@ import {
 } from "./attachable-resources";
 import { useAttachResourcePicker } from "./useAttachResourcePicker";
 import { useConversationAttachments } from "./useConversationAttachments";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface AttachableConnectionSummary {
   slug: string;
@@ -86,6 +87,7 @@ export function AttachedResourcesSection({
           >
             Try again
           </button>
+          <ErrorAlchemyMenu error={attachments.error} />
         </p>
       )}
 
@@ -93,6 +95,7 @@ export function AttachedResourcesSection({
         <p className="mb-1.5 flex items-start gap-1 text-[11px] leading-tight text-destructive">
           <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
           {attachments.writeError}
+          <ErrorAlchemyMenu error={attachments.writeError} />
         </p>
       )}
 

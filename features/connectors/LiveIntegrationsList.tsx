@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { ConnectorMark } from "./ConnectorMark";
 import { useLiveConnectors } from "./useLiveConnectors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The canonical, live-only integrations directory used by the chat window. */
 export function LiveIntegrationsList() {
@@ -63,6 +64,7 @@ export function LiveIntegrationsList() {
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
           <p className="text-sm font-medium">
             Integrations could not be loaded
+            <ErrorAlchemyMenu />
           </p>
           <p className="max-w-sm text-sm text-muted-foreground">{error}</p>
           <Button

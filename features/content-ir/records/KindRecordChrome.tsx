@@ -64,6 +64,7 @@ import {
   subscribeToKindRecordChanges,
   type KindRecord,
 } from "./kind-record-service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * True when the host should draw the strip at all. Exported so the host can ask
@@ -339,6 +340,7 @@ export function KindRecordChrome({
           <span className="text-muted-foreground">
             {state.message ??
               `Your ${disposition.labelPlural} could not be read.`}
+            <ErrorAlchemyMenu />
           </span>
           <button
             type="button"
@@ -445,6 +447,7 @@ export function KindRecordChrome({
                 This block&apos;s data could not be read, so there is nothing to
                 save from it. Open the message&apos;s raw view to see what
                 arrived.
+                <ErrorAlchemyMenu />
               </span>
               <Link
                 href={tableHref}

@@ -58,6 +58,7 @@ import {
   type PortalShareAccepted,
   type PortalSharePeek,
 } from "@/features/portals/portalInviteService";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function AcceptPortalInvitationPage() {
   const params = useParams();
@@ -217,7 +218,7 @@ export default function AcceptPortalInvitationPage() {
         <h2 className="mb-2 text-xl font-semibold">{peek.offer}</h2>
         <p className="mb-4 text-sm text-muted-foreground">{peek.say}</p>
         {offer(peek)}
-        {error ? <p className="mb-4 text-sm text-destructive">{error}</p> : null}
+        {error ? <p className="mb-4 text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p> : null}
         <Button onClick={() => void open()} disabled={working}>
           {working ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

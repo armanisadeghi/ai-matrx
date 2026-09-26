@@ -27,6 +27,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { FOLDER_CATEGORIES } from "../constants/folderCategories";
 import { cn } from "@/lib/utils";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CreateFolderDialogProps {
   open: boolean;
@@ -135,6 +136,7 @@ export function CreateFolderDialog({
         {error ? (
           <p id="note-folder-name-error" className="text-sm text-destructive">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </p>
         ) : null}
       </div>

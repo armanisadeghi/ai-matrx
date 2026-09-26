@@ -53,6 +53,7 @@ import { formatStampedTimeWithZone, pluralize } from "../shared/format";
 import { RefusalNotice } from "../shared/RefusalNotice";
 import { PUNCH_KIND_LABELS } from "../shared/vocabulary";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** §4.1: *"Reason is required and cannot be a single character."* */
 const MIN_REASON_LENGTH = 2;
@@ -241,6 +242,7 @@ export function PunchCorrectionDialog({
                 {reasonsError ? (
                   <p className="text-xs text-destructive">
                     The list of reasons could not be loaded, so this correction cannot be filed yet.
+                    <ErrorAlchemyMenu />
                   </p>
                 ) : (
                   <select

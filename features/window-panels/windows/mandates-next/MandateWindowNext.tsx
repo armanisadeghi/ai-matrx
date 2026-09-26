@@ -54,6 +54,7 @@ import { MandateStatusBadge } from "@/features/mandates/status/MandateStatusBadg
 import { MandateStatusControl } from "@/features/mandates/status/MandateStatusControl";
 import { mandateStatusOfRow } from "@/features/mandates/status/mandate-status";
 import { seatCanManageMandate } from "@/features/mandates/status/can-manage";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface MandateWindowNextProps {
   isOpen?: boolean;
@@ -292,6 +293,7 @@ function MandateWindowNextInner({
             >
               Retry
             </Button>
+            <ErrorAlchemyMenu />
           </div>
         ) : null}
         {!rows && !loadFailed ? (

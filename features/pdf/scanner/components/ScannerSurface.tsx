@@ -40,6 +40,7 @@ import { CropSheet, type CropEnhance } from "./CropSheet";
 import { ProcessingView } from "./ProcessingView";
 import { ReviewList } from "./ReviewList";
 import { SaveSheet } from "./SaveSheet";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function ScannerSurface() {
   const router = useRouter();
@@ -181,6 +182,7 @@ export default function ScannerSurface() {
             <p className="pb-1 text-center text-[11px] text-destructive">
               {session.errorCount} upload{session.errorCount === 1 ? "" : "s"}{" "}
               failed — tap a failed tile to retry, or remove it.
+              <ErrorAlchemyMenu error={session.errorCount} />
             </p>
           )}
           <div className="flex items-center gap-2 pb-2">

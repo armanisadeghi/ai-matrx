@@ -17,6 +17,7 @@ import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { toast } from "@/lib/toast";
 import { syncManifests } from "@/features/surfaces/services/surfaces.service";
 import { countDriftIssues } from "@/features/surfaces/utils/drift-report-count";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type SyncResult = Awaited<ReturnType<typeof syncManifests>>;
 
@@ -266,6 +267,7 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
         {error && (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-xs text-destructive">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
 

@@ -24,6 +24,7 @@ import { LiveAudioPlayer } from "@/features/podcasts/generator/components/LiveAu
 import { studyMediaService } from "@/features/education/media/service";
 import { useAudioStudyRunPersistence } from "@/features/education/media/audio/useAudioStudyRunPersistence";
 import type { StudyMediaRow } from "@/features/education/media/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function KitAudioRunner({
   artifactId,
@@ -54,6 +55,7 @@ export function KitAudioRunner({
       <p className="flex items-center gap-1.5 text-xs text-destructive">
         <AlertCircle className="h-3.5 w-3.5 shrink-0" />
         {loadError}
+        <ErrorAlchemyMenu error={loadError} />
       </p>
     );
   }
@@ -131,6 +133,7 @@ function LiveKitAudio({
         >
           open it to retry
         </Link>
+        <ErrorAlchemyMenu error={state.error} />
       </p>
     );
   }

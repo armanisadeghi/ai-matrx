@@ -93,6 +93,7 @@ import { useAllPlanProfiles, usePlanSiteStats } from "../data/hooks";
 import { planSiteStatusMix, planSiteSummary } from "../format";
 import type { PlanSiteStats } from "../data/service";
 import { useContentPlanSites } from "./ContentPlanHeader";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Bump `version` when a column is added/removed (lib/list-views backfill contract). */
 const SURFACE_PREFS: Partial<ListViewPrefs> = {
@@ -790,6 +791,7 @@ export function PlanSitesList({
     return (
       <div className="p-6 text-sm text-destructive">
         Could not load sites: {extractErrorMessage(sites.error)}
+        <ErrorAlchemyMenu />
       </div>
     );
   }
@@ -797,6 +799,7 @@ export function PlanSitesList({
     return (
       <div className="p-6 text-sm text-destructive">
         Could not load plan stats: {extractErrorMessage(stats.error)}
+        <ErrorAlchemyMenu />
       </div>
     );
   }

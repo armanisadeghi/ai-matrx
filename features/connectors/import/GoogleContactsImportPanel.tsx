@@ -66,6 +66,7 @@ import type {
   ContactImportOutcomePending,
   ContactSearchResultPending,
 } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface GoogleContactsImportPanelProps {
   organizationId: string | null;
@@ -655,6 +656,7 @@ export function GoogleContactsImportPanel({
                 <p className="mt-1 flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400">
                   <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   {refusal(outcome)}
+                  <ErrorAlchemyMenu />
                 </p>
               ) : null}
             </li>
@@ -707,6 +709,7 @@ export function GoogleContactsImportPanel({
           <p className="flex items-start gap-2 border-b border-border bg-destructive/10 px-4 py-2 text-xs text-destructive">
             <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             {error}
+            <ErrorAlchemyMenu error={error} />
           </p>
         ) : null}
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
@@ -956,6 +959,7 @@ export function GoogleContactsImportPanel({
         <p className="flex items-start gap-2 border-b border-border bg-destructive/10 px-4 py-2 text-xs text-destructive">
           <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           {error}
+          <ErrorAlchemyMenu error={error} />
         </p>
       ) : null}
       {/* THE FOURTH STATE. One posture, both import panels
@@ -999,6 +1003,7 @@ export function GoogleContactsImportPanel({
           We could not find this contact in the first{" "}
           {unfilteredSearch?.total_read ?? "the"} read — search for it by
           name below.
+          <ErrorAlchemyMenu />
         </p>
       ) : requestedStillLooking ? (
         /* 🚨 NEVER SILENT WHILE THE PROOF IS STILL PENDING (Bugbot on

@@ -49,6 +49,7 @@ import {
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { extractErrorMessage } from "@/utils/errors";
 import { Textarea } from "@/components/ui/textarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type RunStatus =
   | "idle"
@@ -611,6 +612,7 @@ export function NewCrawlWorkspace() {
             {visibleError ? (
               <p className="shrink-0 border-t border-border bg-destructive/5 px-3 py-2 text-xs text-destructive">
                 {visibleError}
+                <ErrorAlchemyMenu error={visibleError} />
               </p>
             ) : null}
           </section>

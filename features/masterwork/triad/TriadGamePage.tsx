@@ -83,6 +83,7 @@ import {
 } from "../sitting/sitting";
 import { dealTriads, ingestTriadAnswer, TRIAD_GENERATOR_MANDATE } from "./service";
 import { MODE_COPY, type Triad, type TriadDeck, type TriadMode } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Per-card save state. `idle` is a card not answered yet. */
 type SaveState =
@@ -424,6 +425,7 @@ export function TriadGamePage({
           <p className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-400">
             <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
             {dealError}
+            <ErrorAlchemyMenu error={dealError} />
           </p>
         ) : null}
 
@@ -522,6 +524,7 @@ export function TriadGamePage({
         {dealError ? (
           <p className="text-center text-sm text-amber-700 dark:text-amber-400">
             {dealError}
+            <ErrorAlchemyMenu error={dealError} />
           </p>
         ) : null}
       </div>

@@ -38,6 +38,7 @@ import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 import { extractJsonFromText } from "@/features/agents/utils/json-extraction";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------------------------------------------------------------------------
 // Minimal normalization helpers (inlined from features/prompts/utils so this
@@ -311,6 +312,7 @@ export function FullPromptOptimizer({
                           The full AI response is displayed below. You can copy
                           it and manually extract the JSON if needed.
                         </span>
+                        <ErrorAlchemyMenu error={extractionError} />
                       </div>
                     </div>
                   )}

@@ -16,6 +16,7 @@ import { contentLength } from "@/features/scraper/utils/scraper-floating-helpers
 import type { ScraperResult } from "@/features/scraper/hooks/useScraperApi";
 import { cn } from "@/lib/utils";
 import { InlineMediaRef } from "@ai-matrx/media/react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type ScrapedDetailTabId = "pretty" | "overview" | "text" | "raw";
 
@@ -260,6 +261,7 @@ function ScrapedEmptyState({
           <AlertCircle className="w-10 h-10 mb-2 text-destructive/40" />
           <p className="text-xs font-medium text-destructive/70 max-w-[200px] text-center leading-snug">
             {errorMessage}
+            <ErrorAlchemyMenu error={errorMessage} />
           </p>
         </>
       ) : isBusy ? (

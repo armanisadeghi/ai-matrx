@@ -31,6 +31,7 @@ import {
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@/components/official/mobile-table/mobileTable";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface VersionHistoryTimelineProps {
   agentId: string;
@@ -91,6 +92,7 @@ export function VersionHistoryTimeline({
               {failureReason ? `: ${failureReason}` : "."} Retrying loads the
               ones that are readable.
             </span>
+            <ErrorAlchemyMenu />
           </div>
         )}
         <Button

@@ -36,6 +36,7 @@ import {
   AdminUserAcquisitionRowSchema,
 } from "../types";
 import { pushAppHref } from "@/lib/deployment/navigate";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Timeframe = "7d" | "30d" | "90d" | "all";
 
@@ -635,6 +636,7 @@ export function UserAcquisitionTableClient() {
       {error ? (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : null}
       {focusUser ? (
@@ -811,6 +813,7 @@ export function UserAcquisitionTableClient() {
             {journeyError ? (
               <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
                 {journeyError}
+                <ErrorAlchemyMenu error={journeyError} />
               </div>
             ) : null}
             {journey ? (

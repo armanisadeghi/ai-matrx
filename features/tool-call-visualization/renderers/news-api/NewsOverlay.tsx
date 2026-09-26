@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { getArg, resultAsObject } from "../_shared";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface NewsArticle {
     source: { id: string | null; name: string };
@@ -81,6 +82,7 @@ export const NewsOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
             <div className="flex flex-col items-center justify-center py-16 gap-3 text-destructive">
                 <AlertCircle className="w-10 h-10 opacity-60" />
                 <p className="text-sm">Failed to fetch news articles.</p>
+              <ErrorAlchemyMenu />
             </div>
         );
     }

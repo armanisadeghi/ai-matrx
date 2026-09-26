@@ -66,6 +66,7 @@ import {
 import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import { levelVocabularyHref } from "@/features/marketing/seo/value-system/reason-links";
 import type { ValueSummaryRow } from "@/features/marketing/seo/value-system/types";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 /**
  * C6 — ONE LEVEL ROW: `seo.gsc_perf_value_summary` returns a row per
@@ -173,10 +174,8 @@ function num(value: number | null | undefined): string {
 
 function ErrorPanel({ error }: { error: unknown }) {
   return (
-    <div className="flex h-full items-center justify-center rounded-md border border-destructive/40 bg-destructive/5 p-4">
-      <p className="max-w-lg text-center text-xs text-destructive">
-        {error instanceof Error ? error.message : String(error)}
-      </p>
+    <div className="flex h-full items-center justify-center p-4">
+      <ErrorNotice className="max-w-lg" error={error} operation="Load Search Console traffic quality" />
     </div>
   );
 }

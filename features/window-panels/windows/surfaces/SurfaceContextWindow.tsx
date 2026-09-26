@@ -27,6 +27,7 @@ import { listLiveWriteTargets } from "@/features/surfaces/runtime/surface-writeb
 import type { ResolvedSurfaceValue } from "@/features/surfaces/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface SurfaceContextWindowProps {
   isOpen: boolean;
@@ -733,6 +734,7 @@ export default function SurfaceContextWindow({
       {live.error && (
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 rounded-md border border-destructive/30 bg-background px-3 py-2 text-xs text-destructive shadow-lg">
           {live.error}
+          <ErrorAlchemyMenu error={live.error} />
         </div>
       )}
     </WindowPanel>

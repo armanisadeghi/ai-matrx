@@ -24,6 +24,7 @@ import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorC
 import { useSkills } from "../hooks/useSkills";
 import { useSkillCategories } from "../hooks/useSkillCategories";
 import type { SkillRow } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type ScopeFilter = "all" | "system" | "public" | "personal";
 
@@ -192,6 +193,7 @@ export function SkillsBrowser({
         ) : error ? (
           <div className="px-4 py-10 text-center text-sm text-destructive">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         ) : filtered.length === 0 ? (
           <div className="px-4 py-10 text-center text-sm text-muted-foreground">

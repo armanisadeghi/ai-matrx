@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/lib/toast";
 import { fetchWorkflowPeek, type WorkflowPeek } from "../service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** One in-flight read per workflow, shared by the peek body and the copy menu. */
 function useWorkflowPeek(workflowId: string, active: boolean) {
@@ -104,6 +105,7 @@ export function WorkflowSneakPeekContent({
       <p className="flex items-start gap-1.5 py-4 text-xs text-destructive">
         <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         {error ?? "This workflow could not be read."}
+        <ErrorAlchemyMenu error={error} />
       </p>
     );
   }

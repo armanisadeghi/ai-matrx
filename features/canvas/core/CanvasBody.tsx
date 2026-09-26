@@ -37,6 +37,7 @@ import {
   hasArtifactRenderer,
 } from "@/features/canvas/artifact-types/artifact-renderers";
 import { isJsonObject, type JsonValue } from "@/types/json";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Blocks that are NOT handled by the unified renderer (code_preview /
 // code_edit_error are NON_PERSISTABLE and have no artifact renderer).
@@ -236,6 +237,7 @@ function PersistedArtifactCanvasBody({
           <div>
             <p className="text-sm font-medium text-foreground">
               Couldn't load the saved artifact
+              <ErrorAlchemyMenu />
             </p>
             <p className="mt-1 text-xs">
               The Canvas kept its identity, but the saved content was not

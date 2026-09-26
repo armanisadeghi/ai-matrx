@@ -18,6 +18,7 @@ import {
   listExecutorsWithStats,
   type ExecutorWithStats,
 } from "@/features/tool-registry/executor-surfaces/services/executor-surfaces.service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type KindFilter = "all" | "mcp" | "non-mcp";
 
@@ -152,6 +153,7 @@ export function ExecutorSurfacesContainer() {
         <div className="mx-3 mt-2 rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-xs text-destructive flex items-center gap-2">
           <AlertCircle className="h-3.5 w-3.5" />
           {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 

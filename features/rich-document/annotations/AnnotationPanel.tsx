@@ -46,6 +46,7 @@ import { MentionComposer } from "./MentionComposer";
 import { LinkRecordSheet } from "./LinkRecordSheet";
 import { tokenizeMentions } from "./mentions";
 import type { ResolvedItem } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Filter = "all" | "comments" | "suggestions" | "highlights" | "links";
 
@@ -441,6 +442,7 @@ function ReplyRow({
                 }}>Replace theirs with mine</Button>
                 <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => { setConflict(null); setEditing(false); }}>Keep theirs</Button>
               </div>
+              <ErrorAlchemyMenu />
             </div>
           )}
         </>
@@ -510,6 +512,7 @@ function ThreadActions({
           Keep theirs
         </Button>
       </div>
+      <ErrorAlchemyMenu />
     </div>
   );
 

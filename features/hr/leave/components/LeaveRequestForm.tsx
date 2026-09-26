@@ -512,7 +512,7 @@ export function LeaveRequestForm({
         </div>
 
         {previewRefusal ? (
-          <p className="text-sm text-destructive">{previewRefusal}</p>
+          <p className="text-sm text-destructive">{previewRefusal} <ErrorAlchemyMenu error={previewRefusal} /></p>
         ) : null}
 
         {!shownPreview && !previewRefusal ? (

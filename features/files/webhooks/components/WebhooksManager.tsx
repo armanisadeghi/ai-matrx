@@ -60,6 +60,7 @@ import {
   type Webhook,
   type WebhookDelivery,
 } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function SecretReveal({ secret }: { secret: string }) {
   const [copied, setCopied] = useState(false);
@@ -274,6 +275,7 @@ function WebhookCard({
             {webhook.consecutive_failures > 0 && (
               <span className="text-red-500">
                 {webhook.consecutive_failures} consecutive failures
+                <ErrorAlchemyMenu error={webhook.consecutive_failures} />
               </span>
             )}
           </div>

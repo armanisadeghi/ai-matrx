@@ -71,6 +71,7 @@ import {
   INTAKE_INSTANT_ANALYSIS_MANDATE_KEY,
   useInstantIntakeAnalysis,
 } from "../hooks/useInstantIntakeAnalysis";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const INSTANT_MANDATE_REFS = [
   {
@@ -468,6 +469,7 @@ export function IntakeCaptureScreenV3({
                     {session.errorCount > 0 && (
                       <span className="text-red-400">
                         {session.errorCount} failed — tap the red thumbnail.
+                        <ErrorAlchemyMenu error={session.errorCount} />
                       </span>
                     )}
                   </span>

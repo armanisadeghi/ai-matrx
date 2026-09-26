@@ -38,6 +38,7 @@ import type {
   SourceVariationKind,
 } from "@/features/page-extraction/types";
 import type { ActivePageRun } from "@/features/page-extraction/redux/pageExtractionSlice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ChunkCardProps {
   chunk: ChunkPreviewItem;
@@ -214,6 +215,7 @@ export function ChunkCard({ chunk, pageRun, onJumpToPage }: ChunkCardProps) {
           </Section>
         )}
       </div>
+      <ErrorAlchemyMenu error={pageRun?.error} />
     </div>
   );
 }

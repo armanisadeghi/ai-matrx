@@ -12,6 +12,7 @@ import {
 } from "../actions";
 import type { DeckSuggestionRow } from "../types";
 import { guardedSave } from "@/lib/save/guardedSave";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The deck owner's inbox of suggest-edits on their decks. Accept/decline
  *  routes through the owner-gated RPC. */
@@ -52,7 +53,7 @@ export function OwnerSuggestionInbox() {
   };
 
   if (error) {
-    return <p className="text-sm text-destructive">Failed to load: {error}</p>;
+    return <p className="text-sm text-destructive">Failed to load: {error} <ErrorAlchemyMenu error={error} /></p>;
   }
   if (rows === null) {
     return (

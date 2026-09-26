@@ -73,6 +73,7 @@ import {
   type SubOrgScopeKind,
 } from "./scopeRows";
 import { useUniversalSettings } from "./UniversalSettingsContext";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** "Table" → "table"; used inside sentences, never as a heading. */
 function nounWord(kind: SubOrgScopeKind): string {
@@ -241,7 +242,7 @@ function ScopeRowPicker({
           // The door's own sentence. An empty list here would say "there are
           // none", which is a different — and false — statement.
           <div className="space-y-2 p-3 text-xs">
-            <p className="text-destructive">{error}</p>
+            <p className="text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
             <Button
               type="button"
               size="sm"

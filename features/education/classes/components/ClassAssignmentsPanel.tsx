@@ -17,6 +17,7 @@ import { useClassAssignments } from "../hooks/useClassAssignments";
 import { AssignResourceSheet } from "./AssignResourceSheet";
 import { DueDateLabel } from "./assignmentDisplay";
 import type { AssignableToken } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function ClassAssignmentsPanel({
   classId,
@@ -73,7 +74,7 @@ export function ClassAssignmentsPanel({
           <Skeleton className="h-12 w-full" />
         </div>
       ) : assignments.error ? (
-        <p className="text-xs text-destructive">{assignments.error}</p>
+        <p className="text-xs text-destructive">{assignments.error} <ErrorAlchemyMenu error={assignments.error} /></p>
       ) : assignments.assignments.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-8 text-center">
           <p className="text-sm text-muted-foreground">

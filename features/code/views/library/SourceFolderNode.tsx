@@ -22,6 +22,7 @@ import type { LibrarySourceAdapter } from "../../library-sources/types";
 import { useLibrarySource } from "../../hooks/useLibrarySource";
 import { useOpenSourceEntry } from "../../hooks/useOpenSourceEntry";
 import { SourceEntryNode } from "./SourceEntryNode";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SourceFolderNodeProps {
   adapter: LibrarySourceAdapter;
@@ -247,7 +248,7 @@ export const SourceFolderNode: React.FC<SourceFolderNodeProps> = ({
               className="flex flex-col gap-1 text-[11px]"
               style={{ paddingLeft: 8 + (depth + 1) * 12 }}
             >
-              <span className="text-red-500">Failed to load</span>
+              <span className="text-red-500">Failed to load <ErrorAlchemyMenu /></span>
               <span className="text-neutral-500">{error}</span>
               <button
                 type="button"

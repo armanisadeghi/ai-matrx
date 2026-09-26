@@ -172,6 +172,7 @@ import { useHolderInputs } from "./useHolderInputs";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { RequestAccess } from "@/features/access-gate/components/RequestAccess";
 import { bindingAccessTarget } from "./access-target";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * THE MAPPER'S NOUNS ON A MANDATE SCREEN. The mechanic is the surface bind
@@ -2555,6 +2556,7 @@ function BindingDraft({
                 {storedDraft.droppedSources.length === 1
                   ? "1 stored source of this binding could not be read, and is not shown below."
                   : `${storedDraft.droppedSources.length} stored sources of this binding could not be read, and are not shown below.`}
+                <ErrorAlchemyMenu />
               </p>
               <ul className="mt-1 space-y-0.5 pl-5">
                 {storedDraft.droppedSources.map((line) => (

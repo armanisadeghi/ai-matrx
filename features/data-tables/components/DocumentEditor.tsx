@@ -68,6 +68,7 @@ import { DocumentHistoryViewer } from "./DocumentHistoryViewer";
 import { DocumentPageReferenceCopyButton } from "./DocumentPageReferenceCopyButton";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 type SaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
 
 type Props = {
@@ -591,6 +592,7 @@ export default function DocumentEditor({
           {bootState === "load_error" && (
             <span className="text-destructive">
               Load failed: {loadError ?? "unknown"}
+              <ErrorAlchemyMenu error={loadError} />
             </span>
           )}
           {bootState === "ready" && (

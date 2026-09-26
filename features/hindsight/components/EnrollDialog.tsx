@@ -41,6 +41,7 @@ import { enroll, listToolSubjects } from "../api";
 import type { EnrollRequest, SubjectKind } from "../types";
 import { ENROLLABLE_KINDS, KIND_LABEL } from "./tokens";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type WindowMode = NonNullable<EnrollRequest["window_mode"]>;
 type LensVisibility = NonNullable<EnrollRequest["lens_visibility"]>;
@@ -440,6 +441,7 @@ export function EnrollDialog({
                 {rows.isError && (
                   <p className="p-3 text-sm text-red-600 dark:text-red-400">
                     Could not load {subjectNoun}s: {(rows.error as Error).message}
+                    <ErrorAlchemyMenu />
                   </p>
                 )}
                 {rows.data?.length === 0 && (
@@ -477,6 +479,7 @@ export function EnrollDialog({
                 {workflowNodes.isError && (
                   <p className="p-3 text-sm text-red-600 dark:text-red-400">
                     Could not load steps: {(workflowNodes.error as Error).message}
+                    <ErrorAlchemyMenu />
                   </p>
                 )}
                 {workflowNodes.data?.length === 0 && (
@@ -512,6 +515,7 @@ export function EnrollDialog({
                 {tools.isError && (
                   <p className="p-3 text-sm text-red-600 dark:text-red-400">
                     Could not load tools: {(tools.error as Error).message}
+                    <ErrorAlchemyMenu />
                   </p>
                 )}
                 {(tools.data ?? []).slice(0, 60).map((t) => (

@@ -16,6 +16,7 @@ import { ScraperSurfaceMount } from "@/features/scraper/agent-context/ScraperSur
 // `scrape_command` write handler use, so an agent can never stage a URL this
 // page's own Scrape buttons would reject.
 import { normalizeUrl } from "@/features/scraper/utils/scraper-floating-helpers";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const MODES = [
   {
@@ -223,6 +224,7 @@ export default function Page() {
             <div className="mt-1 max-w-5xl mx-auto text-center">
               <p className="text-xs text-destructive">
                 {error || hookScrapeError}
+                <ErrorAlchemyMenu error={error} />
               </p>
               <ScraperHookErrorDetails diagnostics={errorDiagnostics} />
             </div>
@@ -272,6 +274,7 @@ export default function Page() {
             <div className="mt-2 text-center w-full">
               <p className="text-xs text-destructive">
                 {error || hookScrapeError}
+                <ErrorAlchemyMenu error={error} />
               </p>
               <ScraperHookErrorDetails diagnostics={errorDiagnostics} />
             </div>

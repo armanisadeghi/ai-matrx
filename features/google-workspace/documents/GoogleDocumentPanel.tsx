@@ -48,6 +48,7 @@ import {
 } from "./service";
 import { announceDocumentRefreshed, subscribeToDocumentRefresh } from "./refreshBus";
 import type { GoogleDocumentRow } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * 🚨 N12 — THE DOOR TO GOOGLE IS DERIVED FROM THE FILE ID WHEN THE ROW HAS NO URL.
@@ -609,6 +610,7 @@ export function GoogleDocumentPanel({ initialRow }: { initialRow: GoogleDocument
       {refreshError ? (
         <p className="text-xs text-destructive" data-google-document-refresh-error>
           {refreshError}
+          <ErrorAlchemyMenu error={refreshError} />
         </p>
       ) : null}
       {status === "detached" ? (

@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const STRATEGY_INTERVIEW_PATH = "/seo/sites/strategy-interview";
 
@@ -108,7 +109,7 @@ export function SiteStrategyCard({
           </p>
         ) : null}
         {command.error ? (
-          <p className="text-[11px] text-destructive">{command.error}</p>
+          <p className="text-[11px] text-destructive">{command.error} <ErrorAlchemyMenu error={command.error} /></p>
         ) : null}
         {result ? (
           <div className="grid gap-2 rounded-md border border-border bg-muted/30 p-3">

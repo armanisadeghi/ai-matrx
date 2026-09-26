@@ -158,6 +158,7 @@ export function TakeoverCanvas({
             {visibleError ? (
               <div className="absolute inset-x-3 bottom-3 z-20 rounded-md bg-destructive px-3 py-2 text-sm text-destructive-foreground shadow">
                 {visibleError}
+                <ErrorAlchemyMenu error={visibleError} />
               </div>
             ) : null}
           </>

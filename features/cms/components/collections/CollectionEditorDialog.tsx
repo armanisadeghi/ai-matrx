@@ -53,6 +53,7 @@ import {
 } from "lucide-react";
 import { recordToast } from "@/lib/toast";
 import { parseOrderSpec } from "@/features/cms/collections/ordering";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const FIELD_TYPES: { value: CollectionFieldType; label: string }[] = [
   { value: "text", label: "Text" },
@@ -741,6 +742,7 @@ export function CollectionEditorDialog({
             <div className="text-sm text-destructive flex items-center gap-2 p-3 rounded-md bg-destructive/10">
               <AlertCircle className="h-4 w-4 shrink-0" />
               {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
         </div>

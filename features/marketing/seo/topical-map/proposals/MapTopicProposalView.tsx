@@ -174,6 +174,7 @@ export function MapTopicProposalView({
             {" — shown at the top level: "}
             {orphans.map((n) => `${n.name} (under "${n.parent_slug}")`).join(", ")}.
           </span>
+          <ErrorAlchemyMenu />
         </p>
       ) : null}
 

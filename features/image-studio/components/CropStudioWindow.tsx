@@ -44,6 +44,7 @@ import {
   type CropStudioEntry,
   type CropStudioEntryStatus,
 } from "./useCropStudioController";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── Public surface ──────────────────────────────────────────────────────────
 
@@ -309,7 +310,7 @@ function StatusLabel({ entry }: { entry: CropStudioEntry }) {
   if (entry.status === "saved") return <>Saved to cloud</>;
   if (entry.status === "error") {
     return (
-      <span className="text-destructive">{entry.errorMessage ?? "Failed"}</span>
+      <span className="text-destructive">{entry.errorMessage ?? "Failed"} <ErrorAlchemyMenu error={entry.errorMessage} /></span>
     );
   }
   if (entry.cropIsModified) return <>Cropped · ready to save</>;
