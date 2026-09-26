@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-26T09:26:00.381Z",
+  "generated_at": "2026-09-26T11:11:26.117Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -2173,6 +2173,12 @@
       "filename": "gridmanual_a_hand_ordered_view_opens_in_its_layout.sql",
       "checksum": "c613bd6cef9508492ae9d38c4b64136b608366c8169ebf18c79d774fcabe0642",
       "applied_at": "2026-09-25 06:23:47.467413+00"
+    },
+    "migrations/campaign/gridmerge_a_retired_columns_provenance_never_blocks_a_write.sql": {
+      "source": "matrx-frontend",
+      "filename": "gridmerge_a_retired_columns_provenance_never_blocks_a_write.sql",
+      "checksum": "91abfc5db02a7c19f599836d44b7e007aa2ed8fec14cba2afe7ebbce5991a1f3",
+      "applied_at": "2026-09-26 11:11:25.222046+00"
     },
     "migrations/campaign/gridmerge_a_view_keeps_its_column_order.sql": {
       "source": "matrx-frontend",
