@@ -826,9 +826,10 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
   }, [job, router]);
 
   const jumpToSource = useCallback(() => {
-    if (!job?.processed_document_id) return;
+    const docId = job?.processed_document_id;
+    if (!docId) return;
     startTransition(() =>
-      router.push(`/tools/pdf-extractor?doc=${encodeURIComponent(job.processed_document_id)}`),
+      router.push(`/tools/pdf-extractor?doc=${encodeURIComponent(docId)}`),
     );
   }, [job, router]);
 

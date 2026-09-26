@@ -32,7 +32,7 @@ import { executionRejectionMeta, type ExecutionRejectionMeta } from "@/lib/diagn
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { UserOverrides } from "@/features/agents/types/request.types";
 
 import { generateRequestId } from "../utils/ids";
@@ -226,7 +226,8 @@ export const resumeInstance = createAsyncThunk<
       // person just approved, and the launch-time snapshot would tell the
       // agent the change never landed (found live 2026-09-26, ARE-010). Re-
       // read the live screen first; a failure keeps the cached tier, loudly.
-      await dispatch(refreshSurfaceScope({ conversationId }))
+      // This thunk's generics carry no typed dispatch; the store's is the real one.
+      await (dispatch as AppDispatch)(refreshSurfaceScope({ conversationId }))
         .unwrap()
         .catch((error: unknown) =>
           console.error(
