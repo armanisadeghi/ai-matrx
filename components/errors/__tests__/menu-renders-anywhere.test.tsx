@@ -38,3 +38,12 @@ it("takes one line-height of width in the text flow, not its 32px tap target (ne
   expect(cls).toEqual(expect.arrayContaining(["w-[1lh]", "h-[1lh]", "justify-center", "overflow-visible"]));
   await act(async () => root.unmount());
 });
+
+it("ErrorNotice puts its menu on the sentence's line, never in a column beside the ⋯ that narrows the text", async () => {
+  // Server markup: before any placement effect runs, the menu is written INSIDE
+  // the sentence paragraph (a 375px card grew 176→224px with it in a column).
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const { ErrorNotice } = await import("@/components/errors/ErrorNotice");
+  const html = renderToStaticMarkup(<ErrorNotice title="We could not check your organization" message="Something went wrong." />);
+  expect(html).toMatch(/Something went wrong\.(?:<!-- -->)?<span hidden="" data-error-alchemy-anchor=""><\/span><span data-error-alchemy-menu/);
+});

@@ -151,11 +151,14 @@ export function ErrorNotice({
           )}
           <p className={cn("break-words text-foreground", title && "mt-0.5")}>
             {sentence}
+            {/* The menu rides the sentence's last line — never a column of its
+                own that narrows every line (a 375px card grew 176→224px with
+                it beside the ⋯, RC-B12 layout rule). */}
+            <ErrorAlchemyMenu input={input} size="xs" />
           </p>
           {children}
           {actions && <div className="mt-1 flex flex-wrap gap-1">{actions}</div>}
         </div>
-        <ErrorAlchemyMenu input={input} size={compact ? "xs" : "icon"} />
         <OpenOneMenuButton source={source} className={compact ? "h-6 w-6" : undefined} />
       </div>
     </div>
