@@ -119,8 +119,17 @@ export async function getDocument(
     .select("*")
     .eq("id", documentId)
     .is("deleted_at", null)
-    .single();
+    .maybeSingle();
   if (error) return { success: false, error: error.message };
+  if (!data) {
+    // A trashed or unreachable document is a state the person can act on,
+    // never PostgREST's "Cannot coerce the result to a single JSON object".
+    return {
+      success: false,
+      error:
+        "This document is in the trash or you no longer have access to it. Restore it from Trash, or ask its owner to share it again.",
+    };
+  }
   return { success: true, data: data as DocumentRow };
 }
 
