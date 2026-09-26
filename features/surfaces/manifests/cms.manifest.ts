@@ -248,6 +248,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const cmsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/cms",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "CMS hub — list of owned websites + entry to standalone published pages",
   readiness: "verified",
   label: "CMS",
   urlPattern: "/cms",

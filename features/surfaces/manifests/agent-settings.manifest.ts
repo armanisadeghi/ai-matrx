@@ -414,6 +414,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const agentSettingsManifest: SurfaceManifest = {
   surfaceName: AGENT_SETTINGS_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Per-agent configuration UI",
   readiness: "verified",
   overlayId: "agentSettingsWindow",
   label: "Agent Settings",

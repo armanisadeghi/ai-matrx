@@ -244,6 +244,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const marketingRanksManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-ranks",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "verified",
   label: "Marketing Rank Tracking",
   urlPattern: "/marketing/[brandId]/seo/[siteId]/rankings",

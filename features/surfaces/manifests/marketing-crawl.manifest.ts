@@ -247,6 +247,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const marketingCrawlManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-crawl",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "One frozen crawl session — summary, URLs, logs, snapshots, links, technical reports.",
   readiness: "verified",
   label: "Marketing Crawl Session",
   urlPattern: "/marketing/[brandId]/websites/[siteId]/crawls/[crawlId]",

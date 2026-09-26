@@ -313,6 +313,10 @@ export const IMAGES_SURFACE_NAME = "matrx-user/images";
 
 export const imagesManifest: SurfaceManifest = {
   surfaceName: IMAGES_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "partial",
   readinessNote:
     "Completeness audit done against CloudImagesTab; registered, route-mapped, and DB-synced. Write targets (search_query / recents_only / image_selection) are live and verified against a real agent run. Remaining gaps: no `data-surface-value` anchors on tiles, and no live non-matching-name binding test.",

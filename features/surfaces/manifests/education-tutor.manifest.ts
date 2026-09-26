@@ -414,6 +414,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const educationTutorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-tutor",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   requiresBeforeExecute: true,
   readiness: "partial",
   readinessNote:

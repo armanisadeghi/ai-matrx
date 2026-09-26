@@ -177,6 +177,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const contentPlanEntitiesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/content-plan-entities",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "E-E-A-T entity manager of the content plan: the people, sources, media, and orgs behind the site's content.",
   label: "Content Plan Entities",
   readiness: "partial",
   readinessNote:

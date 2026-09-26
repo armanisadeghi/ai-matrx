@@ -328,6 +328,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const marketingFindingsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-findings",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Durable finding lifecycle register and finding detail for one site.",
   readiness: "verified",
   label: "Marketing Findings Register",
   urlPattern: "/marketing/[brandId]/seo/[siteId]/findings",

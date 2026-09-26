@@ -248,6 +248,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const adminEmailManifest: SurfaceManifest = {
   surfaceName: ADMIN_EMAIL_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "Email configuration",
   readiness: "verified",
   label: "Email Users",
   urlPattern: "/administration/users/email",

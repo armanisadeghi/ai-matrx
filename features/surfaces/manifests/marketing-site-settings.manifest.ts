@@ -187,6 +187,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const marketingSiteSettingsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-site-settings",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Settings page of one managed website: identity, lifecycle, default crawl policy, and the health of every data source feeding the site.",
   readiness: "verified",
   label: "Marketing Site Settings",
   urlPattern: "/marketing/[brandId]/websites/[siteId]/settings",

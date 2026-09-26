@@ -139,6 +139,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const marketingSiteMediaManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-site-media",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Site media command center — crawled inventory, brand library, research images, AI generation orders, media standards.",
   label: "Site Media Workspace",
   urlPattern: "/marketing/[brandId]/websites/[siteId]/media",
   inheritsFrom: "matrx-user/marketing-site",

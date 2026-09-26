@@ -227,6 +227,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const feedbackManifest: SurfaceManifest = {
   surfaceName: FEEDBACK_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Feedback / bug report submission",
   readiness: "partial",
   readinessNote:
     "Emitter wired on FeedbackWindow (type, description, attachment count, submission state and admin routing all live) and the write half (feedback_draft) is registered and live-verified against a real agent run; the window's route and username lines are shown to the user but not yet declared as values",

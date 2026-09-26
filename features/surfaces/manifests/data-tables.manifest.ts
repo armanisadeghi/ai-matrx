@@ -396,6 +396,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const dataTablesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/data-tables",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Tables and spreadsheet views",
   readiness: "partial",
   readinessNote:
     "Emitter + write handlers live on the /data/[id] mount (UserTableViewer, gated by emitSurfaceScope); the grid mounts the v3 right-click menu (cell / row / column sections) and Locate anchors for its rendered controls, headers, selected rows/cells, and selection state. full_table_json deliberately has no Locate target: it can be emitted after a background fetch, but the grid renders only the current page and must not claim otherwise. This remains partial until the complete live binding and surface-certification checks run. The /data LIST route emits nothing by design because it has no authored table state.",

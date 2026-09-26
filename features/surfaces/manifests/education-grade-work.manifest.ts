@@ -219,6 +219,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const educationGradeWorkManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-grade-work",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Photograph handwritten work and have it graded step-by-step (/education/grade-work).",
   readiness: "partial",
   readinessNote:
     "Manifest + emitter shipped for everything the grade-work flow holds. Not yet stamped verified: the DB sync, a live non-matching-name binding test, and the Matrx-vs-matrix context check have not been run; no agent roles are declared (the vision grader resolves via ASSESSMENT_AGENTS.gradeHandwritten, not a surface role); and no `data-surface-value` Locate anchors are tagged.",

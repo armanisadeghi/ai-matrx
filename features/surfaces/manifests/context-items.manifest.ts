@@ -222,6 +222,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const contextItemsManifest: SurfaceManifest = {
   surfaceName: CONTEXT_ITEMS_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "verified",
   readinessNote:
     "Manifest, emitter and write targets live-verified on /context-items with a bound agent (apply + decline + refusal + validation error). Per-section item loads stay lazy, so the catalog values — and the write targets that depend on them — cover only the scope types fetched so far.",

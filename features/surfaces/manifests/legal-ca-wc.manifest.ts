@@ -285,6 +285,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const legalCaWcManifest: SurfaceManifest = {
   surfaceName: "matrx-user/legal-ca-wc",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "California workers-compensation cases, PD ratings calculator, and utilities.",
   readiness: "partial",
   readinessNote:
     "The Present Value utility now emits its declared inputs and results. The Weeks, Life Expectancy, and AWC utility calculators still need their own declared values and emitters, followed by live surface verification.",

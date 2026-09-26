@@ -155,6 +155,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const visionInterviewManifest: SurfaceManifest = {
   surfaceName: "matrx-user/vision-interview",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Multi-round interrogation of a vision statement by six named roles.",
   readiness: "stub",
   readinessNote:
     "Vocabulary declared 2026-08-17 to close an entirely undeclared agent-shaped feature. Not yet audited against the session page's loaded data (turns, per-role bindings, settings), and no runtime emitter is wired.",

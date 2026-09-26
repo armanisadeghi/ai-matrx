@@ -204,6 +204,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const voicePadManifest: SurfaceManifest = {
   surfaceName: "matrx-user/voice-pad",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Voice-to-text capture",
   readiness: "verified",
   readinessNote:
     "Emitter wired 2026-08-09 (nested SurfaceRuntimeProvider inside VoicePad — entries/draft/live transcript from voicePadSlice + local state at Run time); read + write both confirmed in a live agent run 2026-08-10, and RE-VERIFIED 2026-08-12 on a MAPPED route. The old note here said the header Agents panel prefers the ROUTE surface over a deeper floating runtime, so the pad had to be opened from an unmapped route (/reports) to be exercised. That is NO LONGER TRUE and the workaround is obsolete: `SurfaceAgentsPanelImpl` now treats a manifest with an `overlayId` as primary when it is the deepest live runtime, so the popover names Voice Pad, lists ITS agents and runs against ITS scope on any route — re-confirmed on /dashboard, where reverting that one line puts `matrx-user/dashboard` back in the popover. Reads work here too: a fresh Run reads `content` exactly. The one real gotcha is TIMING, not routing — `getScope` is called ONCE when the user hits Run, so page state changed after that (including by the agent's own applied write) is NOT visible to the rest of that conversation and the agent will report `content` as empty. Start a new run to re-read.",

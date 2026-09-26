@@ -525,6 +525,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminBillingSpendManifest: SurfaceManifest = {
   surfaceName: ADMIN_BILLING_SPEND_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "Super-admin platform spend dashboard with measured cost totals, ledger explorer, dimensions, request signals, and batch savings.",
   readiness: "partial",
   readinessNote:
     "Runtime contract and DB mirror are wired; full independent S1-S18 surface certification remains.",

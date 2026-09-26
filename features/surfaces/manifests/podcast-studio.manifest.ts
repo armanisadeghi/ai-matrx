@@ -480,6 +480,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const podcastStudioManifest: SurfaceManifest = {
   surfaceName: "matrx-user/podcast-studio",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "partial",
   readinessNote:
     "Manifest + emitter (GeneratorForm) are wired against every piece of state the compose form holds, and the five draft write targets are handler-backed and verified against a live agent run. Routed in route-to-surface.ts. Not yet DB-synced (the client write tool works either way), and the declared agent roles have no default agents bound.",

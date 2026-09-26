@@ -301,6 +301,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const adminAgentReviewManifest: SurfaceManifest = {
   surfaceName: ADMIN_AGENT_REVIEW_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "Agent Review Queue: reviewable items agents registered for Arman.",
   readiness: "partial",
   readinessNote:
     "Emitter and the triage write target were rebuilt against the live agent-first list on 2026-08-26 (the manifest had drifted to the retired human-first page: pending/changes_requested statuses, an archived toggle, and per-row feedback drafts that no longer exist on this route). Still needs the live browser pass: load /administration/users/agent-review as a super-admin, open the Agents chrome, confirm the emitted scope, and run one triage write end to end.",

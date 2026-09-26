@@ -445,6 +445,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const projectsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/projects",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Project management views",
   readiness: "partial",
   readinessNote:
     "List/runtime contract repaired statically; desktop/mobile and light/dark live certification is pending because the isolated in-app Browser is unavailable.",

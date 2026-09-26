@@ -501,6 +501,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const agentRunManifest: SurfaceManifest = {
   surfaceName: "matrx-user/agent-run",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Live agent execution viewer",
   readiness: "verified",
   label: "Agent Run",
   urlPattern: "/agents/[id]/run",

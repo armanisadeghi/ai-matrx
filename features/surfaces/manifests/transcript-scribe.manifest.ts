@@ -66,6 +66,10 @@ export const TRANSCRIPT_SCRIBE_SURFACE = "matrx-user/transcript-scribe";
 
 export const transcriptScribeManifest: SurfaceManifest = {
   surfaceName: TRANSCRIPT_SCRIBE_SURFACE,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Scribe session screen (mobile audio studio): the Agent tab chats against the working document and session recordings. Distinct from the transcripts list so it can carry its own tool defaults (memory).",
   readiness: "partial",
   readinessNote: "Context flows via smartExecute (useStudioAssistant), no surface-scope emitter",
   label: "Transcript Scribe",

@@ -180,6 +180,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const mandateWorkspaceManifest: SurfaceManifest = {
   surfaceName: MANDATE_WORKSPACE_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "partial",
   readinessNote:
     "Provider mounted on the admin route; identity + goal + goal-draft values live; the one write target (goal draft) is wired and user-verified. Inputs/holder/health are not yet emitted as values.",

@@ -979,6 +979,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const marketingPageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-page",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Marketing page workspace — one canonical web.page: observed crawl evidence (SERP preview, metrics) plus the user's editorial intent (target keyword, desired metadata).",
   readiness: "verified",
   label: "Marketing Page Workspace",
   urlPattern: "/marketing/[brandId]/websites/[siteId]/pages/[pageId]",

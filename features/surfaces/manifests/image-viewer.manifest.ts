@@ -89,6 +89,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const imageViewerManifest: SurfaceManifest = {
   surfaceName: IMAGE_VIEWER_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Multi-image viewer",
   readiness: "partial",
   readinessNote:
     "Emitter wired 2026-08-09 (nested SurfaceRuntimeProvider inside ImageViewerWindow, live index/URL/alt at Run time); values audited against the window component. Needs the live browser pass (open the window, confirm the scope in the Agents chrome) to earn verified.",

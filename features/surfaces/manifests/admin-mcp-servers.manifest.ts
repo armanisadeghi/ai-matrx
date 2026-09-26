@@ -316,6 +316,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const adminMcpServersManifest: SurfaceManifest = {
   surfaceName: ADMIN_MCP_SERVERS_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "MCP server admin (sync status + configs)",
   readiness: "verified",
   label: "MCP Servers Admin",
   urlPattern: "/administration/agents/mcp-servers",

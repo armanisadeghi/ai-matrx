@@ -247,6 +247,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const educationFlashcardEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-flashcard-editor",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Flashcard set editor — one set open for authoring (/education/flashcards/[setId]/edit).",
   readiness: "partial",
   readinessNote:
     "Manifest + emitter + the three write targets (set_details, card_content, add_cards) are shipped, DB-synced, and verified end-to-end against a live Badass Agent run on the edit route: ask-per-target, Apply landing visibly, decline writing nothing, a handler throw reaching the agent verbatim, and a clean Error Inspector. Not yet stamped verified: no agent roles are declared, no `data-surface-value` Locate anchors are tagged on the page, and two child controls still load state this manifest does not declare — FolderTagPicker's folder taxonomy for this set and SetVisibilityControl's share links (only the resulting `set_visibility` is declared).",

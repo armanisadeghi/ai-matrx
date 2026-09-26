@@ -364,6 +364,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const transcriptScribeLiveManifest: SurfaceManifest = {
   surfaceName: TRANSCRIPT_SCRIBE_LIVE_SURFACE,
+  client: "matrx-user",
+  executionMode: "browser-realtime",
+  description:
+    "Scribe session screen — Live tab. xAI Realtime voice agent talking against the working document. Browser↔model direct WebSocket; bypasses the Python streaming backend.",
   readiness: "partial",
   readinessNote:
     "Manifest + SurfaceRuntimeProvider emitter landed; registry.ts entry and DB manifest sync pending. No route mapping is possible — this is a TAB inside /transcripts/scribe/:sessionId, so route resolution correctly keeps returning the studio surface.",

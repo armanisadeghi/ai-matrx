@@ -406,6 +406,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminCxDashboardManifest: SurfaceManifest = {
   surfaceName: ADMIN_CX_DASHBOARD_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "Conversation experience dashboard",
   readiness: "verified",
   label: "CX Dashboard",
   urlPattern: "/administration/chat/cx-dashboard",

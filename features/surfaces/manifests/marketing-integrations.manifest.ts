@@ -260,6 +260,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const marketingIntegrationsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-integrations",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Provider bindings for one site — GSC, GA4, PageSpeed, CMS. Reference-only, never secrets.",
   readiness: "verified",
   label: "Marketing Site Integrations",
   urlPattern: "/marketing/[brandId]/websites/[siteId]/settings/integrations",

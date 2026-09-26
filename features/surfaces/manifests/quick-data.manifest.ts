@@ -120,6 +120,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const quickDataManifest: SurfaceManifest = {
   surfaceName: QUICK_DATA_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Quick data table browser overlay",
   readiness: "partial",
   readinessNote:
     "Emitter wired in QuickDataSheet and reflects its real state (table picker + selection). Gap (COMPLETENESS LAW, not fabricated here): the deep table state — schema, visible rows, search, column filters, and the open cell/row editor — belongs to the `matrx-user/data-tables` surface and is only emitted by `UserTableViewer` when its host passes `emitSurfaceScope`, which `QuickDataWindow` deliberately does not (that provider is opt-in precisely to avoid shadowing a host surface — see `data-tables.manifest.ts`). QuickDataSheet has no lifted access to that nested state today, so it cannot be declared here without fabricating a value the component doesn't hold. If deep table editing inside this window becomes a real use case, the fix is either (a) accept the deepest-wins nesting and pass `emitSurfaceScope` through, degrading quick-data's own scope to invisible while a table is open, or (b) lift UserTableViewer's search/filter/edit state out so QuickDataSheet can re-emit it under this surface's own vocabulary.",

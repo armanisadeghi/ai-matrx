@@ -68,6 +68,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const agentGateManifest: SurfaceManifest = {
   surfaceName: AGENT_GATE_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Pre-execution agent gate / trigger",
   readiness: "partial",
   readinessNote: "emitter wired, browser verification pending",
   overlayId: "agentGateWindow",

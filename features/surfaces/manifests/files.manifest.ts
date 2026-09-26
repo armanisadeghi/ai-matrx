@@ -847,6 +847,10 @@ const clientTools: SurfaceClientTool[] = [
 
 export const filesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/files",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Cloud files browser",
   readiness: "partial",
   readinessNote:
     "LUI-007 static S1-S18 pass complete: DB mirror present, desktop and mobile both emit live scope, row/search/section/preview anchors are mounted, and load/error/retry states are explicit. Remaining certification work is browser proof at desktop/tablet/mobile; Files runs no fixed AI job, so certification must not invent an agent role or binding. Mobile intentionally remains read-only because it does not render the desktop write controls.",

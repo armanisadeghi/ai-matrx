@@ -764,6 +764,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const cmsSiteManifest: SurfaceManifest = {
   surfaceName: "matrx-user/cms-site",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "CMS site workspace — page list, site settings, components hub",
   readiness: "verified",
   label: "CMS Site",
   urlPattern: "/cms/[siteId]",

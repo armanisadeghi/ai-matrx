@@ -330,6 +330,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminServerLogsManifest: SurfaceManifest = {
   surfaceName: ADMIN_SERVER_LOGS_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "Server log viewer",
   readiness: "verified",
   label: "Server Logs",
   urlPattern: "/administration/compute/server-logs",

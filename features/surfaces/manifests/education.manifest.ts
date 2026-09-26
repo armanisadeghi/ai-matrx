@@ -186,6 +186,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const educationManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "partial",
   readinessNote:
     "Manifest + emitter shipped and complete for the hub's own data (discovery registries, entry points, and the Study-today snapshot published by EducationHome). Not yet stamped verified: the DB sync + a live non-matching-name binding test and the Matrx-vs-matrix context check have not been run, and no agent roles are declared yet.",

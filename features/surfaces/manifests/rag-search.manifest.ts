@@ -494,6 +494,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const ragSearchManifest: SurfaceManifest = {
   surfaceName: "matrx-user/knowledge-search",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "verified",
   label: "Knowledge Search",
   urlPattern: "/knowledge/search",

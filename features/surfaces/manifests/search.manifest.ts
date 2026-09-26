@@ -211,6 +211,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const searchManifest: SurfaceManifest = {
   surfaceName: "matrx-user/search",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Matrx Search — the platform's public search engine at /search. One box; the web comes back as the web_search_results kind family.",
   readiness: "partial",
   readinessNote:
     "Values declared and complete against the live page, emitter wired in SearchWorkspace. Not yet verified: no agent role is bound here, so the non-matching-name binding test has not been run.",

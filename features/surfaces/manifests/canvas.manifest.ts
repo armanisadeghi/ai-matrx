@@ -171,6 +171,10 @@ export const CANVAS_SURFACE_NAME = "matrx-user/canvas";
 
 export const canvasManifest: SurfaceManifest = {
   surfaceName: CANVAS_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Visual canvas and diagram editors",
   readiness: "partial",
   readinessNote:
     // access-errors: ok — internal readiness note about a removed editor's vocabulary, verified against the codebase; never rendered to a user as record state

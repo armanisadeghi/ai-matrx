@@ -335,6 +335,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminReportingManifest: SurfaceManifest = {
   surfaceName: ADMIN_REPORTING_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "Reporting admin family: events, reports catalog, dead-ends/unwired/lint-debt scoreboards",
   readiness: "partial",
   readinessNote:
     "Emitter wired, browser verification pending. The reporting hub remains a static link directory with only its section identity.",

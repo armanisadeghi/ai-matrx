@@ -605,6 +605,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const adminToolRegistryManifest: SurfaceManifest = {
   surfaceName: ADMIN_TOOL_REGISTRY_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "Tool, bundle, and surface admin pages",
   readiness: "partial",
   readinessNote:
     "Catalogue and open-tool emitters are wired and real. Executor bindings (tool.executor + tool.binding) and per-surface tool defaults (tool.surface_defaults) are loaded inside the detail page's Registry tab and never reach the emitter, so they are deliberately undeclared; lifting that state to the emitter is the remaining work. The mcp-servers / bundles / executor-surfaces sibling routes have no emitter.",

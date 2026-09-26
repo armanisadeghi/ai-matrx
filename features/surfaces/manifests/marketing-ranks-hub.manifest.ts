@@ -84,6 +84,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const marketingRanksHubManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-ranks-hub",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Cross-site rank tracking hub at /marketing/ranks: every rank target across every brand and site the user can see, read-only, with per-row links to the owning site's Ranks workspace.",
   readiness: "partial",
   readinessNote:
     "Declared, emitted (CrossSiteRanksHub provider), routed, and synced; the live non-matching-name binding + Matrx-vs-matrix verification has not been run yet.",

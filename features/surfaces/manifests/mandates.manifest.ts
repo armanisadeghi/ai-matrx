@@ -320,6 +320,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const mandatesManifest: SurfaceManifest = {
   surfaceName: MANDATES_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "Agent Slots console — DB-managed system-agent pins, health, overrides, and the exemplar test bench.",
   readiness: "partial",
   readinessNote:
     "Console emitter is live (list, health roll-up, selected mandate + pin + contract + overrides), and the bench's exemplars + exemplar draft are published up through bench-draft.ts. Candidate-run state (comparison columns, batch results, verdict notes) still lives in MandateTestBench local state and is not lifted into the scope.",

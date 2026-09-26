@@ -49,6 +49,10 @@ const values: SurfaceValue[] = [
 ];
 export const marketingInitiativesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-initiatives",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Marketing initiative portfolio and detail",
   readiness: "partial",
   readinessNote:
     "Manifest, route mapping, and list/detail emitters are wired; live binding verification remains.",

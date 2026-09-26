@@ -189,6 +189,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const documentsWorkspaceManifest: SurfaceManifest = {
   surfaceName: DOCUMENTS_WORKSPACE_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "The multi-document workspace shell — recent-docs rail plus tab strip over working documents and scratchpads.",
   readiness: "partial",
   readinessNote:
     "Manifest + emitter + tab-strip menu wiring shipped 2026-08-24; no agent is bound yet and the non-matching-name binding test has not been run.",

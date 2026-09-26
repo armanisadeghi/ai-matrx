@@ -135,6 +135,9 @@ async function main() {
   );
   const ALL_MANIFESTS: ReadonlyArray<{
     surfaceName: string;
+    client?: string;
+    executionMode?: string;
+    description?: string;
     label?: string;
     readiness?: string;
     readinessNote?: string;
@@ -240,6 +243,28 @@ async function main() {
       }
       clientLabels.set(label.toLowerCase(), m.surfaceName);
       labelsByClient.set(client, clientLabels);
+    }
+
+    // ALC-14: client / executionMode / description are declared, not derived.
+    const prefix = m.surfaceName.split("/")[0] ?? "";
+    if (m.client !== prefix) {
+      errors.push(
+        `Surface "${m.surfaceName}" declares client "${m.client}" but its name prefix is "${prefix}" — they must match.`,
+      );
+    }
+    if (
+      !["python-stream", "nextjs-stream", "browser-realtime", "local-runtime"].includes(
+        m.executionMode ?? "",
+      )
+    ) {
+      errors.push(
+        `Surface "${m.surfaceName}" has invalid executionMode "${String(m.executionMode)}".`,
+      );
+    }
+    if (typeof m.description !== "string") {
+      errors.push(
+        `Surface "${m.surfaceName}" has no description — SurfaceManifest.description is required (may be "" only where the live row is empty).`,
+      );
     }
 
     // Readiness tracking — required; non-verified surfaces must say what's

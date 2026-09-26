@@ -360,6 +360,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const agentAdvancedEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/agent-advanced-editor",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Agent system + content editor",
   readiness: "verified",
   label: "Agent Advanced Editor",
   // No `urlPattern`: this is a floating WINDOW, opened over whatever route the

@@ -71,6 +71,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const vaultManifest: SurfaceManifest = {
   surfaceName: "matrx-user/vault",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Credential vault; non-secret vocabulary only.",
   readiness: "stub",
   readinessNote:
     "Deliberately narrow non-secret vocabulary declared 2026-08-17 to close the undeclared /vault route. Secret values are intentionally NOT declarable here; no runtime emitter is wired.",

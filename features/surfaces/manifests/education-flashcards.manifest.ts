@@ -196,6 +196,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const educationFlashcardsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-flashcards",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "partial",
   readinessNote:
     "Manifest + emitter shipped and complete for everything the flashcards home loads. Not yet stamped verified: the DB sync + a live non-matching-name binding test and the Matrx-vs-matrix context check have not been run, no agent roles are declared, and no `data-surface-value` Locate anchors are tagged on the page yet.",

@@ -55,6 +55,10 @@ const agentRoles: ManifestAgentRole[] = [
 
 export const marketingRunConsoleManifest: SurfaceManifest = {
   surfaceName: MARKETING_RUN_CONSOLE_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "The run console at the SYSTEM tier: drive the keyword-coverage engines by hand across every brand on the platform, and read back what each pass claimed, placed, proposed, protected and quarantined.",
   label: "Run console",
   readiness: "partial",
   readinessNote:

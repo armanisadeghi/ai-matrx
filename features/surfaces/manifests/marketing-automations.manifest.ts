@@ -42,6 +42,10 @@ const agentRoles: ManifestAgentRole[] = [
 
 export const marketingAutomationsManifest: SurfaceManifest = {
   surfaceName: MARKETING_AUTOMATIONS_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "The run console at the organization/brand tier: run the coverage engines over the brands this organization controls and author the schedule that overrides the system default.",
   label: "Automations",
   readiness: "partial",
   readinessNote:

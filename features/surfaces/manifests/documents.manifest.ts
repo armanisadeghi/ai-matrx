@@ -471,6 +471,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const documentsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/documents",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Document viewer and editor",
   readiness: "partial",
   readinessNote:
     "Manifest rewritten against the real /documents routes and both emitters are wired; not yet DB-synced and no live binding test run. The Univer editor's body text, save status, and collab presence stay undeclared until the editor lifts them to the route.",

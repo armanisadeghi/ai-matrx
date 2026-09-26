@@ -188,6 +188,10 @@ const values: SurfaceValue[] = [
 
 export const marketingReportsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-reports",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Client-ready Search Console reports with plain-language findings and canonical traffic-class evidence.",
   readiness: "partial",
   readinessNote:
     "Manifest, route mapping, canonical GSC emitters, traffic-class evidence, and printable report are wired; live agent binding verification remains.",

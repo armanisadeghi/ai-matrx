@@ -230,6 +230,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const keywordValueWorkbenchManifest: SurfaceManifest = {
   surfaceName: KEYWORD_VALUE_WORKBENCH_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "The keyword value workbench for one site: what every keyword is worth, the level it lands on, and the receipt behind it.",
   label: "Keyword Value Workbench",
   urlPattern: "/marketing/[brandId]/seo/[siteId]/keywords/value",
   inheritsFrom: "matrx-user/marketing-site",

@@ -396,6 +396,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const quickTasksManifest: SurfaceManifest = {
   surfaceName: QUICK_TASKS_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Quick task browser overlay",
   readiness: "partial",
   readinessNote:
     "Window-level Redux state, the selected task's saved fields, and (via selected_task_draft) the details panel's UNSAVED field drafts are all emitted, and all eight write targets are live-verified; the org/project/scope PICK LISTS the hierarchy cascade renders are still not emitted, which is why none of them is agent-writable",

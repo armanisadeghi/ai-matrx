@@ -170,6 +170,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const marketingBrandAssetsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-brand-assets",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "The brand's asset desk — owned library, research imagery, stock sources, and AI image generation. Split out of matrx-user/marketing-site-media on 2026-08-15.",
   label: "Brand Asset Desk",
   urlPattern: "/marketing/[brandId]/identity/media",
   inheritsFrom: "matrx-user/marketing-brand",

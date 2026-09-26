@@ -265,6 +265,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const listsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/lists",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Custom lists organizer",
   readiness: "partial",
   readinessNote:
     "surface-check 2026-08-22 (checklist v1): registration, values, write targets, context menu and text inputs all pass and are DB-synced; the original three write targets were live-verified with a real agent run. Still `partial` for two honest reasons: the new update_list_item target has not yet been exercised end-to-end in a live run, and header/mobile/theme were checked statically only. The /lists index is a static landing page and deliberately emits nothing, so values here describe the detail route only.",

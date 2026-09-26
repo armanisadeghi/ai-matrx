@@ -169,6 +169,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const quickNoteSaveManifest: SurfaceManifest = {
   surfaceName: QUICK_NOTE_SAVE_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Quick-note capture overlay",
   readiness: "partial",
   readinessNote:
     "Opener payload (content + defaults + folder vocabulary) audited and emitted, and the write half (note_draft) is registered and live-verified against a real agent run; live form state inside QuickNoteSaveCore (chosen title/folder/target note/refined text) is still not emitted, so note_draft declares no updatesValue",

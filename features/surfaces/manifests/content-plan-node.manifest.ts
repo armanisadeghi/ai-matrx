@@ -616,6 +616,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const contentPlanNodeManifest: SurfaceManifest = {
   surfaceName: "matrx-user/content-plan-node",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "The open plan-node editor panel: one planned page's draft-overlaid fields; first read/write surface (writeTargets).",
   label: "Content Plan Node",
   readiness: "partial",
   readinessNote:

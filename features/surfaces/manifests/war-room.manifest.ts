@@ -427,6 +427,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const warRoomManifest: SurfaceManifest = {
   surfaceName: "matrx-user/war-room",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "War Room room-level agent — spans all threads in a room.",
   readiness: "verified",
   label: "War Room",
   urlPattern: "/war-room/[id]",

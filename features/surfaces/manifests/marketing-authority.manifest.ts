@@ -149,6 +149,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const marketingAuthorityManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-authority",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "verified",
   label: "Internal Authority Router",
   urlPattern: "/marketing/[brandId]/seo/[siteId]/authority",

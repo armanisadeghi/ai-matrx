@@ -759,6 +759,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const crmRecordManifest: SurfaceManifest = {
   surfaceName: CRM_RECORD_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "verified",
   label: "CRM Record",
   urlPattern: "/crm/[partyId]",

@@ -359,6 +359,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const workbooksManifest: SurfaceManifest = {
   surfaceName: "matrx-user/workbooks",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "partial",
   readinessNote:
     "Manifest + emitters (library page, editor page, live content source registered by WorkbookEditor) are wired and every value the routes load is declared. Not yet verified: DB sync (ui_surface row + manifest sync), route-prefix mapping in utils/route-to-surface.ts, data-surface-value anchors for Locate, and a live non-matching-name binding test.",

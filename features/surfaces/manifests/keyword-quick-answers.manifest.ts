@@ -352,6 +352,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const keywordQuickAnswersManifest: SurfaceManifest = {
   surfaceName: KEYWORD_QUICK_ANSWERS_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "partial",
   readinessNote:
     "Manifest, trigger-time emitter, v3 menus, Locate anchors, and write handlers are wired; DB mirror sync and isolated live Browser proof are still pending before verified.",

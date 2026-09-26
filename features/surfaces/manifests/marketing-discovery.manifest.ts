@@ -204,6 +204,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const marketingDiscoveryManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-discovery",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Machine-discovery review inbox — pending candidates promoted to confirmed brand truth.",
   readiness: "verified",
   label: "Marketing Discovery Inbox",
   urlPattern: "/marketing/[brandId]/inbox",

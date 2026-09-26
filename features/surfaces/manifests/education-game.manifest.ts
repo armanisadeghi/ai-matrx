@@ -276,6 +276,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const educationGameManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-game",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Study game arcade: solo + multiplayer deck play (/education/game).",
   readiness: "partial",
   readinessNote:
     "Manifest + three emitters (home, host, join) shipped, targeting a live DB row that previously had no manifest at all. NOT yet: DB sync has not been run; the solo-arcade and live-multiplayer views (SoloArcadeImpl / MultiplayerGameImpl, both dynamic({ssr:false}) real-time game engines) declare solo_*/room_* values but have no SurfaceRuntimeProvider mount (deliberately deferred, see manifest header); no write targets, agent roles, or config namespaces are declared; no data-surface-value Locate anchors are tagged; no live-agent-run verification or Matrx-vs-matrix test has been performed.",

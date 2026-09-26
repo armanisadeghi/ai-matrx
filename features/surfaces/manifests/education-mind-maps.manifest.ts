@@ -534,6 +534,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const educationMindMapsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-mind-maps",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Generate and view study mind maps (/education/mind-maps).",
   readiness: "partial",
   readinessNote:
     "Manifest + emitters shipped for all three views (list / create / detail) and two write targets on the create view, verified with a live agent run. Not yet stamped verified: the DB sync has not been run; no agent roles or config namespaces are declared (the generator resolves via EDU_MEDIA_AGENTS.mindMap, not a surface role); no `data-surface-value` Locate anchors are tagged; a non-matching-name binding test and the Matrx-vs-matrix context check have not been run; and the entitlement guard's own transient state (gen.isChecking, the paywall/COPPA dialog flags) is deliberately not emitted — the durable fact an agent needs is is_generating.",

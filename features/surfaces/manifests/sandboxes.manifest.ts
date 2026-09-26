@@ -486,6 +486,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const sandboxesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/sandboxes",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Code execution sandbox runs",
   readiness: "partial",
   readinessNote:
     "List + instance + shell values are declared and emitted. The sandbox filesystem tree and the currently-open file are NOT declared because they live in SandboxDiagnosticsPanel's local state and the page cannot emit them; lifting fsRoot / selectedFile / fileContent to app/(core)/sandbox/[id]/page.tsx is the remaining work. Terminal output is also session-only — there is no persisted run history to declare.",

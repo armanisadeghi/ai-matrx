@@ -258,6 +258,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const publicAgentAppManifest: SurfaceManifest = {
   surfaceName: PUBLIC_AGENT_APP_SURFACE_NAME,
+  client: "matrx-public",
+  executionMode: "python-stream",
+  description:
+    "Slug-based public agent / app pages",
   readiness: "verified",
   readinessNote:
     "All five /p render paths emit. Shell conversations remain mount-created, then smartExecute refreshes the named live provider and re-applies bindings at submit. Live-verified 2026-08-15 signed in and signed out with chat-shell app surface-submit-scope-probe and the deliberately non-name-matched mapping topic <- user_input; chat.conversation.variables.topic contained the exact typed Matrx-vs-matrix phrases in rows 71eb5d6e-b376-42f9-a07f-2030e237e4ae and 07f5dedc-c7df-45c3-a41a-bf884b373bb0.",

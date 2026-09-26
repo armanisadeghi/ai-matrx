@@ -594,6 +594,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const organizationPerformanceReviewsManifest: SurfaceManifest = {
   surfaceName: PERFORMANCE_REVIEW_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Organization-scoped interim employee performance-review editor",
   readiness: "partial",
   readinessNote:
     "The exhaustive values, handlers, canonical copy controls, organization route, demo mount, and static checks are complete; real-agent writeback and independent browser certification are pending.",

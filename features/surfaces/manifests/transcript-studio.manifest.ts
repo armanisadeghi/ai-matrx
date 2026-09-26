@@ -422,6 +422,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const transcriptStudioManifest: SurfaceManifest = {
   surfaceName: "matrx-user/transcript-studio",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Live transcription studio overlay",
   readiness: "verified",
   readinessNote:
     // access-errors: ok — internal verification note quoting a live PostgREST 42703 finding about schema drift; never rendered to a user as record state

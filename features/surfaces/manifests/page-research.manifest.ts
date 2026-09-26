@@ -385,6 +385,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const pageResearchManifest: SurfaceManifest = {
   surfaceName: PAGE_RESEARCH_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "partial",
   readinessNote:
     "Complete authored contract, nested runtime, draft write handlers, canonical menus, Pro inputs, and Locate anchors are wired; DB mirror sync and isolated live Browser certification remain coordinator-owned before verified.",

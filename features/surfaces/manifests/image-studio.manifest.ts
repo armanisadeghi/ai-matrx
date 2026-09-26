@@ -503,6 +503,10 @@ export const IMAGE_STUDIO_SURFACE_NAME = "matrx-user/image-studio";
 
 export const imageStudioManifest: SurfaceManifest = {
   surfaceName: IMAGE_STUDIO_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Image Studio batch preset converter at /images/convert (fronted by the /images/studio landing).",
   readiness: "partial",
   readinessNote:
     "READ half: ImageStudioShell emitter + describe-shortcut carries surfaceName AND scope. WRITE half: writeTargets declared and handlers wired. Remaining: no `data-surface-value` anchors, and no live non-matching-name binding test. NOT a gap by design: EmbeddedImageStudio mounts no provider — it is a widget embedded INSIDE host surfaces (html-pages Save tab, Image Manager, cloud Image Studio tab), so a nested provider would shadow the host's scope under deepest-wins.",

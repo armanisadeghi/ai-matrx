@@ -72,6 +72,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const contentPlanListManifest: SurfaceManifest = {
   surfaceName: "matrx-user/content-plan-list",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Content Plan front door: every visible site with its plan aggregates (pages, statuses, keyword coverage).",
   label: "Content Plan Sites",
   readiness: "partial",
   readinessNote:

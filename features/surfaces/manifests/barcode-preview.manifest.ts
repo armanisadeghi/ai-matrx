@@ -28,6 +28,10 @@ const groups: SurfaceValueGroup[] = [
 
 export const barcodePreviewManifest: SurfaceManifest = {
   surfaceName: BARCODE_PREVIEW_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "partial",
   readinessNote:
     "Runtime wiring and focused source checks are complete, and the live manifest mirror is synchronized; independent browser certification remains outstanding.",

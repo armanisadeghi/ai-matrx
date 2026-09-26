@@ -171,6 +171,10 @@ const values: SurfaceValue[] = [
 
 export const crmChaseboxManifest: SurfaceManifest = {
   surfaceName: CRM_CHASEBOX_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Outreach triage: replies to answer and held drafts to approve, reword or reject at volume",
   readiness: "verified",
   readinessNote:
     "Read vocabulary verified against crm_chasebox_items + the draft review dialog; emitter and assist strip both mounted on ChaseboxPage. draft_reviewer carries its default agent (outreach_draft_reviewer, WP5 round 4) and was proven against a real draft + evidence pair. Note: draft_body and visible_items are autoContext:false, so they arrive DEFERRED — verify them with retrieval allowed or an emitter that works looks broken.",

@@ -138,6 +138,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const tableViewerManifest: SurfaceManifest = {
   surfaceName: TABLE_VIEWER_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "The floating Table Viewer window — the platform generic markdown-table viewer, opened app-wide.",
   readiness: "partial",
   readinessNote:
     "Manifest + emitter + menu wiring shipped 2026-08-24; no agent is bound yet and the non-matching-name binding test has not been run.",

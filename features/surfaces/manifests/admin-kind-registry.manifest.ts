@@ -406,6 +406,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminKindRegistryManifest: SurfaceManifest = {
   surfaceName: ADMIN_KIND_REGISTRY_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "Shape System admin: kind catalog, detail, one-shot kind builder",
   readiness: "partial",
   readinessNote:
     "Catalog, detail, component-editor, and builder emitters are wired. The catalog's MatrxDataTable column-filter/search internals are not yet exposed by the table primitive, so the surface remains partial.",

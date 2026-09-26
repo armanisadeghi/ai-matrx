@@ -439,6 +439,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const educationAudioStudyManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-audio-study",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Audio study episodes: generate, listen, spoken review (/education/audio-study).",
   readiness: "partial",
   readinessNote:
     "Manifest + three emitters (list, new, detail) shipped, targeting a live DB row that previously had no manifest at all. NOT yet: DB sync has not been run; the Audio Review live-voice session (/education/audio-study/review) declares review_* values but has no SurfaceRuntimeProvider mount (its phase machine deserves its own pass, see manifest header); this surface declares no write targets (composer fields are consumed by a single metered, human-pressed Generate button — same judgment as education-memory) and no agent roles; no data-surface-value Locate anchors are tagged; no live-agent-run verification or Matrx-vs-matrix test has been performed.",

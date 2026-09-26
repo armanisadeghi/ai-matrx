@@ -324,6 +324,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const keywordResearchManifest: SurfaceManifest = {
   surfaceName: "matrx-user/keyword-research",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   label: "Keyword Research Workbench",
   urlPattern: "/marketing/keyword-research",
   readiness: "partial",

@@ -322,6 +322,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const educationFastfireManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-fastfire",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "FastFire spoken rapid-drill over a flashcard set (/education/fastfire).",
   readiness: "partial",
   readinessNote:
     "Manifest + emitter shipped for everything the drill state machine holds. Not yet stamped verified: a live non-matching-name binding test and the Matrx-vs-matrix context check have not been run, and no Locate anchors are tagged.",

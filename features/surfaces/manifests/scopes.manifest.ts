@@ -464,6 +464,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const scopesManifest: SurfaceManifest = {
   surfaceName: SCOPES_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "partial",
   readinessNote:
     "Manifest + emitters wired on /scopes, /scopes/templates and /scopes/settings; not yet live-verified with a bound agent, and the embedded knowledge-graph suggestions inbox (HeavyHitterSuggestionsInbox on the hub) loads data that is not declared here. Read-only by decision, not by omission: write targets were evaluated 2026-08-11 and again 2026-08-12 and DELIBERATELY NOT DECLARED — all three mounts are read-only (one filter input and two refresh buttons between them) and the route that edits scope cells mounts no surface. See the WRITE TARGETS block in this file's docblock before re-assigning.",

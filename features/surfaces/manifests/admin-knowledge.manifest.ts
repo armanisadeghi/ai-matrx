@@ -491,6 +491,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminKnowledgeManifest: SurfaceManifest = {
   surfaceName: ADMIN_KNOWLEDGE_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "Knowledge admin family: cms-agents, kg-cost, kg-inspector, podcasts, research-system",
   readiness: "partial",
   readinessNote:
     "Emitter wired, browser verification pending. /administration/knowledge itself is a static link directory; growth-loop remains deliberately excluded as its own pillar.",

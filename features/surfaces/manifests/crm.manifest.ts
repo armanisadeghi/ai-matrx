@@ -395,6 +395,10 @@ export const crmGroups = groups;
 
 export const crmManifest: SurfaceManifest = {
   surfaceName: CRM_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "People and companies manager with explicit Mine, My Orgs, and Public list scopes",
   readiness: "verified",
   readinessNote:
     "Read vocabulary verified against CrmListPage. Write targets (search_query / party_kind_filter / column_filters / list_sort) are live on both the /crm route and the CrmManagerWindow mount, and verified against a real agent run. DB mirror sync still pending.",

@@ -89,6 +89,10 @@ const values: SurfaceValue[] = [
 ];
 export const commerceLabelBatchManifest: SurfaceManifest = {
   surfaceName: COMMERCE_LABEL_BATCH_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   label: "Label batch",
   urlPattern: "/commerce/labels/:batchId",
   readiness: "partial",

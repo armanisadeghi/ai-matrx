@@ -214,6 +214,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const agentComparisonModelManifest: SurfaceManifest = {
   surfaceName: "matrx-user/agent-comparison-model",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   label: "Model Battle",
   readiness: "partial",
   readinessNote:

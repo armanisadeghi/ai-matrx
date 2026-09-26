@@ -273,6 +273,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const contextPreviewManifest: SurfaceManifest = {
   surfaceName: CONTEXT_PREVIEW_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "partial",
   readinessNote:
     "Manifest + panel emitter live for every declared value. Live binding verification (non-matching-name mapping + Matrx-vs-matrix test) not yet run.",

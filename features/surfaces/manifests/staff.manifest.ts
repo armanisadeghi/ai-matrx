@@ -43,6 +43,10 @@ export const STAFF_SURFACE_NAME = "matrx-user/staff";
 
 export const staffManifest: SurfaceManifest = {
   surfaceName: STAFF_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "The in-app door onto a person's Personal Staff (/staff) — the SAME conversation their texts and phone calls use, answered by the Holder of personal_staff.front_line. Also the native client's surface.",
   label: "Your staff",
   urlPattern: "/staff",
   readiness: "partial",

@@ -460,6 +460,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const agentAppsManifest: SurfaceManifest = {
   surfaceName: AGENT_APPS_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Agent-backed apps directory (replaces prompt-apps)",
   readiness: "partial",
   readinessNote:
     "Hub and per-app runtime emitters are implemented; full browser certification is pending",

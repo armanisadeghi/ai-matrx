@@ -138,6 +138,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const podcastManifest: SurfaceManifest = {
   surfaceName: "matrx-user/podcast",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "partial",
   readinessNote:
     "Manifest + emitter (PodcastIndexClient) are wired and complete against what the page loads. Not yet DB-synced, not yet in route-to-surface.ts, and no agent roles are bound — promote to verified after the sync + a live binding test.",

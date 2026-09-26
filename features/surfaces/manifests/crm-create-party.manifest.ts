@@ -228,6 +228,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const crmCreatePartyManifest: SurfaceManifest = {
   surfaceName: CRM_CREATE_PARTY_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Floating create form for a CRM person or company and optional contact methods",
   readiness: "verified",
   overlayId: "crmCreatePartyWindow",
   label: "Create CRM Record",

@@ -548,6 +548,10 @@ export const PDF_EXTRACTOR_SURFACE_NAME = "matrx-user/pdf-extractor";
 
 export const pdfExtractorManifest: SurfaceManifest = {
   surfaceName: PDF_EXTRACTOR_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "PDF Extractor studio (/tools/pdf-extractor) — one-shot agent runs on a loaded PDF with a 4-way scope picker (full doc / current page / page range / browser selection). Parent of matrx-user/extractor-chunker.",
   readiness: "verified",
   label: "PDF Extractor",
   urlPattern: "/tools/pdf-extractor/[documentId]",

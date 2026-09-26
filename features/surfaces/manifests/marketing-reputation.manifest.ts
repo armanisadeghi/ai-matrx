@@ -205,6 +205,10 @@ Persists immediately through the same case-update path the Dismiss / Monitor / A
 
 export const marketingReputationManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-reputation",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "verified",
   label: "Digital PR & Reputation",
   urlPattern: "/marketing/[brandId]/intelligence/reputation/[siteId]",

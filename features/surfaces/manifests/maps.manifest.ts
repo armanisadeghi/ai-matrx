@@ -202,6 +202,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const mapsManifest: SurfaceManifest = {
   surfaceName: MAPS_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "A non-executable visual thinking canvas for boxes, sections, and arrows.",
   readiness: "verified",
   label: "Visual Maps",
   urlPattern: "/maps/[id]",

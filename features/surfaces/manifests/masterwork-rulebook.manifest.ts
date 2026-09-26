@@ -407,6 +407,10 @@ const clientTools: SurfaceClientTool[] = [
 
 export const masterworkRulebookManifest: SurfaceManifest = {
   surfaceName: MASTERWORK_RULEBOOK_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "One Rulebook workspace for reviewing, sourcing, correcting, and approving the rules that power Masterworks.",
   label: "Rulebook",
   readiness: "verified",
   urlPattern: "/masterwork/[rulebookId]",

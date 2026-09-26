@@ -25,6 +25,10 @@ const values: SurfaceValue[] = [
 
 export const educationStudyGuidesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-study-guides",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Read or edit a study guide, navigate its outline, and review your own notes and linked flashcard terms (/education/study-guides).",
   label: "Study guides",
   urlPattern: "/education/study-guides/[id]",
   readiness: "partial",

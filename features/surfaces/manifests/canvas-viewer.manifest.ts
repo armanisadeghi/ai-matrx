@@ -47,6 +47,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const canvasViewerManifest: SurfaceManifest = {
   surfaceName: CANVAS_VIEWER_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Visual canvas viewer overlay",
   readiness: "partial",
   readinessNote: "emitter wired, browser verification pending",
   overlayId: "canvasViewerWindow",

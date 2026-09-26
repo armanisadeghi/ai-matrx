@@ -246,6 +246,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const galleryManifest: SurfaceManifest = {
   surfaceName: GALLERY_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Image gallery browser",
   readiness: "partial",
   readinessNote:
     "Emitter wired 2026-08-09 (nested SurfaceRuntimeProvider inside GalleryWindow reading the workspace's live state; the shell/workspace duplicate viewMode state was also collapsed — the footer view-mode buttons previously never changed the grid). Surface check 2026-08-22 expanded the vocabulary to the images themselves and gave the window its own context menu. Still `partial` for ONE reason: nobody has opened the window and confirmed live that the menu shows Gallery, the values inspector has no red rows, and the emitted scope is right. That browser pass is what earns verified.",

@@ -479,6 +479,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const notesEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/notes",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Note editor and notes management",
   readiness: "verified",
   label: "Notes",
   urlPattern: "/notes/[id]",

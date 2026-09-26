@@ -176,6 +176,10 @@ const writeTargets = LIST_SURFACE_WRITE_TARGETS;
 
 export const listManagerManifest: SurfaceManifest = {
   surfaceName: "matrx-user/list-manager",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "List management overlay",
   readiness: "verified",
   overlayId: "listManagerWindow",
   label: "List Manager",

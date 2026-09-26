@@ -157,6 +157,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const shareManifest: SurfaceManifest = {
   surfaceName: SHARE_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Resource sharing dialog",
   readiness: "partial",
   readinessNote:
     "Emitter wired 2026-08-09 (nested SurfaceRuntimeProvider inside ShareModalWindow — resource identity, share URL, active tab, and post-load grant state at Run time). Needs the live browser pass to earn verified.",

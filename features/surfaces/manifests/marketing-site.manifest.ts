@@ -222,6 +222,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const marketingSiteManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-site",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Managed website overview — identity, connections, initialization, registry counts.",
   readiness: "verified",
   label: "Marketing Site Workspace",
   urlPattern: "/marketing/[brandId]/websites/[siteId]",

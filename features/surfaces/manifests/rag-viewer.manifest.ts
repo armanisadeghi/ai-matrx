@@ -510,6 +510,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const ragViewerManifest: SurfaceManifest = {
   surfaceName: "matrx-user/knowledge-viewer",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "partial",
   readinessNote:
     "Manifest authored against the live /knowledge/viewer/[id] component and the emitter is wired via SurfaceRuntimeProvider (the page-text pane lifts its loaded page through onActivePageLoaded); not yet DB-synced and no live non-matching-name binding test run. The Knowledge Asset Builder drawer's derivation rollup stays undeclared — it loads inside KnowledgeAssetPanel and nothing lifts it to the route.",

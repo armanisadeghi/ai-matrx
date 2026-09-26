@@ -374,6 +374,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const cmsComponentManifest: SurfaceManifest = {
   surfaceName: "matrx-user/cms-component",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "CMS shared component editor — header/footer/sidebar/CTA HTML+CSS",
   readiness: "verified",
   label: "CMS Component",
   urlPattern: "/cms/[siteId]/components",

@@ -153,6 +153,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const marketingCompetitorsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-competitors",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "verified",
   label: "Competitor Opportunity Autopsy",
   urlPattern: "/marketing/competitors",

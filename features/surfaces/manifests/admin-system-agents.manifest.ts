@@ -595,6 +595,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const adminSystemAgentsManifest: SurfaceManifest = {
   surfaceName: ADMIN_SYSTEM_AGENTS_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "System agent management",
   readiness: "partial",
   readinessNote:
     "Roster + open-agent emitters are wired and real. Version HISTORY lists (AgentVersionDiffPage) and linked sync-twin state (AgentSyncBody, an overlay window) are loaded on adjacent UI but not emitted, so they are deliberately undeclared. The shortcuts / categories / lineage / apps sub-pages under this route have no emitter yet.",

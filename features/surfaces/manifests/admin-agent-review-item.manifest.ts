@@ -329,6 +329,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const adminAgentReviewItemManifest: SurfaceManifest = {
   surfaceName: ADMIN_AGENT_REVIEW_ITEM_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "One open Agent Review item: its stage, its conversation, and the human feedback editor.",
   readiness: "partial",
   readinessNote:
     "Manifest, emitter and the feedback-draft write target were built together on 2026-08-26. Still needs the live browser pass: open a review at /administration/users/agent-review/[id] as a super-admin, confirm the emitted scope in the Agents chrome, and stage one feedback draft end to end.",

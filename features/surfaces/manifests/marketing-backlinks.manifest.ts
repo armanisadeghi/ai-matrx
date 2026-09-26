@@ -391,6 +391,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const marketingBacklinksManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-backlinks",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Persisted backlink intelligence — summary KPIs, referring domains, anchors, competitors.",
   readiness: "verified",
   label: "Marketing Backlinks",
   urlPattern: "/marketing/[brandId]/seo/[siteId]/backlinks",

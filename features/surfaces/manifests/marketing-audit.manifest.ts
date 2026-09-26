@@ -212,6 +212,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const marketingAuditManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-audit",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Deterministic site-wide audit rollup over stored per-snapshot metrics.",
   readiness: "verified",
   label: "Marketing Site Audit",
   urlPattern: "/marketing/[brandId]/seo/[siteId]/audit",

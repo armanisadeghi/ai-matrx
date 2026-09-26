@@ -473,6 +473,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const scraperManifest: SurfaceManifest = {
   surfaceName: "matrx-user/scraper",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Web scraper overlay (also a /scraper route)",
   readiness: "verified",
   label: "Scraper",
   urlPattern: "/scraper",

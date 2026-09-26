@@ -123,6 +123,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const educationFlashcardSetManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-flashcard-set",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   label: "Flashcard set",
   urlPattern: "/education/flashcards/[setId]",
   readiness: "partial",

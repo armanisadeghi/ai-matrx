@@ -472,6 +472,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const adminApplicationsManifest: SurfaceManifest = {
   surfaceName: ADMIN_APPLICATIONS_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "Applications hub: shipped-client config, catalogs, installations, history.",
   readiness: "verified",
   label: "Applications",
   urlPattern: "/administration/applications",

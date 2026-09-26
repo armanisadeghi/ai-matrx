@@ -204,6 +204,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const educationLearnManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-learn",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Published Learn library articles, server-rendered (/education/learn).",
   readiness: "stub",
   readinessNote:
     "Manifest-only, never audited against a live runtime: the vocabulary is declared from a code read of EducationLearnPage / LearnArticlePage / LearnArticle.tsx (all Server Components), but NO SurfaceRuntimeProvider is mounted anywhere in this path and none can be without either converting genuinely-static SEO content to a client component or adding a thin client shell purely to host the provider — see the manifest header for the real decision this needs. DB sync has not been run. No write targets (this is a public reader page, nothing is authored here — authoring lives on matrx-user/education-learn-authoring). No agent roles, no Locate anchors, no live-agent verification.",

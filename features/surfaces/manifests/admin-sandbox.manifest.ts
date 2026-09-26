@@ -249,6 +249,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminSandboxManifest: SurfaceManifest = {
   surfaceName: ADMIN_SANDBOX_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "Sandbox environment admin",
   readiness: "verified",
   label: "Accessible Sandboxes",
   urlPattern: "/administration/compute/sandbox",

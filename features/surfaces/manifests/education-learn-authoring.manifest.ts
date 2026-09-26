@@ -404,6 +404,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const educationLearnAuthoringManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-learn-authoring",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Study guide authoring — the super-admin editor behind the public /education/learn library (/education/learn/admin).",
   readiness: "partial",
   readinessNote:
     "Manifest + emitter + the four write targets (doc_metadata, doc_sections, add_sections, doc_related) are shipped, DB-synced, and verified end-to-end against a live Badass Agent run on /education/learn/admin: ask-per-target, Apply landing visibly in the inputs and the live preview, decline staging nothing, an undeclared target refused, a handler throw reaching the agent verbatim, and a clean Error Inspector. Not yet stamped verified: no agent roles are declared, and the PUBLIC reader half of the /education/learn prefix (the index and the [...slug] article, still mapped to the manifest-less matrx-user/education-learn) has no surface of its own yet.",

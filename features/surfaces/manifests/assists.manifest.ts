@@ -111,6 +111,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const assistsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/assists",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "The user inbox of one-click AI assists.",
   readiness: "stub",
   readinessNote:
     "Vocabulary declared 2026-08-17 to close the undeclared /assists inbox. Not yet audited against the manager's full table state, and no runtime emitter is wired.",

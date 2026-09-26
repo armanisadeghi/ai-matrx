@@ -212,6 +212,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const agentConnectionsManifest: SurfaceManifest = {
   surfaceName: AGENT_CONNECTIONS_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Agent inter-dependency graph",
   readiness: "verified",
   label: "Agent Connections",
   urlPattern: "/agent-connections",

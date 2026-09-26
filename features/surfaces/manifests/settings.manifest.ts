@@ -417,6 +417,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const settingsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/settings",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "User preferences and account settings",
   readiness: "verified",
   label: "Settings",
   urlPattern: "/user-settings",

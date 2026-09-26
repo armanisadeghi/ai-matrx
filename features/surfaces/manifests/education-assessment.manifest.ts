@@ -627,6 +627,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const educationAssessmentManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-assessment",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Quizzes + practice tests: one assessment surface (/education/quizzes, /education/practice-tests).",
   readiness: "partial",
   readinessNote:
     "Manifest + emitters shipped for the list, create, and detail/take views (one surface spanning /education/quizzes and /education/practice-tests). Not yet stamped verified: the DB sync, a live non-matching-name binding test, and the Matrx-vs-matrix context check have not been run; no agent roles are declared (the generator/grader agents resolve via ASSESSMENT_AGENTS ids, not surface roles); no `data-surface-value` Locate anchors are tagged; and the detail emitter mounts only after the row loads, so the loading/error states emit nothing.",

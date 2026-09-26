@@ -194,6 +194,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminHindsightManifest: SurfaceManifest = {
   surfaceName: ADMIN_HINDSIGHT_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "Hindsight — the platform's self-review console: enrolled subjects, reviewer findings, and replay evidence.",
   readiness: "partial",
   readinessNote:
     "Manifest + emitter are wired for the enrollment/review/spend values the page holds. NOT declared, deliberately: replay verdicts (they hang off ReviewDetailOut, fetched lazily per review — the enrollment payload does not carry them, so declaring them would promise what the emitter cannot deliver), and Internal Affairs' change-history / finding-effectiveness tables. No agent roles are bound yet.",

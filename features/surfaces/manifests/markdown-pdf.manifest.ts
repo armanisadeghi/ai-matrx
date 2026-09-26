@@ -27,6 +27,10 @@ const groups: SurfaceValueGroup[] = [
 
 export const markdownPdfManifest: SurfaceManifest = {
   surfaceName: MARKDOWN_PDF_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "partial",
   readinessNote:
     "Runtime wiring and focused source checks are complete; the live manifest mirror is synchronized and browser certification remains outstanding.",

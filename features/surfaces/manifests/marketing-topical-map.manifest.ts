@@ -212,6 +212,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const marketingTopicalMapManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-topical-map",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   label: "Topical Map",
   readiness: "partial",
   readinessNote:

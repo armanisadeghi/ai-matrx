@@ -5,6 +5,10 @@ export const VOICE_CHAT_SURFACE = "matrx-user/voice-chat";
 
 export const voiceChatManifest: SurfaceManifest = {
   surfaceName: VOICE_CHAT_SURFACE,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   label: "Hands-free Voice Chat",
   urlPattern: "/voice/playground",
   readiness: "partial",

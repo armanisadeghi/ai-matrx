@@ -355,6 +355,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const educationProgressManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-progress",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Study analytics dashboard + narrated progress reports (/education/progress).",
   readiness: "partial",
   readinessNote:
     "Manifest + both emitters (dashboard, learning_gain) shipped, targeting a live DB row that previously had no manifest at all. NOT yet: DB sync has not been run; no write targets are declared (every value here is derived evidence — correctly so, nothing on either view is editable); no agent roles or config namespaces are declared; no data-surface-value Locate anchors are tagged; no live-agent-run verification or Matrx-vs-matrix test has been performed; the guardian/family progress view (StudentProgressView, a different data path over a linked student's spine) is explicitly OUT of scope for this manifest — see header.",

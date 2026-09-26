@@ -250,6 +250,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const markdownStudioManifest: SurfaceManifest = {
   surfaceName: "matrx-user/markdown-studio",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "verified",
   label: "Markdown Studio",
   urlPattern: "/markdown-studio",

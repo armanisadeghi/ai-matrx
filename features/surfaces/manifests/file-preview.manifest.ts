@@ -110,6 +110,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const filePreviewManifest: SurfaceManifest = {
   surfaceName: FILE_PREVIEW_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "File preview overlay",
   readiness: "partial",
   readinessNote:
     "Window-held state (file id, page, hydrated metadata) audited and emitted; PreviewPane internals (active tab, versions, extracted text content) are not emitted",

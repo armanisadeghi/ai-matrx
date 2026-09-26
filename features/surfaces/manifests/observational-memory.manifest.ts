@@ -108,6 +108,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const observationalMemoryManifest: SurfaceManifest = {
   surfaceName: OBSERVATIONAL_MEMORY_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Agent observational memory inspector",
   readiness: "partial",
   readinessNote: "emitter wired, browser verification pending",
   overlayId: "observationalMemoryWindow",

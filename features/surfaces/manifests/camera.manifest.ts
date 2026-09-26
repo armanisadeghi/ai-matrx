@@ -68,6 +68,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const cameraManifest: SurfaceManifest = {
   surfaceName: "matrx-user/camera",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Photograph or record something and save it into files.",
   readiness: "stub",
   readinessNote:
     "Narrow vocabulary declared 2026-08-17 to close the undeclared /camera route. Capture settings and device state are not declared, and no runtime emitter is wired.",

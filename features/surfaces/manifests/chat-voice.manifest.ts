@@ -412,6 +412,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const chatVoiceManifest: SurfaceManifest = {
   surfaceName: CHAT_VOICE_SURFACE,
+  client: "matrx-user",
+  executionMode: "browser-realtime",
+  description:
+    "Realtime voice chat surface (/chat/voice). Browser↔model direct WebSocket; bypasses the Python streaming backend.",
   readiness: "partial",
   readinessNote:
     "Manifest + SurfaceRuntimeProvider emitter, registry.ts entry, and the /chat/voice route mapping (route-to-surface.ts, above the /chat prefix) are all landed and verified 2026-08-11; write targets added the same day. The DB manifest sync is still pending.",

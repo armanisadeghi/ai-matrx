@@ -461,6 +461,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const keywordResearchWindowManifest: SurfaceManifest = {
   surfaceName: KEYWORD_RESEARCH_WINDOW_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   label: "Keyword Research",
   overlayId: "keywordResearchWindow",
   readiness: "partial",

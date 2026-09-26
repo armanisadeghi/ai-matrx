@@ -85,6 +85,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const imageManagerManifest: SurfaceManifest = {
   surfaceName: "matrx-user/image-manager",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "The image hub and its tabs (tools, branded, profile photo, public search, studio library).",
   readiness: "stub",
   readinessNote:
     "Narrow hub vocabulary declared 2026-08-17 so the previously unmapped /images/** tab routes resolve to a real surface. Each tab's own data is not yet declared, and no emitter is wired.",

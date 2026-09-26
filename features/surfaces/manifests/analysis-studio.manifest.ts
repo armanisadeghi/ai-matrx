@@ -382,6 +382,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const analysisStudioManifest: SurfaceManifest = {
   surfaceName: "matrx-user/analysis-studio",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "PDF Analysis Studio (/files/f/[id]/studio) — pages, detectors, annotations, redaction. Agents act on the open file/page.",
   readiness: "verified",
   inheritsFrom: "matrx-user/pdf-extractor",
   label: "Analysis Studio",

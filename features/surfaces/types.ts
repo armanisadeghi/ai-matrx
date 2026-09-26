@@ -470,11 +470,11 @@ export interface SurfaceManifest {
    * The client that owns the surface (`ui_surface.client_name`). Always the
    * `surfaceName` prefix before the first `/`; the checks refuse a mismatch.
    */
-  client?: string;
+  client: string;
   /** `ui_surface.execution_mode`. Backfilled from the live row (ALC-14 S1). */
-  executionMode?: SurfaceExecutionMode;
+  executionMode: SurfaceExecutionMode;
   /** One sentence on what this surface is (`ui_surface.description`). */
-  description?: string;
+  description: string;
   /**
    * Whether this surface has a bindable roster of agents in the shell's
    * existing Agents menu. `bound` is the default. `universal` is reserved for

@@ -218,6 +218,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const extractorChunkerManifest: SurfaceManifest = {
   surfaceName: "matrx-user/extractor-chunker",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Chunked AI extraction Jobs on the PDF Extractor (Chunked Runs tab). Superset of pdf-extractor values plus per-chunk clean_text / raw_text / pdf_page / chunk identity.",
   readiness: "partial",
   readinessNote:
     "Groups + completeness audited against the server chunk builder; shadows of the parent's vocabulary removed 2026-08-22. Still partial because the RUNTIME EMITTER is server-side (aidream `_build_surface_vars`) and emits only `page_numbers`, `filename` (carrying the JOB name), the requested source variations, and the `selection`/`content` aliases — `chunk_index`, `chunk_count`, `job_id`, `run_id`, `chunk_first_page` and `job_name` are declared here (they are real concepts this surface owns and the FE type contract exports) but resolve empty until that builder is extended. Promote to verified in the same change that lands them.",

@@ -200,6 +200,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const contentPlanSetupManifest: SurfaceManifest = {
   surfaceName: "matrx-user/content-plan-setup",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Site Setup view of the content plan: archetype shape, counts/names, exact route preview, readiness checklist.",
   label: "Content Plan Setup",
   readiness: "partial",
   readinessNote:

@@ -236,6 +236,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const marketingLinksManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-links",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Site link graph, outbound-links report, and link-edge table.",
   readiness: "verified",
   label: "Marketing Site Links",
   urlPattern: "/marketing/[brandId]/seo/[siteId]/links",

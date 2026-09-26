@@ -27,6 +27,10 @@ export const CRM_MANAGER_SURFACE_NAME = "matrx-user/crm-manager";
 
 export const crmManagerManifest: SurfaceManifest = {
   surfaceName: CRM_MANAGER_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Floating CRM people-and-companies manager available from the main app menu",
   readiness: "verified",
   overlayId: "crmManagerWindow",
   label: "CRM Manager",

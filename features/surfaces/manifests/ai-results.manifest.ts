@@ -134,6 +134,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const aiResultsManifest: SurfaceManifest = {
   surfaceName: AI_RESULTS_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Cross-agent conversation history viewer",
   readiness: "partial",
   readinessNote: "emitter wired, browser verification pending",
   overlayId: "quickChatHistory",

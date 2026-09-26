@@ -220,6 +220,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminSkillsManifest: SurfaceManifest = {
   surfaceName: ADMIN_SKILLS_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "Skills registry admin: skills, categories, ingest",
   readiness: "partial",
   readinessNote:
     "Emitter wired, browser verification pending.",

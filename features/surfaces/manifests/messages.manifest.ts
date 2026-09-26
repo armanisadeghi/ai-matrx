@@ -228,6 +228,10 @@ const agentRoles: ManifestAgentRole[] = MESSAGING_MANDATE_ROLES.map(
 
 export const messagesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/messages",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Cross-conversation message inbox",
   agentRoles,
   readiness: "partial",
   readinessNote:

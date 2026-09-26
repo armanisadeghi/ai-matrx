@@ -393,6 +393,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const scannerManifest: SurfaceManifest = {
   surfaceName: "matrx-user/scanner",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Phone/desktop document scanner (/tools/scanner) — capture or import pages into a PDF, then hand off to the extractor pipeline.",
   readiness: "verified",
   inheritsFrom: "matrx-user/pdf-extractor",
   label: "Scanner",

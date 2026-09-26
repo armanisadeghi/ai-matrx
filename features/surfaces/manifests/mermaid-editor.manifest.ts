@@ -196,6 +196,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const mermaidEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/mermaid-editor",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Mermaid diagram workbench (canvas editor: visual / outline / code modes). Agents bound here receive the diagram source and editor state, and return ONE full updated ```mermaid fence.",
   readiness: "partial",
   readinessNote: "Bound-agent flow live; completeness not audited",
   label: "Mermaid Editor",

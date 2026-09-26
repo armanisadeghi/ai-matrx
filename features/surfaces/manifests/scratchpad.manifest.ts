@@ -42,6 +42,10 @@ import {
 
 export const scratchpadManifest: SurfaceManifest = {
   surfaceName: "matrx-user/scratchpad",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Per-conversation private scratchpad editor. The cloud agent only reads it; surface (context-menu) agents can edit it — it is just text inside the surface.",
   readiness: "verified",
   label: "Scratchpad",
   intro: `<surface_intro>

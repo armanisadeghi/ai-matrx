@@ -188,6 +188,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminGrowthLoopManifest: SurfaceManifest = {
   surfaceName: ADMIN_GROWTH_LOOP_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "Growth Loop pipeline map: stages, edges, gaps, blockers, loop score",
   readiness: "partial",
   readinessNote:
     "Emitter wired in GrowthLoopCanvasInner and matches the component's real state (the static overview + click selection), but not yet live-checked against the DB (no ui_surface row exists — the orchestrator seeds it) and never bound to a test agent for the Matrx-vs-matrix verification.",

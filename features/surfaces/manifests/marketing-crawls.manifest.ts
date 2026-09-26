@@ -257,6 +257,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const marketingCrawlsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-crawls",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Crawl sessions list and launch workspace for one site.",
   readiness: "verified",
   label: "Marketing Crawls",
   urlPattern: "/marketing/[brandId]/websites/[siteId]/crawls",

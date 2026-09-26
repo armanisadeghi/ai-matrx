@@ -598,6 +598,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const transcriptsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/transcripts",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Transcript editor and transcription views",
   readiness: "verified",
   label: "Transcripts",
   groups,

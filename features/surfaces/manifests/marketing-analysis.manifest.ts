@@ -163,6 +163,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const marketingAnalysisManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-analysis",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Open, non-suppressed priority queue for one site.",
   readiness: "verified",
   label: "Marketing Analysis Queue",
   urlPattern: "/marketing/[brandId]/seo/[siteId]/analysis",

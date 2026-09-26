@@ -173,6 +173,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const marketingSitemapsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-sitemaps",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Discovered sitemap documents and page membership evidence for one site.",
   readiness: "verified",
   label: "Marketing Sitemaps",
   urlPattern: "/marketing/[brandId]/websites/[siteId]/sitemaps",

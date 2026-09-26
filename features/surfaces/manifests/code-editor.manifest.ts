@@ -333,6 +333,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const codeEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/code-editor",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Code editing, review, and generation surfaces",
   readiness: "verified",
   label: "Code Editor",
   urlPattern: "/code",

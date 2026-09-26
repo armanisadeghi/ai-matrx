@@ -413,6 +413,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const ragDataStoresManifest: SurfaceManifest = {
   surfaceName: "matrx-user/knowledge-data-stores",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   readiness: "partial",
   readinessNote:
     "Manifest authored against the live /knowledge/data-stores component and the emitter is wired via SurfaceRuntimeProvider; not yet DB-synced and no live non-matching-name binding test run. The publish panel's per-audience grant rows stay undeclared — they load inside LibraryPublishPanel and nothing lifts them to the route.",

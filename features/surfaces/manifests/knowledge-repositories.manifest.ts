@@ -142,6 +142,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const knowledgeRepositoriesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/knowledge-repositories",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "The repository list for Knowledge indexing: the repositories visible to this person and their indexing state.",
   label: "Knowledge Repositories",
   readiness: "partial",
   readinessNote:

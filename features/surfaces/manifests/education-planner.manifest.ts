@@ -290,6 +290,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const educationPlannerManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-planner",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "AI study planner: goal, exam date, daily minutes, agenda (/education/planner).",
   readiness: "partial",
   readinessNote:
     "Manifest + emitter + four write targets shipped and verified with a live agent run. Not yet stamped verified: no agent roles or config namespaces are declared; no `data-surface-value` Locate anchors are tagged; and the return-after-absence / plan-staleness banners are transient UI prompts derived from a heavy cross-mode snapshot (collectPlanSummary), so their computed `reason` strings are deliberately not emitted — the underlying facts (plan_progress.overdue, last_study_session_at, the agenda dates) are.",

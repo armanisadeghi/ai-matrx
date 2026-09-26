@@ -365,6 +365,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const htmlPageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/html-page",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Standalone published HTML page editor (html_pages table, distinct from client sites)",
   readiness: "verified",
   label: "HTML Page",
   urlPattern: "/cms/html-pages/[pageId]",

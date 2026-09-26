@@ -673,6 +673,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const agentBuilderManifest: SurfaceManifest = {
   surfaceName: "matrx-user/agent-builder",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Agent creation and editing interface",
   readiness: "verified",
   label: "Agent Builder",
   urlPattern: "/agents/[id]/build",

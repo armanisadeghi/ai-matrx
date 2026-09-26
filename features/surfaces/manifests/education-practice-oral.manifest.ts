@@ -359,6 +359,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const educationPracticeOralManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-practice-oral",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Spoken oral-practice sessions with AI examiner grading (/education/practice-oral).",
   readiness: "partial",
   readinessNote:
     "Manifest + emitter + two write targets shipped and verified with a live agent run against the setup form. Not yet stamped verified: no agent roles or config namespaces are declared; no `data-surface-value` Locate anchors are tagged; the live microphone level (`micLevel`) is deliberately not emitted because it is an rAF-driven number that would flap on every 400ms getScope poll; and the running half of the surface (runner + summary values) has been read-audited against the components but not exercised end to end, because a real run needs a microphone.",

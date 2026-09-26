@@ -181,6 +181,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const aiWorkConversationsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/ai-work-conversations",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Browse and inspect every accessible conversation, native or mirrored.",
   readiness: "stub",
   readinessNote:
     "Vocabulary declared 2026-08-17 to close an undeclared route family (/work/conversations and its detail route). Not yet audited against the entity-list config and provenance panel, and no runtime emitter is wired.",

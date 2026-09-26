@@ -438,6 +438,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminUtilitiesManifest: SurfaceManifest = {
   surfaceName: ADMIN_UTILITIES_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "Utilities admin family: all-routes, caches, capture-inspector, content-blocks, message-templates, markdown-tester, text-cleaner (kind-registry excluded)",
   readiness: "partial",
   readinessNote:
     "Emitter wired, browser verification pending. kind-registry remains deliberately excluded as its own surface.",

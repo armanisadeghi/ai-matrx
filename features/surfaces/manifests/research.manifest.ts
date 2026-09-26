@@ -638,6 +638,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const researchManifest: SurfaceManifest = {
   surfaceName: "matrx-user/research",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Research and analysis views",
   readiness: "verified",
   label: "Research",
   urlPattern: "/research/topics/[topicId]",

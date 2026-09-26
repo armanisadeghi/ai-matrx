@@ -224,6 +224,10 @@ export const IMAGE_GENERATE_SURFACE_NAME = "matrx-user/image-generate";
 
 export const imageGenerateManifest: SurfaceManifest = {
   surfaceName: IMAGE_GENERATE_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Text-to-image generation at /images/generate (also fronts /images/ai-generate).",
   readiness: "partial",
   readinessNote:
     "READ half: GenerateShellClient emitter wired. WRITE half: `generation_request` target declared and handler wired. Remaining: no `data-surface-value` anchors, no live non-matching-name binding test. Known and accepted: /images/ai-generate mounts no provider — it is a coming-soon hero that loads nothing (never declare what nothing emits); it gains one when that page becomes real.",

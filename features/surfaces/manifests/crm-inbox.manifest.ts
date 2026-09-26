@@ -123,6 +123,10 @@ const values: SurfaceValue[] = [
 
 export const crmInboxManifest: SurfaceManifest = {
   surfaceName: CRM_INBOX_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Every reply an outreach campaign got back, with the classifier verdict and the evidence behind it",
   readiness: "partial",
   readinessNote:
     "Read vocabulary verified against crm_inbox_list_scoped's own return shape; values are emitted by the canonical entity-list shell (EntityListPage `surface` binding), so they cannot drift from what is rendered. `visible_replies` is autoContext:false at ~4000 chars, so it arrives DEFERRED — verify it with retrieval allowed. Pending: WP5 to fill reply_reader's default agent (IC-7).",

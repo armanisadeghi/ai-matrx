@@ -197,6 +197,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const taskCreateManifest: SurfaceManifest = {
   surfaceName: TASK_CREATE_SURFACE_NAME,
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Quick task creation overlay",
   readiness: "partial",
   readinessNote:
     "Opener payload and the live form draft (task_draft) are both emitted and the task_draft write target is live-verified; the project and scope PICK LISTS the form renders are still not emitted, which is why neither is agent-writable",

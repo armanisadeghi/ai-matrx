@@ -67,6 +67,10 @@ const values: SurfaceValue[] = [
 ];
 export const adminLimitsManifest: SurfaceManifest = {
   surfaceName: ADMIN_LIMITS_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "",
   label: "Limits and Knobs",
   urlPattern: "/administration/users/limits",
   readiness: "partial",

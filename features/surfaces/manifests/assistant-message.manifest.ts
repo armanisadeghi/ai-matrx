@@ -182,6 +182,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const assistantMessageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/assistant-message",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Read-only rendered conversation thread (the chat message display). Right-click a message or content block to act on it. Read side of matrx-user/chat.",
   readiness: "verified",
   label: "Assistant Message",
   urlPattern: "/chat",

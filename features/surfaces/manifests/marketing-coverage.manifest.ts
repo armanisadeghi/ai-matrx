@@ -252,6 +252,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const marketingCoverageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-coverage",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Source-disagreement coverage matrix over the canonical page registry.",
   readiness: "verified",
   label: "Marketing Coverage Matrix",
   urlPattern: "/marketing/[brandId]/seo/[siteId]/coverage",

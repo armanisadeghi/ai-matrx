@@ -217,6 +217,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const keywordIntelligenceManifest: SurfaceManifest = {
   surfaceName: "matrx-user/keyword-intelligence",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "",
   label: "Keyword Intelligence",
   overlayId: "keywordWindow",
   readiness: "partial",

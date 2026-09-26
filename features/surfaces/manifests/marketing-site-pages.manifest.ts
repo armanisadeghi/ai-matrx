@@ -118,6 +118,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const marketingSitePagesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-site-pages",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Canonical page registry for one site — coverage filters, health verdicts, GSC metrics.",
   readiness: "verified",
   label: "Marketing Pages Registry",
   urlPattern: "/marketing/[brandId]/websites/[siteId]/pages",

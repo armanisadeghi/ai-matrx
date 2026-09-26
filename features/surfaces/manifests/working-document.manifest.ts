@@ -41,6 +41,10 @@ import {
 
 export const workingDocumentManifest: SurfaceManifest = {
   surfaceName: "matrx-user/working-document",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Per-conversation collaborative working document editor. The cloud agent reads and writes it; surface agents act on the user's selection or the whole body.",
   readiness: "verified",
   label: "Working Document",
   intro: `<surface_intro>

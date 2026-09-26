@@ -109,6 +109,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const aiWorkManifest: SurfaceManifest = {
   surfaceName: "matrx-user/ai-work",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "AI Work hub: the overview directory, Saved Requests, and connections.",
   readiness: "stub",
   readinessNote:
     "Baseline vocabulary declared 2026-08-17 to close an undeclared Tier-1 route family (/work, /work/requests, /work/connections). Not yet audited field-by-field against each page, and no runtime emitter is wired.",

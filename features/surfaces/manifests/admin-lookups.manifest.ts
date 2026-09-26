@@ -260,6 +260,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const adminLookupsManifest: SurfaceManifest = {
   surfaceName: ADMIN_LOOKUPS_SURFACE_NAME,
+  client: "matrx-admin",
+  executionMode: "python-stream",
+  description:
+    "Tool registry lookup tables admin",
   readiness: "verified",
   readinessNote:
     "Emitter + write half both live. LookupsAdminPage mounts the SurfaceRuntimeProvider; its three CRUD sub-components and the open row dialog publish into the page-scoped store in components/LookupsSurfaceRuntime.tsx, which builds both the scope and the lookup_draft handler. Not yet mirrored to ui.ui_surface_write_target.",

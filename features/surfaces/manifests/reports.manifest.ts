@@ -96,6 +96,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const reportsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/reports",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Read-only analyses over platform data.",
   readiness: "stub",
   readinessNote:
     "Vocabulary declared 2026-08-17 to close the undeclared /reports module. Per-report data is not declared (only Agent Drift exists today), and no runtime emitter is wired.",

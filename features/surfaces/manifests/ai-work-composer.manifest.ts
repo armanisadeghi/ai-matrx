@@ -205,6 +205,10 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const aiWorkComposerManifest: SurfaceManifest = {
   surfaceName: "matrx-user/ai-work-composer",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "The eight-step composer at /work/new that assembles and launches one run.",
   readiness: "stub",
   readinessNote:
     "Vocabulary declared 2026-08-17 to close an agent-LAUNCHING page that had no surface declaration at all. Not yet audited step-by-step against the eight composer steps, and the emitter is not wired — AiWorkComposer still launches with an ad-hoc surfaceKey instead of runtime.surfaceName.",

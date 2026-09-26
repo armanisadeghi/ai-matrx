@@ -383,6 +383,10 @@ const clientTools: SurfaceClientTool[] = [
 
 export const contentPlanManifest: SurfaceManifest = {
   surfaceName: "matrx-user/content-plan",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Content Plan workspace — the editable plan.node tree, briefs, keywords, topics, and E-E-A-T entities for one managed website.",
   label: "Content Plan",
   readiness: "partial",
   readinessNote:

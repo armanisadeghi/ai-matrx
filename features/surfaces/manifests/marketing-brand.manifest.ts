@@ -179,6 +179,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const marketingBrandManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-brand",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Brand cockpit — identity, editorial profile, properties, confirmed facts, assets, managed sites.",
   readiness: "verified",
   label: "Marketing Brand Cockpit",
   urlPattern: "/marketing/[brandId]",

@@ -451,6 +451,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const educationMemoryManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-memory",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Generate and view memory aids (/education/memory).",
   readiness: "partial",
   readinessNote:
     "Manifest, all three emitters (list, new, detail) and the two create-view write targets are shipped, DB-synced, and verified against live agent runs: the Agents popover names this surface, runs receive real page scope instead of the empty-scope fallback they took before, and both targets stage into the learner's own inputs behind an ask. Not yet stamped verified: no agent roles or config namespaces are declared, and two child controls on the new view load state this manifest does not declare — EntitlementMeter's `education.memory_generate` allowance and useAiComplianceGate's COPPA status.",

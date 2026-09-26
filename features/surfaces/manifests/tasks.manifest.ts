@@ -440,6 +440,10 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const tasksManifest: SurfaceManifest = {
   surfaceName: "matrx-user/tasks",
+  client: "matrx-user",
+  executionMode: "python-stream",
+  description:
+    "Task management and to-do lists",
   readiness: "partial",
   readinessNote:
     "Static S1-S18 repair is complete; independent desktop/mobile and light/dark browser certification is pending",
