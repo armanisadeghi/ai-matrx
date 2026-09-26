@@ -16,6 +16,7 @@
  *   POST /api/scraper/search-and-scrape-limited — single keyword, limited pages
  */
 
+import type { components } from "@/types/python-generated/api-types";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { ENDPOINTS } from "@/lib/api/endpoints";
@@ -386,6 +387,41 @@ export interface BatchScrapeRow {
   result: ScraperResult | null;
   /** Plain-English reason, present only when `success` is false. Never a stack trace or raw JSON. */
   failureMessage: string | null;
+  /**
+   * The Source this page landed as (SOURCE-CONVERGENCE §4.1): every successful
+   * scrape lands through the door at the route's result boundary and the page
+   * payload carries its `processed_document_id`. `null` when it did not land —
+   * `sourceNotices` then says why (or the server predates the door).
+   */
+  processedDocumentId: string | null;
+  /** Every decision the door made about this page, in sentences — rendered, never dropped. */
+  sourceNotices: BatchSourceNotice[];
+}
+
+/** The door's notice shape — the generated contract, never a mirror. */
+export type BatchSourceNotice = components["schemas"]["LandingNotice"];
+
+function readSourceLanding(raw: Record<string, unknown>): {
+  processedDocumentId: string | null;
+  sourceNotices: BatchSourceNotice[];
+} {
+  const id = raw.processed_document_id;
+  const notices = Array.isArray(raw.notices) ? raw.notices : [];
+  return {
+    processedDocumentId: typeof id === "string" && id ? id : null,
+    sourceNotices: notices.flatMap((n): BatchSourceNotice[] => {
+      if (!n || typeof n !== "object") return [];
+      const r = n as Record<string, unknown>;
+      if (typeof r.message !== "string" || !r.message.trim()) return [];
+      return [
+        {
+          code: typeof r.code === "string" ? r.code : "notice",
+          message: r.message,
+          remedy: typeof r.remedy === "string" ? r.remedy : "",
+        },
+      ];
+    }),
+  };
 }
 
 export interface UseScraperApiReturn extends ScraperApiState {
@@ -1233,7 +1269,14 @@ export function useScraperApi(): UseScraperApiReturn {
                   error: rawScrapeRowFailureMessage(raw),
                   diagnostics: null,
                 }).title;
-          return { url, success: false, result: null, failureMessage };
+          return {
+            url,
+            success: false,
+            result: null,
+            failureMessage,
+            processedDocumentId: null,
+            sourceNotices: [],
+          };
         }
         try {
           return {
@@ -1241,6 +1284,7 @@ export function useScraperApi(): UseScraperApiReturn {
             success: true,
             result: mapToScraperResult(raw, url, {}),
             failureMessage: null,
+            ...readSourceLanding(raw),
           };
         } catch (mapErr) {
           return {
@@ -1251,6 +1295,8 @@ export function useScraperApi(): UseScraperApiReturn {
               error: extractErrorMessage(mapErr),
               diagnostics: null,
             }).title,
+            processedDocumentId: null,
+            sourceNotices: [],
           };
         }
       };
@@ -1328,6 +1374,8 @@ export function useScraperApi(): UseScraperApiReturn {
             success: false,
             result: null,
             failureMessage,
+            processedDocumentId: null,
+            sourceNotices: [],
           };
           rows.push(row);
           onRow(row);

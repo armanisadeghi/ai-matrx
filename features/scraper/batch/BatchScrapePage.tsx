@@ -41,15 +41,15 @@
 // server did not mark `next_rung === "own_browser"`, because inferring the next
 // rung on the client is how a rung gets skipped.
 //
-// LIBRARY HAND-OFF: there is no scraped-content "Library" write path in this
-// repo (`features/source-library` is the YouTube/video Media Source Catalog —
-// a different noun for a different kind of source). Inventing a Library
-// endpoint here would be exactly the kind of fake backend this platform
-// refuses to ship. The one real, already-existing persistence surface a
-// scraped page can go to is Notes (`features/notes/service/notesApi.ts`), so
-// the bulk action saves each selected successful row there and says so —
-// never a silent no-op, never a button that pretends to reach a Library that
-// does not exist.
+// SOURCES (SOURCE-CONVERGENCE §4.1, 2026-09-25): every page this screen reads
+// already LANDED as a Source at the scrape route's result boundary — the
+// server's page payload carries its `processed_document_id` and any notices
+// the door raised. So the bulk action is no longer "copy into Notes" (the old
+// stopgap, deleted): it is Keep — `POST /sources/{id}/keep`, the signal
+// that starts the Source's AI processing, optionally filing it against attach
+// targets. Screen copy says "Save" until "Keep" has a vocabulary row (plan §8).
+// Each row shows its Source and opens it. A row that did not land
+// says why (the door's own sentence), never a silent gap.
 
 import Link from "next/link";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -59,7 +59,12 @@ import {
   ensureOrganizationContext,
   isOrganizationSelectionCancelled,
 } from "@/lib/organization/organization-gate";
-import { NotesAPI } from "@/features/notes/service/notesApi";
+import {
+  keepSource,
+  sourceHref,
+  type SourceAttachTarget,
+} from "@/features/sources/api/sourcesApi";
+import { BackendApiError } from "@/lib/api/errors";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -76,7 +81,7 @@ import {
   Clock,
   RotateCw,
   ExternalLink,
-  NotebookPen,
+  Bookmark,
   MonitorSmartphone,
 } from "lucide-react";
 import {
@@ -110,6 +115,11 @@ interface BatchRow extends LadderCandidate {
   status: RowStatus;
   result: BatchScrapeRow["result"];
   failureMessage: string | null;
+  /** The Source this page landed as; null when it did not land (see `sourceNotices`). */
+  processedDocumentId: string | null;
+  sourceNotices: BatchScrapeRow["sourceNotices"];
+  /** True once the person kept this Source from this screen. */
+  kept: boolean;
 }
 
 function toPending(url: string): BatchRow {
@@ -119,6 +129,9 @@ function toPending(url: string): BatchRow {
     result: null,
     failureMessage: null,
     ladder: null,
+    processedDocumentId: null,
+    sourceNotices: [],
+    kept: false,
   };
 }
 
@@ -130,6 +143,9 @@ function fromBatchRow(row: BatchScrapeRow): BatchRow {
     failureMessage: row.failureMessage,
     // The server's verdict, carried verbatim. `null` when it did not give one.
     ladder: row.result?.ladder ?? null,
+    processedDocumentId: row.processedDocumentId,
+    sourceNotices: row.sourceNotices,
+    kept: false,
   };
 }
 
@@ -238,13 +254,26 @@ export default function BatchScrapePage() {
     [scrapeUrlsBatch, updateRow],
   );
 
-  const handleSaveSelectedToNotes = useCallback(
-    async (selectedRows: BatchRow[]) => {
-      const savable = selectedRows.filter(
-        (r) => r.status === "success" && r.result,
-      );
-      if (savable.length === 0) {
+  /**
+   * Keep the selected Sources (and file them against `attachTo` when given).
+   * Keep is a server write — it is the signal that starts AI processing — so it
+   * goes through `POST /sources/{id}/keep`, one Source per call, and every
+   * refusal reaches the toast in the server's own words.
+   */
+  const handleKeepSelected = useCallback(
+    async (selectedRows: BatchRow[], attachTo: SourceAttachTarget[] = []) => {
+      const readRows = selectedRows.filter((r) => r.status === "success");
+      if (readRows.length === 0) {
         toast.error("Select at least one successfully read page first");
+        return;
+      }
+      const notLanded = readRows.filter((r) => !r.processedDocumentId);
+      const keepable = readRows.filter((r) => r.processedDocumentId);
+      if (keepable.length === 0) {
+        toast.error(
+          notLanded[0]?.sourceNotices[0]?.message ??
+            "None of the selected pages became a Source, so there is nothing to save. Scrape them again.",
+        );
         return;
       }
       setSaving(true);
@@ -253,44 +282,55 @@ export default function BatchScrapePage() {
           organizationId,
         });
         let ok = 0;
-        let failed = 0;
-        for (const row of savable) {
-          const result = row.result!;
+        const refusals: string[] = [];
+        for (const row of keepable) {
           try {
-            await NotesAPI.create({
-              label: result.overview.page_title || row.url,
-              content:
-                (result.markdownRenderable ?? result.textContent) +
-                `\n\nSource: ${row.url}`,
-              folder_name: "Batch Scrape",
-              tags: ["batch-scrape"],
-              organization_id: capturedOrganizationId,
+            const landed = await keepSource(row.processedDocumentId as string, {
+              attachTo,
+              organizationId: capturedOrganizationId,
             });
             ok += 1;
-          } catch {
-            failed += 1;
+            updateRow({
+              ...row,
+              kept: landed.kept,
+              sourceNotices: landed.notices ?? row.sourceNotices,
+            });
+          } catch (error) {
+            refusals.push(
+              error instanceof BackendApiError
+                ? error.userMessage
+                : error instanceof Error && error.message
+                  ? error.message
+                  : "The server did not say why.",
+            );
           }
         }
-        if (failed === 0) {
+        const skipped =
+          notLanded.length > 0
+            ? ` ${notLanded.length} ${notLanded.length === 1 ? "page did" : "pages did"} not become a Source, so ${notLanded.length === 1 ? "it was" : "they were"} skipped.`
+            : "";
+        if (refusals.length === 0) {
           toast.success(
-            ok === 1
-              ? "Saved 1 page to Notes → Batch Scrape"
-              : `Saved ${ok} pages to Notes → Batch Scrape`,
+            (ok === 1 ? "Saved 1 Source." : `Saved ${ok} Sources.`) + skipped,
           );
           setSelectedIds([]);
         } else {
           toast.error(
-            `Saved ${ok} of ${savable.length} to Notes — ${failed} failed to save`,
+            `Saved ${ok} of ${keepable.length}. ${refusals[0]}${refusals.length > 1 ? ` (and ${refusals.length - 1} more)` : ""}${skipped}`,
           );
         }
       } catch (error) {
         if (isOrganizationSelectionCancelled(error)) return;
-        toast.error("Could not save to Notes");
+        toast.error(
+          error instanceof BackendApiError
+            ? error.userMessage
+            : "Could not save these Sources and we could not say why.",
+        );
       } finally {
         setSaving(false);
       }
     },
-    [organizationId],
+    [organizationId, updateRow],
   );
 
   // Every row the SERVER sent to rung 3. Not "every failure" — a 404 is a 404
@@ -411,6 +451,55 @@ export default function BatchScrapePage() {
                 {rung.next}
               </span>
             ) : null}
+          </div>
+        );
+      },
+    },
+    {
+      id: "source",
+      header: "Source",
+      filter: false,
+      cell: (row) => {
+        if (row.status !== "success") {
+          return <span className="text-xs text-muted-foreground">—</span>;
+        }
+        if (!row.processedDocumentId) {
+          return (
+            <span className="text-xs text-amber-700 dark:text-amber-400">
+              {row.sourceNotices[0]?.message ?? "This page did not become a Source."}
+            </span>
+          );
+        }
+        return (
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="flex items-center gap-1.5">
+              <Link
+                href={sourceHref(row.processedDocumentId)}
+                className="text-xs font-medium text-primary hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Open
+              </Link>
+              {row.kept ? (
+                <Badge
+                  variant="neutral"
+                  className="h-4 px-1 text-[10px] font-normal text-emerald-700 dark:text-emerald-400"
+                >
+                  Saved
+                </Badge>
+              ) : null}
+            </span>
+            <span
+              className="font-mono text-[10px] text-muted-foreground"
+              title={row.processedDocumentId}
+            >
+              {row.processedDocumentId.slice(0, 8)}
+            </span>
+            {row.sourceNotices.map((n) => (
+              <span key={n.code + n.message} className="text-[10px] text-muted-foreground">
+                {n.message}
+              </span>
+            ))}
           </div>
         );
       },
@@ -587,14 +676,14 @@ export default function BatchScrapePage() {
                       size="sm"
                       className="h-7 gap-1.5 text-xs"
                       disabled={saving}
-                      onClick={() => void handleSaveSelectedToNotes(selected)}
+                      onClick={() => void handleKeepSelected(selected)}
                     >
                       {saving ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <NotebookPen className="h-3.5 w-3.5" />
+                        <Bookmark className="h-3.5 w-3.5" />
                       )}
-                      Save selected to Notes
+                      Save selected
                     </Button>
                   ),
                 }}

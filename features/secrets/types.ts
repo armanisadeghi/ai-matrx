@@ -214,12 +214,8 @@ export type VaultRevealResponse = ApiSchemas["VaultRevealResponse"];
 export type VaultPasswordHistoryEntry = ApiSchemas["VaultPasswordHistoryEntry"];
 export type VaultPasswordHistoryResponse =
   ApiSchemas["VaultPasswordHistoryResponse"];
-export type VaultPasswordHistoryRevealResponse = {
-  item_id: string;
-  field_id: string;
-  revision: number;
-  value: string;
-};
+export type VaultPasswordHistoryRevealResponse =
+  ApiSchemas["VaultPasswordHistoryRevealResponse"];
 export type VaultShareRequest = ApiSchemas["VaultShareRequest"];
 export type VaultAuditEntry = ApiSchemas["VaultAuditEntry"];
 export type VaultGrant = ApiSchemas["VaultGrantOut"];

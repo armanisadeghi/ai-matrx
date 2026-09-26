@@ -13935,6 +13935,68 @@
         }
       }
     },
+    "/vault/items/{item_id}/password-history/reveal": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Reveal Password History",
+        "description": "Explicitly reveal one historical ordinary-password state.  The route\nis no-store and the service performs current-owner, recent-auth, closed\nchain, and post-decrypt revocation checks before returning plaintext.",
+        "operationId": "reveal_password_history_vault_items__item_id__password_history_reveal_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultPasswordHistoryRevealRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultPasswordHistoryRevealResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/vault/backups/preview": {
       "post": {
         "tags": [
@@ -49534,6 +49596,7 @@
           "Scraper"
         ],
         "summary": "Content Save",
+        "description": "Save a page a person's own computer or browser read — as a Source (SOURCE-CONVERGENCE §4.4).\n\nDesktop (matrx-local) and the extension's scrape tool push the parse they made here. It lands\nthrough the landing door (the identity row in ``scraper.scrape_parsed_page`` is created there,\nowned by the person) and the answer carries the Source id. The person is the one this request\nwas admitted for (the forwarded JWT); the organization is the admitted one. Nothing is written\nto the page cache: the cache is the scraper's own, never a Source body (§1 rule 5).",
         "operationId": "content_save_scraper_content_save_post",
         "requestBody": {
           "content": {
@@ -49551,9 +49614,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
+                  "additionalProperties": true,
                   "type": "object",
                   "title": "Response Content Save Scraper Content Save Post"
                 }
@@ -73567,6 +73628,47 @@
             }
           }
         }
+      },
+      "get": {
+        "tags": [
+          "RAG Search Lab"
+        ],
+        "summary": "Inventory Get Endpoint",
+        "operationId": "inventory_get_endpoint_rag_search_lab_inventory_get",
+        "parameters": [
+          {
+            "name": "admin_bypass_acl",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Admin Bypass Acl"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/rag/search-lab/diagnose": {
@@ -83167,6 +83269,196 @@
                   "type": "object",
                   "additionalProperties": true,
                   "title": "Response Dismiss Handoff Capture Handoffs  Handoff Id  Dismiss Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sources/land": {
+      "post": {
+        "tags": [
+          "Sources"
+        ],
+        "summary": "Land",
+        "description": "Land one acquisition as a Source (the processed document every producer converges on).",
+        "operationId": "land_sources_land_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceLanding"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LandedSource"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sources/{processed_document_id}/keep": {
+      "post": {
+        "tags": [
+          "Sources"
+        ],
+        "summary": "Keep",
+        "description": "Keep a Source and/or file it — the signal that starts its AI processing.",
+        "operationId": "keep_sources__processed_document_id__keep_post",
+        "parameters": [
+          {
+            "name": "processed_document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Processed Document Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeepBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LandedSource"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sources/{processed_document_id}/edit": {
+      "post": {
+        "tags": [
+          "Sources"
+        ],
+        "summary": "Edit",
+        "description": "Save a person's edit beside the original (the original capture is never overwritten).",
+        "operationId": "edit_sources__processed_document_id__edit_post",
+        "parameters": [
+          {
+            "name": "processed_document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Processed Document Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LandedSource"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sources/internal/land": {
+      "post": {
+        "tags": [
+          "Sources (internal)"
+        ],
+        "summary": "Internal Land",
+        "description": "Land one acquisition for the person the bridge named, in the organization it verified.",
+        "operationId": "internal_land_sources_internal_land_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceLanding"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LandedSource"
                 }
               }
             }
@@ -107956,6 +108248,37 @@
         "title": "AttachResourceRequest",
         "description": "What the chooser sends. Only `provider` plus one of `resource_ref` /\n`resource_id` decides anything — the display fields ride along so the\nclient can post a candidate back unchanged, and the server re-reads the\nreal row rather than trusting them."
       },
+      "AttachTarget": {
+        "properties": {
+          "entity_type": {
+            "type": "string",
+            "title": "Entity Type"
+          },
+          "entity_id": {
+            "type": "string",
+            "title": "Entity Id"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "entity_type",
+          "entity_id"
+        ],
+        "title": "AttachTarget",
+        "description": "An entity the Source is filed against (``platform.associations``)."
+      },
       "AttachableKindInfo": {
         "properties": {
           "resource_type": {
@@ -111293,6 +111616,19 @@
             "type": "boolean",
             "title": "Fast",
             "default": false
+          },
+          "keep": {
+            "type": "boolean",
+            "title": "Keep",
+            "default": false
+          },
+          "attach_to": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Attach To"
           }
         },
         "type": "object",
@@ -140184,6 +140520,28 @@
             "type": "integer",
             "title": "Char Count",
             "default": 0
+          },
+          "origin_client": {
+            "type": "string",
+            "enum": [
+              "extension",
+              "local"
+            ],
+            "title": "Origin Client",
+            "default": "local"
+          },
+          "keep": {
+            "type": "boolean",
+            "title": "Keep",
+            "default": false
+          },
+          "attach_to": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Attach To"
           }
         },
         "type": "object",
@@ -159755,6 +160113,24 @@
           "items"
         ],
         "title": "EdgesTop"
+      },
+      "EditBody": {
+        "properties": {
+          "portions": {
+            "items": {
+              "$ref": "#/components/schemas/Portion"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Portions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "portions"
+        ],
+        "title": "EditBody"
       },
       "EditInputsRetryProposal": {
         "properties": {
@@ -189389,6 +189765,25 @@
         ],
         "title": "KayakoServiceStatus"
       },
+      "KeepBody": {
+        "properties": {
+          "keep": {
+            "type": "boolean",
+            "title": "Keep",
+            "default": true
+          },
+          "attach_to": {
+            "items": {
+              "$ref": "#/components/schemas/AttachTarget"
+            },
+            "type": "array",
+            "title": "Attach To"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "KeepBody"
+      },
       "KeyFindingEntry": {
         "properties": {
           "label_category": {
@@ -193586,6 +193981,98 @@
         },
         "type": "object",
         "title": "LabelRequest"
+      },
+      "LandedSource": {
+        "properties": {
+          "processed_document_id": {
+            "type": "string",
+            "title": "Processed Document Id"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "reused_existing": {
+            "type": "boolean",
+            "title": "Reused Existing"
+          },
+          "new_version_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Version Of"
+          },
+          "kept": {
+            "type": "boolean",
+            "title": "Kept"
+          },
+          "intelligence": {
+            "type": "string",
+            "enum": [
+              "deferred",
+              "never",
+              "queued"
+            ],
+            "title": "Intelligence"
+          },
+          "original_file_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original File Id"
+          },
+          "notices": {
+            "items": {
+              "$ref": "#/components/schemas/LandingNotice"
+            },
+            "type": "array",
+            "title": "Notices"
+          }
+        },
+        "type": "object",
+        "required": [
+          "processed_document_id",
+          "source_id",
+          "reused_existing",
+          "kept",
+          "intelligence"
+        ],
+        "title": "LandedSource",
+        "description": "What every producer surfaces: the Source's id and what happens to it next.\n\n``notices`` is every decision the door made on the caller's behalf that the person should\nhear — processing deferred until a Keep, processing turned off for the kind, the original not\nkept because the organization turned originals off, a default filing place that failed, the\nledger row that could not be written, a processing job that could not be queued. Each is a\ncode, a sentence and a remedy; a client renders them, never drops them (nothing is silent).\n``intelligence == \"queued\"`` means a durable ``runtime.work_item`` row exists for the Source."
+      },
+      "LandingNotice": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "remedy": {
+            "type": "string",
+            "title": "Remedy",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "LandingNotice",
+        "description": "Something the door did on the caller's behalf, said out loud (nothing is silent)."
       },
       "LandingiServiceStatus": {
         "properties": {
@@ -217833,6 +218320,43 @@
         ],
         "title": "OrganizationSummary"
       },
+      "Original": {
+        "properties": {
+          "bytes_b64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bytes B64"
+          },
+          "file_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Id"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mime_type"
+        ],
+        "title": "Original",
+        "description": "The original bytes behind a Source — kept in S3, never in Postgres."
+      },
       "OsfPublicProject": {
         "properties": {
           "__kind": {
@@ -220172,6 +220696,38 @@
             },
             "type": "array",
             "title": "Failure Details"
+          },
+          "processed_document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed Document Id"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "notices": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Notices"
           }
         },
         "type": "object",
@@ -228818,6 +229374,53 @@
         "title": "PollyStatusResult",
         "description": "Safe projection of Polly's high-level service status."
       },
+      "Portion": {
+        "properties": {
+          "ordinal": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Ordinal",
+            "description": "1-based position in the Source."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "message",
+              "page",
+              "section",
+              "segment",
+              "sheet",
+              "slide"
+            ],
+            "title": "Kind"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "locator": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Locator",
+            "description": "page {\"page\": n}; section {\"heading_path\": [...], \"text_fragment\": \"...\"}; segment {\"t0_ms\", \"t1_ms\", \"speaker\"}; message {\"message_id\"}; sheet {\"sheet\", \"row_start\", \"row_end\"}; slide {\"slide\": n}"
+          },
+          "method": {
+            "type": "string",
+            "title": "Method",
+            "default": "native"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ordinal",
+          "kind",
+          "text",
+          "locator"
+        ],
+        "title": "Portion",
+        "description": "One addressable piece of a Source: a page, a section, a timed segment, a message."
+      },
       "Position": {
         "properties": {
           "x": {
@@ -235428,6 +236031,91 @@
           "seed_keyword"
         ],
         "title": "ProspectQuery"
+      },
+      "Provenance": {
+        "properties": {
+          "origin_client": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "backfill",
+              "cloud_browser",
+              "crawl",
+              "extension",
+              "local",
+              "research",
+              "transcription",
+              "upload",
+              "web",
+              "youtube"
+            ],
+            "title": "Origin Client"
+          },
+          "capture_method": {
+            "type": "string",
+            "enum": [
+              "browser",
+              "captions",
+              "http",
+              "human_drive",
+              "native",
+              "ocr",
+              "own_browser",
+              "residential",
+              "speech"
+            ],
+            "title": "Capture Method"
+          },
+          "captured_by_rung": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Captured By Rung"
+          },
+          "rung_trail": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Rung Trail"
+          },
+          "captured_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Captured At"
+          },
+          "final_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Url"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "origin_client",
+          "capture_method",
+          "captured_at",
+          "user_id"
+        ],
+        "title": "Provenance",
+        "description": "Who obtained this, how, and when."
       },
       "ProviderAttachablePayload": {
         "properties": {
@@ -265401,6 +266089,112 @@
         "type": "object",
         "title": "SourceFilterModel"
       },
+      "SourceLanding": {
+        "properties": {
+          "source_kind": {
+            "type": "string",
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "canonical_identity": {
+            "type": "string",
+            "title": "Canonical Identity"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type"
+          },
+          "portions": {
+            "items": {
+              "$ref": "#/components/schemas/Portion"
+            },
+            "type": "array",
+            "title": "Portions"
+          },
+          "original": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Original"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "structured": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Structured"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/Provenance"
+          },
+          "attach_to": {
+            "items": {
+              "$ref": "#/components/schemas/AttachTarget"
+            },
+            "type": "array",
+            "title": "Attach To"
+          },
+          "content_already_clean": {
+            "type": "boolean",
+            "title": "Content Already Clean",
+            "default": false
+          },
+          "keep": {
+            "type": "boolean",
+            "title": "Keep",
+            "default": false
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "internal",
+              "personal"
+            ],
+            "title": "Visibility",
+            "default": "personal"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_kind",
+          "canonical_identity",
+          "name",
+          "mime_type",
+          "portions",
+          "provenance",
+          "organization_id"
+        ],
+        "title": "SourceLanding",
+        "description": "Everything the door needs to land one acquisition as a Source."
+      },
       "SourcePackageMetadata": {
         "properties": {
           "__kind": {
@@ -292607,8 +293401,10 @@
         "properties": {
           "revision": {
             "type": "integer",
+            "maximum": 100.0,
             "minimum": 1.0,
-            "title": "Revision"
+            "title": "Revision",
+            "description": "Gate B reconstruction cap; this does not define retention."
           },
           "recorded_at": {
             "type": "string",
@@ -292704,7 +293500,62 @@
           "incomplete"
         ],
         "title": "VaultPasswordHistoryResponse",
-        "description": "Metadata only; a future explicit reveal contract owns old values."
+        "description": "Value-free password-history timeline metadata."
+      },
+      "VaultPasswordHistoryRevealRequest": {
+        "properties": {
+          "field_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Field Id"
+          },
+          "revision": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Revision",
+            "description": "Gate B reconstruction cap; this does not define retention."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "field_id",
+          "revision"
+        ],
+        "title": "VaultPasswordHistoryRevealRequest",
+        "description": "The exact historical field state the caller wants to reveal."
+      },
+      "VaultPasswordHistoryRevealResponse": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "field_id": {
+            "type": "string",
+            "title": "Field Id"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Revision"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_id",
+          "field_id",
+          "revision",
+          "value"
+        ],
+        "title": "VaultPasswordHistoryRevealResponse",
+        "description": "One explicitly requested old value; never ciphertext or fingerprints."
       },
       "VaultResolveRef": {
         "properties": {

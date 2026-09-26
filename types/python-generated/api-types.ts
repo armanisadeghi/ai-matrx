@@ -5585,6 +5585,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vault/items/{item_id}/password-history/reveal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reveal Password History
+         * @description Explicitly reveal one historical ordinary-password state.  The route
+         *     is no-store and the service performs current-owner, recent-auth, closed
+         *     chain, and post-decrypt revocation checks before returning plaintext.
+         */
+        post: operations["reveal_password_history_vault_items__item_id__password_history_reveal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vault/backups/preview": {
         parameters: {
             query?: never;
@@ -24776,7 +24798,16 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Content Save */
+        /**
+         * Content Save
+         * @description Save a page a person's own computer or browser read — as a Source (SOURCE-CONVERGENCE §4.4).
+         *
+         *     Desktop (matrx-local) and the extension's scrape tool push the parse they made here. It lands
+         *     through the landing door (the identity row in ``scraper.scrape_parsed_page`` is created there,
+         *     owned by the person) and the answer carries the Source id. The person is the one this request
+         *     was admitted for (the forwarded JWT); the organization is the admitted one. Nothing is written
+         *     to the page cache: the cache is the scraper's own, never a Source body (§1 rule 5).
+         */
         post: operations["content_save_scraper_content_save_post"];
         delete?: never;
         options?: never;
@@ -33886,7 +33917,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Inventory Get Endpoint */
+        get: operations["inventory_get_endpoint_rag_search_lab_inventory_get"];
         put?: never;
         /** Inventory Endpoint */
         post: operations["inventory_endpoint_rag_search_lab_inventory_post"];
@@ -37536,6 +37568,86 @@ export interface paths {
          * @description "This one is not worth it" — the person's own answer, recorded.
          */
         post: operations["dismiss_handoff_capture_handoffs__handoff_id__dismiss_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sources/land": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Land
+         * @description Land one acquisition as a Source (the processed document every producer converges on).
+         */
+        post: operations["land_sources_land_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sources/{processed_document_id}/keep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Keep
+         * @description Keep a Source and/or file it — the signal that starts its AI processing.
+         */
+        post: operations["keep_sources__processed_document_id__keep_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sources/{processed_document_id}/edit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Edit
+         * @description Save a person's edit beside the original (the original capture is never overwritten).
+         */
+        post: operations["edit_sources__processed_document_id__edit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sources/internal/land": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Internal Land
+         * @description Land one acquisition for the person the bridge named, in the organization it verified.
+         */
+        post: operations["internal_land_sources_internal_land_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -47395,6 +47507,18 @@ export interface components {
             } | null;
         };
         /**
+         * AttachTarget
+         * @description An entity the Source is filed against (``platform.associations``).
+         */
+        AttachTarget: {
+            /** Entity Type */
+            entity_type: string;
+            /** Entity Id */
+            entity_id: string;
+            /** Label */
+            label?: string | null;
+        };
+        /**
          * AttachableKindInfo
          * @description One kind of thing a connected service lets a user attach to a chat.
          */
@@ -49025,6 +49149,15 @@ export interface components {
              * @default false
              */
             fast?: boolean;
+            /**
+             * Keep
+             * @default false
+             */
+            keep?: boolean;
+            /** Attach To */
+            attach_to?: {
+                [key: string]: unknown;
+            }[];
         };
         /** BatchScrapeResponse */
         BatchScrapeResponse: {
@@ -61082,6 +61215,21 @@ export interface components {
              * @default 0
              */
             char_count?: number;
+            /**
+             * Origin Client
+             * @default local
+             * @enum {string}
+             */
+            origin_client?: "extension" | "local";
+            /**
+             * Keep
+             * @default false
+             */
+            keep?: boolean;
+            /** Attach To */
+            attach_to?: {
+                [key: string]: unknown;
+            }[];
         };
         /**
          * ContentStudioServiceStatus
@@ -69401,6 +69549,11 @@ export interface components {
         EdgesTop: {
             /** Items */
             items: components["schemas"]["EdgeRow"][];
+        };
+        /** EditBody */
+        EditBody: {
+            /** Portions */
+            portions: components["schemas"]["Portion"][];
         };
         /**
          * EditInputsRetryProposal
@@ -83063,6 +83216,16 @@ export interface components {
              */
             status_page?: "https://status.kayako.com";
         };
+        /** KeepBody */
+        KeepBody: {
+            /**
+             * Keep
+             * @default true
+             */
+            keep?: boolean;
+            /** Attach To */
+            attach_to?: components["schemas"]["AttachTarget"][];
+        };
         /** KeyFindingEntry */
         KeyFindingEntry: {
             /** Label Category */
@@ -84697,6 +84860,53 @@ export interface components {
              * @default false
              */
             debug?: boolean;
+        };
+        /**
+         * LandedSource
+         * @description What every producer surfaces: the Source's id and what happens to it next.
+         *
+         *     ``notices`` is every decision the door made on the caller's behalf that the person should
+         *     hear — processing deferred until a Keep, processing turned off for the kind, the original not
+         *     kept because the organization turned originals off, a default filing place that failed, the
+         *     ledger row that could not be written, a processing job that could not be queued. Each is a
+         *     code, a sentence and a remedy; a client renders them, never drops them (nothing is silent).
+         *     ``intelligence == "queued"`` means a durable ``runtime.work_item`` row exists for the Source.
+         */
+        LandedSource: {
+            /** Processed Document Id */
+            processed_document_id: string;
+            /** Source Id */
+            source_id: string;
+            /** Reused Existing */
+            reused_existing: boolean;
+            /** New Version Of */
+            new_version_of?: string | null;
+            /** Kept */
+            kept: boolean;
+            /**
+             * Intelligence
+             * @enum {string}
+             */
+            intelligence: "deferred" | "never" | "queued";
+            /** Original File Id */
+            original_file_id?: string | null;
+            /** Notices */
+            notices?: components["schemas"]["LandingNotice"][];
+        };
+        /**
+         * LandingNotice
+         * @description Something the door did on the caller's behalf, said out loud (nothing is silent).
+         */
+        LandingNotice: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /**
+             * Remedy
+             * @default
+             */
+            remedy?: string;
         };
         /** LandingiServiceStatus */
         LandingiServiceStatus: {
@@ -95689,6 +95899,18 @@ export interface components {
             archived_at?: string | null;
         };
         /**
+         * Original
+         * @description The original bytes behind a Source — kept in S3, never in Postgres.
+         */
+        Original: {
+            /** Bytes B64 */
+            bytes_b64?: string | null;
+            /** File Id */
+            file_id?: string | null;
+            /** Mime Type */
+            mime_type: string;
+        };
+        /**
          * OsfPublicProject
          * @description Safe factual projection of one public OSF project.
          */
@@ -96744,6 +96966,14 @@ export interface components {
             failure_reason?: string | null;
             /** Failure Details */
             failure_details?: {
+                [key: string]: string;
+            }[];
+            /** Processed Document Id */
+            processed_document_id?: string | null;
+            /** Source Id */
+            source_id?: string | null;
+            /** Notices */
+            notices?: {
                 [key: string]: string;
             }[];
         };
@@ -100881,6 +101111,36 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /**
+         * Portion
+         * @description One addressable piece of a Source: a page, a section, a timed segment, a message.
+         */
+        Portion: {
+            /**
+             * Ordinal
+             * @description 1-based position in the Source.
+             */
+            ordinal: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "message" | "page" | "section" | "segment" | "sheet" | "slide";
+            /** Text */
+            text: string;
+            /**
+             * Locator
+             * @description page {"page": n}; section {"heading_path": [...], "text_fragment": "..."}; segment {"t0_ms", "t1_ms", "speaker"}; message {"message_id"}; sheet {"sheet", "row_start", "row_end"}; slide {"slide": n}
+             */
+            locator: {
+                [key: string]: unknown;
+            };
+            /**
+             * Method
+             * @default native
+             */
+            method?: string;
+        };
         /** Position */
         Position: {
             /** X */
@@ -103855,6 +104115,37 @@ export interface components {
             variant: components["schemas"]["QueryVariant"];
             /** Seed Keyword */
             seed_keyword: string;
+        };
+        /**
+         * Provenance
+         * @description Who obtained this, how, and when.
+         */
+        Provenance: {
+            /**
+             * Origin Client
+             * @enum {string}
+             */
+            origin_client: "agent" | "backfill" | "cloud_browser" | "crawl" | "extension" | "local" | "research" | "transcription" | "upload" | "web" | "youtube";
+            /**
+             * Capture Method
+             * @enum {string}
+             */
+            capture_method: "browser" | "captions" | "http" | "human_drive" | "native" | "ocr" | "own_browser" | "residential" | "speech";
+            /** Captured By Rung */
+            captured_by_rung?: string | null;
+            /** Rung Trail */
+            rung_trail?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Captured At
+             * Format: date-time
+             */
+            captured_at: string;
+            /** Final Url */
+            final_url?: string | null;
+            /** User Id */
+            user_id: string;
         };
         /** ProviderAttachablePayload */
         ProviderAttachablePayload: {
@@ -116751,6 +117042,50 @@ export interface components {
             /** Ids */
             ids?: string[];
         };
+        /**
+         * SourceLanding
+         * @description Everything the door needs to land one acquisition as a Source.
+         */
+        SourceLanding: {
+            /** Source Kind */
+            source_kind: string;
+            /** Source Id */
+            source_id?: string | null;
+            /** Canonical Identity */
+            canonical_identity: string;
+            /** Name */
+            name: string;
+            /** Mime Type */
+            mime_type: string;
+            /** Portions */
+            portions: components["schemas"]["Portion"][];
+            original?: components["schemas"]["Original"] | null;
+            /** Structured */
+            structured?: {
+                [key: string]: unknown;
+            } | null;
+            provenance: components["schemas"]["Provenance"];
+            /** Attach To */
+            attach_to?: components["schemas"]["AttachTarget"][];
+            /**
+             * Content Already Clean
+             * @default false
+             */
+            content_already_clean?: boolean;
+            /**
+             * Keep
+             * @default false
+             */
+            keep?: boolean;
+            /**
+             * Visibility
+             * @default personal
+             * @enum {string}
+             */
+            visibility?: "internal" | "personal";
+            /** Organization Id */
+            organization_id: string;
+        };
         /** SourcePackageMetadata */
         SourcePackageMetadata: {
             /**
@@ -128824,7 +129159,10 @@ export interface components {
          * @description A value-free entry in the personal password-history timeline.
          */
         VaultPasswordHistoryEntry: {
-            /** Revision */
+            /**
+             * Revision
+             * @description Gate B reconstruction cap; this does not define retention.
+             */
             revision: number;
             /** Recorded At */
             recorded_at: string;
@@ -128841,7 +129179,7 @@ export interface components {
         };
         /**
          * VaultPasswordHistoryResponse
-         * @description Metadata only; a future explicit reveal contract owns old values.
+         * @description Value-free password-history timeline metadata.
          */
         VaultPasswordHistoryResponse: {
             /** Entries */
@@ -128862,6 +129200,36 @@ export interface components {
             omitted_count: number;
             /** Incomplete */
             incomplete: boolean;
+        };
+        /**
+         * VaultPasswordHistoryRevealRequest
+         * @description The exact historical field state the caller wants to reveal.
+         */
+        VaultPasswordHistoryRevealRequest: {
+            /**
+             * Field Id
+             * Format: uuid
+             */
+            field_id: string;
+            /**
+             * Revision
+             * @description Gate B reconstruction cap; this does not define retention.
+             */
+            revision: number;
+        };
+        /**
+         * VaultPasswordHistoryRevealResponse
+         * @description One explicitly requested old value; never ciphertext or fingerprints.
+         */
+        VaultPasswordHistoryRevealResponse: {
+            /** Item Id */
+            item_id: string;
+            /** Field Id */
+            field_id: string;
+            /** Revision */
+            revision: number;
+            /** Value */
+            value: string;
         };
         /** VaultResolveRef */
         VaultResolveRef: {
@@ -145505,6 +145873,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VaultPasswordHistoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reveal_password_history_vault_items__item_id__password_history_reveal_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultPasswordHistoryRevealRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultPasswordHistoryRevealResponse"];
                 };
             };
             /** @description Validation Error */
@@ -172896,7 +173301,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: string;
+                        [key: string]: unknown;
                     };
                 };
             };
@@ -188609,6 +189014,37 @@ export interface operations {
             };
         };
     };
+    inventory_get_endpoint_rag_search_lab_inventory_get: {
+        parameters: {
+            query?: {
+                admin_bypass_acl?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     inventory_endpoint_rag_search_lab_inventory_post: {
         parameters: {
             query?: {
@@ -194396,6 +194832,142 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    land_sources_land_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SourceLanding"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LandedSource"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    keep_sources__processed_document_id__keep_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                processed_document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeepBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LandedSource"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_sources__processed_document_id__edit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                processed_document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LandedSource"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    internal_land_sources_internal_land_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SourceLanding"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LandedSource"];
                 };
             };
             /** @description Validation Error */

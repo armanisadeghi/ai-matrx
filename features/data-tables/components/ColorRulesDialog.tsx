@@ -66,6 +66,15 @@ type Props = {
   style: TableStyle;
   /** Resolved options per column (value → color) for choice columns; may be missing for a column. */
   choicesByField?: Record<string, ChoiceOption[]>;
+  /**
+   * Distinct values ACTUALLY IN the table per column, from the rows the browser
+   * holds. A choice column accepts off-list values (typed into a cell, they
+   * render amber) and a rule must be able to name them — until 2026-09-25 the
+   * value list showed only the declared options, so a value that was in every
+   * row could not be colored (Arman: "the Active option I just added doesn't
+   * appear"). Declared options come first; the rest say so.
+   */
+  valuesInData?: Record<string, string[]>;
   /** Persist ONE path; resolves when the write landed (the owner shows the error toast on failure and rethrows nothing). */
   onSetPath: (path: readonly string[], value: unknown) => Promise<void>;
 };
@@ -147,6 +156,7 @@ export function ColorRulesDialog({
   fields,
   style,
   choicesByField,
+  valuesInData,
   onSetPath,
 }: Props) {
   const [rules, setRules] = useState<ColorRule[]>(() =>
@@ -228,11 +238,18 @@ export function ColorRulesDialog({
 
   const optionsFor = (fieldName: string): ChoiceOption[] => {
     const resolved = choicesByField?.[fieldName];
-    if (resolved && resolved.length > 0) return resolved;
-    const field = fieldByName.get(fieldName);
-    if (!field) return [];
-    const inline = resolveFieldFormat(field.data_type, field.metadata).options?.choices;
-    return inline ? inline.map((c) => ({ value: c.value, label: c.label, color: c.color })) : [];
+    let declared: ChoiceOption[] = [];
+    if (resolved && resolved.length > 0) declared = resolved;
+    else {
+      const field = fieldByName.get(fieldName);
+      const inline = field ? resolveFieldFormat(field.data_type, field.metadata).options?.choices : undefined;
+      declared = inline ? inline.map((c) => ({ value: c.value, label: c.label, color: c.color })) : [];
+    }
+    const known = new Set(declared.map((o) => o.value));
+    const extra = (valuesInData?.[fieldName] ?? [])
+      .filter((v) => !known.has(v))
+      .map((v) => ({ value: v, label: `${v} · in the table, not an option` }));
+    return [...declared, ...extra];
   };
 
   return (
