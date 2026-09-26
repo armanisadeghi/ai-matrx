@@ -200,6 +200,7 @@ test("a headline ending in a colon carries its first item; tsc errors name their
   ].join("\n"));
   assert.match(pkgs.title, /install-graph check failed: STALE: @ai-matrx\//);
   const tsc = judge({ label: "TypeScript type-check" }, 2, [
+    "[tsc-capped] 2 type-check(s) already running on this machine \u2014 waiting for a free slot (0s)\u2026",
     "features/a/b.tsx(12,5): error TS2322: Type 'string' is not assignable to type 'number'.",
     "lib/c.ts(3,1): error TS2304: Cannot find name 'x'.",
     " ELIFECYCLE  Command failed with exit code 2.",
