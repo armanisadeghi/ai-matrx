@@ -23,6 +23,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Clapperboard } from "lucide-react";
+import { Progress } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import {
@@ -35,10 +36,8 @@ import {
   selectInstanceVariableDefinitions,
   selectResolvedVariables,
 } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { selectAgentModelId } from "@/features/agents/redux/agent-definition/selectors";
+import { selectRunModelId } from "@/features/agents/runtime/generation-job";
 import { useVideoSecondPrice } from "./useVideoSecondPrice";
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function formatElapsed(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -120,17 +119,10 @@ export function GenerationJobCard({
     [conversationId],
   );
   const values = useAppSelector(resolvedSelector);
-  const agentId = useAppSelector(
-    (state) => state.conversations.byConversationId[conversationId]?.agentId ?? null,
-  );
-  const agentModelId = useAppSelector((state) =>
-    agentId ? selectAgentModelId(state, agentId) : null,
-  );
-  // A run-time model override wins; otherwise the agent's own model runs.
-  const modelId =
-    typeof settings?.model === "string" && UUID.test(settings.model)
-      ? settings.model
-      : agentModelId;
+  // The same model the job was labelled from (override, else the agent's own,
+  // honouring a pinned version) — reading the agent record directly missed it
+  // on /agents/[id]/run and the card claimed "no catalog price".
+  const modelId = useAppSelector((state) => selectRunModelId(state, conversationId));
   const price = useVideoSecondPrice(job?.kind === "video" ? modelId : null);
   const [now, setNow] = useState(() => Date.now());
 
@@ -163,25 +155,25 @@ export function GenerationJobCard({
         className,
       )}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-2">
         <Clapperboard className="h-4 w-4 shrink-0 text-muted-foreground" />
-        <span className="font-medium">Generating a video</span>
-        {job.modelLabel && (
-          <span className="truncate text-muted-foreground">· {job.modelLabel}</span>
-        )}
+        <span className="min-w-0 truncate">
+          <span className="font-medium">Generating a video</span>
+          {job.modelLabel && (
+            <span className="text-muted-foreground"> · {job.modelLabel}</span>
+          )}
+        </span>
         {elapsed && (
-          <span className="ml-auto text-xs tabular-nums text-muted-foreground">
+          <span className="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground">
             {elapsed}
           </span>
         )}
       </div>
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-        <div className="h-full w-1/3 animate-[job-slide_1.6s_ease-in-out_infinite] rounded-full bg-primary/70" />
-      </div>
+      {/* Indeterminate: providers report no percentage. */}
+      <Progress value={null} aria-label="Generating a video" className="mt-2 h-1.5" />
       <p className="mt-2 text-xs text-muted-foreground" data-testid="generation-job-facts">
         {facts.join(" · ")}
       </p>
-      <style>{`@keyframes job-slide{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}`}</style>
     </div>
   );
 }

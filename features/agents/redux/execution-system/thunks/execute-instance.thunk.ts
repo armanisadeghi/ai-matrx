@@ -25,7 +25,7 @@ import {
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type {
   AssembledAgentStartRequest,
   UserInputPart,
@@ -94,6 +94,7 @@ import {
   createRequest,
   setRequestStatus,
 } from "../active-requests/active-requests.slice";
+import { labelGenerationJob } from "@/features/agents/runtime/generation-job";
 import {
   addOptimisticUserMessage,
   shouldCreateOptimisticUserMessage,
@@ -803,6 +804,14 @@ export const executeInstance = createAsyncThunk<
       // bound to `activeRequests` (status pills, "thinking" indicators) gets
       // wired to the in-flight turn before we yield to the network/registry.
       dispatch(createRequest({ requestId, conversationId }));
+      // An image / video / audio run is a JOB: its own working line or card
+      // (model, clock, estimated cost) replaces the generic shimmer.
+      void labelGenerationJob(
+        dispatch as AppDispatch,
+        getState as () => RootState,
+        requestId,
+        conversationId,
+      );
       dispatch(setInstanceStatus({ conversationId, status: "running" }));
       dispatch(setRequestStatus({ requestId, status: "connecting" }));
 
