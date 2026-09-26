@@ -4,6 +4,7 @@ import {
   Keyboard,
   Code,
   Brain,
+  AudioLines,
   Mic,
   Volume2,
   BookA,
@@ -50,6 +51,7 @@ import PlanUsageTab from "./tabs/PlanUsageTab";
 import AppearanceTab from "./tabs/AppearanceTab";
 import VoiceTab from "./tabs/VoiceTab";
 import TextToSpeechTab from "./tabs/TextToSpeechTab";
+import VoicesTab from "./tabs/VoicesTab";
 import DictionaryTab from "./tabs/DictionaryTab";
 import AssistantTab from "./tabs/AssistantTab";
 import EmailTab from "./tabs/EmailTab";
@@ -451,11 +453,33 @@ export const settingsRegistry: SettingsTabDef[] = [
     persistence: "synced",
   },
   {
+    id: "voice.voices",
+    label: "Voices",
+    icon: AudioLines,
+    parentId: "voice",
+    description:
+      "Every voice AI Matrx speaks with — hear them, and choose the ones that speak to you.",
+    searchKeywords: [
+      "voice",
+      "voices",
+      "read aloud",
+      "text to speech",
+      "tts",
+      "speaker",
+      "live conversation",
+      "sample",
+      "podcast voice",
+      "voice library",
+    ],
+    component: VoicesTab,
+    persistence: "server",
+  },
+  {
     id: "voice.input",
     label: "Voice input",
     icon: Mic,
     parentId: "voice",
-    description: "Microphone, wake word, speech speed.",
+    description: "Microphone, wake word, and how the assistant listens.",
     component: VoiceTab,
     persistence: "synced",
   },
@@ -464,7 +488,7 @@ export const settingsRegistry: SettingsTabDef[] = [
     label: "Text-to-speech",
     icon: Volume2,
     parentId: "voice",
-    description: "Voice used to read responses aloud.",
+    description: "Auto-play and how replies are prepared for reading aloud.",
     component: TextToSpeechTab,
     persistence: "synced",
   },
