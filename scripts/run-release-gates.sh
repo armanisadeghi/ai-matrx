@@ -734,6 +734,11 @@ if $STRICT; then
         # RESERVED ICONS — BrainCircuit is the Intelligence icon only (Arman,
         # 2026-09-26). Baseline ratchet: exits 1 only on a NEW use; advisory here.
         "Reserved icon used outside its domain (BrainCircuit = Intelligence)|pnpm check:reserved-icons"
+        # DEPRECATED ORGANIZATION FLAG — organizations are unlimited and equal (access
+        # ladder, Arman 2026-09-26). Ratchet that only shrinks; exits 1 on a NEW reference.
+        # Its database twin is the event trigger no_new_org_flag_reader.
+        "New reference to the deprecated organization flag|pnpm check:org-flag-readers"
+        "Deprecated organization flag guard self-test|pnpm check:org-flag-readers:self-test"
         # HAND-TYPED MANDATE KEYS — the same law spelled as a string literal.
         # @ai-matrx/agents 0.10.0 publishes the key set; a literal is a mirror of
         # it, and a rename or retirement on the server becomes a 404 nobody sees.
@@ -1275,6 +1280,11 @@ else
         # RESERVED ICONS — BrainCircuit is the Intelligence icon only (Arman,
         # 2026-09-26). Baseline ratchet: exits 1 only on a NEW use; advisory here.
         "Reserved icon used outside its domain (BrainCircuit = Intelligence)|pnpm check:reserved-icons"
+        # DEPRECATED ORGANIZATION FLAG — organizations are unlimited and equal (access
+        # ladder, Arman 2026-09-26). Ratchet that only shrinks; exits 1 on a NEW reference.
+        # Its database twin is the event trigger no_new_org_flag_reader.
+        "New reference to the deprecated organization flag|pnpm check:org-flag-readers"
+        "Deprecated organization flag guard self-test|pnpm check:org-flag-readers:self-test"
         # HAND-TYPED MANDATE KEYS — the same law spelled as a string literal.
         # @ai-matrx/agents 0.10.0 publishes the key set; a literal is a mirror of
         # it, and a rename or retirement on the server becomes a 404 nobody sees.
