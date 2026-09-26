@@ -9,11 +9,11 @@
  * for the other, which reads as "that agent said nothing."
  */
 
-import { DECISION_ANSWERS_KIND } from "@/features/agents/decision-answers/read";
+import { DECISION_ANSWERS_KIND } from "@ai-matrx/agents/presentation/decision-answers";
 import {
   readDecisionAnswers,
   type DecisionAnswersView,
-} from "@/features/agents/decision-answers/read";
+} from "@ai-matrx/agents/presentation/decision-answers";
 
 const KIND_MARKER = `"${DECISION_ANSWERS_KIND}"`;
 

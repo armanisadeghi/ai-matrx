@@ -215,7 +215,6 @@ export function CloudBrowserStartFailed({
           Reference: <span className="font-mono">{error.requestId}</span>
         </p>
       ) : null}
-      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

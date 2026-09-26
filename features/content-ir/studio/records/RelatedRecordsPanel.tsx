@@ -363,7 +363,6 @@ function RelatedChildList({
               Try again
             </Button>
           </span>
-          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : result && result.rows.length > 0 ? (
         <ol className="space-y-1.5">

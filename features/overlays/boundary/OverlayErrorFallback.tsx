@@ -131,13 +131,11 @@ export function OverlayErrorFallback({
           <div className="min-w-0 flex-1">
             <h2 className="text-sm font-semibold text-foreground">
               This panel failed to load
-              <ErrorAlchemyMenu />
             </h2>
             <p className="mt-1 text-xs text-muted-foreground">
               {e.isChunkLoadError
                 ? "A required part of the panel did not finish loading. Try again, or reload the page if retrying fails."
                 : "Something went wrong while rendering this panel."}
-              <ErrorAlchemyMenu />
             </p>
           </div>
         </div>

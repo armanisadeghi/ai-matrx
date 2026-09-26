@@ -226,7 +226,7 @@ function ExistingComputers() {
     return (
       <p className="text-[11px] text-amber-600 dark:text-amber-400">
         We could not check which of your computers are already connected:{" "}
-        {error}. The steps below still work.
+        {error.replace(/[.!?\s]+$/, "")}. The steps below still work.
         <ErrorAlchemyMenu error={error} />
       </p>
     );

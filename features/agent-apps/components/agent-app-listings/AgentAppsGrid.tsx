@@ -585,7 +585,6 @@ export function AgentAppsGrid({
                 <div className="min-w-0 flex-1">
                   <h3 className="text-sm font-semibold text-foreground">
                     Agent apps couldn’t load
-                    <ErrorAlchemyMenu />
                   </h3>
                   <p className="text-xs text-muted-foreground">
                     The app catalog is temporarily unavailable. Check your

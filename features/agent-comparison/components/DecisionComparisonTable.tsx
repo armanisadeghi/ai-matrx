@@ -39,7 +39,7 @@ import {
   METHOD_EXPLANATIONS,
   METHOD_LABELS,
   type DecisionAnswersView,
-} from "@/features/agents/decision-answers/read";
+} from "@ai-matrx/agents/presentation/decision-answers";
 import type { RootState } from "@/lib/redux/store";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

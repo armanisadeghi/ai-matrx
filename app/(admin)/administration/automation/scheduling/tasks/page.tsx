@@ -26,7 +26,6 @@ import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
@@ -46,6 +45,7 @@ import { useDuplicateSchedules } from "@/features/scheduling/hooks/useDuplicateS
 import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
 import { useScheduledTaskMenuSection } from "@/features/scheduling/components/shared/scheduling-menu-sections";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 function triggerText(r: AdminTaskRow): string {
   return r.trigger
@@ -60,6 +60,9 @@ export default function AdminTasksPage() {
   const [rows, setRows] = useState<AdminTaskRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
+  // A failed read is shown where the rows would be — a toast alone vanished
+  // and left an empty table that read as "no tasks" (RC-B12 round 4).
+  const [loadError, setLoadError] = useState<unknown>(null);
   const {
     groups: duplicateGroups,
     error: duplicateError,
@@ -93,8 +96,9 @@ export default function AdminTasksPage() {
     setFetching(true);
     try {
       setRows(await fetchAllTasksAdmin({ limit: 200 }));
+      setLoadError(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      setLoadError(err);
     } finally {
       setLoading(false);
       setFetching(false);
@@ -243,6 +247,20 @@ export default function AdminTasksPage() {
           void refetchDuplicates();
         }}
       />
+      {loadError != null && (
+        <ErrorNotice
+          size="compact"
+          title="Scheduled tasks couldn't load"
+          error={loadError}
+          operation="List scheduled tasks"
+          calls={["sch_task"]}
+          actions={
+            <Button variant="outline" size="sm" onClick={() => void load()} disabled={fetching} className="gap-1.5">
+              <RefreshCw className="h-3.5 w-3.5" /> Retry
+            </Button>
+          }
+        />
+      )}
       <div className="min-h-0 flex-1" data-surface-value="task_row_count">
         <NonEditableContextMenu
           sourceFeature="scheduled"

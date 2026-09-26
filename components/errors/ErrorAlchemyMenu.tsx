@@ -74,7 +74,7 @@ function resolve(input: NonNullable<ErrorAlchemyMenuProps["input"]>): ErrorAlche
  */
 export function errorRootFor(menu: Element | null): Element | null {
   if (!menu) return null;
-  const marked = menu.closest('[role="alert"], [data-error-alchemy-root], [data-error-box]');
+  const marked = menu.closest('[role="alert"], [data-error-alchemy-root], [data-error-box], [data-error-notice]');
   if (marked) return marked;
   let el = menu.parentElement;
   const wordsBesideMenu = (node: Element) => {
@@ -83,14 +83,27 @@ export function errorRootFor(menu: Element | null): Element | null {
     return (clone.textContent ?? "").trim();
   };
   while (el && !wordsBesideMenu(el) && el.parentElement) el = el.parentElement;
-  // A title alone ("Couldn't load the saved artifact") reads better with the
-  // sentence beside it: take the small card it heads, never a whole page.
-  const parent = el?.parentElement;
-  if (el && parent && parent !== document.body && wordsBesideMenu(el).length < 80) {
-    const cardWords = wordsBesideMenu(parent);
-    if (cardWords.length > wordsBesideMenu(el).length && cardWords.length <= 600) return parent;
+  // A short line may head a card — take that card only when the card is
+  // itself an error box. Never an ordinary ancestor: that copies toolbars,
+  // tabs and counters as the error (RC-B12 round 4).
+  if (!el || isErrorBox(el) || wordsBesideMenu(el).length >= 80) return el;
+  let card = el.parentElement;
+  for (let hops = 0; card && card !== document.body && hops < 3; hops += 1, card = card.parentElement) {
+    if (!isErrorBox(card)) continue;
+    const cardWords = wordsBesideMenu(card);
+    if (cardWords.length > wordsBesideMenu(el).length && cardWords.length <= 600) return card;
+    break;
   }
   return el;
+}
+
+const ERROR_BOX_CLASS = /(^|\s)(?:(?:dark|sm|md|lg|xl|2xl):)*(?:border|bg|ring)-(?:destructive|red|rose|pink|fuchsia)(?:\b|-|\/)/;
+
+/** An element that is itself an error box: an alert, a declared error root, or a destructive-styled box. */
+export function isErrorBox(node: Element): boolean {
+  if (node.matches('[role="alert"], [data-error-alchemy-root], [data-error-box], [data-error-notice]')) return true;
+  const cls = node.getAttribute("class") ?? "";
+  return ERROR_BOX_CLASS.test(cls);
 }
 
 export function ErrorAlchemyMenu({
@@ -180,7 +193,7 @@ function blockTexts(root: Node): string[] {
   const blocks: string[] = [];
   let current = "";
   const flush = () => {
-    const text = current.replace(/\s+/g, " ").trim();
+    const text = tidySentence(current.replace(/\s+/g, " ").trim());
     if (text) blocks.push(text);
     current = "";
   };
@@ -203,6 +216,15 @@ function blockTexts(root: Node): string[] {
   walk(root);
   flush();
   return blocks;
+}
+
+/**
+ * A render that writes `{error}.` after a message that already ends in a
+ * full stop shows "try again.." — the copy says it once. A real ellipsis
+ * ("...") stays (RC-B12 round 4).
+ */
+export function tidySentence(text: string): string {
+  return text.replace(/(?<!\.)([.!?])\.(?!\.)/g, "$1");
 }
 
 /** Blocks joined as sentences: a block that ends without punctuation gets a period. */

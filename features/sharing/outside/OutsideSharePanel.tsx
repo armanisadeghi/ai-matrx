@@ -192,7 +192,6 @@ export function OutsideSharePanel({
             <p className="mt-0.5 text-xs text-destructive/80">
               Nobody was added or removed. This does not mean sharing outside is switched
               off — we simply could not look.
-              <ErrorAlchemyMenu />
             </p>
             <p className="mt-1 break-words text-xs text-muted-foreground">{loadError}</p>
           </div>

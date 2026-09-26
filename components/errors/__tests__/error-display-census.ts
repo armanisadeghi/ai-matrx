@@ -57,11 +57,11 @@ export interface ErrorDisplayHit {
 }
 
 const RED =
-  /(?<!(?:hover|focus|focus-visible|focus-within|active|group-hover|peer-hover|disabled|placeholder|visited):)\b(?:text|bg|border|ring)-(?:destructive|red-\d{2,3}|rose-\d{2,3})\b|\btext-\[#(?:ff6961|f87171|ef4444|dc2626)\]/i;
+  /(?<!(?:hover|focus|focus-visible|focus-within|active|group-hover|peer-hover|disabled|placeholder|visited):)\b(?:text|bg|border|ring)-(?:destructive|red-\d{2,3}|rose-\d{2,3}|pink-\d{2,3}|fuchsia-\d{2,3})\b|\btext-\[#(?:ff6961|f87171|ef4444|dc2626)\]/i;
 const NOTICE =
   /(?<!(?:hover|focus|focus-visible|focus-within|active|group-hover|peer-hover|disabled|placeholder|visited):)\b(?:text|bg|border)-(?:amber-\d{2,3}|orange-\d{2,3}|warning|yellow-\d{2,3})\b/;
 const FAILURE_WORDS =
-  /something went wrong|could(?:n['’]t| not) (?:load|save|read|open|find|update|create|delete|connect|send|start|reach|be (?:loaded|saved|read))|failed to (?:load|save|read|fetch|create|update|delete|send|start|connect|open)|unable to (?:load|save|read|fetch|open|find|create|update|delete|send|start|connect|reach|play|process|generate)|error (?:loading|saving|fetching|reading|creating|updating|deleting|sending|connecting|processing)|\b(?:save|load|upload|download|delete|update|sync|send|fetch|import|export|connection|request|generation) failed\b|\bnot saved\b|unexpected error|an error occurred|failed to compile|\btemplate error\b|permission denied|access denied|\btimed out\b|\bnot authori[sz]ed\b/i;
+  /something went wrong|\boops\b|did(?:n['’]t| not) work|could(?:n['’]t| not) (?:load|save|read|open|find|update|create|delete|connect|send|start|reach|be (?:loaded|saved|read))|failed to (?:load|save|read|fetch|create|update|delete|send|start|connect|open)|unable to (?:load|save|read|fetch|open|find|create|update|delete|send|start|connect|reach|play|process|generate)|error (?:loading|saving|fetching|reading|creating|updating|deleting|sending|connecting|processing)|\b(?:save|load|upload|download|delete|update|sync|send|fetch|import|export|connection|request|generation) failed\b|\bnot saved\b|unexpected error|an error occurred|failed to compile|\btemplate error\b|permission denied|access denied|\btimed out\b|\bnot authori[sz]ed\b/i;
 /** Words that only mean an error when the text is painted red ("Error: {detail}"). */
 const RED_ONLY_WORDS = /\berror\b\s*:?|\bdenied\b|\binvalid\b/i;
 const ERROR_NAME = /(?:[eE]rror|Err$|^err$|^e$|[fF]ailure|[rR]efusal|^why$|Why$|[pP]roblem)/;
@@ -260,7 +260,13 @@ function classify(node: JsxLike): ErrorDisplayHit["reason"] | null {
   if (hasAlertRole(node)) return "alert";
   const { words, errorLeaves, messageLeaves, renderedAny } = ownChildren(node);
   const className = alwaysClasses(node);
-  const red = RED.test(className) || STYLE_RED.test(attrText(node, "style") ?? "");
+  // A destructive Badge / Button variant is red — but a status chip ("Error",
+  // "failed", "3 errors") is a label, not an error to copy. It counts only when
+  // it renders the error itself (`<Badge variant="destructive">{error}</Badge>`).
+  const variantRed =
+    /destructive/.test(attrText(node, "variant") ?? "") &&
+    [...errorLeaves, ...messageLeaves].some((leaf) => !/count|Count|length|\bn\b/.test(leaf));
+  const red = RED.test(className) || STYLE_RED.test(attrText(node, "style") ?? "") || variantRed;
   if (red && (errorLeaves.length > 0 || messageLeaves.length > 0 || FAILURE_WORDS.test(words) || RED_ONLY_WORDS.test(words))) {
     return "red-error";
   }
@@ -284,14 +290,24 @@ function classify(node: JsxLike): ErrorDisplayHit["reason"] | null {
  */
 function isHiddenMenu(node: JsxLike): boolean {
   const cls = attrText(node, "className") ?? "";
-  if (/(?<![\w:-])(?:hidden|sr-only|invisible)\b/.test(cls)) return true;
+  if (isHiddenElement(cls)) return true;
+  // Zero size: nothing to see or tap.
+  if (/(?<![\w:-])size-0\b/.test(cls) || (/(?<![\w:-])w-0\b/.test(cls) && /(?<![\w:-])h-0\b/.test(cls))) return true;
   return /(?<![\w:-])opacity-0\b/.test(cls) && !/(?:hover|focus|focus-within|focus-visible):opacity-/.test(cls);
+}
+
+/** Hidden at every width: `hidden` / `sr-only` / `invisible` with no responsive reveal. */
+function isHiddenElement(cls: string): boolean {
+  if (!/(?<![\w:-])(?:hidden|sr-only|invisible)\b/.test(cls)) return false;
+  return !/(?:^|\s)[\w-]+:(?:block|inline|inline-block|inline-flex|flex|grid|visible|not-sr-only)\b/.test(cls);
 }
 
 function containsCarrier(node: ts.Node): boolean {
   let found = false;
   node.forEachChild(function visit(n) {
     if (found) return;
+    // A menu inside a hidden element of the box is never seen.
+    if ((ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n)) && isHiddenElement(attrText(n, "className") ?? "")) return;
     if ((ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n)) && CARRIER_NAMES.has(tagName(n))) {
       // A hidden menu carries nothing.
       if (!isHiddenMenu(n)) {
@@ -311,6 +327,9 @@ function containsCarrier(node: ts.Node): boolean {
  * (that is the F9 hole).
  */
 function hasSiblingMenu(box: JsxLike): boolean {
+  // An alert box must hold its own menu: the menu reads the words of the
+  // alert it sits in, and a menu beside it reads the row instead.
+  if (hasAlertRole(box) || isDestructiveAlert(box)) return false;
   const parent = box.parent;
   if (!parent || !(ts.isJsxElement(parent) || ts.isJsxFragment(parent))) return false;
   return parent.children.some(
@@ -356,7 +375,9 @@ export function findErrorDisplays(source: string, fileName = "file.tsx"): ErrorD
             box = a;
             continue;
           }
-          const next = ancestors.slice(i + 1, i + 3).findIndex((b) => isErrorStyled(b));
+          // Up to three plain wrappers (card > content > row > column), the same
+          // reach the menu's DOM read climbs to find its card (errorRootFor).
+          const next = ancestors.slice(i + 1, i + 4).findIndex((b) => isErrorStyled(b));
           if (next === -1) break;
           box = ancestors[i + 1 + next];
           i += 1 + next;
@@ -416,4 +437,52 @@ export function findOrphanMenus(source: string, fileName = "file.tsx"): number[]
   };
   visit(sf);
   return lines;
+}
+
+/**
+ * Two menus on one box (`AgentAppsGrid`: one after the title and one at the
+ * right edge) — the person sees two identical icons and does not know which
+ * is the error. Menus in exclusive branches (`a ? <p>…<Menu/></p> : …`) are
+ * never on screen together and do not count. An ErrorNotice / ErrorBox draws
+ * its own menu, so one beside a bare menu in the same box is also a double.
+ */
+export function findDoubleMenus(source: string, fileName = "file.tsx"): number[] {
+  const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const lines = new Set<number>();
+  const isBox = (n: JsxLike) => hasAlertRole(n) || RED.test(alwaysClasses(n));
+  /** The branch a node renders under, inside `box`: the innermost conditional arm, or the box itself. */
+  const branchOf = (n: ts.Node, box: ts.Node): ts.Node => {
+    let child: ts.Node = n;
+    let cur: ts.Node | undefined = n.parent;
+    while (cur && cur !== box) {
+      if (ts.isConditionalExpression(cur) && (child === cur.whenTrue || child === cur.whenFalse)) return child;
+      if (ts.isBinaryExpression(cur) && child === cur.right) return child;
+      if (ts.isCallExpression(cur) || ts.isFunctionLike(cur)) return cur;
+      child = cur;
+      cur = cur.parent;
+    }
+    return box;
+  };
+  const visit = (n: ts.Node) => {
+    if ((ts.isJsxElement(n) && isBox(n))) {
+      const menus: ts.Node[] = [];
+      n.forEachChild(function inner(m) {
+        if (ts.isFunctionLike(m)) return;
+        if ((ts.isJsxElement(m) || ts.isJsxSelfClosingElement(m)) && CARRIER_NAMES.has(tagName(m))) {
+          if (!isHiddenMenu(m)) menus.push(m);
+          return;
+        }
+        m.forEachChild(inner);
+      });
+      const seen = new Set<ts.Node>();
+      for (const m of menus) {
+        const b = branchOf(m, n);
+        if (seen.has(b)) lines.add(sf.getLineAndCharacterOfPosition(n.getStart()).line + 1);
+        seen.add(b);
+      }
+    }
+    n.forEachChild(visit);
+  };
+  visit(sf);
+  return [...lines].sort((a, b) => a - b);
 }

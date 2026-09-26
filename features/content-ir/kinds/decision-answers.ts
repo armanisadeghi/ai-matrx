@@ -27,7 +27,7 @@ import {
   answerProbability,
   formatDecisionAnswer,
   readDecisionAnswers,
-} from "@/features/agents/decision-answers/read";
+} from "@ai-matrx/agents/presentation/decision-answers";
 
 export const DECISION_ANSWERS_KIND = "decision_answers";
 /** The render key `kind-route` sets `block.type` to (SHAPE_BLOCK_DISPATCH). */

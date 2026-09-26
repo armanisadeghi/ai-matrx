@@ -109,7 +109,6 @@ export function MetricsStrip() {
           label="Retry"
           onClick={refetch}
         />
-        <ErrorAlchemyMenu className="ml-auto" />
       </section>
     );
   }

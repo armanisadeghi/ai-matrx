@@ -1,6 +1,7 @@
 "use client";
 
-import { Loader2, Play, RefreshCw, Scale } from "lucide-react";
+import { ListChecks, Loader2, Play, RefreshCw, Scale } from "lucide-react";
+import Link from "next/link";
 import { formatUsd } from "@ai-matrx/kit/format";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -26,6 +27,7 @@ import {
 import { loadDecision, runDecision } from "./decision-api";
 import type { DecisionResultView } from "./decision-result";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ALL_DECISIONS_REVIEW_HREF } from "@/features/agents/decision-review/service";
 
 export function DecisionPlayground() {
   const dispatch = useAppDispatch();
@@ -160,14 +162,22 @@ export function DecisionPlayground() {
             Decision playground
           </h1>
         </div>
-        {result && (
-          <a
-            className="text-sm font-medium text-primary hover:underline"
-            href={`?execution_id=${encodeURIComponent(result.executionId)}`}
-          >
-            Share this result
-          </a>
-        )}
+        <div className="flex items-center gap-3">
+          {result && (
+            <a
+              className="text-sm font-medium text-primary hover:underline"
+              href={`?execution_id=${encodeURIComponent(result.executionId)}`}
+            >
+              Share this result
+            </a>
+          )}
+          <Button asChild size="sm" variant="outline" className="gap-1.5">
+            <Link href={`${ALL_DECISIONS_REVIEW_HREF}?source=model`}>
+              <ListChecks className="size-4" />
+              Review answers
+            </Link>
+          </Button>
+        </div>
       </header>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.8fr)]">
         <main className="space-y-4">

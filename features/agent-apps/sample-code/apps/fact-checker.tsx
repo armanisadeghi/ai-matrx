@@ -166,8 +166,8 @@ export default function FactCheckerApp({
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <p className="font-semibold text-destructive">{error.type} <ErrorAlchemyMenu /></p>
-                <p className="text-sm text-destructive/80">{error.message} <ErrorAlchemyMenu /></p>
+                <p className="font-semibold text-destructive">{error.type}</p>
+                <p className="text-sm text-destructive/80">{error.message} <ErrorAlchemyMenu error={error.message} /></p>
               </div>
             </div>
           </CardContent>

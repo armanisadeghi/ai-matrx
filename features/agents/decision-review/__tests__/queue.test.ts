@@ -7,6 +7,7 @@
 
 import {
   agentAsksDecisions,
+  decisionSource,
   optionLabel,
   orderQueue,
   queueKeyAction,
@@ -161,5 +162,43 @@ describe("workflow items", () => {
     const item = readReviewItem(row({}));
     expect(item.workflowRunId).toBeNull();
     expect(item.workflowNodeId).toBeNull();
+  });
+});
+
+describe("source — what the combined queue filters and tags on", () => {
+  it("an agent's chat answer is an agent item naming that agent", () => {
+    const item = readReviewItem(row({ judge_key: "agent:143f5d37-7d49-4bac-96c4-c5955cac21f2" }));
+    expect(item.source).toBe("agent");
+    expect(item.agentId).toBe("143f5d37-7d49-4bac-96c4-c5955cac21f2");
+  });
+
+  it("an agent answering inside a workflow Decide step is a workflow item that still names the agent", () => {
+    const base = row({}).metadata as Record<string, unknown>;
+    const item = readReviewItem(
+      row({
+        judge_key: "agent:143f5d37-7d49-4bac-96c4-c5955cac21f2",
+        metadata: { ...base, workflow_run_id: "18ff87aa-5380-4a27-9291-c26e8847e52e" },
+      }),
+    );
+    expect(item.source).toBe("workflow");
+    expect(item.agentId).toBe("143f5d37-7d49-4bac-96c4-c5955cac21f2");
+  });
+
+  it("an agentless inline step is a workflow item with no agent", () => {
+    const item = readReviewItem(row({ judge_key: "workflow_node:f30ddc59:decide" }));
+    expect(item.source).toBe("workflow");
+    expect(item.agentId).toBeNull();
+  });
+
+  it("an /ai/decisions call is an API model item", () => {
+    const item = readReviewItem(row({ judge_key: "model:jev-1.13.0" }));
+    expect(item.source).toBe("model");
+    expect(item.agentId).toBeNull();
+  });
+
+  it("the source helper agrees with the reader", () => {
+    expect(decisionSource("model:x", null)).toBe("model");
+    expect(decisionSource("model:x", "run")).toBe("workflow");
+    expect(decisionSource(undefined, null)).toBe("agent");
   });
 });

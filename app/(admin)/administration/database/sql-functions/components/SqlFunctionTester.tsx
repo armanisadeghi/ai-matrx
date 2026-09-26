@@ -360,7 +360,6 @@ function ResultDisplay({ result }: { result: ExecuteResult }) {
             <div>
               <p className="text-[10px] font-semibold text-red-700 dark:text-red-400 uppercase tracking-wider mb-0.5">
                 Error
-                <ErrorAlchemyMenu />
               </p>
               <p className="text-xs text-red-700 dark:text-red-300 font-mono whitespace-pre-wrap">
                 {error}

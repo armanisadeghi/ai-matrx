@@ -383,7 +383,6 @@ export default function ToolsDemoClient() {
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-destructive">
                   Failed to load tools
-                  <ErrorAlchemyMenu />
                 </p>
                 <p className="text-[11px] text-destructive/80 mt-0.5 break-words">
                   {loadError}

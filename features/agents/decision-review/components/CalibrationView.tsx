@@ -22,7 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { METHOD_LABELS, type DecisionMethod } from "@/features/agents/decision-answers/read";
+import { METHOD_LABELS, type DecisionMethod } from "@ai-matrx/agents/presentation/decision-answers";
 import {
   loadCalibration,
   loadFacets,
@@ -100,7 +100,7 @@ export function CalibrationView({ agentId }: { agentId: string }) {
     let cancelled = false;
     setReport(null);
     setError(null);
-    Promise.all([loadCalibration(dispatch, agentId, { model, method }, agentOrganizationId), loadFacets(agentId)])
+    Promise.all([loadCalibration(dispatch, agentId, { model, method }, agentOrganizationId), loadFacets({ agentId })])
       .then(([r, f]) => {
         if (cancelled) return;
         setReport(r);

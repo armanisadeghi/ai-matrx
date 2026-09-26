@@ -271,6 +271,7 @@ function ExpertNotJoined({
           {failed
             ? `Opening ${roleName}'s room didn't work`
             : `Opening ${roleName}'s room…`}
+          {failed && !rolesError && <ErrorAlchemyMenu />}
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">{roleDescription}</p>
         <p className="mt-3 text-sm text-muted-foreground">

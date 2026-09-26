@@ -489,10 +489,10 @@ export default function LSIMarkdownGenerator({
               <div className="flex items-start gap-3">
                 <X className="w-5 h-5 text-destructive mt-0.5" />
                 <div>
-                  <p className="font-semibold text-destructive">{error.type} <ErrorAlchemyMenu /></p>
+                  <p className="font-semibold text-destructive">{error.type}</p>
                   <p className="text-sm text-destructive/80 mt-1">
                     {error.message}
-                    <ErrorAlchemyMenu />
+                    <ErrorAlchemyMenu error={error.message} />
                   </p>
                 </div>
               </div>

@@ -206,7 +206,6 @@ function StageCard({ stage }: { stage: Row }) {
               <pre className="max-h-60 overflow-auto text-[11px] text-red-700 dark:text-red-300">
                 {pretty(stage.error)}
               </pre>
-              <ErrorAlchemyMenu />
             </div>
           )}
           <div className="flex items-center justify-between">

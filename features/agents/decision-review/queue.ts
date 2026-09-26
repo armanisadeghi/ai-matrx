@@ -13,12 +13,40 @@ import {
   readDecisionAnswers,
   type DecisionAnswersView,
   type DecisionMethod,
-} from "@/features/agents/decision-answers/read";
+} from "@ai-matrx/agents/presentation/decision-answers";
 
 export const DECISION_SUBJECT_KIND = "decision_answer" as const;
 
 export function decisionJudgeKey(agentId: string): string {
   return `agent:${agentId}`;
+}
+
+/**
+ * Where a decision item came from. The judge key says who answered
+ * (`agent:<id>`, `model:<model>` from `/ai/decisions`, `workflow_node:<wf>:<node>`
+ * for an agentless inline step); a workflow run id in the metadata means a
+ * workflow Decide step asked, whoever answered.
+ */
+export type DecisionSource = "agent" | "workflow" | "model";
+
+export const DECISION_SOURCE_LABELS: Record<DecisionSource, string> = {
+  agent: "Agent",
+  workflow: "Workflow",
+  model: "API model",
+};
+
+export function decisionSource(
+  judgeKey: string | null | undefined,
+  workflowRunId: string | null,
+): DecisionSource {
+  if (workflowRunId || judgeKey?.startsWith("workflow_node:")) return "workflow";
+  if (judgeKey?.startsWith("model:")) return "model";
+  return "agent";
+}
+
+/** The agent behind an `agent:<id>` key, else null. */
+export function agentIdFromJudgeKey(judgeKey: string | null | undefined): string | null {
+  return judgeKey?.startsWith("agent:") ? judgeKey.slice("agent:".length) || null : null;
 }
 
 export interface ReviewOption {
@@ -28,6 +56,10 @@ export interface ReviewOption {
 
 export interface ReviewItem {
   id: string;
+  /** Who answered and what asked — the combined queue filters and tags on this. */
+  source: DecisionSource;
+  /** The answering agent when the judge key names one (`agent:<id>`). */
+  agentId: string | null;
   /** The item's own organization — a label is a write on THIS record, in its org. */
   organizationId: string | null;
   question: string;
@@ -59,6 +91,7 @@ export interface ReviewItem {
 
 export interface JudgeVerdictRow {
   id: string;
+  judge_key?: string | null;
   organization_id?: string | null;
   question: string;
   judge_version: number;
@@ -127,8 +160,11 @@ export function readReviewItem(row: JudgeVerdictRow): ReviewItem {
     },
   });
 
+  const workflowRunId = str(meta.workflow_run_id);
   return {
     id: row.id,
+    source: decisionSource(row.judge_key, workflowRunId),
+    agentId: agentIdFromJudgeKey(row.judge_key),
     organizationId: row.organization_id ?? null,
     question: row.question,
     version: row.judge_version,
@@ -145,7 +181,7 @@ export function readReviewItem(row: JudgeVerdictRow): ReviewItem {
     agreed: row.agreed,
     messageId: row.subject_ref_id,
     conversationId: str(meta.conversation_id),
-    workflowRunId: str(meta.workflow_run_id),
+    workflowRunId,
     workflowNodeId: str(meta.workflow_node_id),
     createdAt: row.created_at,
     view,

@@ -20,7 +20,7 @@
 import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { findOrphanMenus, uncarriedErrorDisplays } from "./error-display-census";
+import { findDoubleMenus, findOrphanMenus, uncarriedErrorDisplays } from "./error-display-census";
 
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 const SCANNED_DIRS = ["app", "components", "features", "lib"];
@@ -195,6 +195,60 @@ describe("round-3 probes (RC-B12 verify R3-1), red then green", () => {
   it("an opacity-0 menu does not carry, unless it is revealed on hover", () => {
     expect(count('<p role="alert">{error}<ErrorAlchemyMenu className="opacity-0" /></p>')).toBe(1);
     expect(count('<p role="alert">{error}<ErrorAlchemyMenu className="opacity-0 group-hover:opacity-100" /></p>')).toBe(0);
+  });
+});
+
+describe("round-4 probes (RC-B12 verify, theoretical shapes), red then green", () => {
+  it("a zero-size menu, or a menu inside a hidden element of the box, does not carry", () => {
+    expect(count('<p role="alert">{error}<ErrorAlchemyMenu className="w-0 h-0 overflow-hidden" /></p>')).toBe(1);
+    expect(count('<p role="alert">{error}<ErrorAlchemyMenu className="size-0" /></p>')).toBe(1);
+    expect(count('<div role="alert">{error}<span className="hidden"><ErrorAlchemyMenu /></span></div>')).toBe(1);
+    expect(count('<div role="alert">{error}<span className="hidden sm:inline"><ErrorAlchemyMenu /></span></div>')).toBe(0);
+  });
+  it("pink or fuchsia text rendering an error counts", () => {
+    expect(count('<p className="text-pink-600">{error}</p>')).toBe(1);
+    expect(count('<p className="text-fuchsia-500">{error}</p>')).toBe(1);
+  });
+  it("a destructive Badge rendering an error counts", () => {
+    expect(count('<Badge variant="destructive">{error}</Badge>')).toBe(1);
+    expect(count('<Badge variant="destructive">Archived</Badge>')).toBe(0);
+  });
+  it("'Oops! That didn't work.' counts in any colour", () => {
+    expect(count("<p>Oops! That didn't work.</p>")).toBe(1);
+  });
+  it("a destructive card with three plain wrappers is one box: a title line and a message line share one menu", () => {
+    expect(
+      count('<Card className="border-destructive"><CardContent><div className="flex"><div><p className="text-destructive">{error.type}</p><p className="text-destructive/80">{error.message}<ErrorAlchemyMenu /></p></div></div></CardContent></Card>'),
+    ).toBe(0);
+  });
+  it("a menu beside a role=alert box does not carry it; beside a heading it does", () => {
+    expect(count('<div><div role="alert">{error}</div><ErrorAlchemyMenu /></div>')).toBe(1);
+    expect(count('<div><h2>Something went wrong</h2><ErrorAlchemyMenu /></div>')).toBe(0);
+  });
+});
+
+describe("one error box carries one menu", () => {
+  const doubles = (jsx: string) =>
+    findDoubleMenus(`export function C({ error, ok }: any) { return (<>${jsx}</>); }`).length;
+  it("self-test: two menus in one box are a defect; menus in exclusive branches are not", () => {
+    expect(doubles('<div role="alert"><h3>Failed<ErrorAlchemyMenu /></h3><p>x</p><ErrorAlchemyMenu /></div>')).toBe(1);
+    expect(doubles('<div role="alert"><ErrorNotice message="x" /><ErrorAlchemyMenu /></div>')).toBe(1);
+    expect(doubles('<div role="alert">{ok ? <p>a<ErrorAlchemyMenu /></p> : <p>b<ErrorAlchemyMenu /></p>}</div>')).toBe(0);
+    expect(doubles('<div role="alert"><p>a</p><ErrorAlchemyMenu /></div>')).toBe(0);
+  });
+  it("no file draws two menus on one box", () => {
+    const files: string[] = [];
+    for (const dir of SCANNED_DIRS) walk(path.join(REPO_ROOT, dir), files);
+    const found: string[] = [];
+    for (const file of files) {
+      const rel = path.relative(REPO_ROOT, file).split(path.sep).join("/");
+      if (!isScannable(rel)) continue;
+      const source = fs.readFileSync(file, "utf8");
+      if (!source.includes("ErrorAlchemyMenu")) continue;
+      for (const line of findDoubleMenus(source, rel)) found.push(`${rel}:${line}`);
+    }
+    if (process.env.ERROR_CENSUS_PRINT === "1") console.log("DOUBLES " + JSON.stringify(found));
+    expect(found).toEqual([]);
   });
 });
 

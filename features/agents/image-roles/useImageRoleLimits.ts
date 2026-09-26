@@ -5,12 +5,13 @@
  * on: the lowest-priority-number available offering, exactly as the server's
  * catalog resolver picks it (aidream `catalog/manager.py`, priority-ordered).
  *
- * Returns `null` while loading, when no model is chosen, or when the offering
- * cannot be read, so a caller never mistakes "not known" for "this model takes
- * no references". (ai.offering rows are visibility 'internal'; a signed-in
- * member who is not a platform admin reads none. Treating that empty read as
- * "declares no roles" greyed out every role — "Veo 3.1 cannot take a First
- * frame image" — on a model that takes one.)
+ * Read through `ai.offering_capabilities` — the member-readable door that
+ * returns only capability metadata (ai.offering rows themselves are
+ * visibility 'internal'; pricing and internal fields stay hidden).
+ *
+ * Returns `null` while loading, when no model is chosen, or when the read
+ * fails or returns nothing, so a caller never mistakes "not known" for "this
+ * model takes no references".
  */
 
 import { useEffect, useState } from "react";
@@ -27,25 +28,22 @@ export async function fetchImageRoleLimits(
   if (cache.has(modelId)) return cache.get(modelId) ?? null;
   const { data, error } = await supabase
     .schema("ai")
-    .from("offering")
-    .select("capabilities_override, priority")
-    .eq("model_id", modelId)
-    .eq("is_available", true)
-    .is("deleted_at", null)
-    .order("priority", { ascending: true })
-    .limit(1);
+    .rpc("offering_capabilities", { p_model_ids: [modelId] });
   if (error) throw error;
-  if (!data || data.length === 0) {
+  const row = data?.[0];
+  if (!row || !row.offering_id) {
     captureError({
       source: "data-shape",
-      relation: "ai.offering.capabilities_override",
+      relation: "ai.offering_capabilities",
       message: `No readable offering for model ${modelId}; reference roles are not judged`,
-      details: "ai.offering returned no row to this user (RLS: visibility 'internal').",
+      details: row
+        ? "The model has no available offering."
+        : "ai.offering_capabilities returned no row for this model to this user.",
     });
     cache.set(modelId, null);
     return null;
   }
-  const limits = readImageRoleLimits(data[0]?.capabilities_override);
+  const limits = readImageRoleLimits(row.reference_roles);
   cache.set(modelId, limits);
   return limits;
 }
@@ -69,7 +67,7 @@ export function useImageRoleLimits(
       .catch((err: unknown) => {
         captureError({
           source: "data-shape",
-          relation: "ai.offering.capabilities_override",
+          relation: "ai.offering_capabilities",
           message: `Could not read reference-image role limits for model ${modelId}`,
           details: err instanceof Error ? err.message : String(err),
         });

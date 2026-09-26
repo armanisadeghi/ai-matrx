@@ -522,7 +522,6 @@ export default function KindRecordsTable({
           <span>
             <strong>These records could not be read. <ErrorAlchemyMenu /></strong> {error}
           </span>
-          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
 

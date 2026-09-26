@@ -1,8 +1,11 @@
 "use client";
 
 /**
- * ReviewQueue — people give the true answer to an agent's decision answers,
- * lowest confidence first, from the keyboard.
+ * ReviewQueue — people give the true answer to decision answers, lowest
+ * confidence first, from the keyboard. With an `agentId` it is that agent's
+ * queue (`/agents/<id>/answers`); without one it is the combined queue
+ * (`/decisions/review`): every decision item in the person's organizations —
+ * agents, workflow steps and API model calls — with a source filter.
  *
  * Champion: Braintrust / LangSmith annotation queues — a list, the item under
  * review with everything the model saw, one keystroke per label, and the next
@@ -12,7 +15,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Check, ChevronLeft, ChevronRight, LineChart, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, LineChart, ListChecks, X } from "lucide-react";
 import {
   Button,
   SegmentedControl,
@@ -25,19 +28,27 @@ import {
 } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { DecisionAnswers } from "@/features/agents/decision-answers/DecisionAnswers";
-import { METHOD_LABELS, type DecisionMethod } from "@/features/agents/decision-answers/read";
+import { METHOD_LABELS, type DecisionMethod } from "@ai-matrx/agents/presentation/decision-answers";
 import {
+  ALL_DECISIONS_REVIEW_HREF,
   calibrationHref,
   DEFAULT_FILTERS,
   labelItem,
   loadFacets,
   loadJudgedState,
   loadQueue,
+  reviewAnswersHref,
   type JudgedState,
   type QueueFacets,
   type QueueFilters,
 } from "../service";
-import { optionLabel, queueKeyAction, type ReviewItem } from "../queue";
+import {
+  DECISION_SOURCE_LABELS,
+  optionLabel,
+  queueKeyAction,
+  type DecisionSource,
+  type ReviewItem,
+} from "../queue";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ALL = "__all__";
@@ -85,10 +96,12 @@ function Kbd({ children }: { children: React.ReactNode }) {
 function QueueRow({
   item,
   selected,
+  showSource,
   onSelect,
 }: {
   item: ReviewItem;
   selected: boolean;
+  showSource: boolean;
   onSelect: () => void;
 }) {
   return (
@@ -122,6 +135,7 @@ function QueueRow({
         </span>
       </span>
       <span className="col-span-2 truncate font-mono text-[10px] text-muted-foreground">
+        {showSource ? `${DECISION_SOURCE_LABELS[item.source]} · ` : ""}
         v{item.version} · {item.model ?? "model not recorded"}
         {item.method ? ` · ${METHOD_LABELS[item.method]}` : ""}
       </span>
@@ -129,8 +143,19 @@ function QueueRow({
   );
 }
 
-export function ReviewQueue({ agentId }: { agentId: string }) {
-  const [filters, setFilters] = useState<QueueFilters>(DEFAULT_FILTERS);
+export function ReviewQueue({
+  agentId = null,
+  initialSource = null,
+}: {
+  agentId?: string | null;
+  /** Combined queue only: open filtered to one source (`?source=`). */
+  initialSource?: DecisionSource | null;
+}) {
+  const combined = agentId == null;
+  const [filters, setFilters] = useState<QueueFilters>({
+    ...DEFAULT_FILTERS,
+    source: combined ? initialSource : null,
+  });
   const [items, setItems] = useState<ReviewItem[] | null>(null);
   const [facets, setFacets] = useState<QueueFacets | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -147,7 +172,8 @@ export function ReviewQueue({ agentId }: { agentId: string }) {
   useEffect(() => {
     let cancelled = false;
     setItems(null);
-    Promise.all([loadQueue(agentId, filters), loadFacets(agentId)])
+    const scope = { agentId };
+    Promise.all([loadQueue(scope, filters), loadFacets(scope)])
       .then(([queue, facetRows]) => {
         if (cancelled) return;
         setItems(queue);
@@ -266,6 +292,22 @@ export function ReviewQueue({ agentId }: { agentId: string }) {
             { value: "all", label: "All" },
           ]}
         />
+        {combined && (
+          <SegmentedControl
+            size="sm"
+            value={filters.source ?? ALL}
+            onValueChange={(v) => setFilter("source", v === ALL ? null : (v as DecisionSource))}
+            data={[
+              { value: ALL, label: "Every source" },
+              ...(["agent", "workflow", "model"] as const).map((source) => ({
+                value: source,
+                label: facets
+                  ? `${DECISION_SOURCE_LABELS[source]} ${facets.sources[source]}`
+                  : DECISION_SOURCE_LABELS[source],
+              })),
+            ]}
+          />
+        )}
         <FilterSelect
           label="Question"
           value={filters.question}
@@ -287,21 +329,35 @@ export function ReviewQueue({ agentId }: { agentId: string }) {
           options={(facets?.models ?? []).map((m) => ({ value: m, label: m }))}
           onChange={(v) => setFilter("model", v)}
         />
-        <FilterSelect
-          label="Version"
-          value={filters.version == null ? null : String(filters.version)}
-          options={(facets?.versions ?? []).map((v) => ({ value: String(v), label: `v${v}` }))}
-          onChange={(v) => setFilter("version", v == null ? null : Number(v))}
-        />
+        {!combined && (
+          <FilterSelect
+            label="Version"
+            value={filters.version == null ? null : String(filters.version)}
+            options={(facets?.versions ?? []).map((v) => ({ value: String(v), label: `v${v}` }))}
+            onChange={(v) => setFilter("version", v == null ? null : Number(v))}
+          />
+        )}
         <span className="ml-auto font-mono text-[11px] text-muted-foreground">
           {facets ? `${facets.labeled} / ${facets.total} labeled` : ""}
         </span>
-        <Button asChild size="sm" variant="outline" className="h-7 gap-1.5 text-xs">
-          <Link href={calibrationHref(agentId)}>
-            <LineChart className="h-3.5 w-3.5" />
-            Calibration
-          </Link>
-        </Button>
+        {/* Calibration is computed per agent: the combined queue offers the
+            selected answer's agent, and nothing when an API model answered. */}
+        {(agentId ?? selected?.agentId) && (
+          <Button asChild size="sm" variant="outline" className="h-7 gap-1.5 text-xs">
+            <Link href={calibrationHref((agentId ?? selected?.agentId) as string)}>
+              <LineChart className="h-3.5 w-3.5" />
+              {combined ? "Agent calibration" : "Calibration"}
+            </Link>
+          </Button>
+        )}
+        {!combined && (
+          <Button asChild size="sm" variant="ghost" className="h-7 gap-1.5 text-xs">
+            <Link href={ALL_DECISIONS_REVIEW_HREF}>
+              <ListChecks className="h-3.5 w-3.5" />
+              All answers
+            </Link>
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -342,6 +398,7 @@ export function ReviewQueue({ agentId }: { agentId: string }) {
                 <QueueRow
                   item={item}
                   selected={item.id === selectedId}
+                  showSource={combined}
                   onSelect={() => {
                     setSelectedId(item.id);
                     setPhoneDetail(true);
@@ -380,6 +437,18 @@ export function ReviewQueue({ agentId }: { agentId: string }) {
               <section className="rounded-lg border border-border bg-card">
                 <div className="flex items-center gap-2 border-b border-border px-3 py-1.5 text-[11px] font-medium text-muted-foreground">
                   What the model judged
+                  {combined && selected.source === "model" && (
+                    <span className="ml-auto font-normal">API model call{selected.model ? ` · ${selected.model}` : ""}</span>
+                  )}
+                  {combined && selected.source === "agent" && selected.agentId && (
+                    <Link
+                      href={reviewAnswersHref(selected.agentId)}
+                      className="ml-auto inline-flex items-center gap-1 font-normal text-primary hover:underline"
+                    >
+                      <ListChecks className="h-3 w-3" />
+                      This agent&apos;s answers
+                    </Link>
+                  )}
                   {selected.workflowRunId && (
                     <Link
                       href={`/workflows/runs/${selected.workflowRunId}`}

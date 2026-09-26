@@ -23,7 +23,7 @@ import {
   METHOD_LABELS,
   type DecisionAnswerView,
   type DecisionAnswersView,
-} from "./read";
+} from "@ai-matrx/agents/presentation/decision-answers";
 
 function percent(value: number | null): string {
   if (value == null) return "—";

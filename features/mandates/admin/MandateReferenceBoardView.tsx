@@ -541,7 +541,6 @@ export function MandateReferenceBoardView() {
             <strong>The board failed to load. <ErrorAlchemyMenu /></strong> Nothing below is a
             report of health — it is unknown. {error}
           </div>
-          <ErrorAlchemyMenu className="ml-auto" />
         </div>
       ) : null}
 

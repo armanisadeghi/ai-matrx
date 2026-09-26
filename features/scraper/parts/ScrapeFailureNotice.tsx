@@ -123,7 +123,6 @@ export function ScrapeFailureNotice({
           <ScraperHookErrorDetails diagnostics={failure.diagnostics} />
         </div>
       ) : null}
-      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

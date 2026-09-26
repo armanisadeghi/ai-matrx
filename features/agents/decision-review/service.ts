@@ -18,11 +18,14 @@ import { callApi } from "@/lib/api/call-api";
 import { isJsonObject } from "@/types/json";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
+import { getUserOrganizations } from "@/features/organizations/service";
 import {
   DECISION_SUBJECT_KIND,
   decisionJudgeKey,
+  decisionSource,
   orderQueue,
   readReviewItem,
+  type DecisionSource,
   type JudgeVerdictRow,
   type ReviewItem,
 } from "./queue";
@@ -68,13 +71,24 @@ function readLabeledItem(value: unknown): LabeledItem {
 }
 
 const ITEM_COLUMNS =
-  "id, organization_id, question, judge_version, model, verdict, confidence, authority_verdict, agreed, subject_ref_id, created_at, metadata";
+  "id, judge_key, organization_id, question, judge_version, model, verdict, confidence, authority_verdict, agreed, subject_ref_id, created_at, metadata";
 
 /** Everything the queue can show for one agent, capped by the knob-free page size. */
 export const QUEUE_PAGE_SIZE = 500;
 
+/**
+ * Which items a queue reads. One agent's answers (`/agents/<id>/answers`), or
+ * every decision item in the organizations the person belongs to
+ * (`/decisions/review`) — declared here, never left to RLS alone, because a
+ * platform admin's RLS reads every organization's rows and this is a person's
+ * page, not the admin system.
+ */
+export type QueueScope = { agentId: string } | { agentId: null };
+
 export interface QueueFilters {
   status: "unlabeled" | "labeled" | "all";
+  /** Combined queue only: agent / workflow step / API model. */
+  source: DecisionSource | null;
   question: string | null;
   method: string | null;
   model: string | null;
@@ -83,23 +97,40 @@ export interface QueueFilters {
 
 export const DEFAULT_FILTERS: QueueFilters = {
   status: "unlabeled",
+  source: null,
   question: null,
   method: null,
   model: null,
   version: null,
 };
 
+/** The organization ids the combined queue reads — the person's own memberships. */
+async function myOrganizationIds(): Promise<string[]> {
+  const organizations = await getUserOrganizations();
+  return organizations.map((organization) => organization.id);
+}
+
 export async function loadQueue(
-  agentId: string,
+  scope: QueueScope,
   filters: QueueFilters,
 ): Promise<ReviewItem[]> {
-  let query = createClient()
+  const organizationIds = scope.agentId ? null : await myOrganizationIds();
+  const base = createClient()
     .schema("platform")
     .from("judge_verdict")
     .select(ITEM_COLUMNS)
-    .eq("judge_key", decisionJudgeKey(agentId))
     .eq("subject_kind", DECISION_SUBJECT_KIND)
     .is("deleted_at", null);
+  let query = scope.agentId
+    ? base.eq("judge_key", decisionJudgeKey(scope.agentId))
+    : base.in("organization_id", organizationIds ?? []);
+  if (filters.source === "model") query = query.like("judge_key", "model:%");
+  if (filters.source === "workflow") {
+    query = query.or("judge_key.like.workflow_node:*,metadata->>workflow_run_id.not.is.null");
+  }
+  if (filters.source === "agent") {
+    query = query.like("judge_key", "agent:%").is("metadata->>workflow_run_id", null);
+  }
   if (filters.status === "unlabeled") query = query.is("authority_verdict", null);
   if (filters.status === "labeled") query = query.not("authority_verdict", "is", null);
   if (filters.question) query = query.eq("question", filters.question);
@@ -115,6 +146,8 @@ export async function loadQueue(
 }
 
 export interface QueueFacets {
+  /** How many items came from each source (combined queue). */
+  sources: Record<DecisionSource, number>;
   questions: string[];
   models: string[];
   methods: string[];
@@ -124,29 +157,37 @@ export interface QueueFacets {
 }
 
 /** Every value each filter can take, and the labeled/total counts. */
-export async function loadFacets(agentId: string): Promise<QueueFacets> {
+export async function loadFacets(scope: QueueScope): Promise<QueueFacets> {
   const client = createClient();
+  const organizationIds = scope.agentId ? null : await myOrganizationIds();
   const rows = await readAllRows(
-    ({ from, to }) =>
-      client
+    ({ from, to }) => {
+      const base = client
         .schema("platform")
         .from("judge_verdict")
-        .select("id, question, model, judge_version, authority_verdict, metadata", {
+        .select("id, judge_key, question, model, judge_version, authority_verdict, metadata", {
           count: "exact",
-        })
-        .eq("judge_key", decisionJudgeKey(agentId))
+        });
+      const scoped = scope.agentId
+        ? base.eq("judge_key", decisionJudgeKey(scope.agentId))
+        : base.in("organization_id", organizationIds ?? []);
+      return scoped
         .eq("subject_kind", DECISION_SUBJECT_KIND)
         .is("deleted_at", null)
         .order("id", { ascending: true })
-        .range(from, to),
+        .range(from, to);
+    },
     { label: "platform.judge_verdict (decision answers)" },
   );
+  const sources: Record<DecisionSource, number> = { agent: 0, workflow: 0, model: 0 };
   const questions = new Set<string>();
   const models = new Set<string>();
   const methods = new Set<string>();
   const versions = new Set<number>();
   let labeled = 0;
   for (const row of rows) {
+    const runId = isJsonObject(row.metadata) ? row.metadata.workflow_run_id : null;
+    sources[decisionSource(row.judge_key, typeof runId === "string" ? runId : null)] += 1;
     questions.add(row.question);
     if (row.model) models.add(row.model);
     const method = isJsonObject(row.metadata) ? row.metadata.method : null;
@@ -155,6 +196,7 @@ export async function loadFacets(agentId: string): Promise<QueueFacets> {
     if (row.authority_verdict) labeled += 1;
   }
   return {
+    sources,
     questions: [...questions].sort(),
     models: [...models].sort(),
     methods: [...methods].sort(),
@@ -275,6 +317,9 @@ export async function loadCalibration(
 export function reviewAnswersHref(agentId: string): string {
   return `/agents/${agentId}/answers`;
 }
+
+/** Every decision item the person may see — agents, workflow steps and API model calls. */
+export const ALL_DECISIONS_REVIEW_HREF = "/decisions/review";
 
 export function calibrationHref(agentId: string): string {
   return `/agents/${agentId}/answers/calibration`;

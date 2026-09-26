@@ -417,7 +417,6 @@ function UnavailableCard({
       >
         Retry
       </button>
-      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

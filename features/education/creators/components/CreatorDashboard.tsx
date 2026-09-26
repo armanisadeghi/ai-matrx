@@ -61,6 +61,7 @@ import type {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 const RESOURCE_LABEL: Record<string, string> = {
   fc_set: "Flashcards",
@@ -82,6 +83,8 @@ function ClaimHandle({ onClaimed }: { onClaimed: (p: CreatorProfileMine) => void
   const [displayName, setDisplayName] = useState("");
   const [checking, setChecking] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
+  // A check that FAILED is not "taken" — say which one happened (RC-B12 round 4).
+  const [checkError, setCheckError] = useState<unknown>(null);
   const [claiming, setClaiming] = useState(false);
 
   useEffect(() => {
@@ -95,9 +98,15 @@ function ClaimHandle({ onClaimed }: { onClaimed: (p: CreatorProfileMine) => void
     const t = setTimeout(async () => {
       try {
         const ok = await isHandleAvailable(h);
-        if (!cancelled) setAvailable(ok);
-      } catch {
-        if (!cancelled) setAvailable(false);
+        if (!cancelled) {
+          setAvailable(ok);
+          setCheckError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setAvailable(null);
+          setCheckError(err);
+        }
       } finally {
         if (!cancelled) setChecking(false);
       }
@@ -167,7 +176,15 @@ function ClaimHandle({ onClaimed }: { onClaimed: (p: CreatorProfileMine) => void
             <p className="mt-1 text-xs text-muted-foreground">
               3–30 characters — letters, numbers, dashes.
               {available === false ? (
-                <span className="ml-1 text-destructive">Taken or invalid. <ErrorAlchemyMenu /></span>
+                <span className="ml-1 text-destructive">That handle is taken or not allowed.</span>
+              ) : checkError != null ? (
+                <span className="ml-1 text-destructive">
+                  We couldn't check this handle — you can still try to claim it.
+                  <ErrorAlchemyMenu
+                    error={checkError}
+                    input={{ operation: "Check handle availability", calls: ["creator_handle_available"], unsavedInput: { handle } }}
+                  />
+                </span>
               ) : null}
             </p>
           </div>
@@ -268,9 +285,14 @@ function Editor({ initial }: { initial: CreatorProfileMine }) {
 
   const { classes } = useClasses();
   const [myResources, setMyResources] = useState<OwnedPublicResource[]>([]);
-  useEffect(() => {
-    void listMyPublicResources().then(setMyResources).catch(() => setMyResources([]));
+  const [resourcesError, setResourcesError] = useState<unknown>(null);
+  const loadResources = useCallback(() => {
+    setResourcesError(null);
+    void listMyPublicResources().then(setMyResources).catch(setResourcesError);
   }, []);
+  useEffect(() => {
+    loadResources();
+  }, [loadResources]);
 
   const handle = initial.handle!;
 
@@ -502,7 +524,19 @@ function Editor({ initial }: { initial: CreatorProfileMine }) {
         )}
 
         {/* Add resources */}
-        {availableResources.length > 0 ? (
+        {resourcesError != null ? (
+          <ErrorNotice
+            size="compact"
+            title="Your free tools couldn't load"
+            error={resourcesError}
+            operation="List your public flashcard sets and guides"
+            actions={
+              <Button variant="outline" size="sm" onClick={loadResources}>
+                Retry
+              </Button>
+            }
+          />
+        ) : availableResources.length > 0 ? (
           <div>
             <p className="mb-2 text-xs font-medium text-muted-foreground">Your public free tools</p>
             <div className="flex flex-wrap gap-2">
@@ -561,13 +595,21 @@ function Editor({ initial }: { initial: CreatorProfileMine }) {
 export function CreatorDashboard() {
   const [profile, setProfile] = useState<CreatorProfileMine | null>(null);
   const [loading, setLoading] = useState(true);
+  // A failed read is not "no creator page yet": offering the claim form here
+  // told a creator their page was gone (RC-B12 round 4, nothing fails silently).
+  const [loadError, setLoadError] = useState<unknown>(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setLoading(true);
+    setLoadError(null);
     void getMyCreatorProfile()
       .then(setProfile)
-      .catch(() => setProfile(null))
+      .catch(setLoadError)
       .finally(() => setLoading(false));
   }, []);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   return (
     <div className="h-full overflow-y-auto">
@@ -578,6 +620,18 @@ export function CreatorDashboard() {
             <Skeleton className="h-40 w-full" />
             <Skeleton className="h-40 w-full" />
           </div>
+        ) : loadError != null ? (
+          <ErrorNotice
+            title="Your creator page couldn't load"
+            error={loadError}
+            operation="Load your creator page"
+            calls={["creator_get_mine"]}
+            actions={
+              <Button variant="outline" size="sm" onClick={load}>
+                Retry
+              </Button>
+            }
+          />
         ) : !profile?.handle ? (
           <ClaimHandle onClaimed={setProfile} />
         ) : (

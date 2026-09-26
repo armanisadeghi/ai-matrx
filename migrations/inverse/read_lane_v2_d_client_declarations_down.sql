@@ -1,22 +1,8 @@
--- draft: deep-lane read-lane-v2 client declarations — chair runs it in the 2026-09-27 window, after read_lane_v2_b_lock_order
--- chair-step: adds two registry declarations (platform.entity_types.client_read_only_columns, client_deletes_refused) and replaces iam._apply_rls_unchecked, iam.apply_table_grants and iam.verify_canonical to honour them; no policy statement, no freeze. Nothing changes for any table until it is declared (read_lane_v2_e) and regenerated.
--- based-on: iam._apply_rls_unchecked(text, text, text, text) 33351692a761b1791ca6c890e0866f9a137c536d96052dc4326b7fd3bffe9a7a
--- based-on: iam.apply_table_grants(text, text, text) 3c6b7bd6e2e7d5cbb5b8bda776f7532d3dfb952f6984144d204a65d73cf03f33
--- based-on: iam.verify_canonical(text, text, text, text) 0ec1a3b16caf798daf3bf19998652f7d8bf9f2367e645886aa636916d05b643e
--- (the _apply_rls_unchecked hash above is the body read_lane_v2_b_lock_order installs: b runs first)
--- read_lane_v2_d_client_declarations — chair rulings 2026-09-26:
---   * CLIENT READ-ONLY COLUMNS: a declared column is granted SELECT only to authenticated (never INSERT or
---     UPDATE) — server-derived facts a client reads but must not write.
---   * CLIENT DELETES REFUSED: Arman's law is archive, never hard-delete. A declared token gets no std_delete
---     policy and no DELETE grant; deletes go through archive doors.
--- Both are asserted on the privileges apply_table_grants just issued (it raises if either is not true).
--- Adding two nullable/defaulted columns to platform.entity_types is metadata-only.
-alter table platform.entity_types add column if not exists client_read_only_columns text[];
-alter table platform.entity_types add column if not exists client_deletes_refused boolean not null default false;
-comment on column platform.entity_types.client_read_only_columns is
-  'Columns a signed-in client may read but never insert or update (server-derived). Honoured by iam.apply_table_grants (SELECT-only column grant). Chair ruling 2026-09-26 (read-lane v2).';
-comment on column platform.entity_types.client_deletes_refused is
-  'Archive, never hard-delete: the generator emits no client DELETE policy and iam.apply_table_grants issues no DELETE grant; deletes go through archive doors. Chair ruling 2026-09-26 (read-lane v2).';
+-- chair-step: inverse of read_lane_v2_d_client_declarations — restores the generator, grant and certifier bodies it replaced. The two registry columns are LEFT STANDING (their declarations are data; an inverse does not destroy them) and simply stop being honoured.
+-- ground-standing-ok: b — ORDER: runs before read_lane_v2_b_lock_order_down.sql and read_lane_v2_a_generator_down.sql; the body it restores calls the read-lane v2 helpers, which stay standing until read_lane_v2_a_generator_down runs.
+-- based-on: iam._apply_rls_unchecked(text, text, text, text) 01c5f6d086b55b4db512bb142dfae20eaf60ba42cab026df4b605088b302d8d2
+-- based-on: iam.apply_table_grants(text, text, text) 99db20e8ffcf3ba3ef814d4dcd43717d746232efc03242a4572aeebda743b96a
+-- based-on: iam.verify_canonical(text, text, text, text) d258f4cfd64a8ad7f1e29e9a1d69d1f00833dc3689cdf6e00e72c4f90291373f
 
 CREATE OR REPLACE FUNCTION iam._apply_rls_unchecked(p_schema text, p_table text, p_token text, p_variant text DEFAULT 'entity'::text)
  RETURNS void
@@ -133,9 +119,6 @@ declare
   v_ref_type_col text; v_ref_id_col text;
   -- READ-LANE V2 (P7): the token is enrolled in iam.read_lane_v2_rollout.
   v_v2 boolean := false;
-  -- CLIENT DELETES REFUSED (chair 2026-09-26: archive, never hard-delete): the token emits no client
-  -- DELETE policy, and iam.apply_table_grants issues no DELETE grant. Deletes go through archive doors.
-  v_del_refused boolean := false;
 begin
   select coalesce(is_component, false), coalesce(suppress_platform_admin_lane, false),
          coalesce(component_anon_read_via_public_parent, false), client_excluded_columns
@@ -144,9 +127,6 @@ begin
 
   -- D347: publication is an additional anonymous-only restriction, never an access grant.
   v_v2 := iam.read_lane_v2_enrolled(p_token);
-  select coalesce(et.client_deletes_refused, false) into v_del_refused
-    from platform.entity_types et where et.token = p_token;
-  v_del_refused := coalesce(v_del_refused, false);
 
   select anonymous_read_status into v_required_anon_status
     from platform.entity_types where token = p_token;
@@ -352,7 +332,7 @@ begin
       'create policy std_update on %s for update to authenticated using (created_by = (select auth.uid())) with check (created_by = (select auth.uid()))',
       v_tbl);
     end if;
-    if not v_no_client_writes and not v_del_refused then
+    if not v_no_client_writes then
     v_pol := v_pol || format(
       'create policy std_delete on %s for delete to authenticated using (created_by = (select auth.uid()))',
       v_tbl);
@@ -485,7 +465,7 @@ begin
       'create policy std_update on %s for update to authenticated using (created_by = (select auth.uid()) and platform.detail_parent_access(entity_type, entity_id, ''commenter''::public.permission_level)) with check (created_by = (select auth.uid()) and platform.detail_parent_access(entity_type, entity_id, ''commenter''::public.permission_level))',
       v_tbl);
     end if;
-    if not v_no_client_writes and not v_del_refused then
+    if not v_no_client_writes then
     v_pol := v_pol || format(
       'create policy std_delete on %s for delete to authenticated using (created_by = (select auth.uid()) or platform.detail_parent_access(entity_type, entity_id, ''admin''::public.permission_level))',
       v_tbl);
@@ -725,7 +705,7 @@ begin
       v_tbl, v_admin_read, v_parent_expr_edit, p_token, v_admin, v_parent_expr_edit, p_token);
     end if;
 
-    if not v_no_client_writes and not v_del_refused then
+    if not v_no_client_writes then
     v_pol := v_pol || format(
       'create policy std_delete on %s for delete to authenticated using (%s(%s) or iam.has_access(%L, id, ''editor''))',
       v_tbl, v_admin_read, v_parent_expr_edit, p_token);
@@ -793,7 +773,7 @@ begin
       'create policy std_update on %s for update to authenticated using (%s created_by = (select auth.uid())%s) with check (%s created_by = (select auth.uid())%s)',
       v_tbl, v_admin_read, v_su_sel_read, v_admin, v_su_sel);
     end if;
-    if not v_no_client_writes and not v_del_refused then
+    if not v_no_client_writes then
     v_pol := v_pol || format(
       'create policy std_delete on %s for delete to authenticated using (%s created_by = (select auth.uid())%s)',
       v_tbl, v_admin_read, v_su_sel_read);
@@ -852,7 +832,7 @@ begin
     'create policy std_update on %s for update to authenticated using (%s(created_by = (select auth.uid()) or iam.has_access(%L, id, ''editor''))) with check (%s(created_by = (select auth.uid()) or iam.has_access(%L, id, ''editor'')))',
     v_tbl, v_admin_read, p_token, v_admin, p_token);
   end if;
-  if not v_no_client_writes and not v_del_refused then
+  if not v_no_client_writes then
   v_pol := v_pol || format(
     'create policy std_delete on %s for delete to authenticated using (%s(created_by = (select auth.uid()) or iam.has_access(%L, id, ''admin'')))',
     v_tbl, v_admin_read, p_token);
@@ -872,7 +852,8 @@ begin
   perform iam._rls_emit_policies(v_drop, v_pol);  -- POLICY-LOCK: the freeze starts here and ends at COMMIT
 end;
 
-$function$;
+$function$
+;
 
 CREATE OR REPLACE FUNCTION iam.apply_table_grants(p_schema text, p_table text, p_variant text DEFAULT 'entity'::text)
  RETURNS void
@@ -883,12 +864,6 @@ declare
   v_rel regclass := v_tbl::regclass;
   -- READ-LANE V2 (P6): did a signed-in client read this table's id when we started?
   v_v2_had_read boolean := iam.read_lane_v2_auth_reads_id(v_tbl::regclass);
-  -- CLIENT READ-ONLY COLUMNS (chair 2026-09-26): declared in platform.entity_types.client_read_only_columns —
-  -- a signed-in client may READ them, never insert or update them (server-derived facts such as
-  -- users.integration_connections.credential_present). CLIENT DELETES REFUSED: no DELETE grant at all.
-  v_ro text[];
-  v_del_refused boolean := false;
-  v_writable text;
   v_rls_on boolean;
   v_n_pol integer;
   v_live_cols integer;
@@ -1082,25 +1057,6 @@ begin
     v_declared := null;
   end if;
 
-  select et.client_read_only_columns, coalesce(et.client_deletes_refused, false)
-    into v_ro, v_del_refused
-  from platform.entity_types et
-  where et.schema_name = p_schema and et.table_name = p_table
-  limit 1;
-  if v_ro is not null and cardinality(v_ro) = 0 then v_ro := null; end if;
-  v_del_refused := coalesce(v_del_refused, false);
-  if v_ro is not null then
-    select string_agg(x, ', ') into v_missing
-    from unnest(v_ro) x
-    where not exists (select 1 from pg_attribute a
-                       where a.attrelid = v_rel and a.attname = x and a.attnum > 0 and not a.attisdropped);
-    if v_missing is not null then
-      raise exception
-        'apply_table_grants: %.% declares client_read_only_columns that do not exist: % — fix or clear the declaration.',
-        p_schema, p_table, v_missing;
-    end if;
-  end if;
-
   -- A declared name that is not a live column is a stale declaration, and a
   -- stale declaration is how an exclusion quietly stops excluding anything.
   if v_declared is not null then
@@ -1132,9 +1088,8 @@ begin
   end if;
 
   -- An UNDECLARED design still refuses, exactly as the rail did before — that
-  -- is the lane protecting every table not yet migrated to a declaration. A table that declares
-  -- read-only columns HAS declared its column design.
-  if v_declared is null and v_ro is null then
+  -- is the lane protecting every table not yet migrated to a declaration.
+  if v_declared is null then
     select count(*),
            count(*) filter (where a.attacl::text like '%authenticated=%')
       into v_live_cols, v_granted_cols
@@ -1188,21 +1143,15 @@ begin
                      iam._client_grant_column_list(v_rel, v_declared), v_tbl);
     end if;
   else
-    if v_declared is null and v_ro is null then
-      execute format('grant select, insert, update%s on %s to authenticated',
-                     case when v_del_refused then '' else ', delete' end, v_tbl);
+    if v_declared is null then
+      execute format('grant select, insert, update, delete on %s to authenticated', v_tbl);
     else
-      v_kept := iam._client_grant_column_list(v_rel, coalesce(v_declared, '{}'::text[]));
-      v_writable := iam._client_grant_column_list(v_rel, coalesce(v_declared, '{}'::text[]) || coalesce(v_ro, '{}'::text[]));
-      execute format('grant select (%s) on %s to authenticated', v_kept, v_tbl);
-      if v_writable is not null then
-        execute format('grant insert (%1$s), update (%1$s) on %2$s to authenticated', v_writable, v_tbl);
-      end if;
+      v_kept := iam._client_grant_column_list(v_rel, v_declared);
       -- DELETE has no column form and needs none: removing a row you are
       -- already permitted to remove reveals nothing about an excluded column.
-      if not v_del_refused then
-        execute format('grant delete on %s to authenticated', v_tbl);
-      end if;
+      execute format('grant select (%1$s), insert (%1$s), update (%1$s) on %2$s to authenticated',
+                     v_kept, v_tbl);
+      execute format('grant delete on %s to authenticated', v_tbl);
     end if;
   end if;
 
@@ -1223,19 +1172,6 @@ begin
     raise notice
       'apply_table_grants: %.% column-exclusion design PRESERVED (withheld from authenticated: %).',
       p_schema, p_table, array_to_string(v_declared, ', ');
-  end if;
-  if v_ro is not null then
-    raise notice 'apply_table_grants: %.% client read-only columns (select only for authenticated): %.',
-      p_schema, p_table, array_to_string(v_ro, ', ');
-  end if;
-  -- The declarations are forcing functions, not wishes: prove them on the privileges just issued.
-  if v_del_refused and has_table_privilege('authenticated', v_rel, 'DELETE') then
-    raise exception 'apply_table_grants: %.% declares client_deletes_refused but authenticated still holds DELETE', p_schema, p_table using errcode = '42501';
-  end if;
-  if v_ro is not null and exists (select 1 from unnest(v_ro) x
-                                    where has_column_privilege('authenticated', v_rel, x, 'INSERT')
-                                       or has_column_privilege('authenticated', v_rel, x, 'UPDATE')) then
-    raise exception 'apply_table_grants: %.% declares client_read_only_columns but authenticated can still write one of them', p_schema, p_table using errcode = '42501';
   end if;
 
   -- 🚨 THE OPT-IN ANONYMOUS READ LANE'S KEY (chair ruling 2026-09-22, DD-249 / R12).
@@ -1352,7 +1288,8 @@ begin
   execute format('grant all on %s to service_role', v_tbl);
   perform iam.read_lane_v2_refuse_withdraw(v_rel, v_v2_had_read);
 end;
-$function$;
+$function$
+;
 
 CREATE OR REPLACE FUNCTION iam.verify_canonical(p_schema text, p_table text, p_token text, p_variant text DEFAULT NULL::text)
  RETURNS TABLE(check_name text, status text, detail text)
@@ -1927,10 +1864,6 @@ BEGIN
       v_expected:=ARRAY(SELECT unnest(v_expected) EXCEPT SELECT 'platform_admin_all');
       v_expected:=array_append(v_expected,'platform_admin_select');
     END IF;
-  END IF;
-  -- CLIENT DELETES REFUSED (chair 2026-09-26): a declared token emits no std_delete.
-  IF COALESCE((SELECT et.client_deletes_refused FROM platform.entity_types et WHERE et.token = p_token), false) THEN
-    v_expected:=ARRAY(SELECT unnest(v_expected) EXCEPT SELECT 'std_delete');
   END IF;
   -- D347: certify the declared restriction, including role and permissiveness.
   SELECT anonymous_read_status INTO v_required_anon_status
@@ -2571,4 +2504,5 @@ BEGIN
   ELSE status:='FAIL'; detail:=format('registry resource_type=%s != token=%s',v_reg_rt,p_token); END IF; RETURN NEXT;
 END;
 
-$function$;
+$function$
+;

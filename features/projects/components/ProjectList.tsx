@@ -49,7 +49,6 @@ export function ProjectList({ organizationId, orgSlug, canCreate = false }: Proj
         <div className="text-center">
           <h3 className="text-lg font-semibold text-red-900 dark:text-red-100 mb-2">
             Failed to Load Projects
-            <ErrorAlchemyMenu />
           </h3>
           <p className="text-red-700 dark:text-red-300 mb-4">{error} <ErrorAlchemyMenu error={error} /></p>
           <Button onClick={refresh} variant="outline">

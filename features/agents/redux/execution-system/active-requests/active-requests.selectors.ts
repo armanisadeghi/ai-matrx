@@ -14,7 +14,7 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { blockMediaFileId } from "@/features/agents/redux/execution-system/utils/block-media-identity";
 import { DECISION_ANSWERS_BLOCK_TYPE } from "@/features/content-ir/kinds/decision-answers";
-import { decisionAnswersText } from "@/features/agents/decision-answers/read";
+import { decisionAnswersText } from "@ai-matrx/agents/presentation/decision-answers";
 import type { RootState } from "@/lib/redux/store";
 import type {
   ActiveRequest,

@@ -10,7 +10,7 @@
  */
 
 import { DecisionAnswers } from "@/features/agents/decision-answers/DecisionAnswers";
-import { readDecisionAnswers } from "@/features/agents/decision-answers/read";
+import { readDecisionAnswers } from "@ai-matrx/agents/presentation/decision-answers";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface DecisionAnswersBlockProps {
