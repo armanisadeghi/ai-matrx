@@ -167,7 +167,7 @@ function UsageTable({
   const columns: MatrxColumnDef<CodexUsageRow>[] = [
     { id: "name", header: "Name", accessorFn: (row) => labelFor(row, "Unnamed activity"), cell: (usage) => {
       const name = labelFor(usage, "Unnamed activity");
-      return <div className="min-w-0">{onSelect ? <button type="button" onClick={() => onSelect(usage)} className="max-w-full truncate text-left font-medium text-primary hover:underline">{name}</button> : usage.href ? <a href={usage.href} className="inline-flex max-w-full items-center gap-1 font-medium text-primary hover:underline"><span className="truncate">{name}</span><ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden /></a> : <span className="block truncate font-medium">{name}</span>}{usage.project && usage.project !== name ? <span className="mt-0.5 block truncate text-xs text-muted-foreground">{usage.project}</span> : null}</div>;
+      return <div className="min-w-0">{onSelect ? <button type="button" onClick={() => onSelect(usage)} className="max-w-full truncate text-left font-medium text-primary hover:underline">{name}</button> : usage.href ? <a href={usage.href} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-full items-center gap-1 font-medium text-primary hover:underline"><span className="truncate">{name}</span><ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden /></a> : <span className="block truncate font-medium">{name}</span>}{usage.project && usage.project !== name ? <span className="mt-0.5 block truncate text-xs text-muted-foreground">{usage.project}</span> : null}</div>;
     } },
     { accessorKey: "model", header: "Model", cell: (row) => row.model ?? "—" },
     { accessorKey: "effort", header: "Effort", cell: (row) => row.effort ?? "—" },

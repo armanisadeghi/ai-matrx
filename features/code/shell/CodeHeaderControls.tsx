@@ -156,7 +156,9 @@ export function CodeHeaderControls() {
             aria-label={`Manage ${sandboxDisplayName(activeSandbox)}`}
             className="flex shrink-0 items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground"
             title="Open sandbox details"
-          >
+             target="_blank"
+             rel="noopener noreferrer"
+           >
             <span className="hidden lg:inline">Manage</span>
             <ExternalLink className="size-3" aria-hidden />
           </a>

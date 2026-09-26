@@ -103,7 +103,9 @@ export default function ShapeOpenSightings({
                       key={route}
                       href={route}
                       className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                    >
+                       target="_blank"
+                       rel="noopener noreferrer"
+                     >
                       <ExternalLink className="h-3 w-3" />
                       {route}
                     </Link>

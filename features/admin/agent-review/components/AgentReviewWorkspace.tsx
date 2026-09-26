@@ -576,7 +576,9 @@ export default function AgentReviewWorkspace({
                 <AppLink
                   href={raiseOutcome.feedbackHref}
                   className="mt-2 inline-flex items-start gap-1.5 text-primary hover:underline"
-                >
+                   target="_blank"
+                   rel="noopener noreferrer"
+                 >
                   <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   Open the feedback item
                 </AppLink>
@@ -620,7 +622,9 @@ export default function AgentReviewWorkspace({
                     <AppLink
                       href={feedbackHref(item.id)}
                       className="flex items-start gap-1.5 text-sm text-primary hover:underline"
-                    >
+                       target="_blank"
+                       rel="noopener noreferrer"
+                     >
                       <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       <span className="line-clamp-3">{item.description}</span>
                     </AppLink>

@@ -113,7 +113,9 @@ export function TopRequestsTable({
               className="shrink-0 text-muted-foreground hover:text-primary"
               title="Open the conversation"
               aria-label="Open the conversation"
-            >
+               target="_blank"
+               rel="noopener noreferrer"
+             >
               <ExternalLink className="h-3 w-3" />
             </Link>
           ) : null}

@@ -144,7 +144,7 @@ export function AttentionQueue() {
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {item.assetId && (
               <Button asChild variant="outline" size="sm" className="gap-1">
-                <Link href={`/commerce/intake/assets/${item.assetId}`}>
+                <Link href={`/commerce/intake/assets/${item.assetId}`} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-3.5 w-3.5" /> Open asset
                 </Link>
               </Button>

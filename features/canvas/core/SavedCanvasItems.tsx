@@ -9,7 +9,7 @@ import {
   Archive,
   Trash2,
   Share2,
-  ExternalLink,
+  Globe,
   Search,
   Filter,
   RefreshCw,
@@ -276,7 +276,7 @@ export function SavedCanvasItems() {
                 {item.visibility === "public" && (
                   <div className="absolute bottom-3 left-3">
                     <Badge variant="secondary" className="text-xs">
-                      <ExternalLink className="w-3 h-3 mr-1" />
+                      <Globe className="w-3 h-3 mr-1" />
                       Shared
                     </Badge>
                   </div>

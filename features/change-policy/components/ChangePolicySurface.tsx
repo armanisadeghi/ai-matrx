@@ -377,7 +377,7 @@ function PolicyRow({
             {door ? (
                 <>
                     {" · "}
-                    <Link href={door.href} className="inline-flex items-center gap-0.5 underline underline-offset-2 text-primary">
+                    <Link href={door.href} className="inline-flex items-center gap-0.5 underline underline-offset-2 text-primary" target="_blank" rel="noopener noreferrer">
                         {door.label}
                         <ExternalLink className="h-3 w-3" aria-hidden />
                     </Link>

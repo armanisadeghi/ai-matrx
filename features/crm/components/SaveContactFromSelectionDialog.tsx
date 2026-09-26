@@ -21,7 +21,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, ExternalLink, User } from "lucide-react";
+import { Building2, Save, User } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -310,7 +310,7 @@ export function SaveContactFromSelectionDialog({
             disabled={!canSave}
             className={cn(saving && "opacity-80")}
           >
-            <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+            <Save className="mr-1.5 h-3.5 w-3.5" />
             {saving ? "Saving…" : "Save contact"}
           </Button>
         </DialogFooter>

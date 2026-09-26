@@ -113,7 +113,9 @@ function DetailTable({ spec }: { spec: SignalSpec }) {
             href={row.href}
             className="inline-flex h-10 w-10 items-center justify-center text-muted-foreground hover:text-primary"
             aria-label="Open"
-          >
+             target="_blank"
+             rel="noopener noreferrer"
+           >
             <ExternalLink className="h-3.5 w-3.5" aria-hidden />
           </Link>
         ) : null

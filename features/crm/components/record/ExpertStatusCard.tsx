@@ -206,7 +206,9 @@ export function ExpertStatusCard({ party, onChanged }: Props) {
                     "flex items-center gap-1.5 rounded px-1 py-0.5 text-xs",
                     "text-foreground hover:bg-accent ",
                   )}
-                >
+                   target="_blank"
+                   rel="noopener noreferrer"
+                 >
                   <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
                   <span className="truncate">{topic.name}</span>
                 </Link>

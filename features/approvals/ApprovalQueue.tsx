@@ -752,7 +752,9 @@ export function ApprovalQueue({
                           <AppLink
                             href={section.slot.source.moreHref}
                             className="ml-auto inline-flex items-center gap-1 text-[11px] text-primary underline-offset-2 hover:underline"
-                          >
+                             target="_blank"
+                             rel="noopener noreferrer"
+                           >
                             {section.slot.source.moreLabel ?? "See them all"}
                             <ExternalLink className="size-3" />
                           </AppLink>

@@ -463,7 +463,9 @@ export default function KindRegistryAdminClient() {
                         href={`/administration/utilities/kind-registry/${selected.kind}`}
                         className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
                         title="Open the per-kind admin page (Preview / Gate / Schema / Assets)"
-                      >
+                         target="_blank"
+                         rel="noopener noreferrer"
+                       >
                         <ExternalLink className="h-3 w-3" />
                         Detail page
                       </AppLink>

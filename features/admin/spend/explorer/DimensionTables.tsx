@@ -85,7 +85,9 @@ function columnsFor(
                 className="shrink-0 text-muted-foreground hover:text-primary"
                 title="Open"
                 aria-label={`Open ${label}`}
-              >
+                 target="_blank"
+                 rel="noopener noreferrer"
+               >
                 <ExternalLink className="h-3 w-3" />
               </Link>
             ) : null}

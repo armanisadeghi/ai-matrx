@@ -360,7 +360,9 @@ export function KindRecordChrome({
               <Link
                 href={shapeInstancePermalink(record.id)}
                 className="inline-flex items-center gap-1 font-medium text-foreground hover:underline"
-              >
+                 target="_blank"
+                 rel="noopener noreferrer"
+               >
                 {record.title?.trim() || `This ${disposition.label}`}
                 <ExternalLink className="h-3 w-3" aria-hidden />
               </Link>

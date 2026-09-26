@@ -281,7 +281,9 @@ function ParetoCard({
                   className="relative shrink-0 text-muted-foreground opacity-0 hover:text-primary group-hover:opacity-100"
                   title="Open"
                   aria-label={`Open ${label}`}
-                >
+                   target="_blank"
+                   rel="noopener noreferrer"
+                 >
                   <ExternalLink className="h-3 w-3" />
                 </Link>
               ) : (

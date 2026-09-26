@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { useCanvas } from '@/features/canvas/hooks/useCanvas';
 import { CanvasContent } from '@/features/canvas/redux/canvasSlice';
 
@@ -30,7 +30,7 @@ export function CanvasButton({ content, className, title = "Open in side panel" 
       className={className || "p-2 rounded-md bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700 transition-all shadow-sm"}
       title={title}
     >
-      <ExternalLink className="h-4 w-4" />
+      <ArrowUpRight className="h-4 w-4" />
     </button>
   );
 }
