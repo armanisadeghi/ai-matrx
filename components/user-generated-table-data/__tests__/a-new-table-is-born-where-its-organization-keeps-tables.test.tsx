@@ -9,15 +9,15 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-const serviceCreate = jest.fn(async () => ({ success: true, tableId: "7c1e2f40-5a6b-4c3d-8e9f-0a1b2c3d4e5f" }));
-const olderCreate = jest.fn(async () => ({ success: true, tableId: "older-door" }));
+const serviceCreate = jest.fn(async (_params: unknown) => ({ success: true, tableId: "7c1e2f40-5a6b-4c3d-8e9f-0a1b2c3d4e5f" }));
+const olderCreate = jest.fn(async (..._args: unknown[]) => ({ success: true, tableId: "older-door" }));
 jest.mock("@/features/data-tables/service", () => ({
-  createTable: (...a: unknown[]) => serviceCreate(...(a as [])),
+  createTable: (params: unknown) => serviceCreate(params),
   bulkWrite: jest.fn(),
 }));
 jest.mock("@/utils/user-table-utls/table-utils", () => {
   const actual = jest.requireActual("@/utils/user-table-utls/table-utils");
-  return { ...actual, createTable: (...a: unknown[]) => olderCreate(...(a as [])) };
+  return { ...actual, createTable: (...a: unknown[]) => olderCreate(...a) };
 });
 jest.mock("@/utils/supabase/client", () => ({
   supabase: {
