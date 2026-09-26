@@ -90,6 +90,10 @@ adapter). Registered in `features/admin/constants/admin-categories.ts` (Reportin
 - Accepted-by-allowlist items show "in the <repo> allowlist": the reason, who and when live in
   that file, not in the database.
 - "First seen" is the item row's `created_at` (ingest time), not the first run's commit time.
+- aidream `file-access-gate` matches `gh.get_file(...)` (a GitHub contents read in
+  `aidream/services/platform_checks/accept.py`) as a raw user-file lookup; one of the three was
+  Marked OK on 2026-09-26, the other two are the same false alarm and the class fix belongs in the
+  check's `_RAW_LOOKUP` pattern.
 - Production holds ONE check today (`visibility-vocabulary`, two owner hand-run ingests on
   2026-09-26); no schedule is approved, so nothing else arrives until one is.
 
@@ -106,3 +110,11 @@ adapter). Registered in `features/admin/constants/admin-categories.ts` (Reportin
   main, the next ingest marked the item accepted (basis allowlist).
 - `2026-09-26` — Mark OK reachable at every width: the decision moved into the State cell, State
   follows Finding, group label capped at 20rem. Verified on localhost at 375 / 800 / 1024 / 1500.
+- `2026-09-26` — aidream half proven end to end through PRODUCTION's `POST /admin/checks/accept`
+  (it now answers 401 unauthenticated, 404 for an unknown path): owner hand-run ingest of
+  aidream `file-access-gate` (8 open), Mark OK on item `714496e5` as admin@admin.com → refused
+  honestly first ("main's newest checks run does not report it" — the CI artifact predated
+  `accept.py`), then after a fresh `repo-only-checks` run landed aidream `4167f2aea1` (author
+  admin@admin.com, reason + Accepted-by in the message and a `reasons` entry in
+  `scripts/file_access_gate_baseline.json`); re-run on that commit reported it known/accepted and
+  the re-ingest marked it `accepted` (basis allowlist), opened 0; the open list went 8 → 7.
