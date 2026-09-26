@@ -115,7 +115,7 @@ member lanes, `platform_admin_read`, `svc_all`; no staff write arm (admin
 writes go through the `scheduler.admin_*` doors). Cross-table
 `WITH CHECK` clauses on `sch_trigger` and `sch_run` enforce that
 inserted rows reference an owned `sch_task` (prevents cross-user
-injection of triggers/runs).
+injection of triggers/runs). Under the access-ladder law (`common-docs/policies/access-ladder.md`) a scheduled task is work made for the job — Organization level; the live `confidential` class has no named law or company rule behind it, so it is a gap to move to `organization` (no approval needed).
 
 ## Key flows
 
