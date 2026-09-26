@@ -173,3 +173,18 @@ describe("the expanded action set", () => {
     expect(plain).toContain("Mon\tChili");
   });
 });
+
+describe("thumbs rate outputs, never your own words (RC-B6 round 2)", () => {
+  it("an assistant answer can be rated", () => {
+    expect(ids(chatContext("assistant"))).toEqual(expect.arrayContaining(["thumbs-up", "thumbs-down"]));
+  });
+  it("your own chat message cannot", () => {
+    const own = ids(chatContext("user"));
+    expect(own).not.toContain("thumbs-up");
+    expect(own).not.toContain("thumbs-down");
+  });
+  it("a note you own cannot; someone else's shared note can", () => {
+    expect(ids(noteContext())).not.toContain("thumbs-up");
+    expect(ids(noteContext({ extensions: { type: "note", isOwner: false } }))).toContain("thumbs-up");
+  });
+});

@@ -1318,7 +1318,11 @@ export const ProTextarea = React.forwardRef<
                           : isProTextareaAgentActionId(menuMode) &&
                               isEmbeddedProTextareaAgentAction(menuMode)
                             ? "w-auto max-w-none"
-                            : "w-80",
+                            : // An agent panel (Clean up, a bound agent) is bounded
+                              // by the room the viewport has: its header, Run and
+                              // Apply rows stay on screen, the result scrolls
+                              // (RC-B6 round 2: Apply fell below 1400×900).
+                              "flex w-80 max-h-[var(--radix-popover-content-available-height)] flex-col overflow-hidden",
                     )}
                     onOpenAutoFocus={(e) => e.preventDefault()}
                   >

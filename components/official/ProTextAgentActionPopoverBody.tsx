@@ -66,8 +66,8 @@ export function ProTextAgentActionPopoverBody({
   };
 
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
           <BrainCircuit className="h-3.5 w-3.5 text-primary" />
           {title}
@@ -88,7 +88,7 @@ export function ProTextAgentActionPopoverBody({
         </button>
       </div>
 
-      <div className="flex items-center gap-1.5 border-b border-border px-3 py-2">
+      <div className="flex shrink-0 items-center gap-1.5 border-b border-border px-3 py-2">
         <div className="min-w-0 flex-1">
           <AgentListDropdown
             onSelect={onSelectAgent}
@@ -119,7 +119,7 @@ export function ProTextAgentActionPopoverBody({
       </div>
 
       {hasRun && (
-        <div className="max-h-56 overflow-y-auto px-3 py-2.5">
+        <div className="max-h-56 min-h-0 flex-1 overflow-y-auto px-3 py-2.5">
           {isError ? (
             <p className="text-xs text-destructive">
               {error ?? "Something went wrong. Please try again."}
@@ -156,7 +156,7 @@ export function ProTextAgentActionPopoverBody({
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border px-3 py-2">
         <button
           type="button"
           onClick={onBack}

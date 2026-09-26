@@ -48,6 +48,19 @@ async function toggleVerdict(
 }
 
 /** The verdict in force for this content (the ONE output-feedback store). */
+/**
+ * Thumbs rate an OUTPUT (an answer, an artifact, an agent-written document) —
+ * never words the person wrote themselves (RC-B6 round 2: Helpful / Not
+ * helpful on your own note, your own chat message).
+ */
+export function isRateableOutput(ctx: RichDocumentActionContext): boolean {
+  if (!outputFeedbackSubjectForSource(ctx.source)) return false;
+  const ext = ctx.extensions as { type?: string; role?: string; isOwner?: boolean } | undefined;
+  if (ctx.source.type === "chat-message") return ext?.role === "assistant";
+  if (ctx.source.type === "note") return ext?.isOwner === false;
+  return true;
+}
+
 function currentVerdict(ctx: RichDocumentActionContext): OutputFeedbackVerdict | null {
   const subject = outputFeedbackSubjectForSource(ctx.source);
   return subject ? (peekOutputFeedback(subject)?.verdict ?? null) : null;
@@ -72,7 +85,7 @@ registerAction({
   supportedSources: ["chat-message", "note", "artifact", "working-document"],
   renderSlot: "primary",
   order: 0,
-  visible: (ctx) => Boolean(outputFeedbackSubjectForSource(ctx.source)),
+  visible: isRateableOutput,
   active: (ctx) => currentVerdict(ctx) === "positive",
   subscribe: subscribeVerdict,
   run: (ctx) => toggleVerdict(ctx, "positive"),
@@ -88,7 +101,7 @@ registerAction({
   supportedSources: ["chat-message", "note", "artifact", "working-document"],
   renderSlot: "primary",
   order: 1,
-  visible: (ctx) => Boolean(outputFeedbackSubjectForSource(ctx.source)),
+  visible: isRateableOutput,
   active: (ctx) => currentVerdict(ctx) === "negative",
   subscribe: subscribeVerdict,
   run: (ctx) => toggleVerdict(ctx, "negative"),
