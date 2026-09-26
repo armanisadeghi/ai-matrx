@@ -191,9 +191,16 @@ begin
     get stacked diagnostics v_err = message_text;
     if v_err not like '%This list moved to the new system%' or v_err not like '%/data/' || f.lst || '%' then raise exception '2i2: the refusal says %', v_err; end if;
   end;
+  -- 2j. update_user_list on a moved list writes its COPY (lane LISTS-AFTER-SWITCH, 2026-09-26: a
+  -- moved list lives in the store, so the older door writes there); the archived older list is
+  -- not touched — the older rows take no writes, from any door.
+  perform public.update_user_list(f.lst, 'Countries by Continent (2026)');
+  if (public.get_user_list_with_items(f.lst) ->> 'list_name') is distinct from 'Countries by Continent (2026)' then
+    raise exception '2j: update_user_list did not rename the moved list where it now lives (its copy)';
+  end if;
   begin
-    perform public.update_user_list(f.lst, 'Countries by Continent (2026)');
-    raise exception '2j: update_user_list renamed the moved older list';
+    update workbench.udt_structured_lists set list_name = 'Countries by Continent (2026)' where id = f.lst;
+    raise exception '2j2: a direct update renamed the moved older list';
   exception when check_violation then null;
   end;
   begin
