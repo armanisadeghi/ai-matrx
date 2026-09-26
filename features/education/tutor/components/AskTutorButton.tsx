@@ -16,12 +16,7 @@
 import { useState } from "react";
 import { GraduationCap, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@ai-matrx/design-system";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { cn } from "@/lib/utils";
 import type { TutorGroundingSeed } from "../grounding";
 import { EducationTutorClient } from "./EducationTutorClient";
@@ -61,33 +56,34 @@ export function AskTutorButton({
         {!iconOnly && label}
       </Button>
 
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent
-          side="right"
-          className="flex w-full flex-col gap-0 p-0 sm:max-w-lg"
-        >
-          <SheetHeader className="flex-row items-center justify-between space-y-0 border-b border-border px-4 py-3">
-            <SheetTitle className="flex items-center gap-2 text-base">
-              <GraduationCap className="h-4 w-4 text-primary" aria-hidden />
-              AI Tutor
-            </SheetTitle>
-            <a
-              href="/education/tutor"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-            >
-              Open full tutor
-              <ExternalLink className="h-3 w-3" aria-hidden />
-            </a>
-          </SheetHeader>
-          <div className="min-h-0 flex-1 overflow-hidden">
-            {open && (
-              <EducationTutorClient embedded seed={seed} hideLanding />
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
+      <MatrxDynamicPanelHost
+        open={open}
+        onOpenChange={setOpen}
+        title={
+          <span className="flex items-center gap-2 text-base">
+            <GraduationCap className="h-4 w-4 text-primary" aria-hidden />
+            AI Tutor
+          </span>
+        }
+        headerActions={
+          <a
+            href="/education/tutor"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            Open full tutor
+            <ExternalLink className="h-3 w-3" aria-hidden />
+          </a>
+        }
+        position="right"
+        defaultSize={34}
+        minSize={24}
+        initialFocus
+        contentClassName="flex min-h-0 flex-1 flex-col px-3 pb-3"
+      >
+        {open && <EducationTutorClient embedded seed={seed} hideLanding />}
+      </MatrxDynamicPanelHost>
     </>
   );
 }
