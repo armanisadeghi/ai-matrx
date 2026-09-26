@@ -158,6 +158,18 @@ and Runs floating windows.
 - Unconfigured columns remain inert, and Quick Look stays disabled in this
   floating-window context.
 
+### Known gaps (2026-09-26)
+
+- **Conversation mode** keeps its forks in page state, never `mountedMode`: its rating bars show no
+  rank buttons and it has no saved-battle URL or battle-wide Alchemy.
+- **Attachments on a shared request are not saved** — `metadata.locked` holds message and variables
+  only; the files live in each column's conversation history.
+- **Six near-copies of `LockedInputSection`** (one per locked mode) remain; consolidating them is
+  a separate, state-sensitive change.
+- **"Prepare this page"** in the per-answer Alchemy menu is battle-aware only in Model mode (the
+  only registered surface); the header's battle-wide Alchemy covers every mode.
+- The agent picker trigger (`AgentListDropdown`, `@ai-matrx/agents`) renders an unnamed button.
+
 ### Save / Load
 - **First Submit all** creates the battle (automatic name `<agent> · <Mode> battle · <date>`) and the
   URL gains its id. **Save battle / Save changes** runs the same persist path; **Rename battle…** and
