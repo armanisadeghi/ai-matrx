@@ -8,12 +8,14 @@
 // answers as they are. Lane FLIP-SEAMS, 2026-09-25.
 
 import React from "react";
-import { Check, CircleDashed, Loader2, RefreshCw } from "lucide-react";
+import { Check, CircleDashed, Copy, Loader2, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { usePageCaptureContribution } from "@/components/agent-copy/page-capture/usePageCapture";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { pressSeam, readSeamBoard, type Seam, type SeamBoard, type SeamState } from "./seamSwitches";
+import { CHECKS_COPY_AGAIN_CLEARS, copyAgain } from "./copyAgain";
 
 type Pending = { seam: Seam; to: SeamState } | null;
 
@@ -34,6 +36,10 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
   const [pending, setPending] = React.useState<Pending>(null);
   const [pressing, setPressing] = React.useState(false);
   const [outcome, setOutcome] = React.useState<{ seamKey: string; ok: boolean; says: string } | null>(null);
+  const dispatch = useAppDispatch();
+  // "Copy again" (lane COPY-AGAIN-DOOR): the mover's rerun from this page, then measured again.
+  const [copying, setCopying] = React.useState<string | null>(null);
+  const [copied, setCopied] = React.useState<{ ok: boolean; says: string } | null>(null);
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -59,11 +65,11 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
         id: "data-switches",
         title: "Old system to new system switches",
         role: "data",
-        value: { board, problem, pending: pending ? { seam: pending.seam.key, to: pending.to } : null, outcome },
+        value: { board, problem, pending: pending ? { seam: pending.seam.key, to: pending.to } : null, outcome, copyAgain: copied },
         brief: problem ?? (board ? "Board loaded" : "Loading"),
       },
     ],
-    `${board ? JSON.stringify(board).length : 0}|${problem}|${outcome?.says}|${pending?.seam.key}`,
+    `${board ? JSON.stringify(board).length : 0}|${problem}|${outcome?.says}|${pending?.seam.key}|${copied?.says}`,
   );
 
   const press = async () => {
@@ -78,6 +84,15 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
     setOutcome({ seamKey: pending.seam.key, ok: answer.ok, says: answer.says });
     setPressing(false);
     setPending(null);
+    await load();
+  };
+
+  const runCopyAgain = async () => {
+    setCopied(null);
+    setCopying("Starting…");
+    const answer = await copyAgain(dispatch, { organizationId }, (p) => setCopying(p.says));
+    setCopying(null);
+    setCopied({ ok: answer.ok, says: answer.says });
     await load();
   };
 
@@ -103,6 +118,12 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
   if (!board) return null;
 
   const pressable = board.seams.filter((s) => s.pressKind === "owner_press");
+  // Offered only when the tables switch is on the old side and names a difference copying again clears.
+  const tables = board.seams.find((s) => s.key === "older_tables");
+  const copyAgainClears =
+    board.mayPress &&
+    tables?.state === "old" &&
+    tables.checks.some((c) => !c.met && CHECKS_COPY_AGAIN_CLEARS.includes(c.key));
   const elsewhere = board.seams.filter((s) => s.pressKind !== "owner_press");
 
   return (
@@ -113,8 +134,30 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
           <RefreshCw className={`h-3.5 w-3.5 mr-1 ${loading ? "animate-spin" : ""}`} />
           Check again
         </Button>
+        {(copyAgainClears || copying) && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2"
+            onClick={() => void runCopyAgain()}
+            disabled={copying != null || loading}
+          >
+            {copying ? (
+              <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+            ) : (
+              <Copy className="h-3.5 w-3.5 mr-1" />
+            )}
+            Copy again
+          </Button>
+        )}
         {!board.mayPress && <span>{board.mayPressDetail}</span>}
       </div>
+      {copying && <p className="text-xs text-muted-foreground -mt-2">Copying the older tables again. {copying}</p>}
+      {copied && !copying && (
+        <p className={`text-xs -mt-2 ${copied.ok ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}`}>
+          {copied.says}
+        </p>
+      )}
 
       <ul className="flex flex-col divide-y rounded-lg border">
         {pressable.map((seam) => (
