@@ -19,12 +19,7 @@ import { ConfidenceBadge } from "@/features/education/trust/components/Confidenc
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { MadeFromSource } from "@/features/education/convert/MadeFromSource";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@ai-matrx/design-system";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { useAccess } from "@/utils/permissions/access";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationMindMapsScope } from "@/features/surfaces/manifests/education-mind-maps.manifest";
@@ -307,22 +302,22 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
         )}
 
         {trust && (
-          <Sheet open={sourcesOpen} onOpenChange={setSourcesOpen}>
-            <SheetContent
-              side="right"
-              className="flex w-full flex-col p-0 sm:max-w-lg"
-            >
-              <SheetHeader className="border-b border-border px-4 py-3">
-                <SheetTitle className="flex items-center gap-2">
-                  Grounded in
-                  <ConfidenceBadge confidence={trust.confidence} />
-                </SheetTitle>
-              </SheetHeader>
-              <div className="min-h-0 flex-1 overflow-y-auto p-4">
-                <SourceCitations trust={trust} />
-              </div>
-            </SheetContent>
-          </Sheet>
+          <MatrxDynamicPanelHost
+            open={sourcesOpen}
+            onOpenChange={setSourcesOpen}
+            title={
+              <span className="flex items-center gap-2">
+                Grounded in
+                <ConfidenceBadge confidence={trust.confidence} />
+              </span>
+            }
+            position="right"
+            defaultSize={32}
+            minSize={24}
+            contentClassName="flex min-h-0 flex-1 flex-col p-4"
+          >
+            <SourceCitations trust={trust} />
+          </MatrxDynamicPanelHost>
         )}
       </div>
     </SurfaceRuntimeProvider>

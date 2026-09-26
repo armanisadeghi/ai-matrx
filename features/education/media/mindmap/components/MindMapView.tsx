@@ -20,12 +20,7 @@ import CardFaceContent from "@/components/mardown-display/blocks/flashcards/Card
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import { Loader2, AlertCircle, BookOpen, Network } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@ai-matrx/design-system";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { AskTutorButton } from "@/features/education/tutor/components/AskTutorButton";
 import { VerifyAgainstSourceButton } from "@/features/education/trust/components/VerifyAgainstSourceButton";
 import type { TrustEnvelope } from "@/features/education/trust/types";
@@ -112,18 +107,21 @@ function NodePanel({
   const card = nodeCard(node);
   const seed = seedForNode(node);
   return (
-    <Sheet open onOpenChange={(o) => !o && onClose()}>
-      <SheetContent
-        side="right"
-        className="flex w-full flex-col gap-0 p-0 sm:max-w-md"
-      >
-        <SheetHeader className="space-y-0 border-b border-border px-4 py-3">
-          <SheetTitle className="flex items-center gap-2 text-base">
-            <Network className="h-4 w-4 text-primary" aria-hidden />
-            {node.label}
-          </SheetTitle>
-        </SheetHeader>
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+    <MatrxDynamicPanelHost
+      open
+      onOpenChange={(o) => !o && onClose()}
+      title={
+        <span className="flex items-center gap-2 text-base">
+          <Network className="h-4 w-4 text-primary" aria-hidden />
+          {node.label}
+        </span>
+      }
+      position="right"
+      defaultSize={30}
+      minSize={22}
+      contentClassName="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4"
+    >
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto">
           {node.description && (
             <p className="text-sm text-muted-foreground">{node.description}</p>
           )}
@@ -163,8 +161,7 @@ function NodePanel({
             className="w-full justify-center text-sm"
           />
         </div>
-      </SheetContent>
-    </Sheet>
+    </MatrxDynamicPanelHost>
   );
 }
 
