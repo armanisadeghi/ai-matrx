@@ -78,17 +78,6 @@ function truncatePreview(text: string): string {
 export default function MobileMenuContent(props: MobileMenuContentProps) {
   const {
     onClose,
-    surfaceName,
-    extraSections,
-    isEditable,
-    onSave,
-    onDelete,
-    onUndo,
-    onRedo,
-    canUndo,
-    canRedo,
-    onViewHistory,
-    hasHistory,
   } = props;
 
   const m = useContextMenuActions(props);
@@ -234,6 +223,13 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
   const nodes = usable(levelNodes);
   const atRoot = validPath.length === 0;
 
+  // The sheet names the surface in the person's words (the same label the
+  // surface row carries, e.g. "Assistant Message") — never a registry id like
+  // "matrx-user/assistant-message".
+  const surfaceRow = m.surfaceSection.items.find((item) => "label" in item && item.label);
+  const sheetTitle =
+    (surfaceRow && "label" in surfaceRow ? surfaceRow.label : null) ?? "Actions";
+
   const headerLabel =
     actionText.source === "selection"
       ? "Selected"
@@ -313,7 +309,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
           </button>
         ) : (
           <span className="px-2 text-sm font-semibold text-foreground">
-            {surfaceName ?? "Menu"}
+            {sheetTitle}
           </span>
         )}
         <span className="flex-1 truncate text-center text-sm font-semibold">
