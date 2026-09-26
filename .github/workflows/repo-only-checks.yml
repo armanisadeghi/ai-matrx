@@ -1,0 +1,54 @@
+name: Repo-only checks
+
+# The code-only leg of "checks run in the app" (common-docs/projects/checks-run-in-the-app/PLAN.md,
+# decision 4): the release-check rows DECLARED repo-only in scripts/checks/row-classes.json run here
+# on the head of main, and the runner's --json output is uploaded as the artifact `checks-findings`.
+# The app (aidream `platform_checks_ci_pull` system task) pulls the newest successful artifact
+# through the GitHub API and feeds it to the one ingest (ops.check_run / ops.check_item).
+#
+# 🚨 NO `schedule:` HERE. Arman approves every automated schedule by exact name and interval
+# (common-docs/operations/scheduled-tasks.md). The proposed cadence (hourly) sits in that register
+# as PENDING APPROVAL; until he approves it this workflow runs only when dispatched by hand:
+#   gh workflow run repo-only-checks.yml --ref main
+#
+# 🚨 THIS REPOSITORY IS PUBLIC. Nothing here may read a database or need a secret: `--repo-only`
+# runs ONLY rows declared repo-only (clone-db, live-db and undeclared rows are left out and named in
+# the header's `skipped_not_repo_only`). No `secrets.*` is referenced in this file — keep it so.
+on:
+  workflow_dispatch:
+
+# Its own group, never cancelled: a push to main never touches this run (CI's group is separate),
+# and a second dispatch waits for the first instead of killing it.
+concurrency:
+  group: repo-only-checks
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: repo-only checks (head of main)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run every repo-only row (items on)
+        env:
+          MATRX_ITEMS: "1"
+        run: node scripts/checks/run.mjs --repo-only --json tmp/checks/findings.jsonl
+      - name: Upload the findings artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checks-findings
+          path: tmp/checks/findings.jsonl
+          if-no-files-found: error
+          retention-days: 7

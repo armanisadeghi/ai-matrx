@@ -424,3 +424,14 @@ test("end-of-scan: endItems prints only when asked, with the item lines this pro
   assert.equal(parseItems('MATRX-ITEM {"key":"x"}').complete, false);
   assert.equal(parseItems('MATRX-ITEM {"key":"x"}\nMATRX-ITEMS-END {"count":"x"}').errors.length, 1);
 });
+
+test("--repo-only runs ONLY rows declared repo-only — never clone-db, live-db or undeclared (the public CI leg)", () => {
+  const rows = ["Repo gate|echo repo", "Clone gate|echo clone", "Live gate|echo live", "Mystery gate|echo mystery"];
+  const dir = mkdtempSync(join(tmpdir(), "release-checks-repo-only-"));
+  const byId = { "repo-gate": "repo-only", "clone-gate": "clone-db", "live-gate": "live-db" };
+  const classes = declareRows(rows, dir, (id) => byId[id]);
+  const { out, header } = runWithManifest(rows, ["--classes", classes, "--repo-only"]);
+  assert.deepEqual(header.ran, ["repo-gate"]);
+  assert.deepEqual([...header.skipped_not_repo_only].sort(), ["clone-gate", "live-gate", "mystery-gate"]);
+  assert.match(out, /skipped 3 row\(s\) not declared repo-only/);
+});

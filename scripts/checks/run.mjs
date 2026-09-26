@@ -49,6 +49,7 @@
  *   node scripts/checks/run.mjs --only <id>          # one row (repeatable)
  *   node scripts/checks/run.mjs --list               # the rows, one per line, with their declared class
  *   node scripts/checks/run.mjs --skip-live-db       # leave out every live-db row (the release after-phase)
+ *   node scripts/checks/run.mjs --repo-only          # ONLY rows declared repo-only (the public GitHub Actions leg)
  *   node scripts/checks/run.mjs --manifest rows.txt  # test seam: rows from a file
  *   node scripts/checks/run.mjs --classes c.json     # test seam: row classes from a file
  */
@@ -118,6 +119,7 @@ const ERROR_ROWS = /check:parse|check-migrations|check:migrations|kind-marker-la
 export const ROW_CLASSES_PATH = join(REPO_ROOT, "scripts", "checks", "row-classes.json");
 export const LIVE_DB = "live-db";
 export const UNCLASSIFIED = "unclassified";
+export const REPO_ONLY = "repo-only";
 
 export function loadRowClasses(path = ROW_CLASSES_PATH) {
   try {
@@ -568,7 +570,7 @@ export function renderTable(findings) {
 }
 
 function parseArgs(argv) {
-  const args = { lanes: [], only: [], json: null, workers: DEFAULT_WORKERS, dbWorkers: DEFAULT_DB_WORKERS, timeout: null, list: false, manifest: null, extras: true, skipLiveDb: false, classes: null };
+  const args = { lanes: [], only: [], json: null, workers: DEFAULT_WORKERS, dbWorkers: DEFAULT_DB_WORKERS, timeout: null, list: false, manifest: null, extras: true, skipLiveDb: false, repoOnly: false, classes: null };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     const next = () => argv[++i];
@@ -583,6 +585,7 @@ function parseArgs(argv) {
       case "--manifest": args.manifest = resolve(next()); break;
       case "--no-extras": args.extras = false; break;
       case "--skip-live-db": args.skipLiveDb = true; break;
+      case "--repo-only": args.repoOnly = true; break; // the public CI leg: no database, no secrets
       case "--classes": args.classes = resolve(next()); break; // test seam: row classes from a file
       case "--all": case "--changed-since": if (a === "--changed-since") next(); break; // accepted: every row runs every release
       case "-h": case "--help":
@@ -611,6 +614,14 @@ export async function main(argv = process.argv.slice(2)) {
   if (args.skipLiveDb) {
     skipped = rows.filter((r) => r.dbClass === LIVE_DB || r.dbClass === UNCLASSIFIED);
     rows = rows.filter((r) => !skipped.includes(r));
+  }
+  // --repo-only: the GitHub Actions leg (the repository is public — PLAN.md decision 4). ONLY rows
+  // DECLARED repo-only run; clone-db, live-db and undeclared rows are left out and named.
+  let notRepoOnly = [];
+  if (args.repoOnly) {
+    notRepoOnly = rows.filter((r) => r.dbClass !== REPO_ONLY);
+    rows = rows.filter((r) => r.dbClass === REPO_ONLY);
+    process.stdout.write(`checks: skipped ${notRepoOnly.length} row(s) not declared repo-only\n`);
   }
   if (args.list) {
     for (const r of rows) process.stdout.write(`${r.id}\t${r.category}\t${r.level}\t${r.dbClass}\t${r.cmd}\n`);
@@ -642,6 +653,7 @@ export async function main(argv = process.argv.slice(2)) {
     const sha = spawnSync("git", ["-C", REPO_ROOT, "rev-parse", "HEAD"], { encoding: "utf8" }).stdout?.trim() || null;
     const header = { ran: rows.map((r) => r.id), git_sha: sha, started_at: runStartedAt, checks: metrics };
     if (skipped.length) header.skipped_live_db = skipped.map((r) => r.id);
+    if (notRepoOnly.length) header.skipped_not_repo_only = notRepoOnly.map((r) => r.id);
     const tally = itemTally(findings);
     if (Object.keys(tally).length) header.items = tally;
     if (Object.keys(scans).length) header.scan_complete = scans;
