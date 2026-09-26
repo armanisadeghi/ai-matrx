@@ -71,9 +71,9 @@ function seedToInsertPayload(
  * (common-docs/policies/context-is-carried-never-rebuilt.md). `agent.definition`
  * is one of the 328 tables carrying `public._stamp_org_default`, a BEFORE
  * INSERT trigger that files a row arriving with a NULL organization into the
- * WRITER'S PERSONAL organization. This action wrote no organization at all
+ * WRITER'S OWN organization. This action wrote no organization at all
  * until 2026-09-17, so every agent made from a template landed in the
- * creator's personal workspace instead of the organization they were working
+ * creator's own organization instead of the organization they were working
  * in — invisible to their teammates, and no error anywhere. The caller (the
  * client half of `/agents/new/manual`) reads the selected organization from
  * the store and passes it; with nothing selected this refuses and writes

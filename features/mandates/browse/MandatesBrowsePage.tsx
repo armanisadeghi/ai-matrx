@@ -13,7 +13,7 @@
 //
 // 🚨 OWNERSHIP TABS (one-resolution, 2026-09-07). A mandate's home is its
 // ORGANIZATION (D-R3), so the tabs are the organizations the caller belongs to
-// — a personal workspace included, because a personal workspace is just an
+// — a own organization included, because a own organization is just an
 // organization — plus the platform's own corpus for a Matrx admin. A non-admin
 // never sees the System tab; if one asks for that home anyway (a pasted
 // `?scope=system` link), the door refuses with its reason and the shell prints

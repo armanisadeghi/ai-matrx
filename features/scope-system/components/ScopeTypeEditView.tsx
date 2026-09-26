@@ -29,7 +29,6 @@ interface ScopeTypeEditViewProps {
   orgId: string;
   orgSlugOrId: string;
   orgName: string;
-  orgIsPersonal: boolean;
   typeParam: string;
   canManage: boolean;
 }
@@ -43,7 +42,6 @@ export function ScopeTypeEditView({
   orgId,
   orgSlugOrId,
   orgName,
-  orgIsPersonal,
   typeParam,
   canManage,
 }: ScopeTypeEditViewProps) {
@@ -92,7 +90,7 @@ export function ScopeTypeEditView({
           </div>
           <div className="min-w-0">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {orgIsPersonal ? "Personal workspace" : orgName} · scope type
+              {orgName} · scope type
             </p>
             <h1 className="text-2xl font-bold text-foreground leading-tight">
               Edit {scopeType.label_singular} settings

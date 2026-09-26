@@ -78,7 +78,7 @@ export function PartyCreateForm({
     🚨 THE EXPLICIT ACTIVE ORG, NEVER THE "EFFECTIVE" ONE.
 
     This read `selectEffectiveOrganizationId`, which is `organization_id ??
-    personal_organization_id` — so whenever no org was actively selected, a record
+    the person's own organization id` — so whenever no org was actively selected, a record
     the user believed they were filing into their working organization was silently
     stamped with their PERSONAL workspace instead. Nothing said so: the form shows
     no org, the body was the only place the value appeared, and no header carried a

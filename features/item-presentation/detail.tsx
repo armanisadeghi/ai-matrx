@@ -69,7 +69,7 @@ function makeLoader(
  * From the seat, a cold load of `/detail/google_document/<id>` issued
  *
  *   +4231ms  GET …/google_document?select=*&id=eq.…
- *   +4610ms  POST …/rpc/current_personal_org_id      ← the organization question
+ *   +4610ms  POST …/rpc/(organization lookup)      ← the organization question
  *
  * — the read went out before anything had asked which organization the person
  * works in, and when it came back empty the screen blamed the provider:

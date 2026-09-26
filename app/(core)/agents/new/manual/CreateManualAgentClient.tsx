@@ -5,9 +5,9 @@
 // 🚨 WHY THIS EXISTS: the page creates an agent the moment it opens, and
 // `agent.definition` is one of the 328 tables carrying
 // `public._stamp_org_default` — a BEFORE INSERT trigger that files a row
-// arriving with a NULL organization into the WRITER'S PERSONAL organization.
+// arriving with a NULL organization into the WRITER'S OWN organization.
 // The server action had no organization to write, so every agent made from a
-// template silently landed in the creator's personal workspace instead of the
+// template silently landed in the creator's own organization instead of the
 // organization they were working in (242 of 562 recent definitions).
 //
 // The organization a write acts in is the one the person SELECTED, so it is

@@ -10,7 +10,7 @@
  *   1. **Refuse.** `requireOrganizationContext` throws
  *      `organization_context_required`. Correct, and useless on its own: the
  *      person is told to go do something else, somewhere else, and come back.
- *   2. **Guess.** Fall back to the personal workspace. Silent, convenient, and
+ *   2. **Guess.** Fall back to the own organization. Silent, convenient, and
  *      the source of the 2026-08-30 incident — an upload landed in a personal
  *      workspace nobody had chosen, then collided with the team organization
  *      the person actually picked a minute later.

@@ -122,7 +122,7 @@ export function KindRecordChrome({
   const disposition = resolveKindRecordDisposition(kind);
   // The EXPLICIT active org. With none, the count says so on the strip and a
   // Save refuses through `saveKindInstance` with the same sentence — never a
-  // record quietly filed into the user's personal workspace.
+  // record quietly filed into the user's own organization.
   const organizationId = useAppSelector(selectOrganizationId);
   const [state, setState] = useState<LoadState>(INITIAL);
   const [busy, setBusy] = useState(false);

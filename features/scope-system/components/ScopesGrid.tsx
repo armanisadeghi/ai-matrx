@@ -23,13 +23,11 @@ import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree"
 interface ScopesGridProps {
   orgId: string;
   orgSlugOrId: string;
-  personalOnly?: boolean;
 }
 
 export function ScopesGrid({
   orgId,
   orgSlugOrId,
-  personalOnly,
 }: ScopesGridProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -129,7 +127,6 @@ export function ScopesGrid({
         open={galleryOpen}
         onOpenChange={setGalleryOpen}
         orgId={orgId}
-        personalOnly={personalOnly}
       />
     </div>
   );

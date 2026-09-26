@@ -68,7 +68,7 @@ export interface ShareCapabilities {
     | null;
   /**
    * The column naming the thing's OWN organization (`organization_id`), when its table has one.
-   * The Share dialog reads it to tell a thing homed in its owner's personal workspace — where
+   * The Share dialog reads it to tell a thing homed in its owner's own organization — where
    * "My organization" and "Add everyone in …" name nobody — for every kind (2026-09-26).
    */
   organizationColumn: "organization_id" | null;
@@ -260,7 +260,7 @@ export async function forkSharedResource(
     // WHERE THE COPY LANDS IS THE PERSON'S ANSWER, NOT OURS. The source's organization is
     // where the ORIGINAL lives — often somebody else's workspace or a public library — so
     // it cannot be reused for the copy, and until 2026-09-22 all three RPCs answered it
-    // with the caller's own personal workspace (DEFAULT-ORG-4). `ensureOrgId` returns the
+    // with the caller's own own organization (DEFAULT-ORG-4). `ensureOrgId` returns the
     // active organization, or opens the picker and returns what the person selects. It
     // throws `OrganizationSelectionCancelled` when they close it — "not now", not an error.
     const orgId = await ensureOrgId(organizationId);

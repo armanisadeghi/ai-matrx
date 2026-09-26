@@ -97,7 +97,6 @@ const ORGANIZATIONS = Array.from({ length: 48 }, (_, index) => ({
   id: `org-${index}`,
   name: `Organization Number ${index} With A Fairly Long Workspace Name Inc`,
   abbreviation: `O${index}`,
-  isPersonal: index === 3,
 }));
 
 /**

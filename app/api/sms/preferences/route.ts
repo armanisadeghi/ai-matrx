@@ -271,12 +271,12 @@ export async function PUT(request: NextRequest) {
 
     // 🚨 THE PREFERENCE ROW IS FILED IN THE ORGANIZATION THE CALLER IS ACTING
     // IN. Until 2026-09-19 this read `ensureOrgIdServer(supabase, undefined)`,
-    // which ended in the `current_personal_org_id()` RPC: the server picking
-    // the person's personal workspace because the request named none. The
+    // which ended in the old own-organization lookup: the server picking
+    // the person's own organization because the request named none. The
     // old comment here called that deliberate — "a per-person singleton, one
     // row that follows the person across organizations" — but `upsert on
     // user_id` is what makes the row a singleton; `organization_id` is still a
-    // tenant, and stamping it from the personal workspace is the server
+    // tenant, and stamping it from the own organization is the server
     // choosing a tenant nobody chose. Arman, 2026-09-19: "one missed org check
     // that should have just failed turns into 50 in a month and 5,000 in a
     // year". The caller states the organization on `X-Organization-Id` — the

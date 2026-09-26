@@ -17,11 +17,11 @@
 //
 // 🚨 IT NO LONGER PICKS (Arman, 2026-09-19). Between those last two steps it
 // used to apply a rung order — stated default-org preference, then the
-// person's own personal workspace — and dispatch that selection itself, so a
+// person's own own organization — and dispatch that selection itself, so a
 // note could be filed in an organization nobody named. Both rungs are gone: a
 // "default organization" is at most a per-client display preference that only
 // the picker may read, and nothing may choose an organization for the person
-// from a preference or their personal org.
+// from a preference or their own org.
 //
 //   "one missed org check that should have just failed turns into 50 in a
 //    month and 5,000 in a year, and suddenly we don't have orgs any more, we
@@ -104,12 +104,12 @@ export async function resolveNewNoteOrganization(
     const resolved = selectOrgBootstrapResolved(state);
     if (resolved) {
       // Boot has looked and settled with nothing selected. It used to apply a
-      // rung order here — stated default → own personal org → sole membership
+      // rung order here — stated default → own own org → sole membership
       // — and SELECT one silently, "the same choice
       // `useActiveOrganizationAutoSelect` makes". Both of the first two rungs
       // were deleted on 2026-09-19: a default organization is at most a
       // display preference, and nothing may pick an organization for the
-      // person from a preference or their personal workspace. The sole
+      // person from a preference or their own organization. The sole
       // membership case never reaches here — boot itself takes it, because
       // there is nothing to choose.
       //

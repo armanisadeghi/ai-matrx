@@ -36,7 +36,6 @@ const ORGANIZATIONS = Array.from({ length: 48 }, (_, index) => ({
   id: `org-${index}`,
   name: `Organization Number ${index} With A Fairly Long Workspace Name Inc`,
   abbreviation: `O${index}`,
-  is_personal: index === 3,
 }));
 
 jest.mock("@/features/organizations/hooks/useActiveOrganizationPicker", () => ({
@@ -83,7 +82,6 @@ describe("the account menu's Organization section with no workspace chosen", () 
   });
 
   it("is not the blank rectangle: the section has real rows, not just the pill and the toggle", () => {
-    expect(text).toContain("Personal");
     // 🚨 THE CONTROL IS NO LONGER CALLED "Set as my default", AND THAT IS THE
     // POINT. A default organization is at most a per-client DISPLAY preference
     // — nothing may pick a workspace for the person from it — so the shared
@@ -93,7 +91,7 @@ describe("the account menu's Organization section with no workspace chosen", () 
     // And with nothing selected it says why it cannot be used, rather than
     // sitting there dead: the row is honest or it is absent.
     expect(text).toContain("Select an organization first");
-    // The walk saw ONLY those two. A row's abbreviation chip is the third thing
+    // A row's abbreviation chip is the other thing
     // that must be there, 48 times.
     expect(markup.match(/aria-label="Organization abbreviation /g)).toHaveLength(
       ORGANIZATIONS.length,

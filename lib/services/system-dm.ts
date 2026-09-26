@@ -38,7 +38,7 @@ export async function findOrCreateDirectConversation(
   // THE NOTIFICATION'S OWN RECORD NAMES THE ORGANIZATION. A DM about a task belongs where
   // the task lives; a DM about a feedback item belongs where the feedback item lives.
   // Until 2026-09-22 this omitted the argument and the RPC filed every notification
-  // conversation in the SENDER's personal workspace — which for the Matrx System bot meant
+  // conversation in the SENDER's own organization — which for the Matrx System bot meant
   // a workspace belonging to a bot (DEFAULT-ORG-4).
   if (!organizationId) {
     throw new Error(
@@ -92,7 +92,7 @@ export interface SendDmOptions {
   actionData?: { kind: string; payload: Record<string, unknown> };
   /**
    * The organization the thing this DM is ABOUT lives in — the task's, the feedback
-   * item's. Required: it used to be answered with the sender's personal workspace.
+   * item's. Required: it used to be answered with the sender's own organization.
    */
   organizationId: string;
 }

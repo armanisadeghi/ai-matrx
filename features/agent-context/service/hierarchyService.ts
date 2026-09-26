@@ -29,8 +29,6 @@ export type HierarchyOrg = {
   slug: string;
   description: string | null;
   logo_url: string | null;
-  // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-  is_personal: boolean | null;
   settings: Record<string, unknown> | null;
   role: string;
   created_at: string | null;
@@ -123,7 +121,7 @@ export const hierarchyService = {
       .schema("iam")
       .from("organizations")
       .select(
-        "id, name, abbreviation, slug, description, logo_url, is_personal, settings, created_at",
+        "id, name, abbreviation, slug, description, logo_url, settings, created_at",
       )
       .in("id", orgIds);
     if (error) throw error;
@@ -259,7 +257,6 @@ export const hierarchyService = {
         meta: {
           slug: org.slug,
           abbreviation: org.abbreviation,
-          is_personal: org.is_personal,
           role: org.role,
           created_at: org.created_at,
         },
@@ -383,12 +380,13 @@ export const hierarchyService = {
   }): Promise<HierarchyProject> {
     // Delegate to the canonical create path. The owner membership is written to
     // the canonical `iam.memberships` store by `createProjectCanonical` (via
-    // `membershipsService.add`), and `is_personal` is derived from the org.
+    // `membershipsService.add`).
     // Without that member row the project becomes invisible to `/projects` and
     // to every permission/sharing query that traverses project membership.
     //
-    // The canonical service resolves missing organization ids to the user's
-    // real personal organization, so project rows are never left unscoped.
+    // The canonical service resolves a missing organization id through
+    // `ensureOrgId` (the selected organization, asked when none), so project
+    // rows are never left unscoped.
     const result = await createProjectCanonical({
       name: data.name,
       slug: generateProjectSlug(data.name),

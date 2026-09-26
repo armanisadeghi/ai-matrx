@@ -113,7 +113,7 @@ export interface CloudBrowserProfile {
   /** The caller's resolved level on this profile (never active-org-keyed). */
   accessLevel: ShareLevel;
   /** True only for the caller's own personal default. */
-  isPersonalDefault: boolean;
+  isOwnDefault: boolean;
 }
 
 /**

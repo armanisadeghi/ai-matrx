@@ -70,7 +70,6 @@ function makeState(
     history?: Array<{ id: string; role: string; content: unknown }>;
     userInput?: string;
     organizationId?: string | null;
-    personalOrganizationId?: string | null;
     conversationOrganizationId?: string | null;
     cacheOnly?: boolean;
     resourcePolicies?: Record<
@@ -199,15 +198,13 @@ function makeState(
     // Read by the `editor-state` client-capability provider that
     // `buildToolInjection` walks. Same reducer-derived rule as above.
     editorState: editorStateReducer(undefined, { type: "@@INIT" }),
-    // AI execution reads ONLY the explicit active organization. The personal
-    // organization remains distinct so tests catch any reintroduced fallback.
+    // AI execution reads ONLY the explicit active organization.
     appContext: {
       ...appContextReducer(undefined, { type: "@@INIT" }),
       organization_id:
         "organizationId" in partial
           ? (partial.organizationId ?? null)
           : SELECTED_ORGANIZATION_ID,
-      personal_organization_id: partial.personalOrganizationId ?? null,
     },
     // Desktop target routing is a real RootState slice. Derive defaults from
     // its reducer so this partial fixture cannot drift from production state.
@@ -335,10 +332,9 @@ describe("assembleManualRequest — live read contract", () => {
     ]);
   });
 
-  test("missing selection is rejected even when a personal organization exists", async () => {
+  test("missing selection is rejected", async () => {
     const state = makeStoredAssemblyState({
       organizationId: null,
-      personalOrganizationId: "org-personal",
       cacheOnly: true,
     });
 
@@ -353,7 +349,6 @@ describe("assembleManualRequest — live read contract", () => {
   test("a new entity-bound run may use its explicitly supplied organization", async () => {
     const state = makeStoredAssemblyState({
       organizationId: null,
-      personalOrganizationId: "org-personal",
       conversationOrganizationId: "org-owned-entity",
       cacheOnly: true,
     });

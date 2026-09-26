@@ -31,7 +31,6 @@ export interface Project {
   description?: string | null;
   organizationId: string | null;
   createdBy?: string | null;
-  isPersonal: boolean;
   status: ProjectStatus;
   priority?: ProjectPriority | null;
   startDate?: string | null;

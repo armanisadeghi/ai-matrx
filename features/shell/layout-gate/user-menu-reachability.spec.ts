@@ -128,7 +128,6 @@ const ORGANIZATIONS = Array.from({ length: 48 }, (_, index) => ({
   id: `org-${index}`,
   name: `Organization Number ${index} With A Fairly Long Workspace Name Inc`,
   abbreviation: `O${index}`,
-  isPersonal: index === 3,
 }));
 
 const CHEVRON = `<svg class="mg-chevron w-3 h-3 shrink-0" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg>`;

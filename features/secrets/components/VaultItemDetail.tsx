@@ -2842,7 +2842,7 @@ function PrincipalPicker({
 }) {
   const { organizations, loading } = useUserOrganizations();
   const targets = organizations.filter(
-    (org) => !org.isPersonal && org.id !== item.organization_id,
+    (org) => org.id !== item.organization_id,
   );
   const allowPersonal = Boolean(item.organization_id);
   const [target, setTarget] = useState<string>("");

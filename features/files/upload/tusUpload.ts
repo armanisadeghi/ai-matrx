@@ -63,8 +63,8 @@ export const TUS_UPLOAD_PATH = "/files/upload/tus";
  * it is not decoration. The server reads it (`SyncEngine._metadata_organization_id`,
  * membership-checked against `iam.has_org_access_for`) and stamps
  * `files.files.organization_id` from it. Omit it and the server falls back to
- * the uploader's PERSONAL workspace — which is how, on 2026-08-30, a screenshot
- * attached from the composer landed in a personal workspace nobody had chosen
+ * the uploader's OWN organization — which is how, on 2026-08-30, a screenshot
+ * attached from the composer landed in a own organization nobody had chosen
  * and then disagreed with the team organization the person actually picked.
  *
  * Callers never set it by hand: `bindUploadOrganization` in `cloudUpload.ts`
@@ -89,7 +89,7 @@ export function buildUploadMetadataEnvelope(
     // original bug survive. The server still fails closed on its own terms.
     console.warn(
       "[buildUploadMetadataEnvelope] upload carries no scope.organization_id — " +
-        "it will be filed in the uploader's personal workspace. Route this " +
+        "it will be filed in an organization nobody chose. Route this " +
         "upload through cloudUpload/cloudUploadRaw so the organization gate runs.",
     );
   }

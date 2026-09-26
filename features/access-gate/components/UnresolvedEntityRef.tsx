@@ -156,9 +156,7 @@ export function UnresolvedEntityRef({
     context.status === "error" || context.status === "missing"
       ? "text-amber-700 dark:text-amber-400"
       : "text-muted-foreground";
-  const showOrg = Boolean(
-    context.organization && !context.organization.isPersonal,
-  );
+  const showOrg = Boolean(context.organization);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

@@ -131,7 +131,6 @@ beforeAll(async () => {
 
     const org = await client.query<{ organization_id: string }>(
       `select om.organization_id from iam.organization_member om
-        join iam.organizations o on o.id = om.organization_id and not coalesce(o.is_personal, false)
         where om.user_id = $1 and om.role = 'owner'
           and not exists (select 1 from iam.organization_member a
                            where a.organization_id = om.organization_id and a.user_id = $2)

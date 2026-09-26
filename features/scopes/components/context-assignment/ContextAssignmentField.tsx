@@ -1228,7 +1228,6 @@ export function ContextAssignmentField({
             id: created.id,
             name: created.name,
             orgId: created.organizationId ?? null,
-            isPersonal: created.isPersonal,
           },
         ]);
         setSelProjects((p) => new Set(p).add(created.id));
@@ -1248,7 +1247,7 @@ export function ContextAssignmentField({
     const id = `new:project:${v}`;
     setAddedProjects((p) => [
       ...p,
-      { id, name: v, orgId: targetOrgId, isPersonal: false },
+      { id, name: v, orgId: targetOrgId },
     ]);
     setSelProjects((p) => new Set(p).add(id));
     setAdding(null);

@@ -86,8 +86,8 @@ function formatWhen(iso: string): string {
 export function AllItemsTable() {
   const router = useRouter();
   // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE: this read
-  // `organization_id ?? personal_organization_id`, so with no organization
-  // selected the table listed the PERSONAL workspace's captures as if they were the organization's.
+  // `organization_id ?? the person's own organization id`, so with no organization
+  // selected the table listed the OWN organization's captures as if they were the organization's.
   const organizationId = useAppSelector(selectOrganizationId);
 
   const isMobile = useIsMobile();

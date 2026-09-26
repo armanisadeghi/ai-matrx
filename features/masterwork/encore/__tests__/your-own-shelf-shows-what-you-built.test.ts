@@ -39,7 +39,7 @@ jest.mock("@/utils/auth/getUserId", () => ({
 
 jest.mock("@/features/organizations/service", () => ({
   getUserOrganizations: async () => [
-    { id: ORG_ID, isPersonal: false, name: "Recyclers" },
+    { id: ORG_ID, name: "Recyclers" },
   ],
 }));
 

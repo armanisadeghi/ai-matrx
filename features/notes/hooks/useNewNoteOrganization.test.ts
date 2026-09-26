@@ -10,18 +10,18 @@
  * ---------------------------------------------------------------------------
  * Once boot had settled with nothing selected, this resolver applied a rung
  * order of its own — stated default-org preference, then the person's own
- * personal workspace — dispatched `chooseActiveOrganization` for whatever it
+ * own organization — dispatched `chooseActiveOrganization` for whatever it
  * could name, and filed the note there. The case below was called
  *
  *   "SELECTS the nameable organization itself when boot settled empty
  *    (the multi-org, no-default user)"
  *
- * and it asserted exactly that: one dispatch, resolving to the PERSONAL org,
+ * and it asserted exactly that: one dispatch, resolving to the first-created org,
  * for a person who belongs to several organizations and never said which one
  * they work in. That is the thing the ruling forbids. A "default organization"
  * is at most a per-client DISPLAY preference that only the org picker may
  * read, and nothing may pick an organization for a person from a preference or
- * from their personal workspace:
+ * from their own organization:
  *
  *   "one missed org check that should have just failed turns into 50 in a
  *    month and 5,000 in a year, and suddenly we don't have orgs any more, we
@@ -70,13 +70,12 @@ function fakeStore(initial: Record<string, unknown>) {
 }
 
 const ORG = "11111111-1111-4111-8111-111111111111";
-const PERSONAL = "22222222-2222-4222-8222-222222222222";
+const FIRST_CREATED = "22222222-2222-4222-8222-222222222222";
 const CHOSEN = "33333333-3333-4333-8333-333333333333";
 
 function stateWith(overrides: {
   organization_id?: string | null;
   orgBootstrapResolved?: boolean;
-  personal?: string | null;
   memberships?: string[];
   defaultOrganizationId?: string | null;
 }) {
@@ -85,7 +84,6 @@ function stateWith(overrides: {
     appContext: {
       organization_id: overrides.organization_id ?? null,
       organization_name: null,
-      personal_organization_id: overrides.personal ?? null,
       orgBootstrapResolved: overrides.orgBootstrapResolved ?? false,
     },
     scopesTree: {
@@ -100,7 +98,7 @@ function stateWith(overrides: {
 
 /**
  * The exact person the deleted rungs existed for: several memberships, one of
- * them their own personal workspace, a stated default sitting right there in
+ * them the one they created at signup, a stated default sitting right there in
  * `userPreferences` — and boot settled with nothing selected. Every rung that
  * was deleted had everything it needed in this state.
  */
@@ -108,8 +106,7 @@ function theMultiOrgNoSelectionStore() {
   const store = fakeStore(
     stateWith({
       orgBootstrapResolved: true,
-      personal: PERSONAL,
-      memberships: [PERSONAL, ORG],
+      memberships: [FIRST_CREATED, ORG],
       defaultOrganizationId: ORG,
     }),
   );
@@ -147,10 +144,10 @@ describe("resolveNewNoteOrganization", () => {
 
   it("ASKS when boot settled empty, and files the note in the organization the PERSON sets", async () => {
     // This case asserted the opposite until 2026-09-19: one silent dispatch and
-    // the PERSONAL org as the answer. Now the held click goes through the ONE
+    // the first-created org as the answer. Now the held click goes through the ONE
     // gate, and the note lands in whatever the person chose in the picker —
-    // never the stated default (ORG) and never their personal workspace
-    // (PERSONAL), both of which are present in this state.
+    // never the stated default (ORG) and never their first-created
+    // organization (FIRST_CREATED), both of which are present in this state.
     const { store, dispatched } = theMultiOrgNoSelectionStore();
     ensureOrganizationContext.mockResolvedValue(CHOSEN);
 
@@ -179,7 +176,7 @@ describe("resolveNewNoteOrganization", () => {
     expect(dispatched).toEqual([]);
   });
 
-  it("NEVER dispatches a selection of its own — not a default, not the personal org, not anything", async () => {
+  it("NEVER dispatches a selection of its own — not a default, not the first-created org, not anything", async () => {
     // THE GUARD FOR THE DELETED RUNGS. A restored rung must dispatch
     // `chooseActiveOrganization` to have any effect, so this fails the moment
     // one grows back — even if the gate is still called afterwards.

@@ -324,8 +324,8 @@ export function useLibrarySummary(
 
   const userId = useAppSelector(selectUserId);
   // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE. This read
-  // `organization_id ?? personal_organization_id`, so an unselected picker
-  // silently reported the PERSONAL workspace's totals as the organization's.
+  // `organization_id ?? the person's own organization id`, so an unselected picker
+  // silently reported the OWN organization's totals as the organization's.
   // The RPC is keyed on auth.uid() and `p_organization_id` only NARROWS it:
   // with nothing selected we send nothing and the totals honestly cover the
   // caller's own documents — no tenant is substituted.

@@ -128,14 +128,17 @@ async function main(): Promise<void> {
 
     const personal = await client.query<{ id: string }>(
       `select o.id from iam.organizations o join iam.organization_member om on om.organization_id = o.id
-        where om.user_id = $1 and o.is_personal and om.role = 'owner' limit 1`,
-      [creator],
+        where om.user_id = $1 and om.role = 'owner' and o.archived_at is null
+          and not exists (select 1 from iam.organization_member v
+                           where v.organization_id = o.id and v.user_id = $2)
+        order by o.created_at limit 1`,
+      [creator, viewer],
     );
     const shared = await client.query<{ id: string }>(
       `select o.id from iam.organizations o
          join iam.organization_member a on a.organization_id = o.id and a.user_id = $1
          join iam.organization_member b on b.organization_id = o.id and b.user_id = $2
-        where not o.is_personal and o.archived_at is null order by o.name limit 1`,
+        where o.archived_at is null order by o.name limit 1`,
       [creator, viewer],
     );
     // An organization the viewer belongs to but does not administer (optional: the case is
@@ -147,9 +150,9 @@ async function main(): Promise<void> {
     );
     const memberOnlyOrg = memberOnly.rows[0]?.id ?? null;
     if (!memberOnlyOrg) console.log("[SKIP] the viewer administers every organization they are in — the plain-member case is not measured");
-    const personalOrg = personal.rows[0]?.id;
+    const creatorOrg = personal.rows[0]?.id;
     const sharedOrg = shared.rows[0]?.id;
-    if (!personalOrg || !sharedOrg) fail("UNMEASURED: no personal org for the creator, or no organization both accounts share.");
+    if (!creatorOrg || !sharedOrg) fail("UNMEASURED: no organization the creator owns without the viewer, or no organization both accounts share.");
 
     // The creator makes a personal soft mandate from their own seat.
     const key = `probe.sharing_lanes_${randomUUID().slice(0, 8)}`;
@@ -159,7 +162,7 @@ async function main(): Promise<void> {
                                        organization_id, created_by, visibility)
        values ($1, 'Sharing lanes probe', 'Prove who sees a shared mandate.', 'agent', 'user',
                $2, $3, 'personal') returning id`,
-      [key, personalOrg, creator],
+      [key, creatorOrg, creator],
     );
     const mandateId = made.rows[0]!.id;
 
@@ -243,7 +246,7 @@ async function main(): Promise<void> {
     await asOperator(client);
     await client.query(`delete from mandate.binding where mandate_id = $1`, [mandateId]);
     let own = await ownership();
-    expect(own.created_by === creator && own.organization_id === personalOrg,
+    expect(own.created_by === creator && own.organization_id === creatorOrg,
       "after a person share the creator still owns it and it stays in their personal organization");
     await asOperator(client);
     await client.query(`delete from iam.permissions where resource_type = 'mandate' and resource_id = $1`, [mandateId]);
@@ -268,7 +271,7 @@ async function main(): Promise<void> {
     bind = await tryBind(client, { mandateId, principal: "user", orgId: sharedOrg, subject: viewer, actor: viewer });
     expect(bind === null, `granted to an organization → a member can bind it for themselves${bind ? ` (${bind})` : ""}`);
     own = await ownership();
-    expect(own.created_by === creator && own.organization_id === personalOrg,
+    expect(own.created_by === creator && own.organization_id === creatorOrg,
       "after an organization share the creator still owns it (share never moves it)");
     await asOperator(client);
     await client.query(`delete from iam.permissions where resource_type = 'mandate' and resource_id = $1`, [mandateId]);
@@ -290,7 +293,7 @@ async function main(): Promise<void> {
     bind = await tryBind(client, { mandateId, principal: "org", orgId: sharedOrg, actor: viewer });
     expect(bind === null, `published → any organization can bind it org-wide${bind ? ` (${bind})` : ""}`);
     own = await ownership();
-    expect(own.created_by === creator && own.organization_id === personalOrg,
+    expect(own.created_by === creator && own.organization_id === creatorOrg,
       "after publishing the creator still owns it");
   } finally {
     await client.query("rollback").catch(() => undefined);

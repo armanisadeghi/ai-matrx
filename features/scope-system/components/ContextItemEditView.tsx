@@ -32,7 +32,6 @@ interface ContextItemEditViewProps {
   orgId: string;
   orgSlugOrId: string;
   orgName: string;
-  orgIsPersonal: boolean;
   typeParam: string;
   itemParam: string;
   canManage: boolean;
@@ -47,7 +46,6 @@ export function ContextItemEditView({
   orgId,
   orgSlugOrId,
   orgName,
-  orgIsPersonal,
   typeParam,
   itemParam,
   canManage,

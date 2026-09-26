@@ -59,9 +59,7 @@ export function GovernedActionDialog({
 
   const ownerName =
     context?.owner?.displayName ??
-    (context?.organization && !context.organization.isPersonal
-      ? context.organization.name
-      : null) ??
+    (context?.organization ? context.organization.name : null) ??
     "the owner";
 
   async function sendRequest() {

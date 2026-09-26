@@ -5,7 +5,7 @@
  * The finding: `/mandates` shipped with ONE aggregate "My Orgs" tab, no
  * per-organization control a walker could find, and no column saying whose job
  * a row is. A mandate's home is its ORGANIZATION (DESIGN-one-resolution.md
- * D-R3) — a personal workspace is just an organization — so a blended list that
+ * D-R3) — a own organization is just an organization — so a blended list that
  * cannot tell the platform's 400+ jobs from the handful an organization added
  * has lost the exact distinction the one-resolution ruling is about.
  *

@@ -130,7 +130,6 @@ function org(scopeTypes: ScopeTypeNode[]): OrgNode {
     name: "Harbor Consulting",
     abbreviation: "HC",
     slug: "harbor-consulting",
-    is_personal: false,
     role: "owner",
     projects: [],
     scope_types: scopeTypes,

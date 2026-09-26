@@ -138,7 +138,7 @@ export function useStorageQuota(
   const authReady = useAppSelector(selectAuthReady);
   // The EXPLICIT active org — the plan describes the organization the user
   // chose. With none, no plan is fetched and none is shown (the effect below
-  // already refuses on null) rather than quoting a personal workspace's plan.
+  // already refuses on null) rather than quoting a own organization's plan.
   const organizationId = useAppSelector(selectOrganizationId);
   const active = enabled && authReady && isAuthenticated && !!userId;
   // D11: storage limits and the plan behind them come from billing, metered to

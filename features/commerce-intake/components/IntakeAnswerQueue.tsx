@@ -60,8 +60,8 @@ interface QueueEntry {
 
 export function IntakeAnswerQueue() {
   // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE: this read
-  // `organization_id ?? personal_organization_id`, so with no organization
-  // selected the queue answered the PERSONAL workspace's questions.
+  // `organization_id ?? the person's own organization id`, so with no organization
+  // selected the queue answered the OWN organization's questions.
   const organizationId = useAppSelector(selectOrganizationId);
   const [queue, setQueue] = useState<QueueEntry[] | null>(null);
   // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class MandatesConsole and

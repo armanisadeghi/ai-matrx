@@ -210,7 +210,7 @@ async function convertToTemplate(
   const response = await fetch(`/api/agents/${agentId}/convert-to-template`, {
     method: "POST",
     // The template is filed in the organization the person selected — the
-    // route refuses without it rather than filing in a personal workspace.
+    // route refuses without it rather than filing in a own organization.
     headers: applyOrganizationContextHeader({}, organizationId),
   });
   if (!response.ok) {

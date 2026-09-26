@@ -92,7 +92,7 @@ const STATUS_META: Record<
 export function ImportWizard() {
   const router = useRouter();
   // Seeds the wizard's own "Into organization" picker with the EXPLICIT
-  // active org — never the personal workspace. With none selected the picker
+  // active org — never the own organization. With none selected the picker
   // stays empty and the wizard already says imported records need one.
   const activeOrgId = useAppSelector(selectOrganizationId);
 

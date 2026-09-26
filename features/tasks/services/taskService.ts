@@ -101,7 +101,7 @@ export async function createTask(
     const userId = requireUserId();
     // The task carries the caller's explicit organization, else the SELECTED
     // one. `ensureOrgId` REFUSES when nothing is selected — it never falls back
-    // to a personal organization. Law:
+    // to a own organization. Law:
     // common-docs/policies/context-is-carried-never-rebuilt.md.
     const organizationId = await ensureOrgId(input.organization_id);
     const { data, error } = await workspaceDb(supabase)
@@ -817,7 +817,7 @@ export interface SystemTaskInput {
   assigneeId?: string | null;
   /**
    * The organization whose work this task is — REQUIRED. Omitting it used to file the
-   * task in the caller's personal workspace, where their team could never see it
+   * task in the caller's own organization, where their team could never see it
    * (DEFAULT-ORG-4, 2026-09-22); the RPC now refuses with 23502 instead.
    */
   organizationId: string;

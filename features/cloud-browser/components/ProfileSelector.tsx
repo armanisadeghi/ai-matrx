@@ -58,11 +58,11 @@ export function ProfileSelector({
   const [busy, setBusy] = React.useState(false);
 
   const personal = profiles.filter(
-    (p) => p.ownerType === "user" && (p.isPersonalDefault || p.isDefault),
+    (p) => p.ownerType === "user" && (p.isOwnDefault || p.isDefault),
   );
   const org = profiles.filter((p) => p.ownerType === "organization");
   const shared = profiles.filter(
-    (p) => !p.isPersonalDefault && p.ownerType === "user" && !p.isDefault,
+    (p) => !p.isOwnDefault && p.ownerType === "user" && !p.isDefault,
   );
 
   const taken = new Set(

@@ -4,7 +4,7 @@
  * comment. It is TEXT, and it renders on the screen.
  *
  * THE CLASS (found live 2026-09-17): the Data Doctrine stamp sweep placed
- * `// CONVERGE: C-3 — is_personal is dropped; …` lines above the expressions
+ * `// CONVERGE: C-3 — <a field> is dropped; …` lines above the expressions
  * they annotate. Where that expression was a JSX child, the "comment" became a
  * JsxText node, so the "Add brand" dialog on /marketing/brands showed the
  * organization name followed by the whole convergence note. TypeScript is
@@ -108,13 +108,13 @@ function trackedFiles() {
 
 function selfTest() {
   const planted = [
-    "export function A({ org }: { org: { name: string; is_personal: boolean } }) {",
+    "export function A({ org }: { org: { name: string; is_archived: boolean } }) {",
     "  // CONVERGE: a real comment in code position — must NOT be flagged",
     "  return (",
     "    <option>",
     "      {org.name}",
-    "      // CONVERGE: C-3 — is_personal is dropped",
-    "      {org.is_personal ? ' (personal)' : ''}",
+    "      // CONVERGE: C-3 — is_archived is dropped",
+    "      {org.is_archived ? ' (archived)' : ''}",
     "      {/* eslint-disable-next-line react/jsx-no-comment-textnodes -- literal JSON5 syntax */}",
     "      // comments are fine",
     "    </option>",
@@ -127,7 +127,7 @@ function selfTest() {
   const ok =
     found.length === 1 &&
     found[0].line === 6 &&
-    fixed.includes("{/* CONVERGE: C-3 — is_personal is dropped */}") &&
+    fixed.includes("{/* CONVERGE: C-3 — is_archived is dropped */}") &&
     fixed.includes("  // CONVERGE: a real comment in code position") &&
     refound.length === 0;
   if (!ok) {

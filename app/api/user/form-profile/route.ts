@@ -237,7 +237,7 @@ export async function PATCH(request: NextRequest) {
     // 🚨 THE WRITE CARRIES ITS ORGANIZATION EXPLICITLY.
     //
     // `organization_id` is NOT NULL on this table, and a database default
-    // choosing one (the personal workspace) is exactly what the platform is
+    // choosing one (the own organization) is exactly what the platform is
     // retiring — so this route names the tenant itself. An existing profile
     // keeps the organization it is already filed in: a save must never MOVE
     // the row to whichever organization the caller happens to be looking at.

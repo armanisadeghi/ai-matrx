@@ -13,7 +13,7 @@
 // "sometimes missing" / "fetched when used" — the exact drift the shared
 // constants were created (FIX-R13/C2) to make impossible.
 //
-// ONE renderer, two surfaces: the personal workspace (§1 "The job") and the
+// ONE renderer, two surfaces: the own organization (§1 "The job") and the
 // admin workbench drawer. The workspace grew this row first; the drawer must
 // not grow a second, drifting copy of it.
 

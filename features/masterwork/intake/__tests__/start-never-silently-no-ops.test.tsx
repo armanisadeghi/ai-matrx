@@ -150,7 +150,6 @@ function makeStore(appContext: {
         organization_id: appContext.organization_id,
         organization_name: null,
         organization_settings: null,
-        personal_organization_id: null,
         orgBootstrapResolved: appContext.orgBootstrapResolved,
         orgBootstrapFailure: appContext.orgBootstrapFailure ?? null,
       },

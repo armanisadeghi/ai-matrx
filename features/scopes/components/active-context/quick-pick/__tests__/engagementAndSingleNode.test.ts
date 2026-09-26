@@ -51,14 +51,14 @@ const clients = {
 };
 
 const orgs = [
-  { id: "org-castellano", name: "Castellano & Reyes, LLP", slug: "castellano-reyes", is_personal: false, scope_types: [clients] },
-  { id: "org-ironclad-a", name: "Ironclad Mobile Mechanic", slug: "ironclad-mobile-mechanic", is_personal: false, scope_types: [] },
-  { id: "org-ironclad-b", name: "Ironclad Mobile Mechanic", slug: "ironclad-mobile-mechanic-9ffd844b", is_personal: false, scope_types: [] },
+  { id: "org-castellano", name: "Castellano & Reyes, LLP", slug: "castellano-reyes", scope_types: [clients] },
+  { id: "org-ironclad-a", name: "Ironclad Mobile Mechanic", slug: "ironclad-mobile-mechanic", scope_types: [] },
+  { id: "org-ironclad-b", name: "Ironclad Mobile Mechanic", slug: "ironclad-mobile-mechanic-9ffd844b", scope_types: [] },
 ] as unknown as OrgNode[];
 
 const projects = [
-  { id: "proj-renewal", name: "Meridian renewal", orgId: "org-castellano", isPersonal: false },
-  { id: "proj-fleet", name: "Fleet service contracts", orgId: "org-ironclad-a", isPersonal: false },
+  { id: "proj-renewal", name: "Meridian renewal", orgId: "org-castellano" },
+  { id: "proj-fleet", name: "Fleet service contracts", orgId: "org-ironclad-a" },
 ];
 const tasks = [
   { id: "task-draft", title: "Draft the renewal letter", projectId: "proj-renewal", orgId: "org-castellano", status: "incomplete" },

@@ -78,7 +78,6 @@ async function myOrgs(): Promise<{ ids: string[]; names: Map<string, string> }> 
   const names = new Map<string, string>();
   const ids: string[] = [];
   for (const org of orgs) {
-    if (org.isPersonal) continue;
     ids.push(org.id);
     names.set(org.id, org.name);
   }

@@ -22,7 +22,6 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface ScopeManagerPageProps {
   organizationId: string;
   organizationName: string;
-  isPersonal?: boolean;
   /**
    * THE ADMIN LANE — set ONLY by the `/administration/**` console route. Loads
    * this organization's tree through the platform-admin read arm (the admin is
@@ -35,7 +34,6 @@ interface ScopeManagerPageProps {
 export function ScopeManagerPage({
   organizationId,
   organizationName,
-  isPersonal,
   adminLane = false,
 }: ScopeManagerPageProps) {
   const dispatch = useAppDispatch();
@@ -107,7 +105,6 @@ export function ScopeManagerPage({
       <div className="p-4 md:p-6 max-w-5xl mx-auto">
         <ScopeOnboarding
           orgId={organizationId}
-          isPersonal={isPersonal}
           onChanged={() => load(adminLane)}
         />
       </div>

@@ -14,7 +14,7 @@
 // (`migrations/guest_oauth_data_transfer.sql`, hardened by
 // `migrations/guest_oauth_personal_org_merge.sql`) discovers FK-owned rows at
 // runtime and transfers them. Guest organization-scoped rows are first moved
-// into the permanent user's one personal org; the guest's personal org and
+// into the permanent user's one own org; the guest's own org and
 // its owner membership stay with the guest identity. The RPC writes an audit
 // row, stamps `guest_executions.converted_to_user_id`, and nulls
 // `guest_executions.auth_user_id` so the Python guest registry (aidream

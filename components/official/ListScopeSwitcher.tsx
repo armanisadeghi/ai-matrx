@@ -29,7 +29,6 @@ export function ListScopeSwitcher({
   className,
 }: ListScopeSwitcherProps) {
   const { organizations } = useUserOrganizations();
-  const nonPersonalOrgs = organizations.filter((org) => !org.isPersonal);
   const activeKey = scopeKey(value);
 
   const baseChip =
@@ -80,7 +79,7 @@ export function ListScopeSwitcher({
         </button>
       )}
 
-      {nonPersonalOrgs.map((org) => {
+      {organizations.map((org) => {
         const key = `orgs:${org.id}`;
         return (
           <button

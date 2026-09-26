@@ -159,7 +159,7 @@ async function withRulebooks(
 export async function listEncoreShelves(): Promise<EncoreShelf[]> {
   const userId = requireUserId();
   const orgs = await getUserOrganizations();
-  const orgIds = orgs.filter((o) => !o.isPersonal).map((o) => o.id);
+  const orgIds = orgs.map((o) => o.id);
 
   const [mineRes, orgsRes, publicRes] = await Promise.all([
     // YOUR shelf shows everything you built, draft or released.

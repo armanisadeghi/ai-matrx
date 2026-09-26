@@ -25,7 +25,7 @@ export async function forkProcessedDocument(
 ): Promise<string> {
   // WHICH ORGANIZATION THE COPY LANDS IN IS A QUESTION ONLY THE PERSON CAN ANSWER.
   // The source's organization is where the ORIGINAL lives (usually the library), and the
-  // RPC used to answer it with the caller's personal workspace — a workspace nobody
+  // RPC used to answer it with the caller's own organization — a workspace nobody
   // chose (DEFAULT-ORG-4, 2026-09-22). `ensureOrgId` returns the active organization, or
   // opens the picker and returns what the person selects; it never substitutes one. It
   // throws `OrganizationSelectionCancelled` when they close it, which means "not now".

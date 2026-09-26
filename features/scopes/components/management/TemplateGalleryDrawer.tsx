@@ -50,8 +50,6 @@ interface TemplateGalleryDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orgId: string;
-  /** Show only personal templates (for personal orgs). Default: show all. */
-  personalOnly?: boolean;
   /** Which mode the drawer opens in. Default: "templates". */
   initialMode?: Mode;
   /** Called after a template (or single scope-type) is successfully applied. */
@@ -96,14 +94,13 @@ function dedupeAndPrioritize(
       best.set(key, item);
       continue;
     }
-    // Prefer the richest example; break ties toward non-personal templates so
-    // a professional "Client" wins over a personal one.
+    // Prefer the richest example; break ties toward organization templates so
+    // a professional "Client" wins over an individual one.
     const better =
       item.fields.length > current.fields.length ||
       (item.fields.length === current.fields.length &&
-        // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-        !item.template_is_personal &&
-        current.template_is_personal);
+        item.template_audience === "organization" &&
+        current.template_audience === "individual");
     if (better) best.set(key, item);
   }
 
@@ -123,7 +120,6 @@ export function TemplateGalleryDrawer({
   open,
   onOpenChange,
   orgId,
-  personalOnly,
   initialMode = "templates",
   onApplied,
 }: TemplateGalleryDrawerProps) {
@@ -156,9 +152,6 @@ export function TemplateGalleryDrawer({
 
   const visibleTemplates = useMemo(() => {
     let list = allTemplates;
-    if (personalOnly !== undefined) {
-      list = list.filter((t) => t.is_personal === personalOnly);
-    }
     if (category !== ALL) {
       list = list.filter((t) => t.category === category);
     }
@@ -175,13 +168,10 @@ export function TemplateGalleryDrawer({
       );
     }
     return list;
-  }, [allTemplates, personalOnly, category, query]);
+  }, [allTemplates, category, query]);
 
   const visibleFlat = useMemo(() => {
     let list = allFlat;
-    if (personalOnly !== undefined) {
-      list = list.filter((s) => s.template_is_personal === personalOnly);
-    }
     if (category !== ALL) {
       list = list.filter((s) => s.template_category === category);
     }
@@ -200,17 +190,13 @@ export function TemplateGalleryDrawer({
       );
     }
     return dedupeAndPrioritize(list);
-  }, [allFlat, personalOnly, category, query]);
+  }, [allFlat, category, query]);
 
   const categories = useMemo(() => {
-    const base =
-      personalOnly !== undefined
-        ? allTemplates.filter((t) => t.is_personal === personalOnly)
-        : allTemplates;
     const set = new Set<string>();
-    for (const t of base) set.add(t.category);
+    for (const t of allTemplates) set.add(t.category);
     return Array.from(set).sort();
-  }, [allTemplates, personalOnly]);
+  }, [allTemplates]);
 
   const selected = visibleTemplates.find((t) => t.id === selectedId);
 
@@ -524,9 +510,9 @@ function TemplateCard({
                 +{scopeOverflow} more
               </Badge>
             )}
-            {template.is_personal && (
+            {template.audience === "individual" && (
               <Badge variant="outline" className="text-[10px]">
-                Personal
+                Individual
               </Badge>
             )}
           </div>
@@ -560,9 +546,9 @@ function FlatScopeRow({
             <span className="text-xs text-muted-foreground">
               from {item.template_name}
             </span>
-            {item.template_is_personal && (
+            {item.template_audience === "individual" && (
               <Badge variant="outline" className="text-[10px]">
-                Personal
+                Individual
               </Badge>
             )}
           </div>
@@ -649,9 +635,9 @@ function TemplateDetail({
             <Badge variant="secondary" className="text-[10px]">
               {humanizeCategory(template.category)}
             </Badge>
-            {template.is_personal && (
+            {template.audience === "individual" && (
               <Badge variant="outline" className="text-[10px]">
-                Personal
+                Individual
               </Badge>
             )}
           </div>

@@ -31,12 +31,12 @@ const clients = {
 };
 const fixture = {
   orgs: [
-    { id: "org-castellano", name: "Castellano & Reyes, LLP", slug: "castellano-reyes", is_personal: false, scope_types: [clients] },
-    { id: "org-titanium", name: "Titanium Success", slug: "titanium", is_personal: false, scope_types: [] },
+    { id: "org-castellano", name: "Castellano & Reyes, LLP", slug: "castellano-reyes", scope_types: [clients] },
+    { id: "org-titanium", name: "Titanium Success", slug: "titanium", scope_types: [] },
   ] as unknown as OrgNode[],
   projects: [
-    { id: "proj-renewal", name: "Meridian renewal", orgId: "org-castellano", isPersonal: false },
-    { id: "proj-seo", name: "Spring SEO push", orgId: "org-titanium", isPersonal: false },
+    { id: "proj-renewal", name: "Meridian renewal", orgId: "org-castellano" },
+    { id: "proj-seo", name: "Spring SEO push", orgId: "org-titanium" },
   ],
   tasks: [
     { id: "task-draft", title: "Draft the renewal letter", projectId: "proj-renewal", orgId: "org-castellano", status: "incomplete" },

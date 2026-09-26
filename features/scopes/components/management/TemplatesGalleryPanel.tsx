@@ -37,7 +37,7 @@ export function TemplatesGalleryPanel() {
   // Applying a template WRITES scope types and context items into one
   // organization, so the target is the organization the person selected —
   // never whichever organization sorted first in their list (a membership in
-  // someone else's personal workspace can sort first). With no selection the
+  // someone else's own organization can sort first). With no selection the
   // catalog still browses and the apply affordance is replaced by the honest
   // organization-required state below.
   // Law: common-docs/policies/context-is-carried-never-rebuilt.md.

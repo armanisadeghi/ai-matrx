@@ -26,14 +26,10 @@ const scope: ResolvedCallScope = {
   organization_id: ORGANIZATION_ID,
 };
 
-function requestState(
-  organizationId: string | null,
-  personalOrganizationId: string | null,
-): RootState {
+function requestState(organizationId: string | null): RootState {
   const appContext = {
     ...appContextReducer(undefined, { type: "test/init" }),
     organization_id: organizationId,
-    personal_organization_id: personalOrganizationId,
   };
   const userAuth = userAuthReducer(
     userAuthReducer(undefined, { type: "test/init" }),
@@ -156,10 +152,10 @@ describe("callApi organization context", () => {
     ).toThrow("must match the request context organization");
   });
 
-  it("does not let a personal organization fallback reach the network (a write is refused)", async () => {
+  it("refuses a write with no organization selected before the network", async () => {
     const fetchMock = jest.fn();
     global.fetch = fetchMock;
-    const state = requestState(null, ORGANIZATION_ID);
+    const state = requestState(null);
 
     const result = await callApi({
       path: "/ai/agents/{agent_id}",
@@ -178,9 +174,9 @@ describe("callApi organization context", () => {
 
   // THE PERSON, NOT THE ORG (Arman, 2026-09-23). "No organization selected" is
   // never an error for a READ: a GET with nothing selected goes out WITHOUT an
-  // organization — and still never borrows the personal one — so the server's
+  // organization — and never borrows one — so the server's
   // read door decides whether this item opens.
-  it("sends a READ with no organization selected, naming none (and never the personal one)", async () => {
+  it("sends a READ with no organization selected, naming none", async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -189,7 +185,7 @@ describe("callApi organization context", () => {
       json: async () => ({ status: "healthy" }),
     } as Response);
     global.fetch = fetchMock;
-    const state = requestState(null, ORGANIZATION_ID);
+    const state = requestState(null);
 
     const result = await callApi({
       path: "/health",
@@ -217,7 +213,7 @@ describe("callApi organization context", () => {
       json: async () => ({ verdicts: [] }),
     } as Response);
     global.fetch = fetchMock;
-    const state = requestState(null, ORGANIZATION_ID);
+    const state = requestState(null);
 
     const result = await callApi({
       path: "/mandates/impact/workflows",
@@ -244,7 +240,7 @@ describe("callApi organization context", () => {
       json: async () => ({ status: "healthy" }),
     } as Response);
     global.fetch = fetchMock;
-    const state = requestState(OTHER_ORGANIZATION_ID, ORGANIZATION_ID);
+    const state = requestState(OTHER_ORGANIZATION_ID);
 
     const result = await callApi({
       path: "/health",
@@ -261,7 +257,7 @@ describe("callApi organization context", () => {
   it("does not start a stream without explicit organization context", async () => {
     const fetchMock = jest.fn();
     global.fetch = fetchMock;
-    const state = requestState(null, ORGANIZATION_ID);
+    const state = requestState(null);
 
     const result = await callApi({
       path: "/seo/sites/{site_id}/analytics/sync",
@@ -292,7 +288,7 @@ describe("callApi organization context", () => {
       json: async () => ({ status: "healthy" }),
     } as Response);
     global.fetch = fetchMock;
-    const base = requestState(null, null);
+    const base = requestState(null);
     const state = {
       ...base,
       userProfile: {
@@ -328,7 +324,7 @@ describe("callApi organization context", () => {
       json: async () => ({ status: "healthy" }),
     } as Response);
     global.fetch = fetchMock;
-    const base = requestState(null, null);
+    const base = requestState(null);
     const state = {
       ...base,
       userProfile: {
@@ -363,7 +359,7 @@ describe("callApi organization context", () => {
       json: async () => ({ status: "healthy" }),
     } as Response);
     global.fetch = fetchMock;
-    const state = requestState(ORGANIZATION_ID, OTHER_ORGANIZATION_ID);
+    const state = requestState(ORGANIZATION_ID);
 
     const result = await callApi({
       path: "/ai/agents/{agent_id}",
@@ -403,7 +399,7 @@ describe("callApi organization context", () => {
         headers: new Headers({ "X-Request-ID": "fork-request-1" }),
         json: async () => ({ message: "Failed to create forked conversation." }),
       } as Response);
-    const state = requestState(ORGANIZATION_ID, null);
+    const state = requestState(ORGANIZATION_ID);
 
     const result = await callApi({
       path: "/ai/agents/{agent_id}",

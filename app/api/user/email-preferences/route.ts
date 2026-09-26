@@ -154,8 +154,8 @@ export async function PATCH(request: Request) {
       // 🚨 THE FIRST PREFERENCE ROW IS FILED IN THE ORGANIZATION THE CALLER
       // IS ACTING IN. Until 2026-09-19 this read
       // `ensureOrgIdServer(supabase, undefined)`, which ended in the
-      // `current_personal_org_id()` RPC — the server choosing the person's
-      // personal workspace because the request named none. The old comment
+      // the old own-organization lookup — the server choosing the person's
+      // own organization because the request named none. The old comment
       // called that deliberate ("one row per user_id"), but the uniqueness of
       // the row is not what `organization_id` means: it is a tenant, and a
       // tenant nobody chose is the substitution the 2026-09-19 ruling forbids.

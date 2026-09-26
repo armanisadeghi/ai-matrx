@@ -1,22 +1,21 @@
 /**
  * A MANDATE LIST NEVER UNDER-COUNTS THE WORKSPACES YOU BELONG TO.
  *
- * Review 2026-09-25: test@test.com is a member of 12 workspaces — one of them another
- * person's personal workspace ("admin's Workspace", slug `admin`). The new lists
+ * Review 2026-09-25: test@test.com is a member of 12 organizations — one of them created by
+ * another person at signup ("admin's Workspace", slug `admin`). The new lists
  * (/mandates/list-preview, /organizations/admin/mandates) said "My Orgs 0 / No mandates
  * here" while the original /mandates showed every one of those mandates, because the `orgs`
- * scope threw away every row homed in ANY personal workspace. Membership is access.
+ * scope threw away rows by organization type. Membership is access.
  *
  * What this proves, from the seat the person really has (`role authenticated`,
  * `request.jwt.claims` = test@test.com), through `public.mnd_member_list`:
  *
  *   person level  `orgs` count = every live mandate the seat can read that is homed in one
- *                 of its organizations (not the system, not its own personal home) or
+ *                 of its organizations (not the system) or
  *                 granted to one of them — counted independently, straight off the table.
  *   org level     for EVERY organization the seat belongs to, `orgs` count = the live
  *                 mandates homed in that organization or granted to it.
  *   page = count  the page's `total` under scope `orgs` equals the `orgs` count.
- *   narrowing     no narrowing option names another person's personal workspace.
  *
  * Read-only; runs inside a transaction that is rolled back.
  * UNMEASURED IS NOT PASSED: no credentials or an unreachable database is a FAILURE.
@@ -85,12 +84,10 @@ async function main(): Promise<void> {
     // ── person level ────────────────────────────────────────────────────────
     const expectedPerson = await client.query<{ n: string }>(
       `select count(*)::text as n from mandate.definition m
-        left join iam.organizations o on o.id = m.organization_id
         where ${LIVE} and m.organization_id <> $1
-          and ((m.organization_id in (select iam.my_orgs())
-                and not (coalesce(o.is_personal, false) and m.created_by = $2))
+          and (m.organization_id in (select iam.my_orgs())
                or ${GRANTED_TO("in (select iam.my_orgs())")})`,
-      [systemOrg, uid],
+      [systemOrg],
     );
     const person = await client.query<{ out: Counts }>(
       `select public.mnd_member_list('counts', 'person', 'orgs') as out`,
@@ -106,15 +103,6 @@ async function main(): Promise<void> {
     if (got !== want) problems.push(`person-level orgs count ${got} ≠ ${want} readable mandates homed in or granted to the viewer's organizations`);
     if (personPage.rows[0]!.out.total !== got)
       problems.push(`person-level page total ${personPage.rows[0]!.out.total} ≠ orgs count ${got}`);
-
-    const personalOrgs = await client.query<{ id: string; name: string }>(
-      `select o.id, o.name from iam.organizations o
-        where o.is_personal and o.id in (select iam.my_orgs())`,
-    );
-    for (const option of person.rows[0]!.out.orgs_narrow) {
-      const named = personalOrgs.rows.find((o) => o.id === option.id && option.label === o.name);
-      if (named) problems.push(`narrowing names a personal workspace: "${option.label}"`);
-    }
 
     // ── organization level, for every organization the viewer belongs to ────
     const orgs = await client.query<{ id: string; name: string }>(

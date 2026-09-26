@@ -24,8 +24,6 @@ export interface ProjectRecord {
   name: string;
   slug: string | null;
   organization_id: string | null;
-  // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-  is_personal: boolean;
   open_task_count: number;
   total_task_count: number;
   scope_tags: ProjectScopeTag[];
@@ -79,12 +77,8 @@ export const fetchProject = createAsyncThunk(
     return {
       ...(data as Omit<
         ProjectRecord,
-        "is_personal" | "open_task_count" | "total_task_count" | "scope_tags"
+        "open_task_count" | "total_task_count" | "scope_tags"
       >),
-      // Personal-ness is derived from the project's org (organizations.is_personal),
-      // not stored on ctx_projects. Raw record fetches default to false; the
-      // org-derived value flows in via hydrateProjectsFromContext (nav tree).
-      is_personal: false,
       open_task_count: 0,
       total_task_count: 0,
       scope_tags: [],
@@ -113,10 +107,8 @@ export const fetchOrgProjects = createAsyncThunk(
       projects: (data ?? []).map((p) => ({
         ...(p as Omit<
           ProjectRecord,
-          "is_personal" | "open_task_count" | "total_task_count" | "scope_tags"
+          "open_task_count" | "total_task_count" | "scope_tags"
         >),
-        // Org-derived; see fetchProject note.
-        is_personal: false,
         open_task_count: 0,
         total_task_count: 0,
         scope_tags: [],
@@ -156,10 +148,8 @@ export const createProjectThunk = createAsyncThunk(
     return {
       ...(proj as Omit<
         ProjectRecord,
-        "is_personal" | "open_task_count" | "total_task_count" | "scope_tags"
+        "open_task_count" | "total_task_count" | "scope_tags"
       >),
-      // Org-derived; see fetchProject note.
-      is_personal: false,
       open_task_count: 0,
       total_task_count: 0,
       scope_tags: [],
@@ -241,7 +231,6 @@ const projectsSlice = createSlice({
           name: p.name,
           slug: p.slug,
           organization_id: orgId,
-          is_personal: p.is_personal,
           open_task_count: p.open_task_count,
           total_task_count: p.total_task_count,
           scope_tags: p.scope_tags ?? [],
@@ -415,7 +404,3 @@ export const selectProjectsByOrgSorted = createSelector(
   (projects) => [...projects].sort((a, b) => a.name.localeCompare(b.name)),
 );
 
-export const selectPersonalProjects = createSelector(
-  [selectAllProjects],
-  (projects) => projects.filter((p) => p.is_personal),
-);

@@ -160,7 +160,7 @@ export function QuickTasksWorkspaceProvider({
 
   // Seed the window's org from the organization the PERSON selected — never
   // from whichever organization sorted first in their membership list. A
-  // membership in someone else's personal workspace can sort first, and this
+  // membership in someone else's own organization can sort first, and this
   // value scopes both the list and the org every task created here is filed
   // under (`QuickTasksMain`). Boot is total, so a null selection here means
   // genuinely unresolved: the window then shows the organization-required

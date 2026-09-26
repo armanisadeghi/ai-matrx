@@ -10,7 +10,6 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
-  Home,
   Layers,
   Boxes,
   ListChecks,
@@ -101,7 +100,6 @@ interface ScopesListProps {
   typeId: string;
   orgName: string;
   orgSlug: string;
-  orgIsPersonal: boolean;
   /** Owner/admin: may edit the scope type (org-wide structure) + its context-item fields. */
   canManage: boolean;
 }
@@ -112,7 +110,6 @@ export function ScopesList({
   typeId,
   orgName,
   orgSlug,
-  orgIsPersonal,
   canManage,
 }: ScopesListProps) {
   const router = useRouter();
@@ -298,12 +295,8 @@ export function ScopesList({
                 href={orgScopesHref(orgSlug)}
                 className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors"
               >
-                {orgIsPersonal ? (
-                  <Home className="h-3.5 w-3.5" />
-                ) : (
-                  <Building2 className="h-3.5 w-3.5" />
-                )}
-                {orgIsPersonal ? "Personal workspace" : orgName}
+                <Building2 className="h-3.5 w-3.5" />
+                {orgName}
               </Link>
               <h1 className="text-3xl font-bold text-foreground leading-tight">
                 {scopeType.label_plural}

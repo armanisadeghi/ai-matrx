@@ -16,7 +16,7 @@ jest.mock("@/features/files/utils/folder-conventions", () => ({
 /**
  * The workspace an upload files into. An upload is a WRITE, so the uploader
  * requires the EXPLICIT active organization and refuses when there is none —
- * it never falls back to the personal workspace. The bounded wait is the
+ * it never falls back to the own organization. The bounded wait is the
  * platform primitive; here it is mocked so both answers can be proven.
  */
 const ORG_ID = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";

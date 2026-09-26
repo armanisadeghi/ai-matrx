@@ -108,7 +108,6 @@ function org(id: string, name: string, types: ScopeTypeNode[], extra: Partial<Or
     name,
     abbreviation: name.slice(0, 2).toUpperCase(),
     slug: name.toLowerCase().replace(/\s+/g, "-"),
-    is_personal: false,
     role: "owner",
     projects: [],
     scope_types: types,

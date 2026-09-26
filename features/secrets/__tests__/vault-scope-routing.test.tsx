@@ -102,14 +102,12 @@ jest.mock("@/features/scopes/service/favoritesService", () => ({
 jest.mock("@/features/organizations/hooks", () => ({
   useUserOrganizations: () => ({
     organizations: [
-      { id: "org-first", name: "First Org", isPersonal: false, role: "member" },
+      { id: "org-first", name: "First Org", role: "member" },
       {
         id: "org-selected",
         name: "Selected Org",
-        isPersonal: false,
         role: "member",
       },
-      { id: "org-personal", name: "Personal", isPersonal: true, role: "owner" },
     ],
     loading: false,
   }),
@@ -292,9 +290,8 @@ describe("VaultWorkspace scope routing", () => {
   });
 
   /**
-   * THE TAB IS NEVER DEAD (ACCESS-FIX-18, VERIFIER-18 M4). With nothing selected — or with a
-   * personal workspace selected, which has no Organization list (admin's Workspace on
-   * production) — pressing Organization used to toast and change nothing. It must open the
+   * THE TAB IS NEVER DEAD (ACCESS-FIX-18, VERIFIER-18 M4). With nothing selected, pressing
+   * Organization used to toast and change nothing. It must open the
    * chooser, read NOTHING until the person picks (never a first-membership guess), and the pick
    * must open that organization's credentials.
    */
@@ -306,11 +303,8 @@ describe("VaultWorkspace scope routing", () => {
     await act(async () => option.click());
   }
 
-  it.each([
-    ["nothing is selected", null],
-    ["a personal workspace is selected", "org-personal"],
-  ])("opens the organization chooser when %s, and the pick opens that list", async (_label, selected) => {
-    selectedOrganizationId = selected;
+  it("opens the organization chooser when nothing is selected, and the pick opens that list", async () => {
+    selectedOrganizationId = null;
     await mount();
 
     await clickScope("Organization");

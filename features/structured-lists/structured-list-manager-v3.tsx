@@ -350,7 +350,7 @@ export type PicklistManagerProps = {
 export function StructuredListManagerV3({ supabase, userId }: PicklistManagerProps) {
   // THE ACTIVE ORGANIZATION, never the "effective" one: a new picklist is
   // filed in the organization the user picked, and it refuses when there is
-  // none rather than landing in their personal workspace by default.
+  // none rather than landing in their own organization by default.
   const activeOrganizationId = useAppSelector(selectOrganizationId);
   const router = useRouter();
   const [lists, setLists] = React.useState<Picklist[]>([]);

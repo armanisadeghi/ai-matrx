@@ -41,7 +41,6 @@ interface ScopeContextItemsHubProps {
   orgId: string;
   orgSlugOrId: string;
   orgName: string;
-  orgIsPersonal: boolean;
   typeParam: string;
   scopeParam: string;
   canManage: boolean;

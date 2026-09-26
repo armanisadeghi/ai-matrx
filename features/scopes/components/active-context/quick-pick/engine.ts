@@ -189,7 +189,7 @@ export function createDraft(p: CreatePayload): { id: string } {
       ...drafts,
       projects: [
         ...drafts.projects,
-        { id, name, orgId: p.orgId, isPersonal: false },
+        { id, name, orgId: p.orgId },
       ],
     };
   } else {
@@ -352,8 +352,7 @@ export function orgNodeOf(
   return {
     kind: "org",
     id: o.id,
-    // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-    label: o.is_personal ? `${o.name} (personal)` : o.name,
+    label: o.name,
     path: [],
     orgId: o.id,
     ...(hint ? { hint } : {}),

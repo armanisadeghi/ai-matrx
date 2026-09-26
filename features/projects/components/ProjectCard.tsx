@@ -87,7 +87,7 @@ export function ProjectCard({
   //     orgSlug, that's a bug in the caller (the org list it came from didn't
   //     resolve the slug); fall through to `/projects/[id]` as a safety net
   //     so the card is still clickable.
-  const isOrgScoped = !project.isPersonal && !!project.organizationId;
+  const isOrgScoped = !!project.organizationId;
   const basePath =
     isOrgScoped && orgSlug ? `/organizations/${orgSlug}/projects` : "/projects";
   const projectSegment = isOrgScoped

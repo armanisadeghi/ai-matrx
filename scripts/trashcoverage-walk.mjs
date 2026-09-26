@@ -43,8 +43,8 @@ let org = orgs?.[0];
 if (!org) {
   const { data: mine } = await sb.schema("iam").from("organization_member").select("organization_id, role").eq("user_id", uid).eq("role", "owner");
   const ids = (mine ?? []).map((m) => m.organization_id);
-  const { data: named } = await sb.schema("iam").from("organizations").select("id, name, archived_at, is_personal").in("id", ids).is("archived_at", null);
-  org = (named ?? []).find((o) => o.is_personal) ?? named?.[0];
+  const { data: named } = await sb.schema("iam").from("organizations").select("id, name, archived_at").in("id", ids).is("archived_at", null);
+  org = named?.[0];
 }
 check("an organization to file the disposables under", !!org, org?.name);
 

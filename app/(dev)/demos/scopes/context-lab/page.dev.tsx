@@ -245,8 +245,6 @@ function AssignToItemPanel({
                     <SelectGroup key={o.id}>
                       <SelectLabel>
                         {o.name}
-                        {/* CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045 */}
-                        {o.is_personal ? " (personal)" : ""}
                       </SelectLabel>
                       {opts.map(({ s, t }) => (
                         <SelectItem key={s.id} value={s.id}>
@@ -522,7 +520,6 @@ function ScopeAsValuePanel({ orgs }: { orgs: OrgNode[] }) {
                     <SelectGroup key={o.id}>
                       <SelectLabel>
                         {o.name}
-                        {o.is_personal ? " (personal)" : ""}
                       </SelectLabel>
                       {opts.map(({ s, t }) => (
                         <SelectItem key={s.id} value={s.id}>
@@ -795,7 +792,6 @@ function RequiredSlotsPanel({ orgs }: { orgs: OrgNode[] }) {
                     <SelectGroup key={o.id}>
                       <SelectLabel>
                         {o.name}
-                        {o.is_personal ? " (personal)" : ""}
                       </SelectLabel>
                       {o.scope_types.map((t) => (
                         <SelectItem key={t.id} value={t.id}>

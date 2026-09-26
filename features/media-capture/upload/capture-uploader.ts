@@ -40,8 +40,8 @@ import { recordCaptureFailure } from "@/features/media-capture/runtime/mediaCapt
  * The org a capture files under: the EXPLICIT active organization, waited for
  * while the bootstrap is still in flight and refused by name when there is
  * none. It used to read the effective org — explicit selection ELSE the user's
- * personal workspace — so a capture taken with no organization selected was
- * silently filed into a personal workspace nobody chose, with only the folder
+ * own organization — so a capture taken with no organization selected was
+ * silently filed into a own organization nobody chose, with only the folder
  * path (never on screen) recording where it went. An upload is a write: with
  * no organization it refuses and says so instead.
  */

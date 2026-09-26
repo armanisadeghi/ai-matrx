@@ -648,7 +648,7 @@ export const canvasArtifactService = {
       // Scope columns: a chat row inherits its organization and task from the
       // conversation it belongs to; a non-chat row acts in the organization the
       // person SELECTED (`ensureOrgId` throws `OrganizationContextError` when
-      // there is none — it never substitutes the personal workspace). The
+      // there is none — it never substitutes the own organization). The
       // organization is NEVER left for `public._stamp_org_default` to choose.
       // common-docs/policies/context-is-carried-never-rebuilt.md
       // A feature table may not depend on a project FK — project membership,

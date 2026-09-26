@@ -55,7 +55,7 @@ type ServerSupabaseClient = SupabaseClient<Database>;
 // read once per session and reused: it cannot change under a session, and
 // re-resolving it per write is how a long recording ends up split across two
 // organizations. A session with no organization refuses, by name, with the
-// remedy — it never falls back to a personal workspace.
+// remedy — it never falls back to a own organization.
 const sessionOrganizationIds = new Map<string, Promise<string>>();
 
 async function sessionOrganizationId(sessionId: string): Promise<string> {

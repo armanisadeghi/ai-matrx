@@ -93,7 +93,6 @@ import type {
   UpdateScopeTypeParams,
 } from "@/features/scopes/types";
 import type { EntityTypeToken } from "@ai-matrx/associations";
-import { readTemplateIsPersonal } from "./templateAudience";
 import type { Database } from "@/types/database.types";
 
 // One denormalized scope row for tags: which entity, which scope, plus the
@@ -272,7 +271,6 @@ export const scopesService = {
           ? supabase
               .schema("iam")
               .from("organizations")
-              // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
               // `settings` carries the `test_fixture` classification and
               // `created_by` says whose organization it is — the org picker
               // hides fixtures behind the archived-items disclosure and draws
@@ -281,7 +279,7 @@ export const scopesService = {
               // "which one am I working in" list; the organizations page's
               // own archive disclosure is where those live.
               .select(
-                "id, name, abbreviation, slug, is_personal, settings, created_by, archived_at",
+                "id, name, abbreviation, slug, settings, created_by, archived_at",
               )
               .in("id", orgIds)
           : Promise.resolve({
@@ -290,7 +288,6 @@ export const scopesService = {
                 name: string;
                 abbreviation: string;
                 slug: string;
-                is_personal: boolean | null;
                 settings: unknown;
                 created_by: string | null;
                 archived_at: string | null;
@@ -417,7 +414,6 @@ export const scopesService = {
           name: row.name,
           abbreviation: row.abbreviation,
           slug: row.slug,
-          is_personal: !!row.is_personal,
           // The stored classification, never a guess from the name.
           is_test_fixture:
             !!row.settings &&
@@ -432,7 +428,6 @@ export const scopesService = {
 
       // Stable ordering: personal first, then alpha.
       organizations.sort((a, b) => {
-        if (a.is_personal !== b.is_personal) return a.is_personal ? -1 : 1;
         return a.name.localeCompare(b.name);
       });
 
@@ -472,8 +467,7 @@ export const scopesService = {
       const orgP = supabase
         .schema("iam")
         .from("organizations")
-        // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-        .select("id, name, abbreviation, slug, is_personal, settings, created_by, archived_at")
+        .select("id, name, abbreviation, slug, settings, created_by, archived_at")
         .eq("id", organizationId)
         .maybeSingle();
       // VIEW LAW: org-scoped — the ONE organization the admin console names;
@@ -523,7 +517,6 @@ export const scopesService = {
         name: row.name,
         abbreviation: row.abbreviation,
         slug: row.slug,
-        is_personal: !!row.is_personal,
         is_test_fixture:
           !!row.settings &&
           typeof row.settings === "object" &&
@@ -985,7 +978,7 @@ export const scopesService = {
       const orgP = supabase
         .schema("iam")
         .from("organizations")
-        .select("id, name, slug, is_personal")
+        .select("id, name, slug")
         .eq("id", scope.organization_id)
         .single();
 
@@ -1051,7 +1044,6 @@ export const scopesService = {
           id: orgRes.data.id,
           name: orgRes.data.name,
           slug: orgRes.data.slug,
-          is_personal: !!orgRes.data.is_personal,
         },
         scope_type: {
           id: scopeTypeRes.data.id,
@@ -1168,7 +1160,7 @@ export const scopesService = {
       const query = contextDb(supabase)
         .from("templates")
         .select(
-          `id, key, name, description, category, icon, is_active, sort_order,
+          `id, key, name, description, category, icon, is_active, sort_order, audience,
            template_scope_types (
              id, key, icon, label_singular, label_plural, sort_order,
              max_assignments_per_entity, parent_template_type_id,
@@ -1182,12 +1174,6 @@ export const scopesService = {
         : await query;
       if (error) return err(...mapPgErrorPair(error));
 
-      // REC-64: the audience is a WORD now (`context.templates.audience`), and this
-      // is the one place that reads the table directly rather than through
-      // `public.list_templates`, which keeps emitting the derived boolean. The
-      // reader asks for the word and falls back to the old boolean, so this works
-      // on both sides of the migration — see ./templateAudience.ts.
-      const isPersonalById = await readTemplateIsPersonal(supabase);
 
       const templates: ContextTemplate[] = (data ?? []).map((row) => {
         const scopeTypes = row.template_scope_types ?? [];
@@ -1224,7 +1210,7 @@ export const scopesService = {
           category: row.category ?? "",
           icon: row.icon ?? "",
           is_active: !!row.is_active,
-          is_personal: isPersonalById?.get(row.id) ?? false,
+          audience: row.audience === "individual" ? "individual" : "organization",
           sort_order: row.sort_order ?? 0,
           scope_type_count: scope_types.length,
           context_item_count,

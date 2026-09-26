@@ -11,7 +11,7 @@
 // `project_id` column write. "No project" is a fully valid state.
 
 import { useState, useEffect, useMemo } from "react";
-import { Loader2, Save, FolderPlus, User, X } from "lucide-react";
+import { Loader2, Save, FolderPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { ProInput } from "@/components/official/ProInput";
@@ -71,7 +71,6 @@ interface ProjectOption {
   name: string;
   orgId: string;
   orgName: string;
-  isPersonalOrg: boolean;
 }
 
 export interface TopicSettingsFormProps {
@@ -93,20 +92,16 @@ export function TopicSettingsForm({
   const projectOptions = useMemo<ProjectOption[]>(() => {
     const out: ProjectOption[] = [];
     for (const org of orgs) {
-      // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-      const isPersonalOrg = org.is_personal === true;
       for (const p of org.projects) {
         out.push({
           id: p.id,
           name: p.name,
           orgId: org.id,
           orgName: org.name,
-          isPersonalOrg,
         });
       }
     }
     return out.sort((a, b) => {
-      if (a.isPersonalOrg !== b.isPersonalOrg) return a.isPersonalOrg ? -1 : 1;
       if (a.orgName !== b.orgName) return a.orgName.localeCompare(b.orgName);
       return a.name.localeCompare(b.name);
     });
@@ -115,7 +110,7 @@ export function TopicSettingsForm({
   const groupedProjects = useMemo(() => {
     const groups = new Map<
       string,
-      { orgName: string; isPersonalOrg: boolean; projects: ProjectOption[] }
+      { orgName: string; projects: ProjectOption[] }
     >();
     for (const p of projectOptions) {
       const existing = groups.get(p.orgId);
@@ -123,7 +118,6 @@ export function TopicSettingsForm({
       else {
         groups.set(p.orgId, {
           orgName: p.orgName,
-          isPersonalOrg: p.isPersonalOrg,
           projects: [p],
         });
       }
@@ -304,7 +298,6 @@ export function TopicSettingsForm({
                 {groupedProjects.map((group) => (
                   <SelectGroup key={group.orgId}>
                     <SelectLabel className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      {group.isPersonalOrg && <User className="h-3 w-3" />}
                       {group.orgName}
                     </SelectLabel>
                     {group.projects.map((project) => (

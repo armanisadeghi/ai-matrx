@@ -442,7 +442,7 @@ export function InlineUploadArea({
           // (`bindUploadOrganization`), asking the person when nothing is
           // selected. This component sending nothing at all is precisely the
           // 2026-08-30 bug — the server then filed the attachment in the
-          // uploader's personal workspace, which promptly disagreed with the
+          // uploader's own organization, which promptly disagreed with the
           // organization they picked for the conversation a minute later. The
           // fix belongs at the one upload choke point, not in each door.
           const normalized = await upload(
