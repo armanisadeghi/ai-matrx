@@ -1,5 +1,7 @@
 # Context Menu v3 — the universal right-click / floating menu
 
+> **Note (Alchemy architecture session, 2026-09-25):** Arman ruled that screen declarations, the action registry, the menu engine and the write door move into the Alchemy package (agents above it). Plan and wave order: `/Users/armanisadeghi/code/common-docs/projects/matrx-alchemy/BUILD-PLAN.md`. Do not start a parallel declaration, menu, registry or write path.
+
 > **Rollout status lives elsewhere.** This file is the menu's own contract. Which surfaces have a menu, what remains, and the registry of shared per-identity section builders are tracked in [`SECTIONS.md`](./SECTIONS.md) and the program handoff [`docs/handoffs/context-menu-everywhere-rollout.md`](../../docs/handoffs/context-menu-everywhere-rollout.md). Run `pnpm check:context-menu` for the live census.
 
 **Status:** live everywhere — the ONLY context menu (`features/context-menu-v2/` deleted 2026-07-19). One menu for every surface: a near-zero shell on mount, full power on first open, all modals through the OverlayController.

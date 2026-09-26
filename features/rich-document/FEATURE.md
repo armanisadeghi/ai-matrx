@@ -1,5 +1,7 @@
 # FEATURE.md — `rich-document`
 
+> **Note (Alchemy architecture session, 2026-09-25):** Arman ruled that screen declarations, the action registry, the menu engine and the write door move into the Alchemy package (agents above it). Plan and wave order: `/Users/armanisadeghi/code/common-docs/projects/matrx-alchemy/BUILD-PLAN.md`. Do not start a parallel declaration, menu, registry or write path.
+
 **Status:** `active`
 **Tier:** `1`
 **Last updated:** `2026-09-11`

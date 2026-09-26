@@ -1,5 +1,7 @@
 # Tool Registry · UI Surfaces (v2)
 
+> **Note (Alchemy architecture session, 2026-09-25):** Arman ruled that screen declarations, the action registry, the menu engine and the write door move into the Alchemy package (agents above it). Plan and wave order: `/Users/armanisadeghi/code/common-docs/projects/matrx-alchemy/BUILD-PLAN.md`. Do not start a parallel declaration, menu, registry or write path.
+
 > Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agents/agent-tools/STATE.md` — read it before touching this feature in ANY repo.
 
 **Status**: shipped
