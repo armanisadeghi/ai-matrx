@@ -6,8 +6,9 @@
  * Every place in this app that draws a record-store table — the /data-v2 table page, the table
  * window, the dataset overlay, a chat table artifact, the quick data sheet, the tables picker,
  * the chat "view table" modal — hands `@ai-matrx/records-ui` the SAME ports: links, toasts, files,
- * members, share, the record chat, agent row actions, "ask an agent", number click-through, and
- * (merged grid) the agent grid context, Clean HTML and the icon picker. Before this module the
+ * members, share, the record chat, agent row actions, "ask an agent", number click-through, the
+ * app's file window for an attachment cell (`pickFiles`), and (merged grid) the agent grid context,
+ * Clean HTML, the icon picker and markdown cells (`renderText` slot "cell"). Before this module the
  * list lived inline in `app/(core)/data-v2/[tableId]/page.tsx` and nothing else had it; a second
  * copy would drift within a week. `recordsUiHostFor` is the list, written once; the hook
  * `useRecordsUiPorts` builds the ports that need React (the launcher, the organization list).
@@ -84,12 +85,14 @@ export function recordsUiHostFor({ ports, merged, gridContext, layouts }: Record
     density: "condensed",
     // records-ui 0.87+: the merged grid's control layer; left out = classic.
     ...(merged ? { grid: "merged" as const } : {}),
-    // The merged grid's side-chat context (6l), Clean HTML (6m) and row-action icons (6j).
+    // The merged grid's side-chat context (6l), Clean HTML (6m), row-action icons (6j) and
+    // markdown cells through the one rich-text renderer (renderText "cell").
     ...(merged && gridContext ? { onGridContext: gridContext.onGridContext } : {}),
     ...(merged ? RECORDS_TEXT : {}),
     // The page's toasts (the where-it-lives chip's "now lives in …" outlives a re-mount).
     notify: RECORDS_NOTIFY,
-    // A value kept as a file opens at /files/f/<id>; the export reads its whole text.
+    // A value kept as a file opens at /files/f/<id>; the export reads its whole text; an
+    // attachment cell attaches through the app's one file window (pickFiles).
     ...RECORDS_FILES,
     members: ports.members,
     onAskForOne: ports.onAskForOne,

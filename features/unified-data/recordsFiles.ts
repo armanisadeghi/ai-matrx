@@ -13,6 +13,7 @@
  *                 whole text is, never passing the first words off as the value.
  */
 import { downloadFile } from "@/features/files/api/files";
+import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 
 export function hrefForFile({ fileId }: { fileId: string }): string {
   return `/files/f/${encodeURIComponent(fileId)}`;
@@ -29,5 +30,38 @@ export async function readFileText({ fileId }: { fileId: string }): Promise<stri
   return await blob.text();
 }
 
-/** The two host ports, as one object to spread into a RecordsMount host. */
-export const RECORDS_FILES = { hrefForFile, readFileText };
+const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "avif", "gif", "svg"];
+
+/** A native `accept` list ("image/*,.pdf") as the picker's extension filter; empty = every file. */
+export function extensionsFromAccept(accept: string | undefined): string[] {
+  if (!accept) return [];
+  const out = new Set<string>();
+  for (const raw of accept.split(",")) {
+    const token = raw.trim().toLowerCase();
+    if (!token) continue;
+    if (token.startsWith(".")) out.add(token.slice(1));
+    else if (token === "image/*") IMAGE_EXTENSIONS.forEach((e) => out.add(e));
+    else if (token === "application/pdf") out.add("pdf");
+    else return []; // a type the picker cannot filter by: offer every file rather than hide some
+  }
+  return [...out];
+}
+
+/**
+ *   pickFiles     an attachment cell's "Attach files…": the app's ONE file window (the canonical
+ *                 FilesResourcePicker in its non-blocking window, multi-pick footer "Attach N
+ *                 files"). Resolves the chosen file ids — the store turns each into its kernel
+ *                 File record at the write door — or null when the person closed the window.
+ */
+export async function pickFiles({ multiple, accept }: { multiple: boolean; accept?: string }): Promise<string[] | null> {
+  const allowedExtensions = extensionsFromAccept(accept);
+  const picked = await openFilePicker({
+    multi: multiple,
+    title: multiple ? "Attach files" : "Attach a file",
+    ...(allowedExtensions.length > 0 ? { allowedExtensions } : {}),
+  });
+  return picked && picked.length > 0 ? picked : null;
+}
+
+/** The host's file ports, as one object to spread into a RecordsMount host. */
+export const RECORDS_FILES = { hrefForFile, readFileText, pickFiles };
