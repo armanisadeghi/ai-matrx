@@ -401,7 +401,7 @@ export function NewMandatePage() {
 
         {/* The one action stays in view at the bottom edge (punch list
             2026-09-26: Create sat below the fold at 1440x900). */}
-        <div className="sticky bottom-0 z-10 -mx-2 flex items-center gap-3 border-t border-border bg-background/95 px-2 py-2 backdrop-blur">
+        <div className="sticky bottom-0 z-10 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border bg-background/95 py-2 pb-safe backdrop-blur">
           <Button
             disabled={creating || pending || missing.length > 0 || keyIsTaken}
             onClick={() => void create()}
