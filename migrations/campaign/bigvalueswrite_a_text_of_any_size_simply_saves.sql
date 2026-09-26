@@ -3,7 +3,8 @@
 --   It ADDS one table, custom.whole_value_parked (no client grant), four internal helpers
 --   (whole_value_ceiling, whole_value_head, whole_value_source, whole_value_park) and TWO signed-in
 --   doors, custom.whole_value_complete and custom.whole_values_waiting (declared in
---   platform.client_callable_door, EXECUTE to authenticated). It REPLACES custom._value_envelope() with its existing signature, security and
+--   platform.client_callable_door; their EXECUTE grant to authenticated is the chair step
+--   bigvalueswrite_the_two_doors_can_be_reached.sql, applied right after this file). It REPLACES custom._value_envelope() with its existing signature, security and
 --   search_path, keeping every existing line. No record is written; a value under the ceiling is
 --   written exactly as before.
 -- guard: custom/system_enabled
@@ -66,10 +67,9 @@ comment on table custom.whole_value_parked is
   'BIG-VALUES-WRITE: a text value over custom/value_max_bytes, waiting for the server to write its file. The cell already holds the first 1000 characters and a pending whole_value_in_file source; custom.whole_value_complete completes the pointer and clears the row. Written only inside custom._value_envelope (a store door), read only by the server. No client grant.';
 create index if not exists whole_value_parked_organization_idx on custom.whole_value_parked (organization_id, parked_at);
 alter table custom.whole_value_parked enable row level security;
-revoke all on custom.whole_value_parked from public, anon, authenticated;
 
 -- ── 2. The helpers the trigger reads ───────────────────────────────────────────────────────
-create or replace function custom.whole_value_ceiling(p_organization_id uuid)
+create function custom.whole_value_ceiling(p_organization_id uuid)
  returns bigint
  language plpgsql
  stable
@@ -84,7 +84,7 @@ exception when others then
 end;
 $function$;
 
-create or replace function custom.whole_value_head(p_text text)
+create function custom.whole_value_head(p_text text)
  returns text
  language sql
  immutable
@@ -94,7 +94,7 @@ as $function$
   select left(p_text, 1000);
 $function$;
 
-create or replace function custom.whole_value_source(p_text text, p_writer_src jsonb)
+create function custom.whole_value_source(p_text text, p_writer_src jsonb)
  returns jsonb
  language sql
  immutable
@@ -113,7 +113,7 @@ as $function$
               'mime', 'text/plain; charset=utf-8');
 $function$;
 
-create or replace function custom.whole_value_park(
+create function custom.whole_value_park(
   p_organization_id uuid, p_table_id uuid, p_record_id uuid, p_owner_id uuid, p_visibility platform.visibility,
   p_data jsonb, p_park jsonb)
  returns void
@@ -150,13 +150,9 @@ begin
     'record_id', p_record_id)::text);
 end;
 $function$;
-revoke all on function custom.whole_value_ceiling(uuid) from public, anon, authenticated;
-revoke all on function custom.whole_value_head(text) from public, anon, authenticated;
-revoke all on function custom.whole_value_source(text, jsonb) from public, anon, authenticated;
-revoke all on function custom.whole_value_park(uuid, uuid, uuid, uuid, platform.visibility, jsonb, jsonb) from public, anon, authenticated;
 
 -- ── 3. The door that completes a pointer once its file exists ─────────────────────────────
-create or replace function custom.whole_value_complete(
+create function custom.whole_value_complete(
   p_organization_id uuid, p_record_id uuid, p_field_key text, p_file_id uuid)
  returns jsonb
  language plpgsql
@@ -262,10 +258,9 @@ select 'custom', 'whole_value_complete',
        true, false
 where not exists (select 1 from platform.client_callable_door d
                    where d.schema_name = 'custom' and d.function_name = 'whole_value_complete');
-grant execute on function custom.whole_value_complete(uuid, uuid, text, uuid) to authenticated;
 
 -- ── 3b. What is waiting on the records this session just wrote (no text: the writer holds it) ─
-create or replace function custom.whole_values_waiting(p_organization_id uuid, p_record_ids uuid[])
+create function custom.whole_values_waiting(p_organization_id uuid, p_record_ids uuid[])
  returns table (record_id uuid, field_key text, pointer text, value_version integer, sha256 text,
                 bytes bigint, chars bigint, owner_id uuid, record_visibility text, table_id uuid,
                 table_name text)
@@ -305,7 +300,6 @@ select 'custom', 'whole_values_waiting',
        true, false
 where not exists (select 1 from platform.client_callable_door d
                    where d.schema_name = 'custom' and d.function_name = 'whole_values_waiting');
-grant execute on function custom.whole_values_waiting(uuid, uuid[]) to authenticated;
 
 -- ── 4. The ONE trigger, carrying instead of refusing ───────────────────────────────────────
 create or replace function custom._value_envelope()
@@ -376,6 +370,9 @@ begin
        where left(e.key, 1) <> '_' and jsonb_typeof(e.value) = 'string'
          and octet_length(e.value::text) > v_ceiling
     loop
+      -- Held OFF by the store's own switch (custom/system_enabled): an organization whose store
+      -- is not on keeps the refusal below, exactly as before this file.
+      exit when not coalesce((platform.knob_resolve('custom', 'system_enabled', new.organization_id) #>> '{}')::boolean, false);
       v_whole := v_whole || jsonb_build_object(v_key, v_text);
       v_data := jsonb_set(v_data, array[v_key], to_jsonb(custom.whole_value_head(v_text)));
     end loop;
