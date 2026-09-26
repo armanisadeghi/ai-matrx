@@ -1,5 +1,7 @@
 # Surface authoring — inheritance and families
 
+> **Static family vs live chain.** `inheritsFrom` fixes one VOCABULARY across a family (declarations). What is open on screen right now — the page under a window, a parent layout, the window over a page — reaches the agent automatically at run time as `surface_chain` levels (`features/surfaces/runtime/surface-chain.ts`); do not add `inheritsFrom` just to get a page's live values into a window. See `overlay-surfaces.md` § LAYERS AND THE SURFACE CHAIN.
+
 Read this when a surface declares `inheritsFrom`, is the parent of other surfaces, or a family's vocabulary is being fixed.
 
 ## THE FAMILY DOCTRINE — what a parent conveys, what a child owns
