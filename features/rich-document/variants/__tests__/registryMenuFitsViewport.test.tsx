@@ -18,7 +18,7 @@ import { createRoot } from "react-dom/client";
 
 import AdvancedMenu, { type MenuItem } from "@/components/official/AdvancedMenu";
 import "../../actions/handlers";
-import { resolveActions } from "../../actions/registry";
+import { resolveActions } from "../../actions/provider";
 import { chatContext } from "../../test-utils/chatContext";
 import { toAdvancedMenuItems } from "../RegistryActionMenu";
 

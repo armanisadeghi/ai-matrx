@@ -76,7 +76,7 @@ import { LISTENING_HOME_SURFACE } from "@/features/audio/service/listeningConfig
 import { insertTextAtCursor } from "@/utils/editor-text-insertion";
 import { insertTextAtTextareaCursor } from "@/utils/text-insertion";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { resolveActions } from "@/features/rich-document/actions/registry";
+import { resolveActions } from "@/features/rich-document/actions/provider";
 import { registryMenuActions } from "@/features/rich-document/variants/shared/menuStructure";
 import { getSourceAdapter } from "@/features/rich-document/actions/sources";
 import { shortHash } from "@/features/rich-document/actions/sources/raw";

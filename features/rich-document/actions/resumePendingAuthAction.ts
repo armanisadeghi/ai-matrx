@@ -7,7 +7,7 @@
 // resumed action is byte-for-byte the action the reader picked (the chat menu
 // used to keep a second, drifting copy of eleven of them here).
 
-import { getAction } from "./registry";
+import { getAction } from "./provider";
 import { PENDING_ACTION_KEY } from "./utils";
 import type { RichDocumentActionContext } from "../types";
 

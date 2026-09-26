@@ -10,7 +10,7 @@
 // the source's save adapter, Discard writes nothing). Elsewhere: absent.
 
 import { MessageCircle, Wand2 } from "lucide-react";
-import { registerAction } from "../registry";
+import { registerAction } from "../provider";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 registerAction({

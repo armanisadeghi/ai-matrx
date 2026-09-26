@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Archive, BookA, Loader2, Plus, Save } from "lucide-react";
+import { Archive, BookA, ChevronLeft, Loader2, Plus, Save } from "lucide-react";
 import {
   Button,
   Input,
@@ -108,7 +108,23 @@ export function TermListsWorkspace() {
   return (
     <div className="flex h-full overflow-hidden pt-[var(--shell-header-h)]">
       <RouteHeader
-        left={<span className="text-sm font-medium">Term lists</span>}
+        left={
+          <div className="flex min-w-0 items-center gap-1">
+            {selectedId ? (
+              // Phone: the list and the editor are one screen each (list → detail).
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 md:hidden"
+                aria-label="All term lists"
+                onClick={() => replaceAddressOrNavigate(router, "/resources/term-lists")}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            ) : null}
+            <span className="text-sm font-medium">Term lists</span>
+          </div>
+        }
         right={
           <TapTargetButtonSolid
             ariaLabel="New term list"
@@ -118,7 +134,12 @@ export function TermListsWorkspace() {
           />
         }
       />
-      <aside className="flex w-64 shrink-0 flex-col border-r border-border">
+      <aside
+        className={cn(
+          "w-full shrink-0 flex-col border-border md:flex md:w-64 md:border-r",
+          selectedId ? "hidden" : "flex",
+        )}
+      >
         <div className="min-h-0 flex-1 overflow-y-auto p-1.5" data-testid="term-list-rail">
           {lists === null ? (
             <div className="flex flex-col gap-1.5 p-1">
@@ -152,7 +173,12 @@ export function TermListsWorkspace() {
           )}
         </div>
       </aside>
-      <main className="min-w-0 flex-1 overflow-y-auto">
+      <main
+        className={cn(
+          "min-w-0 flex-1 overflow-y-auto md:block",
+          selectedId ? "block" : "hidden",
+        )}
+      >
         {selectedId ? (
           <TermListEditor
             key={selectedId}
@@ -280,12 +306,17 @@ export function TermListEditor({
           aria-label="Name"
           value={draft.name}
           onChange={(e) => set({ name: e.target.value })}
-          className="max-w-md text-base font-medium"
+          className="min-w-0 max-w-md flex-1 text-base font-medium"
         />
         <div className="ml-auto flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={() => void archive()}>
-            <Archive className="mr-1 h-3.5 w-3.5" />
-            Archive
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label="Archive"
+            onClick={() => void archive()}
+          >
+            <Archive className="h-3.5 w-3.5 sm:mr-1" />
+            <span className="hidden sm:inline">Archive</span>
           </Button>
           <Button
             size="sm"
@@ -302,16 +333,24 @@ export function TermListEditor({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span className="text-xs text-muted-foreground">Used for</span>
         <ToggleGroup
           type="multiple"
           aria-label="Used for"
           value={draft.modalities}
           onValueChange={(values: string[]) => set({ modalities: values.filter(isModality) })}
-          className="justify-start"
+          className="flex-wrap justify-start"
         >
           {MODALITIES.map((m) => (
-            <ToggleGroupItem key={m} value={m} size="sm" aria-label={MODALITY_LABELS[m]}>
+            <ToggleGroupItem
+              key={m}
+              value={m}
+              size="sm"
+              variant="outline"
+              aria-label={MODALITY_LABELS[m]}
+              className="data-[state=on]:border-primary/50 data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+            >
               {MODALITY_LABELS[m]}
             </ToggleGroupItem>
           ))}

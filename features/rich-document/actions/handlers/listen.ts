@@ -20,7 +20,7 @@ import {
   ensureSurfaceConfig,
   selectSurfaceConfigEntry,
 } from "@/features/surfaces/redux/surfaceConfigSlice";
-import { registerAction } from "../registry";
+import { registerAction } from "../provider";
 import { getErrorMessage, contentForDestination } from "../utils";
 import type { RichDocumentActionContext } from "../../types";
 

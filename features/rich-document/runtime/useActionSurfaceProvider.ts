@@ -33,7 +33,8 @@ import {
 } from "../redux/actionSurfacesSlice";
 import { getSourceAdapter } from "../actions/sources";
 import { shortHash } from "../actions/sources/raw";
-import { resolveActions } from "../actions/registry";
+import { resolveActions, richDocumentClickTarget } from "../actions/provider";
+import type { ClickTarget } from "@ai-matrx/alchemy/actions";
 import { resolveActionLabel } from "../actions/utils";
 // Side-effect import — registers every built-in action handler at module load.
 // Without this, the registry is empty when resolveActions runs. Kept here (not
@@ -168,6 +169,13 @@ export interface UseActionSurfaceProviderResult {
   getCtx: () => RichDocumentActionContext;
   /** The actions visible for this source + this consumer's exclude/extra. */
   resolvedActions: RichDocumentAction[];
+  /**
+   * The Alchemy click target for this content (ALC-15): what the package's
+   * layouts (bar, ⋯, sheet) resolve the one registry against. Stable until
+   * something that changes eligibility changes (content, source, auth, org,
+   * exclude/extra).
+   */
+  target: ClickTarget;
 }
 
 /**
@@ -262,6 +270,40 @@ export function useActionSurfaceProvider(
     extra: actionsProp?.extra,
   });
   const specs = actionsToSpecs(resolvedActions, ctx);
+
+  // The Alchemy click target — a new object only when eligibility inputs move,
+  // so the package engine re-resolves exactly then (never every render).
+  const targetKey = [
+    ctx.instanceKey("target"),
+    source.readOnly ? 1 : 0,
+    isAuthenticated ? 1 : 0,
+    isAdmin ? 1 : 0,
+    organizationId ?? "",
+    actionsProp?.isCreator ? 1 : 0,
+    (actionsProp?.exclude ?? []).join(","),
+    (actionsProp?.extra ?? []).map((a) => a.id).join(","),
+    shortHash(content ?? ""),
+    resolvedActions.map((a) => a.id).join(","),
+  ].join("|");
+  const [targetState, setTargetState] = React.useState(() => ({
+    key: targetKey,
+    target: richDocumentClickTarget(ctx, {
+      getCtx,
+      exclude: actionsProp?.exclude ?? [],
+      extra: actionsProp?.extra ?? [],
+    }),
+  }));
+  if (targetState.key !== targetKey) {
+    setTargetState({
+      key: targetKey,
+      target: richDocumentClickTarget(ctx, {
+        getCtx,
+        exclude: actionsProp?.exclude ?? [],
+        extra: actionsProp?.extra ?? [],
+      }),
+    });
+  }
+  const target = targetState.target;
   const contentSourceId = ctx.instanceKey("alchemy");
 
   // Remote-surface registration — only when actionsVariant === "remote".
@@ -325,13 +367,13 @@ export function useActionSurfaceProvider(
   // Redux. Registered for every actionsVariant (not just "remote") so the
   // bridge is always available; harmless when no surface is consuming it.
   React.useEffect(() => {
-    registerBridge(providerId, { getCtx, resolvedActions });
+    registerBridge(providerId, { getCtx, resolvedActions, target });
     return () => unregisterBridge(providerId);
     // Re-registration on every relevant change happens via updateBridge below.
   }, [providerId]);
   React.useEffect(() => {
-    updateBridge(providerId, { getCtx, resolvedActions });
+    updateBridge(providerId, { getCtx, resolvedActions, target });
   });
 
-  return { ctx, getCtx, resolvedActions };
+  return { ctx, getCtx, resolvedActions, target };
 }

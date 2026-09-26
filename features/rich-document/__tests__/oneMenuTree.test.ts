@@ -6,8 +6,9 @@
  * History / "Document", a second AI family (AI Actions, Agents, My Items, Org
  * Items) beside "Improve with AI", and "Regenerate answer" twice.
  *
- * The guard: for one content source, the ⋯ tree (OverflowMenu / AdvancedMenu /
- * ProTextarea list / MobileActionDrawer — all `buildMenuTree(registryMenuActions)`)
+ * The guard: for one content source, the ⋯ tree (AdvancedMenu / ProTextarea
+ * list — `buildMenuTree(registryMenuActions)`; the bar's ⋯ and the standalone
+ * ⋯/sheet are the Alchemy package's layouts over the same registry, ALC-15)
  * and the right-click model (context-menu v3 `buildMenuModel`, which the phone
  * sheet also renders) list the SAME registry ids in the SAME order and
  * grouping; the agent libraries live inside the AI submenu; nothing repeats.
@@ -32,7 +33,7 @@ jest.mock("@/features/context-menu-v3/hooks/useContextMenuActions", () => ({
 import * as fs from "fs";
 import * as path from "path";
 import "../actions/handlers";
-import { resolveActions } from "../actions/registry";
+import { resolveActions } from "../actions/provider";
 import {
   AI_SUBMENU_LABEL,
   buildMenuTree,
@@ -185,10 +186,8 @@ describe("one registry tree behind every menu", () => {
 
   it("every menu host builds from the one selector and the one tree", () => {
     const hosts = [
-      "../variants/OverflowMenu.tsx",
       "../variants/RegistryActionMenu.tsx",
       "../variants/RegistryActionList.tsx",
-      "../variants/MobileActionDrawer.tsx",
       "../../context-menu-v3/model/menu-model.ts",
     ];
     for (const rel of hosts) {

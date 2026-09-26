@@ -8,7 +8,7 @@
 
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { getAllActions } from "../actions/registry";
+import { getAllActions } from "../actions/provider";
 import { resolveActionLabel } from "../actions/utils";
 import "../actions/handlers/answer-tools";
 import type { RichDocumentActionContext } from "../types";

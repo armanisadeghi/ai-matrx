@@ -9,6 +9,9 @@
  *                        `SchemaSourcePort`)
  *   diagnostics  ALC-13  REQUIRED — contract breaks land in the error store
  *   identity     ALC-14  the signed-in person and active organization
+ *   icons        ALC-15  keys → components (`alchemy-icon-keys.ts`: registered
+ *                        app components first, else `@ai-matrx/icons` names)
+ *   notify       ALC-15  the app toast; every failure carries its remedy
  *   persistence  ALC-14  NOT BOUND. No per-person Alchemy setting exists yet
  *                        (the menu layout/density setting arrives with ALC-15),
  *                        so per-person settings are ABSENT — never stubbed.
@@ -17,9 +20,13 @@
 import type {
   AlchemyHostPorts,
   DiagnosticsPort,
+  IconResolverPort,
   IdentityPort,
   KindValidatorPort,
+  NotifyPort,
 } from "@ai-matrx/alchemy/ports";
+import { toast } from "@/lib/toast";
+import { resolveAlchemyIcon } from "./alchemy-icon-keys";
 import type { KindValidator } from "@ai-matrx/content-ir/registry";
 import { kindValidator } from "@/features/content-ir/registry/kind-schema-source";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
@@ -119,6 +126,18 @@ export function createIdentityPort(store: AlchemyIdentityStore): IdentityPort {
   };
 }
 
+export function createIconResolverPort(): IconResolverPort {
+  return { resolve: (key) => resolveAlchemyIcon(key) };
+}
+
+export function createNotifyPort(): NotifyPort {
+  return {
+    success: (sentence) => toast.success(sentence),
+    info: (sentence) => toast.info(sentence),
+    error: (sentence, remedy) => toast.error(sentence, { description: remedy }),
+  };
+}
+
 export function createAlchemyHostPorts({
   store,
 }: {
@@ -128,5 +147,7 @@ export function createAlchemyHostPorts({
     kinds: createKindValidatorPort(),
     diagnostics: createDiagnosticsPort(),
     identity: createIdentityPort(store),
+    icons: createIconResolverPort(),
+    notify: createNotifyPort(),
   };
 }

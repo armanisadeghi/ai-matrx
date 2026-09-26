@@ -10,7 +10,7 @@
 // thumb that writes nowhere is worse than no thumb.
 
 import { ThumbsUp, ThumbsDown } from "lucide-react";
-import { registerAction } from "../registry";
+import { registerAction } from "../provider";
 import { toast } from "@/lib/toast";
 import { outputFeedbackSubjectForSource } from "../../outputFeedbackSubject";
 import type { RichDocumentActionContext } from "../../types";

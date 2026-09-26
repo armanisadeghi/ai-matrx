@@ -21,7 +21,7 @@
 import { Contact } from "lucide-react";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { looksLikeContact } from "@/features/crm/agent-context/parseContactSelection";
-import { registerAction } from "../registry";
+import { registerAction } from "../provider";
 import { requireAuth, contentForDestination } from "../utils";
 
 registerAction({

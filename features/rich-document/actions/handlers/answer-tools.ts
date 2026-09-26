@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { registerAction } from "../registry";
+import { registerAction } from "../provider";
 import { chatIds, getErrorMessage } from "../utils";
 import type { RichDocumentActionContext } from "../../types";
 import {

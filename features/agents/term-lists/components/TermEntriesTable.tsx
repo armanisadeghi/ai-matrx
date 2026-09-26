@@ -56,21 +56,26 @@ export function TermEntriesTable({
 
   return (
     <div className="flex min-h-0 flex-col">
-      <div className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_9.5rem_5.5rem_2rem] items-center gap-1.5 border-b border-border px-1 pb-1 text-xs font-medium text-muted-foreground">
+      <div className="hidden md:grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_9.5rem_5.5rem_2rem] items-center gap-1.5 border-b border-border px-1 pb-1 text-xs font-medium text-muted-foreground md:grid">
         <span>Term</span>
         <span>Value</span>
         <span>Kind</span>
         <span>Language</span>
         <span />
       </div>
-      <div className="flex flex-col gap-1 py-1.5" data-testid="term-entries">
+      <div
+        className="flex flex-col divide-y divide-border py-1.5 md:gap-1 md:divide-y-0"
+        data-testid="term-entries"
+      >
         {entries.map((entry, index) => {
           const needsValue = kindNeedsValue(entry.kind);
           const flagged = problemRows.has(index + 1);
           return (
             <div
               key={index}
-              className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_9.5rem_5.5rem_2rem] items-center gap-1.5 px-1"
+              // Phone: each entry is a two-line unit (term · value · remove /
+              // kind · language); md+: one spreadsheet row.
+              className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2rem] items-center gap-1.5 px-1 py-2 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_9.5rem_5.5rem_2rem] md:py-0"
               data-row={index + 1}
             >
               <Input
@@ -96,7 +101,10 @@ export function TermEntriesTable({
                 value={entry.kind}
                 onValueChange={(v) => update(index, { kind: v as EntryKind })}
               >
-                <SelectTrigger aria-label={`Kind ${index + 1}`}>
+                <SelectTrigger
+                  aria-label={`Kind ${index + 1}`}
+                  className="max-md:col-start-1 max-md:row-start-2"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -112,15 +120,17 @@ export function TermEntriesTable({
                 value={entry.language ?? ""}
                 onChange={(e) => update(index, { language: e.target.value })}
                 placeholder="Any"
+                className="max-md:col-start-2 max-md:row-start-2"
               />
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="icon"
                 aria-label={`Remove row ${index + 1}`}
                 onClick={() => remove(index)}
-                className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground max-md:col-start-3 max-md:row-start-1"
               >
                 <X className="h-3.5 w-3.5" />
-              </button>
+              </Button>
             </div>
           );
         })}

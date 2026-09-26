@@ -14,6 +14,7 @@
 // The Redux slice tracks WHICH providers are active per surfaceId; this
 // module tracks WHAT each provider can actually do.
 
+import type { ClickTarget } from "@ai-matrx/alchemy/actions";
 import type {
   RichDocumentAction,
   RichDocumentActionContext,
@@ -24,6 +25,8 @@ export interface ProviderBridge {
   getCtx: () => RichDocumentActionContext;
   /** The actions visible for this provider (already filtered + sorted). */
   resolvedActions: RichDocumentAction[];
+  /** The Alchemy click target the package layouts resolve against (ALC-15). */
+  target: ClickTarget;
 }
 
 // Plain Map — providerIds are React.useId() values, no leak risk because

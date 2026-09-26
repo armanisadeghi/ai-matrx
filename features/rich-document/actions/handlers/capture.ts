@@ -30,7 +30,7 @@ import {
   ensureOrganizationContext,
   isOrganizationSelectionCancelled,
 } from "@/lib/organization/organization-gate";
-import { registerAction } from "../registry";
+import { registerAction } from "../provider";
 import {
   chatIds,
   contentFileName,

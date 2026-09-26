@@ -10,7 +10,7 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { getMarkdownStylesheet } from "@ai-matrx/print/markdown";
-import { registerAction } from "../registry";
+import { registerAction } from "../provider";
 import { getErrorMessage, serializeError, contentForDestination } from "../utils";
 import { acknowledgedPreparedSource, prepareContentEdit, savePreparedContentEdit } from "./preparedEdit";
 

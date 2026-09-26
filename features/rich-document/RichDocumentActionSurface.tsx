@@ -59,6 +59,7 @@ export function RichDocumentActionSurface(
         <ActionBar
           actions={bridge.resolvedActions}
           getCtx={bridge.getCtx}
+          target={bridge.target}
           sourceId={provider.contentSourceId}
           className={className}
         />
@@ -68,6 +69,7 @@ export function RichDocumentActionSurface(
         <MiniActionBar
           actions={bridge.resolvedActions}
           getCtx={bridge.getCtx}
+          target={bridge.target}
           sourceId={provider.contentSourceId}
           className={className}
         />
@@ -75,7 +77,7 @@ export function RichDocumentActionSurface(
     case "menu":
       return (
         <MenuVariant
-          actions={bridge.resolvedActions}
+          target={bridge.target}
           getCtx={bridge.getCtx}
           className={cn(className)}
         />

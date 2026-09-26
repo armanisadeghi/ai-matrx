@@ -21,7 +21,7 @@ import {
   setCompareBase,
   openCompareWithBase,
 } from "@/lib/redux/slices/diffCompareSlice";
-import { registerAction } from "../registry";
+import { registerAction } from "../provider";
 import type { ContentSource } from "../../types";
 
 function sourceLabel(source: ContentSource): string {

@@ -67,7 +67,7 @@ import { STUDIO_SOURCES } from "@/components/markdown-studio/lab/content-sources
 import { RichDocument } from "../RichDocument";
 import { RichDocumentActionProvider } from "../RichDocumentActionProvider";
 import { buildChatMessageActions } from "../chat/chatMessageActions";
-import { getAction } from "../actions/registry";
+import { getAction } from "../actions/provider";
 import { hydrateMessages } from "@/features/agents/redux/execution-system/messages/messages.slice";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

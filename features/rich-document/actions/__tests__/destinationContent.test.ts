@@ -7,7 +7,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import "../handlers";
-import { getAction } from "../registry";
+import { getAction } from "../provider";
 import { chatContext } from "../../test-utils/chatContext";
 
 const ENVELOPED =

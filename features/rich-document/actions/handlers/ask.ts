@@ -13,7 +13,7 @@ import { MessageSquareQuote, MessagesSquare } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { selectInstanceContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
-import { registerAction } from "../registry";
+import { registerAction } from "../provider";
 import { chatIds, deriveContentTitle, contentForDestination } from "../utils";
 import type { RichDocumentActionContext } from "../../types";
 

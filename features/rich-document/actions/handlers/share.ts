@@ -7,7 +7,7 @@
 
 import { FileText, Globe } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { registerAction } from "../registry";
+import { registerAction } from "../provider";
 import {
   chatIds,
   deriveContentTitle,

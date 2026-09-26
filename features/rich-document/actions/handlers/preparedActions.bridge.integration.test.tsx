@@ -39,7 +39,7 @@ import { NoteContextPartialSaveError, NotePostAcknowledgementError } from "@/fea
 import type { RichDocumentActionContext } from "../../types";
 import { captureNoteEditSource, noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import { noteAdapter } from "../sources/note";
-import { getAction } from "../registry";
+import { getAction } from "../provider";
 import { FullScreenMarkdownEditorBridge } from "@/components/mardown-display/chat-markdown/FullScreenMarkdownEditorBridge";
 import { HtmlPreviewBridge } from "@/features/cx-conversation/components/HtmlPreviewBridge";
 

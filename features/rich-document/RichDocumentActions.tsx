@@ -25,7 +25,7 @@ export function RichDocumentActions(
   props: RichDocumentActionsProps,
 ): React.ReactElement {
   const { content, source, actions, className, hideOverflow } = props;
-  const { ctx, getCtx, resolvedActions } = useActionSurfaceProvider({
+  const { ctx, getCtx, resolvedActions, target } = useActionSurfaceProvider({
     content,
     source,
     actions,
@@ -35,6 +35,7 @@ export function RichDocumentActions(
     <ActionBar
       actions={resolvedActions}
       getCtx={getCtx}
+      target={target}
       sourceId={ctx.instanceKey("alchemy")}
       className={className}
       hideOverflow={hideOverflow}

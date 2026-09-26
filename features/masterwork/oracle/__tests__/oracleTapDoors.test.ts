@@ -9,7 +9,7 @@
  */
 
 import "@/features/rich-document/actions/handlers";
-import { resolveActions } from "@/features/rich-document/actions/registry";
+import { resolveActions } from "@/features/rich-document/actions/provider";
 import { toAdvancedMenuItems } from "@/features/rich-document/variants/RegistryActionMenu";
 import { chatContext } from "@/features/rich-document/test-utils/chatContext";
 

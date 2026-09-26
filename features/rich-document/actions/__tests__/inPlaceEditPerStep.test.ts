@@ -7,7 +7,7 @@
  * tool-call-only step) instead of opening an empty editor.
  */
 import "../handlers";
-import { getAction } from "../registry";
+import { getAction } from "../provider";
 import { buildChatMessageActions } from "../../chat/chatMessageActions";
 import { getSourceAdapter } from "../sources";
 import type { RichDocumentActionContext } from "../../types";

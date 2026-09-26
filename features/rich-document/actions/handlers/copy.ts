@@ -7,7 +7,7 @@
 import { Copy, FileText, FileType, Brain } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
-import { registerAction } from "../registry";
+import { registerAction } from "../provider";
 import { extractFlatText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { getErrorMessage, contentForDestination } from "../utils";
 

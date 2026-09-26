@@ -6,7 +6,7 @@
 
 import { Bug, Megaphone, Settings } from "lucide-react";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { registerAction } from "../registry";
+import { registerAction } from "../provider";
 
 registerAction({
   id: "submit-feedback",

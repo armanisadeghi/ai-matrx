@@ -8,7 +8,7 @@ import { Maximize2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
-import { registerAction } from "../registry";
+import { registerAction } from "../provider";
 import { chatExtensions, chatWriteBackBlocked } from "../utils";
 import { updateMessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
 import { getErrorMessage, serializeError } from "../utils";

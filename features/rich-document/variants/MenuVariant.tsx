@@ -2,37 +2,59 @@
 
 // features/rich-document/variants/MenuVariant.tsx
 //
-// "menu" variant — just the ⋯ overflow trigger, no primary buttons row.
-// Primary-slot actions get promoted into the overflow menu so nothing is
-// hidden. Used by tight surfaces that have room for one chrome element.
+// "menu" / "icon-only" variant — a single ⋯ trigger. The Alchemy package's
+// overflow layout on desktop, its bottom sheet on a phone (loaded on first
+// tap); primaries are inside, so nothing is hidden. Where the content already
+// has its right-click menu, ⋯ opens that one menu (RC-B6).
 
 import * as React from "react";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import dynamic from "next/dynamic";
+import { MoreHorizontal } from "lucide-react";
+import { OverflowMenu } from "@ai-matrx/alchemy/react/overflow";
+import type { ClickTarget } from "@ai-matrx/alchemy/actions";
+import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { OverflowMenu } from "./OverflowMenu";
-import type {
-  RichDocumentAction,
-  RichDocumentActionContext,
-} from "../types";
+import { OpenOneMenuButton, useOneMenuFor } from "./shared/OpenOneMenuButton";
+import type { RichDocumentActionContext } from "../types";
+
+const ActionSheet = dynamic(
+  () => import("@ai-matrx/alchemy/react/sheet").then((m) => m.ActionSheet),
+  { ssr: false },
+);
 
 export interface MenuVariantProps {
-  actions: RichDocumentAction[];
   getCtx: () => RichDocumentActionContext;
+  target: ClickTarget;
   className?: string;
 }
 
-export function MenuVariant(props: MenuVariantProps): React.ReactElement {
-  const { actions, getCtx, className } = props;
+function Trigger(props: React.ComponentProps<typeof Button>): React.ReactElement {
   return (
-    <TooltipProvider delayDuration={300}>
-      <div className={cn("inline-flex items-center", className)}>
-        <OverflowMenu
-          actions={actions}
-          getCtx={getCtx}
-          includePrimarySlot
-        />
-      </div>
-    </TooltipProvider>
+    <Button variant="ghost" size="icon" className="h-8 w-8 p-0" aria-label="More actions" {...props}>
+      <MoreHorizontal className="h-4 w-4" />
+    </Button>
+  );
+}
+
+export function MenuVariant(props: MenuVariantProps): React.ReactElement {
+  const { getCtx, target, className } = props;
+  const isMobile = useIsMobile();
+  const oneMenu = useOneMenuFor(getCtx().source);
+  const [sheetOpen, setSheetOpen] = React.useState(false);
+  return (
+    <div className={cn("inline-flex items-center", className)}>
+      {oneMenu ? (
+        <OpenOneMenuButton />
+      ) : isMobile ? (
+        <>
+          <Trigger onClick={() => setSheetOpen(true)} />
+          {sheetOpen ? <ActionSheet target={target} open={sheetOpen} onOpenChange={setSheetOpen} /> : null}
+        </>
+      ) : (
+        <OverflowMenu target={target} trigger={<Trigger />} />
+      )}
+    </div>
   );
 }
 

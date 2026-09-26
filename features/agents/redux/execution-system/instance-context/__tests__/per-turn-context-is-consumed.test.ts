@@ -13,7 +13,7 @@ import { QUOTED_PASSAGES_CONTEXT_KEY } from "@/features/rich-document/actions/ha
 import * as fs from "fs";
 import * as path from "path";
 
-jest.mock("@/features/rich-document/actions/registry", () => ({ registerAction: () => {} }));
+jest.mock("@/features/rich-document/actions/provider", () => ({ registerAction: () => {} }));
 
 describe("per-turn context", () => {
   it("the quote key is a per-turn key", () => {

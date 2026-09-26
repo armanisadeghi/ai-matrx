@@ -13,7 +13,7 @@ import {
   resolveContinueInChatConversationId,
 } from "@/features/agents/components/messages-display/assistant/continue-in-chat";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
-import { getAction, registerAction } from "../registry";
+import { getAction, registerAction } from "../provider";
 import type { RichDocumentActionContext } from "../../types";
 
 function continueHref(ctx: RichDocumentActionContext): string | null {

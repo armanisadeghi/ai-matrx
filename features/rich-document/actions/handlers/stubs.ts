@@ -5,7 +5,7 @@
 
 import { Briefcase } from "lucide-react";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
-import { registerAction } from "../registry";
+import { registerAction } from "../provider";
 
 registerAction({
   id: "convert-to-broker",

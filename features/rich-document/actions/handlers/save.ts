@@ -22,7 +22,7 @@ import {
 } from "@/lib/organization/organization-gate";
 import { CodeFilesAPI } from "@/features/code-files/service/codeFilesApi";
 import { setPendingSource } from "@/features/tasks/redux/taskUiSlice";
-import { registerAction } from "../registry";
+import { registerAction } from "../provider";
 import {
   extractFirstCodeBlock,
   getErrorMessage,

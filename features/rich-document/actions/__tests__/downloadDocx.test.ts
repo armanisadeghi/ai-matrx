@@ -17,7 +17,7 @@ jest.mock("@/lib/toast", () => ({
 }));
 
 import "../handlers";
-import { getAction } from "../registry";
+import { getAction } from "../provider";
 import { chatContext } from "../../test-utils/chatContext";
 import JSZip from "jszip";
 

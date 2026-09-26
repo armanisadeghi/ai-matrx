@@ -6,7 +6,8 @@
 // can be reorganized here without touching a single handler.
 //
 // Both the desktop dropdown (OverflowMenu) and the mobile drawer
-// (MobileActionDrawer) and the context menu (R2.4) render from the same
+// (the Alchemy package layouts group by the same names — actions/provider.ts
+// maps each submenu to a named section) and the context menu (R2.4) render from the same
 // `buildMenuTree` output, so the hierarchy stays consistent everywhere.
 
 import {

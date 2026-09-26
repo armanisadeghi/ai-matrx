@@ -19,7 +19,7 @@
  */
 
 import "../handlers";
-import { getAction, resolveActions } from "../registry";
+import { getAction, resolveActions } from "../provider";
 import { chatContext, RICH_MESSAGE } from "../../test-utils/chatContext";
 import { toAdvancedMenuItems } from "../../variants/RegistryActionMenu";
 import type { MenuItem } from "@/components/official/AdvancedMenu";

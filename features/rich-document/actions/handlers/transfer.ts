@@ -22,7 +22,7 @@ import { toast } from "@/lib/toast";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { cleanMarkdown } from "@/utils/markdown-processors/clean-markdown-to-text";
 import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
-import { registerAction } from "../registry";
+import { registerAction } from "../provider";
 import { contentFileName, getErrorMessage, contentForDestination } from "../utils";
 import { parseFirstMarkdownTable, tableToDelimited } from "../markdownTable";
 import type { RichDocumentActionContext } from "../../types";

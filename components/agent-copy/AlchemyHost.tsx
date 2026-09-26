@@ -12,6 +12,9 @@ import {
 } from "react";
 import type { AlchemyHostPorts } from "@ai-matrx/alchemy/ports";
 import { createAlchemyHostPorts } from "./alchemy-host-ports";
+import { createActionRegistry } from "@ai-matrx/alchemy/actions";
+import { AlchemyActionsProvider } from "@ai-matrx/alchemy/react/host";
+import { richDocumentActionProvider } from "@/features/rich-document/actions/provider";
 import { useRouter } from "next/navigation";
 import "@ai-matrx/design-system/content-transfer.css";
 import {
@@ -141,9 +144,16 @@ export function AlchemyHost({ children }: { children: ReactNode }) {
   // Bound once per mount: the identity port reads the live store, so an
   // account or organization switch needs no new ports.
   const [hostPorts] = useState(() => createAlchemyHostPorts({ store }));
+  // THE one action registry (ALC-15). Providers register once, here.
+  const [actionRegistry] = useState(() => {
+    const registry = createActionRegistry({ ports: hostPorts });
+    registry.register(richDocumentActionProvider);
+    return registry;
+  });
 
   return (
     <AlchemyHostPortsContext.Provider value={hostPorts}>
+      <AlchemyActionsProvider ports={hostPorts} registry={actionRegistry}>
       <AlchemyHostSession store={store} userId={userId} orgId={orgId}>
         {/* Every error a package draws (ErrorBox / destructive Alert) carries the
             same Alchemy Menu the frontend's own errors carry (RC-B12). */}
@@ -151,6 +161,7 @@ export function AlchemyHost({ children }: { children: ReactNode }) {
           {children}
         </ErrorActionsProvider>
       </AlchemyHostSession>
+      </AlchemyActionsProvider>
     </AlchemyHostPortsContext.Provider>
   );
 }

@@ -232,7 +232,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
     },
   };
 
-  const { ctx, getCtx, resolvedActions } = useActionSurfaceProvider({
+  const { ctx, getCtx, resolvedActions, target } = useActionSurfaceProvider({
     content,
     source,
     actions: hostedActions,
@@ -250,6 +250,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
         <ActionBar
           actions={resolvedActions}
           getCtx={getCtx}
+          target={target}
           sourceId={ctx.instanceKey("alchemy")}
         />
       );
@@ -259,13 +260,14 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
         <MiniActionBar
           actions={resolvedActions}
           getCtx={getCtx}
+          target={target}
           sourceId={ctx.instanceKey("alchemy")}
         />
       );
       break;
     case "menu":
     case "icon-only":
-      variantNode = <MenuVariant actions={resolvedActions} getCtx={getCtx} />;
+      variantNode = <MenuVariant getCtx={getCtx} target={target} />;
       break;
     case "remote":
     case "none":
