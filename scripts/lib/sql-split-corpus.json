@@ -1,0 +1,68 @@
+{
+  "_doc": "Shared corpus for scripts/lib/sql-split.ts and aidream db/sql_split.py (D351). Both must return `expect` exactly.",
+  "cases": [
+    {
+      "name": "adjacent literals across a newline (the 1160/1161 failure)",
+      "sql": "raise_it();\nselect 'a door a client may call '\n       'ONLY to be refused';\n",
+      "expect": [
+        "raise_it()",
+        "select 'a door a client may call '\n       'ONLY to be refused'"
+      ]
+    },
+    {
+      "name": "multi-line literal holding ; and --",
+      "sql": "insert into t values ('line one;\n-- not a comment\nline three');\nselect 2;",
+      "expect": [
+        "insert into t values ('line one;\n-- not a comment\nline three')",
+        "select 2"
+      ]
+    },
+    {
+      "name": "E-string with backslash-escaped quote and a ;",
+      "sql": "select E'it\\'s; fine';\nselect 3;",
+      "expect": [
+        "select E'it\\'s; fine'",
+        "select 3"
+      ]
+    },
+    {
+      "name": "doubled quotes",
+      "sql": "select 'O''Brien; x';select 4",
+      "expect": [
+        "select 'O''Brien; x'",
+        "select 4"
+      ]
+    },
+    {
+      "name": "dollar body with ; and a line comment, tagged and bare",
+      "sql": "create function f() returns int language plpgsql as $fn$\nbegin -- a; b\n  return 1;\nend $fn$;\ndo $$ begin perform 1; end $$;",
+      "expect": [
+        "create function f() returns int language plpgsql as $fn$\nbegin -- a; b\n  return 1;\nend $fn$",
+        "do $$ begin perform 1; end $$"
+      ]
+    },
+    {
+      "name": "positional parameter and identifier dollar are not quotes",
+      "sql": "prepare p as select $1 + a$b from t;\nselect 5;",
+      "expect": [
+        "prepare p as select $1 + a$b from t",
+        "select 5"
+      ]
+    },
+    {
+      "name": "comments: line, block, nested block, comment-only statement dropped",
+      "sql": "-- header; with a semicolon\n/* block; /* nested; */ still */\nselect 6; -- trailing; comment\n/* only a comment */;",
+      "expect": [
+        "-- header; with a semicolon\n/* block; /* nested; */ still */\nselect 6"
+      ]
+    },
+    {
+      "name": "quoted identifier with ; and \"\"",
+      "sql": "select 1 as \"a;b\"\"c\";select 7",
+      "expect": [
+        "select 1 as \"a;b\"\"c\"",
+        "select 7"
+      ]
+    }
+  ]
+}

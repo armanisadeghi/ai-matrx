@@ -98,6 +98,7 @@ import { formatDurationMs } from "@ai-matrx/kit/format";
 import { connectDirect } from "./lib/direct-db";
 import { functionsTouched, openProductionReadOnly, parityCompare } from "./lib/clone-parity";
 import { onceAsync, withBuildLockCleanup } from "./lib/build-lock-cleanup";
+import { sqlStatements, stripComments } from "./lib/sql-split";
 import { legDidNothing, rule27Legs } from "./lib/rule27-legs";
 import { takeBuildLock, releaseBuildLock, startLockHeartbeat, type LockQuery } from "./lib/build-lock";
 import {
@@ -108,7 +109,6 @@ import {
   readQuarantineFacts,
   stripCommentsQuoteAware,
   TargetRefusal,
-  topLevelStatementsVerbatim,
   INVERSE_DIRNAME,
   CAMPAIGN_DIRNAME,
   CAMPAIGN_SOURCE,
@@ -117,7 +117,6 @@ import {
   policyStatementReasonOf,
   policyStatementTableOf,
   sha256OfBytes,
-  topLevelStatements,
   POLICY_DDL_ONE_TABLE_MAX_MS,
 } from "./lib/migration-target";
 
@@ -221,7 +220,8 @@ async function measure(
     .slice(0, 10)}`;
   const worker = await connectDirect({ ...env }, "db:rehearse (measure)");
   const sampler = await connectDirect({ ...env }, "db:rehearse (pg_locks sampler)");
-  const statements = topLevelStatementsVerbatim(stripForStatements(sql));
+  // THE ONE SPLITTER (scripts/lib/sql-split.ts, D351): each statement's bytes exactly as written.
+  const statements = sqlStatements(sql);
   const out: StatementMeasurement[] = [];
   let failedAt: number | null = null;
   const t0 = Date.now();
@@ -325,7 +325,8 @@ function recordPolicyDdlMeasurement(
   sql: string,
   m: Awaited<ReturnType<typeof measure>>,
 ): void {
-  const stmts = topLevelStatements(stripCommentsQuoteAware(sql));
+  // Same splitter as the measure pass, so the indexes line up statement for statement.
+  const stmts = sqlStatements(sql).map((st) => stripComments(st).replace(/\s+/g, " ").trim());
   const firstPolicy = stmts.findIndex((st) => policyStatementReasonOf(st) !== null);
   if (firstPolicy < 0) return;
   // The measure pass walks the same top-level statements in the same order.

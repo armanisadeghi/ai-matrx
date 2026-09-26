@@ -199,8 +199,10 @@ import {
   pacificHHMM,
   isInsideWindow,
   POLICY_MIXED_GRANDFATHERED,
+  topLevelStatements,
 } from "./lib/migration-target";
 import { confirmChairStep } from "./lib/chair-step";
+import { sqlStatements } from "./lib/sql-split";
 import {
   attributionColumnsPresent,
   attributionJson,
@@ -2779,6 +2781,30 @@ function campaignAuthSelfTest(argv: readonly string[]): number {
   return failures ? 1 : 0;
 }
 
+/**
+ * `pnpm db:apply --sql-split-self-test` — the ONE statement splitter (scripts/lib/sql-split.ts)
+ * against the corpus it shares with aidream db/sql_split.py (D351). RED is carried in the corpus:
+ * case 1 is the adjacent-literal file the old collapsing splitter broke.
+ */
+function sqlSplitSelfTest(): number {
+  const corpus = JSON.parse(readFileSync(resolve(ROOT, "scripts/lib/sql-split-corpus.json"), "utf8")) as {
+    cases: { name: string; sql: string; expect: string[] }[];
+  };
+  let failures = 0;
+  for (const c of corpus.cases) {
+    const got = sqlStatements(c.sql);
+    const ok = JSON.stringify(got) === JSON.stringify(c.expect);
+    if (!ok) failures += 1;
+    console.log(`${ok ? TAG.ok : TAG.fail}${c.name}${ok ? "" : `\n  got ${JSON.stringify(got)}`}`);
+  }
+  // RED, kept as evidence: the collapsing form turns the two-line literal into one line.
+  const collapsed = topLevelStatements(corpus.cases[0]!.sql)[1] ?? "";
+  const redOk = !collapsed.includes("\n");
+  if (!redOk) failures += 1;
+  console.log(`${redOk ? TAG.ok : TAG.fail}RED the collapsing splitter still flattens it (never execute its output)`);
+  return failures ? 1 : 0;
+}
+
 function spawnSyncNode(args: string[]): { status: number; out: string } {
   try {
     const out = execFileSync("npx", ["tsx", ...args], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
@@ -5352,6 +5378,7 @@ async function main(): Promise<number> {
   }
 
   if (argv.includes("--draft-self-test")) return draftSelfTest();
+  if (argv.includes("--sql-split-self-test")) return sqlSplitSelfTest();
   if (argv.includes("--rule-dates-self-test")) return ruleDatesSelfTest();
   if (argv.includes("--campaign-auth-self-test")) return campaignAuthSelfTest(argv);
   if (argv.includes("--policy-only-self-test")) return policyOnlySelfTest();

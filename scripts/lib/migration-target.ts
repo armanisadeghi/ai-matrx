@@ -82,6 +82,7 @@
  * `-- allows: revoke`. The two are kept in step by `BRANCH-REF` being the single
  * source of both identities.
  */
+import { sqlStatements } from "./sql-split";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -1003,47 +1004,9 @@ export function nonAdditiveReasonsDenyList(
  * through `pnpm db:apply` and through psql. Anything that runs SQL uses THIS function.
  */
 export function topLevelStatementsVerbatim(strippedSql: string): string[] {
-  const out: string[] = [];
-  let buf = "";
-  let i = 0;
-  while (i < strippedSql.length) {
-    const tag = /^\$([A-Za-z_]\w*)?\$/.exec(strippedSql.slice(i));
-    if (tag) {
-      const close = strippedSql.indexOf(tag[0], i + tag[0].length);
-      const end = close < 0 ? strippedSql.length : close + tag[0].length;
-      buf += strippedSql.slice(i, end);
-      i = end;
-      continue;
-    }
-    const ch = strippedSql[i]!;
-    if (ch === "'") {
-      let j = i + 1;
-      while (j < strippedSql.length) {
-        if (strippedSql[j] === "'") {
-          if (strippedSql[j + 1] === "'") {
-            j += 2;
-            continue;
-          }
-          j += 1;
-          break;
-        }
-        j += 1;
-      }
-      buf += strippedSql.slice(i, j);
-      i = j;
-      continue;
-    }
-    if (ch === ";") {
-      out.push(buf);
-      buf = "";
-      i += 1;
-      continue;
-    }
-    buf += ch;
-    i += 1;
-  }
-  out.push(buf);
-  return out.map((t) => t.trim()).filter(Boolean);
+  // One splitter for both repos since D351 (scripts/lib/sql-split.ts): E'' strings and nested
+  // block comments included; the input may still carry comments.
+  return sqlStatements(strippedSql);
 }
 
 /** The same statements, each collapsed to ONE LINE — for reading and judging, never for
