@@ -129,7 +129,7 @@ export function KitBoard({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h2 className="text-lg font-semibold text-foreground">
             {done && stillWorking === 0 && finished > 0
@@ -140,7 +140,7 @@ export function KitBoard({
           </h2>
           <p className="text-xs text-muted-foreground">{headline}</p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
           {kit.busy && kit.startedAt && (
             <span className="tabular-nums text-xs text-muted-foreground">
               {formatElapsed(elapsed)}
