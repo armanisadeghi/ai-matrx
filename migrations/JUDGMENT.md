@@ -410,8 +410,13 @@ uv run python db/apply_migrations.py --source campaign --only <file>.sql --targe
   date the runner read the **rehearsal branch** for a `campaign_watch.build_lock` row held by the
   lane; the branch was deleted 2026-09-26 00:30Z, so every campaign file was refused at production
   and lanes applied by hand. Proof: `pnpm check:campaign-auth:self-test`.
-  *(Note, DB-TOOLS-NO-BRANCH 2026-09-25: aidream's `db/apply_migrations.py` still reads the branch
-  for this build_lock row (`branch_dsn`, ~line 3559) — the same defect, not fixed by this lane.)*
+  *(Note, DB-TOOLS-NO-BRANCH 2026-09-25, closed same day by lane AIDREAM-RUNNER-NO-BRANCH:
+  aidream's `db/apply_migrations.py` no longer reads the branch either. The old
+  `_refuse_unauthorised_campaign_production` (its `branch_dsn` call was ~line 3559) is removed;
+  `_report_campaign_clone_pair` reads the dev clone's ledger for the file + inverse pair and
+  prints it — on `--dry-run` too — exactly as this runner does, and never refuses. Proof:
+  `db/tests/test_campaign_production_authorisation_no_branch.py`, incl. a real `--target
+  production --dry-run` run of the actual CLI.)*
 
 ### 6a. 🚨 THE REHEARSAL COPY IS NOT A GATE (owner ruling, 2026-09-18)
 
