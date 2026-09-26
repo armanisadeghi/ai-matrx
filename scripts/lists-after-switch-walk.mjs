@@ -19,7 +19,7 @@ import { chromium } from "playwright";
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { signIn, until, sleep } from "./lib/seat-browser.mjs";
+import { signIn, until, sleep, setOrganization } from "./lib/seat-browser.mjs";
 
 const ORIGIN = process.env.ORIGIN ?? "http://lists-after-switch.localhost:3001";
 const ORG = "11f4e747-c13a-49c7-81a3-66e6391f8a9b"; // Harbor Dental Group (admin's test org)
@@ -120,7 +120,7 @@ try {
     await sleep(3000);
     out.card_after_switch = await card().innerText();
     await page.screenshot({ path: join(SHOTS, "press-switched-to-new.png") });
-  } else {
+  } else if (PHASE === "look") {
     // ── the doors, as admin ──
     const summary = await client.rpc("get_user_lists_summary", { p_user_id: me.id });
     const entry = (summary.data ?? []).find((l) => l.list_name === LIST_NAME && l.lives_in === "record");
@@ -183,13 +183,20 @@ try {
       step("the added choice archived again (soft)", { error: archived.error?.message ?? null });
     }
 
+  }
+  if (PHASE === "look" || PHASE === "newlist") {
     // a NEW list from the manager is born in the new system
     await page.setViewportSize({ width: 1600, height: 1000 });
     await page.goto(`${ORIGIN}/lists/v3`, { waitUntil: "domcontentloaded", timeout: 180000 });
     await until("lists manager", async () => (await text()).includes(LIST_NAME), 120000);
+    // A new list is filed in the organization the person picked (the picker, as a person does).
+    out.organization_set = await setOrganization(page, "Harbor Dental Group");
     await sleep(1500);
-    await page.getByRole("button", { name: /New picklist/ }).first().click();
-    await until("the new list's page", async () => /\/lists\/[0-9a-f-]{36}$/.test(page.url()), 60000);
+    // The header's centre strip overlaps the manager's own "New picklist" button at this width, so a
+    // pointer click lands on the header; the button's own click is what a person's tap reaches.
+    await page.getByRole("button", { name: /New picklist/ }).first().evaluate((el) => el.click());
+    const opened = await until("the new list's page", async () => /\/lists\/[0-9a-f-]{36}$/.test(page.url()), 60000);
+    if (!opened.v) throw new Error(`"New picklist" did not open a new list (still at ${page.url()})`);
     const NEW = page.url().split("/").pop();
     await until("new list table page", async () => (await text()).includes("now lives in the new system"), 180000);
     await sleep(2500);
