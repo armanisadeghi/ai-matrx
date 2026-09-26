@@ -454,7 +454,7 @@ export function LibraryPreviewPage({
 }
 
 /** Canonical `ui_surface.name` the standalone viewer route emits. */
-const RAG_VIEWER_SURFACE = "matrx-user/rag-viewer";
+const RAG_VIEWER_SURFACE = "matrx-user/knowledge-viewer";
 
 interface SurfaceFrameProps {
   getScope: () => SurfaceScopePayload;
@@ -647,7 +647,7 @@ function PageContent({
   /** Active search term — literal matches are highlighted in the page text. */
   query: string;
   /** Lift the loaded page + the cleaned/raw choice to the route so the
-   *  `matrx-user/rag-viewer` surface can emit the text the user is reading.
+   *  `matrx-user/knowledge-viewer` surface can emit the text the user is reading.
    *  Optional so embedded hosts that don't emit a scope stay unchanged. */
   onActivePageLoaded?: (page: RagViewerActivePage | null) => void;
 }) {
