@@ -119,9 +119,16 @@ const AlchemyMenuContent = dynamic(() => import("./components/AlchemyMenuContent
 // under the pointer, resolved for the element under the pointer. One document
 // listener for the whole page (on globalThis — module state is per bundle).
 type PaletteOpener = (element: HTMLElement) => void;
+type SurfaceClaim = { id: symbol; element: HTMLElement; seq: number; at: number };
 interface PaletteRegistry {
   openers: Map<symbol, PaletteOpener>;
-  last: { id: symbol; element: HTMLElement } | null;
+  /** Innermost surface under the pointer (where a right-click would land). */
+  pointer: SurfaceClaim | null;
+  /** Innermost surface holding focus. */
+  focus: SurfaceClaim | null;
+  /** Last press — a focus it caused never outranks the pointer. */
+  pointerDown: { element: HTMLElement; at: number } | null;
+  seq: number;
   installed: boolean;
 }
 const PALETTE_KEY = Symbol.for("ai-matrx.context-menu.palette");
@@ -129,7 +136,7 @@ function paletteRegistry(): PaletteRegistry {
   const g = globalThis as unknown as Record<symbol, PaletteRegistry | undefined>;
   let reg = g[PALETTE_KEY];
   if (!reg) {
-    reg = { openers: new Map(), last: null, installed: false };
+    reg = { openers: new Map(), pointer: null, focus: null, pointerDown: null, seq: 0, installed: false };
     g[PALETTE_KEY] = reg;
   }
   if (!reg.installed && typeof document !== "undefined") {
@@ -138,14 +145,34 @@ function paletteRegistry(): PaletteRegistry {
     document.addEventListener("keydown", (e) => {
       if (e.defaultPrevented) return;
       if (!(e.metaKey || e.ctrlKey) || !e.shiftKey || e.key.toLowerCase() !== "k") return;
-      const last = r.last;
-      const open = last ? r.openers.get(last.id) : undefined;
-      if (!last || !open || !last.element.isConnected) return;
+      const target = paletteTarget(r);
+      const open = target ? r.openers.get(target.id) : undefined;
+      if (!target || !open) return;
       e.preventDefault();
-      open(last.element);
+      open(target.element);
     });
   }
   return reg;
+}
+/**
+ * Where the palette opens — exactly where right-click would: the innermost
+ * surface under the pointer. Focus wins only when it moved AFTER the pointer
+ * by the keyboard (Tab), never the focus a click itself caused (clicking an
+ * answer focuses its outer message article; round 2, finding 1).
+ */
+function paletteTarget(r: PaletteRegistry): SurfaceClaim | null {
+  const live = (c: SurfaceClaim | null) => (c && c.element.isConnected && r.openers.has(c.id) ? c : null);
+  const pointer = live(r.pointer);
+  const focus = live(r.focus);
+  if (!focus) return pointer;
+  if (!pointer) return focus;
+  if (focus.seq < pointer.seq) return pointer;
+  // A focus the last press caused (the pressed element sits inside what took
+  // focus, moments later) is the click's side effect, not a keyboard move.
+  const down = r.pointerDown;
+  const causedByPress =
+    !!down && focus.element.contains(down.element) && focus.at - down.at < 1000;
+  return causedByPress ? pointer : focus;
 }
 const CLAIMED = "__alchemyPaletteClaimed";
 
@@ -726,18 +753,6 @@ export function ContextMenuV3({
   // users). The surface name + revision now live in the surface submenu the
   // engine builds (`surfaceSection`), admin-only for the revision.
 
-  // ── The palette (every action, type to filter — Linear) ──────────────────
-  // ⌘/Ctrl+Shift+K inside the wrapped surface opens it over the same target.
-  const handlePaletteKey = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (suppressed) return;
-    if (!(e.metaKey || e.ctrlKey) || !e.shiftKey || e.key.toLowerCase() !== "k") return;
-    if (e.defaultPrevented) return;
-    e.preventDefault();
-    captureContext(e.target as HTMLElement, e.currentTarget);
-    setOpenSeq((n) => n + 1);
-    setPaletteOpen(true);
-    onMenuOpenChange?.(true);
-  };
 
   // Register this surface's palette opener; the innermost trigger under the
   // pointer (or holding focus) claims "last surface" for the page listener.
@@ -761,14 +776,19 @@ export function ContextMenuV3({
     reg.openers.set(id, (el) => openPaletteRef.current(el));
     return () => {
       reg.openers.delete(id);
-      if (reg.last?.id === id) reg.last = null;
+      if (reg.pointer?.id === id) reg.pointer = null;
+      if (reg.focus?.id === id) reg.focus = null;
     };
   }, []);
-  const claimSurface = (e: React.SyntheticEvent<HTMLElement>) => {
+  const claim = (kind: "pointer" | "focus") => (e: React.SyntheticEvent<HTMLElement>) => {
     const native = e.nativeEvent as Event & { [CLAIMED]?: boolean };
     if (native[CLAIMED]) return; // an inner surface already claimed it
     native[CLAIMED] = true;
-    paletteRegistry().last = { id: paletteIdRef.current as symbol, element: e.target as HTMLElement };
+    const reg = paletteRegistry();
+    const now = Date.now();
+    if (e.type === "pointerdown") reg.pointerDown = { element: e.target as HTMLElement, at: now };
+    reg.seq += 1;
+    reg[kind] = { id: paletteIdRef.current as symbol, element: e.target as HTMLElement, seq: reg.seq, at: now };
   };
 
   const mode: "context" | "sheet" | "palette" | null = sheetOpen
@@ -820,9 +840,11 @@ export function ContextMenuV3({
       handleContextMenu(e);
     },
     onMouseDown: isMobile ? undefined : handleMouseDown,
-    onKeyDown: handlePaletteKey,
-    onPointerOver: claimSurface,
-    onFocus: claimSurface,
+    // The palette key is answered by the ONE page listener (paletteTarget), so
+    // a click that focused an OUTER surface cannot steal it from the inner one.
+    onPointerOver: claim("pointer"),
+    onPointerDown: claim("pointer"),
+    onFocus: claim("focus"),
     ...(isMobile
       ? {
           onTouchStart: handleTouchStart,

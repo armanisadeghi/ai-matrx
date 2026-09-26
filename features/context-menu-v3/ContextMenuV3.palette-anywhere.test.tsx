@@ -64,4 +64,60 @@ describe("the palette opens from anywhere on a surface with a menu", () => {
     expect(menus.map((m) => [m.getAttribute("data-source"), m.getAttribute("data-mode")])).toEqual([["udt", "palette"]]);
     expect(resolved).toContain("row-2:price");
   });
+
+  it("after a click, targets the innermost surface under the pointer — not the outer one that took focus (round 2, finding 1)", () => {
+    act(() => {
+      root.render(
+        <NonEditableContextMenu sourceFeature="messages">
+          <div role="article" tabIndex={0} data-testid="article">
+            <NonEditableContextMenu sourceFeature="chat">
+              <p data-testid="answer">Refunds are allowed within 60 days.</p>
+            </NonEditableContextMenu>
+          </div>
+        </NonEditableContextMenu>,
+      );
+    });
+    const answer = host.querySelector<HTMLElement>('[data-testid="answer"]');
+    const article = host.querySelector<HTMLElement>('[data-testid="article"]');
+    act(() => {
+      answer?.dispatchEvent(new MouseEvent("pointerover", { bubbles: true }));
+      answer?.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+      article?.focus();
+    });
+    act(() => {
+      (document.activeElement ?? document.body).dispatchEvent(
+        new KeyboardEvent("keydown", { key: "K", ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true }),
+      );
+    });
+    const menus = [...document.querySelectorAll('[data-testid="alchemy-menu"]')];
+    expect(menus.map((m) => [m.getAttribute("data-source"), m.getAttribute("data-mode")])).toEqual([["chat", "palette"]]);
+  });
+
+  it("keyboard only (no pointer since): the surface holding focus", () => {
+    act(() => {
+      root.render(
+        <div>
+          <NonEditableContextMenu sourceFeature="notes">
+            <p data-testid="note">Kiln schedule</p>
+          </NonEditableContextMenu>
+          <NonEditableContextMenu sourceFeature="udt">
+            <div role="grid" tabIndex={0} data-testid="grid">cells</div>
+          </NonEditableContextMenu>
+        </div>,
+      );
+    });
+    act(() => {
+      host.querySelector<HTMLElement>('[data-testid="note"]')?.dispatchEvent(new MouseEvent("pointerover", { bubbles: true }));
+    });
+    act(() => {
+      host.querySelector<HTMLElement>('[data-testid="grid"]')?.focus();
+    });
+    act(() => {
+      (document.activeElement ?? document.body).dispatchEvent(
+        new KeyboardEvent("keydown", { key: "K", ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true }),
+      );
+    });
+    const menus = [...document.querySelectorAll('[data-testid="alchemy-menu"]')];
+    expect(menus.map((m) => m.getAttribute("data-source"))).toEqual(["udt"]);
+  });
 });
