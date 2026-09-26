@@ -145,6 +145,7 @@ export function HeldWritesOnTable({
             wait={wait}
             callId={`held-${wait.approvalId}`}
             tableName={held.tableName}
+            organizationId={organizationId}
             hideOpen
             onDecided={markDecided}
           />

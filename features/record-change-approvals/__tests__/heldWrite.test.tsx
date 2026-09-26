@@ -20,7 +20,9 @@ import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
-  useAppSelector: () => "default",
+  // A Set answers both the display-preference selector (not "verbose"/"minimal", so the default)
+  // and any id-set selector the shell reads.
+  useAppSelector: () => new Set<string>(),
 }));
 jest.mock("@/lib/redux/slices/overlaySlice", () => ({ openOverlay: jest.fn() }));
 jest.mock("@/components/loaders/ShimmerText", () => ({

@@ -55,6 +55,12 @@ export interface RecordChangeApprovalCardProps {
   hideOpen?: boolean;
   /** Told once the decision is taken, so a list can refresh. */
   onDecided?: () => void;
+  /**
+   * The organization the WAIT lives in, when the mounting surface knows it (the
+   * table's page reads it from the table). Access is personal: the switch is
+   * asked about the object's organization, never merely the active one.
+   */
+  organizationId?: string | null;
 }
 
 type Decision =
@@ -71,12 +77,14 @@ export function RecordChangeApprovalCard({
   tableName: knownTableName,
   hideOpen = false,
   onDecided,
+  organizationId: objectOrganizationId = null,
 }: RecordChangeApprovalCardProps) {
   // THE switch, asked for the organization the person is actually working in.
   // A card that offered to write into a store this organization does not keep
   // its data in would be a button that cannot mean what it says, so while the
   // switch is off the wait is reported and no decision is offered.
-  const organizationId = useAppSelector(selectActiveOrganizationId);
+  const activeOrganizationId = useAppSelector(selectActiveOrganizationId);
+  const organizationId = objectOrganizationId ?? activeOrganizationId;
   const campaign = useUnifiedDataCampaign({
     organizationId,
     storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.enabled(organization),
