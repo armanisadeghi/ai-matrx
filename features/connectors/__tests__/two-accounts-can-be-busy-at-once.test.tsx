@@ -162,6 +162,10 @@ function dead(id: string, label: string): ConnectorAccount {
 
 const ACCOUNTS = [dead("acct-1", "one@aimatrx.com"), dead("acct-2", "two@aimatrx.com")];
 
+beforeAll(() => {
+  HTMLElement.prototype.scrollIntoView = jest.fn();
+});
+
 let container: HTMLDivElement | null = null;
 let root: Root | null = null;
 
@@ -200,6 +204,43 @@ describe("two accounts, two presses", () => {
     });
 
     expect(run).toHaveBeenCalledWith(
+      expect.objectContaining({ targetAccountId: "acct-2" }),
+      expect.objectContaining({ loginHint: "two@aimatrx.com" }),
+    );
+    expect(container.querySelector("#connector-consent-account")?.textContent)
+      .toContain("two@aimatrx.com");
+  });
+
+  it("restores the card account on a repeat press after the lower selector changes", async () => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    act(() => root!.render(<ConnectorsSettingsPanel />));
+
+    run.mockImplementationOnce(async () => ({ connectionId: "acct-2" }));
+    await act(async () => {
+      accountReconnect(1).click();
+    });
+    expect(container.querySelector("#connector-consent-account")?.textContent)
+      .toContain("two@aimatrx.com");
+
+    const selector = container.querySelector("#connector-consent-account")!;
+    await act(async () => {
+      selector.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    });
+    const firstOption = [...document.querySelectorAll('[role="option"]')].find(
+      (option) => option.textContent?.includes("one@aimatrx.com"),
+    );
+    expect(firstOption).toBeDefined();
+    await act(async () => {
+      (firstOption as HTMLElement).click();
+    });
+    expect(selector.textContent).toContain("one@aimatrx.com");
+
+    await act(async () => {
+      accountReconnect(1).click();
+    });
+    expect(run).toHaveBeenLastCalledWith(
       expect.objectContaining({ targetAccountId: "acct-2" }),
       expect.objectContaining({ loginHint: "two@aimatrx.com" }),
     );

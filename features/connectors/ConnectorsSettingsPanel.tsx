@@ -132,6 +132,7 @@ function ProviderConnectorsPanel({
   const [cardConsent, setCardConsent] = useState<{
     accountId: string;
     productKeys: string[];
+    press: number;
   } | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [failure, setFailure] = useState<ConsentFailureAnswer | null>(null);
@@ -180,7 +181,11 @@ function ProviderConnectorsPanel({
       });
       return;
     }
-    setCardConsent({ accountId, productKeys });
+    setCardConsent((previous) => ({
+      accountId,
+      productKeys,
+      press: (previous?.press ?? 0) + 1,
+    }));
     setBusy((running) =>
       running.some((entry) => busyActionKey(entry) === busyActionKey(pressed))
         ? running
@@ -413,7 +418,7 @@ function ProviderConnectorsPanel({
         </header>
         <ConnectorConsentBody
           key={cardConsent
-            ? `${cardConsent.accountId}:${cardConsent.productKeys.join(",")}`
+            ? `card-press-${cardConsent.press}`
             : "default"}
           provider={provider}
           rowAnchorPrefix="integration-google-product-"
