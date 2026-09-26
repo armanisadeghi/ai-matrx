@@ -935,8 +935,18 @@ export default function PdfDocumentRenderer({
               />
             </div>
           ) : null}
+          {/* `suspense={false}` is load-bearing. react-pdf 11 (adopted
+           * 2026-09-22) made Suspense + Error Boundaries the DEFAULT for
+           * Document/Page: a load failure (a 401 from the files service, a
+           * corrupt file) was THROWN to the route's error boundary and the
+           * whole page became "Something went wrong", and loading suspended
+           * past this component's own overlay. This renderer owns loading
+           * (the overlay above) and failure (`onLoadError` → the inline
+           * retryable error) itself; `<Page>` inherits the setting.
+           * Guard: PdfPreview.auth-source.test.tsx. */}
           <Document
             file={documentFile}
+            suspense={false}
             onLoadSuccess={({ numPages: n }) => {
               setNumPages(n);
               setPageNumber((p) => Math.min(p, n));

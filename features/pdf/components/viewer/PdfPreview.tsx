@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { usePdfRemoteSource } from "@/features/files/hooks/usePdfRemoteSource";
+import { isAuthenticatedFileBytesUrl } from "@/features/files/handler/utils/python-base";
 import PdfDocumentRenderer from "./PdfDocumentRenderer";
 import PdfSourceUnavailable from "./PdfSourceUnavailable";
 
@@ -38,8 +39,12 @@ export interface PdfPreviewProps {
   fileId: string;
   className?: string;
   /**
-   * Already-resolved CDN / durable-inline URL. When present, PDF.js can begin
-   * range loading on the first render while the hook still owns refresh/retry.
+   * Already-resolved URL for these bytes. A PUBLIC one (CDN, blob:, share)
+   * lets PDF.js begin range loading on the first render while the hook still
+   * owns refresh/retry. A durable private `/files/{id}/download` URL is never
+   * handed to PDF.js on its own: it waits for the hook's auth (headers +
+   * file-session cookie), because sent bare it answers 401 — the "Unexpected
+   * server response (401) while retrieving PDF" page crash (2026-09-26).
    */
   remoteUrl?: string | null;
   /**
@@ -92,7 +97,14 @@ export default function PdfPreview({
     fileId ? selectFileById(s, fileId) : null,
   );
 
-  if (sourceMissing && !providedRemoteUrl) {
+  // The bytes PDF.js may read right now, and with which credentials. The
+  // hook's URL arrives only once its auth is ready, so it always carries it.
+  // A caller's URL is used alone only when it needs no auth.
+  const providedIsPublic =
+    !!providedRemoteUrl && !isAuthenticatedFileBytesUrl(providedRemoteUrl);
+  const useHookSource = !!remoteUrl || !providedIsPublic;
+
+  if (sourceMissing && !providedIsPublic) {
     return (
       <div className={cn("relative h-full w-full", className)}>
         <PdfSourceUnavailable fileName={file?.fileName ?? null} />
@@ -103,12 +115,12 @@ export default function PdfPreview({
   return (
     <div className={cn("relative h-full w-full", className)}>
       <PdfDocumentRenderer
-        remoteUrl={remoteUrl ?? providedRemoteUrl}
-        remoteHeaders={headers}
-        withCredentials={!providedRemoteUrl && withCredentials}
+        remoteUrl={useHookSource ? remoteUrl : providedRemoteUrl}
+        remoteHeaders={useHookSource ? headers : undefined}
+        withCredentials={useHookSource && withCredentials}
         fileName={file?.fileName ?? null}
-        loading={!providedRemoteUrl && sessionLoading}
-        error={providedRemoteUrl ? null : sessionError}
+        loading={useHookSource && sessionLoading}
+        error={useHookSource ? sessionError : null}
         onRetry={retry}
         bytesLoaded={bytesLoaded}
         bytesTotal={bytesTotal}

@@ -125,6 +125,19 @@ export function fileUrls(fileId: string): FileUrls {
   };
 }
 
+const AUTHENTICATED_FILE_BYTES_RE =
+  /\/files\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/download(?:[?#]|$)/i;
+
+/**
+ * True for a durable `/files/{id}/download` URL (either host, either
+ * spelling) — bytes that answer 401 unless the request carries the person's
+ * Authorization header or the `mx_files_session` cookie. A consumer that
+ * loads bytes with its own fetch (PDF.js) must never send one bare.
+ */
+export function isAuthenticatedFileBytesUrl(url: string | null | undefined): boolean {
+  return !!url && AUTHENTICATED_FILE_BYTES_RE.test(url);
+}
+
 /** Single-URL convenience wrapper around `fileUrls(fileId).download`. */
 export function pythonFileDownloadUrl(fileId: string): string {
   return fileUrls(fileId).download;
