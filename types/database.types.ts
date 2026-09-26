@@ -31411,51 +31411,6 @@ export type Database = {
   }
   graveyard: {
     Tables: {
-      iam_canonical_sweep: {
-        Row: {
-          claimed_at: string | null
-          claimed_by: string | null
-          fails: string | null
-          notes: string | null
-          schema_name: string
-          status: string
-          table_name: string
-          token: string
-          updated_at: string
-          variant: string
-          verified_ok: boolean | null
-          warns: string | null
-        }
-        Insert: {
-          claimed_at?: string | null
-          claimed_by?: string | null
-          fails?: string | null
-          notes?: string | null
-          schema_name: string
-          status?: string
-          table_name: string
-          token: string
-          updated_at?: string
-          variant?: string
-          verified_ok?: boolean | null
-          warns?: string | null
-        }
-        Update: {
-          claimed_at?: string | null
-          claimed_by?: string | null
-          fails?: string | null
-          notes?: string | null
-          schema_name?: string
-          status?: string
-          table_name?: string
-          token?: string
-          updated_at?: string
-          variant?: string
-          verified_ok?: boolean | null
-          warns?: string | null
-        }
-        Relationships: []
-      }
       mandate: {
         Row: {
           auto_context_disabled: boolean
@@ -31537,249 +31492,48 @@ export type Database = {
         }
         Relationships: []
       }
-      mandate_binding: {
+      system_personal_org_failures: {
         Row: {
-          agent_id: string | null
-          agent_version_id: string | null
-          config_overrides: Json | null
-          consumption_map: Json | null
           created_at: string
           created_by: string | null
-          deleted_at: string | null
-          holder_id: string | null
-          holder_type: string
-          holder_version_id: string | null
-          id: string
-          is_enabled: boolean
-          mandate_id: string
-          metadata: Json
-          organization_id: string
-          principal_type: string
-          subject_user_id: string | null
-          updated_at: string
-          updated_by: string | null
-          use_latest: boolean
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          agent_id?: string | null
-          agent_version_id?: string | null
-          config_overrides?: Json | null
-          consumption_map?: Json | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          holder_id?: string | null
-          holder_type?: string
-          holder_version_id?: string | null
-          id?: string
-          is_enabled?: boolean
-          mandate_id: string
-          metadata?: Json
-          organization_id: string
-          principal_type: string
-          subject_user_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          use_latest?: boolean
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          agent_id?: string | null
-          agent_version_id?: string | null
-          config_overrides?: Json | null
-          consumption_map?: Json | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          holder_id?: string | null
-          holder_type?: string
-          holder_version_id?: string | null
-          id?: string
-          is_enabled?: boolean
-          mandate_id?: string
-          metadata?: Json
-          organization_id?: string
-          principal_type?: string
-          subject_user_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          use_latest?: boolean
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
-      provision: {
-        Row: {
-          code_path: string | null
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          derived_input_kind: string | null
-          description: string | null
-          id: string
-          is_enabled: boolean
-          label: string
-          metadata: Json
-          offered_values: Json
-          organization_id: string
-          provision_key: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          code_path?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          derived_input_kind?: string | null
-          description?: string | null
-          id?: string
-          is_enabled?: boolean
-          label: string
-          metadata?: Json
-          offered_values?: Json
-          organization_id: string
-          provision_key: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          code_path?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          derived_input_kind?: string | null
-          description?: string | null
-          id?: string
-          is_enabled?: boolean
-          label?: string
-          metadata?: Json
-          offered_values?: Json
-          organization_id?: string
-          provision_key?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
-      user_flashcard_reviews: {
-        Row: {
-          card_index: number
-          created_by: string | null
-          deleted_at: string | null
+          email: string | null
+          error_code: string | null
+          error_message: string | null
           id: string
           metadata: Json
           organization_id: string
-          result: string
-          reviewed_at: string
-          set_id: string
-          updated_at: string
+          resolved_at: string | null
+          resolved_org_id: string | null
           updated_by: string | null
           user_id: string
-          version: number
         }
         Insert: {
-          card_index: number
+          created_at?: string
           created_by?: string | null
-          deleted_at?: string | null
+          email?: string | null
+          error_code?: string | null
+          error_message?: string | null
           id?: string
           metadata?: Json
           organization_id: string
-          result: string
-          reviewed_at?: string
-          set_id: string
-          updated_at?: string
+          resolved_at?: string | null
+          resolved_org_id?: string | null
           updated_by?: string | null
           user_id: string
-          version?: number
         }
         Update: {
-          card_index?: number
+          created_at?: string
           created_by?: string | null
-          deleted_at?: string | null
+          email?: string | null
+          error_code?: string | null
+          error_message?: string | null
           id?: string
           metadata?: Json
           organization_id?: string
-          result?: string
-          reviewed_at?: string
-          set_id?: string
-          updated_at?: string
+          resolved_at?: string | null
+          resolved_org_id?: string | null
           updated_by?: string | null
           user_id?: string
-          version?: number
-        }
-        Relationships: []
-      }
-      user_flashcard_sets: {
-        Row: {
-          card_count: number
-          cards: Json
-          conversation_id: string | null
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          id: string
-          is_archived: boolean
-          last_studied_at: string | null
-          message_id: string | null
-          metadata: Json
-          organization_id: string
-          tags: string[]
-          title: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          card_count?: number
-          cards?: Json
-          conversation_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_archived?: boolean
-          last_studied_at?: string | null
-          message_id?: string | null
-          metadata?: Json
-          organization_id: string
-          tags?: string[]
-          title?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          card_count?: number
-          cards?: Json
-          conversation_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_archived?: boolean
-          last_studied_at?: string | null
-          message_id?: string | null
-          metadata?: Json
-          organization_id?: string
-          tags?: string[]
-          title?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -55918,51 +55672,6 @@ export type Database = {
           },
         ]
       }
-      system_personal_org_failures: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          email: string | null
-          error_code: string | null
-          error_message: string | null
-          id: string
-          metadata: Json
-          organization_id: string
-          resolved_at: string | null
-          resolved_org_id: string | null
-          updated_by: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          email?: string | null
-          error_code?: string | null
-          error_message?: string | null
-          id?: string
-          metadata?: Json
-          organization_id: string
-          resolved_at?: string | null
-          resolved_org_id?: string | null
-          updated_by?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          email?: string | null
-          error_code?: string | null
-          error_message?: string | null
-          id?: string
-          metadata?: Json
-          organization_id?: string
-          resolved_at?: string | null
-          resolved_org_id?: string | null
-          updated_by?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       team: {
         Row: {
           created_at: string
@@ -59794,6 +59503,39 @@ export type Database = {
           },
         ]
       }
+      reference_archive: {
+        Row: {
+          archived_at: string
+          id: string
+          identity_hash: string
+          kept_id: string | null
+          revision: string
+          revision_kind: string
+          row_created_at: string
+          row_data: Json
+        }
+        Insert: {
+          archived_at?: string
+          id: string
+          identity_hash: string
+          kept_id?: string | null
+          revision: string
+          revision_kind: string
+          row_created_at: string
+          row_data: Json
+        }
+        Update: {
+          archived_at?: string
+          id?: string
+          identity_hash?: string
+          kept_id?: string | null
+          revision?: string
+          revision_kind?: string
+          row_created_at?: string
+          row_data?: Json
+        }
+        Relationships: []
+      }
       scan: {
         Row: {
           absent_against_revision: string | null
@@ -60484,6 +60226,10 @@ export type Database = {
           subject_user_id: string
           version_live: boolean
         }[]
+      }
+      archive_redundant_references_batch: {
+        Args: { p_after: string; p_identities?: number }
+        Returns: Record<string, unknown>
       }
       binding_holder_runnable: {
         Args: {
