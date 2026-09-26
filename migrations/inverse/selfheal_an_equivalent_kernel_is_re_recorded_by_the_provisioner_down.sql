@@ -1,8 +1,11 @@
 -- INVERSE of migrations/campaign/selfheal_an_equivalent_kernel_is_re_recorded_by_the_provisioner.sql (lane PROVISIONER-SELF-HEAL).
+-- chair-step: lane PROVISIONER-SELF-HEAL — undo the self-healing provisioner; a stale kernel fingerprint is refused with a logged row again (KERNEL-TAILS' behaviour).
+-- based-on: platform._provisioner_refuses_a_stale_kernel(jsonb, jsonb, text, uuid, text) 326c4e7bd365993804fa4a6c10140e191ce972698dfee49e07c7ff95fb157085
+-- based-on: platform.provision(jsonb, text, uuid, text) b36487697c909d1f080d701476c4b427bd5bbf21ec6896a7925fec312bde3c36
+-- based-on: platform.provision_batch(jsonb, text, uuid, text) 653f01fad8f3efe03ecdf8c9819914f6712537b49b40c701bd8df163f8b1e45d
 -- Restores platform._provisioner_refuses_a_stale_kernel, platform.provision and platform.provision_batch
 -- byte-for-byte (KERNEL-TAILS' bodies: a stale fingerprint is refused with a logged row, never healed)
 -- and drops the five new functions. platform.kernel_fingerprint_record stays: its rows are history.
-set local lock_timeout = '30s';
 
 CREATE OR REPLACE FUNCTION platform._provisioner_refuses_a_stale_kernel(p_spec jsonb, p_pre jsonb, p_applied_via text, p_org_id uuid, p_lane text)
  RETURNS jsonb

@@ -6,7 +6,6 @@
 -- based-on: platform.provision_batch(jsonb, text, uuid, text) 9b2f368b4ec0ab02a575294e4706f0c18b1e603cfea7d739fbd8622813804c37
 -- lane: PROVISIONER-SELF-HEAL
 -- INVERSE: migrations/inverse/selfheal_an_equivalent_kernel_is_re_recorded_by_the_provisioner_down.sql
-set local lock_timeout = '30s';
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- 1. THE RECORD OF EVERY RE-RECORDING THE PROVISIONER MAKES ITSELF. One row per automatic
