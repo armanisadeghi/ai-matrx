@@ -175,3 +175,16 @@ describe("directory sections (Arman, 2026-09-26)", () => {
     ).toEqual(["Education", "Not yet assigned to a domain"]);
   });
 });
+
+describe("the card never promises more than the page shows", () => {
+  it("drops definitions the member list does not return from this seat, once it answers", () => {
+    const { buildDirectory: build } = jest.requireActual("../index-model");
+    const rows = build(
+      [{ mandate_key: "app.mine" }, { mandate_key: "app.someone_elses" }],
+      [{ mandateKey: "app.mine", holderName: "A", holderType: "agent", status: "active" }],
+    ) as { feature: string; jobs: unknown[] }[];
+    expect(rows.find((row) => row.feature === "agent-apps")?.jobs).toHaveLength(1);
+    const before = build([{ mandate_key: "app.mine" }, { mandate_key: "app.someone_elses" }]) as { feature: string; jobs: unknown[] }[];
+    expect(before.find((row) => row.feature === "agent-apps")?.jobs).toHaveLength(2);
+  });
+});

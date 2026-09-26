@@ -129,7 +129,13 @@ export function buildDomains(
 ): DirectoryDomain[] {
   const byKey = new Map(holders.map((row) => [row.mandateKey, row]));
   const jobsByTarget = new Map<string, DirectoryJob[]>();
+  // Once the member list has answered, a card counts only the jobs its page
+  // will show from this seat: a definition the viewer can read but the member
+  // list does not return for them (another person's app, a patrol canary) is
+  // not one of their jobs, and the card never promises more than the page holds.
+  const seated = holders.length > 0 ? byKey : null;
   for (const def of defs) {
+    if (seated && !seated.has(def.mandate_key)) continue;
     const target = placementForKey(def.mandate_key).fixture
       ? FIXTURES
       : targetForKey(def.mandate_key);
