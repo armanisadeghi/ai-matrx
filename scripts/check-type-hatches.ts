@@ -27,6 +27,7 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { emitItem } from "./checks/items.mjs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
@@ -285,6 +286,16 @@ function main(): void {
     if (delta > 0) {
       grew = true;
       grownCats.push({ label: cat.label, cur, base, delta });
+    }
+    // Item (ITEM-PROTOCOL.md): ONE per category, keyed by the baseline's own key. A count
+    // ratchet marks the whole key `new` when it grew; at or under baseline it is `known` debt.
+    if (baseline && cur > 0) {
+      emitItem({
+        key: cat.key,
+        status: delta > 0 ? "new" : "known",
+        title: `${cat.label}: ${cur} now vs ${base} frozen (${delta > 0 ? "+" : ""}${delta})`,
+        rule: "type-escape-hatch",
+      });
     }
     console.log(
       `  ${cat.label.padEnd(22)}  ${String(cur).padStart(7)}  ${String(base).padStart(8)}  ${deltaStr}`,

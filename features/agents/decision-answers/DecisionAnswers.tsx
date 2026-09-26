@@ -162,6 +162,8 @@ export interface DecisionAnswersProps {
   instructions?: Record<string, string>;
   /** Author-suggested cuts, by field name. */
   thresholds?: Record<string, number>;
+  /** False when the host already shows the question right above the card. */
+  showInstructions?: boolean;
   className?: string;
 }
 
@@ -169,6 +171,7 @@ export function DecisionAnswers({
   view,
   instructions,
   thresholds,
+  showInstructions = true,
   className,
 }: DecisionAnswersProps) {
   const method = view.method;
@@ -216,7 +219,9 @@ export function DecisionAnswers({
 
       <div className="divide-y divide-border/60">
         {view.answers.map((answer) => {
-          const instruction = instructions?.[answer.name] ?? answer.instruction;
+          const instruction = showInstructions
+            ? (instructions?.[answer.name] ?? answer.instruction)
+            : null;
           const threshold =
             thresholds?.[answer.name] ?? answer.suggestedThreshold;
           const probability = answerProbability(answer);

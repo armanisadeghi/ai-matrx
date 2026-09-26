@@ -429,6 +429,7 @@ how that savior page gets built.
 
 ## Change log
 
+- `2026-09-26` — Claude (Opus): **A failed count is not zero.** When the counts or facets read fails, `EntityListPage` shows no number on any scope tab (it passes `countsLoading || countsError` to the tabs) and renders `EntitySourceFailures` — one plain sentence per failed side read and a Try again that calls `refresh`. Found on `/mandates/list-preview`, which read "0" on every tab after a 57014. Guard: `__tests__/a-failed-count-is-not-zero.test.tsx` (RED "Mine0System0" without the fix, GREEN with it).
 - `2026-09-25` — Claude (Opus): **`memoryService.ts`** — an `EntityListService` over a fully loaded small corpus, for report-shaped sources that cannot page or facet themselves. First consumers: `/administration/mandates/unconverted-preview` and `/administration/mandates/health-preview` (`features/mandates/code-references/`).
 - `2026-09-24` — Claude (Opus): **`config.tableToolbar` (opt-in)** — the table's own title row carries search, saved views (`tableId`), working view tabs and the column picker (controlled `columnState` over the same `useListViewPrefs.hiddenColumns`); the shell toolbar row is not rendered. Absent = unchanged. First consumer: `/administration/mandates/list-preview` (`features/mandates/admin-list/`).
 - `2026-09-22` — Claude (Opus): **No two rows in a list are indistinguishable**

@@ -68,6 +68,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import process from "node:process";
+import { emitItem } from "./checks/items.mjs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 import {
   AIDREAM_SCAN_DIRS,
@@ -290,6 +291,22 @@ function main(): void {
   if (json) {
     console.log(JSON.stringify({ live: live.length, allowlisted: allow.length, classified: declared.length, fresh, stale, staleClass }, null, 2));
     exitAfterDrain(fresh.length > 0 ? 1 : 0);
+  }
+
+  // Items (ITEM-PROTOCOL.md): key = the allowlist's own `<file>::<NAME>` (siteKey). Baselined =
+  // known debt; not baselined = new. A CLASSIFIED constant is declared not-an-opinion — not debt,
+  // not a finding — so it is not an item (nor is a KNOB MIRROR).
+  for (const s of live) {
+    const k = siteKey(s);
+    if (classKeys.has(k)) continue;
+    emitItem({
+      key: k,
+      status: allowKeys.has(k) ? "known" : "new",
+      title: `${s.name} = ${s.value} — knob-shaped constant outside the registry`,
+      file: s.file,
+      line: s.line,
+      rule: "hardcoded-setting",
+    });
   }
 
   console.log(`\n${C.bold}${C.white}HARDCODED SETTINGS${C.reset} ${C.dim}(${GUARD})${C.reset}`);

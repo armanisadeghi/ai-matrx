@@ -62,7 +62,7 @@ describe("a component that stands for several actions declares them", () => {
     ]);
     for (const item of items) {
       // The name is printed as text, and nothing in the item is hidden below `lg`.
-      expect(item.html).toContain(`>${item.label.replace("&", "&amp;")}</span>`);
+      expect(item.html).toContain(`>${(item.label ?? "").replace("&", "&amp;")}</span>`);
       expect(item.html).not.toContain("hdr-actions-desktop");
     }
   });

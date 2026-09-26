@@ -12,7 +12,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Check, ChevronRight, LineChart, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, LineChart, X } from "lucide-react";
 import {
   Button,
   SegmentedControl,
@@ -135,6 +135,10 @@ export function ReviewQueue({ agentId }: { agentId: string }) {
   const [items, setItems] = useState<ReviewItem[] | null>(null);
   const [facets, setFacets] = useState<QueueFacets | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Phones get list OR detail (the iOS list→detail pattern); from md up both
+  // panes show side by side. A 22rem list beside the detail left the detail
+  // one letter wide at 375px.
+  const [phoneDetail, setPhoneDetail] = useState(false);
   const [state, setState] = useState<JudgedState | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -313,7 +317,13 @@ export function ReviewQueue({ agentId }: { agentId: string }) {
 
       <div className="flex min-h-0 flex-1">
         {/* The list. */}
-        <div ref={listRef} className="w-[22rem] shrink-0 overflow-y-auto border-r border-border">
+        <div
+          ref={listRef}
+          className={cn(
+            "w-full shrink-0 overflow-y-auto border-border md:block md:w-[22rem] md:border-r",
+            phoneDetail && "hidden",
+          )}
+        >
           {items == null ? (
             <div className="flex flex-col gap-1 p-2">
               {Array.from({ length: 8 }, (_, i) => (
@@ -329,19 +339,39 @@ export function ReviewQueue({ agentId }: { agentId: string }) {
           ) : (
             items.map((item, index) => (
               <div key={item.id} data-row-index={index}>
-                <QueueRow item={item} selected={item.id === selectedId} onSelect={() => setSelectedId(item.id)} />
+                <QueueRow
+                  item={item}
+                  selected={item.id === selectedId}
+                  onSelect={() => {
+                    setSelectedId(item.id);
+                    setPhoneDetail(true);
+                  }}
+                />
               </div>
             ))
           )}
         </div>
 
         {/* The item under review. */}
-        <div className="min-w-0 flex-1 overflow-y-auto">
+        <div
+          className={cn(
+            "min-w-0 flex-1 overflow-y-auto md:block",
+            !phoneDetail && "hidden",
+          )}
+        >
           {selected ? (
             <div className="mx-auto flex max-w-3xl flex-col gap-3 p-4">
+              <button
+                type="button"
+                onClick={() => setPhoneDetail(false)}
+                className="-ml-1 inline-flex h-8 items-center gap-1 self-start rounded px-1 text-xs text-muted-foreground hover:text-foreground md:hidden"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                All answers
+              </button>
               <div className="flex items-baseline gap-2">
-                <span className="font-mono text-xs text-muted-foreground">{selected.question}</span>
                 <span className="text-sm font-medium">{selected.instructions ?? "Question text not recorded"}</span>
+                <span className="font-mono text-[11px] text-muted-foreground">{selected.question}</span>
                 <span className="ml-auto font-mono text-[11px] text-muted-foreground">
                   {selectedIndex + 1} / {items?.length ?? 0}
                 </span>
@@ -370,6 +400,7 @@ export function ReviewQueue({ agentId }: { agentId: string }) {
                 <DecisionAnswers
                   view={selected.view}
                   instructions={selected.instructions ? { [selected.question]: selected.instructions } : undefined}
+                  showInstructions={false}
                 />
               )}
 

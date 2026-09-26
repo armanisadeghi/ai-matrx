@@ -38,6 +38,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, sep } from "node:path";
+import { emitItem } from "../checks/items.mjs";
 import { DEAD_END_ALLOWLIST } from "./allowlist";
 import { describeFinding } from "./describe";
 import { loadEntityTokens } from "./entity-tokens";
@@ -193,12 +194,25 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 /** Allowlist match: exact file, optionally narrowed to one rule. */
-function isAllowlisted(finding: DeadEndFinding): boolean {
-  return DEAD_END_ALLOWLIST.some(
+function allowlistEntryFor(finding: DeadEndFinding) {
+  return DEAD_END_ALLOWLIST.find(
     (entry) =>
       entry.file === finding.file &&
       (entry.rule === undefined || entry.rule === finding.rule),
   );
+}
+
+function isAllowlisted(finding: DeadEndFinding): boolean {
+  return allowlistEntryFor(finding) !== undefined;
+}
+
+/**
+ * The item key (common-docs/projects/checks-run-in-the-app/ITEM-PROTOCOL.md) EQUALS the allowlist
+ * entry key `<file>|<rule or *>`: a known item names the entry that covers it, a new one names the
+ * narrowest entry an accept would add (`file|rule`).
+ */
+function deadEndAllowKey(entry: { file: string; rule?: string }): string {
+  return `${entry.file}|${entry.rule ?? "*"}`;
 }
 
 function rank(findings: DeadEndFinding[], keyOf: (f: DeadEndFinding) => string): DeadEndBucket[] {
@@ -414,6 +428,22 @@ function main(): void {
   const allowlisted = raw.filter(isAllowlisted).length;
   let findings = raw.filter((f) => !isAllowlisted(f));
   if (args.rule) findings = findings.filter((f) => f.rule === args.rule);
+
+  // Items: EVERY finding, known and new, whatever --limit prints (MATRX_ITEMS=1 only; never
+  // inside --json, whose stdout is one JSON document).
+  if (!args.json) {
+    for (const f of args.rule ? raw.filter((x) => x.rule === args.rule) : raw) {
+      const entry = allowlistEntryFor(f);
+      emitItem({
+        key: entry ? deadEndAllowKey(entry) : deadEndAllowKey(f),
+        status: entry ? "known" : "new",
+        title: `${f.entity} — ${RULE_TITLES[f.rule]}`,
+        file: f.file,
+        line: f.line,
+        rule: f.rule,
+      });
+    }
+  }
 
   findings.sort(
     (a, b) =>

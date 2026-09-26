@@ -752,7 +752,13 @@ export function EntityListPage<TRow>({
                 ? [{ label: "The filter options", error: list.facetsError }]
                 : []),
             ]}
-            consequence="The tabs show no number and the filters offer no options until they load; the list itself is unaffected."
+            consequence={`${
+              list.countsError && list.facetsError
+                ? "The tabs show no number and the filters offer no options"
+                : list.countsError
+                  ? "The tabs show no number"
+                  : "The filters offer no options"
+            } until they load; the list itself is unaffected.`}
             onRetry={list.refresh}
           />
         )}

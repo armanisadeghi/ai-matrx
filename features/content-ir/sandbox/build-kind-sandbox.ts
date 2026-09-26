@@ -27,9 +27,10 @@
  *      present in the bundle as string data, and a string is not a capability.
  *
  * ───────────────────────────────────────────────────────────────────────────
- * THE THREE FRAME SUBSTITUTIONS (esbuild `alias`) — each one has a module with
+ * THE FRAME SUBSTITUTIONS (esbuild `alias`) — each one has a module with
  * a header explaining why it exists and what the author sees instead:
  *   @/components/MarkdownStream               → FrameMarkdown     (ruling 1)
+ *   @/components/agent-copy/CopyForAiButton   → FrameCopyForAiButton
  *   @/features/google-workspace/export/sendToGoogle → FrameSendToGoogle
  * They are aliases rather than database migrations, so the live component
  * bodies are migrated to the frame-safe implementations without a row
@@ -57,6 +58,10 @@ const ALIAS: Record<string, string> = {
   "@/components/MarkdownStream": resolve(
     __dirname,
     "runtime/FrameMarkdown.tsx",
+  ),
+  "@/components/agent-copy/CopyForAiButton": resolve(
+    __dirname,
+    "runtime/FrameCopyForAiButton.tsx",
   ),
   "@/components/agent-copy/useAlchemyDisclosure": resolve(
     __dirname,

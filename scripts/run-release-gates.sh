@@ -682,7 +682,7 @@ if $STRICT; then
         # worklist: docs/handoffs/no-dead-ends-sweep.md); hard-failing on it would
         # block every release until the campaign lands. Promote to --strict when
         # the scoreboard reaches zero.
-        "No dead ends (Door Law)|pnpm exec tsx scripts/dead-ends/check-dead-ends.ts --limit=15"
+        "No dead ends (Door Law)|pnpm exec tsx scripts/dead-ends/check-dead-ends.ts"
         # UNWIRED WORK stays ADVISORY even in strict mode. A finding means a
         # previous builder was interrupted and the runtime seam must be FINISHED;
         # the standing backlog may never block an unrelated release.
@@ -1233,7 +1233,7 @@ else
         # THE DOOR LAW — surfaces that name a record without letting the user
         # open it. Advisory by design (Arman: no check blocks a build); the
         # ranked scoreboard lives at /administration/reporting/dead-ends.
-        "No dead ends (Door Law)|pnpm exec tsx scripts/dead-ends/check-dead-ends.ts --limit=15"
+        "No dead ends (Door Law)|pnpm exec tsx scripts/dead-ends/check-dead-ends.ts"
         # Cross-repo unfinished-work alarm; loud and advisory in every mode.
         # Scoreboard: /administration/reporting/unwired.
         "Unwired work (finish purpose-built artifacts)|pnpm exec tsx scripts/unwired/check-unwired.ts --limit=15"

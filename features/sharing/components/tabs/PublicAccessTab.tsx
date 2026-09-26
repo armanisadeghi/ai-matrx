@@ -252,7 +252,10 @@ export function PublicAccessTab({
       if (result?.success !== false) {
         toast({
           title: `Visibility set to “${choice?.label ?? next}”`,
-          description: choice?.describe(typeLabel),
+          description: choice?.describe(typeLabel, {
+            publicPage: Boolean(publicUrl),
+            noLoginLink: caps.isLinkShareable,
+          }),
         });
       } else {
         toast({
