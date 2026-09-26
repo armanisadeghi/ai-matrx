@@ -20,7 +20,10 @@
 import { useEffect, useState, useTransition } from "react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useRouter } from "next/navigation";
-import { INTELLIGENCE_ICON_NAME } from "@/components/icons/domain-icons";
+import {
+  INTELLIGENCE_ICON,
+  INTELLIGENCE_ICON_NAME,
+} from "@/components/icons/domain-icons";
 import {
   Layers,
   Plus,
@@ -39,6 +42,7 @@ import {
   FileSearch,
   Download,
   Loader2,
+  CloudOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -226,7 +230,11 @@ function SetRow({
   );
 }
 
-export function FlashcardsHome() {
+export function FlashcardsHome({
+  actionLayout = "header",
+}: {
+  actionLayout?: "header" | "page";
+}) {
   const router = useRouter();
   const [sets, setSets] = useState<FcSetRow[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -499,34 +507,188 @@ export function FlashcardsHome() {
         <EducationToolHeader
           title="Flashcards"
           sheetTitle="Flashcard actions"
-          actions={headerActions}
+          actions={actionLayout === "header" ? headerActions : undefined}
         />
-        <div className="mx-auto max-w-4xl px-3 pb-safe pt-[var(--shell-header-h)] sm:px-6 sm:pb-6">
-          <div className="flex items-center gap-2 pt-2 sm:pt-4">
-            <div className="flex shrink-0 items-center gap-3">
-              {streak && streak.current_streak > 0 && (
-                <span
-                  className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300"
-                  title={`Longest streak: ${streak.longest_streak} day${streak.longest_streak === 1 ? "" : "s"}`}
-                >
-                  <Flame className="h-3.5 w-3.5" />
-                  {streak.current_streak} day
-                  {streak.current_streak === 1 ? "" : "s"}
-                </span>
-              )}
-            </div>
-            <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 sm:flex-initial">
-              <Button
-                onClick={newSet}
-                disabled={isPending && navigatingId === NEW_SET_NAV_ID}
-                className="h-11 w-full sm:h-9 sm:w-auto"
-              >
-                <Plus className="mr-1.5 h-4 w-4" />
-                Create deck
-              </Button>
-            </div>
-          </div>
+        <div
+          className={cn(
+            "mx-auto max-w-4xl px-3 pb-safe sm:px-6 sm:pb-6",
+            actionLayout === "header" && "pt-[var(--shell-header-h)]",
+          )}
+        >
+          {actionLayout === "page" ? (
+            <section
+              aria-label="Flashcard actions"
+              className="matrx-touch-targets mb-4 rounded-2xl border border-border bg-card/80 p-3 shadow-sm sm:p-4"
+            >
+              <div className="flex flex-col gap-2.5">
+                <div>
+                  <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Quick actions
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <Button
+                      onClick={newSet}
+                      disabled={isPending && navigatingId === NEW_SET_NAV_ID}
+                      className="h-auto min-h-11 w-full justify-start gap-2 whitespace-normal px-3 py-2 sm:min-h-10"
+                    >
+                      <Plus className="h-4 w-4 shrink-0" />
+                      <span className="text-left leading-tight">
+                        Create deck
+                      </span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => goTo("__review__", `${EDU_BASE}/review`)}
+                      disabled={isPending}
+                      className="h-auto min-h-11 w-full justify-start gap-2 whitespace-normal px-3 py-2 sm:min-h-10"
+                    >
+                      <CalendarClock className="h-4 w-4 shrink-0" />
+                      <span className="text-left leading-tight">
+                        Review due
+                      </span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => goTo("__weak__", `${EDU_BASE}/weak-areas`)}
+                      disabled={isPending}
+                      className="h-auto min-h-11 w-full justify-start gap-2 whitespace-normal px-3 py-2 sm:min-h-10"
+                    >
+                      <Flame className="h-4 w-4 shrink-0" />
+                      <span className="text-left leading-tight">
+                        Drill weak areas
+                      </span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        goTo("__progress__", `${EDU_BASE}/progress`)
+                      }
+                      disabled={isPending}
+                      className="h-auto min-h-11 w-full justify-start gap-2 whitespace-normal px-3 py-2 sm:min-h-10"
+                    >
+                      <TrendingUp className="h-4 w-4 shrink-0" />
+                      <span className="text-left leading-tight">Progress</span>
+                    </Button>
+                  </div>
+                </div>
 
+                <div className="border-t border-border pt-2.5">
+                  <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Deck tools
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        goTo("__from_source__", `${EDU_BASE}/new/from-source`)
+                      }
+                      disabled={isPending}
+                      className="h-auto min-h-11 w-full justify-start gap-2 whitespace-normal px-3 py-2 sm:min-h-10"
+                    >
+                      <FileSearch className="h-4 w-4 shrink-0" />
+                      <span className="text-left leading-tight">
+                        From a document
+                      </span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        goTo("__import__", `${EDU_BASE}/new/import`)
+                      }
+                      disabled={isPending}
+                      className="h-auto min-h-11 w-full justify-start gap-2 whitespace-normal px-3 py-2 sm:min-h-10"
+                    >
+                      <Upload className="h-4 w-4 shrink-0" />
+                      <span className="text-left leading-tight">
+                        Import decks
+                      </span>
+                    </Button>
+                    {sets && sets.length > 0 ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          if (!exportingLibrary) void exportLibrary();
+                        }}
+                        disabled={exportingLibrary}
+                        className="h-auto min-h-11 w-full justify-start gap-2 whitespace-normal px-3 py-2 sm:min-h-10"
+                      >
+                        {exportingLibrary ? (
+                          <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4 shrink-0" />
+                        )}
+                        <span className="text-left leading-tight">
+                          Export library
+                        </span>
+                      </Button>
+                    ) : null}
+                    <Button
+                      variant="outline"
+                      onClick={() => goTo("__offline__", "/education/offline")}
+                      disabled={isPending}
+                      className="h-auto min-h-11 w-full justify-start gap-2 whitespace-normal px-3 py-2 sm:min-h-10"
+                    >
+                      <CloudOff className="h-4 w-4 shrink-0" />
+                      <span className="text-left leading-tight">
+                        Downloaded &amp; offline
+                      </span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        goTo(
+                          "__mandates__",
+                          featureIntelligenceHref("flashcards"),
+                        )
+                      }
+                      disabled={isPending}
+                      className="h-auto min-h-11 w-full justify-start gap-2 whitespace-normal px-3 py-2 sm:min-h-10"
+                    >
+                      <INTELLIGENCE_ICON className="h-4 w-4 shrink-0" />
+                      <span className="text-left leading-tight">
+                        Flashcards intelligence
+                      </span>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          ) : null}
+
+          {(actionLayout === "header" ||
+            (streak && streak.current_streak > 0)) && (
+            <div
+              className={cn(
+                "flex items-center gap-2",
+                actionLayout === "page" ? "pt-1 sm:pt-2" : "pt-2 sm:pt-4",
+              )}
+            >
+              <div className="flex shrink-0 items-center gap-3">
+                {streak && streak.current_streak > 0 && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300"
+                    title={`Longest streak: ${streak.longest_streak} day${streak.longest_streak === 1 ? "" : "s"}`}
+                  >
+                    <Flame className="h-3.5 w-3.5" />
+                    {streak.current_streak} day
+                    {streak.current_streak === 1 ? "" : "s"}
+                  </span>
+                )}
+              </div>
+              {actionLayout === "header" ? (
+                <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 sm:flex-initial">
+                  <Button
+                    onClick={newSet}
+                    disabled={isPending && navigatingId === NEW_SET_NAV_ID}
+                    className="h-11 w-full sm:h-9 sm:w-auto"
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    Create deck
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          )}
           {/* Search + filters */}
           <div className="mt-4 flex flex-col gap-2.5">
             <div className="relative">
