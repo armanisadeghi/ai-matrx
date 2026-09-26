@@ -2,27 +2,24 @@
  * components/errors/__tests__/error-renders-carry-alchemy.test.ts
  *
  * EVERY ERROR ON SCREEN CARRIES THE ALCHEMY MENU (Arman, 2026-09-25: "the
- * errors don't have an 'Alchemy' icon… find all places that need it"). The
- * menu lives in the shared error primitives, so a render inherits it by USING
- * one of them:
+ * errors don't have an 'Alchemy' icon… find all places that need it").
  *
- *   - `ErrorNotice`            (components/errors/ErrorNotice.tsx) — inline cards
- *   - destructive `Alert`      (components/ui/alert.tsx) — automatic
- *   - route/section boundaries (ErrorBoundaryView, ErrorBoundaryWithCapture)
- *   - error toasts             (lib/toast.ts decorator, components/ui/toaster.tsx)
+ * What an error display IS — semantic, per element, parsed from the JSX — lives
+ * in `error-display-census.ts`: role="alert" boxes of any colour, red-styled
+ * elements rendering an error value or a failure sentence, failure sentences in
+ * any colour, and amber / role="status" notices rendering an error value. Each
+ * one must carry the menu IN ITS OWN BOX (or sit inside a primitive that draws
+ * it: ErrorNotice, ErrorBox, a destructive Alert, ErrorBoundaryView). A carrier
+ * elsewhere in the file never excuses a box (RC-B12 verify F9).
  *
- * A file that hand-renders its own error — its own `role="alert"` box, its own
- * "Something went wrong" sentence — bypasses the menu. This guard
- * counts those bespoke renders per file across app/, components/, features/ and
- * lib/. The BASELINE is a census, not an exemption: a file may not gain a
- * bespoke render, a new file may not introduce one, and a file whose count
- * DROPS fails until its baseline entry is lowered — so the list only shrinks.
- *
- * Move a bespoke render onto `ErrorNotice` (or a destructive `Alert`), then
- * lower or delete its entry in `error-render-census.baseline.json`.
+ * The BASELINE (`error-render-census.baseline.json`) counts uncarried displays
+ * per file. It is a census, not an exemption: a file may not gain one, a new
+ * file may not introduce one, and a file whose count drops fails until its
+ * entry is lowered — the list only shrinks.
  */
 import fs from "node:fs";
 import path from "node:path";
+import { uncarriedErrorDisplays } from "./error-display-census";
 
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 const SCANNED_DIRS = ["app", "components", "features", "lib"];
@@ -37,67 +34,6 @@ const PRIMITIVES = new Set([
 ]);
 
 /**
- * What counts as a bespoke ERROR render (comments never count — a sentence in a
- * doc comment is not on screen):
- *   - an element carrying role="alert" whose opening tag is not styled as a
- *     warning / info / muted notice (those are not errors);
- *   - "Something went wrong" as rendered JSX text. The same words as a fallback
- *     STRING (a toast message, a thrown error) are not a render; the toast
- *     carries the menu on its own.
- * Each menu carrier in the file (`<ErrorAlchemyMenu>` inside a bespoke box, an
- * `<ErrorNotice>`, a destructive `<Alert>`, `<ErrorBoundaryView>`) offsets one
- * render — a bespoke-styled box or heading that carries the menu satisfies the
- * law. A file with more error renders than carriers is counted by the excess.
- * "Not saved" is not counted: it is also an ordinary status label (Sources'
- * "Saved / Not saved" column); a real Not-saved error box carries role="alert".
- */
-const ALERT_ATTR = /role=(?:"alert"|\{\s*["']alert["']\s*\})/g;
-const NOT_AN_ERROR_TAG = /warning|amber|yellow|text-info|border-info|muted-foreground/;
-const RENDERED_SOMETHING_WENT_WRONG = />\s*Something went wrong/g;
-/** Anything that puts the menu on screen beside the render it sits in. */
-const MENU_CARRIERS = /<ErrorAlchemyMenu\b|<ErrorNotice\b|<ErrorBoundaryView\b|<Alert\b[^>]*variant="destructive"/g;
-
-/**
- * Comments that START a line (after indentation), and JSX comment blocks
- * (a slash-star comment wrapped in braces).
- * Deliberately not a full lexer: JSX text holds apostrophes ("Couldn't"), so
- * string-aware scanning would swallow real markup; a mid-line comment is rare
- * and at worst over-counts, which the census makes visible.
- */
-export function stripComments(source: string): string {
-  return source
-    .replace(/\{\s*\/\*[\s\S]*?\*\/\s*\}/g, "")
-    .replace(/^([ \t]*)\/\*[\s\S]*?\*\//gm, "$1")
-    .replace(/^([ \t]*)\/\/[^\n]*/gm, "$1");
-}
-
-/** End of a JSX opening tag, skipping `>` inside `{…}` expressions. */
-function openingTagEnd(source: string, from: number): number {
-  let depth = 0;
-  for (let i = from; i < source.length; i += 1) {
-    const c = source[i];
-    if (c === "{") depth += 1;
-    else if (c === "}") depth -= 1;
-    else if (c === ">" && depth === 0) return i;
-  }
-  return source.length;
-}
-
-export function countBespokeErrorRenders(raw: string): number {
-  const source = stripComments(raw);
-  let alerts = 0;
-  for (const match of source.matchAll(ALERT_ATTR)) {
-    const at = match.index ?? 0;
-    const open = source.lastIndexOf("<", at);
-    const tag = source.slice(open, openingTagEnd(source, open + 1));
-    if (!NOT_AN_ERROR_TAG.test(tag)) alerts += 1;
-  }
-  const words = source.match(RENDERED_SOMETHING_WENT_WRONG)?.length ?? 0;
-  const carriers = source.match(MENU_CARRIERS)?.length ?? 0;
-  return Math.max(0, alerts + words - carriers);
-}
-
-/**
  * Bundles that cannot import host code: the kind sandbox runtime runs inside
  * an isolated iframe and relays its render error to the host, whose boundary
  * carries the menu.
@@ -106,8 +42,8 @@ const ISOLATED_BUNDLES = [/^features\/content-ir\/sandbox\/runtime\//];
 
 function isScannable(rel: string): boolean {
   if (!/\.tsx$/.test(rel)) return false;
-  if (ISOLATED_BUNDLES.some((pattern) => pattern.test(rel))) return false;
   if (PRIMITIVES.has(rel)) return false;
+  if (ISOLATED_BUNDLES.some((pattern) => pattern.test(rel))) return false;
   return (
     !/(^|\/)(__tests__|__mocks__)(\/|$)/.test(rel) &&
     !/\.(test|spec)\.tsx$/.test(rel)
@@ -124,42 +60,58 @@ function walk(dir: string, out: string[]): void {
   }
 }
 
-function censusTheTree(): Record<string, number> {
+export function censusTheTree(): Record<string, number> {
   const files: string[] = [];
   for (const dir of SCANNED_DIRS) walk(path.join(REPO_ROOT, dir), files);
   const found: Record<string, number> = {};
   for (const file of files) {
     const rel = path.relative(REPO_ROOT, file).split(path.sep).join("/");
     if (!isScannable(rel)) continue;
-    const n = countBespokeErrorRenders(fs.readFileSync(file, "utf8"));
+    const n = uncarriedErrorDisplays(fs.readFileSync(file, "utf8"), rel).length;
     if (n > 0) found[rel] = n;
   }
   return found;
 }
 
-describe("the bespoke-error detector (self-test)", () => {
-  it("counts every bespoke shape", () => {
-    expect(countBespokeErrorRenders('<div role="alert">x</div>')).toBe(1);
-    expect(countBespokeErrorRenders("<div role={'alert'}>x</div>")).toBe(1);
-    expect(countBespokeErrorRenders('<p className="text-destructive" role="alert">{e}</p>')).toBe(1);
-    expect(countBespokeErrorRenders("<h2>Something went wrong</h2>")).toBe(1);
+const count = (jsx: string) =>
+  uncarriedErrorDisplays(`export function C({ error, e }: any) { return (<>${jsx}</>); }`).length;
+
+describe("the error-display detector (self-test — each RC-B12 verify hole, red then green)", () => {
+  it("probe A: a bare role=alert box counts", () => {
+    expect(count('<div role="alert" className="text-destructive">{error}</div>')).toBe(1);
   });
-  it("does not count a render that uses the primitive or is not an error", () => {
+  it("probe B: a carrier elsewhere in the file never cancels an unrelated box", () => {
     expect(
-      countBespokeErrorRenders('<ErrorNotice title="Not saved" message={e} />'),
-    ).toBe(0);
-    expect(countBespokeErrorRenders('<Alert variant="destructive">x</Alert>')).toBe(0);
-    expect(countBespokeErrorRenders('<Badge>Not saved</Badge>')).toBe(0);
-    expect(
-      countBespokeErrorRenders('<div role="alert" className="text-destructive">x<ErrorAlchemyMenu input={i} /></div>'),
-    ).toBe(0);
-    expect(countBespokeErrorRenders('<p role="alert" className="text-warning">x</p>')).toBe(0);
-    expect(countBespokeErrorRenders('<h2>Something went wrong</h2><ErrorAlchemyMenu input={i} />')).toBe(0);
-    expect(
-      countBespokeErrorRenders('<p role="alert">a</p><p role="alert">b<ErrorAlchemyMenu /></p>'),
+      count('<ErrorNotice message="x" /><div role="alert" className="text-destructive">{error}</div>'),
     ).toBe(1);
-    expect(countBespokeErrorRenders('// it used to render role="alert" here\nconst a = 1;')).toBe(0);
-    expect(countBespokeErrorRenders('toast.error(e.message ?? "Something went wrong.")')).toBe(0);
+  });
+  it("probe C: red text rendering an error without role=alert counts", () => {
+    expect(count('<p className="text-destructive">Failed to save: {error}</p>')).toBe(1);
+  });
+  it("probe D: a grey role=alert box counts", () => {
+    expect(count('<div role="alert" className="text-muted-foreground">{error}</div>')).toBe(1);
+  });
+  it("a failure sentence counts in any colour, and an amber status notice rendering an error counts", () => {
+    expect(count("<h2>Something went wrong</h2>")).toBe(1);
+    expect(count("<p>We couldn't load this note.</p>")).toBe(1);
+    expect(count('<div role="status" className="text-amber-700">{error.message}</div>')).toBe(1);
+  });
+  it("one box with a title and a message counts once", () => {
+    expect(
+      count('<div role="alert" className="border-destructive"><p className="text-destructive">Could not save</p><p>{error}</p></div>'),
+    ).toBe(1);
+  });
+  it("does not count a box that carries the menu, or a render inside a primitive", () => {
+    expect(count('<div role="alert">{error}<ErrorAlchemyMenu error={error} /></div>')).toBe(0);
+    expect(count('<ErrorNotice title="Not saved" message={error} />')).toBe(0);
+    expect(count('<Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>')).toBe(0);
+    expect(count('<ErrorNotice title="t"><p className="text-destructive">{error}</p></ErrorNotice>')).toBe(0);
+  });
+  it("does not count red text that is not an error, or error words in comments and props", () => {
+    expect(count('<span className="text-destructive">*</span>')).toBe(0);
+    expect(count('<Button variant="destructive">Delete</Button>')).toBe(0);
+    expect(count("<Badge>Not published</Badge>")).toBe(0);
+    expect(count('{/* role="alert" used to live here */}<p>ok</p>')).toBe(0);
   });
 });
 
@@ -170,21 +122,20 @@ describe("every error render carries the Alchemy Menu", () => {
   const census = censusTheTree();
 
   if (process.env.ERROR_CENSUS_PRINT === "1") {
-    // Prints the live census so a baseline entry can be LOWERED by hand.
     console.log(JSON.stringify(census, null, 2));
   }
 
-  it("no file gained a bespoke error render, and no new file introduced one", () => {
+  it("no file gained an error display without the menu, and no new file introduced one", () => {
     const grown = Object.entries(census)
       .filter(([file, n]) => n > (baseline.files[file] ?? 0))
       .map(
         ([file, n]) =>
-          `${file}: ${n} bespoke error render(s), baseline ${baseline.files[file] ?? 0} — render it with <ErrorNotice> (components/errors/ErrorNotice.tsx) or a destructive <Alert> so it carries the Alchemy Menu`,
+          `${file}: ${n} error display(s) without the Alchemy Menu, baseline ${baseline.files[file] ?? 0} — render it with <ErrorNotice error={…}> or put <ErrorAlchemyMenu error={…} /> inside the box`,
       );
     expect(grown).toEqual([]);
   });
 
-  it("the baseline only shrinks — a file that moved onto the primitive lowers its entry", () => {
+  it("the baseline only shrinks — a fixed file lowers its entry", () => {
     const stale = Object.entries(baseline.files)
       .filter(([file, n]) => (census[file] ?? 0) < n)
       .map(

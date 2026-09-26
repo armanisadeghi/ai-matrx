@@ -12,6 +12,7 @@ import {
   buildErrorFixPrompt,
   buildErrorHumanText,
   describeError,
+  matchCapturedErrors,
   pickDeclaredSurfaceValues,
   type ErrorSurfaceSnapshot,
 } from "@/components/errors/error-alchemy";
@@ -157,5 +158,43 @@ describe("human text and fix prompt", () => {
     expect(prompt).toMatch(/diagnose/i);
     expect(prompt).toContain("Boom");
     expect(prompt).toContain("matrx-user/study-guide");
+  });
+});
+
+describe("the network error behind the sentence (RC-B12 verify F7)", () => {
+  const now = 1_000_000;
+  const captured = [
+    { source: "supabase", lastAt: now - 5_000, route: "/schedules", relation: "sch_task", operation: "select", code: "XX500", status: 500, message: "forced failure (RC-B12 verify)" },
+    { source: "supabase", lastAt: now - 600_000, route: "/schedules", relation: "old", code: "42501", status: 403, message: "stale" },
+    { source: "supabase", lastAt: now - 2_000, route: "/notes", relation: "notes", code: "X", status: 400, message: "other page" },
+  ];
+
+  it("fills code/status/relation from the error captured on this page just before", () => {
+    const matched = matchCapturedErrors(
+      "readAllRows(scheduler.sch_task user schedule roster): query failed — forced failure (RC-B12 verify)",
+      "/schedules",
+      captured,
+      now,
+    );
+    expect(matched.map((m) => m.relation)).toEqual(["sch_task"]);
+    const payload = buildErrorAlchemyPayload(
+      { message: "Couldn't load schedules", captured: matched },
+      surface,
+    );
+    const data = payload.data as { error: Record<string, unknown>; captured_errors: unknown[] };
+    expect(data.error).toMatchObject({ code: "XX500", status: 500, relation: "sch_task" });
+    expect(data.captured_errors).toHaveLength(1);
+  });
+
+  it("never borrows an error from another page or from long ago", () => {
+    expect(matchCapturedErrors("anything", "/elsewhere", captured, now)).toEqual([]);
+  });
+
+  it("keeps the caller's own error fields over the captured ones", () => {
+    const payload = buildErrorAlchemyPayload(
+      { message: "x", error: { code: "OWN", status: 409 }, captured: matchCapturedErrors("x", "/schedules", captured, now) },
+      surface,
+    );
+    expect((payload.data as { error: Record<string, unknown> }).error).toMatchObject({ code: "OWN", status: 409 });
   });
 });

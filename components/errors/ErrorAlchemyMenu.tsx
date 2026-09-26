@@ -16,11 +16,13 @@ import {
   buildErrorAlchemyPayload,
   buildErrorFixPrompt,
   buildErrorHumanText,
+  matchCapturedErrors,
   type ErrorAlchemyInput,
 } from "@/components/errors/error-alchemy";
 import { useErrorSurfaceSnapshot } from "@/components/errors/useErrorSurfaceSnapshot";
 import { cn } from "@/lib/utils";
 import { useRef } from "react";
+import { getSnapshot as getCapturedErrors } from "@/lib/diagnostics/errorCaptureStore";
 
 export type ErrorAlchemyMenuProps = {
   /**
@@ -41,8 +43,43 @@ export type ErrorAlchemyMenuProps = {
   label?: string;
 };
 
+/**
+ * The input at the click, enriched with the structured errors the Error
+ * Inspector captured on this page just before (code, HTTP status, relation,
+ * request id) — the facts a rendered sentence drops (RC-B12 verify F7).
+ */
 function resolve(input: NonNullable<ErrorAlchemyMenuProps["input"]>): ErrorAlchemyInput {
-  return typeof input === "function" ? input() : input;
+  const base = typeof input === "function" ? input() : input;
+  if (base.captured) return base;
+  try {
+    const captured = matchCapturedErrors(
+      base.message,
+      typeof window !== "undefined" ? window.location.pathname : null,
+      getCapturedErrors(),
+    );
+    return captured.length > 0 ? { ...base, captured } : base;
+  } catch {
+    return base;
+  }
+}
+
+/**
+ * The box this menu reports on: the element it sits in (every box puts the
+ * menu inside itself), else the nearest alert region. Never "nothing" — a menu
+ * with no box reads its parent (RC-B12 verify F8).
+ */
+export function errorRootFor(menu: Element | null): Element | null {
+  if (!menu) return null;
+  const marked = menu.closest('[role="alert"], [data-error-alchemy-root], [data-error-box]');
+  if (marked) return marked;
+  let el = menu.parentElement;
+  const wordsBesideMenu = (node: Element) => {
+    const clone = node.cloneNode(true) as Element;
+    clone.querySelectorAll("[data-error-alchemy-menu]").forEach((n) => n.remove());
+    return (clone.textContent ?? "").trim();
+  };
+  while (el && !wordsBesideMenu(el) && el.parentElement) el = el.parentElement;
+  return el;
 }
 
 export function ErrorAlchemyMenu({
@@ -61,10 +98,7 @@ export function ErrorAlchemyMenu({
   const input: NonNullable<ErrorAlchemyMenuProps["input"]> =
     given ??
     (() => ({
-      ...readRenderedError(
-        self.current?.closest('[role="alert"], [data-error-alchemy-root]') ??
-          null,
-      ),
+      ...readRenderedError(errorRootFor(self.current)),
       source: "inline" as const,
       ...(operation ? { operation } : {}),
       ...(records ? { records } : {}),

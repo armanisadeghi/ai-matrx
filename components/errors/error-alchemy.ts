@@ -60,6 +60,75 @@ export interface ErrorAlchemyInput {
   /** Any further facts the render holds (retry count, field name…). */
   details?: Record<string, unknown>;
   source?: ErrorAlchemySource;
+  /**
+   * Structured errors the Error Inspector captured on this page just before
+   * (see `matchCapturedErrors`). They carry what a rendered sentence drops:
+   * the code, HTTP status, relation and request id.
+   */
+  captured?: readonly CapturedErrorLike[];
+}
+
+/** The fields of a `lib/diagnostics` captured error the payload uses. */
+export interface CapturedErrorLike {
+  source: string;
+  lastAt: number;
+  route: string;
+  message: string;
+  relation?: string;
+  operation?: string;
+  code?: string;
+  status?: number;
+  userMessage?: string;
+  requestId?: string;
+  details?: string;
+  hint?: string;
+}
+
+const CAPTURE_WINDOW_MS = 120_000;
+
+function overlaps(sentence: string, message: string): boolean {
+  const a = sentence.toLowerCase();
+  const b = message.toLowerCase().trim();
+  if (!b) return false;
+  return a.includes(b) || b.includes(a) || a.includes(b.slice(0, 40));
+}
+
+/**
+ * The captured errors that explain THIS sentence: same route, within the last
+ * two minutes, newest first; when any of them says the same words as the
+ * sentence, only those. Never another page's error, never an old one.
+ */
+export function matchCapturedErrors(
+  sentence: string,
+  route: string | null,
+  captured: readonly CapturedErrorLike[],
+  now: number = Date.now(),
+): CapturedErrorLike[] {
+  const recent = captured
+    .filter((c) => route !== null && c.route === route && now - c.lastAt <= CAPTURE_WINDOW_MS)
+    .sort((a, b) => b.lastAt - a.lastAt);
+  const same = recent.filter(
+    (c) => overlaps(sentence, c.message) || (c.userMessage ? overlaps(sentence, c.userMessage) : false),
+  );
+  return (same.length > 0 ? same : recent).slice(0, 3);
+}
+
+function capturedFields(c: CapturedErrorLike): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries({
+      source: c.source,
+      relation: c.relation,
+      operation: c.operation,
+      code: c.code,
+      status: c.status,
+      message: c.message,
+      user_message: c.userMessage,
+      request_id: c.requestId,
+      details: c.details,
+      hint: c.hint,
+      at: new Date(c.lastAt).toISOString(),
+    }).filter(([, v]) => v !== undefined && v !== null && v !== ""),
+  );
 }
 
 export interface ErrorSurfaceSnapshot {
@@ -224,9 +293,14 @@ export function buildErrorAlchemyPayload(
   surface: ErrorSurfaceSnapshot,
 ): AgentPayloadInput {
   const described = describeError(input.error);
-  const code = input.code ?? described.code;
-  const status = input.status ?? described.status;
-  const error: DescribedError = {
+  const best = input.captured?.[0];
+  const code = input.code ?? described.code ?? best?.code;
+  const status = input.status ?? described.status ?? best?.status;
+  const error: DescribedError & { relation?: string; request_id?: string } = {
+    ...(best?.relation ? { relation: best.relation } : {}),
+    ...(best?.requestId ? { request_id: best.requestId } : {}),
+    ...(best?.details && !described.details ? { details: best.details } : {}),
+    ...(best?.hint && !described.hint ? { hint: best.hint } : {}),
     ...described,
     ...(code !== undefined ? { code } : {}),
     ...(status !== undefined ? { status } : {}),
@@ -254,6 +328,9 @@ export function buildErrorAlchemyPayload(
       records: input.records ? [...input.records] : [],
       unsaved_input: unsaved ? input.unsavedInput : null,
       ...(input.details ? { details: input.details } : {}),
+      ...(input.captured && input.captured.length > 0
+        ? { captured_errors: input.captured.map(capturedFields) }
+        : {}),
       surface: surfaceBlock(surface),
     },
     attributes: {
