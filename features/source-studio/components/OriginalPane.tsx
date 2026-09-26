@@ -74,8 +74,8 @@ export function OriginalPane({
       return (
         <Notice icon={<Mic className="h-5 w-5" />} title="No recording on file">
           This transcript was saved without its audio or video, so there is
-          nothing to play. Its segments, with their times, are in Parts and in
-          the text panes.
+          nothing to play. Its segments, with their times, are in the list on
+          the left and in the text panes.
         </Notice>
       );
     case "web-snapshot":

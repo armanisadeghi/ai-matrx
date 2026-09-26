@@ -26,10 +26,7 @@ export type MediaAdapter =
     | "outlook_mail"
     | "outlook_calendar"
     | "teams_chat"
-    | "google_picked_files"
-    /** Pages captured in a person's browser (capture ladder). Its Sources are
-     *  catalogued by `catalogued_source` edges, not listed by the catalog read. */
-    | "web_capture";
+    | "google_picked_files";
 export type LibraryKind = "channel" | "playlist";
 /**
  * THE PLATFORM'S OWN ENUM SPELLING, and it is not the one that reads naturally.

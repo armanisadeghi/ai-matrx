@@ -20,6 +20,11 @@ import { getCached, invalidate } from "@/features/files/hooks/blob-cache";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 import { mediaFilesClient } from "@/features/files/media-client/client";
 import { buildHeaders } from "@/lib/python-client";
+// The PDF's bytes are a GET for ONE file: its headers name that file's own
+// organization (never the picker) and a read never fails closed on "choose an
+// organization" — a fresh session opened a Source's PDF to "Select an
+// organization before sending this request" (2026-09-27, Source screen walk).
+import { withFileOrganization } from "@/features/files/api/fileOrganization";
 import { extractErrorMessage } from "@/utils/errors";
 
 export interface UsePdfRemoteSourceResult {
@@ -75,7 +80,7 @@ export function usePdfRemoteSource(
       setAuthFailure(null);
       void Promise.all([
         mediaFilesClient.ensureSession({ force: true }),
-        buildHeaders({}, false),
+        buildHeaders(withFileOrganization(fileId ?? "", {}), false, "GET"),
       ])
         .then(([, auth]) => {
           setPrivateAuth({ fileId, headers: auth.headers });
@@ -97,7 +102,7 @@ export function usePdfRemoteSource(
       };
     }
 
-    void Promise.all([mediaFilesClient.ensureSession(), buildHeaders({}, false)]).then(
+    void Promise.all([mediaFilesClient.ensureSession(), buildHeaders(withFileOrganization(fileId ?? "", {}), false, "GET")]).then(
       ([, auth]) => {
         if (active) setPrivateAuth({ fileId, headers: auth.headers });
       },

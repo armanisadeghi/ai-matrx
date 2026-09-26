@@ -18,8 +18,8 @@ import { CircleAlert } from "lucide-react";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
+import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
-import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
 import { sourceHref } from "@/features/sources/api/sourcesApi";
 import {
     SOURCE_KIND_LABEL,
@@ -38,31 +38,45 @@ export function CataloguedSourcesList({
     organizationId: string | null;
 }) {
     const router = useRouter();
-    const links = useContainerLinks({
-        containerType: "media_source_library",
-        containerId: libraryId,
-        orgId: organizationId,
-    });
-    const ids = cataloguedSourceIds(links.linksFor("processed_document"));
-    const idsKey = ids.join(",");
     const [rows, setRows] = useState<SourceListRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [nonce, setNonce] = useState(0);
 
     useEffect(() => {
-        if (links.status !== "ready") return undefined;
         let cancelled = false;
-        if (!idsKey) {
-            setRows([]);
-            setLoading(false);
-            setError(null);
-            return undefined;
-        }
         setLoading(true);
         void (async () => {
+            // The edges that file a Source in this Library (RLS: org members read them).
+            const edges = await readAllRows<{ source_id: string; label: string | null }>(
+                ({ from, to }) =>
+                    supabase
+                        .schema("platform")
+                        .from("associations")
+                        .select("source_id,label", { count: "exact" })
+                        .eq("target_type", "media_source_library")
+                        .eq("target_id", libraryId)
+                        .eq("source_type", "processed_document")
+                        .eq("label", CATALOGUED_SOURCE_LABEL)
+                        .is("deleted_at", null)
+                        .order("created_at", { ascending: false })
+                        .range(from, to) as unknown as PromiseLike<{
+                        data: { source_id: string; label: string | null }[] | null;
+                        error: { message: string } | null;
+                        count?: number | null;
+                    }>,
+                { label: "platform.associations (catalogued_source)" },
+            ).catch(() => null);
+            if (cancelled) return;
+            if (!edges) {
+                setError("This Library's Sources could not be listed.");
+                setLoading(false);
+                return;
+            }
+            const all = cataloguedSourceIds(
+                edges.map((e) => ({ resourceId: e.source_id, label: e.label })),
+            );
             // Chunked so a Library of hundreds never builds an over-long URL.
-            const all = idsKey.split(",");
             const found: SourceListRow[] = [];
             for (let i = 0; i < all.length; i += 100) {
                 const { data, error: readError } = await supabase
@@ -86,12 +100,9 @@ export function CataloguedSourcesList({
         return () => {
             cancelled = true;
         };
-    }, [idsKey, links.status, nonce]);
+    }, [libraryId, organizationId, nonce]);
 
-    const edgeError = links.status === "error" ? links.error : null;
-    const shownError =
-        error ??
-        (edgeError ? `This Library's Sources could not be listed. ${edgeError}` : null);
+    const shownError = error;
 
     const columns: MatrxColumnDef<SourceListRow>[] = [
         {
@@ -154,10 +165,7 @@ export function CataloguedSourcesList({
                         <Button
                             variant="link"
                             className="ml-1 h-auto p-0 text-sm"
-                            onClick={() => {
-                                void links.reload();
-                                setNonce((n) => n + 1);
-                            }}
+                            onClick={() => setNonce((n) => n + 1)}
                         >
                             Try again
                         </Button>
@@ -172,7 +180,7 @@ export function CataloguedSourcesList({
                     getRowId={(r) => r.id}
                     density="condensed"
                     viewTabs={false}
-                    isLoading={(links.status !== "ready" && links.status !== "error") || loading}
+                    isLoading={loading}
                     defaultSort={{ id: "created_at", direction: "desc" }}
                     searchText={(r) => `${r.name} ${r.canonical_identity ?? ""}`}
                     toolbar={{
