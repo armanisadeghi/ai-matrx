@@ -642,6 +642,13 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  // "Send to another agent…" from any response's ⋯ menu — pick an agent,
+  // choose where the content goes, open it prefilled and unsent.
+  sendToAgentDialog: {
+    label: "Send to another agent",
+    instanceMode: "singleton",
+    isWindow: false,
+  },
   addToRulebookDialog: {
     label: "Add to Rulebook",
     instanceMode: "singleton",

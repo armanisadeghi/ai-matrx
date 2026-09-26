@@ -16,6 +16,7 @@ import "./listen";
 import "./transfer";
 import "./ask";
 import "./ai";
+import "./send-to-agent";
 import "./chat";
 import "./contact";
 import "./export";

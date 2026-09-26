@@ -60,6 +60,7 @@ export const MENU_STRUCTURE: MenuSection[] = [
       "thumbs-down",
       "tts-play",
       "continue-in-chat",
+      "send-to-agent",
       "add-to-rulebook",
       "save-to-task",
       "copy",

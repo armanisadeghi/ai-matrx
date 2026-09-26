@@ -188,6 +188,8 @@ export type RichDocumentActionId =
   // Ask in chat — the content rides as a context entry, never as user text
   | "quote-into-chat"
   | "ask-followup"
+  // Hand the content to ANY agent (picker → destination → prefilled window)
+  | "send-to-agent"
   // Text-field AI powers (ProTextarea hosts them)
   | "text-cleanup"
   | "text-help"
