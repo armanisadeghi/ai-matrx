@@ -65,3 +65,22 @@ export function pathHref(path: string): string {
 export function commitHref(commit: string): string {
   return `${REPO_URLS["matrx-frontend"]}/commit/${commit}`;
 }
+
+/**
+ * A repo-relative file door in either repository — line-anchored when the finding names a
+ * line, the file itself when it does not (the check-findings page: many items name a file
+ * or a rule without a line). Same default-branch reasoning as above.
+ */
+export function repositoryFileHref(
+  repository: SourceRepository,
+  file: string,
+  line?: number | null,
+): string {
+  const anchor = line != null && line > 0 ? `#L${line}` : "";
+  return `${REPO_URLS[repository]}/blob/${DEFAULT_BRANCH}/${encodeURI(file)}${anchor}`;
+}
+
+/** A commit in either repository, as provenance (see `commitHref`). */
+export function repositoryCommitHref(repository: SourceRepository, commit: string): string {
+  return `${REPO_URLS[repository]}/commit/${commit}`;
+}

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1267,
+  "routeCount": 1279,
   "routes": [
     {
       "pattern": "/",
@@ -167,6 +167,11 @@
       "pattern": "/administration/agents/skills/ingest",
       "status": "live",
       "source": "app/(admin)/administration/agents/skills/ingest/page.tsx"
+    },
+    {
+      "pattern": "/administration/agents/support",
+      "status": "live",
+      "source": "app/(admin)/administration/agents/support/page.tsx"
     },
     {
       "pattern": "/administration/agents/system-agents",
@@ -457,6 +462,11 @@
       "pattern": "/administration/automation/scheduling/tasks",
       "status": "live",
       "source": "app/(admin)/administration/automation/scheduling/tasks/page.tsx"
+    },
+    {
+      "pattern": "/administration/automation/scheduling/tasks/[id]",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/scheduling/tasks/[id]/page.tsx"
     },
     {
       "pattern": "/administration/automation/scheduling/templates",
@@ -769,6 +779,16 @@
       "source": "app/(admin)/administration/intelligence/mandates/health/page.tsx"
     },
     {
+      "pattern": "/administration/intelligence/mandates/support",
+      "status": "live",
+      "source": "app/(admin)/administration/intelligence/mandates/support/page.tsx"
+    },
+    {
+      "pattern": "/administration/intelligence/mandates/support/[mandateId]",
+      "status": "live",
+      "source": "app/(admin)/administration/intelligence/mandates/support/[mandateId]/page.tsx"
+    },
+    {
       "pattern": "/administration/intelligence/mandates/unconverted",
       "status": "live",
       "source": "app/(admin)/administration/intelligence/mandates/unconverted/page.tsx"
@@ -947,6 +967,11 @@
       "pattern": "/administration/reporting",
       "status": "live",
       "source": "app/(admin)/administration/reporting/page.tsx"
+    },
+    {
+      "pattern": "/administration/reporting/check-findings",
+      "status": "live",
+      "source": "app/(admin)/administration/reporting/check-findings/page.tsx"
     },
     {
       "pattern": "/administration/reporting/codex-usage",
@@ -1482,6 +1507,11 @@
       "pattern": "/agents/battle/conversation",
       "status": "live",
       "source": "app/(core)/agents/battle/conversation/page.tsx"
+    },
+    {
+      "pattern": "/agents/battle/conversation/[setId]",
+      "status": "live",
+      "source": "app/(core)/agents/battle/conversation/[setId]/page.tsx"
     },
     {
       "pattern": "/agents/battle/model",
@@ -2282,6 +2312,11 @@
       "pattern": "/education/flashcards",
       "status": "live",
       "source": "app/(core)/education/flashcards/page.tsx"
+    },
+    {
+      "pattern": "/education/flashcards-2",
+      "status": "live",
+      "source": "app/(core)/education/flashcards-2/page.tsx"
     },
     {
       "pattern": "/education/flashcards/[setId]",
@@ -3326,6 +3361,16 @@
       "source": "app/(core)/intelligence/[feature]/page.tsx"
     },
     {
+      "pattern": "/intelligence/[feature]/unassigned",
+      "status": "live",
+      "source": "app/(core)/intelligence/[feature]/unassigned/page.tsx"
+    },
+    {
+      "pattern": "/intelligence/card-options",
+      "status": "live",
+      "source": "app/(core)/intelligence/card-options/page.tsx"
+    },
+    {
       "pattern": "/invitations/class/accept/[token]",
       "status": "live",
       "source": "app/(core)/invitations/class/accept/[token]/page.tsx"
@@ -3449,6 +3494,11 @@
       "pattern": "/knowledge/search",
       "status": "live",
       "source": "app/(core)/knowledge/search/page.tsx"
+    },
+    {
+      "pattern": "/knowledge/sources/[id]",
+      "status": "live",
+      "source": "app/(core)/knowledge/sources/[id]/page.tsx"
     },
     {
       "pattern": "/knowledge/viewer/[id]",
@@ -3579,6 +3629,11 @@
       "pattern": "/mandates/[mandateKey]",
       "status": "live",
       "source": "app/(core)/mandates/[mandateKey]/page.tsx"
+    },
+    {
+      "pattern": "/mandates/id/[id]",
+      "status": "live",
+      "source": "app/(core)/mandates/id/[id]/page.tsx"
     },
     {
       "pattern": "/mandates/list-preview",
@@ -5969,6 +6024,11 @@
       "pattern": "/sms",
       "status": "live",
       "source": "app/(public)/sms/page.tsx"
+    },
+    {
+      "pattern": "/sms/personal-staff",
+      "status": "live",
+      "source": "app/(public)/sms/personal-staff/page.tsx"
     },
     {
       "pattern": "/staff",

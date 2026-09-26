@@ -10,6 +10,7 @@
  *   /administration/reporting/dead-ends        No Dead Ends scoreboard — committed report.json snapshot
  *   /administration/reporting/unwired          Unwired Work scoreboard — committed report.json snapshot
  *   /administration/reporting/lint-debt        ESLint debt scoreboard — committed report.json snapshot
+ *   /administration/reporting/check-findings   live ops.check_run / ops.check_item board (features/admin/check-findings)
  *
  * The three scoreboards (dead-ends, unwired, lint-debt) are the SAME pattern
  * (`features/admin/{dead-ends,unwired,lint-debt}/`): a committed snapshot
@@ -86,6 +87,13 @@ const groups: SurfaceValueGroup[] = [
     description:
       "Repo-wide ESLint error backlog classified bug/correctness/doctrine/style: committed scan totals, the active drill-down filter, worst offenders, and staleness warnings.",
   },
+  {
+    key: "check_findings",
+    label: "Check findings",
+    sortOrder: 700,
+    description:
+      "The live checks store: every static check's last run, open counts, and one check's findings by state.",
+  },
 ];
 
 const surfaceSpecific: SurfaceValue[] = [
@@ -94,7 +102,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "reporting_section",
     label: "Reporting section",
     description:
-      'Which child of the Reporting admin family is active: "hub", "events", "reports", "dead_ends", "unwired", or "lint_debt". Always present — each emitter declares which one it is.',
+      'Which child of the Reporting admin family is active: "hub", "events", "reports", "dead_ends", "unwired", "lint_debt", or "check_findings". Always present — each emitter declares which one it is.',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 12,
@@ -331,6 +339,41 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 625,
     group: "lint_debt",
   },
+
+  // ── Check findings ───────────────────────────────────────────────────
+  {
+    name: "check_findings_totals",
+    label: "Check findings totals",
+    description:
+      "Board totals read live from ops.proof_check / ops.check_run / ops.check_item: checks, open (real items, reserved check records excluded), broken, overdue (last run older than 2x cadence), never ran. Present only on reporting_section=check_findings.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 120,
+    sortOrder: 700,
+    group: "check_findings",
+  },
+  {
+    name: "check_findings_selected_check",
+    label: "Selected check",
+    description:
+      "The check whose findings are open (id, stable_id, repo), or absent on the board view. Present only on reporting_section=check_findings.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 120,
+    sortOrder: 705,
+    group: "check_findings",
+  },
+  {
+    name: "check_findings_state_filter",
+    label: "Check findings state filter",
+    description:
+      'Which findings of the selected check are listed: "open" (open + claimed), "accepted", "fixed", "broken", or "retired". Present only when a check is selected.',
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 8,
+    sortOrder: 710,
+    group: "check_findings",
+  },
 ];
 
 export const adminReportingManifest: SurfaceManifest = {
@@ -363,7 +406,7 @@ Only the values matching the current reporting_section are populated — everyth
  */
 export function createAdminReportingScope(values: {
   // alwaysAvailable: true → required
-  reporting_section: "hub" | "events" | "reports" | "dead_ends" | "unwired" | "lint_debt";
+  reporting_section: "hub" | "events" | "reports" | "dead_ends" | "unwired" | "lint_debt" | "check_findings";
   // alwaysAvailable: false → optional
   context?: Record<string, unknown>;
   events_action_prefix?: string;
@@ -385,6 +428,9 @@ export function createAdminReportingScope(values: {
   lint_debt_worst_features?: unknown[];
   lint_debt_by_rule?: unknown[];
   lint_debt_problems?: string[];
+  check_findings_totals?: Record<string, unknown>;
+  check_findings_selected_check?: Record<string, unknown>;
+  check_findings_state_filter?: string;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;
 }

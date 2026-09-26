@@ -1513,6 +1513,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Check findings",
+        description:
+          "Every check's last run, verdict, scan completeness, open findings and the oldest one's age — live from the checks store. Drill into a check to see its findings by work unit, and mark a false alarm OK once, with a reason, so it never raises again.",
+        iconName: "ListChecks",
+        link: "/administration/reporting/check-findings",
+        isNew: true,
+      },
+      {
         title: "Unwired Work",
         description:
           "Purpose-built components, services, routers, host installers, and scheduler handlers that still need a runtime path. Ranked by implementation size with a finish-the-wiring brief on every row.",
