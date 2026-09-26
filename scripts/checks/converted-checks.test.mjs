@@ -34,7 +34,10 @@ function run(cmd, items) {
  * One row per converted check:
  *   cmd        — the runner's command for it (scripts/run-release-gates.sh --list)
  *   allowKeys  — the check's allowlist/baseline, as the keys the check itself matches on
- *   staleKeys  — (output) → keys the check reports as stale this run (they cannot be emitted)
+ *   keyShape   — every allowlist key and every emitted key has this shape (same key space)
+ *   staleKeys  — (output) → keys the check reports as stale this run (they cannot be emitted).
+ *                A check that reports no staleness omits it: then an allowlist key the run did not
+ *                match is listed as a diagnostic (a stale entry to prune), not a failure.
  */
 export const CONVERTED = [
   {
@@ -46,9 +49,21 @@ export const CONVERTED = [
         (a[d] ?? []).map((e) => `${d}|${e.file}|${e.line ?? "*"}`),
       );
     },
+    keyShape: /^(retiredSpelling|collapsedUnion|onlyYouClaim)\|[^|]+\|(\*|\d+)$/,
     staleKeys(out) {
       return [...out.matchAll(/\[STALE\] (\S+?)(?::(\d+))? \((\w+)\)/g)].map((m) => `${m[3]}|${m[1]}|${m[2] ?? "*"}`);
     },
+  },
+  {
+    id: "access-guard-check",
+    cmd: "pnpm exec tsx scripts/check-access-guards.ts --strict",
+    allowKeys() {
+      const a = json("scripts/access-guards/allowlist.json");
+      return ["lowestTierDefault", "activeOrgAccess", "handRolledLadder", "bareRlsList"].flatMap((d) =>
+        (a[d] ?? []).map((e) => `${d}|${e.file}|${e.line ?? "*"}`),
+      );
+    },
+    keyShape: /^(lowestTierDefault|activeOrgAccess|handRolledLadder|bareRlsList)\|[^|]+\|(\*|\d+)$/,
   },
 ];
 
@@ -64,14 +79,21 @@ for (const check of CONVERTED) {
     assert.ok(items.length > 0, `${check.id} printed no MATRX-ITEM lines`);
 
     const allow = new Set(check.allowKeys());
-    const stale = new Set(check.staleKeys(itemRun.out));
+    const badShape = [...allow, ...items.map((i) => i.key)].filter((k) => !check.keyShape.test(k));
+    assert.deepEqual(badShape, [], "keys outside the check's key space");
     const known = items.filter((i) => i.status === "known").map((i) => i.key);
     const fresh = items.filter((i) => i.status === "new").map((i) => i.key);
 
     const knownNotAllowed = known.filter((k) => !allow.has(k));
     assert.deepEqual(knownNotAllowed, [], "known keys that are not allowlist keys");
-    const allowedNotEmitted = [...allow].filter((k) => !stale.has(k) && !known.includes(k));
-    assert.deepEqual(allowedNotEmitted, [], "allowlist keys the check neither matched nor reported stale");
+    if (check.staleKeys) {
+      const stale = new Set(check.staleKeys(itemRun.out));
+      const allowedNotEmitted = [...allow].filter((k) => !stale.has(k) && !known.includes(k));
+      assert.deepEqual(allowedNotEmitted, [], "allowlist keys the check neither matched nor reported stale");
+    } else {
+      const unmatched = [...allow].filter((k) => !known.includes(k));
+      if (unmatched.length) console.log(`# ${check.id}: ${unmatched.length} allowlist key(s) matched nothing this run (stale?): ${unmatched.slice(0, 5).join(", ")}`);
+    }
     const newButAllowed = fresh.filter((k) => allow.has(k));
     assert.deepEqual(newButAllowed, [], "new keys that ARE allowlist keys");
   });

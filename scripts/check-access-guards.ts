@@ -36,6 +36,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 import { repoFiles } from "./lib/repo-files";
+import { emitItem } from "./checks/items.mjs";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");
@@ -79,13 +80,32 @@ function loadAllowlist(): Allowlist {
   };
 }
 
-function isAllowed(entries: AllowEntry[], file: string, line: number): boolean {
-  return entries.some((e) => {
-    if (e.file !== file) return false;
-    if (e.line == null) return true; // file-level allow
-    return Math.abs(e.line - line) <= 2;
-  });
+/**
+ * C5 item key — the allowlist entry's own identity: `<section>|<file>|<line or *>`. A known item is
+ * the entry that suppressed it; a new finding's key is the file-level entry that would cover it.
+ */
+function itemKey(section: keyof Allowlist, file: string, line?: number): string {
+  return `${section}|${file}|${line ?? "*"}`;
 }
+
+function isAllowed(section: keyof Allowlist, entries: AllowEntry[], file: string, line: number): boolean {
+  let allowed = false;
+  for (const e of entries) {
+    if (e.file !== file) continue;
+    if (e.line != null && Math.abs(e.line - line) > 2) continue; // file-level allow when no line
+    emitItem({ key: itemKey(section, e.file, e.line), status: "known", file, line, rule: section });
+    allowed = true;
+  }
+  return allowed;
+}
+
+// Which allowlist section covers each detector (for the C5 key of a NEW finding).
+const DETECTOR_SECTION: Record<string, keyof Allowlist> = {
+  "LOWEST-TIER DEFAULT": "lowestTierDefault",
+  "ACTIVE-ORG ACCESS": "activeOrgAccess",
+  "HAND-ROLLED LADDER": "handRolledLadder",
+  "BARE-RLS LIST": "bareRlsList",
+};
 
 // ─── Repo file listing ──────────────────────────────────────────────────────
 
@@ -225,7 +245,7 @@ function detectLowestTierDefault(allow: Allowlist) {
       const lineNo = i + 1;
       const window = lines.slice(Math.max(0, i - 3), Math.min(lines.length, i + 4)).join("\n");
       if (JUSTIFY_RE.test(window)) continue;
-      if (isAllowed(allow.lowestTierDefault, rel, lineNo)) continue;
+      if (isAllowed("lowestTierDefault", allow.lowestTierDefault, rel, lineNo)) continue;
 
       pushFinding({
         detector: "LOWEST-TIER DEFAULT",
@@ -304,7 +324,7 @@ function detectActiveOrgAccess(allow: Allowlist) {
       const m = importRe.exec(lines[i]);
       if (!m) continue;
       const lineNo = i + 1;
-      if (isAllowed(allow.activeOrgAccess, rel, lineNo)) continue;
+      if (isAllowed("activeOrgAccess", allow.activeOrgAccess, rel, lineNo)) continue;
       pushFinding({
         detector: "ACTIVE-ORG ACCESS",
         severity: "FAIL",
@@ -331,7 +351,7 @@ function detectActiveOrgAccess(allow: Allowlist) {
       for (let j = i + 1; j < windowEnd; j++) {
         if (/\.eq\(\s*["']organization_id["']/.test(lines[j])) {
           const lineNo = j + 1;
-          if (isAllowed(allow.activeOrgAccess, rel, lineNo)) continue;
+          if (isAllowed("activeOrgAccess", allow.activeOrgAccess, rel, lineNo)) continue;
           pushFinding({
             detector: "ACTIVE-ORG ACCESS",
             severity: "WARN",
@@ -402,7 +422,7 @@ function detectHandRolledLadder(allow: Allowlist) {
       const hitsShape = shapeStartsHere && !shapeIsEnumVocabulary;
       if (!hitsRank && !hitsShape) continue;
       const lineNo = i + 1;
-      if (isAllowed(allow.handRolledLadder, rel, lineNo)) continue;
+      if (isAllowed("handRolledLadder", allow.handRolledLadder, rel, lineNo)) continue;
       pushFinding({
         detector: "HAND-ROLLED LADDER",
         severity: hitsRank ? "FAIL" : "WARN",
@@ -477,7 +497,7 @@ function detectBareRlsList(allow: Allowlist) {
       if (VIEW_LAW_COMMENT_RE.test(above) || VIEW_LAW_COMMENT_RE.test(chain)) continue;
 
       const lineNo = i + 1;
-      if (isAllowed(allow.bareRlsList, rel, lineNo)) continue;
+      if (isAllowed("bareRlsList", allow.bareRlsList, rel, lineNo)) continue;
 
       pushFinding({
         detector: "BARE-RLS LIST",
@@ -507,6 +527,19 @@ function main() {
   detectActiveOrgAccess(allow);
   detectHandRolledLadder(allow);
   detectBareRlsList(allow);
+
+  for (const f of findings) {
+    const section = DETECTOR_SECTION[f.detector];
+    if (!section) throw new Error(`no allowlist section for detector ${f.detector}`);
+    emitItem({
+      key: itemKey(section, f.file),
+      status: "new",
+      title: `${f.severity} ${f.file}:${f.line} — ${f.detector}`,
+      file: f.file,
+      line: f.line,
+      rule: section,
+    });
+  }
 
   console.log("");
   console.log(`${BOLD}  ACCESS GUARD CHECK${RESET}`);
