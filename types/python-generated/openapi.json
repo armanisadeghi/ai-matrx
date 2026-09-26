@@ -5014,89 +5014,6 @@
         }
       }
     },
-    "/ai/google/background-interactions": {
-      "post": {
-        "tags": [
-          "AI"
-        ],
-        "summary": "Create Background Interaction",
-        "operationId": "create_background_interaction_ai_google_background_interactions_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BackgroundInteractionStart"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BackgroundInteractionView"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/ai/google/background-interactions/{execution_id}": {
-      "get": {
-        "tags": [
-          "AI"
-        ],
-        "summary": "Get Background Interaction",
-        "operationId": "get_background_interaction_ai_google_background_interactions__execution_id__get",
-        "parameters": [
-          {
-            "name": "execution_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Execution Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BackgroundInteractionView"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v2/ai/manual": {
       "post": {
         "tags": [
@@ -111141,210 +111058,6 @@
         "title": "BackfillPassResult",
         "description": "What one pass actually did. Every field is measured, never assumed."
       },
-      "BackgroundInteractionStart": {
-        "properties": {
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "Organization context for the request; omitted to use the authenticated context."
-          },
-          "project_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Project Id",
-            "description": "Optional associated project selected by the caller."
-          },
-          "task_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Task Id",
-            "description": "Optional associated task selected by the caller."
-          },
-          "source_app": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source App",
-            "description": "Stable application slug that initiated the request."
-          },
-          "source_feature": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Feature",
-            "description": "Stable feature slug within the source application."
-          },
-          "initiation": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "auto",
-                  "user"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Initiation",
-            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
-          },
-          "model": {
-            "type": "string",
-            "title": "Model"
-          },
-          "input": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "items": {
-                  "additionalProperties": {
-                    "$ref": "#/components/schemas/JsonValue"
-                  },
-                  "type": "object"
-                },
-                "type": "array"
-              }
-            ],
-            "title": "Input"
-          },
-          "previous_interaction_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Previous Interaction Id"
-          },
-          "idempotency_key": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Idempotency Key"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "model",
-          "input"
-        ],
-        "title": "BackgroundInteractionStart"
-      },
-      "BackgroundInteractionView": {
-        "properties": {
-          "execution_id": {
-            "type": "string",
-            "title": "Execution Id"
-          },
-          "status": {
-            "type": "string",
-            "title": "Status"
-          },
-          "interaction_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Interaction Id"
-          },
-          "provider_status": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Provider Status"
-          },
-          "steps": {
-            "items": {
-              "additionalProperties": {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              "type": "object"
-            },
-            "type": "array",
-            "title": "Steps"
-          },
-          "outputs": {
-            "items": {
-              "additionalProperties": {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              "type": "object"
-            },
-            "type": "array",
-            "title": "Outputs"
-          },
-          "error": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "$ref": "#/components/schemas/JsonValue"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error"
-          }
-        },
-        "type": "object",
-        "required": [
-          "execution_id",
-          "status"
-        ],
-        "title": "BackgroundInteractionView"
-      },
       "BacklinkEnrichmentBody": {
         "properties": {
           "organization_id": {
@@ -176852,6 +176565,7 @@
             "enum": [
               "analytics",
               "calendar",
+              "calendar_shared",
               "contacts",
               "docs",
               "drive_files",
@@ -176912,6 +176626,19 @@
             "type": "array",
             "title": "Mcp Tool Actions"
           },
+          "http_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Http Actions",
+            "default": []
+          },
+          "consent_requestable": {
+            "type": "boolean",
+            "title": "Consent Requestable",
+            "default": true
+          },
           "limitation": {
             "type": "string",
             "title": "Limitation"
@@ -176964,6 +176691,7 @@
             "enum": [
               "non_sensitive",
               "restricted",
+              "unverified",
               "verified_sensitive"
             ],
             "title": "Provider Classification"
@@ -177123,6 +176851,7 @@
                   "enum": [
                     "analytics",
                     "calendar",
+                    "calendar_shared",
                     "contacts",
                     "docs",
                     "drive_files",
@@ -177168,6 +176897,7 @@
               "enum": [
                 "analytics",
                 "calendar",
+                "calendar_shared",
                 "contacts",
                 "docs",
                 "drive_files",
@@ -177483,6 +177213,7 @@
             "enum": [
               "analytics",
               "calendar",
+              "calendar_shared",
               "contacts",
               "docs",
               "drive_files",

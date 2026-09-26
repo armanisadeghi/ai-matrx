@@ -2297,40 +2297,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/ai/google/background-interactions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create Background Interaction */
-        post: operations["create_background_interaction_ai_google_background_interactions_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ai/google/background-interactions/{execution_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Background Interaction */
-        get: operations["get_background_interaction_ai_google_background_interactions__execution_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v2/ai/manual": {
         parameters: {
             query?: never;
@@ -48897,72 +48863,6 @@ export interface components {
             /** Skipped */
             skipped?: string | null;
         };
-        /** BackgroundInteractionStart */
-        BackgroundInteractionStart: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /**
-             * Source App
-             * @description Stable application slug that initiated the request.
-             */
-            source_app?: string | null;
-            /**
-             * Source Feature
-             * @description Stable feature slug within the source application.
-             */
-            source_feature?: string | null;
-            /**
-             * Initiation
-             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
-             */
-            initiation?: ("auto" | "user") | null;
-            /** Model */
-            model: string;
-            /** Input */
-            input: string | {
-                [key: string]: components["schemas"]["JsonValue"];
-            }[];
-            /** Previous Interaction Id */
-            previous_interaction_id?: string | null;
-            /** Idempotency Key */
-            idempotency_key?: string | null;
-        };
-        /** BackgroundInteractionView */
-        BackgroundInteractionView: {
-            /** Execution Id */
-            execution_id: string;
-            /** Status */
-            status: string;
-            /** Interaction Id */
-            interaction_id?: string | null;
-            /** Provider Status */
-            provider_status?: string | null;
-            /** Steps */
-            steps?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            }[];
-            /** Outputs */
-            outputs?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            }[];
-            /** Error */
-            error?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            } | null;
-        };
         /** BacklinkEnrichmentBody */
         BacklinkEnrichmentBody: {
             /**
@@ -76893,7 +76793,7 @@ export interface components {
              * Key
              * @enum {string}
              */
-            key: "analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
+            key: "analytics" | "calendar" | "calendar_shared" | "contacts" | "docs" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
             /** Title */
             title: string;
             /** User Outcome */
@@ -76911,6 +76811,16 @@ export interface components {
             native_tool_actions: string[];
             /** Mcp Tool Actions */
             mcp_tool_actions: string[];
+            /**
+             * Http Actions
+             * @default []
+             */
+            http_actions?: string[];
+            /**
+             * Consent Requestable
+             * @default true
+             */
+            consent_requestable?: boolean;
             /** Limitation */
             limitation: string;
             /** Remedy */
@@ -76931,7 +76841,7 @@ export interface components {
              * Provider Classification
              * @enum {string}
              */
-            provider_classification: "non_sensitive" | "restricted" | "verified_sensitive";
+            provider_classification: "non_sensitive" | "restricted" | "unverified" | "verified_sensitive";
         };
         /** GoogleConnectionCredentialResponse */
         GoogleConnectionCredentialResponse: {
@@ -76977,14 +76887,14 @@ export interface components {
             /** Capability Key */
             capability_key?: ("calendar" | "contacts" | "tag_manager" | "tasks" | "youtube_analytics") | null;
             /** Capability Keys */
-            capability_keys?: ("analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[] | null;
+            capability_keys?: ("analytics" | "calendar" | "calendar_shared" | "contacts" | "docs" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[] | null;
         };
         /** GoogleExchangeResponse */
         GoogleExchangeResponse: {
             /** Connection Id */
             connection_id: string;
             /** Connected Capability Keys */
-            connected_capability_keys?: ("analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[];
+            connected_capability_keys?: ("analytics" | "calendar" | "calendar_shared" | "contacts" | "docs" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[];
             /** Refused Capability Keys */
             refused_capability_keys?: components["schemas"]["GoogleProductRefusal"][];
         };
@@ -77071,7 +76981,7 @@ export interface components {
              * Key
              * @enum {string}
              */
-            key: "analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
+            key: "analytics" | "calendar" | "calendar_shared" | "contacts" | "docs" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
             /** Error */
             error: string;
             /** Message */
@@ -140325,70 +140235,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EmbeddingResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_background_interaction_ai_google_background_interactions_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BackgroundInteractionStart"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BackgroundInteractionView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_background_interaction_ai_google_background_interactions__execution_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                execution_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BackgroundInteractionView"];
                 };
             };
             /** @description Validation Error */

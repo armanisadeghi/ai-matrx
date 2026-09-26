@@ -9,8 +9,9 @@
 // by the mandate ladder, never here. The run opens in the platform's flexible
 // agent panel, the canonical viewer for a streamed, cited report.
 //
-// The old direct card (GoogleBackgroundAgentCard) sits beside this one until
-// Arman approves its removal (common-docs UI-REGISTER, BYPASS-CENSUS).
+// The old direct card (GoogleBackgroundAgentCard, and its Antigravity sandbox
+// option) was removed 2026-09-26 (Arman approved; common-docs UI-REGISTER,
+// BYPASS-CENSUS row 34).
 
 import { useEffect, useState } from "react";
 import { Loader2, Play, Telescope } from "lucide-react";
