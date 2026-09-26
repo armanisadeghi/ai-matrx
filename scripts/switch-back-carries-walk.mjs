@@ -73,7 +73,7 @@ try {
   if (out.signed_in_as !== "admin@admin.com") throw new Error(`signed in as ${out.signed_in_as}`);
   await setOrganization(page, ORG_NAME).catch((e) => (out.set_org = String(e?.message ?? e)));
 
-  if (PHASE === "edit") {
+  if (PHASE === "edit" && process.env.SKIP_EDIT !== "1") {
     await visit("table-before-edit", `/data/${TABLE}`, async () => (await text()).includes(ROW_TEXT), 1600);
     const row = page.locator("tr, [role=row]", { hasText: ROW_TEXT }).first();
     const cell = row.locator("td, [role=gridcell], [role=cell]", { hasText: OLD_VALUE }).first();
@@ -86,7 +86,8 @@ try {
     await shot("table-after-edit-1600");
     out.row_after_edit = await row.innerText().catch(() => null);
     out.edit_calls = [...new Set(calls)];
-
+  }
+  if (PHASE === "edit") {
     await visit("home-before-create", "/data", homeLoaded, 1600);
     await button("Create Table").click();
     await until("create dialog", () => page.locator("#tableName").isVisible(), 20000);
@@ -95,10 +96,32 @@ try {
     await sleep(1500);
     calls = [];
     await page.getByRole("dialog").getByRole("button", { name: "Create Table", exact: true }).click();
+    await sleep(3000);
+    // The one birth asks which organization when none is active: the person picks, it resumes.
+    const ask = page.getByText("Which workspace is this for?");
+    if (await ask.isVisible().catch(() => false)) {
+      out.asked_for_organization = true;
+      await page.getByText(ORG_NAME, { exact: true }).last().scrollIntoViewIfNeeded();
+      await page.getByText(ORG_NAME, { exact: true }).last().click();
+      await page.getByRole("button", { name: "Continue", exact: true }).click();
+    }
     await sleep(8000);
     out.create_calls = [...new Set(calls)];
     await shot("after-create-1600");
     out.after_create_text = await text();
+  } else if (PHASE === "edit") {
+    // handled above
+  } else if (PHASE === "trash") {
+    // Personal Trash: a moved older table offers Switch back only into organizations I own or run.
+    for (const width of [1600, 390]) {
+      await visit("personal-trash", "/trash", async () => (await text()).includes("Trash"), width);
+      out.pages[`personal-trash@${width}`].links = await page
+        .locator("[data-testid=moved-older-table-switch-back]")
+        .evaluateAll((els) => els.map((e) => e.getAttribute("href")));
+      out.pages[`personal-trash@${width}`].no_link_rows = await page
+        .locator("[data-testid=moved-older-table-moved-by-its-organization]")
+        .count();
+    }
   } else if (PHASE === "archive") {
     // Archive ONE of admin's own tables through the home's own delete control (Trash keeps it).
     const name = process.env.ARCHIVE_NAME;
