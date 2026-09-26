@@ -1,10 +1,12 @@
 // File: features/user-profile/hooks/useUserFormProfile.ts
 //
-// Fetch + save the rich `users.user_form_profile` (the "agent on behalf
-// of the user" data — legal name, addresses, phones, emails, social
-// handles, emergency contacts, etc.). Local state only — this shape is
-// large and only needed on the profile surface, so we don't pay the cost
-// of putting it in Redux.
+// Fetch + save the rich `users.user_form_profile` row — legal name,
+// addresses, phones, emails, social handles, emergency contacts, etc.
+// Saved for the person's own reference; no agent or other surface reads it
+// yet (settings-truth-audit, 2026-09-25) — see the type doc comment before
+// describing this as agent-facing. Local state only — this shape is large
+// and only needed on the profile surface, so we don't pay the cost of
+// putting it in Redux.
 //
 // Companion to `useUserProfile` (account / auth metadata). Section-level
 // saves on the form are encouraged: only dirty top-level keys are sent.

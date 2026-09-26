@@ -20,7 +20,6 @@ import {
   Globe,
   Sun,
   Layers,
-  Eye,
   Settings as SettingsIcon,
   MessageSquare,
   Camera,
@@ -65,7 +64,6 @@ import CodeWorkspaceTab from "./tabs/CodeWorkspaceTab";
 import FlashcardsTab from "./tabs/FlashcardsTab";
 import AiModelsTab from "./tabs/AiModelsTab";
 import AdminServerTab from "./tabs/AdminServerTab";
-import LayoutTab from "./tabs/LayoutTab";
 import SiteWorkbenchTab from "./tabs/SiteWorkbenchTab";
 import WindowsTab from "./tabs/WindowsTab";
 import SystemTab from "./tabs/SystemTab";
@@ -214,8 +212,8 @@ export const settingsRegistry: SettingsTabDef[] = [
     id: "appearance",
     label: "Appearance",
     icon: Palette,
-    description: "Theme, density, accent color.",
-    searchKeywords: ["dark", "light", "mode", "theme", "layout"],
+    description: "Theme and density.",
+    searchKeywords: ["dark", "light", "mode", "theme"],
     component: AppearanceTab,
     persistence: "synced",
   },
@@ -224,7 +222,7 @@ export const settingsRegistry: SettingsTabDef[] = [
     label: "Theme",
     icon: Sun,
     parentId: "appearance",
-    description: "Light, dark, accent variants.",
+    description: "Light, dark, or follow your device.",
     searchKeywords: ["dark mode", "light mode"],
     component: AppearanceTab,
     persistence: "synced",
@@ -236,24 +234,6 @@ export const settingsRegistry: SettingsTabDef[] = [
     parentId: "appearance",
     component: AppearanceTab,
     persistence: "synced",
-  },
-  {
-    id: "appearance.accent",
-    label: "Accent color",
-    icon: Eye,
-    parentId: "appearance",
-    component: AppearanceTab,
-    persistence: "synced",
-  },
-  {
-    id: "appearance.layout",
-    label: "Shell layout",
-    icon: Layers,
-    parentId: "appearance",
-    description: "How the shell chrome arranges around content.",
-    searchKeywords: ["window", "frame", "chrome"],
-    component: LayoutTab,
-    persistence: "local-only",
   },
   {
     id: "appearance.windows",
@@ -580,7 +560,7 @@ export const settingsRegistry: SettingsTabDef[] = [
     icon: IdCard,
     parentId: "account",
     description:
-      "Legal name, pronouns, and date of birth — used by agents acting on your behalf.",
+      "Legal name, pronouns, and date of birth — saved to your profile. No agent reads this yet.",
     searchKeywords: [
       "legal name",
       "first name",
@@ -622,7 +602,7 @@ export const settingsRegistry: SettingsTabDef[] = [
     label: "Addresses",
     icon: Truck,
     parentId: "account",
-    description: "Shipping and billing addresses for forms and deliveries.",
+    description: "Shipping and billing addresses, saved to your profile. No checkout or delivery flow reads them yet.",
     searchKeywords: [
       "shipping",
       "billing",
@@ -641,7 +621,7 @@ export const settingsRegistry: SettingsTabDef[] = [
     label: "Work",
     icon: Briefcase,
     parentId: "account",
-    description: "Company and job title — used for signatures and forms.",
+    description: "Company and job title, saved to your profile. No signature or form reads them yet.",
     searchKeywords: [
       "company",
       "employer",

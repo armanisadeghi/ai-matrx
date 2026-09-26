@@ -90,8 +90,13 @@ export interface UserAccountData {
 export type UserAccountPatch = Partial<UserAccountData>;
 
 /**
- * Rich form profile — used by agents working on behalf of the user. Mirrors
- * `users.user_form_profile` 1:1, with JSONB columns strongly typed.
+ * Rich form profile — the person's own legal/contact/address/work/emergency
+ * data, saved for their own reference. Mirrors `users.user_form_profile` 1:1,
+ * with JSONB columns strongly typed. NOT currently read by any agent, form,
+ * or other surface in matrx-frontend or aidream (settings-truth-audit,
+ * 2026-09-25) — the settings UI is the only reader and writer today. Wiring
+ * this into agent context / signatures / checkout flows is a real product
+ * decision (which fields, which surfaces, what consent), not a given.
  */
 export interface UserFormProfileData {
   legal_first_name: string | null;

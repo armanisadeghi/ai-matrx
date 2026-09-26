@@ -513,7 +513,7 @@ function IdentitySection({
     <SectionAnchor
       id={PROFILE_SECTION_IDS.identity}
       title="Identity"
-      description="Legal and preferred names that agents acting on your behalf can use for paperwork, forms, and introductions."
+      description="Legal and preferred names, saved to your profile. No agent reads this for paperwork or introductions yet."
       icon={IdCard}
       footer={<SaveBar dirty={dirty} saving={saving} onSave={onSave} />}
     >
@@ -583,7 +583,7 @@ function ContactSection({
     <SectionAnchor
       id={PROFILE_SECTION_IDS.contact}
       title="Contact"
-      description="Phone numbers, additional emails, social handles, and your website. Agents use these when they need to reach out or reference you."
+      description="Phone numbers, additional emails, social handles, and your website — saved to your profile. No agent reads these to reach out or reference you yet."
       icon={Phone}
       footer={<SaveBar dirty={dirty} saving={saving} onSave={onSave} />}
     >
@@ -665,7 +665,7 @@ function ShippingSection({
     <SectionAnchor
       id={PROFILE_SECTION_IDS.shipping}
       title="Shipping address"
-      description="Where physical items should be sent. Used by agents when shipping is required."
+      description="Where physical items should be sent, saved to your profile. No shipping flow reads this yet."
       icon={Truck}
       footer={<SaveBar dirty={dirty} saving={saving} onSave={onSave} />}
     >
@@ -772,7 +772,7 @@ function WorkSection({
     <SectionAnchor
       id={PROFILE_SECTION_IDS.work}
       title="Work"
-      description="Where you work and what you do. Used by agents drafting emails, scheduling meetings, and filing paperwork on your behalf."
+      description="Where you work and what you do, saved to your profile. No agent drafts emails, schedules meetings, or files paperwork with it yet."
       icon={Building2}
       footer={<SaveBar dirty={dirty} saving={saving} onSave={onSave} />}
     >
