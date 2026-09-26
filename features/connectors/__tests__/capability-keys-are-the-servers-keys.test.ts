@@ -100,10 +100,13 @@ const clientResourceTypes = new Set(
 
 /**
  * A capability deliberately not surfaced lives here WITH its reason, and nothing
- * else may. It is empty on purpose: everything the catalog ships today has a
- * product row that carries it.
+ * else may. Pending capabilities stay here until their consent and account UI
+ * are ready; every other catalog key needs a product row.
  */
-const NOT_SURFACED: Record<string, string> = {};
+const NOT_SURFACED: Record<string, string> = {
+  calendar_shared:
+    "The server inventories bounded selected-calendar reads, but its scope classifications and provider grant are pending; consent and the account UI must stay closed.",
+};
 
 describe("the client's capability coverage", () => {
   it("claims each key exactly once — no two products fight over one", () => {

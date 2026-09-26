@@ -78,6 +78,7 @@ export const GOOGLE_ADMISSION_CODES = [
   "google_analytics_internal_test_required",
   "youtube_internal_test_required",
   "google_oauth_internal_test_required",
+  "google_calendar_shared_consent_pending",
   "google_read_only_sweep_paused",
   // Raised when NOTHING in a multi-product selection is admitted
   // (`capabilities.py::resolve_google_product_selection`). It was missing until
@@ -98,6 +99,8 @@ export const ADMISSION_LANGUAGE: Record<GoogleAdmissionCode, string> = {
     "YouTube turns on automatically when ready for your account.",
   google_oauth_internal_test_required:
     "Turns on automatically when ready for your account.",
+  google_calendar_shared_consent_pending:
+    "Selected shared calendars are still being prepared and cannot be connected yet.",
   google_read_only_sweep_paused:
     "This one is paused for everyone right now while we finish certifying it with Google. Nothing you have connected is affected.",
   google_products_rollout_conflict:
@@ -139,6 +142,8 @@ export const GOOGLE_FAILURE_LANGUAGE: Record<string, string> = {
     "YouTube is not open on your account yet, so it was not connected. It turns on automatically when it is ready; anything else you approved is unaffected.",
   google_oauth_internal_test_required:
     "That one is not open on your account yet, so it was not connected. It turns on automatically when it is ready; anything else you approved is unaffected.",
+  google_calendar_shared_consent_pending:
+    "Selected shared calendars cannot be connected yet. Nothing changed on this account.",
   google_read_only_sweep_paused:
     "That one is paused for everyone right now while we finish certifying it with Google, so it was not connected. Nothing you already had is affected.",
   google_products_rollout_conflict:
