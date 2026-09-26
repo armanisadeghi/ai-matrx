@@ -712,8 +712,8 @@ export const INTEGRATIONS: Integration[] = [
         // from the older table (test edits replaced, person-added rows archived, logged) before it
         // flips. So the proof is the verdict in the fence, the evaluation door, and the re-sync in
         // the press step.
-        sql: "select (to_regprocedure('custom.where_tables_live(uuid[])') is not null and to_regprocedure('platform.table_lives_in(uuid)') is not null and to_regprocedure('custom.table_copy_evaluation_state(uuid)') is not null and pg_get_functiondef('custom._context_copy_fence()'::regprocedure) like '%_older_table_copy_verdict%' and pg_get_functiondef('platform._cutover_seam_apply(text,uuid,text,uuid,uuid)'::regprocedure) like '%_cutover_copy_resync%') as ok, 'the store answers where a table lives from the switch; the copy fence refuses an agent''s, automation''s or integration''s write to a test copy and notes a person''s; the press re-syncs the copy from the older table before it flips' as detail",
-        says: "the store's door, the copy fence's verdict and the press's re-sync are live",
+        sql: "select (to_regprocedure('custom.where_tables_live(uuid[])') is not null and to_regprocedure('platform.table_lives_in(uuid)') is not null and to_regprocedure('custom.table_copy_evaluation_state(uuid)') is not null and pg_get_functiondef('custom._context_copy_fence()'::regprocedure) like '%_older_table_copy_refusal%' and pg_get_functiondef('custom._context_copy_fence()'::regprocedure) like '%_copy_evaluation_note%' and pg_get_functiondef('custom._older_table_copy_refusal(uuid)'::regprocedure) like '%write_is_a_persons_own%' and pg_get_functiondef('platform._cutover_seam_apply(text,uuid,text,uuid,uuid)'::regprocedure) like '%_cutover_copy_resync%') as ok, 'the store answers where a table lives from the switch; the copy fence refuses an agent''s, automation''s or integration''s write to a test copy and notes a person''s; the press re-syncs the copy from the older table before it flips' as detail",
+        says: "the store's door, the copy fence's person rule and note, and the press's re-sync are live",
       },
     ],
   },
