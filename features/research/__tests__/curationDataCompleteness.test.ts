@@ -119,6 +119,14 @@ jest.mock("@/features/scopes/service/associationsService", () => ({
   associationsService: {},
 }));
 
+// The research service reaches the Python server for page bodies; nothing
+// here calls it, and the real client pulls in cookie machinery this suite's
+// @ai-matrx/data/db stand-in does not carry.
+jest.mock("@/lib/python-client", () => ({
+  getJson: jest.fn(),
+  postJson: jest.fn(),
+}));
+
 import { getCurationData } from "../service";
 
 beforeEach(() => {
