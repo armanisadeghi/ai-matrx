@@ -1,4 +1,3 @@
--- draft: rc-a2-deep RC-A8 L4 person rows; remove when rehearsed + suite green on the clone
 --
 -- RC-A8 L4 (register row RC-A8; chair ruling 2026-09-26). A ROW THAT NAMES A PERSON IS THAT PERSON'S
 -- ALONE — keyed on the row's PERSON column (user_id), never on whoever created it.
