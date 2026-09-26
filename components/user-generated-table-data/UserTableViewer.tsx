@@ -4518,13 +4518,15 @@ const UserTableViewer = ({
             ) : null}
           </div>
         }
+        toolbarTrailing={toolbarTrailing}
         // The grid's ONE menu has a ⋯ (ALC-15): table-level, the same shell and
         // rows right-click opens, anchored at the button.
-        toolbarTrailing={
-          <>
-            {toolbarTrailing}
-            <OpenSurfaceMenuButton getSurface={() => grid.containerRef.current} label="Table actions" />
-          </>
+        moreActions={
+          <OpenSurfaceMenuButton
+            getSurface={() => grid.containerRef.current}
+            label="More actions"
+            className="h-11 w-11 md:h-7 md:w-7"
+          />
         }
       />,
       )}

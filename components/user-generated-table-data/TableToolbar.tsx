@@ -33,7 +33,7 @@ import {
   GripVertical,
   Eye,
   Clipboard,
-  MoreHorizontal,
+  SlidersHorizontal,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import type { FieldChoice } from "@ai-matrx/design-system/field-formats";
@@ -147,6 +147,12 @@ interface TableToolbarProps {
   /** Optional trailing controls in the toolbar row (e.g. chat artifact revert). */
   toolbarTrailing?: React.ReactNode;
   /**
+   * The ⋯ that opens the grid's ONE menu (ALC-15): the same shell and rows
+   * right-click opens. Shown at the end of the desktop row and beside the
+   * phone's search, so it is one tap away at every width.
+   */
+  moreActions?: React.ReactNode;
+  /**
    * THIS VIEW's controls — saved views, undo/redo, columns, layout, reset —
    * rendered in the toolbar row between the search and the table actions
    * (Arman, 2026-09-22: they had their own full-width row above the grid).
@@ -232,6 +238,7 @@ export default function TableToolbar({
   disableRowOrdering,
   onRowOrderingSuccess,
   toolbarTrailing,
+  moreActions,
   viewControls,
   copyControls,
   mobileViewControls,
@@ -358,6 +365,7 @@ export default function TableToolbar({
             </Button>
           </form>
 
+          {moreActions ? <div className="flex shrink-0 md:hidden">{moreActions}</div> : null}
           {/* Mobile-only: one tap target opens the full action drawer,
               replacing the Column/Row/Paste + icon clusters below md. */}
           <Button
@@ -365,9 +373,10 @@ export default function TableToolbar({
             size="icon"
             className="h-11 w-11 flex-shrink-0 md:hidden"
             onClick={() => setShowMobileActions(true)}
-            aria-label="Table actions"
+            aria-label="Table controls"
           >
-            <MoreHorizontal className="h-4 w-4" />
+            {/* Controls, not the ⋯ menu: the grid's one menu sits beside it. */}
+            <SlidersHorizontal className="h-4 w-4" />
           </Button>
         </div>
 
@@ -435,6 +444,7 @@ export default function TableToolbar({
           )}
 
           {toolbarTrailing}
+          {moreActions}
         </div>
       </div>
 
