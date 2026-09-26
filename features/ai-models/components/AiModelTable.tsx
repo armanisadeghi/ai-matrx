@@ -45,7 +45,7 @@ import {
   Pencil,
   Trash2,
   Copy,
-  BrainCircuit,
+  Cpu,
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
@@ -1133,7 +1133,7 @@ function CurrentAiModelTable({
                   className="h-32 text-center p-2"
                 >
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    <BrainCircuit className="h-10 w-10 opacity-30" />
+                    <Cpu className="h-10 w-10 opacity-30" />
                     <p className="text-sm">No AI models found</p>
                     {(q || Object.keys(filters).length > 0) && (
                       <Button

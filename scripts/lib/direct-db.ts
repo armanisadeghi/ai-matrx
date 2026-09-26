@@ -13,6 +13,8 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import type { NoticeMessage } from "pg-protocol/dist/messages.js";
+import type { QueryFn } from "./gate-db";
+import { governProduction, isProductionTarget } from "./production-guard";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -88,11 +90,27 @@ export function loadDbEnv(): DbEnv | DbEnvMissing {
   return { missing: [...DB_VARS], looked };
 }
 
-/** Open the connection. Callers that run DDL must still pin + verify the role. */
+export interface ConnectDirectOptions {
+  /**
+   * The migration runners (`pnpm db:apply`, `pnpm db:rehearse`) set their own per-file ceilings and
+   * are the ONE sanctioned exception to the production guard. Nothing else passes this.
+   */
+  readonly migrationRunner?: boolean;
+}
+
+/**
+ * Open the connection. Callers that run DDL must still pin + verify the role.
+ *
+ * On PRODUCTION the client carries the production guard (`./production-guard.ts`, incident
+ * 2026-09-26): every transaction is capped (10 min / 60 s idle / 30 s statement / 5 s lock) and a
+ * statement that loosens a cap or takes REPEATABLE READ/SERIALIZABLE is refused before it is sent.
+ * Heavy comparisons and benchmarks go to the clone (`loadCloneDbEnv`).
+ */
 export async function connectDirect(
   env: DbEnv,
   applicationName: string,
   onNotice?: (n: NoticeMessage) => void,
+  options: ConnectDirectOptions = {},
 ): Promise<pg.Client> {
   const client = new pg.Client({
     host: env.host,
@@ -106,5 +124,8 @@ export async function connectDirect(
   });
   if (onNotice) client.on("notice", onNotice);
   await client.connect();
+  if (!options.migrationRunner && isProductionTarget(env)) {
+    governProduction(client as unknown as { query: QueryFn; end: () => Promise<void> }, applicationName);
+  }
   return client;
 }

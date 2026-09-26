@@ -34,7 +34,6 @@ import {
   PanelRight,
   Plus,
   Save,
-  BrainCircuit,
 } from "lucide-react";
 import {
   upsertJobInCache,
@@ -116,6 +115,7 @@ import type { ChunkingConfigDraft } from "@/features/page-extraction/redux/pageE
 import { normalizeExtraInputs } from "@/features/page-extraction/utils/extra-inputs";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface ChunkingConfigFormProps {
   fileId: string;
@@ -1102,7 +1102,7 @@ function TemplateEditor({
                 disabled={!canApplyRecommended}
                 onClick={handleApplyRecommended}
               >
-                <BrainCircuit className="h-3.5 w-3.5 shrink-0" />
+                <AGENT_ICON className="h-3.5 w-3.5 shrink-0" />
                 Apply Recommended
               </Button>
               {showRecommendedDebug && recommendedDebug && (

@@ -13,7 +13,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Loader2, BrainCircuit } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,7 @@ import type { MediaOrderDraft } from "@/features/marketing/lib/site-media-write-
 import type { SiteMediaStandards } from "@/features/marketing/data/media-library";
 import type { BrandAssetKind } from "@/features/marketing/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /** Which library kind a generated image of each preset lands under. */
 const PRESET_ASSET_KIND: Partial<Record<MediaOrderPresetId, BrandAssetKind>> = {
@@ -343,7 +344,7 @@ export function GenerateMediaView({
             {generating ? (
               <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
             ) : (
-              <BrainCircuit className="mr-1.5 h-4 w-4" />
+              <AGENT_ICON className="mr-1.5 h-4 w-4" />
             )}
             {generating ? "Generating…" : "Order this image"}
           </Button>

@@ -19,21 +19,35 @@ import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlic
 import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
 import { estimateTokensForText } from "@/lib/tokens/estimate";
 
-export const MESSAGE_FLAG_KEYS = ["prefill", "cache_boundary", "example"] as const;
-export type MessageFlagKey = (typeof MESSAGE_FLAG_KEYS)[number];
-export type MessageFlags = Partial<Record<MessageFlagKey, true>>;
+// Flag keys, the stored flag shape and the compatibility modes are GENERATED
+// from aidream `matrx_ai/config/message_flags.py` (scripts/generate_types.py →
+// stream-events.ts) — never hand-typed here.
+import {
+  DEFAULT_FLAG_COMPATIBILITY_MODE,
+  FLAG_COMPATIBILITY_MODES,
+  MESSAGE_FLAG_KEYS,
+  type FlagCompatibilityMode,
+  type MessageFlagKey,
+  type MessageFlags,
+} from "@/types/python-generated/stream-events";
+
+export {
+  DEFAULT_FLAG_COMPATIBILITY_MODE,
+  FLAG_COMPATIBILITY_MODES,
+  MESSAGE_FLAG_KEYS,
+  type FlagCompatibilityMode,
+  type MessageFlagKey,
+  type MessageFlags,
+};
 
 /** The org knob that decides what an unhonourable flag becomes (aidream ai_091). */
 export const FLAG_COMPATIBILITY_KNOB = {
   feature: "agents.messages",
   key: "flag_compatibility_mode",
 } as const;
-export type FlagCompatibilityMode = "refuse" | "convert" | "drop";
-export const DEFAULT_FLAG_COMPATIBILITY_MODE: FlagCompatibilityMode = "refuse";
-
 export function resolveFlagCompatibilityMode(raw: unknown): FlagCompatibilityMode {
-  return raw === "convert" || raw === "drop" || raw === "refuse"
-    ? raw
+  return (FLAG_COMPATIBILITY_MODES as readonly unknown[]).includes(raw)
+    ? (raw as FlagCompatibilityMode)
     : DEFAULT_FLAG_COMPATIBILITY_MODE;
 }
 

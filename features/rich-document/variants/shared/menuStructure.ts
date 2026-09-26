@@ -19,10 +19,10 @@ import {
   Settings,
   GitCompareArrows,
   MessagesSquare,
-  BrainCircuit,
   type LucideIcon,
 } from "lucide-react";
 import type { RichDocumentAction } from "../../types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface MenuSection {
   /** Submenu label, or null for the promoted top-level group. */
@@ -73,7 +73,7 @@ export const MENU_STRUCTURE: MenuSection[] = [
     // Review-and-apply AI powers (a text field promotes these to the top —
     // RegistryActionList; a document keeps them one row deep).
     submenu: AI_SUBMENU_LABEL,
-    icon: BrainCircuit,
+    icon: AGENT_ICON,
     actionIds: ["text-cleanup", "text-help", "text-custom-agent"],
   },
   {

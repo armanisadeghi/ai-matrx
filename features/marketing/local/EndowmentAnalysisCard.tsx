@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BrainCircuit, ListChecks } from "lucide-react";
+import { ListChecks } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -23,6 +23,7 @@ import {
   type EndowmentPortfolio,
 } from "@/features/marketing/local/endowment-portfolio";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /**
  * The Endowment Model, live (common-docs/systems/marketing/local-listings/ENDOWMENTS.md).
@@ -142,7 +143,7 @@ export function EndowmentAnalysisCard({
             onClick={() => void handleAnalyze()}
             disabled={running}
           >
-            <BrainCircuit className="size-3.5" aria-hidden />
+            <AGENT_ICON className="size-3.5" aria-hidden />
             {running ? "Analyzing…" : "Read the analysis"}
           </Button>
           <Button

@@ -39,7 +39,6 @@ import React, {
 } from "react";
 import { useRouter } from "next/navigation";
 import {
-  BrainCircuit,
   Camera as CameraIcon,
   Check,
   Eye,
@@ -81,6 +80,7 @@ import { NotesPanel } from "./NotesPanel";
 import { VoiceNoteButton } from "./VoiceNoteButton";
 import { ItemsSheet } from "./ItemsSheet";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const QR_MODE_STORAGE_KEY = "product-capture:qr-auto";
 
@@ -532,7 +532,7 @@ export function CaptureScreen({
                     {instant.isRunning || instant.restoring ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <BrainCircuit className="h-4 w-4" />
+                      <AGENT_ICON className="h-4 w-4" />
                     )}
                     <span className="ml-1">
                       {instant.isRunning

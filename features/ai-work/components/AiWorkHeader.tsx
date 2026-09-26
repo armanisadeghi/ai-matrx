@@ -5,10 +5,10 @@ import {
   LayoutDashboard,
   MessagesSquare,
   Plug,
-  BrainCircuit,
 } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const AI_WORK_NAV_ITEMS = [
   {
@@ -20,7 +20,7 @@ const AI_WORK_NAV_ITEMS = [
   {
     name: "Start work",
     href: "/work/new",
-    icon: BrainCircuit,
+    icon: AGENT_ICON,
   },
   {
     name: "Conversations",

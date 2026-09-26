@@ -70,6 +70,26 @@ interface PublicAccessTabProps {
 }
 
 /**
+ * What "Anyone" means for this type, in words that never promise more than the
+ * platform delivers. "No sign-in" only where a signed-out page exists
+ * (utils/permissions/publicLane.ts); everywhere else public means every signed-in
+ * person finds it under Public, and a signed-out visitor reaches it only through a
+ * no-login link — when the type has one. Pure — exported for tests.
+ */
+export function anyoneReachWords(
+  typeLabel: string,
+  reach: { publicPage: boolean; noLoginLink: boolean },
+): string {
+  if (reach.publicPage) return `Open to everyone — anyone can view this ${typeLabel}, no sign-in.`;
+  return (
+    `Everyone signed in to AI Matrx can find and view this ${typeLabel}.` +
+    (reach.noLoginLink
+      ? " People without an account need a no-login link."
+      : " People without an account cannot open it.")
+  );
+}
+
+/**
  * The three states a person actually chooses between. `link` is a real enum
  * value but it is set by the share-link flow, not picked here — offering it as
  * a fourth button would give one value two owners.
@@ -78,7 +98,11 @@ const VISIBILITY_CHOICES: {
   value: VisibilityValue;
   label: string;
   icon: typeof Lock;
-  describe: (typeLabel: string) => string;
+  /**
+   * `reach.publicPage`: the type has a signed-out page (`publicResourceUrl`);
+   * `reach.noLoginLink`: it can be handed out through a no-login share link.
+   */
+  describe: (typeLabel: string, reach: { publicPage: boolean; noLoginLink: boolean }) => string;
 }[] = [
   {
     value: "personal",
@@ -96,7 +120,7 @@ const VISIBILITY_CHOICES: {
     value: "public",
     label: "Anyone",
     icon: Globe,
-    describe: (t) => `Open to everyone — anyone can view this ${t}, no sign-in.`,
+    describe: anyoneReachWords,
   },
 ];
 
@@ -435,7 +459,10 @@ export function PublicAccessTab({
                             )}
                           </span>
                           <span className="block text-xs text-muted-foreground">
-                            {choice.describe(typeLabel)}
+                            {choice.describe(typeLabel, {
+                              publicPage: Boolean(publicUrl),
+                              noLoginLink: caps.isLinkShareable,
+                            })}
                           </span>
                         </span>
                       </button>

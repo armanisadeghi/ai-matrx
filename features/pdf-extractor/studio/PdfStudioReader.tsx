@@ -50,7 +50,6 @@ import {
   EyeOff,
   AlertTriangle,
   Zap,
-  BrainCircuit,
   Upload,
   Crop,
   Download,
@@ -164,6 +163,7 @@ import type { UseDocumentSearch } from "@/features/rag/hooks/useDocumentSearch";
 export type { PaneKey } from "../state/types";
 import type { PaneKey } from "../state/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 export type PdfPaneEditMode = "crop" | "reorder" | null;
 
 export interface PdfStudioReaderProps {
@@ -1587,7 +1587,7 @@ function BlankPagesBanner({
                   </>
                 ) : (
                   <>
-                    <BrainCircuit className="w-3 h-3" />
+                    <AGENT_ICON className="w-3 h-3" />
                     {docHasAggregate ? "Run AI Clean again" : "Run AI Clean"}
                   </>
                 )}

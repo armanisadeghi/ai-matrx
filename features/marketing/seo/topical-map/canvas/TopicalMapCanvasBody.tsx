@@ -18,7 +18,6 @@
 
 import { useState } from "react";
 import {
-  BrainCircuit,
   ExternalLink,
   FileText,
   Files,
@@ -38,6 +37,7 @@ import { TopicalMapWorkspaceBody } from "../components/TopicalMapWorkspaceBody";
 import { MAP_CURATION_MANDATE_KEY, TOPICAL_MAP_SURFACE_NAME } from "../mandateKeys";
 import type { MapWorkspaceScreen } from "../useMapWorkspaceParams";
 import { isWorkspaceScreen } from "./topicalMapCanvasContent";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface TopicalMapCanvasBodyProps {
   mapId: string;
@@ -120,7 +120,7 @@ export function TopicalMapCanvasBody({
             })
           }
         >
-          <BrainCircuit className="h-3.5 w-3.5" aria-hidden />
+          <AGENT_ICON className="h-3.5 w-3.5" aria-hidden />
           Ask the map
         </button>
         <button

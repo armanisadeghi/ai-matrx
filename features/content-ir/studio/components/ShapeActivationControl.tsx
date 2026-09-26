@@ -28,7 +28,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BrainCircuit, CircleAlert, Loader2, Power, PowerOff } from "lucide-react";
+import { CircleAlert, Loader2, Power, PowerOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
@@ -46,6 +46,7 @@ import {
 } from "@/features/content-ir/studio/constants";
 import { composeKindAgentIntent } from "@/features/content-ir/studio/kind-agent-intents";
 import { useKindAgentLaunch } from "@/features/content-ir/studio/useKindAgentLaunch";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 interface ShapeActivationControlProps {
   kind: string;
@@ -256,7 +257,7 @@ export default function ShapeActivationControl({
             {artisanLaunching ? (
               <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
             ) : (
-              <BrainCircuit className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+              <AGENT_ICON className="mr-1.5 h-3.5 w-3.5" aria-hidden />
             )}
             Build the component with an agent
           </Button>

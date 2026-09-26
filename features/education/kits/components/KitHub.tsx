@@ -11,7 +11,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
-  BrainCircuit,
   CalendarClock,
   FileSearch,
   Flag,
@@ -45,6 +44,7 @@ import {
 } from "../kitService";
 import { MakeMoreFromKit } from "./MakeMoreFromKit";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 interface StudyStage {
   number: string;
@@ -289,7 +289,7 @@ export function KitHub({
         <EducationToolHeader title="Study kit" />
         <div className="mx-auto w-full max-w-3xl px-4 pb-10">
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-8 text-center">
-            <BrainCircuit className="h-8 w-8 text-warning" />
+            <AGENT_ICON className="h-8 w-8 text-warning" />
             <div>
               <h2 className="font-semibold text-foreground">
                 This study kit could not be loaded
@@ -314,13 +314,13 @@ export function KitHub({
         <EducationToolHeader title="Study kit" />
         <div className="mx-auto w-full max-w-3xl px-4 pb-10">
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border p-10 text-center">
-            <BrainCircuit className="h-8 w-8 text-muted-foreground" />
+            <AGENT_ICON className="h-8 w-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
               Nothing has been made from this material yet.
             </p>
             <Button asChild size="sm" className="gap-1.5">
               <Link href="/education/start">
-                <BrainCircuit className="h-4 w-4" />
+                <AGENT_ICON className="h-4 w-4" />
                 Create a study kit
               </Link>
             </Button>

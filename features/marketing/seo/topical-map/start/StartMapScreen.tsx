@@ -27,7 +27,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, BrainCircuit, Globe, Loader2, Square } from "lucide-react";
+import { AlertTriangle, Globe, Loader2, Square } from "lucide-react";
 
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
@@ -58,6 +58,7 @@ import { START_MAP_SOURCES, startMapSource } from "./startMapSources";
 import { StartMapResult } from "./StartMapResult";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const EVERY_SITE = "__every_site__";
 const ROOT = "__root__";
@@ -496,7 +497,7 @@ export function StartMapScreen({
               {busy ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               ) : (
-                <BrainCircuit className="h-4 w-4" aria-hidden />
+                <AGENT_ICON className="h-4 w-4" aria-hidden />
               )}
               {tile.launchLabel}
             </Button>

@@ -25,6 +25,7 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, relative } from "node:path";
 import { execSync } from "node:child_process";
+import { emitItem } from "../checks/items.mjs";
 
 const ROOT = process.cwd();
 const REPORT = join(ROOT, "scripts/access-errors/report.json");
@@ -597,6 +598,18 @@ function main() {
   const findings = scan();
   const swallowed = scanSwallowed();
   const narrowed = scanNarrowedReads();
+
+  // C5 item line. This check's accept is an inline `// access-errors: ok — <reason>` marker, not a
+  // key list, so every item it names is new. Keys carry no line number.
+  for (const f of findings) {
+    emitItem({ key: `${f.kind}|${f.file}`, title: `${f.file}:${f.line} ${f.kind}`, file: f.file, line: f.line, rule: f.kind });
+  }
+  for (const w of swallowed) {
+    emitItem({ key: `swallowed|${w.file}|${w.binding}`, title: `${w.file}:${w.line} ${w.hook} → ${w.binding} never reads its error`, file: w.file, line: w.line, rule: "swallowed" });
+  }
+  for (const n of narrowed) {
+    emitItem({ key: `narrowed|${n.file}|${n.fn}`, title: `${n.file}:${n.line} ${n.fn}() narrows a gated record read`, file: n.file, line: n.line, rule: "narrowed" });
+  }
 
   const byFeature = new Map<string, Finding[]>();
   for (const f of findings) {

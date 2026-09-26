@@ -134,18 +134,12 @@ export interface ArchivedThing {
   detail?: string;
 }
 
-const NOT_A_PERSONS_DELETION =
-  "System- or derived-row, not a person's deletion: a run, a queue item, an index or a setting row that " +
-  "is superseded or re-toggled rather than restored (TRASH-COVERAGE's notification_preference ruling).";
-const NOT_YET_JUDGED =
-  "A person's archived thing with no Trash kind yet (TRASH-TABLES census 2026-09-26). The chair rules " +
-  "each: register a user_artifact_kind (restorable through entity_undelete) or name why it comes back " +
-  "with a parent.";
-
 /**
- * Known gaps and deliberate absences — every entry names why. The census that seeded it: every
- * `type = 'entity'` registry row with soft delete and at least one archived row on production, plus
- * every record-store class with an archived row (2026-09-26).
+ * Known absences — every entry names why. Seeded by lane TRASH-TABLES' census (2026-09-26); re-judged
+ * by lane TRASH-COVERAGE-2 the same day against the chair's test: A TRUE EXCUSE NAMES WHY A PERSON CAN
+ * NEVER ARCHIVE IT THEMSELVES. An entry that fails that test is not an excuse — it is marked
+ * `STORE GAP` (the record store has no door that puts it back) and reported to the chair; it stays
+ * listed only so the gap is named, never so it is forgotten.
  */
 export const TRASH_COVERAGE_EXEMPT: Readonly<Record<string, string>> = {
   // ── the record store ────────────────────────────────────────────────────────────────────────
@@ -153,64 +147,70 @@ export const TRASH_COVERAGE_EXEMPT: Readonly<Record<string, string>> = {
     "custom.record is the record store's ONE physical table; its Tables and Records are covered by the " +
     "store branch (store:table, store:record), probed separately. The generic loop must not list it.",
   "store:field":
-    "A Field removed on its own (custom.field_retire) has no store door that puts the column back; a " +
-    "Trash row would be a dead control. Fields archived with their Table come back with it.",
-  "store:rule": "Archived only with its Table (custom.table_archive's event) and restored with it.",
-  "store:relation": "Archived only with its Table or Record and restored with it (the archive event's took list).",
+    "STORE GAP, not an excuse: a person retires a Field on its own (custom.field_retire) and the record " +
+    "store has no door that puts a retired column back, so a Trash row would be a dead control. Fields " +
+    "archived with their Table come back with it. Owed: a store restore door (TRASH-COVERAGE-2 report).",
+  "store:rule":
+    "STORE GAP, not an excuse: a Rule is archived when it is rewritten or removed in its Table's rule " +
+    "editor (custom._rule_definition_write) and the store has no door that brings one Rule back. Owed: a " +
+    "store restore door (TRASH-COVERAGE-2 report).",
+  "store:relation":
+    "STORE GAP, not an excuse: a link between Records is archived when it is unlinked " +
+    "(custom.relation_uncarry / custom.relation_edges_withdraw); the way back is linking again, and the " +
+    "store has no door that restores the old link. Owed: a store ruling (TRASH-COVERAGE-2 report).",
   "store:work_approval":
-    "Withdrawn by custom._work_approvals_withdraw_on_archive when its Record is archived; comes back with the Record.",
+    "Nobody archives an approval: custom._work_approvals_withdraw_on_archive withdraws it when its Record " +
+    "is archived, and it comes back with the Record.",
   "store:doc_template":
-    "Removed through custom.doc_template_delete; not yet a Trash kind (store branch lists Tables and Records only).",
-  "store:dashboard": "Removed through custom.dashboard_delete; not yet a Trash kind.",
+    "STORE GAP, not an excuse: removed through custom.doc_template_delete (today only the store test " +
+    "bench calls it); the store has no door that brings a template back. Owed: a store restore door.",
+  "store:dashboard":
+    "STORE GAP, not an excuse: removed through custom.dashboard_delete (no screen calls it yet); the " +
+    "store has no door that brings a dashboard back. Owed: a store restore door.",
   "entity:io_comment":
-    "Record comments are archived only by a table move (custom.table_move) or with their Record; no person-facing delete.",
-  // ── system or derived rows ──────────────────────────────────────────────────────────────────
-  "entity:kg_chunks": NOT_A_PERSONS_DELETION,
-  "entity:workflow_run": NOT_A_PERSONS_DELETION,
-  "entity:cx_user_request": NOT_A_PERSONS_DELETION,
-  "entity:global_request": NOT_A_PERSONS_DELETION,
-  "entity:hindsight_enrollment": NOT_A_PERSONS_DELETION,
-  "entity:study_attempt": NOT_A_PERSONS_DELETION,
-  "entity:item_mastery": NOT_A_PERSONS_DELETION,
-  "entity:notification_channel_preference": NOT_A_PERSONS_DELETION,
-  "entity:notification_event_override": NOT_A_PERSONS_DELETION,
-  "entity:mandate_treatment": NOT_A_PERSONS_DELETION,
-  "entity:mandate_binding": NOT_A_PERSONS_DELETION,
-  "entity:assist": NOT_A_PERSONS_DELETION,
-  "entity:integration_connection": NOT_A_PERSONS_DELETION,
-  "entity:processed_document": NOT_A_PERSONS_DELETION,
-  // ── a person's thing, not yet in Trash ──────────────────────────────────────────────────────
-  "entity:rulebook": NOT_YET_JUDGED,
-  "entity:folder": NOT_YET_JUDGED,
-  "entity:war_room": NOT_YET_JUDGED,
-  "entity:thread": NOT_YET_JUDGED,
-  "entity:scope_type": NOT_YET_JUDGED,
-  "entity:scope": NOT_YET_JUDGED,
-  "entity:context_item": NOT_YET_JUDGED,
-  "entity:working_document": NOT_YET_JUDGED,
-  "entity:user_memory": NOT_YET_JUDGED,
-  "entity:wbx_highlight": NOT_YET_JUDGED,
-  "entity:browser_profile": NOT_YET_JUDGED,
-  "entity:media_source_library": NOT_YET_JUDGED,
-  "entity:learn_doc": NOT_YET_JUDGED,
-  "entity:seo_topical_map": NOT_YET_JUDGED,
-  "entity:seo_rank_target": NOT_YET_JUDGED,
-  "entity:hr_employee": NOT_YET_JUDGED,
-  "entity:hr_employment": NOT_YET_JUDGED,
-  "entity:hr_leave_policy": NOT_YET_JUDGED,
-  "entity:hr_jurisdiction_rule_org_decision": NOT_YET_JUDGED,
-  "entity:crm_blocklist_entry": NOT_YET_JUDGED,
-  "entity:commerce_intake_batch": NOT_YET_JUDGED,
-  "entity:interview_decision_interview": NOT_YET_JUDGED,
-  "entity:workflow_runtime_surface": NOT_YET_JUDGED,
-  "entity:workflow_trigger": NOT_YET_JUDGED,
-  "entity:product_capture_item": NOT_YET_JUDGED,
-  "entity:category": NOT_YET_JUDGED,
-  "entity:flexible_data": NOT_YET_JUDGED,
-  "entity:shared_canvas_item": NOT_YET_JUDGED,
-  "entity:sch_task": NOT_YET_JUDGED,
-  "entity:user_feedback": NOT_YET_JUDGED,
-  "entity:agent_mandate_note": NOT_YET_JUDGED,
+    "No person-facing delete: record comments are archived only with their Record or by a table move " +
+    "(custom.table_move), and come back with the Record.",
+  // ── rows a person can never archive themselves ─────────────────────────────────────────────
+  "entity:kg_chunks":
+    "The search index of a library document, never shown as an item: archived and restored only with its " +
+    "document (rag.fn_delete_library_document / fn_restore_library_document, or its file's cascade).",
+  "entity:workflow_run":
+    "A run is history the engine writes; no screen or door archives a run (no archiver in the catalogue, " +
+    "no client delete). The workflow itself is the Trash kind.",
+  "entity:cx_user_request":
+    "One request inside a conversation, never shown as an item: archived only with its conversation " +
+    "(public.cx_soft_delete_conversation). The conversation is the Trash kind.",
+  "entity:global_request":
+    "The runtime spine's record of one request, never shown as an item: archived only with its " +
+    "conversation (runtime.spine_soft_delete_conversation_requests). The conversation is the Trash kind.",
+  "entity:hindsight_enrollment":
+    "Written by the hindsight engine for a request under review; no screen or door archives one.",
+  "entity:study_attempt":
+    "An answer a learner gave, written by the study engine; no screen or door archives one (history, " +
+    "never a thing a learner removes).",
+  "entity:item_mastery":
+    "Computed per learner and item by the study engine; no screen or door archives one.",
+  "entity:notification_channel_preference":
+    "A setting row, re-toggled rather than restored (TRASH-COVERAGE's notification_preference ruling); " +
+    "no one archives a preference as a thing.",
+  "entity:notification_event_override":
+    "A setting row, re-toggled rather than restored (TRASH-COVERAGE's notification_preference ruling).",
+  "entity:mandate_treatment":
+    "Platform configuration of a mandate, written by the mandate system and its admin tools; no person " +
+    "archives one from a screen.",
+  "entity:mandate_binding":
+    "Which agent serves a mandate — platform configuration rebound rather than restored; no person " +
+    "archives one from a screen.",
+  "entity:assist":
+    "A notice the platform raised for a person; it is dismissed, snoozed or resolved (status / " +
+    "suppressed_until), never archived by its reader.",
+  "entity:integration_connection":
+    "Disconnecting an integration revokes the provider's tokens; the way back is reconnecting with fresh " +
+    "consent, never a restore of the old row.",
+  "entity:hr_leave_policy":
+    "No door archives a leave policy: HR ends one with hr.leave_policy_deactivate, which sets is_active " +
+    "= false after deciding every balance on it (freeze / pay out / migrate). The one archived row is " +
+    "the HRB-017 verification fixture (2026-08-28).",
 };
 
 export function judgeTrashCoverage(

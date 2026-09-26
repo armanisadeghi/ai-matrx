@@ -57,6 +57,7 @@ import type { HrPresentedKnob } from "../types";
 import { Textarea } from "@/components/ui/textarea";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { KnobHistoryPopover } from "@/lib/scoped-config/KnobHistoryPopover";
 
 // ── Value rendering ─────────────────────────────────────────────────────────
 
@@ -241,6 +242,28 @@ export function KnobRow({
     onChanged();
   };
 
+  // History's "Undo" / "Revert to this" write through HR's OWN door, like Save and Clear.
+  const revertTo = async (value: unknown): Promise<boolean> => {
+    setBusy(true);
+    const result =
+      value === null || value === undefined
+        ? await clearHrKnob({ organizationId, feature: knob.feature, key: knob.key })
+        : await setHrKnob({ organizationId, feature: knob.feature, key: knob.key, value });
+    setBusy(false);
+    if (!result.ok) {
+      setWhy(
+        isHrDenied(result)
+          ? result.detail || `The server refused this (${result.reason}).`
+          : result.message,
+      );
+      return false;
+    }
+    setDraft(toEditable(value ?? knob.platform_default, knob.value_type));
+    toast.success(`${humanKey} reverted.`);
+    onChanged();
+    return true;
+  };
+
   const controlId = `knob-${knob.full_key.replace(/[^a-zA-Z0-9]/g, "-")}`;
   const locked = Boolean(floor?.lockedValue !== undefined);
 
@@ -356,6 +379,17 @@ export function KnobRow({
           )}
         </div>
 
+        <KnobHistoryPopover
+          feature={knob.feature}
+          key_={knob.key}
+          label={humanKey}
+          organizationId={organizationId}
+          scopeKind="organization"
+          scopeId={organizationId}
+          canRevert={!locked && !busy}
+          displayValue={(value) => knobValueText(value)}
+          onRevert={revertTo}
+        />
         {locked ? null : (
           <div className="flex shrink-0 items-center gap-2">
             <Button

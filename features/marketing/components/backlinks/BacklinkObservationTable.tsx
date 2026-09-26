@@ -12,7 +12,6 @@
  */
 
 import {
-  BrainCircuit,
   Camera,
   ExternalLink,
   Image as ImageIcon,
@@ -90,6 +89,7 @@ import {
   CONTEXT_MENU_ENTITY_KEY,
   type ResolvedContextMenuContext,
 } from "@/features/context-menu-v3/types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /**
  * One honest empty line per lens — a lens finding nothing is usually GOOD
@@ -737,7 +737,7 @@ export function BacklinkObservationTable({
                       {running || action.inProgress ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
                       ) : (
-                        <BrainCircuit className="h-3 w-3" />
+                        <AGENT_ICON className="h-3 w-3" />
                       )}
                       {action.label}
                     </Button>

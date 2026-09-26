@@ -30,18 +30,18 @@
 
 import React, { useState } from "react";
 import {
-    FileText,
-    ChevronDown,
-    ChevronRight,
-    Maximize2,
-    Minimize2,
-    BrainCircuit,
+  FileText,
+  ChevronDown,
+  ChevronRight,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import MarkdownStream from "@/components/MarkdownStream";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
 import { useAutoScrollOnStream } from "../useAutoScrollOnStream";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /** Collapse state of the report viewport. */
 type ReportView = "none" | "partial" | "full";
@@ -88,7 +88,7 @@ export const SubagentReportBlock: React.FC<SubagentReportBlockProps> = ({
                     ) : (
                         <ChevronDown className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
                     )}
-                    <BrainCircuit className="h-4 w-4 flex-shrink-0 text-primary" />
+                    <AGENT_ICON className="h-4 w-4 flex-shrink-0 text-primary" />
                     <div className="min-w-0">
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-foreground">

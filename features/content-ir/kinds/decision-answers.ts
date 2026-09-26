@@ -23,6 +23,11 @@ import { KIND_KEY } from "@ai-matrx/content-ir";
 
 import { makeCompleteEnvelopeBridge } from "./legacy-bridge-utils";
 import { joinBlocks } from "./kind-markdown-utils";
+import {
+  answerProbability,
+  formatDecisionAnswer,
+  readDecisionAnswers,
+} from "@/features/agents/decision-answers/read";
 
 export const DECISION_ANSWERS_KIND = "decision_answers";
 /** The render key `kind-route` sets `block.type` to (SHAPE_BLOCK_DISPATCH). */
@@ -98,26 +103,22 @@ const MD_KNOWN_KEYS = [
   KIND_KEY,
 ];
 
+/**
+ * One answer as a markdown line. Read through the ONE reader so the number
+ * beside the answer is the probability OF THAT ANSWER: a `false` at
+ * `probability: 0.3` is "No (70%)" — this line used to print "No (30%)", the
+ * raw P(true), on every copy and export of a decision turn.
+ */
 function answerLine(name: string, value: unknown): string {
-  if (!value || typeof value !== "object") return `- **${name}**: unreadable`;
-  const answer = value as Record<string, unknown>;
-  const shown =
-    typeof answer.answer === "boolean"
-      ? answer.answer
-        ? "Yes"
-        : "No"
-      : answer.answer == null
-        ? "unreadable"
-        : String(answer.answer);
-  const probability =
-    typeof answer.probability === "number"
-      ? ` (${Math.round(answer.probability * 100)}%)`
-      : "";
+  const view = readDecisionAnswers({ answers: { [name]: value } })?.answers[0];
+  if (!view || view.answer === null) return `- **${name}**: unreadable`;
+  const p = answerProbability(view);
+  const probability = p == null ? "" : ` (${Math.round(p * 100)}%)`;
   const confidence =
-    typeof answer.confidence === "number"
-      ? `, confidence ${Math.round(answer.confidence * 100)}%`
-      : "";
-  return `- **${name}**: ${shown}${probability}${confidence}`;
+    view.confidence == null
+      ? ""
+      : `, confidence ${Math.round(view.confidence * 100)}%`;
+  return `- **${name}**: ${formatDecisionAnswer(view)}${probability}${confidence}`;
 }
 
 export function decisionAnswersMarkdownFromValue(

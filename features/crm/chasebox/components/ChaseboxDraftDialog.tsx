@@ -34,7 +34,6 @@ import {
   MessageSquareReply,
   Pencil,
   Send,
-  BrainCircuit,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -76,6 +75,7 @@ import type { InteractionRow } from "@/features/crm/types";
 import type { ChaseboxRow } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /**
  * What the reviewer currently has in front of them, lifted to the page so the
@@ -498,7 +498,7 @@ export function ChaseboxDraftDialog({
             {personalization && (
               <div className="rounded-md border border-primary/30 bg-primary/5">
                 <div className="flex items-center gap-1.5 border-b border-primary/20 px-3 py-1.5 text-xs font-medium">
-                  <BrainCircuit className="h-3.5 w-3.5 text-primary" aria-hidden />
+                  <AGENT_ICON className="h-3.5 w-3.5 text-primary" aria-hidden />
                   Written for this contact from their own pages
                   {personalization.humanEdited && (
                     <span className="text-muted-foreground">· edited by a person</span>

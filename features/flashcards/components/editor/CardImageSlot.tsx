@@ -43,7 +43,6 @@ import {
   Loader2,
   Trash2,
   Upload,
-  BrainCircuit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
@@ -63,6 +62,7 @@ import {
 import { fcService } from "../../data/fcService";
 import { getCardImages } from "../study/cardImages";
 import type { CardWithDetails } from "../../data/types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 type Face = "front" | "back";
 
@@ -344,7 +344,7 @@ function FaceRow({
         {busy === "generate" ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
         ) : (
-          <BrainCircuit className="h-3.5 w-3.5" />
+          <AGENT_ICON className="h-3.5 w-3.5" />
         )}
       </Button>
       {image && (

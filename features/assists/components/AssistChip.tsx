@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useRef, useState } from "react";
-import { BrainCircuit, X } from "lucide-react";
+import { X } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -28,6 +28,7 @@ import {
   urgencyFromPriority,
   type Assist,
 } from "../types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const HOVER_OPEN_MS = 120;
 const HOVER_CLOSE_MS = 250;
@@ -74,7 +75,7 @@ export function AssistChip({
   // Urgency changes how the chip LOOKS, never what it does: expand only.
   const urgency = urgencyFromPriority(assist.priority);
   const urgencyMeta = ASSIST_URGENCY_META[urgency];
-  const UrgencyIcon = ambient ? BrainCircuit : ASSIST_URGENCY_ICON[urgency];
+  const UrgencyIcon = ambient ? AGENT_ICON : ASSIST_URGENCY_ICON[urgency];
   const [open, setOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 

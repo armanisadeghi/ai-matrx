@@ -38,9 +38,9 @@ import { IconInputCompact } from "@/components/official/icons/IconInputWithValid
 import { isComputedColumn } from "@ai-matrx/design-system/formulas";
 import {
   coerceForColumn,
-  compileRowAction,
   describeRowAction,
   newRowActionId,
+  previewRowAction,
   readRowActions,
   stepsFromRow,
   validateRowActions,
@@ -53,6 +53,7 @@ import { setTableRowActions } from "../service";
 import { STYLE_COLORS, STYLE_COLOR_LABELS, type StyleColor } from "@ai-matrx/design-system/data-table/table-style";
 import { isServiceFailure } from "../types";
 import { FormatAwareInput, formatHasOwnInput } from "./FormatAwareInput";
+import { RowActionPreview } from "./RowActionPreview";
 import { FormulaExpressionEditor } from "./FormulaExpressionEditor";
 import { FORMULA_FUNCTIONS, parseFormula } from "@ai-matrx/design-system/formulas";
 import {
@@ -402,7 +403,7 @@ function ActionForm(props: {
   };
 
   const preview =
-    action.kind === "update" && previewRow && steps.length > 0 ? compileRowAction(action, previewRow, fields) : null;
+    action.kind === "update" && previewRow && steps.length > 0 ? previewRowAction(action, previewRow, fields) : null;
 
   return (
     <div className="space-y-3 rounded-md border bg-muted/30 p-3">
@@ -522,7 +523,7 @@ function ActionForm(props: {
       {action.kind === "update" && rows.length > 0 && steps.length > 0 && (
         <div className="rounded-md border bg-background p-2 text-xs">
           <div className="mb-1 flex items-center gap-2 text-muted-foreground">
-            <span>Preview on</span>
+            <span>Preview — this row now, and after the action runs:</span>
             <Select value={previewRow?.id ?? ""} onValueChange={setPreviewRowId}>
               <SelectTrigger className="h-6 w-auto gap-1 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -533,20 +534,7 @@ function ActionForm(props: {
             </Select>
           </div>
           {preview?.ok ? (
-            <ul className="space-y-0.5">
-              {Object.entries(preview.patch).map(([fieldName, value]) => {
-                const f = fields.find((x) => x.field_name === fieldName);
-                const before = previewRow ? previewRow.data?.[fieldName] : undefined;
-                const fmt = f ? resolveFieldFormat(f.data_type, f.metadata) : null;
-                const show = (v: unknown) =>
-                  f && fmt ? (formatFieldValue(v, fmt, f.data_type).empty ? "empty" : formatFieldValue(v, fmt, f.data_type).text) : String(v ?? "empty");
-                return (
-                  <li key={fieldName}>
-                    <span className="font-medium">{f?.display_name ?? fieldName}</span>: {show(before)} → {show(value)}
-                  </li>
-                );
-              })}
-            </ul>
+            <RowActionPreview preview={preview} fields={fields} />
           ) : preview ? (
             <p className="text-destructive">{preview.error} <ErrorAlchemyMenu error={preview.error} /></p>
           ) : null}

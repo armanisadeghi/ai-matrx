@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BrainCircuit, User, Zap, type LucideIcon } from "lucide-react";
+import { Cpu, User, Zap, type LucideIcon } from "lucide-react";
 
 import { PUBLIC_CAPABILITY, type PublicCapability } from "../map/loop-map";
 import { STAGE_CARDS } from "./stage-cards";
@@ -28,7 +28,7 @@ import { STAGE_CARDS } from "./stage-cards";
 
 const CAPABILITY_ICON: Record<PublicCapability, LucideIcon> = {
     you: User,
-    ai: BrainCircuit,
+    ai: Cpu,
     automatic: Zap,
 };
 

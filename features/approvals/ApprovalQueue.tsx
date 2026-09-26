@@ -36,7 +36,6 @@
 
 import { isValidElement, useEffect, useState, type ReactNode } from "react";
 import {
-  BrainCircuit,
   Check,
   ChevronDown,
   ChevronRight,
@@ -68,6 +67,7 @@ import {
   type ApprovalSource,
 } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 type Decision = "accept" | "reject";
 
@@ -644,7 +644,7 @@ export function ApprovalQueue({
           )}
         >
           <div className="flex flex-wrap items-center gap-2">
-            <BrainCircuit className="size-4 shrink-0 text-muted-foreground" />
+            <AGENT_ICON className="size-4 shrink-0 text-muted-foreground" />
             <span className="text-sm font-medium text-foreground">
               {title ?? "Waiting on your approval"}
             </span>

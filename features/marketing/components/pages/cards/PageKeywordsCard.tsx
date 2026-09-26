@@ -16,7 +16,7 @@
  */
 
 import { useState } from "react";
-import { ArrowUpFromDot, BrainCircuit, Loader2, Tags, X } from "lucide-react";
+import { ArrowUpFromDot, Loader2, Tags, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
@@ -43,6 +43,7 @@ import type { KeywordSuggestion } from "@/features/marketing/seo/keyword/types";
 import type { MarketingPage } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
 import { PageTaskButton } from "@/features/marketing/components/pages/PageTaskButton";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function PageKeywordsCard({
   page,
@@ -276,7 +277,7 @@ export function PageKeywordsCard({
                 }
                 className="text-muted-foreground transition-colors hover:text-primary"
               >
-                <BrainCircuit className="h-3.5 w-3.5" />
+                <AGENT_ICON className="h-3.5 w-3.5" />
               </button>
             </span>
           ) : (
@@ -346,7 +347,7 @@ export function PageKeywordsCard({
                           }
                           className="text-muted-foreground transition-colors hover:text-primary"
                         >
-                          <BrainCircuit className="h-3.5 w-3.5" />
+                          <AGENT_ICON className="h-3.5 w-3.5" />
                         </button>
                         <button
                           type="button"

@@ -9,12 +9,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BrainCircuit, Package } from "lucide-react";
+import { Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresentation";
 import { listKits, kitHref, type StudyKit } from "../kitService";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 function KitRow({ kit }: { kit: StudyKit }) {
   return (
@@ -99,7 +100,7 @@ export function KitsHome() {
           </p>
           <Button asChild size="sm" className="gap-1.5">
             <Link href="/education/start">
-              <BrainCircuit className="h-4 w-4" />
+              <AGENT_ICON className="h-4 w-4" />
               New kit
             </Link>
           </Button>
@@ -132,7 +133,7 @@ export function KitsHome() {
             </p>
             <Button asChild size="sm" className="gap-1.5">
               <Link href="/education/start">
-                <BrainCircuit className="h-4 w-4" />
+                <AGENT_ICON className="h-4 w-4" />
                 Create your first kit
               </Link>
             </Button>

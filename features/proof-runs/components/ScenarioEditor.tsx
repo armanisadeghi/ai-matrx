@@ -16,7 +16,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
-  BrainCircuit,
   Check,
   ChevronDown,
   ChevronRight,
@@ -54,6 +53,7 @@ import type {
 } from "@/features/proof-runs/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const MARKER_PATTERN = /\{\{marker:([a-zA-Z0-9_]+)\}\}/g;
 
@@ -134,7 +134,7 @@ function ExpectationRow({
               )}
             >
               {isJudge ? (
-                <BrainCircuit className="h-3 w-3" />
+                <AGENT_ICON className="h-3 w-3" />
               ) : (
                 <Code2 className="h-3 w-3" />
               )}

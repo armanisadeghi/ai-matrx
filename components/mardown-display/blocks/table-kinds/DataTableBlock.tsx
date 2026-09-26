@@ -86,7 +86,6 @@ import {
   ArrowUp,
   ArrowUpDown,
   Braces,
-  BrainCircuit,
   Copy,
   Download,
   Loader2,
@@ -128,6 +127,7 @@ import {
   isNumericColumn,
 } from "./data-table-cells";
 import { useDataTableMore } from "./data-table-more";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface DataTableBlockProps {
   serverData?: unknown;
@@ -422,7 +422,7 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
             aria-label="Copy for AI"
             className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
-            <BrainCircuit className="h-3.5 w-3.5" />
+            <AGENT_ICON className="h-3.5 w-3.5" />
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

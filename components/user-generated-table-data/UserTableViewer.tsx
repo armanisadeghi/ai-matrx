@@ -133,7 +133,11 @@ import {
 } from "@/features/data-tables/hooks/useTableRealtime";
 import { useRecordStoreTableRealtime } from "@/features/data-tables/hooks/useRecordStoreTableRealtime";
 import { useGridSelection } from "@/features/data-tables/hooks/useGridSelection";
-import { useCellUndo } from "@/features/data-tables/hooks/useCellUndo";
+import {
+  describeCellGroup,
+  useCellUndo,
+  type CellEdit,
+} from "@/features/data-tables/hooks/useCellUndo";
 import {
   cellDomKey,
   rangeRows as rangeRowsOf,
@@ -248,6 +252,8 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
+// The canonical toaster, for the row action's toast that carries an Undo.
+import { toast as notify } from "@/lib/toast";
 import TableReferenceModal from "./TableReferenceModal";
 import ColumnHeaderMenu from "./ColumnHeaderMenu";
 import { TableLayoutMenu } from "@/features/data-tables/components/TableLayoutMenu";
@@ -680,6 +686,10 @@ const UserTableViewer = ({
     TableDataRow[] | null
   >(null);
   const [loadingFullDataset, setLoadingFullDataset] = useState(false);
+
+  // A request to open ONE column's header filter (from the right-click
+  // Column section). `n` changes on every request so asking twice reopens it.
+  const [filterOpenRequest, setFilterOpenRequest] = useState<{ field: string; n: number } | null>(null);
 
   // Row action state
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
@@ -2680,6 +2690,11 @@ const UserTableViewer = ({
        * all genuinely moved. A pure cell batch patches in place instead.
        */
       refetch = true,
+      /**
+       * Raise the success toast here. FALSE when the caller raises its own —
+       * a row action announces itself with an "Undo" on the same toast.
+       */
+      announce = true,
     ): Promise<boolean> => {
       if (isReadOnly || ops.length === 0) return false;
       const result = await bulkWrite({ tableId, operations: ops });
@@ -2701,7 +2716,7 @@ const UserTableViewer = ({
           description: `${failed.length} row${failed.length === 1 ? "" : "s"} could not be found — they may have been removed by someone else.`,
           variant: "destructive",
         });
-      } else {
+      } else if (announce) {
         toast({ title: describe });
       }
       if (refetch) refreshAfterWrite();
@@ -2741,6 +2756,45 @@ const UserTableViewer = ({
       }
     },
     [cellUndo, fields, patchLocalCell, runBulkOps, tableId],
+  );
+
+  /**
+   * THE AFTER-ACTION UNDO (Arman, 2026-09-21: "just after an action runs … an
+   * easy undo that would guarantee a full recovery"). Gmail's "Undo" on the
+   * sent toast, Airtable's and Linear's toast undo: every cell the action wrote
+   * is recorded as ONE step on the grid's one undo stack, and the success toast
+   * carries an Undo that restores all of them in one transaction — the same
+   * step Cmd-Z and the toolbar Undo take, never a second undo system.
+   */
+  const announceRowActionRun = useCallback(
+    (actionName: string, rowCount: number, changed: CellEdit[], readBackError: string | null) => {
+      const rowsWord = `${rowCount} row${rowCount === 1 ? "" : "s"}`;
+      if (readBackError) {
+        // The store ran it but the rows could not be read back, so there is
+        // nothing exact to restore from here — say so, and name the way back.
+        notify.warning(`${actionName} ran on ${rowsWord}`, {
+          description: `The changed values could not be read back (${readBackError}), so this run cannot be undone from here. Row history still has every earlier value.`,
+          duration: 12000,
+        });
+        return;
+      }
+      if (changed.length === 0) {
+        notify.info(`${actionName}: nothing changed`, {
+          description: `Every value on ${rowCount === 1 ? "this row" : "these rows"} was already what the action sets.`,
+        });
+        return;
+      }
+      const handle = cellUndo.recordGroup(changed, actionName);
+      notify.success(`${actionName}: ${rowsWord} updated`, {
+        description: `${describeCellGroup(changed)} changed. Undo puts every one back exactly as it was.`,
+        duration: 10000,
+        action: {
+          label: "Undo",
+          onClick: () => void cellUndo.undoThis(handle),
+        },
+      });
+    },
+    [cellUndo],
   );
 
   /**
@@ -2835,15 +2889,17 @@ const UserTableViewer = ({
           return;
         }
         const after = await readRowsById({ tableId, rowIds: rows.map((r) => r.id) });
+        const changed: CellEdit[] = [];
         if (!isServiceFailure(after)) {
           for (const row of after.data) {
             const prior = priorById.get(row.id) ?? {};
             for (const f of fields) {
+              if (isComputedColumn(f)) continue;
               const next = row.data[f.field_name] ?? null;
               const was = prior[f.field_name] ?? null;
               if (JSON.stringify(next) === JSON.stringify(was)) continue;
               patchLocalCell(row.id, f.field_name, next);
-              cellUndo.record({
+              changed.push({
                 tableId,
                 rowId: row.id,
                 fieldName: f.field_name,
@@ -2854,7 +2910,7 @@ const UserTableViewer = ({
             }
           }
         }
-        toast({ title: `${action.name}: ${rows.length} row${rows.length === 1 ? "" : "s"} updated` });
+        announceRowActionRun(action.name, rows.length, changed, isServiceFailure(after) ? after.error : null);
         return;
       }
       const built = buildRowActionOps(action, rows, fields);
@@ -2875,13 +2931,15 @@ const UserTableViewer = ({
         built.ops,
         `${action.name}: ${rows.length} row${rows.length === 1 ? "" : "s"} updated`,
         false,
+        false,
       );
       if (!landed) return;
+      const changed: CellEdit[] = [];
       for (const [rowId, patch] of built.patches) {
         const prior = priorByRow.get(rowId) ?? {};
         for (const [fieldName, value] of Object.entries(patch)) {
           patchLocalCell(rowId, fieldName, value);
-          cellUndo.record({
+          changed.push({
             tableId,
             rowId,
             fieldName,
@@ -2891,9 +2949,10 @@ const UserTableViewer = ({
           });
         }
       }
+      announceRowActionRun(action.name, rows.length, changed, null);
     },
     [
-      cellUndo,
+      announceRowActionRun,
       currentUserId,
       displayRows,
       fields,
@@ -3637,6 +3696,39 @@ const UserTableViewer = ({
       },
       actions: rowActionMenuItems,
     });
+  /**
+   * Make a column the table's row label — ONE path for the header ⌄ menu and
+   * the header's right-click Column section.
+   */
+  const setColumnAsRowLabel = (fieldName: string) =>
+    void (async () => {
+      const field = fields.find((f) => f.field_name === fieldName);
+      if (!field) return;
+      const result = await setTableRowLabel({
+        tableId,
+        rowLabel: { kind: "field", field: field.field_name },
+      });
+      if (isServiceFailure(result)) {
+        toast({ title: "Could not set the row label", description: result.error, variant: "destructive" });
+        return;
+      }
+      setTableInfo((prev) =>
+        prev
+          ? {
+              ...prev,
+              metadata: {
+                ...((prev.metadata as Record<string, unknown> | null | undefined) ?? {}),
+                row_label: { kind: "field", field: field.field_name },
+              },
+            }
+          : prev,
+      );
+      toast({
+        title: `Rows are now called by ${field.display_name}`,
+        description: "References, copies and links to this table's rows use it.",
+        variant: "success",
+      });
+    })();
   const gridColumnSection = buildGridColumnMenuSection({
       primary: gridMenuTargetKind === "column",
       column: menuField
@@ -3647,6 +3739,7 @@ const UserTableViewer = ({
             highlight: tableStyle.columns?.[menuField.field_name] ?? null,
             canColorBy: fieldCanColorBy(menuField),
             isColorBy: tableStyle.colorBy?.field === menuField.field_name,
+            isRowLabel: isRowLabelField(menuField.field_name, tableInfo?.metadata, fields),
             summary: columnSummaries[menuField.field_name] ?? null,
             summaryKinds: summaryKindsFor(menuField.data_type).map((kind) => ({
               kind,
@@ -3674,7 +3767,14 @@ const UserTableViewer = ({
             stylePath.colorBy(),
             on ? { field: fieldName, target: "row" } : null,
           ),
-        colors: () => setShowColorsDialog(true),
+        useAsRowLabel: (fieldName) => setColumnAsRowLabel(fieldName),
+        // After the right-click menu has closed and handed focus back, so the
+        // popover it opens is not dismissed by that same focus change.
+        filter: (fieldName) =>
+          window.setTimeout(
+            () => setFilterOpenRequest((prev) => ({ field: fieldName, n: (prev?.n ?? 0) + 1 })),
+            0,
+          ),
         sortAsc: (fieldName) => void handleSort(fieldName, "asc"),
         sortDesc: (fieldName) => void handleSort(fieldName, "desc"),
         clearSort,
@@ -3704,6 +3804,18 @@ const UserTableViewer = ({
     buildDatasetTableMenuSection({
       label: tableInfo.table_name ? `Table · ${tableInfo.table_name}` : "Table",
       getRow: () => ({ id: tableId, name: tableInfo.table_name ?? null }),
+      // Table-wide doors sit ONLY here, never in a column's section.
+      extraItems: isReadOnly
+        ? []
+        : [
+            {
+              kind: "item" as const,
+              id: "grid-table-colors",
+              label: "Table colors…",
+              icon: Paintbrush,
+              onSelect: () => setShowColorsDialog(true),
+            },
+          ],
       unavailable: {
         // On the route itself the door leads to where the user already is.
         "dataset-open-workspace":
@@ -4858,33 +4970,10 @@ const UserTableViewer = ({
                         onUseAsRowLabel={
                           isReadOnly || isRowLabelField(field.field_name, tableInfo?.metadata, fields)
                             ? undefined
-                            : () =>
-                                void (async () => {
-                                  const result = await setTableRowLabel({
-                                    tableId,
-                                    rowLabel: { kind: "field", field: field.field_name },
-                                  });
-                                  if (isServiceFailure(result)) {
-                                    toast({ title: "Could not set the row label", description: result.error, variant: "destructive" });
-                                    return;
-                                  }
-                                  setTableInfo((prev) =>
-                                    prev
-                                      ? {
-                                          ...prev,
-                                          metadata: {
-                                            ...((prev.metadata as Record<string, unknown> | null | undefined) ?? {}),
-                                            row_label: { kind: "field", field: field.field_name },
-                                          },
-                                        }
-                                      : prev,
-                                  );
-                                  toast({
-                                    title: `Rows are now called by ${field.display_name}`,
-                                    description: "References, copies and links to this table's rows use it.",
-                                    variant: "success",
-                                  });
-                                })()
+                            : () => setColumnAsRowLabel(field.field_name)
+                        }
+                        openRequest={
+                          filterOpenRequest?.field === field.field_name ? filterOpenRequest.n : 0
                         }
                         onConfigure={
                           isReadOnly

@@ -27,7 +27,6 @@
 
 import { useState } from "react";
 import {
-  BrainCircuit,
   Check,
   CircleSlash,
   ExternalLink,
@@ -61,6 +60,7 @@ import {
   topicTreeRows,
 } from "./topicRows";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface MapTopicProposalViewProps {
   proposal: MapTopicProposal;
@@ -339,7 +339,7 @@ function ProposalDoors({
           }
           title="Ask the map agent about this proposal"
         >
-          <BrainCircuit className="h-3.5 w-3.5" aria-hidden />
+          <AGENT_ICON className="h-3.5 w-3.5" aria-hidden />
           Ask the map
         </Button>
       </div>

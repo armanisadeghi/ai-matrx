@@ -27,7 +27,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BrainCircuit, ClipboardList, Info, Lock } from "lucide-react";
+import { ClipboardList, Info, Lock } from "lucide-react";
 
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
@@ -42,6 +42,7 @@ import { fetchHrCustomFieldRegistry } from "../service";
 import { HrSettingsShell } from "../HrSettingsShell";
 import type { HrCustomFieldDefinition, HrCustomFieldTarget } from "../types";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 // THE RECORD-TYPE NAMES ARE READ, NOT WRITTEN HERE (DD-097). This file used to
 // carry a seven-entry `TOKEN_LABEL` map that matched a seven-entry token list in
@@ -154,7 +155,7 @@ export function HrFieldsPanel() {
             </>
           ) : (
             <>
-              <BrainCircuit className="h-3.5 w-3.5 text-muted-foreground" />
+              <AGENT_ICON className="h-3.5 w-3.5 text-muted-foreground" />
               {row.ai_exposure}
             </>
           )}

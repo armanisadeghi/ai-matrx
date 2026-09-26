@@ -618,5 +618,16 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     messageId,
     requestId,
   });
-  return block.content ? renderBasicMarkdown(block.content) : null;
+  if (block.content) return renderBasicMarkdown(block.content);
+  // Nothing to show as markdown: never a silent blank. The honest catch-all
+  // names the type and shows the payload (a typed part with no renderer yet).
+  return (
+    <BlockComponents.UnknownDataEventBlock
+      key={index}
+      dataType={block.type}
+      data={(block.serverData as Record<string, unknown> | undefined) ?? {}}
+      conversationId={conversationId}
+      messageId={messageId}
+    />
+  );
 };

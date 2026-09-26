@@ -15,7 +15,6 @@ import {
   Newspaper,
   Search,
   Shapes,
-  BrainCircuit,
 } from "lucide-react";
 import {
   ModuleLanding,
@@ -23,6 +22,7 @@ import {
   type ModuleStep,
   type ModuleSubArea,
 } from "../ModuleLanding";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const CAPABILITIES: ModuleCapability[] = [
   {
@@ -50,7 +50,7 @@ const CAPABILITIES: ModuleCapability[] = [
       "The search you are looking at is in the address bar. Send it to someone and they see the same search. Back and forward move through the ones you ran.",
   },
   {
-    icon: BrainCircuit,
+    icon: AGENT_ICON,
     title: "The same pieces the rest of AI Matrx uses",
     description:
       "A result here is the identical piece an agent, a workflow, or a document works with — so what you find can be handed straight to the work you are doing.",

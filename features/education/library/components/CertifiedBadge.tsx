@@ -1,5 +1,6 @@
-import { BadgeCheck, BrainCircuit } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /**
  * The content trust mark. ONE component everywhere so the signal reads
@@ -35,7 +36,7 @@ export function CertifiedBadge({
   size?: "sm" | "md";
   className?: string;
 }) {
-  const Icon = humanVerified ? BadgeCheck : BrainCircuit;
+  const Icon = humanVerified ? BadgeCheck : AGENT_ICON;
   const label = humanVerified ? "Certified" : "AI-built starter";
   const title =
     note ??

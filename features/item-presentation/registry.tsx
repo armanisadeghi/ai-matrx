@@ -33,7 +33,7 @@ import {
   FileText,
   MessageSquare,
   Mail,
-  BrainCircuit,
+  Boxes,
   Contact,
   LayoutTemplate,
 } from "lucide-react";
@@ -912,7 +912,7 @@ async function enrichFile(
 export const FALLBACK_CONFIG: ItemTypeConfig = {
   type: "file" /* placeholder; not used for routing */,
   label: "Item",
-  icon: BrainCircuit,
+  icon: Boxes,
   accent: {
     text: "text-zinc-500 dark:text-zinc-400",
     bg: "bg-zinc-500/10",

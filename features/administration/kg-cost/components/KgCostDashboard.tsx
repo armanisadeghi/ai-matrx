@@ -32,7 +32,6 @@ import {
   RefreshCw,
   ChevronRight,
   ExternalLink,
-  BrainCircuit,
   Brain,
   Lightbulb,
   TrendingUp,
@@ -79,6 +78,7 @@ import {
   type UnitEconomicsRecentRun,
 } from "../service/kgCostService";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -276,7 +276,7 @@ function KpiTiles({
       <KpiTile
         label="Live NER coverage"
         value={nerValue}
-        icon={<BrainCircuit className="h-3.5 w-3.5" />}
+        icon={<AGENT_ICON className="h-3.5 w-3.5" />}
         loading={loading}
         hint={nerHint}
       />

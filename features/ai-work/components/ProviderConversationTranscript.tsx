@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
-  BrainCircuit,
   ChevronUp,
   CircleAlert,
   CircleDot,
@@ -72,6 +71,7 @@ import {
   type LiveTranscriptStatus,
 } from "../hooks/useLiveProviderTranscript";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /** Tool activity page loaded per request — a mirror can hold thousands. */
 const TOOL_ACTIVITY_PAGE_SIZE = 200;
@@ -458,7 +458,7 @@ export function ProviderConversationTranscript({
             value="analyze"
             className="min-h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
           >
-            <BrainCircuit className="h-3.5 w-3.5" />
+            <AGENT_ICON className="h-3.5 w-3.5" />
             Analyze
           </TabsTrigger>
           <TabsTrigger

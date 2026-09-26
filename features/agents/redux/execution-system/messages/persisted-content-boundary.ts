@@ -220,7 +220,10 @@ export function parsePersistedMessageContent(
       isRecord(value) &&
       typeof value.type === "string" &&
       value.type.trim().length > 0 &&
-      !isKnownMessagePartType(value.type)
+      !isKnownMessagePartType(value.type) &&
+      // A legacy interactive block that failed recovery is MALFORMED legacy
+      // data, not a new kind — it keeps throwing below.
+      !("_matrxBlockType" in value)
     ) {
       // Loud, never silent: a kind the server persists that this build does
       // not know. It still renders (as the Unknown Data Event block).

@@ -23,7 +23,6 @@ import {
   Gamepad2,
   Cpu,
   Zap,
-  BrainCircuit,
   Database,
   KeyRound,
   Server,
@@ -34,6 +33,7 @@ import { Chrome } from "@/components/icons/brand-icons";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MobileDock, type DockItem } from "@/components/navigation/MobileDock";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 interface SettingsNavItem {
   title: string;
@@ -118,7 +118,7 @@ const settingsNavItems: SettingsNavItem[] = [
       {
         title: "Agent Context",
         param: "agentContext",
-        icon: <BrainCircuit className="h-3 w-3" />,
+        icon: <AGENT_ICON className="h-3 w-3" />,
       },
     ],
   },

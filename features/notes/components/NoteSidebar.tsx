@@ -45,7 +45,7 @@ import {
   StickyNote,
   Layers,
   Clock,
-  BrainCircuit,
+  LayoutGrid,
   RotateCcw,
   TriangleAlert,
   Users,
@@ -162,7 +162,7 @@ const GROUP_MODES: {
   label: string;
   icon: typeof Folder;
 }[] = [
-  { mode: "default", label: "Default", icon: BrainCircuit },
+  { mode: "default", label: "Default", icon: LayoutGrid },
   { mode: "folder", label: "Folder", icon: Folder },
   { mode: "recent", label: "Recent", icon: Clock },
 ];

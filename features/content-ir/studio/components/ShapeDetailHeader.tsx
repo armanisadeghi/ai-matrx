@@ -29,7 +29,6 @@
 
 import {
   Boxes,
-  BrainCircuit,
   ClipboardCopy,
   Eye,
   FileJson,
@@ -66,6 +65,7 @@ import {
 } from "@/features/content-ir/studio/kind-agent-intents";
 import { useKindAgentLaunch } from "@/features/content-ir/studio/useKindAgentLaunch";
 import { SHAPE_EDITOR_ANCHOR_ID } from "@/features/content-ir/studio/components/ShapeOwnerEditor";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 interface ShapeDetailHeaderProps {
   kind: string;
@@ -132,7 +132,7 @@ export default function ShapeDetailHeader({
   // so "Edit Shape" is a jump-to, and reads fine as a tooltipped pencil.
   const agentAction = {
     label: isOwnedByViewer ? "Edit with agent" : "Build with agent",
-    icon: BrainCircuit,
+    icon: AGENT_ICON,
     onPress: launchAgent,
     disabled: launching,
     primary: true,

@@ -19,7 +19,7 @@
 // trusted or policed.
 
 import { useState } from "react";
-import { BrainCircuit, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ import { NumberField, SwitchField, numberFieldValue } from "./runFields";
 import { SiteChooser } from "./SiteChooser";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /** How many topics the picker's search offers at once. */
 const TOPIC_SEARCH_LIMIT = 10;
@@ -89,7 +90,7 @@ export function ProposeIntentsRunControl({
   return (
     <RunControlShell
       label="Propose destinations"
-      icon={<BrainCircuit className="h-3.5 w-3.5" aria-hidden />}
+      icon={<AGENT_ICON className="h-3.5 w-3.5" aria-hidden />}
       state={{
         running: run.running,
         restoring: run.restoring,

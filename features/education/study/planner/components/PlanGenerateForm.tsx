@@ -9,7 +9,7 @@
 // React Compiler is on: no manual memo.
 
 import { useEffect, useState } from "react";
-import { CalendarClock, Loader2, BrainCircuit } from "lucide-react";
+import { CalendarClock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Slider } from "@/components/ui/slider";
@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { publishPlanSetupDraft } from "../plannerSnapshot";
 import type { PlanInput, Weekday } from "../types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const SURFACE_NAME = "matrx-user/education-planner";
 
@@ -223,7 +224,7 @@ export function PlanGenerateForm({
   return (
     <div className="rounded-xl border border-border bg-card p-5">
       <div className="mb-4 flex items-center gap-2">
-        <BrainCircuit className="h-5 w-5 text-primary" />
+        <AGENT_ICON className="h-5 w-5 text-primary" />
         <h2 className="text-sm font-semibold text-foreground">
           Generate your study plan
         </h2>

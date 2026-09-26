@@ -20,7 +20,7 @@
 // saveRules) — never a second write path.
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Keyboard, Plus, BrainCircuit, Zap } from "lucide-react";
+import { Check, Keyboard, Plus, Zap } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,7 @@ import {
   RuleFields,
   type RuleFieldValues,
 } from "../detail/RuleFields";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface AddRulePanelProps {
   rulebookId: string;
@@ -306,7 +307,7 @@ export function AddRulePanel({
           className="h-7"
           onClick={() => setMode("ai")}
         >
-          <BrainCircuit className="h-3.5 w-3.5" />
+          <AGENT_ICON className="h-3.5 w-3.5" />
           With AI
         </Button>
         <Button

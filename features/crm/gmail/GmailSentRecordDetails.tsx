@@ -30,7 +30,6 @@
 
 import { useState } from "react";
 import {
-  BrainCircuit,
   FileText,
   Link2Off,
   Loader2,
@@ -57,6 +56,7 @@ import {
   gmailAssociationStanding,
   type GmailIntendedAssociation,
 } from "./sent-record-associations";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface GmailSentRecordDetailsProps {
   row: InteractionRow;
@@ -224,7 +224,7 @@ export function GmailSentRecordDetails({
       {/* Who wrote it, when it was not the person who sent it. */}
       {facts.draftedByLabel || facts.draftedByAgentId || facts.draftedByRunId ? (
         <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-muted-foreground">
-          <BrainCircuit className="h-3 w-3 shrink-0" aria-hidden />
+          <AGENT_ICON className="h-3 w-3 shrink-0" aria-hidden />
           <span>Drafted by</span>
           {facts.draftedByAgentId ? (
             <EntityRef

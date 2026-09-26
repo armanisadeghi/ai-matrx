@@ -9,7 +9,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BrainCircuit, ExternalLink, Loader2 } from "lucide-react";
+import { ExternalLink, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataRowWindow } from "@/components/official/MatrxDataTableHost";
@@ -42,6 +42,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectApiServiceTargets } from "@/lib/redux/slices/apiConfigSlice";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 function ratioLabel(part: number, whole: number): string {
   if (whole === 0) return "—";
@@ -345,7 +346,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
                           {running ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
-                            <BrainCircuit className="h-3 w-3" />
+                            <AGENT_ICON className="h-3 w-3" />
                           )}
                           {action.label}
                         </Button>

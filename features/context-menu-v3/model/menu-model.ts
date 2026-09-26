@@ -47,7 +47,6 @@ import {
   AtSign,
   Bug,
   Braces,
-  BrainCircuit,
   Volume2,
   Headphones,
   AudioLines,
@@ -78,6 +77,7 @@ import type {
   ContextMenuExtraItem,
   ContextMenuExtraSection,
 } from "../types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 // ---------------------------------------------------------------------------
 // Node types (internal — the public surface contract stays `ContextMenuExtraItem`).
@@ -496,7 +496,7 @@ function boundAgentsNode(m: ContextMenuActions): MenuSubmenuNode | null {
         kind: "item",
         id: `agent:${section.key}:${agent.agentId}`,
         label: agent.name,
-        icon: BrainCircuit,
+        icon: AGENT_ICON,
         iconClassName: "text-indigo-500/80",
         onSelect: () => void m.handleBoundAgentExecute(agent),
       });
@@ -506,7 +506,7 @@ function boundAgentsNode(m: ContextMenuActions): MenuSubmenuNode | null {
     kind: "submenu",
     id: "placement:bound-agent",
     label: "Agents",
-    icon: BrainCircuit,
+    icon: AGENT_ICON,
     iconClassName: "text-indigo-500",
     disabled: mode === "disable" || (!hasAgents && !m.boundAgentsLoading),
     loading: m.boundAgentsLoading,

@@ -32,7 +32,6 @@ import Link from "next/link";
 import {
   ArrowRight,
   BarChart3,
-  BrainCircuit,
   Layers,
   MapPinned,
   Scale,
@@ -46,6 +45,7 @@ import {
 import { cn } from "@/lib/utils";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { ValueDoors } from "@/features/marketing/seo/value-system/ValueDoors";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 interface Door {
   /** What the person DOES — the reason they came looking. */
@@ -82,7 +82,7 @@ export function KeywordStartHere({
       screen: "Teach classes",
       line: "Patterns and brand names that class keywords automatically, the guidelines every AI run reads first, and batch AI classing.",
       href: `${keywords}?view=classification`,
-      icon: BrainCircuit,
+      icon: AGENT_ICON,
     },
     {
       action: "See what everything is worth, and why",

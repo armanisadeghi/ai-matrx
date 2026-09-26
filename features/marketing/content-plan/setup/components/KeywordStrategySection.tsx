@@ -13,7 +13,7 @@
  * Results are previewed grouped by role, then applied on the user's word.
  */
 import { useState } from "react";
-import { ArrowRight, BrainCircuit, Loader2, X } from "lucide-react";
+import { ArrowRight, Loader2, X } from "lucide-react";
 
 import { ProcessingUnitsBadge } from "@/components/processing-units/ProcessingUnitsBadge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ import {
 } from "../kind-values";
 import { SetupSection } from "./SetupSection";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const ROLE_LABEL: Record<PageRole, string> = {
   money: "money",
@@ -154,7 +155,7 @@ export function KeywordStrategySection({
             {busy ? (
               <Loader2 className="h-3 w-3 animate-spin" />
             ) : (
-              <BrainCircuit className="h-3 w-3" />
+              <AGENT_ICON className="h-3 w-3" />
             )}
             {strategy ? "Re-plan" : "Plan"} {tierEstimate?.pages ?? "…"} pages
             {tierEstimate ? ` · ${tierEstimate.calls} call${tierEstimate.calls === 1 ? "" : "s"}` : ""}

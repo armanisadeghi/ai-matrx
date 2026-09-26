@@ -133,10 +133,17 @@ export function VisualEditor({
       },
     },
     onCreate: ({ editor: created }) => {
-      baseline.current = captureBaseline(created.state.doc, load.plan);
+      // Tiptap emits "create" on a timer. Under load a keystroke can land first —
+      // then the baseline was already captured from the doc BEFORE that keystroke
+      // (onUpdate below) and must not be replaced by the edited doc, or the edit
+      // reads as "unchanged" and is silently dropped on save (verify-RC-B4 R6-4).
+      if (!baseline.current) baseline.current = captureBaseline(created.state.doc, load.plan);
       onLoadStats?.(load.plan.stats);
     },
-    onUpdate: ({ editor: updated }) => {
+    onUpdate: ({ editor: updated, transaction }) => {
+      // The first edit arrived before "create": the loaded document is the doc
+      // this transaction started from.
+      if (!baseline.current) baseline.current = captureBaseline(transaction.before, load.plan);
       if (timer.current !== null) window.clearTimeout(timer.current);
       timer.current = window.setTimeout(() => {
         timer.current = null;

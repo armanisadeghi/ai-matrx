@@ -18,7 +18,6 @@ import {
   HeartHandshake,
   Loader2,
   RefreshCw,
-  BrainCircuit,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -40,6 +39,7 @@ import { publishPlannerPlanSnapshot } from "../plannerSnapshot";
 import { PlanAgenda } from "./PlanAgenda";
 import { PlanGenerateForm } from "./PlanGenerateForm";
 import type { PlanDraft, PlanInput, PlanWithDays } from "../types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const MS_PER_DAY = 86_400_000;
 
@@ -346,7 +346,7 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
               </h2>
               {plan.plan.generated_by === "ai" ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
-                  <BrainCircuit className="h-3 w-3" />
+                  <AGENT_ICON className="h-3 w-3" />
                   AI plan
                 </span>
               ) : (
@@ -386,7 +386,7 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
               className="gap-1.5 text-muted-foreground"
               onClick={() => setForceForm(true)}
             >
-              <BrainCircuit className="h-3.5 w-3.5" />
+              <AGENT_ICON className="h-3.5 w-3.5" />
               New
             </Button>
             <Button

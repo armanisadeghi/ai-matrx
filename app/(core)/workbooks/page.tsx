@@ -8,7 +8,6 @@ import {
   FileSpreadsheet,
   Loader2,
   Plus,
-  BrainCircuit,
   Trash,
   Upload,
 } from "lucide-react";
@@ -54,6 +53,7 @@ import {
   isOrganizationSelectionCancelled,
 } from "@/lib/organization/organization-gate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /**
  * Pre-flight import file check. We deliberately do NOT use the `accept`
@@ -438,7 +438,7 @@ export default function WorkbooksLandingPage() {
                 solid pill overflowed past the avatar at 375px. */}
             <div className="hidden sm:flex items-center gap-0.5">
               <TapTargetButton
-                icon={<BrainCircuit className="h-4 w-4" />}
+                icon={<AGENT_ICON className="h-4 w-4" />}
                 ariaLabel="Smart import"
                 tooltip="Auto-detect whether your file is a typed dataset or a workbook"
                 disabled={importing || creating || smartCommitting}
@@ -514,7 +514,7 @@ export default function WorkbooksLandingPage() {
               smartFileInputRef.current?.click();
             }}
           >
-            <BrainCircuit className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <AGENT_ICON className="h-4 w-4 shrink-0 text-muted-foreground" />
             <div className="text-left">
               <div className="text-[15px]">Smart import</div>
               <div className="text-xs text-muted-foreground">

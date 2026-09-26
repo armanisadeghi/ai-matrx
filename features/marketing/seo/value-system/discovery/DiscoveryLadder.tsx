@@ -26,7 +26,6 @@ import { useCallback, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowUpRight,
-  BrainCircuit,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -58,6 +57,7 @@ import {
   type DiscoveryStepStatus,
 } from "./data";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /**
  * `requires` is the rung's REAL prerequisite list, not its position.
@@ -229,7 +229,7 @@ export function DiscoveryLadder({ siteId, brandId }: DiscoveryLadderProps) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-2.5">
-        <BrainCircuit className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        <AGENT_ICON className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <p className="text-xs text-muted-foreground">
           AI reads this site cold — its own crawled pages, nothing else — and
           proposes each answer below in order. You read a rung's result, then

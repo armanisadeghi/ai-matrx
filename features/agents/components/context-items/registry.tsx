@@ -41,6 +41,10 @@ import {
 } from "lucide-react";
 import { Youtube } from "@/components/icons/brand-icons";
 import type { ComponentType } from "react";
+import {
+  CONTEXT_ITEM_BLOCK_TYPES,
+  hasContextItemDef,
+} from "./context-item-block-types";
 import type {
   ContextItemBodyProps,
   ContextItemTitleProps,
@@ -347,16 +351,22 @@ const FALLBACK_DEF: ContextItemTypeDef = {
   Body: GenericBody,
 };
 
-/**
- * True when a block type has a REGISTERED context-item def. This is the one
- * rule for "is this persisted part an attachment chip": the registry decides,
- * never a hand-kept list of the types that are NOT attachments (that closed
- * list turned every new part kind — speech_script, any future kind — into a
- * chip reading "Attachment", and kept decision_questions out of the bubble).
- */
-export function hasContextItemDef(blockType: string): boolean {
-  return BY_BLOCK_TYPE.has(blockType);
+// The pure membership list must match these defs exactly — checked once at
+// load so a def added here without the list (or vice versa) fails loudly.
+{
+  const listed = new Set<string>(CONTEXT_ITEM_BLOCK_TYPES);
+  const drift = [
+    ...[...BY_BLOCK_TYPE.keys()].filter((t) => !listed.has(t)),
+    ...CONTEXT_ITEM_BLOCK_TYPES.filter((t) => !BY_BLOCK_TYPE.has(t)),
+  ];
+  if (drift.length > 0) {
+    throw new Error(
+      `context-items registry and CONTEXT_ITEM_BLOCK_TYPES disagree: ${drift.join(", ")}`,
+    );
+  }
 }
+
+export { hasContextItemDef };
 
 /** Resolve the registered def for a block type, or a graceful fallback. */
 export function resolveContextItemDef(blockType: string): ContextItemTypeDef {

@@ -22,7 +22,7 @@
  */
 
 import React from "react";
-import { BrainCircuit, CheckCircle2, Loader2, PackagePlus } from "lucide-react";
+import { CheckCircle2, Loader2, PackagePlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +36,7 @@ import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDis
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 
 import { INSTANT_ANALYSIS_KIND } from "../pipeline-types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface InstantProcessSheetProps {
   open: boolean;
@@ -148,7 +149,7 @@ export function InstantProcessSheet({
           </Button>
           {(storedResult || showUnrecoverable) && !isRunning && (
             <Button variant="outline" onClick={onReanalyze}>
-              <BrainCircuit className="mr-1.5 h-4 w-4" />
+              <AGENT_ICON className="mr-1.5 h-4 w-4" />
               Re-analyze
             </Button>
           )}

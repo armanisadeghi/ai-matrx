@@ -17,7 +17,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { Loader2, MessageCircle, MessagesSquare, Plus, BrainCircuit } from "lucide-react";
+import { Loader2, MessageCircle, MessagesSquare, Plus } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { AssociationEntitySelect } from "@ai-matrx/associations/react";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
@@ -42,6 +42,7 @@ import {
 } from "@/features/war-room/redux/thunks";
 import { useThreadConversationSelectAdapter } from "@/features/war-room/hooks/useThreadEntitySelect";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 // Code-split: ThreadAgentPanel pulls the Scribe Agent+ graph (agents execution +
 // TTS + working-document). Lazy so it never weighs down the room bundle; it
@@ -126,7 +127,7 @@ function ThreadChatChrome({
                   type="button"
                   className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 >
-                  <BrainCircuit className="size-3.5" />
+                  <AGENT_ICON className="size-3.5" />
                   New chat with agent
                 </button>
               }

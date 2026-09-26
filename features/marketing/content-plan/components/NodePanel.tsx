@@ -11,7 +11,6 @@ import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   BookOpenCheck,
-  BrainCircuit,
   Loader2,
   PenLine,
   Trash2,
@@ -128,6 +127,7 @@ import { BriefEditor } from "./BriefEditor";
 import { hasKeywordAssignment } from "../plan-assists-producer";
 import type { NodePipelineProgress } from "../lib/pipeline-progress";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function NodePanel({
   node,
@@ -1033,7 +1033,7 @@ export function NodePanel({
                     {stepRun.isRunning && stepRun.run.step === "p4_write" ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      <BrainCircuit className="h-3.5 w-3.5" />
+                      <AGENT_ICON className="h-3.5 w-3.5" />
                     )}
                     Write with AI
                   </Button>
@@ -1454,7 +1454,7 @@ export function NodePanel({
                     {deepeningThisNode ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      <BrainCircuit className="h-3.5 w-3.5" />
+                      <AGENT_ICON className="h-3.5 w-3.5" />
                     )}
                     {deepeningThisNode
                       ? "Researching…"
@@ -1575,7 +1575,7 @@ export function NodePanel({
                         })
                       }
                     >
-                      <BrainCircuit className="mr-1 h-3.5 w-3.5" />
+                      <AGENT_ICON className="mr-1 h-3.5 w-3.5" />
                       Run research for this page
                     </Button>
                   </div>

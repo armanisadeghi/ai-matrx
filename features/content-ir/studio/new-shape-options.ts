@@ -16,13 +16,13 @@
 
 import type { LucideIcon } from "lucide-react";
 import {
-  BrainCircuit,
   FileText,
   Gauge,
   LayoutPanelTop,
   ListOrdered,
   Table,
 } from "lucide-react";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface NewShapeChoice<T extends string> {
   id: T;
@@ -79,7 +79,7 @@ export const NEW_SHAPE_RENDER_STYLES: ReadonlyArray<
     id: "auto",
     label: "You choose",
     description: "Read what I wrote and pick the layout that fits it best.",
-    icon: BrainCircuit,
+    icon: AGENT_ICON,
   },
 ];
 

@@ -7,7 +7,6 @@
 
 import { useState } from "react";
 import {
-  BrainCircuit,
   Check,
   GitCompareArrows,
   Loader2,
@@ -21,6 +20,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import type { useProTextareaAgentAction } from "./useProTextareaAgentAction";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function ProTextAgentActionPopoverBody({
   title,
@@ -70,7 +70,7 @@ export function ProTextAgentActionPopoverBody({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-          <BrainCircuit className="h-3.5 w-3.5 text-primary" />
+          <AGENT_ICON className="h-3.5 w-3.5 text-primary" />
           {title}
           {isBusy && (
             <span className="ml-1 inline-flex items-center gap-1 text-[10px] font-normal text-muted-foreground">
@@ -113,7 +113,7 @@ export function ProTextAgentActionPopoverBody({
           ) : hasRun ? (
             <RotateCcw className="h-3.5 w-3.5" />
           ) : (
-            <BrainCircuit className="h-3.5 w-3.5" />
+            <AGENT_ICON className="h-3.5 w-3.5" />
           )}
           {hasRun ? "Re-run" : "Run"}
         </button>

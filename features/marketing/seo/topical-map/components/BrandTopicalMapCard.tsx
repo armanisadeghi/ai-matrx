@@ -11,7 +11,7 @@
  */
 
 import Link from "next/link";
-import { BrainCircuit } from "lucide-react";
+import {  } from "lucide-react";
 
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
@@ -20,6 +20,7 @@ import { useTopicalMaps } from "../hooks";
 import { topicalMapErrorText } from "../errors";
 import { startMapHref } from "./TopicalMapHome";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function BrandTopicalMapCard({
   brandId,
@@ -59,7 +60,7 @@ export function BrandTopicalMapCard({
             href={startMapHref(brandSeg, { source: "data" })}
             className="inline-flex w-fit items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-muted"
           >
-            <BrainCircuit className="h-4 w-4" aria-hidden />
+            <AGENT_ICON className="h-4 w-4" aria-hidden />
             Start a map from this brand&apos;s data
           </Link>
         </div>

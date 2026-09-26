@@ -30,7 +30,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { BrainCircuit, Info } from "lucide-react";
+import { Info } from "lucide-react";
 
 import type {
   EvaluationInput,
@@ -39,6 +39,7 @@ import type {
   SignalDef,
   SignalValue,
 } from "../types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const PROVENANCE_OPTIONS: readonly { value: Provenance; label: string }[] = [
   { value: "api", label: "API" },
@@ -205,7 +206,7 @@ export function CandidateForm({ config, input, onChange }: Props) {
                                 variant="secondary"
                                 className="h-4 shrink-0 gap-1 px-1 text-[10px]"
                               >
-                                <BrainCircuit className="h-2.5 w-2.5" />
+                                <AGENT_ICON className="h-2.5 w-2.5" />
                                 AI
                               </Badge>
                             </TooltipTrigger>

@@ -105,7 +105,7 @@ function setConfigRe(guc: string): RegExp {
   return new RegExp(String.raw`set_config\s*\(\s*'${guc}'\s*,\s*${VALUE}\s*,\s*true\s*\)`, "gi");
 }
 
-function toMs(n: string, unit: string | undefined): number {
+export function toMs(n: string, unit: string | undefined): number {
   const v = Number(n);
   switch ((unit ?? "ms").toLowerCase()) {
     case "s":
@@ -120,7 +120,7 @@ function toMs(n: string, unit: string | undefined): number {
 }
 
 /** Strip `--` line comments and `/* *\/` blocks so a comment never trips (or hides) a rule. */
-function stripSqlComments(sql: string): string {
+export function stripSqlComments(sql: string): string {
   return sql.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/--[^\n]*/g, " ");
 }
 
@@ -183,7 +183,7 @@ export function limitsSql(ceilingMs: number, gate: string): string {
 
 // ─── the client ──────────────────────────────────────────────────────────────
 
-type QueryFn = (...args: unknown[]) => Promise<unknown>;
+export type QueryFn = (...args: unknown[]) => Promise<unknown>;
 
 /**
  * Wrap a (connected or not) pg.Client so every statement runs under the gate's limits. Exported
@@ -194,7 +194,38 @@ export function governClient<T extends { query: QueryFn; end: () => Promise<void
   opts: GateDbOptions,
 ): T {
   const ceilingMs = resolveCeiling(opts);
-  const limits = limitsSql(ceilingMs, opts.gate);
+  return governTransactions(client, {
+    limitsSql: limitsSql(ceilingMs, opts.gate),
+    refusal: (text) => refusalFor(text, ceilingMs),
+    refuse: (why) => new GateDbRefusal(`${opts.gate}: ${why}`),
+    onEnd: () => {
+      openSessions = Math.max(0, openSessions - 1);
+    },
+  });
+}
+
+/**
+ * What one governed client enforces: the statement that stamps the limits on a transaction, the
+ * rule that refuses a statement before it is sent, and the error it throws. The gate profile is
+ * `governClient`; the production profile is `scripts/lib/production-guard.ts` — one control flow.
+ */
+export interface TransactionPolicy {
+  readonly limitsSql: string;
+  readonly refusal: (text: string) => string | null;
+  readonly refuse: (why: string) => Error;
+  readonly onEnd?: () => void;
+}
+
+/**
+ * Wrap a pg.Client so every transaction it opens carries `policy.limitsSql` (transaction-local),
+ * every bare statement runs in its own stamped transaction, and a refused statement never leaves
+ * the process.
+ */
+export function governTransactions<T extends { query: QueryFn; end: () => Promise<void> }>(
+  client: T,
+  policy: TransactionPolicy,
+): T {
+  const limits = policy.limitsSql;
   const raw = client.query.bind(client) as QueryFn;
   const rawEnd = client.end.bind(client);
   let inTx = false;
@@ -212,8 +243,8 @@ export function governClient<T extends { query: QueryFn; end: () => Promise<void
     // whatever transaction the gate opened. Nothing in the gates uses one today.
     if (text === null) return raw(...args);
 
-    const refusal = refusalFor(text, ceilingMs);
-    if (refusal) throw new GateDbRefusal(`${opts.gate}: ${refusal}`);
+    const refusal = policy.refusal(text);
+    if (refusal) throw policy.refuse(refusal);
 
     const hasValues = Array.isArray(args[1]) && (args[1] as unknown[]).length > 0;
 
@@ -255,7 +286,7 @@ export function governClient<T extends { query: QueryFn; end: () => Promise<void
   (client as { end: () => Promise<void> }).end = async () => {
     if (ended) return;
     ended = true;
-    openSessions = Math.max(0, openSessions - 1);
+    policy.onEnd?.();
     await rawEnd();
   };
   return client;

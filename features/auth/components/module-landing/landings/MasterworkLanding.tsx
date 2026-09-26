@@ -13,7 +13,6 @@ import {
   MessageCircle,
   Scale,
   ShieldCheck,
-  BrainCircuit,
   Users,
 } from "lucide-react";
 import {
@@ -22,6 +21,7 @@ import {
   type ModuleStep,
   type ModuleSubArea,
 } from "../ModuleLanding";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const CAPABILITIES: ModuleCapability[] = [
   {
@@ -43,7 +43,7 @@ const CAPABILITIES: ModuleCapability[] = [
       "Your judgment lives in one place you can read and edit forever. Every change is tracked, every version is kept, and every verdict cites the exact rule behind it.",
   },
   {
-    icon: BrainCircuit,
+    icon: AGENT_ICON,
     title: "Built into a working system",
     description:
       "One click builds a Masterwork from your Rulebook — a system that does the work the way you would, checked against your rules on every run.",

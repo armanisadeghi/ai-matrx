@@ -35,7 +35,6 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
-  BrainCircuit,
   Check,
   Gavel,
   Loader2,
@@ -92,6 +91,7 @@ import {
   type TrialVerdict,
 } from "./trial";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 type Phase = "gathering" | "review" | "teaching" | "rules";
 
@@ -551,7 +551,7 @@ export function TrialPanel({
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
           <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-            <BrainCircuit className="h-4 w-4 text-primary" />
+            <AGENT_ICON className="h-4 w-4 text-primary" />
             The system tried {dimension.label.toLowerCase()} on these
           </h2>
           <p className="text-xs text-muted-foreground">

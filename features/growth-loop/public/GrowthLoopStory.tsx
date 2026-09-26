@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BrainCircuit, RotateCw, User, Zap, type LucideIcon } from "lucide-react";
+import { ArrowRight, Cpu, RotateCw, User, Zap, type LucideIcon } from "lucide-react";
 
 import { PUBLIC_CAPABILITY, publicStanding, type PublicCapability } from "../map/loop-map";
 import { GrowthLoopRing } from "./GrowthLoopRing";
@@ -26,7 +26,7 @@ import { STAGE_CARDS, type StageCardModel } from "./stage-cards";
 
 const CAPABILITY_ICON: Record<PublicCapability, LucideIcon> = {
     you: User,
-    ai: BrainCircuit,
+    ai: Cpu,
     automatic: Zap,
 };
 

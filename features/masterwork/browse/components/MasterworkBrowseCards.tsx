@@ -16,7 +16,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BookOpen, Hammer, Play, MoreHorizontal, BrainCircuit } from "lucide-react";
+import { BookOpen, Hammer, Play, MoreHorizontal } from "lucide-react";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ import { cleanMarkdownPreview } from "@/utils/markdown-processors/clean-markdown
 import type { Masterwork, RulebookListRow } from "../../types";
 import { rulebookLookalikeNotes } from "../lookalikeRulebooks";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 interface Props {
   rows: RulebookListRow[];
@@ -174,7 +175,7 @@ export function MasterworkBrowseCards({
 
             <div className="mt-auto space-y-1.5 border-t border-border pt-2.5">
               <span className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                <BrainCircuit className="h-3 w-3" />
+                <AGENT_ICON className="h-3 w-3" />
                 Built into
               </span>
               <MasterworkChips

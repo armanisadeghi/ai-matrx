@@ -9,6 +9,7 @@
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
 import { Volume2, FlaskConical } from "lucide-react";
+import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 
 const VOICE_NAV_ITEMS = [
   { name: "Playground", href: "/voice/playground", icon: Volume2 },
@@ -19,7 +20,12 @@ export function VoiceHubHeader({ right }: { right?: React.ReactNode }) {
   return (
     <RouteHeader
       center={<RouteModeNav items={VOICE_NAV_ITEMS} />}
-      right={right}
+      right={
+        <div className="flex items-center gap-2">
+          {right}
+          <MandateDoorLink feature="voice" label="Voice agent" />
+        </div>
+      }
     />
   );
 }

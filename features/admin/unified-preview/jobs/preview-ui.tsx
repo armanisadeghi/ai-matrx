@@ -9,11 +9,11 @@
  * nothing.
  *
  * Icons are Lucide (repo law: Lucide only, no emojis anywhere a user can see) —
- * the harvest's "🤖 / 🔀" shorthand renders as BrainCircuit / Workflow.
+ * the harvest's "🤖 / 🔀" shorthand renders as AGENT_ICON / Workflow.
  */
 
 import type { MouseEvent, ReactNode } from "react";
-import { BrainCircuit, CircleAlert, CircleCheck, TriangleAlert, Workflow } from "lucide-react";
+import { CircleAlert, CircleCheck, TriangleAlert, Workflow } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,7 @@ import type {
   HolderType,
   JobAtAltitude,
 } from "./mock-data";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /** The single honest answer for every control this mockup does not implement. */
 export function previewToast(what: string): void {
@@ -162,8 +163,8 @@ export function HolderChip({
       </span>
     );
   }
-  const Icon: Record<HolderType, typeof BrainCircuit> = { agent: BrainCircuit, workflow: Workflow };
-  const HolderIcon = at.holder_type ? Icon[at.holder_type] : BrainCircuit;
+  const Icon: Record<HolderType, typeof AGENT_ICON> = { agent: AGENT_ICON, workflow: Workflow };
+  const HolderIcon = at.holder_type ? Icon[at.holder_type] : AGENT_ICON;
   const Tag = interactive ? "button" : "span";
   return (
     <Tag

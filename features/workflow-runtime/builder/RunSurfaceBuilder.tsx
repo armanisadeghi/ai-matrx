@@ -14,7 +14,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { BrainCircuit, Loader2, MonitorPlay, Save } from "lucide-react";
+import { Loader2, MonitorPlay, Save } from "lucide-react";
 
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -43,6 +43,7 @@ import { PreviewPane } from "./PreviewPane";
 import { Segmented } from "./parts";
 import { normalize, type ScreenId } from "./layout-model";
 import { describeSteps } from "./vocabulary";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 interface LoadedWorkflow {
   name: string;
@@ -257,7 +258,7 @@ export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
       {!surface ? (
         <div className="mb-6 rounded-xl border border-primary/40 bg-primary/5 p-4">
           <div className="flex items-start gap-3">
-            <BrainCircuit className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <AGENT_ICON className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
             <div className="min-w-0 space-y-2">
               <h2 className="text-sm font-semibold text-foreground">
                 Ready

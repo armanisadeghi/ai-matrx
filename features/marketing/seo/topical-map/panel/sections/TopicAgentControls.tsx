@@ -19,7 +19,7 @@
  * and `description_regeneration_mode` (automatic | queued | manual).
  */
 
-import { BrainCircuit, PenLine } from "lucide-react";
+import { PenLine } from "lucide-react";
 
 import { useMandate } from "@/features/mandates/useMandate";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 
 import type { MapAgentChangeMode, MapDescriptionRegenerationMode } from "../../knobs";
 import { TOPICAL_MAP_SURFACE_NAME, TOPIC_CURATION_MANDATE_KEY } from "../topicCuration";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface TopicAgentControlsProps {
   changeMode: MapAgentChangeMode;
@@ -92,7 +93,7 @@ export function TopicAgentControls({ changeMode, regenerationMode }: TopicAgentC
           onClick={open}
         />
         <AgentButton
-          icon={BrainCircuit}
+          icon={AGENT_ICON}
           label="Ask about this topic"
           title={`Open the topic agent on this topic — ${CHANGE_MODE_LINE[changeMode]}`}
           disabled={!available}
@@ -117,7 +118,7 @@ function AgentButton({
   disabled,
   onClick,
 }: {
-  icon: typeof BrainCircuit;
+  icon: typeof AGENT_ICON;
   label: string;
   title: string;
   disabled: boolean;

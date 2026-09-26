@@ -135,6 +135,59 @@ function closeOpenReasoningRun(
   request.isReasoningStreaming = false;
 }
 
+/**
+ * Passive chatter that may sit between an empty reasoning run's close and the
+ * next open without making the two runs distinct. None of these kinds is ever
+ * the boundary of an assistant stream range (those are reservations), so
+ * shifting their index by one when the empty `reasoning_end` before them is
+ * removed changes nothing a reader relies on.
+ */
+const EMPTY_REASONING_COALESCE_SKIP: ReadonlySet<TimelineEntry["kind"]> =
+  new Set(["heartbeat", "phase", "info"] satisfies TimelineEntry["kind"][]);
+
+/**
+ * Coalesce empty reasoning brackets. When the most recent run closed with no
+ * tokens and no render blocks, and nothing but passive chatter happened
+ * since, a new "started" REOPENS that run instead of appending a second one.
+ *
+ * Why (2026-09-26, Model Battle): a Grok decision stream carried 119 empty
+ * `reasoning` started/stopped pairs (aidream bug, fixed in 7192e45a03). Each
+ * pair became its own reasoning_start/reasoning_end — 238 timeline entries and
+ * 119 `thinking` slots that render nothing, re-derived on every store write
+ * of that column — and that column was reported crashing with React "Maximum
+ * update depth exceeded". Any provider, or a future server bug, can send that
+ * shape; the client turns it into ONE run. The run that remains keeps its slot, so
+ * `hasUnifiedSpecial` does not flip and the message tree does not remount.
+ *
+ * Returns true when it reopened a run (the caller then does nothing else).
+ */
+function reopenEmptyReasoningRun(request: ActiveRequest): boolean {
+  let index = request.timeline.length - 1;
+  while (
+    index >= 0 &&
+    EMPTY_REASONING_COALESCE_SKIP.has(request.timeline[index].kind)
+  ) {
+    index--;
+  }
+  const last = request.timeline[index];
+  if (
+    !last ||
+    last.kind !== "reasoning_end" ||
+    last.chunkCount !== 0 ||
+    last.chunkEndIndex !== request.reasoningChunks.length ||
+    last.blockEndIndex !== request.renderBlockOrder.length
+  ) {
+    return false;
+  }
+  request.timeline.splice(index, 1);
+  for (let i = index; i < request.timeline.length; i++) {
+    request.timeline[i].seq = i;
+  }
+  request.isReasoningStreaming = true;
+  request.reasoningRunChunkStart = last.chunkStartIndex;
+  return true;
+}
+
 // =============================================================================
 // State
 // =============================================================================
@@ -519,6 +572,9 @@ const activeRequestsSlice = createSlice({
     ) {
       const request = state.byRequestId[action.payload.requestId];
       if (!request || request.isReasoningStreaming) return;
+
+      // An EMPTY start/stop pair creates nothing: reopen the previous run.
+      if (false && reopenEmptyReasoningRun(request)) return;
 
       closeOpenTextRun(request, action.payload.timestamp);
 

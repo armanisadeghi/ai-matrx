@@ -33,14 +33,13 @@
 
 import React, { useMemo, useState } from "react";
 import {
-    Globe,
-    ExternalLink,
-    Loader2,
-    FileText,
-    BookOpenCheck,
-    BrainCircuit,
-    ArrowRight,
-    ScanText,
+  Globe,
+  ExternalLink,
+  Loader2,
+  FileText,
+  BookOpenCheck,
+  ArrowRight,
+  ScanText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InlineMediaRef } from "@ai-matrx/media/react";
@@ -50,6 +49,7 @@ import type { ToolRendererProps } from "../../types";
 import { collectMessages, isTerminal, isSuccess } from "../_shared";
 import { getDomain, getFaviconUrl } from "../search/parseSearch";
 import { parseScrape, type ScrapePage } from "./parseScrape";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Small building blocks
@@ -222,7 +222,7 @@ const ReadPageCard: React.FC<{
                 {/* AI review line — ONLY when present. */}
                 {page.aiReview && (
                     <div className="flex items-start gap-1.5 rounded-md border border-primary/15 bg-primary/5 px-2 py-1.5">
-                        <BrainCircuit className="mt-0.5 h-3 w-3 flex-shrink-0 text-primary" />
+                        <AGENT_ICON className="mt-0.5 h-3 w-3 flex-shrink-0 text-primary" />
                         <span className="text-xs leading-relaxed text-foreground/85">
                             {page.aiReview}
                         </span>

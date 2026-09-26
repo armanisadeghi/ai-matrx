@@ -16,7 +16,6 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Crosshair,
-  BrainCircuit,
   Loader2,
   Minus,
   Play,
@@ -54,6 +53,7 @@ import { SerpResult } from "@/features/marketing/seo/serp/SerpResult";
 import { normalizeKeywordPhrase } from "./data";
 import { useKeywordSerpIntentAnalysis } from "./hooks";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /** The portfolio rows tracking THIS keyword (id match first, phrase fallback). */
 function matchingTargets(
@@ -460,7 +460,7 @@ export function KeywordSerpTab({
     <div className="grid gap-3">
       {resultPageHeader}
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/20 p-3">
-        <BrainCircuit className="h-4 w-4 text-primary" />
+        <AGENT_ICON className="h-4 w-4 text-primary" />
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-foreground">
             Enhance intent from observed results
@@ -484,7 +484,7 @@ export function KeywordSerpTab({
           {intentAnalysis.state.status === "running" ? (
             <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
           ) : (
-            <BrainCircuit className="mr-1.5 h-3.5 w-3.5" />
+            <AGENT_ICON className="mr-1.5 h-3.5 w-3.5" />
           )}
           {hasSerpIntentAnalysis
             ? "Refresh analysis"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { AlertTriangle, CheckCircle2, Circle, Loader2, BrainCircuit } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Circle, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 interface StructuredDataIssue {
   severity: "error" | "warning" | string;
@@ -88,7 +89,7 @@ export function StructuredDataValidatorTool() {
                 </>
               ) : (
                 <>
-                  <BrainCircuit className="mr-2 h-4 w-4" /> Validate
+                  <AGENT_ICON className="mr-2 h-4 w-4" /> Validate
                 </>
               )}
             </Button>

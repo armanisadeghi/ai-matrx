@@ -37,7 +37,7 @@
 import { MandateStatusBadge } from "@/features/mandates/status/MandateStatusBadge";
 import { mandateStatusOfRow } from "@/features/mandates/status/mandate-status";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BrainCircuit, ExternalLink, Loader2, Search, ShieldCheck, UserRound } from "lucide-react";
+import { ExternalLink, Loader2, Search, ShieldCheck, UserRound } from "lucide-react";
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -64,6 +64,7 @@ import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-displa
 import { cn } from "@/lib/utils";
 import type { MandateWindowView } from "@/features/overlays/openers/mandateWindow";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 
 export interface MandateWindowProps {
   isOpen?: boolean;
@@ -350,7 +351,7 @@ function MandateWindowInner({
         {/* Identity + panes */}
         <div className="shrink-0 border-b border-border px-3 py-2">
           <div className="flex min-w-0 items-center gap-2">
-            <BrainCircuit className="h-4 w-4 shrink-0 text-primary" />
+            <INTELLIGENCE_ICON className="h-4 w-4 shrink-0 text-primary" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-foreground">
                 {selected?.label ?? selected?.mandateKey ?? "Mandates"}

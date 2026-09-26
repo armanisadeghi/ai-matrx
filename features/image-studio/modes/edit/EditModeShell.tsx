@@ -36,7 +36,6 @@ import {
   Loader2,
   RotateCcw,
   Save,
-  BrainCircuit,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -77,6 +76,7 @@ import { EditAiToolbar } from "./EditAiToolbar";
 import { MaskOverlay } from "./MaskOverlay";
 import { EditorTabHint } from "./EditorTabHint";
 import { useMaskState } from "./use-mask-state";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 // Filerobot 5.0.1 ships THREE files (HistoryButtons.js, TabsResponsive.js,
 // TabsNavbar/index.js) whose compiled output calls `React.createElement(...)`
@@ -673,7 +673,7 @@ export function EditModeShell({
                     {savingVariants ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      <BrainCircuit className="h-3.5 w-3.5" />
+                      <AGENT_ICON className="h-3.5 w-3.5" />
                     )}
                     Sizes
                   </Button>

@@ -13,7 +13,6 @@ import { useCallback, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
-  BrainCircuit,
   Check,
   CheckCircle2,
   Loader2,
@@ -51,6 +50,7 @@ import {
   scoreBlindCheck,
   type BlindCheckRow,
 } from "./verify";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const CHECK_BATCH = 20;
 
@@ -297,7 +297,7 @@ export function VerifyPanel({
           </div>
           {note ? <p className="text-xs text-warning">{note}</p> : null}
           <Button size="sm" className="self-start gap-1.5" onClick={() => void runCheck()}>
-            <BrainCircuit className="h-4 w-4" /> Run the blind check
+            <AGENT_ICON className="h-4 w-4" /> Run the blind check
           </Button>
         </div>
       ) : null}
@@ -405,7 +405,7 @@ export function VerifyPanel({
               }
               onClick={() => void teach()}
             >
-              <BrainCircuit className="h-4 w-4" /> Finish — teach my stands
+              <AGENT_ICON className="h-4 w-4" /> Finish — teach my stands
             </Button>
           ) : null}
           {phase === "teaching" ? (

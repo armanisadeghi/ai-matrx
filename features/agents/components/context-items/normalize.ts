@@ -18,7 +18,8 @@ import {
   webpageTitle,
   webpageUrl,
 } from "@/features/resource-manager/webpage/webpage-snapshot";
-import { hasContextItemDef, resolveContextItemDef } from "./registry";
+import { resolveContextItemDef } from "./registry";
+import { hasContextItemDef } from "./context-item-block-types";
 import { referenceRoleCaption } from "@/features/agents/image-roles/roles";
 import type { FileIdentityHint, Visibility } from "@/features/files/types";
 import type {

@@ -37,7 +37,6 @@ import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   ArrowRightLeft,
-  BrainCircuit,
   Loader2,
   RefreshCw,
   TerminalSquare,
@@ -80,6 +79,7 @@ import {
   NO_DELIVERY_FROM_ANY_TOOL,
 } from "../bindingPlurality";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /** A field the source did not report. Never rendered as an empty cell. */
 const NOT_REPORTED = "Not reported";
@@ -465,7 +465,7 @@ export function ConversationProvenancePanel({
           {provenance.fromProvider ? (
             <TerminalSquare className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
           ) : (
-            <BrainCircuit className="h-3.5 w-3.5 text-muted-foreground" />
+            <AGENT_ICON className="h-3.5 w-3.5 text-muted-foreground" />
           )}
           <span className="text-sm font-medium text-foreground">
             {conversation.title?.trim() || "Untitled conversation"}

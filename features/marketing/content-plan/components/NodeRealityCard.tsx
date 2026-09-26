@@ -18,15 +18,14 @@
  * stamped on a column — see THE TRUE CURRENT STATUS LAW.
  */
 import {
-    ArrowRight,
-    ExternalLink,
-    Hammer,
-    Loader2,
-    PenLine,
-    RefreshCw,
-    Rocket,
-    BrainCircuit,
-    Unlock,
+  ArrowRight,
+  ExternalLink,
+  Hammer,
+  Loader2,
+  PenLine,
+  RefreshCw,
+  Rocket,
+  Unlock,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -52,6 +51,7 @@ import { realityVerdictSummary } from "../format";
 import type { CmsPageMapEntry } from "../setup/bridge";
 import type { PlanNodeRow } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const STATE_TONE: Record<RealityState, string> = {
     "no-cms-site":
@@ -69,7 +69,7 @@ const STATE_TONE: Record<RealityState, string> = {
 const ACTION_ICON = {
     "link-site": Hammer,
     "create-page": Hammer,
-    "write-content": BrainCircuit,
+    "write-content": AGENT_ICON,
     publish: Rocket,
     "edit-in-cms": PenLine,
     rewrite: RefreshCw,

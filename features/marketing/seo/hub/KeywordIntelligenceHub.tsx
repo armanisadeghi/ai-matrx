@@ -18,7 +18,6 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import {
-  BrainCircuit,
   ClipboardCheck,
   Compass,
   Gauge,
@@ -31,6 +30,7 @@ import { useSites } from "@/features/marketing/data/hooks";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { cn } from "@/lib/utils";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /** The six keyword screens, in the order a person actually works them. */
 const SCREENS = [
@@ -43,7 +43,7 @@ const SCREENS = [
   {
     sub: "/value/discovery",
     label: "Discovery",
-    icon: BrainCircuit,
+    icon: AGENT_ICON,
     blurb: "AI reads the site cold and proposes your Offerings and their worth.",
   },
   {

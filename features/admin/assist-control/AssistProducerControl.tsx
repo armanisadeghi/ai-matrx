@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { History, BrainCircuit } from "lucide-react";
+import { History } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@ai-matrx/design-system";
@@ -16,6 +16,7 @@ import {
   type AssistProducerPolicy,
 } from "./service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function AssistProducerControl() {
   const [reason, setReason] = useState("");
@@ -119,7 +120,7 @@ export function AssistProducerControl() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 text-base font-semibold">
-            <BrainCircuit className="h-4 w-4 text-primary" />
+            <AGENT_ICON className="h-4 w-4 text-primary" />
             Assist producer controls
           </h2>
           <p className="mt-1 max-w-3xl text-xs text-muted-foreground">

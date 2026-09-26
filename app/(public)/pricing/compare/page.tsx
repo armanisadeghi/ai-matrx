@@ -7,11 +7,11 @@ import {
   Gauge,
   Info,
   MousePointerClick,
-  BrainCircuit,
   Star,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export const metadata: Metadata = {
   title: "How We Compare — AI Matrx",
@@ -118,7 +118,7 @@ type Stance = {
 
 const STANCES: Stance[] = [
   {
-    icon: BrainCircuit,
+    icon: AGENT_ICON,
     title: "Free study loop",
     body: "Finish a real study session without paying. Generation is metered; studying what you made is not.",
   },

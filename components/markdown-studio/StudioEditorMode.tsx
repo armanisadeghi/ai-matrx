@@ -21,7 +21,7 @@ import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefu
 
 const COPY_FOLDER = "Rich editor proving copies";
 
-interface ProvingCopy {
+export interface ProvingCopy {
   id: string;
   label: string;
   version: number | null;
@@ -32,6 +32,40 @@ async function readBack(id: string): Promise<{ content: string; version: number 
   const note = await NotesAPI.getById(id, { failureMode: "throw" });
   if (!note) throw new Error("the proving copy is no longer visible to you");
   return { content: note.content ?? "", version: typeof note.version === "number" ? note.version : null };
+}
+
+/**
+ * One save to the proving copy. The FIRST save makes the copy from the original
+ * bytes, then writes the edit — two writes. If the edit's write fails (a slow or
+ * restarting server), the copy just made would hold only the original: it is
+ * archived, so no copy without the typed text is ever left behind, and the
+ * person is told nothing was saved (verify-RC-B4 R6-4).
+ */
+export async function saveToProvingCopy(
+  text: string,
+  existing: ProvingCopy | null,
+  io: {
+    createCopy: () => Promise<ProvingCopy>;
+    update: (id: string, content: string, expectedVersion: number | null) => Promise<unknown>;
+    readBack: (id: string) => Promise<{ content: string; version: number | null }>;
+    archive: (id: string) => Promise<unknown>;
+  },
+): Promise<{ copy: ProvingCopy | null; stored: string }> {
+  const target = existing ?? (await io.createCopy());
+  try {
+    await io.update(target.id, text, target.version);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    if (existing) throw error;
+    try {
+      await io.archive(target.id);
+    } catch {
+      throw new Error(`${reason}. The copy made for this save holds only the original text and could not be archived — archive “${target.label}” from Notes`);
+    }
+    throw new Error(`${reason}. The copy made for this save was archived, so no copy without your edit is left behind`);
+  }
+  const stored = await io.readBack(target.id);
+  return { copy: { ...target, version: stored.version, content: stored.content }, stored: stored.content };
 }
 
 export function StudioEditorMode({
@@ -98,11 +132,20 @@ export function StudioEditorMode({
   const save = async (text: string): Promise<string> => {
     // The first save makes the copy from the ORIGINAL bytes, then applies the edit —
     // so the copy's history holds exactly the original and the edited text.
-    const target = copy ?? (await createCopy(opened));
-    await NotesAPI.update(target.id, { content: text }, target.version !== null ? { expectedVersion: target.version } : undefined);
-    const stored = await readBack(target.id);
-    setCopy({ ...target, version: stored.version, content: stored.content });
-    return stored.content;
+    try {
+      const result = await saveToProvingCopy(text, copy, {
+        createCopy: () => createCopy(opened),
+        update: (id, content, expectedVersion) =>
+          NotesAPI.update(id, { content }, expectedVersion !== null ? { expectedVersion } : undefined),
+        readBack,
+        archive: (id) => NotesAPI.remove(id),
+      });
+      setCopy(result.copy);
+      return result.stored;
+    } catch (error) {
+      if (!copy) setCopy(null);
+      throw error;
+    }
   };
 
   const extras = copy ? (

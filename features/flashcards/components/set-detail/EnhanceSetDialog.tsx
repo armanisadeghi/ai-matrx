@@ -19,7 +19,6 @@ import {
   Loader2,
   Check,
   X,
-  BrainCircuit,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import {
@@ -61,6 +60,7 @@ import {
   type EnrichedDetail,
   type ExpandedSubCard,
 } from "../../data/enhanceCard";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 type Mode = "enrich" | "deepen";
 
@@ -518,7 +518,7 @@ export function EnhanceSetDialog({
         <DrawerContent className="pb-safe">
           <DrawerHeader>
             <DrawerTitle className="flex items-center justify-center gap-2 text-base">
-              <BrainCircuit className="h-4 w-4 text-primary" />
+              <AGENT_ICON className="h-4 w-4 text-primary" />
               Make cards deeper
             </DrawerTitle>
             <DrawerDescription className="text-xs">
@@ -537,7 +537,7 @@ export function EnhanceSetDialog({
       <DialogContent className="max-w-2xl gap-0 p-0">
         <DialogHeader className="border-b border-border px-5 py-4">
           <DialogTitle className="flex items-center gap-2 text-base">
-            <BrainCircuit className="h-4 w-4 text-primary" />
+            <AGENT_ICON className="h-4 w-4 text-primary" />
             Make cards deeper
           </DialogTitle>
           <DialogDescription className="text-xs">

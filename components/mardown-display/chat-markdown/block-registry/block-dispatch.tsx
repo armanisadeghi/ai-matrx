@@ -45,6 +45,8 @@
 import { NestedRichContent } from "@/components/rich-content/standard/NestedRichContent";
 import React, { Fragment } from "react";
 import { ReferenceRoleCaption } from "@/features/agents/image-roles/ReferenceRoleCaption";
+import { DecisionQuestionsTranscriptView } from "@/features/agents/decision-questions/DecisionQuestionsTranscriptView";
+import { SpeechScriptTranscriptView } from "@/features/agents/speech-script/SpeechScriptTranscriptView";
 import { BlockComponents } from "./BlockComponentRegistry";
 import { looksLikeDiff } from "../diff-blocks/diff-style-registry";
 import { InlineCodeSnippet } from "../InlineCodeSnippet";
@@ -440,6 +442,10 @@ export function isBlockLoading(block: {
  */
 export type FeSynthesizedBlockType =
   | "directive_receipt"
+  // The typed ASKS on a user turn (normalize-content-blocks.ts): the decision
+  // questions that were put and the speech script that was performed.
+  | "decision_questions"
+  | "speech_script"
   | "media_block"
   | "video_prompt_options"
   | "map_topic_proposal"
@@ -599,6 +605,8 @@ export type ScalarGenericBlockType =
 /** Crosswalk classification: shape — structured content (kinds + candidates). */
 export type ShapeBlockType =
   | ServerShapeRenderBlock["type"]
+  | "decision_questions"
+  | "speech_script"
   | "flashcards"
   | "quiz"
   | "presentation"
@@ -1825,6 +1833,21 @@ const SHAPE_BLOCK_DISPATCH = {
   // Kind-routed (`decision_answers`) — the typed answers a decision holder
   // returns. Complete-only: a half-streamed distribution draws bars that do
   // not sum and a top answer that moves while it arrives.
+  // The typed asks on a user turn — read-only in a transcript, live or reloaded.
+  // The payload rides `serverData.payload` (normalize-content-blocks.ts).
+  decision_questions: ({ block, index }) => (
+    <DecisionQuestionsTranscriptView
+      key={index}
+      payload={(block.serverData?.payload as Record<string, unknown> | undefined) ?? null}
+    />
+  ),
+  speech_script: ({ block, index }) => (
+    <SpeechScriptTranscriptView
+      key={index}
+      payload={(block.serverData?.payload as Record<string, unknown> | undefined) ?? null}
+    />
+  ),
+
   decision_answers: ({ block, index }) => {
     if (block.serverData) {
       return (

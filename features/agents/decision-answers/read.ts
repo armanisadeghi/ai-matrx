@@ -292,3 +292,37 @@ export const METHOD_EXPLANATIONS: Record<DecisionMethod, string> = {
   verbalized_calibrated:
     "A written probability, corrected against this agent version's recorded ground-truth verdicts.",
 };
+
+/**
+ * A decision turn as READABLE TEXT — for every surface that shows a run's
+ * result as a string instead of drawing the `DecisionAnswers` card: the toast
+ * preview, agent apps (their `response` string, public `/p/<slug>` included),
+ * a shortcut's `responseText` handed to its caller. A decision turn carries no
+ * text at all, so every one of those surfaces used to show nothing — or wait
+ * forever — over a paid, finished verdict.
+ *
+ * One line per answer, with the probability OF THE ANSWER GIVEN (never the raw
+ * P(true) a `false` answer carries), then the refusals with their reasons.
+ * `null` when the value is not a decision payload — never a guess.
+ */
+export function decisionAnswersText(payload: unknown): string | null {
+  const view = readDecisionAnswers(payload);
+  if (!view) return null;
+  const lines: string[] = [];
+  for (const answer of view.answers) {
+    const p = answerProbability(answer);
+    const shown = formatDecisionAnswer(answer);
+    lines.push(
+      `- ${answer.name}: ${shown}${p == null ? "" : ` (${Math.round(p * 100)}%)`}`,
+    );
+  }
+  for (const refusal of view.refusals) {
+    lines.push(`- ${refusal.name}: not answered. ${refusal.reason}`);
+  }
+  if (lines.length === 0) lines.push("- No answers were returned.");
+  const how = view.method
+    ? `${METHOD_LABELS[view.method]} probabilities`
+    : "probabilities of unknown origin";
+  const header = `Decision (${how}${view.model ? `, ${view.model}` : ""})`;
+  return [header, ...lines].join("\n");
+}

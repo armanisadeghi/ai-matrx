@@ -4,7 +4,6 @@ import { useRef, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import {
   ArrowLeft,
-  BrainCircuit,
   Check,
   ChevronDown,
   ChevronLeft,
@@ -24,6 +23,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 type LearningAction = "ask" | "explain" | "hint" | "memory";
 
@@ -119,7 +119,7 @@ const ACTIONS: Array<{
   id: LearningAction;
   label: string;
   detail: string;
-  icon: typeof BrainCircuit;
+  icon: typeof AGENT_ICON;
 }> = [
   {
     id: "ask",
@@ -131,7 +131,7 @@ const ACTIONS: Array<{
     id: "explain",
     label: "Explain",
     detail: "Teach it another way",
-    icon: BrainCircuit,
+    icon: AGENT_ICON,
   },
   {
     id: "hint",
@@ -167,7 +167,7 @@ function ActionContract({
   onClose: () => void;
 }) {
   const selected = ACTIONS.find((item) => item.id === action);
-  const Icon = selected?.icon ?? BrainCircuit;
+  const Icon = selected?.icon ?? AGENT_ICON;
 
   return (
     <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 [@starting-style]:translate-y-2 [@starting-style]:opacity-0 transition-all duration-200">
@@ -290,7 +290,7 @@ export function SharpCanonicalFlashcardsDemo() {
           className="h-10 px-3"
           onClick={() => setToolsOpen(true)}
         >
-          <BrainCircuit className="h-4 w-4" />
+          <AGENT_ICON className="h-4 w-4" />
           <span className="hidden sm:inline">Learning tools</span>
         </Button>
       </header>
@@ -493,7 +493,7 @@ export function SharpCanonicalFlashcardsDemo() {
               <GripHorizontal className="h-5 w-8 text-muted-foreground" />
               <div className="mt-1 flex w-full max-w-3xl items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <BrainCircuit className="h-5 w-5" />
+                  <AGENT_ICON className="h-5 w-5" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <h2 className="font-semibold">Learn this card</h2>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Plus, Check, Loader2, BrainCircuit, X } from "lucide-react";
+import { Plus, Check, Loader2, X } from "lucide-react";
 import { recordToast, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -10,6 +10,7 @@ import { useResearchApi } from "../../hooks/useResearchApi";
 import { useResearchStream } from "../../hooks/useResearchStream";
 import { assignTagsToSource, removeSourceTag, createTag } from "../../service";
 import type { ResearchDataEvent } from "../../types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 interface Suggestion {
   name: string;
@@ -252,7 +253,7 @@ export function SourceTagPicker({
                     {applying ? (
                       <Loader2 className="h-2.5 w-2.5 animate-spin" />
                     ) : (
-                      <BrainCircuit className="h-2.5 w-2.5" />
+                      <AGENT_ICON className="h-2.5 w-2.5" />
                     )}
                     <span className="truncate max-w-[10rem] font-medium">
                       {s.name}
@@ -287,7 +288,7 @@ export function SourceTagPicker({
         {suggesting ? (
           <Loader2 className="h-3 w-3 animate-spin" />
         ) : (
-          <BrainCircuit className="h-3 w-3" />
+          <AGENT_ICON className="h-3 w-3" />
         )}
         {suggesting ? "Suggesting…" : "Suggest tags"}
       </button>

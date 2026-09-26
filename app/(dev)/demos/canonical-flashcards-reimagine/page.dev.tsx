@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpenCheck,
-  BrainCircuit,
   ChevronDown,
   ChevronUp,
   CircleHelp,
@@ -23,6 +22,7 @@ import {
   ShieldCheck,
   Volume2,
 } from "lucide-react";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 type Flashcard = {
   id: string;
@@ -121,7 +121,7 @@ const SURFACE_LABELS: Record<Surface, string> = {
 
 const ASSIST_ACTIONS = [
   { id: "ask", label: "Ask coach", icon: MessageCircleQuestion },
-  { id: "explain", label: "Explain", icon: BrainCircuit },
+  { id: "explain", label: "Explain", icon: AGENT_ICON },
   { id: "hint", label: "Get a clue", icon: Lightbulb },
   { id: "memory", label: "Memory hook", icon: Milestone },
   { id: "trust", label: "Check source", icon: ShieldCheck },
@@ -274,7 +274,7 @@ function CanonicalStudyCockpit({ sourceSurface }: { sourceSurface: Surface }) {
     if (assistMode === "explain") {
       return (
         <AssistNote
-          icon={<BrainCircuit className="h-5 w-5" />}
+          icon={<AGENT_ICON className="h-5 w-5" />}
           title="Explanation contract"
           text="The canonical player sends the visible card and study position to the education explanation mandate, then displays the streamed answer in the platform’s standard live-run surface."
         />

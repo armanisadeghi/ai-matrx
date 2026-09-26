@@ -33,7 +33,6 @@ import React, {
 import { useRouter } from "next/navigation";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import {
-  BrainCircuit,
   Camera as CameraIcon,
   Check,
   Eye,
@@ -95,6 +94,7 @@ import {
   useInstantIntakeAnalysis,
 } from "../hooks/useInstantIntakeAnalysis";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const PHOTO_JPEG_QUALITY = 0.92;
 
@@ -796,7 +796,7 @@ export function IntakeCaptureScreen({
               {instant.isRunning || instant.restoring ? (
                 <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
               ) : (
-                <BrainCircuit className="mr-1.5 h-4 w-4" />
+                <AGENT_ICON className="mr-1.5 h-4 w-4" />
               )}
               {instant.isRunning
                 ? "Analyzing…"

@@ -5,7 +5,7 @@
 // variables get connected, the workflow, the guide — and the install rail.
 
 import Link from "next/link";
-import { BrainCircuit, Lightbulb, Link2, ListOrdered, Table2, Workflow } from "lucide-react";
+import { Lightbulb, Link2, ListOrdered, Table2, Workflow } from "lucide-react";
 import type { ReactNode } from "react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
@@ -26,6 +26,7 @@ import { InstallPanel } from "./InstallPanel";
 import { KitIcon } from "./KitIcon";
 import { WhatYouGet } from "./KitCard";
 import { TablePreview } from "./TablePreview";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface SourceAgentFacts {
   id: string;
@@ -80,7 +81,7 @@ export function KitAgentsSection({ manifest, sourceAgents }: { manifest: KitMani
           <div key={a.key} className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-start gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <BrainCircuit className="h-4.5 w-4.5" />
+                <AGENT_ICON className="h-4.5 w-4.5" />
               </span>
               <div className="min-w-0 flex-1">
                 <h4 className="text-sm font-semibold text-foreground">{a.name}</h4>
@@ -220,7 +221,7 @@ export function KitDetail({
               </Section>
 
               {m.agents.length > 0 && (
-                <Section icon={<BrainCircuit className="h-3.5 w-3.5" />} title={m.agents.length === 1 ? "The agent" : "The agents"}>
+                <Section icon={<AGENT_ICON className="h-3.5 w-3.5" />} title={m.agents.length === 1 ? "The agent" : "The agents"}>
                   <KitAgentsSection manifest={m} sourceAgents={sourceAgents} />
                 </Section>
               )}

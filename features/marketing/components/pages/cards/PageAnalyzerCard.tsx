@@ -1,6 +1,6 @@
 "use client";
 
-import { BrainCircuit, Loader2, RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { Badge } from "@/components/ui/badge";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -13,6 +13,7 @@ import {
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 // THE NAMING LAW: canonical labels for every declared surface value + group —
 // section titles and field labels below render these byte-identically.
@@ -111,7 +112,7 @@ export function PageAnalyzerCard({
         {state.status === "idle" ? (
           <div className="flex min-h-28 items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <BrainCircuit className="h-4 w-4" />
+              <AGENT_ICON className="h-4 w-4" />
             </span>
             <div>
               <p className="text-xs font-medium text-foreground">Not yet analyzed</p>

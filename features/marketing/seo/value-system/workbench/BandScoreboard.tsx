@@ -25,7 +25,7 @@
  * decorative, only smaller.
  */
 
-import { ArrowDownRight, ArrowUpRight, Minus, BrainCircuit } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { Skeleton } from "@ai-matrx/design-system";
 import { formatCount } from "@/features/marketing/search-console/types";
@@ -37,6 +37,7 @@ import {
   type BandMeta,
   type Delta,
 } from "../lib";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 function DeltaBadge({ delta, label }: { delta: Delta; label: string }) {
   if (delta.dir === "none") return null;
@@ -54,7 +55,7 @@ function DeltaBadge({ delta, label }: { delta: Delta; label: string }) {
       : delta.dir === "down"
         ? ArrowDownRight
         : delta.dir === "new"
-          ? BrainCircuit
+          ? AGENT_ICON
           : Minus;
   return (
     <span

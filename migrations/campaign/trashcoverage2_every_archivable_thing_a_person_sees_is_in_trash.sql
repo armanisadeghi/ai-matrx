@@ -1,4 +1,4 @@
--- chair-step: lane TRASH-COVERAGE-2. Every archivable thing a person sees is in Trash: thirty more registry kinds get a Trash kind (rulebooks, folders, war rooms, threads, scope types, scopes, scope type Fields, working documents, memories, highlights, browser profiles, source libraries, study guides, topical maps, rank targets, HR employees and employment spells, jurisdiction decisions, blocklist entries, intake batches, decision interviews, run surfaces, workflow triggers, capture items, categories, flexible data, shared canvases, scheduled tasks, feedback, mandate notes). A child whose parent is archived is listed as "<title> (in <parent>)" and its restore brings the parent back first; kinds with their own restore door (folder, scope type, scope, context item, HR employee) are restored through it; a workflow's triggers now come back with it.
+-- chair-step: lane TRASH-COVERAGE-2. Every archivable thing a person sees is in Trash: thirty-one more registry kinds get a Trash kind (rulebooks, folders, war rooms, threads, scope types, scopes, scope type Fields, working documents, memories, highlights, browser profiles, source libraries, study guides, topical maps, rank targets, HR employees and employment spells, jurisdiction decisions, blocklist entries, intake batches, decision interviews, run surfaces, workflow triggers, capture items, categories, flexible data, shared canvases, scheduled tasks, feedback, mandate notes, library documents). A child whose parent is archived is listed as "<title> (in <parent>)" and its restore brings the parent back first; kinds with their own restore door (folder, scope type, scope, context item, library document, HR employee) are restored through it; a workflow's triggers now come back with it.
 --
 -- LANE TRASH-COVERAGE-2 (Unified Data System program, 2026-09-26).
 --
@@ -13,9 +13,9 @@
 -- WHAT THIS FILE DOES
 --   1. platform.archived_parent_of(token, id) — THE parent primitive: the first ARCHIVED parent a row
 --      only comes back with. Declared parents are platform.soft_delete_edge's cascade edges (what the
---      archive cascade and platform._guard_soft_delete_parent already read); four are coded in their
+--      archive cascade and platform._guard_soft_delete_parent already read); five are coded in their
 --      feature and named here (folder -> parent folder, file -> folder, employment -> employee,
---      workflow trigger -> workflow).
+--      workflow trigger -> workflow, library document -> its source file).
 --   2. public._trash_kind_rows: such a row is titled "<title> (in <parent>)"; titles are capped at 200
 --      characters and more descriptive columns are tried (page_title, subject_value, path, code, ...);
 --      a scope type's Field (context.context_items, no organization_id) is listed in its scope type's
@@ -27,9 +27,16 @@
 --      on), public.hr_employee_restore (HR's gate, same-act spells, audit) — never a raw update around a
 --      door. org_trash_restore also stops trusting FOUND after EXECUTE (it never sets it): an
 --      already-restored row now answers restored=false instead of writing an audit row about nothing.
---   4. workflow triggers: the archive cascade keeps each trigger's is_active in metadata and a new
---      restore trigger brings back exactly the triggers that archive took.
---   5. The 30 kinds (kind = registry token) and the label "Working Document" (the only plural label).
+--   4. workflow triggers: the archive cascade keeps each trigger's is_active in metadata, and the Trash
+--      restore doors bring back exactly the triggers that archive took (workflow.restore_triggers_archived_with;
+--      no trigger DDL — recreating one on workflow.definition would freeze auth/storage/realtime).
+--   5. docproc.cascade_file_softdelete_to_documents restores a file's library documents parent first:
+--      a file holding a derived document could not be restored from Trash at all (the guard refused
+--      the child restored in the same statement as its parent). Found by this lane's suite (B5).
+--   6. The 31 kinds (kind = registry token) and the label "Working Document" (the only plural label).
+--      30 were the coverage guard's "not yet in Trash" list; the 31st, processed_document (a knowledge
+--      library document), was excused as a system row but a person removes it from their library and
+--      its library Trash sheet restores it (rag.fn_restore_library_document) — it belongs in the one Trash.
 --
 -- NOT A TRASH KIND, WITH ITS REASON (pnpm check:trash-doors lists it):
 --   hr_leave_policy — no door archives a leave policy: HR ends one with hr.leave_policy_deactivate,
@@ -37,7 +44,7 @@
 --   one archived row is the HRB-017 verification fixture (2026-08-28). A Trash restore could not undo a
 --   payout, and there is no archive for it to undo.
 --
--- Additive to data (no archived or live row changes); replaces five bodies (based-on below).
+-- Additive to data (no archived or live row changes); replaces six bodies (based-on below).
 -- INVERSE: migrations/inverse/trashcoverage2_every_archivable_thing_a_person_sees_is_in_trash_down.sql
 -- lane: TRASH-COVERAGE-2
 -- based-on: public._trash_kind_rows(uuid, uuid, uuid, text[], integer, integer) e6d8b90bf07fcf6052f1525736ba3552ba3b7099678f0beec5ac662c10a5175d
@@ -45,17 +52,21 @@
 -- based-on: public.org_trash_restore(uuid, text, uuid) 1eb037ba470713931d8cba9b6fd03cf9bfbc52dbb63b1cb9ee2de623ca47ad42
 -- based-on: public.entity_undelete(text, uuid) 2f89ad2cdf21c70a4e315627c30755047775a961742f30a2b29835a514114b55
 -- based-on: workflow._cascade_definition_soft_delete() b19b4dfef9fb09aac56d4446bba55a0a350f0fc0aed998b3093f6d63b6a83671
+-- based-on: docproc.cascade_file_softdelete_to_documents() 4605bf73649bc21a946d2ffcc4ede6508bf5480078c8458531bffe854608dbf5
 
-set local lock_timeout = '30s';
+-- (lock and statement ceilings are the runner's: pnpm db:apply / db:rehearse set them.)
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- THE PARENT PRIMITIVE — which archived row a row only comes back with
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- Declared parents are platform.soft_delete_edge's cascade edges (the same rows the archive cascade
--- and platform._guard_soft_delete_parent read). Four parents are coded in their feature instead of
+-- and platform._guard_soft_delete_parent read). Five parents are coded in their feature instead of
 -- declared, and are named here: a folder's parent folder (public.soft_delete_folder), a file's folder
 -- (the same), an employment spell's employee (the HR archive stamps both), a workflow trigger's
--- workflow (workflow._cascade_definition_soft_delete). Returns the first ARCHIVED parent, or nothing.
+-- workflow (workflow._cascade_definition_soft_delete), a library document's source file
+-- (docproc.cascade_file_softdelete_to_documents, which also brings it back with the file). Returns the
+-- first ARCHIVED parent, or nothing — declared parents first (a derived library document's own
+-- parent document comes back before the file that holds them both).
 create or replace function platform.archived_parent_of(p_token text, p_id uuid)
 returns table(parent_token text, parent_id uuid, parent_title text)
 language plpgsql
@@ -77,20 +88,22 @@ begin
   for s in
     select x.col, x.ptok, x.psch, x.ptbl, x.pcol
       from (
-        select 'parent_id'::text as col, 'folder'::text as ptok, 'files'::text as psch, 'folders'::text as ptbl, 'id'::text as pcol, 1 as ord
+        select 'parent_id'::text as col, 'folder'::text as ptok, 'files'::text as psch, 'folders'::text as ptbl, 'id'::text as pcol, 2 as ord
          where p_token = 'folder'
         union all
-        select 'parent_folder_id', 'folder', 'files', 'folders', 'id', 1 where p_token = 'file'
+        select 'parent_folder_id', 'folder', 'files', 'folders', 'id', 2 where p_token = 'file'
         union all
-        select 'employee_id', 'hr_employee', 'hr', 'employee', 'id', 1 where p_token = 'hr_employment'
+        select 'employee_id', 'hr_employee', 'hr', 'employee', 'id', 2 where p_token = 'hr_employment'
         union all
-        select 'definition_id', 'workflow', 'workflow', 'definition', 'id', 1 where p_token = 'workflow_trigger'
+        select 'definition_id', 'workflow', 'workflow', 'definition', 'id', 2 where p_token = 'workflow_trigger'
+        union all
+        select 'source_id', 'file', 'files', 'files', 'id', 2 where p_token = 'processed_document'
         union all
         select d.child_column,
                (select t.token from platform.entity_types t
                  where t.schema_name = d.parent_schema and t.table_name = d.parent_table and t.is_active
                  order by (t.user_artifact_kind is null), t.token limit 1),
-               d.parent_schema, d.parent_table, d.parent_column, 2
+               d.parent_schema, d.parent_table, d.parent_column, 1
           from platform.soft_delete_edge d
          where d.child_schema = e.schema_name and d.child_table = e.table_name and d.action = 'cascade'
       ) x
@@ -108,13 +121,13 @@ begin
       select t.title_column into v_tcol from platform.entity_types t where t.token = s.ptok;
       parent_token := s.ptok;
       parent_id := coalesce(nullif(v_row ->> 'id', '')::uuid, v_pid);
-      parent_title := left(coalesce(nullif(btrim(v_row ->> coalesce(v_tcol, '')), ''),
+      parent_title := left(coalesce(nullif(btrim(v_row ->> 'label_plural'), ''),
+                                    nullif(btrim(v_row ->> coalesce(v_tcol, '')), ''),
                                     nullif(btrim(v_row ->> 'name'), ''),
                                     nullif(btrim(v_row ->> 'title'), ''),
                                     nullif(btrim(v_row ->> 'label'), ''),
                                     nullif(btrim(v_row ->> 'display_name'), ''),
-                                    nullif(btrim(v_row ->> 'folder_name'), ''),
-                                    nullif(btrim(v_row ->> 'label_plural'), '')), 200);
+                                    nullif(btrim(v_row ->> 'folder_name'), '')), 200);
       return next;
       return;
     exception when undefined_column or undefined_table or invalid_text_representation then
@@ -252,15 +265,13 @@ select d.schema_name, d.function_name, iam.door_identity_args(d.fn), d.argtypes,
      null::text),
     ('platform', 'archived_parent_of', 'platform.archived_parent_of(text, uuid)'::regprocedure,
      array['text'::regtype::oid, 'uuid'::regtype::oid],
-     'Names the archived parent (token, id, title) a row only comes back with: platform.soft_delete_edge cascade edges plus the four feature-coded parents. Reads only.',
+     'Names the archived parent (token, id, title) a row only comes back with: platform.soft_delete_edge cascade edges plus the five feature-coded parents. Reads only.',
      'server_only: called only inside public._trash_kind_rows, public.entity_undelete and public.org_trash_restore, which decide the caller''s access themselves; execute is revoked from every client role.')
   ) as d(schema_name, function_name, fn, argtypes, reason, non_client_lane)
  where not exists (select 1 from platform.client_callable_door x
                     where x.schema_name = d.schema_name and x.function_name = d.function_name
                       and x.identity_argtypes = d.argtypes);
 
-revoke all on function public.restore_scope(uuid) from public, anon;
-revoke all on function public.restore_context_item(uuid) from public, anon;
 grant execute on function public.restore_scope(uuid) to authenticated, service_role;
 grant execute on function public.restore_context_item(uuid) to authenticated, service_role;
 
@@ -325,10 +336,12 @@ begin
       end if;
 
       v_title := null;
+      -- A scope type's own name is its plural label ("Service areas"); its title_column is the slug.
       select a.attname into v_title
         from pg_attribute a
        where a.attrelid = v_rel and a.attnum > 0 and not a.attisdropped
-         and a.attname = coalesce(rec.title_column, '')
+         and a.attname = any (array['label_plural', coalesce(rec.title_column, '')])
+       order by (a.attname <> 'label_plural')
        limit 1;
       if v_title is null then
         select a.attname into v_title
@@ -346,7 +359,7 @@ begin
        limit 1;
 
       v_title_expr := case when v_title is null then 'null::text' else format('left(t.%I::text, 200)', v_title) end;
-      v_parented := rec.token in ('folder', 'file', 'hr_employment', 'workflow_trigger')
+      v_parented := rec.token in ('folder', 'file', 'hr_employment', 'workflow_trigger', 'processed_document')
         or exists (select 1 from platform.soft_delete_edge s
                     where s.child_schema = rec.sch and s.child_table = rec.tbl and s.action = 'cascade');
       if v_parented then
@@ -667,7 +680,8 @@ AS $function$
 -- lane TRASH-COVERAGE-2: a row whose parent is archived brings the parent back first, through this
 -- same door (audited and noticed as the parent). Kinds with their own restore door go through it:
 -- folder (public.restore_folder), scope type (public.restore_scope_type), scope (public.restore_scope),
--- scope type Field (public.restore_context_item), HR employee (public.hr_employee_restore); a door's
+-- scope type Field (public.restore_context_item), library document (rag.fn_restore_library_document),
+-- HR employee (public.hr_employee_restore); a door's
 -- refusal is restored=false with a sentence, never a raw update around it.
 declare
   v_me uuid := public._org_trash_gate(p_organization_id);
@@ -734,7 +748,8 @@ begin
 
     select a.attname into v_title_col from pg_attribute a
      where a.attrelid = v_rel and a.attnum > 0 and not a.attisdropped
-       and a.attname = coalesce(e.title_column, '') limit 1;
+       and a.attname = any (array['label_plural', coalesce(e.title_column, '')])
+     order by (a.attname <> 'label_plural') limit 1;
     if v_title_col is null then
       select a.attname into v_title_col from pg_attribute a
        where a.attrelid = v_rel and a.attnum > 0 and not a.attisdropped
@@ -792,13 +807,14 @@ begin
                           coalesce(nullif(btrim(v_ptitle), ''), 'what it sits in')));
     end if;
 
-    if e.token in ('folder', 'scope_type', 'scope', 'context_item', 'hr_employee') then
+    if e.token in ('folder', 'scope_type', 'scope', 'context_item', 'processed_document', 'hr_employee') then
       begin
         case e.token
           when 'folder' then perform public.restore_folder(p_id);
           when 'scope_type' then perform public.restore_scope_type(p_id);
           when 'scope' then perform public.restore_scope(p_id);
           when 'context_item' then perform public.restore_context_item(p_id);
+          when 'processed_document' then perform rag.fn_restore_library_document(p_id);
           when 'hr_employee' then
             v_res := public.hr_employee_restore(jsonb_build_object('employee_id', p_id));
             if not coalesce((v_res ->> 'ok')::boolean, false) then
@@ -807,7 +823,7 @@ begin
                                     'Only someone HR allows to restore this person can bring them back.'));
             end if;
         end case;
-      exception when insufficient_privilege then
+      exception when insufficient_privilege or raise_exception or no_data_found then
         return jsonb_build_object('restored', false,
           'message', format('Only someone who can edit %s can bring it back. Its owner can restore it from their own Trash.',
                             coalesce(nullif(btrim(v_title), ''), 'it')));
@@ -826,6 +842,9 @@ begin
       if v_n = 0 then
         return jsonb_build_object('restored', false,
           'message', 'It is no longer in this organization''s Trash — somebody may have restored it already.');
+      end if;
+      if e.token = 'workflow' then
+        perform workflow.restore_triggers_archived_with(p_id, v_at);
       end if;
     end if;
     v_label := e.label;
@@ -880,7 +899,8 @@ AS $function$
 -- (platform._guard_soft_delete_parent would refuse it anyway). Kinds with their own restore door go
 -- through it and never a raw update: folder -> public.restore_folder (its subfolders and files),
 -- scope type -> public.restore_scope_type, scope -> public.restore_scope, scope type Field ->
--- public.restore_context_item, HR employee -> public.hr_employee_restore (HR's gate and audit).
+-- public.restore_context_item, library document -> rag.fn_restore_library_document (its chunks and
+-- data-store memberships), HR employee -> public.hr_employee_restore (HR's gate and audit).
 declare
   v_s text;
   v_t text;
@@ -945,6 +965,7 @@ begin
     when 'scope_type' then perform public.restore_scope_type(p_id); return true;
     when 'scope' then perform public.restore_scope(p_id); return true;
     when 'context_item' then perform public.restore_context_item(p_id); return true;
+    when 'processed_document' then perform rag.fn_restore_library_document(p_id); return true;
     when 'hr_employee' then
       v_res := public.hr_employee_restore(jsonb_build_object('employee_id', p_id));
       if not coalesce((v_res ->> 'ok')::boolean, false) then
@@ -963,6 +984,9 @@ begin
   execute format('UPDATE %I.%I SET deleted_at=NULL WHERE id=$1 AND deleted_at IS NOT NULL', v_s, v_t)
     using p_id;
   get diagnostics v_n = row_count;
+  if v_n > 0 and p_token = 'workflow' then
+    perform workflow.restore_triggers_archived_with(p_id, v_at);
+  end if;
   return v_n > 0;
 end;
 $function$;
@@ -977,7 +1001,7 @@ create or replace function workflow._cascade_definition_soft_delete()
 AS $function$
 BEGIN
   -- lane TRASH-COVERAGE-2: the trigger's own is_active is kept in metadata so restoring the
-  -- workflow (workflow._cascade_definition_soft_restore) brings each trigger back as it was.
+  -- workflow from Trash (workflow.restore_triggers_archived_with) brings each trigger back as it was.
   UPDATE workflow.trigger
      SET deleted_at = NEW.deleted_at, is_active = false,
          metadata = coalesce(metadata, '{}'::jsonb)
@@ -988,40 +1012,126 @@ BEGIN
 END $function$;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- A FILE'S LIBRARY DOCUMENTS COME BACK WITH IT, PARENT FIRST
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+create or replace function docproc.cascade_file_softdelete_to_documents()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'docproc', 'files', 'rag'
+AS $function$
+declare
+  v_doc_ids uuid[] := '{}';
+  v_batch uuid[];
+  v_pass int := 0;
+begin
+  -- lane TRASH-COVERAGE-2: the restore brings a file's documents back PARENT FIRST. One UPDATE over
+  -- every document of the file restored a derived document in the same statement as the document it
+  -- was derived from, and platform._guard_soft_delete_parent refused the child (its parent was still
+  -- removed in that statement's snapshot) — so a file with derived library documents could not be
+  -- restored from Trash at all. Each pass restores the documents whose parent is live (or none).
+
+  if old.deleted_at is null and new.deleted_at is not null then
+    with stamped as (
+      update docproc.processed_documents
+         set deleted_at = new.deleted_at,
+             metadata = jsonb_set(coalesce(metadata, '{}'::jsonb),
+                                   '{deleted_via}', '"file_cascade"', true)
+       where source_kind = 'cld_file'
+         and source_id = new.id::text
+         and deleted_at is null
+       returning id)
+    select coalesce(array_agg(id), '{}') into v_doc_ids from stamped;
+
+    update rag.kg_chunks c
+       set deleted_at = new.deleted_at
+     where c.deleted_at is null
+       and (c.processed_document_id = any(v_doc_ids)
+            or (c.source_kind = 'cld_file' and c.source_id = new.id::text));
+
+    update rag.data_store_members m
+       set deleted_at = new.deleted_at
+     where m.deleted_at is null
+       and ((m.source_kind = 'cld_file' and m.source_id = new.id::text)
+            or (m.source_kind = 'processed_document'
+                and m.source_id in (select unnest(v_doc_ids)::text)));
+
+  elsif old.deleted_at is not null and new.deleted_at is null then
+    loop
+      v_pass := v_pass + 1;
+      exit when v_pass > 201;
+      with restored as (
+        update docproc.processed_documents d
+           set deleted_at = null,
+               metadata = d.metadata - 'deleted_via'
+         where d.source_kind = 'cld_file'
+           and d.source_id = new.id::text
+           and d.deleted_at is not null
+           and d.metadata->>'deleted_via' = 'file_cascade'
+           and (d.parent_processed_id is null
+                or exists (select 1 from docproc.processed_documents p
+                            where p.id = d.parent_processed_id and p.deleted_at is null))
+         returning d.id)
+      select coalesce(array_agg(id), '{}') into v_batch from restored;
+      exit when cardinality(v_batch) = 0;
+      v_doc_ids := v_doc_ids || v_batch;
+    end loop;
+
+    update rag.kg_chunks c
+       set deleted_at = null
+     where c.deleted_at is not null
+       and (c.processed_document_id = any(v_doc_ids)
+            or (c.source_kind = 'cld_file' and c.source_id = new.id::text
+                and c.processed_document_id is null
+                and c.deleted_at >= old.deleted_at));
+
+    update rag.data_store_members m
+       set deleted_at = null
+     where m.deleted_at is not null
+       and m.deleted_at >= old.deleted_at
+       and ((m.source_kind = 'cld_file' and m.source_id = new.id::text)
+            or (m.source_kind = 'processed_document'
+                and m.source_id in (select unnest(v_doc_ids)::text)));
+  end if;
+
+  return new;
+end
+$function$;
+
+
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- A WORKFLOW'S TRIGGERS COME BACK WITH IT
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- workflow._cascade_definition_soft_delete archived every live trigger with its workflow (and forced
 -- is_active = false) but nothing brought them back: restoring a workflow from Trash left its triggers
--- archived. The archive now keeps each trigger's own is_active in metadata; the restore brings back
--- exactly the triggers THIS archive took (same deleted_at, archived_with_definition = the workflow),
--- each as active as it was.
-create or replace function workflow._cascade_definition_soft_restore()
-returns trigger
+-- archived. The archive now keeps each trigger's own is_active in metadata; the Trash restore doors
+-- then bring back exactly the triggers THIS archive took (same deleted_at, archived_with_definition =
+-- the workflow), each as active as it was.
+create or replace function workflow.restore_triggers_archived_with(p_definition_id uuid, p_archived_at timestamptz)
+returns integer
 language plpgsql
-security definer
-set search_path to 'public'
+set search_path to 'pg_catalog'
 as $function$
--- lane TRASH-COVERAGE-2
+-- lane TRASH-COVERAGE-2. Called by the Trash restore doors (public.entity_undelete,
+-- public.org_trash_restore) right after they bring a workflow back. No trigger DDL on
+-- workflow.definition: recreating a trigger there takes ACCESS EXCLUSIVE plus the 23 auth/storage/
+-- realtime relations Supabase's supautils hook declares (measured by db:rehearse, 2026-09-26).
+declare
+  v_n integer;
 begin
   update workflow.trigger t
      set deleted_at = null,
          is_active = coalesce((t.metadata ->> 'active_before_archive')::boolean, t.is_active),
          metadata = t.metadata - 'active_before_archive' - 'archived_with_definition'
-   where t.definition_id = new.id
-     and t.deleted_at = old.deleted_at
-     and (t.metadata ->> 'archived_with_definition') = new.id::text;
-  return new;
+   where t.definition_id = p_definition_id
+     and t.deleted_at = p_archived_at
+     and (t.metadata ->> 'archived_with_definition') = p_definition_id::text;
+  get diagnostics v_n = row_count;
+  return v_n;
 end;
 $function$;
 
-drop trigger if exists _cascade_soft_restore on workflow.definition;
-create trigger _cascade_soft_restore
-  after update on workflow.definition
-  for each row
-  when (old.deleted_at is not null and new.deleted_at is null)
-  execute function workflow._cascade_definition_soft_restore();
-
-revoke all on function workflow._cascade_definition_soft_restore() from public, anon, authenticated;
+revoke all on function workflow.restore_triggers_archived_with(uuid, timestamptz) from public, anon, authenticated;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- THE KINDS — every archivable thing a person sees is a Trash kind
@@ -1036,7 +1146,7 @@ declare
     'hr_jurisdiction_rule_org_decision', 'crm_blocklist_entry', 'commerce_intake_batch',
     'interview_decision_interview', 'workflow_runtime_surface', 'workflow_trigger',
     'product_capture_item', 'category', 'flexible_data', 'shared_canvas_item', 'sch_task',
-    'user_feedback', 'agent_mandate_note'];
+    'user_feedback', 'agent_mandate_note', 'processed_document'];
   v_n int;
 begin
   if exists (select 1 from platform.entity_types e

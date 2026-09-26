@@ -24,7 +24,7 @@
  */
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, RotateCcw, BrainCircuit, UserRound } from "lucide-react";
+import { ArrowRight, RotateCcw, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,7 @@ import { versionFromIsInferred } from "../types";
 import { DoorLink } from "./DoorLink";
 import { fmtDate, KIND_COLOR, KIND_ICON, LEVER_LABEL } from "./tokens";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const PAGE_SIZE = 25;
 
@@ -165,7 +166,7 @@ export function ChangeHistoryPanel({
           }}
           data-testid="change-history-findings-filter"
         >
-          <BrainCircuit className="mr-1 h-3.5 w-3.5" />
+          <AGENT_ICON className="mr-1 h-3.5 w-3.5" />
           {withFindingsOnly ? "Finding-caused only" : "All changes"}
         </Button>
       </header>

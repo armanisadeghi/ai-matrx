@@ -13,13 +13,14 @@
 // It binds to the same PodcastRunState the live run produces.
 
 import Image from "next/image";
-import { Headphones, FileText, BrainCircuit, Film } from "lucide-react";
+import { Headphones, FileText, Film } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
   PodcastRunState,
   MediaSlot,
 } from "@/features/podcasts/generator/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function EpisodeReveal({ state }: { state: PodcastRunState }) {
   const hasTitle = !!state.title;
@@ -84,7 +85,7 @@ export function EpisodeReveal({ state }: { state: PodcastRunState }) {
           />
         ) : (
           <div className="flex items-center gap-3 rounded-xl bg-muted/40 px-3 py-4">
-            <BrainCircuit className="h-4 w-4 shrink-0 text-emerald-500" />
+            <AGENT_ICON className="h-4 w-4 shrink-0 text-emerald-500" />
             <span className="text-sm text-muted-foreground">
               The episode audio renders last — it&apos;ll appear here when ready.
             </span>
@@ -95,7 +96,7 @@ export function EpisodeReveal({ state }: { state: PodcastRunState }) {
       {/* Cover art gallery (images). */}
       {state.images.length > 0 && (
         <AssetStrip
-          icon={BrainCircuit}
+          icon={AGENT_ICON}
           accent="text-fuchsia-500"
           title="Cover art"
           slots={state.images}

@@ -25364,7 +25364,7 @@ export type Database = {
           id: string
           job_id: string
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           page_run_id: string
           payload: Json
           run_id: string
@@ -25378,7 +25378,7 @@ export type Database = {
           id?: string
           job_id: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           page_run_id: string
           payload: Json
           run_id: string
@@ -25392,7 +25392,7 @@ export type Database = {
           id?: string
           job_id?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           page_run_id?: string
           payload?: Json
           run_id?: string
@@ -89649,7 +89649,6 @@ export type Database = {
       }
       global_meter_entry: {
         Row: {
-          conversation_id: string | null
           created_at: string
           custom_fields: Json
           execution_id: string
@@ -89658,10 +89657,10 @@ export type Database = {
           metadata: Json
           organization_id: string
           payload: Json | null
+          payload_ref_id: string | null
           quantities: Json
         }
         Insert: {
-          conversation_id?: string | null
           created_at?: string
           custom_fields?: Json
           execution_id: string
@@ -89670,10 +89669,10 @@ export type Database = {
           metadata?: Json
           organization_id: string
           payload?: Json | null
+          payload_ref_id?: string | null
           quantities?: Json
         }
         Update: {
-          conversation_id?: string | null
           created_at?: string
           custom_fields?: Json
           execution_id?: string
@@ -89682,6 +89681,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           payload?: Json | null
+          payload_ref_id?: string | null
           quantities?: Json
         }
         Relationships: [

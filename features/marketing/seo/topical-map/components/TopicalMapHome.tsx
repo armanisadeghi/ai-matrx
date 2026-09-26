@@ -31,7 +31,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
-import { BrainCircuit, ListTree, Network, X } from "lucide-react";
+import { ListTree, Network, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useBrandSites } from "@/features/marketing/data/hooks";
@@ -47,6 +47,7 @@ import { selectMapLoadedAt } from "../redux/selectors";
 import { StartMapScreen } from "../start/StartMapScreen";
 import { TopicalMapHomeCard } from "./TopicalMapHomeCard";
 import { TopicalMapEmpty, TopicalMapFailed, TopicalMapLoading } from "./TopicalMapStates";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /**
  * The home in start mode — THE builder every entry point uses. Never
@@ -141,7 +142,7 @@ export function TopicalMapHome() {
                 ) : (
                   <Button asChild size="sm">
                     <Link href={startMapHref(brand.seg)}>
-                      <BrainCircuit className="h-4 w-4" aria-hidden />
+                      <AGENT_ICON className="h-4 w-4" aria-hidden />
                       Start a map
                     </Link>
                   </Button>
@@ -153,7 +154,7 @@ export function TopicalMapHome() {
           {startMode ? (
             <section className="rounded-xl border border-primary/30 bg-card p-4 sm:p-5">
               <h2 className="flex items-center gap-2 text-base font-semibold">
-                <BrainCircuit className="h-4 w-4" aria-hidden />
+                <AGENT_ICON className="h-4 w-4" aria-hidden />
                 {extendMap
                   ? `Extend ${extendMap.name} from the site`
                   : extendMapId
@@ -197,7 +198,7 @@ export function TopicalMapHome() {
                   <div className="flex flex-wrap gap-2">
                     <Button asChild size="sm">
                       <Link href={startMapHref(brand.seg, { source: "data" })}>
-                        <BrainCircuit className="h-4 w-4" aria-hidden />
+                        <AGENT_ICON className="h-4 w-4" aria-hidden />
                         Start a map from this brand&apos;s data
                       </Link>
                     </Button>

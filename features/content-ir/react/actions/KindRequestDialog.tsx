@@ -19,7 +19,7 @@ import type { AnyMandateKey } from "@/features/mandates/mandate-key";
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Loader2, RotateCcw, BrainCircuit } from "lucide-react";
+import { AlertTriangle, Loader2, RotateCcw } from "lucide-react";
 import MarkdownStream from "@/components/MarkdownStream";
 import {
   Dialog,
@@ -44,6 +44,7 @@ import DbKindComponent from "../db-component/DbKindComponent";
 import type { KindComponentUiOptions } from "../db-component/dbKindComponentCache";
 import { useKindRequest } from "./useKindRequest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /**
  * The result, rendered LIVE from the streaming request — the whole point of
@@ -301,7 +302,7 @@ export function KindRequestDialog({
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <BrainCircuit className="h-4 w-4 text-primary" />
+            <AGENT_ICON className="h-4 w-4 text-primary" />
             {title}
           </DialogTitle>
           {description ? (
@@ -388,7 +389,7 @@ export function KindRequestDialog({
                 {isRunning ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <BrainCircuit className="h-4 w-4" />
+                  <AGENT_ICON className="h-4 w-4" />
                 )}
                 {isRunning ? "Generating…" : "Generate ideas"}
               </Button>

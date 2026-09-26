@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from "react";
-import { BrainCircuit, ExternalLink, Globe, Phone } from "lucide-react";
+import { ExternalLink, Globe, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   isRecord,
@@ -25,6 +25,7 @@ import {
   PostalAddressBlock,
   RatingBlock,
 } from "./primitive-blocks";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 interface SearchKindBlockProps {
   serverData?: unknown;
@@ -308,7 +309,7 @@ export function AiAnswerKindBlock({ serverData, className }: SearchKindBlockProp
       )}
     >
       <div className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        <BrainCircuit className="h-3.5 w-3.5" />
+        <AGENT_ICON className="h-3.5 w-3.5" />
         <span>AI answer</span>
         {text(value.source) && <span className="opacity-70">· {text(value.source)}</span>}
       </div>

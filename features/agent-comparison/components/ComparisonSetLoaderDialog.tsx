@@ -62,31 +62,36 @@ export function ComparisonSetLoaderDialog({
   onDeleted,
 }: Props) {
   const dispatch = useAppDispatch();
-  const [sets, setSets] = useState<ComparisonSetRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  // null = not read yet for this opening (the list shows its loading state).
+  const [sets, setSets] = useState<ComparisonSetRow[] | null>(null);
+  const loading = open && sets === null;
   const [allModes, setAllModes] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
+  const allSets = sets ?? [];
   const visibleSets = allModes
-    ? sets
-    : sets.filter((s) => modeOf(s) === mode);
+    ? allSets
+    : allSets.filter((s) => modeOf(s) === mode);
+
+  const handleOpenChange = (next: boolean) => {
+    // Re-read the list on every opening: battles are created on every first run.
+    if (!next) setSets(null);
+    onOpenChange(next);
+  };
 
   useEffect(() => {
     if (!open) return undefined;
     let cancelled = false;
-    setLoading(true);
     dispatch(listMyBattleSets())
       .unwrap()
       .then((rows) => {
         if (!cancelled) setSets(rows);
       })
       .catch((err) => {
+        if (!cancelled) setSets([]);
         toast.error(
           `Couldn't list your saved battles: ${err instanceof Error ? err.message : err}`,
         );
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
@@ -99,7 +104,7 @@ export function ComparisonSetLoaderDialog({
     setConfirmDeleteId(null);
     try {
       await deleteComparisonSet(id);
-      setSets((curr) => curr.filter((s) => s.id !== id));
+      setSets((curr) => (curr ?? []).filter((s) => s.id !== id));
       onDeleted?.(id);
       toast.success("Battle deleted");
     } catch (err) {
@@ -111,7 +116,7 @@ export function ComparisonSetLoaderDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Open a saved battle</DialogTitle>
@@ -148,7 +153,7 @@ export function ComparisonSetLoaderDialog({
             >
               All modes
             </button>
-            {sets.length >= LIST_LIMIT && (
+            {allSets.length >= LIST_LIMIT && (
               <span className="ml-auto text-muted-foreground">
                 Your {LIST_LIMIT} most recent
               </span>
@@ -186,7 +191,7 @@ export function ComparisonSetLoaderDialog({
                           {href ? (
                             <AppLink
                               href={href}
-                              onClick={() => onOpenChange(false)}
+                              onClick={() => handleOpenChange(false)}
                               className="text-sm font-medium truncate hover:underline"
                             >
                               {s.name}
@@ -212,7 +217,7 @@ export function ComparisonSetLoaderDialog({
                         <Button size="sm" variant="outline" asChild>
                           <AppLink
                             href={href}
-                            onClick={() => onOpenChange(false)}
+                            onClick={() => handleOpenChange(false)}
                           >
                             Open
                           </AppLink>
@@ -235,7 +240,7 @@ export function ComparisonSetLoaderDialog({
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" onClick={() => handleOpenChange(false)}>
               Close
             </Button>
           </DialogFooter>

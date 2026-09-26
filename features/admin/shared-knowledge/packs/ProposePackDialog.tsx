@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BrainCircuit, Loader2, Plus, Search, X } from "lucide-react";
+import { Loader2, Plus, Search, X } from "lucide-react";
 import { recordToast, toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { useIndustries } from "@/features/industries/hooks";
@@ -36,6 +36,7 @@ import { searchAdminSites, type AdminPackRecord, type AdminSiteOption } from "./
 import { useProposePack, type ProposeStage } from "./useProposePack";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const NEW = "__new__";
 const NONE = "__none__";
@@ -155,7 +156,7 @@ export function ProposePackDialog({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <BrainCircuit className="size-4 text-primary" /> Propose a starter pack from sample sites
+            <AGENT_ICON className="size-4 text-primary" /> Propose a starter pack from sample sites
           </DialogTitle>
           <DialogDescription>
             Real Search Console demand from a few sites in one industry, the controlled vocabularies, and the expert&apos;s rulings go in; a draft pack comes out. No sample company, city or brand ever lands in the pack.
@@ -254,7 +255,7 @@ export function ProposePackDialog({
             </Button>
           )}
           <Button size="sm" onClick={onRun} disabled={!valid || busy || creatingIndustry}>
-            {busy ? <Loader2 className="mr-1 size-3.5 animate-spin" /> : <BrainCircuit className="mr-1 size-3.5" />}
+            {busy ? <Loader2 className="mr-1 size-3.5 animate-spin" /> : <AGENT_ICON className="mr-1 size-3.5" />}
             Propose pack
           </Button>
         </div>

@@ -17,6 +17,7 @@ import {
 } from "@ai-matrx/tap-target/buttons";
 import { ExternalLink } from "lucide-react";
 import { useEffect } from "react";
+import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useClipboard } from "@/hooks/useClipboard";
 import type { SandboxDetailResponse } from "@/types/sandbox";
@@ -112,6 +113,7 @@ export function CodeHeaderControls() {
       <h1 className="ml-0 lg:ml-2 text-sm font-medium text-foreground truncate">
         Code
       </h1>
+      <MandateDoorLink feature="code_editor" label="Code assistant" className="ml-1" />
       {activeSandbox && status && (
         <div className="ml-2 flex min-w-0 flex-1 items-center gap-1.5 border-l border-border pl-2 lg:ml-3 lg:gap-2 lg:pl-3">
           <div

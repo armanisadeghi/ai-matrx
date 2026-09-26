@@ -11,7 +11,6 @@
 // intended workflow: establish the resource, then build how we feed it.
 
 import {
-  BrainCircuit,
   Code2,
   Database,
   ExternalLink,
@@ -36,6 +35,7 @@ import {
 import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
 import type { Database as DB, Json } from "@/types/database.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export type FeedType = DB["public"]["Enums"]["context_feed_type"];
 export type FeedConfig = Record<string, unknown>;
@@ -72,7 +72,7 @@ export const FEED_TYPE_OPTIONS: FeedTypeOption[] = [
     description:
       "Run an agent (optionally with a JSON output schema) to produce the value. Can be scheduled.",
     live: false,
-    icon: BrainCircuit,
+    icon: AGENT_ICON,
   },
   {
     value: "api",

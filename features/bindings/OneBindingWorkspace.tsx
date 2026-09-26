@@ -120,7 +120,7 @@ import {
 import { toastFailure } from "@/lib/failure/toastFailure";
 import { describeFailure } from "@/lib/failure/transport";
 import { buildBindingSavePayload } from "@/features/mandates/workspace/save-payload";
-import { defaultHolderDraftOf, holderDraftOf } from "./holder-draft-seed";
+import { defaultHolderDraftOf, holderDraftOf, holderIdentityOf } from "./holder-draft-seed";
 import { EffectiveConfigLayers } from "@/features/mandates/components/EffectiveConfigLayers";
 import { useGuardedRebind } from "@/features/mandates/admin/useGuardedRebind";
 import type {
@@ -669,6 +669,17 @@ function BindingDraft({
     () => new Set<string>(),
   );
   const [seededFor, setSeededFor] = useState<string | null>(null);
+  /**
+   * The Holder the draft map's KEYS belong to. A map is keyed by the Holder's
+   * own input names, so switching the Holder (agent → workflow, or one agent
+   * for another) leaves every key of the old one behind — found 2026-09-26:
+   * an org binding switched from an agent to a workflow saved `content` and
+   * `instructions` beside the workflow's `job_brief`, the contract check
+   * answered "unmet", and every run set the new Holder aside.
+   */
+  const [mapHolder, setMapHolder] = useState<string>(
+    () => holderIdentityOf(seedHolder),
+  );
   // F1 — the system rung's awareness gate, mounted between save() and the
   // write exactly as the surface bind panel mounts it.
   const [globalGuardOpen, setGlobalGuardOpen] = useState(false);
@@ -725,6 +736,28 @@ function BindingDraft({
       ? { kind: "workflow", workflowId: holder.workflowId }
       : { kind: "agent", agentId: effectiveAgentId(holder, data) },
   );
+
+  // THE MAP FOLLOWS THE HOLDER. Once the NEW Holder's inputs are known, keys
+  // that are not among them are dropped from the draft (it is unsaved, so the
+  // Save button's dirty state still says the change is pending). Only on a
+  // switch made here — a saved map whose Holder later changed its inputs keeps
+  // its keys, so that drift is reported rather than silently repaired.
+  // Adjustment during render, like the seed below.
+  const holderIdentity = holderIdentityOf(holder);
+  if (
+    !onDefaultHolderRung &&
+    holderIdentity !== mapHolder &&
+    holderInputs.status === "ready"
+  ) {
+    const inputNames = new Set(holderInputs.targets.map((t) => t.name));
+    const kept = Object.fromEntries(
+      Object.entries(draftMap).filter(([name]) => inputNames.has(name)),
+    ) as ConsumptionMap;
+    setMapHolder(holderIdentity);
+    if (Object.keys(kept).length !== Object.keys(draftMap).length) {
+      setDraftMap(kept);
+    }
+  }
 
   // P4 — a row must never open blank when the answer is obvious. Seed exact
   // name matches into the DRAFT once per (binding × holder inputs), and tell

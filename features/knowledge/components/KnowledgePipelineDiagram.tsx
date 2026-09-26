@@ -11,7 +11,6 @@ import {
   Plug,
   ArrowDown,
   Zap,
-  BrainCircuit,
   GitBranch,
   ShieldCheck,
   Database,
@@ -25,6 +24,7 @@ import {
 } from "lucide-react";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { cn } from "@/lib/utils";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /**
  * KnowledgePipelineDiagram
@@ -88,7 +88,7 @@ const PHASES: Phase[] = [
       "Two tiers. Tier A does a generic clean (fix OCR, restore structure, label speakers). Tier B runs a known-type agent that applies your org rules and emits structured JSON.",
     chips: ["Tier A · generic clean", "Tier B · org rules → JSON"],
     tone: "flow",
-    icon: BrainCircuit,
+    icon: AGENT_ICON,
   },
   {
     id: "enrich",

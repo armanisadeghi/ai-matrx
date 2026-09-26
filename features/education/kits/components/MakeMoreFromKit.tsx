@@ -19,7 +19,7 @@
 // in THIS kit rather than beside it.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertCircle, BrainCircuit, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePdfClient } from "@/features/pdf/api/client";
 import { ConvertContentDialog } from "@/features/education/convert/ConvertContentDialog";
@@ -30,6 +30,7 @@ import type {
 } from "@/features/education/convert/types";
 import type { ConvertOrigin } from "@/features/education/convert/ConvertContentDialog";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /** The recovered material, held so a second target costs no second re-read. */
 interface Recovered {
@@ -119,7 +120,7 @@ export function MakeMoreFromKit({
         {busy ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
-          <BrainCircuit className="h-4 w-4" />
+          <AGENT_ICON className="h-4 w-4" />
         )}
         {busy ? "Reading your material…" : "Make more from it"}
       </Button>

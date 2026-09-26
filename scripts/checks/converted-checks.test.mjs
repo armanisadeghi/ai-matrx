@@ -102,6 +102,13 @@ export const CONVERTED = [
     allowKeys: () => json("scripts/record-toasts.baseline.json").ids,
     keyShape: /^[^:]+\.tsx?::.+$/s,
   },
+  {
+    // Accepted by an inline `// access-errors: ok — <reason>` marker, never a key list: all new.
+    id: "access-errors-surfaces-that-guess-why-a-read-failed",
+    cmd: "pnpm exec tsx scripts/access-errors/check-access-errors.ts",
+    allowKeys: () => [],
+    keyShape: /^((raw-supabase-message|raw-governed-write|claims-deleted|claims-denied)\|[^|]+|(swallowed|narrowed)\|[^|]+\|[^|]+)$/,
+  },
 ];
 
 for (const check of CONVERTED) {

@@ -9,8 +9,9 @@
 // review-and-apply view — diff, Apply splices only the changed blocks through
 // the source's save adapter, Discard writes nothing). Elsewhere: absent.
 
-import { BrainCircuit, MessageCircle, Wand2 } from "lucide-react";
+import { MessageCircle, Wand2 } from "lucide-react";
 import { registerAction } from "../registry";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 registerAction({
   id: "text-cleanup",
@@ -44,7 +45,7 @@ registerAction({
   id: "text-custom-agent",
   writesSource: true,
   label: "Custom agent…",
-  icon: BrainCircuit,
+  icon: AGENT_ICON,
   iconColor: "text-primary",
   category: "ai",
   supportedSources: "*",

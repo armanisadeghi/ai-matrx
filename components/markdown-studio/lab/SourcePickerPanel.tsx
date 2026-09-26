@@ -8,7 +8,6 @@
 
 import React, { useEffect, useState } from "react";
 import {
-  BrainCircuit,
   FileText,
   FlaskConical,
   FolderOpen,
@@ -37,13 +36,14 @@ import {
   type StudioSourceListItem,
 } from "./content-sources";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const ICONS: Record<string, LucideIcon> = {
   FileText,
   StickyNote,
   GraduationCap,
   MessageSquare,
-  BrainCircuit,
+  AGENT_ICON,
   PanelTop,
   PanelBottom,
   FlaskConical,

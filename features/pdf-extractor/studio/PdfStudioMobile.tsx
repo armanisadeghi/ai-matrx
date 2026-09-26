@@ -36,7 +36,6 @@ import {
   Layers,
   Loader2,
   MoreVertical,
-  BrainCircuit,
   X,
   Plus,
 } from "lucide-react";
@@ -58,6 +57,7 @@ import { PdfStudioUpload } from "./PdfStudioUpload";
 import { PdfStudioUploadDrawer } from "./PdfStudioUploadDrawer";
 import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
 import { useToastManager } from "@/hooks/useToastManager";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 interface PdfStudioMobileProps {
   initialDocumentId?: string;
@@ -319,7 +319,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
                   aiCleanRunning ? (
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
                   ) : (
-                    <BrainCircuit className="h-4 w-4" />
+                    <AGENT_ICON className="h-4 w-4" />
                   )
                 }
                 ariaLabel="AI Clean"

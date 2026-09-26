@@ -20,7 +20,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   BadgeCheck,
-  BrainCircuit,
   CircleAlert,
   Code2,
   LayoutTemplate,
@@ -50,6 +49,7 @@ import { composeKindAgentIntent } from "@/features/content-ir/studio/kind-agent-
 import { useKindAgentLaunch } from "@/features/content-ir/studio/useKindAgentLaunch";
 import type { Json } from "@/types/database.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 interface ShapeRenderStatusStripProps {
   kind: string;
@@ -274,7 +274,7 @@ export default function ShapeRenderStatusStrip({
                 {artisanLaunching ? (
                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <BrainCircuit className="mr-1.5 h-3.5 w-3.5" />
+                  <AGENT_ICON className="mr-1.5 h-3.5 w-3.5" />
                 )}
                 Build a component with an agent
               </Button>

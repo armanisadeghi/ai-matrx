@@ -31,7 +31,7 @@
 
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { BrainCircuit, Check, Loader2 } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
@@ -46,6 +46,7 @@ import { formatCount } from "@/features/marketing/search-console/types";
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 import type { TopicPlacementPassResult, TopicPlacementStatus } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 // 🚨 THIS PATH SHIPS AHEAD OF THE DEPLOYED BACKEND, ON PURPOSE.
 // `POST /seo/keywords/topics/backfill` lives on aidream main (service
@@ -149,7 +150,7 @@ export function TopicPlacementStrip({
       )}
     >
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <BrainCircuit className="h-4 w-4 shrink-0 text-primary" />
+        <AGENT_ICON className="h-4 w-4 shrink-0 text-primary" />
         <p className="text-xs font-medium text-foreground">
           Place keywords on offerings
         </p>
@@ -212,7 +213,7 @@ export function TopicPlacementStrip({
               {running ? (
                 <Loader2 className="h-3 w-3 animate-spin" />
               ) : (
-                <BrainCircuit className="h-3 w-3" />
+                <AGENT_ICON className="h-3 w-3" />
               )}
               {running ? "Placing…" : "Place next"}
             </Button>

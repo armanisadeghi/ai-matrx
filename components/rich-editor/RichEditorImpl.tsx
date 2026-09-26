@@ -61,6 +61,7 @@ import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { SourceFeature } from "@/types/python-generated/source-attribution";
 import type { ContentSource } from "@/features/rich-document/types";
 import { planSave, type IslandDelta, type SavePlan } from "./core/save-plan";
+import { reconcileHostValue } from "./core/host-value";
 import { measureText } from "./core/text-metrics";
 import { outlineOf, type OutlineEntry } from "./core/outline";
 import type { DeclaredVariable } from "./core/variables";
@@ -208,12 +209,30 @@ export default function RichEditorImpl({
   const imageInput = useRef<HTMLInputElement>(null);
   const { upload } = useFileUpload();
 
-  // A new document from the host resets the editor to it.
+  // A new `value` from the host (core/host-value.ts, verify-RC-B4 R6-4): the
+  // echo of this editor's own save (even one still in flight) or a value equal
+  // to the draft only moves the stored text; over unsaved edits the draft is
+  // KEPT and the person is told; only a clean editor opens the new document.
   const lastValue = useRef(value);
+  const ownSaves = useRef(new Set<string>());
   useEffect(() => {
     if (value === lastValue.current) return;
+    let draft = current;
+    try {
+      draft = handle.current?.flush() ?? current;
+    } catch {
+      // A table edit that cannot be written yet: the draft on screen stays as it is.
+    }
+    const action = reconcileHostValue({ value, lastValue: lastValue.current, stored, draft, ownSaves: ownSaves.current });
     lastValue.current = value;
+    if (action === "ignore") return;
     setStored(value);
+    if (action === "adopt-stored") return;
+    if (action === "keep-draft") {
+      toast.warning("This document changed while you were editing. Your edits are kept — Save writes them over the new version.");
+      return;
+    }
+    ownSaves.current.clear();
     setCurrent(value);
     approved.current.clear();
     setMountKey((key) => key + 1);
@@ -252,6 +271,9 @@ export default function RichEditorImpl({
   const doSave = async (plan: SavePlan) => {
     if (!onSave) return;
     setSaving(true);
+    // The host may echo this text back as its new `value` before (or after) the
+    // save settles — that echo is ours, never "a new document" (host-value.ts).
+    ownSaves.current.add(plan.text);
     try {
       const readBack = await onSave(plan.text, plan);
       const storedNow = typeof readBack === "string" ? readBack : plan.text;

@@ -9,7 +9,7 @@
 // it never drifts from /chat's list behavior.
 
 import Link from "next/link";
-import { BrainCircuit, Plus, Settings2, ShieldCheck } from "lucide-react";
+import { Plus, Settings2, ShieldCheck } from "lucide-react";
 import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
 import {
   Popover,
@@ -18,6 +18,7 @@ import {
 } from "@ai-matrx/design-system";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { TutorSettingsPanel } from "./TutorSettingsPanel";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function TutorHome() {
   return (
@@ -32,7 +33,7 @@ export function TutorHome() {
               Cites your material
             </span>
             <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1">
-              <BrainCircuit className="h-3.5 w-3.5 text-primary" aria-hidden />
+              <AGENT_ICON className="h-3.5 w-3.5 text-primary" aria-hidden />
               Remembers your progress
             </span>
           </div>

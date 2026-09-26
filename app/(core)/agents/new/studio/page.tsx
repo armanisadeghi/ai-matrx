@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, MessageSquare, Import, BrainCircuit, Zap, Repeat } from "lucide-react";
+import { ArrowLeft, MessageSquare, Import, Zap, Repeat } from "lucide-react";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export const metadata = {
     title: "Agent Studio — coming soon",
@@ -54,7 +55,7 @@ export default function AgentStudioComingSoonPage() {
                                 Agent Studio
                             </h1>
                             <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
-                                <BrainCircuit className="h-3 w-3" />
+                                <AGENT_ICON className="h-3 w-3" />
                                 Coming soon
                             </span>
                         </div>

@@ -18,7 +18,6 @@
 
 import { useState } from "react";
 import {
-  BrainCircuit,
   CheckCircle2,
   ChevronDown,
   EyeOff,
@@ -39,9 +38,10 @@ import {
   LAYER_META,
   type DiscoveredMandate,
 } from "./mock-data";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 function HolderChip({ mandate }: { mandate: DiscoveredMandate }) {
-  const Icon = mandate.holder.type === "workflow" ? GitBranch : BrainCircuit;
+  const Icon = mandate.holder.type === "workflow" ? GitBranch : AGENT_ICON;
   return (
     <Badge variant="outline" className="gap-1 text-[10px]">
       <Icon className="h-3 w-3" />

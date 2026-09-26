@@ -20,7 +20,6 @@ import {
   Loader2,
   Plus,
   Save,
-  BrainCircuit,
   Trash2,
   X,
   Video,
@@ -60,6 +59,7 @@ import type {
   FeaturedYouTube,
 } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const RESOURCE_LABEL: Record<string, string> = {
   fc_set: "Flashcards",
@@ -212,7 +212,7 @@ function FeaturedRow({
   isFirst: boolean;
   isLast: boolean;
 }) {
-  let icon = <BrainCircuit className="h-4 w-4 text-primary" />;
+  let icon = <AGENT_ICON className="h-4 w-4 text-primary" />;
   let title = "";
   let sub = "";
   if (item.kind === "youtube") {

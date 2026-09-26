@@ -19,7 +19,6 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  BrainCircuit,
   ExternalLink,
   Loader2,
   Newspaper,
@@ -130,6 +129,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 function compactNumber(value: number | null | undefined): string {
   return value === null || value === undefined
@@ -1346,7 +1346,7 @@ export function BacklinksWorkspace({
               {batchAnalyzing ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <BrainCircuit className="h-3.5 w-3.5" />
+                <AGENT_ICON className="h-3.5 w-3.5" />
               )}
               Review next {enrichmentBatchSize}
             </Button>

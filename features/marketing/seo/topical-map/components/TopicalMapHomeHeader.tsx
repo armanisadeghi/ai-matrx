@@ -7,7 +7,7 @@
  */
 
 import Link from "next/link";
-import { BrainCircuit, ListTree, Network } from "lucide-react";
+import { ListTree, Network } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 import { startMapHref } from "./TopicalMapHome";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function TopicalMapHomeHeader() {
   const brand = useMarketingBrand();
@@ -40,7 +41,7 @@ export function TopicalMapHomeHeader() {
         onPlan ? undefined : (
           <Button asChild size="sm" variant="ghost" className="gap-1.5">
             <Link href={startMapHref(brand.seg)}>
-              <BrainCircuit className="h-4 w-4" aria-hidden />
+              <AGENT_ICON className="h-4 w-4" aria-hidden />
               <span className="hidden sm:inline">Start a map</span>
             </Link>
           </Button>

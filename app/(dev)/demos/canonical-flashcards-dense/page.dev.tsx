@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  BrainCircuit,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -16,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { useRef, useState } from "react";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 type Flashcard = {
   id: string;
@@ -83,7 +83,7 @@ const ASSISTS = [
   {
     id: "explain",
     label: "Explain",
-    icon: BrainCircuit,
+    icon: AGENT_ICON,
     response:
       "Think of a storm as an engine: moisture is fuel, instability lets air accelerate, lift starts it, and shear keeps its moving parts separated.",
   },
@@ -321,7 +321,7 @@ export default function DenseCanonicalFlashcardsDemo() {
                 Visible card is structured context
               </p>
             </div>
-            <BrainCircuit className="h-4 w-4 text-primary" />
+            <AGENT_ICON className="h-4 w-4 text-primary" />
           </div>
           <div className="grid grid-cols-2 gap-1.5 p-2">
             {ASSISTS.map((assist) => (

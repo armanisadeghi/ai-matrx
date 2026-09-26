@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   ArrowRight,
   BadgeCheck,
-  BrainCircuit,
   Clock,
   DollarSign,
   EyeOff,
@@ -14,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export const metadata = createRouteMetadata("/how-we-prove-it", {
   title: "How We Prove It",
@@ -285,7 +285,7 @@ export default function HowWeProveItPage() {
                       ) : (
                         <ul className="flex flex-col gap-1 text-xs text-muted-foreground">
                           <li className="flex items-center gap-1.5">
-                            <BrainCircuit
+                            <AGENT_ICON
                               className="h-3.5 w-3.5 shrink-0"
                               strokeWidth={2}
                               aria-hidden

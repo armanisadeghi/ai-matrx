@@ -63,7 +63,7 @@ import { smartExecute } from "@/features/agents/redux/execution-system/thunks/sm
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 
 import {
-  selectAccumulatedText,
+  selectResultText,
   selectPrimaryRequest,
   selectRequest,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
@@ -477,7 +477,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   const requestId = primaryRequest?.requestId ?? null;
 
   const response = useAppSelector((state) =>
-    requestId ? selectAccumulatedText(requestId)(state) : "",
+    requestId ? selectResultText(requestId)(state) : "",
   );
   const request = useAppSelector((state) =>
     requestId ? selectRequest(requestId)(state) : undefined,

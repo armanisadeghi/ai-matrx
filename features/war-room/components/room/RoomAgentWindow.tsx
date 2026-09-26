@@ -11,9 +11,10 @@
 // window-panels bundle-leak guard. See features/window-panels/FEATURE.md →
 // "Bundle invariant".
 
-import { BrainCircuit } from "lucide-react";
+import {  } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import RoomAgentPanel from "./RoomAgentPanel";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 // Docked bottom-right on open (computed from the viewport in `initialRect`).
 const ROOM_AGENT_W = 460;
@@ -32,7 +33,7 @@ export default function RoomAgentWindow({
       title="Room Agent"
       titleNode={
         <span className="flex items-center gap-1.5 min-w-0">
-          <BrainCircuit className="size-3.5 shrink-0 text-primary" />
+          <AGENT_ICON className="size-3.5 shrink-0 text-primary" />
           <span className="truncate">Room Agent</span>
         </span>
       }

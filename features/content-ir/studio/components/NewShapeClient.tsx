@@ -31,7 +31,6 @@ import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
-  BrainCircuit,
   Check,
   CircleAlert,
   Loader2,
@@ -68,6 +67,7 @@ import {
 import { cn } from "@/lib/utils";
 import AppLink from "@/components/navigation/AppLink";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 // The result pane is this tall from first paint, empty state included, so the
 // page geometry never changes when a run starts (see the floating-law note).
@@ -535,7 +535,7 @@ function NewShapeForm({ agentId }: { agentId: string }) {
               {submitted ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               ) : (
-                <BrainCircuit className="h-4 w-4" aria-hidden />
+                <AGENT_ICON className="h-4 w-4" aria-hidden />
               )}
               {submitted ? "Building your Shape…" : "Build my Shape"}
             </Button>

@@ -19,7 +19,6 @@ import {
   ArrowLeft,
   Trash2,
   Save,
-  BrainCircuit,
   Loader2,
   Lock,
   type LucideIcon,
@@ -44,6 +43,7 @@ import type {
   QuestionType,
 } from "../../data/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const TYPE_LABEL: Record<QuestionType, string> = {
   multiple_choice: "Multiple choice",
@@ -316,7 +316,7 @@ function ItemEditor({
             {deepening ? (
               <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
             ) : (
-              <BrainCircuit className="mr-1 h-3.5 w-3.5" />
+              <AGENT_ICON className="mr-1 h-3.5 w-3.5" />
             )}
             Make deeper
           </Button>

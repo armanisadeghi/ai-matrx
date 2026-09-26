@@ -27,7 +27,8 @@
 import IconSelect from "@/components/official/IconSelect";
 import { EntityTypeCombobox } from "@/components/entity-types/EntityTypeCombobox";
 import { RunControlShell } from "@/features/marketing/seo/topical-map/views/pages/runs/RunControlShell";
-import { BrainCircuit, FolderKanban } from "lucide-react";
+import { FolderKanban } from "lucide-react";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const PROJECT_ITEMS = [
   {
@@ -75,7 +76,7 @@ export default function PopoverExprProofPage() {
         <h2 className="text-sm font-semibold">RunControlShell</h2>
         <RunControlShell
           label="Map the pages"
-          icon={<BrainCircuit className="h-3.5 w-3.5" />}
+          icon={<AGENT_ICON className="h-3.5 w-3.5" />}
           state={{
             running: false,
             restoring: false,

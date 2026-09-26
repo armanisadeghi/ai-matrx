@@ -2,7 +2,6 @@ import AppLink from "@/components/navigation/AppLink";
 import {
   ArrowRight,
   BadgeCheck,
-  BrainCircuit,
   Check,
   CircleDot,
   FlaskConical,
@@ -14,6 +13,7 @@ import {
   TestTubeDiagonal,
   TriangleAlert,
 } from "lucide-react";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const VARIANTS = [
   {
@@ -253,7 +253,7 @@ export default function CanonicalFlashcardsDemoHubPage() {
         <section className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-2xl border border-border bg-card p-5">
             <div className="mb-4 flex items-center gap-2">
-              <BrainCircuit className="h-5 w-5 text-primary" />
+              <AGENT_ICON className="h-5 w-5 text-primary" />
               <h2 className="text-lg font-semibold">
                 Ideas to carry into Refine
               </h2>

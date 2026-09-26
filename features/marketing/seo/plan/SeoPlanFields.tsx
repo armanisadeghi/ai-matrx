@@ -10,7 +10,7 @@
  */
 
 import Link from "next/link";
-import { BrainCircuit, Link2, X } from "lucide-react";
+import { Search, Link2, X } from "lucide-react";
 
 import TextArrayInput from "@/components/official/TextArrayInput";
 import { Input } from "@ai-matrx/design-system";
@@ -164,7 +164,7 @@ export function SeoPlanSecondaryKeywordsField({
                     })
                   }
                 >
-                  <BrainCircuit className="h-3 w-3" />
+                  <Search className="h-3 w-3" />
                 </button>
                 <button
                   type="button"

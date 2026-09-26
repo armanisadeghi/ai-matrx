@@ -52,7 +52,7 @@
 // test rather than a walk.
 
 import { useEffect, useRef, useState } from "react";
-import { BrainCircuit, Plus, Workflow } from "lucide-react";
+import { Plus, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   CONFIGURATION_CHOICE_SIZE,
@@ -78,6 +78,7 @@ import { WorkflowListDropdown } from "@/features/workflow-runtime/listings/Workf
 import { listWorkflowVersionChoices, type WorkflowVersionChoice } from "./workflow-versions";
 import type { HolderDraft } from "./ScopeHolderBar";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /** "Latest" as a select value. `null` is the stored form; this is the option. */
 export const LATEST_VERSION_VALUE = "latest";
@@ -238,7 +239,7 @@ export function HolderAssignment({
               )}
             >
               {kind === "agent" ? (
-                <BrainCircuit className="h-4 w-4" aria-hidden />
+                <AGENT_ICON className="h-4 w-4" aria-hidden />
               ) : (
                 <Workflow className="h-4 w-4" aria-hidden />
               )}

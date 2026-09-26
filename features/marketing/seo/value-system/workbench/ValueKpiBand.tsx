@@ -33,7 +33,6 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   BadgePlus,
-  BrainCircuit,
   Gavel,
   Minus,
   ScanSearch,
@@ -43,6 +42,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { formatPct, type Delta, type ValueKpis } from "../lib";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 function DeltaTag({ delta, label }: { delta: Delta; label: string }) {
   if (delta.dir === "none") return null;
@@ -289,7 +289,7 @@ export function ValueKpiBand({
                 className="h-7 min-w-0 gap-1 border-warning/60 bg-warning/10 px-1.5 text-[10px] font-semibold text-warning hover:bg-warning/20 max-lg:h-11"
                 title="Answer one dimension for five keywords in a floating panel"
               >
-                <BrainCircuit className="h-3 w-3" />
+                <AGENT_ICON className="h-3 w-3" />
                 Answer 5
               </Button>
               <Button

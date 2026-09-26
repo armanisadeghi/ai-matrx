@@ -32,7 +32,6 @@ import React from "react";
 import Link from "next/link";
 import {
   ArrowDown,
-  BrainCircuit,
   Download,
   ExternalLink,
   FileIcon,
@@ -57,6 +56,7 @@ import { shareUrls } from "@/features/files/handler/utils/python-base";
 import { formatFileSize } from "@/features/files/utils/format";
 import { signUpHref } from "@/utils/auth/auth-destination";
 import { resourceTitle } from "@/features/sharing/lenses/default-renderers";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 // The one heavy engine on this lens — React.lazy in-gate boundary so the
 // react-pdf/pdfjs chunk loads only when a PDF share actually renders.
@@ -389,7 +389,7 @@ export function SharedFileLens({
               }
               aria-label="See what AI can do with this file"
             >
-              <BrainCircuit className="h-4 w-4 text-primary" />
+              <AGENT_ICON className="h-4 w-4 text-primary" />
               <span className="ml-1.5 hidden lg:inline">What AI can do</span>
               <ArrowDown className="ml-1 hidden h-3.5 w-3.5 lg:inline" />
             </Button>

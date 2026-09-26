@@ -18,12 +18,13 @@
  */
 
 import Link from "next/link";
-import { BrainCircuit, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { AppHolder } from "@/features/agent-apps/lib/appHolder";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 
 /**
  * One label per RUNG the server verdict can name. `global` and `system` are
@@ -56,7 +57,7 @@ export function AppMandateBinding({
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1 min-w-0">
           <div className="flex items-center gap-2 text-sm font-medium">
-            <BrainCircuit className="size-4 shrink-0 text-muted-foreground" />
+            <INTELLIGENCE_ICON className="size-4 shrink-0 text-muted-foreground" />
             <span className="truncate">
               {holder.mandateKey ?? "No job assigned"}
             </span>

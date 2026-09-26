@@ -16,7 +16,6 @@ import {
   Download,
   FileSpreadsheet,
   FileText,
-  BrainCircuit,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
@@ -43,6 +42,7 @@ import {
   type ExportRow,
 } from "./export";
 import type { ColumnType } from "@/features/page-extraction/types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface ExportMenuColumn extends ExportColumn {
   type?: ColumnType;
@@ -130,7 +130,7 @@ export function ExportMenu({
         <DropdownMenuItem
           onClick={() => void copy(toMarkdownTable(columns, rows), "Markdown")}
         >
-          <BrainCircuit className="mr-2 h-4 w-4" /> Copy for AI
+          <AGENT_ICON className="mr-2 h-4 w-4" /> Copy for AI
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

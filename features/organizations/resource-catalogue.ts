@@ -40,7 +40,7 @@ import {
   Webhook,
   AppWindow,
   Zap,
-  BrainCircuit,
+  Puzzle,
   Workflow,
   LayoutTemplate,
   Terminal,
@@ -275,7 +275,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     label: "Skill",
     labelPlural: "Skills",
     role: "utility",
-    icon: BrainCircuit,
+    icon: Puzzle,
     description: "Reusable capabilities agents can call.",
     // Physical table moved to `skill.definition` in the 2026 schema reorg;
     // queried via `.schema("skill")`. `shareKey` is the canonical permissions

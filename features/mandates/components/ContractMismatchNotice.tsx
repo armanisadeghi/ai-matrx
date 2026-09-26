@@ -12,7 +12,7 @@
  * design is in common-docs/systems/intelligence/mandates/REGISTER.md.
  */
 
-import { AlertTriangle, BrainCircuit } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ComingSoonBadge } from "@/components/coming-soon/ComingSoonBadge";
@@ -23,6 +23,7 @@ import type {
   ContractMismatch,
 } from "@/features/mandates/contract-check";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 
 export interface ContractMismatchNoticeProps {
   /** The server's persisted verdict — preferred when present. */
@@ -80,7 +81,7 @@ export function ContractMismatchNotice({
             className="h-7 gap-1.5 border-destructive/40 text-[11.5px]"
             onClick={() => void announceComingSoon("mandates.holder-auto-heal")}
           >
-            <BrainCircuit className="h-3.5 w-3.5" />
+            <INTELLIGENCE_ICON className="h-3.5 w-3.5" />
             Fix with AI
             <ComingSoonBadge />
           </Button>

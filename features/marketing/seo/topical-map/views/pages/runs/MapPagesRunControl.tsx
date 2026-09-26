@@ -25,7 +25,7 @@
 // pass correctly left it alone; it is rendered as the success it is.
 
 import { useState } from "react";
-import { BrainCircuit } from "lucide-react";
+import {  } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
@@ -42,6 +42,7 @@ import { SiteChooser } from "./SiteChooser";
 import { WantedTopicsPanel } from "./WantedTopicsPanel";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface MapPagesRunControlProps {
   context: PagesWorkspaceContext;
@@ -78,7 +79,7 @@ export function MapPagesRunControl({
   return (
     <RunControlShell
       label="Map the pages"
-      icon={<BrainCircuit className="h-3.5 w-3.5" aria-hidden />}
+      icon={<AGENT_ICON className="h-3.5 w-3.5" aria-hidden />}
       state={{
         running: run.running,
         restoring: run.restoring,

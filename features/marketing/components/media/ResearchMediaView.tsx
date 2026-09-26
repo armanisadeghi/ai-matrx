@@ -9,7 +9,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { ExternalLink, FolderPlus, Search, BrainCircuit } from "lucide-react";
+import { ExternalLink, FolderPlus, Search } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ import {
   urlToMediaRef,
 } from "@/features/files/redux/converters";
 import type { ResearchImageRow } from "@/features/marketing/data/media-library";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 function hostnameOf(url: string | null): string | null {
   if (!url) return null;
@@ -303,7 +304,7 @@ export function ResearchMediaView({
                       title="Use as a creative brief in Generate"
                       onClick={() => onUseAsBrief(row)}
                     >
-                      <BrainCircuit className="h-3 w-3" />
+                      <AGENT_ICON className="h-3 w-3" />
                     </Button>
                     {own ? (
                       <Button

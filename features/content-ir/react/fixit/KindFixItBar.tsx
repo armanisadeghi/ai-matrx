@@ -19,7 +19,7 @@
  */
 
 import React, { useContext, useEffect, useState } from "react";
-import { BrainCircuit, CircleAlert, Loader2, Power, Wrench } from "lucide-react";
+import { CircleAlert, Loader2, Power, Wrench } from "lucide-react";
 import { ReactReduxContext } from "react-redux";
 
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -41,6 +41,7 @@ import {
   activateKindUsingInstance,
   reactivateComponent,
 } from "./fixit-actions";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface KindFixItBarProps {
   kind: string;
@@ -205,7 +206,7 @@ const KindFixItBarInner: React.FC<KindFixItBarProps> = ({ kind, value }) => {
         return (
           <ActionButton
             busy={busy}
-            icon={BrainCircuit}
+            icon={AGENT_ICON}
             label="Build component"
             onClick={() => launchBuilder("component")}
           />
@@ -223,7 +224,7 @@ const KindFixItBarInner: React.FC<KindFixItBarProps> = ({ kind, value }) => {
         return (
           <ActionButton
             busy={busy}
-            icon={BrainCircuit}
+            icon={AGENT_ICON}
             label="Build kind & component"
             onClick={() => launchBuilder("register")}
           />

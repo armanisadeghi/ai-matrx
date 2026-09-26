@@ -79,7 +79,7 @@ import type {
 import type { Enums } from "@/types/database.types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { DecisionQuestionsPart } from "@/features/agents/decision-questions/types";
-import type { MessageFlags } from "@/features/agents/message-flags/flags";
+import type { MessageFlags } from "@/types/python-generated/stream-events";
 
 // The canonical role union, sourced from the generated DB enum so it can never
 // drift from `public.cx_message.role`. Aliased here so `MessageRole` below

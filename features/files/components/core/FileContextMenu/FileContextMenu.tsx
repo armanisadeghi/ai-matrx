@@ -19,7 +19,7 @@ import { PDF_SURFACES } from "@/features/pdf/surfaces/registry";
 import { resolvePdfSurfaceIds } from "@/features/pdf/hooks/usePdfSurfaceLinks";
 import {
   ArchiveRestore,
-  BrainCircuit,
+  Library,
   Copy,
   CopyPlus,
   Download,
@@ -746,7 +746,7 @@ export function FileContextMenu({
                   <DropdownMenuItem
                     onClick={() => void handleOpenKnowledgeAssets()}
                   >
-                    <BrainCircuit className="mr-2 h-4 w-4" />
+                    <Library className="mr-2 h-4 w-4" />
                     Knowledge assets
                   </DropdownMenuItem>
                   <DropdownMenuItem

@@ -30,7 +30,6 @@ import {
   ExternalLink,
   Loader2,
   ShieldAlert,
-  BrainCircuit,
   Zap,
 } from "lucide-react";
 
@@ -53,6 +52,7 @@ import {
   type FindingFixProposal,
 } from "@/features/marketing/components/analysis/useFindingFixer";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /** Checks whose fix this card can actually land on the page today. */
 const FIXABLE_ITEM_KEYS = new Set([
@@ -310,7 +310,7 @@ export function FindingFixCard({
                   className="h-7 gap-1.5"
                   onClick={() => void fixer.run(false)}
                 >
-                  <BrainCircuit className="h-3.5 w-3.5" />
+                  <AGENT_ICON className="h-3.5 w-3.5" />
                   Ask the fixer to write a better one
                 </Button>
               ) : null}
@@ -348,7 +348,7 @@ export function FindingFixCard({
                 className="h-7 gap-1.5"
                 onClick={() => void fixer.run(fixer.state.status === "done")}
               >
-                <BrainCircuit className="h-3.5 w-3.5" />
+                <AGENT_ICON className="h-3.5 w-3.5" />
                 {fixer.state.status === "done"
                   ? "Try again"
                   : "Write the fix for me"}

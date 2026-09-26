@@ -79,6 +79,7 @@ import {
 import {
   selectRequest,
   deriveAnswerText,
+  deriveDecisionResultText,
 } from "../active-requests/active-requests.selectors";
 import {
   setInstanceStatus,
@@ -144,7 +145,12 @@ async function pollForCompletion(
       // leak the model's chain-of-thought into `responseText`, which headless
       // consumers persist verbatim (e.g. the orchestrator's system prompt in
       // an Orchestra). Never hand-roll a parallel block filter here.
-      return deriveAnswerText(request);
+      //
+      // A decision turn has no text at all — its answer is one
+      // `decision_answers` block — so the caller (a shortcut's `direct` /
+      // `background` result, a headless consumer) would receive "" for a
+      // paid, finished verdict. `deriveDecisionResultText` reads it as text.
+      return deriveDecisionResultText(request) ?? deriveAnswerText(request);
     }
     await new Promise((r) => setTimeout(r, intervalMs));
   }

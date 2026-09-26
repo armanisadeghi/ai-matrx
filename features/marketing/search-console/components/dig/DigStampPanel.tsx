@@ -22,7 +22,6 @@
 
 import { useState } from "react";
 import {
-  BrainCircuit,
   Check,
   Plus,
   RefreshCw,
@@ -55,6 +54,7 @@ import {
   useDigRuleStamps,
   useDigStampMutations,
 } from "@/features/marketing/search-console/hooks/useDigRules";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const NEW = "__new__";
 
@@ -402,7 +402,7 @@ export function DigStampPanel({
 
           <div className="flex items-center justify-between gap-2">
             <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-              <BrainCircuit className="h-3 w-3" />
+              <AGENT_ICON className="h-3 w-3" />
               A segment says where a keyword sits — never a task somebody
               closes.
             </span>

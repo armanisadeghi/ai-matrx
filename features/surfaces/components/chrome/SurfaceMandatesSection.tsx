@@ -36,7 +36,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  BrainCircuit,
   Radar,
   ChevronDown,
   ChevronRight,
@@ -60,6 +59,7 @@ import {
   featureIntelligenceHref,
   featureOfMandateKey,
 } from "@/features/mandates/feature-intelligence/hrefs";
+import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 
 export interface SurfaceMandatesSectionProps {
   /** The surface the user is standing on. */
@@ -150,7 +150,7 @@ export function SurfaceMandatesSection({
     <div className={cn("min-w-0 border-b border-border pb-2", className)}>
       {rows.length > 0 && (
         <div className="mb-1 flex items-center gap-1">
-          <BrainCircuit
+          <INTELLIGENCE_ICON
             className="h-3 w-3 shrink-0 text-muted-foreground"
             aria-hidden="true"
           />

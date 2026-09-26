@@ -218,8 +218,8 @@ async function measure(
     .update(`${label}${Date.now()}${Math.random()}`)
     .digest("hex")
     .slice(0, 10)}`;
-  const worker = await connectDirect({ ...env }, "db:rehearse (measure)");
-  const sampler = await connectDirect({ ...env }, "db:rehearse (pg_locks sampler)");
+  const worker = await connectDirect({ ...env }, "db:rehearse (measure)", undefined, { migrationRunner: true });
+  const sampler = await connectDirect({ ...env }, "db:rehearse (pg_locks sampler)", undefined, { migrationRunner: true });
   // THE ONE SPLITTER (scripts/lib/sql-split.ts, D351): each statement's bytes exactly as written.
   const statements = sqlStatements(sql);
   const out: StatementMeasurement[] = [];
@@ -523,7 +523,7 @@ async function takeBuildLocks(
    */
   acquired: LockFamily[],
 ): Promise<{ refusal: string | null }> {
-  const client = await connectDirect({ ...env }, "db:rehearse (build_lock)");
+  const client = await connectDirect({ ...env }, "db:rehearse (build_lock)", undefined, { migrationRunner: true });
   try {
     const q: LockQuery = async (sql, params) => (await client.query(sql, params as never)).rows;
     const where = "the clone";
@@ -594,7 +594,7 @@ async function releaseBuildLocks(
   if (acquired.length === 0) return;
   let client;
   try {
-    client = await connectDirect({ ...env }, "db:rehearse (build_lock release)");
+    client = await connectDirect({ ...env }, "db:rehearse (build_lock release)", undefined, { migrationRunner: true });
   } catch (err) {
     console.error(
       `${TAG.fail}COULD NOT CONNECT TO RELEASE ${acquired.map((f) => `LOCK:${f}`).join(", ")} on the ` +
@@ -757,7 +757,7 @@ async function main(): Promise<number> {
   // asserts them too; the measure pass runs DDL and must not be the one path that does
   // not.
   {
-    const probe = await connectDirect({ ...env }, "db:rehearse (identity)");
+    const probe = await connectDirect({ ...env }, "db:rehearse (identity)", undefined, { migrationRunner: true });
     try {
       const sysid = await probe
         .query<{
@@ -874,7 +874,7 @@ async function main(): Promise<number> {
       // took is renewed every five minutes, on its own connection, until the legs return.
       let beat: { stop: () => Promise<void> } | null = null;
       if (acquired.length) {
-        const hb = await connectDirect({ ...env }, "db:rehearse (build_lock heartbeat)");
+        const hb = await connectDirect({ ...env }, "db:rehearse (build_lock heartbeat)", undefined, { migrationRunner: true });
         const hq: LockQuery = async (sql, params) => (await hb.query(sql, params as never)).rows;
         const beats = acquired.map((family) =>
           startLockHeartbeat(hq, family, heldBy, "the clone", (why) => console.warn(`${TAG.warn}${why}`)),
@@ -932,7 +932,7 @@ async function main(): Promise<number> {
   let upLedgered: boolean;
   let downLedgered: boolean;
   {
-    const lc = await connectDirect({ ...env }, "db:rehearse (ledger read)");
+    const lc = await connectDirect({ ...env }, "db:rehearse (ledger read)", undefined, { migrationRunner: true });
     try {
       const rows = await lc.query<{ filename: string; checksum: string; applied_at: string }>(
         `select filename, checksum, applied_at::text as applied_at from public._schema_migrations
@@ -1051,7 +1051,7 @@ async function main(): Promise<number> {
         );
         return 1;
       }
-      const cloneClient = await connectDirect({ ...env }, "db:rehearse (parity, clone)");
+      const cloneClient = await connectDirect({ ...env }, "db:rehearse (parity, clone)", undefined, { migrationRunner: true });
       try {
         // Against the UP file's `-- based-on:` bodies, not production's current ones: a file
         // not yet on production leaves production holding exactly its based-on body, and that

@@ -1,10 +1,11 @@
 "use client";
 
-import { BrainCircuit, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import type {
   SurfaceBoundAgentEntry,
   SurfaceBoundAgentSection,
 } from "@/features/surfaces/services/surface-bound-agents.service";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface ProTextareaBoundAgentsMenuItemsProps {
   loading: boolean;
@@ -53,7 +54,7 @@ export function ProTextareaBoundAgentsMenuItems({
               onClick={() => onSelect(agent)}
               className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             >
-              <BrainCircuit className="h-4 w-4 shrink-0 text-indigo-500/80" />
+              <AGENT_ICON className="h-4 w-4 shrink-0 text-indigo-500/80" />
               <span className="truncate">{agent.name}</span>
             </button>
           ))}

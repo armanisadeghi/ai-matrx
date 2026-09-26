@@ -33,7 +33,12 @@ import { createInstance } from "@/features/agents/redux/execution-system/convers
 import { addOptimisticUserMessage } from "@/features/agents/redux/execution-system/messages/messages.slice";
 import { createRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import { processStream } from "@/features/agents/redux/execution-system/thunks/process-stream";
-import { AgentConversationDisplay } from "../AgentConversationDisplay";
+import { BoundColumn } from "@/features/agent-comparison/shared/BoundColumn";
+import { setShowCreatorPanel } from "@/lib/redux/preferences/creatorDebugSlice";
+
+jest.mock("@/features/agents/components/inputs/smart-input/SmartAgentInput", () => ({
+  SmartAgentInput: () => null,
+}));
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 // The user bubble's variable chips need the associations store; this test is
@@ -54,6 +59,24 @@ jest.mock("next/dynamic", () => ({
       ) as { BlockRenderer: React.ComponentType<Record<string, unknown>> };
       const Dynamic = (props: Record<string, unknown>) =>
         React.createElement(BlockRenderer, props);
+      return Dynamic;
+    }
+    if (String(loader).includes("CreatorRunPanel")) {
+      const { CreatorRunPanel } = jest.requireActual(
+        "@/features/agents/components/run-controls/CreatorRunPanel",
+      ) as { CreatorRunPanel: React.ComponentType<Record<string, unknown>> };
+      const Dynamic = (props: Record<string, unknown>) =>
+        React.createElement(CreatorRunPanel, props);
+      return Dynamic;
+    }
+    if (String(loader).includes("MarkdownStreamImpl")) {
+      const Impl = (
+        jest.requireActual("@/components/MarkdownStreamImpl") as {
+          default: React.ComponentType<Record<string, unknown>>;
+        }
+      ).default;
+      const Dynamic = (props: Record<string, unknown>) =>
+        React.createElement(Impl, props);
       return Dynamic;
     }
     return () => null;
@@ -161,6 +184,7 @@ async function replay(lines: string[], burst: boolean) {
     }),
   );
   store.dispatch(createRequest({ requestId, conversationId }));
+  store.dispatch(setShowCreatorPanel(true));
 
   const errors: unknown[] = [];
   const consoleError = jest
@@ -180,9 +204,10 @@ async function replay(lines: string[], burst: boolean) {
     root.render(
       <Provider store={store}>
         <TooltipProvider>
-          <AgentConversationDisplay
+          <BoundColumn
             conversationId={conversationId}
             surfaceKey="agent-comparison-model"
+            hideInput
           />
         </TooltipProvider>
       </Provider>,
@@ -209,6 +234,7 @@ async function replay(lines: string[], burst: boolean) {
   }
   await new Promise((resolve) => setTimeout(resolve, 100));
   globals.IS_REACT_ACT_ENVIRONMENT = true;
+  if (process.env.DEBUG_ERRS) console.log('TEXT', host.textContent?.slice(0,2000));
   if (process.env.DEBUG_ERRS) console.log('HTML', host.innerHTML.replace(/class="[^"]*"/g,'').slice(0, 6000));
   if (process.env.DEBUG_ERRS) console.log('STATE', JSON.stringify((store.getState() as any).messages.byConversationId[conversationId], null, 1).slice(0, 3000));
   if (process.env.DEBUG_ERRS) console.log(errors.map((e) => (e instanceof Error ? e.stack : JSON.stringify(e, (_k, v) => (v instanceof Error ? v.stack : v))).slice(0, 3000)));

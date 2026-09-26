@@ -37,7 +37,7 @@
 
 import { useEffect, useState } from "react";
 import { DiffViewer } from "@ai-matrx/diff/react";
-import { AlertTriangle, BrainCircuit, ChevronDown, GitCompareArrows, MessageSquareText, RefreshCw } from "lucide-react";
+import { AlertTriangle, ChevronDown, GitCompareArrows, MessageSquareText, RefreshCw } from "lucide-react";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -59,6 +59,7 @@ import type { components } from "@/types/python-generated/api-types";
 import { usePageCaptureContribution } from "@/components/agent-copy/page-capture/usePageCapture";
 import { useContextPreview, type ContextSelection } from "./useContextPreview";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 type ContextCompare = components["schemas"]["ContextCompare"];
 type CompareSide = components["schemas"]["ContextCompareSide"];
@@ -643,7 +644,7 @@ function AnswerAgentPicker({
         triggerSlot={
           <Button type="button" variant="outline" size="sm" className="h-7 max-w-full justify-between gap-1.5 text-xs font-normal">
             <span className="flex min-w-0 items-center gap-1.5">
-              <BrainCircuit className="h-3 w-3 shrink-0 text-muted-foreground" />
+              <AGENT_ICON className="h-3 w-3 shrink-0 text-muted-foreground" />
               <span className="truncate">{chosenName ?? (agentId ? "This agent" : "Choose an agent")}</span>
             </span>
             <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />

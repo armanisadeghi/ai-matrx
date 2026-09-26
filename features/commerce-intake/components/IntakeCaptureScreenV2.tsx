@@ -17,7 +17,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  BrainCircuit,
   Camera as CameraIcon,
   Check,
   Eye,
@@ -59,6 +58,7 @@ import {
   useInstantIntakeAnalysis,
 } from "../hooks/useInstantIntakeAnalysis";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const INSTANT_MANDATE_REFS = [
   {
@@ -476,7 +476,7 @@ export function IntakeCaptureScreenV2({
                     {instant.isRunning || instant.restoring ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <BrainCircuit className="h-4 w-4" />
+                      <AGENT_ICON className="h-4 w-4" />
                     )}
                     <span className="ml-1">
                       {instant.isRunning

@@ -15,7 +15,7 @@
 "use client";
 
 import { useState } from "react";
-import { BrainCircuit, HardHat } from "lucide-react";
+import { HardHat } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import {
   type HrIncidentKind,
   type HrIncidentRow,
 } from "../types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /**
  * The rules ASSIST. Returns a sentence, never a value — deliberately, so it is
@@ -109,7 +110,7 @@ export function OshaDeterminationPanel({
 
       {assist ? (
         <p className="flex items-start gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          <BrainCircuit className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <AGENT_ICON className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{assist}</span>
         </p>
       ) : null}

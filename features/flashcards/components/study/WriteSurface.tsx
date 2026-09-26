@@ -36,10 +36,11 @@ import {
   type TypedGradeVerdict,
 } from "../../data/gradeTypedSemantic";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { Loader2, BrainCircuit } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import type { ReviewResult } from "../../types";
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 import { useFlashcardMandates } from "../../data/mandate-disclosure";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -273,7 +274,7 @@ export function WriteSurface({ setId }: { setId: string }) {
                       // The grade-on-meaning verdict, with its reason. The
                       // learner still confirms — grading stays learner-final.
                       <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                        <BrainCircuit className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                        <AGENT_ICON className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
                         <span>
                           <span className="font-medium capitalize text-foreground">
                             {verdict.result}

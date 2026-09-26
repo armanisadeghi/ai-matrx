@@ -28,7 +28,7 @@ import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import {
-  selectAccumulatedText,
+  selectResultText,
   selectRequest,
   selectPrimaryRequest,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
@@ -232,7 +232,7 @@ function CustomComponentRenderer({
   const requestId = primaryRequest?.requestId ?? null;
 
   const responseText = useAppSelector((state) =>
-    requestId ? selectAccumulatedText(requestId)(state) : "",
+    requestId ? selectResultText(requestId)(state) : "",
   );
   const request = useAppSelector((state) =>
     requestId ? selectRequest(requestId)(state) : undefined,
@@ -497,7 +497,7 @@ function CustomComponentRenderer({
             // post-await result would mean the renderer never sees the
             // streaming text — only the final blob. Setting conversationId
             // here lets selectPrimaryRequest pick up the live request and
-            // selectAccumulatedText stream the text into the UI.
+            // selectResultText stream the text into the UI.
             onConversationCreated: (id) => setConversationId(id),
           }),
         ).unwrap();
@@ -578,7 +578,7 @@ function CustomComponentRenderer({
     }
   }, [app.component_code, app.allowed_imports, TestComponent]);
 
-  // responseText is already derived from Redux above (selectAccumulatedText).
+  // responseText is already derived from Redux above (selectResultText).
   // The old local-streamEvents → text reduction is gone with the bespoke fetch.
 
   const { open: openCanvas } = useCanvas();

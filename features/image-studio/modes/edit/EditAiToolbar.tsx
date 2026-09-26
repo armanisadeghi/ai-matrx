@@ -29,7 +29,6 @@ import {
   PaintBucket,
   Settings2,
   Sliders,
-  BrainCircuit,
   Sun,
   Zap,
   Waves,
@@ -62,6 +61,7 @@ import {
   upscaleImage,
 } from "../../api/python";
 import type { MaskState } from "./use-mask-state";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 interface Props {
   sourceCloudFileId: string | null;
@@ -377,7 +377,7 @@ export function EditAiToolbar({
   return (
     <div className="flex items-center gap-0.5 overflow-x-auto border-b border-border bg-muted/30 px-2 py-1 shrink-0">
       <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80 mr-2 ml-1 flex items-center gap-1 shrink-0">
-        <BrainCircuit className="h-3 w-3" />
+        <AGENT_ICON className="h-3 w-3" />
         Ops
       </span>
 
@@ -608,7 +608,7 @@ export function EditAiToolbar({
               {busy === "prompt" ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <BrainCircuit className="h-3.5 w-3.5" />
+                <AGENT_ICON className="h-3.5 w-3.5" />
               )}
               AI edit
               {mask.hasPixels ? (

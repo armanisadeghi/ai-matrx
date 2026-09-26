@@ -20,7 +20,6 @@ import {
   BookOpen,
   UploadCloud,
   Settings2,
-  BrainCircuit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ComingSoonCard } from "@/components/coming-soon/ComingSoonCard";
@@ -38,6 +37,7 @@ import {
 } from "@/features/surfaces/manifests/podcast.manifest";
 import type { PcShow } from "@/features/podcasts/types";
 import { featureIntelligenceHref } from "@/features/mandates/feature-intelligence/hrefs";
+import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 
 function ShowChip({ show }: { show: PcShow }) {
   return (
@@ -178,7 +178,7 @@ export function StudioDashboard() {
                 surface named none of that and there was no way in from here. */}
               <Button asChild variant="outline" className="gap-2">
                 <Link href={featureIntelligenceHref("podcast")}>
-                  <BrainCircuit className="h-4 w-4" />
+                  <INTELLIGENCE_ICON className="h-4 w-4" />
                   Podcast intelligence
                 </Link>
               </Button>

@@ -27,13 +27,14 @@
  */
 
 import { useCallback, useState } from "react";
-import { BrainCircuit, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { fetchMyAssists } from "@/features/assists/redux/assistsSlice";
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const STAGE_LABELS: Record<string, string> = {
   "seo.discovery_step_started": "Reading your site's own pages…",
@@ -111,7 +112,7 @@ export function GuidelinesDraftButton({
       {busy ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
       ) : (
-        <BrainCircuit className="h-3.5 w-3.5" />
+        <AGENT_ICON className="h-3.5 w-3.5" />
       )}
       {busy
         ? (run.stage ?? "Reading your site…")

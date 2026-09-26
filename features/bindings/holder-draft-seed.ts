@@ -54,3 +54,14 @@ export function defaultHolderDraftOf(mandate: MandateRowDb): HolderDraft {
     workflowVersionId: isWorkflow ? held.versionId : null,
   };
 }
+
+/**
+ * Which Holder a draft names — the thing a consumption map's keys belong to
+ * (its input names). A version change keeps the identity; a different agent,
+ * a different workflow, or a change of kind does not.
+ */
+export function holderIdentityOf(draft: HolderDraft): string {
+  return draft.kind === "workflow"
+    ? `workflow:${draft.workflowId ?? ""}`
+    : `agent:${draft.agentId ?? draft.agentVersionId ?? ""}`;
+}

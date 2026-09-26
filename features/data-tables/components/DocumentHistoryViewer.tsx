@@ -15,7 +15,6 @@ import {
   Loader2,
   Pencil,
   RotateCcw,
-  BrainCircuit,
   Upload,
 } from "lucide-react";
 
@@ -31,6 +30,7 @@ import {
   saveDocumentSnapshot,
 } from "../document-service";
 import { isServiceFailure, type DocumentSnapshot } from "../types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 type Props = {
   documentId: string | null | undefined;
@@ -266,7 +266,7 @@ function OriginBadge({ origin }: { origin: string }) {
     default:
       return (
         <Badge variant="outline" className="gap-1">
-          <BrainCircuit className="size-3" /> Autosave
+          <AGENT_ICON className="size-3" /> Autosave
         </Badge>
       );
   }

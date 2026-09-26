@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
-import { BrainCircuit, Layers, ListChecks, Package, Plus, Search, TreePine, Users } from "lucide-react";
+import { Layers, ListChecks, Package, Plus, Search, TreePine, Users } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
@@ -33,6 +33,7 @@ import {
 import { PackDetail } from "./PackDetail";
 import { ProposePackDialog } from "./ProposePackDialog";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const STATUS_ORDER: Record<string, number> = { draft: 0, proposed: 1, ratified: 2, retired: 3 };
 
@@ -159,7 +160,7 @@ export function StarterPacksTab({ directory }: { directory: SharedKnowledgeDirec
             <Plus className="mr-1 size-3.5" /> New
           </Button>
           <Button size="sm" className="h-8 shrink-0" onClick={() => setProposeOpen(true)}>
-            <BrainCircuit className="mr-1 size-3.5" /> Propose
+            <AGENT_ICON className="mr-1 size-3.5" /> Propose
           </Button>
         </div>
 

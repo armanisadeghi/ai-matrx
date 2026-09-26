@@ -6,6 +6,7 @@ import { SettingsSubHeader } from "@/components/official/settings/layout/Setting
 import { SettingsLink } from "@/components/official/settings/primitives/SettingsLink";
 import { settingDoorHref } from "../doors/settingDoorTarget";
 import { VOICE_SETTING_DOORS } from "./voices/voiceSettingDoors";
+import { featureIntelligenceHref } from "@/features/mandates/feature-intelligence/hrefs";
 
 /**
  * Flashcards settings — this screen used to also offer education level,
@@ -35,6 +36,12 @@ export default function FlashcardsTab() {
           description="The voice tutor is one of AI Matrx's live assistants, so it speaks in your live conversation voice (Eve unless you pick one)."
           href={settingDoorHref(VOICE_SETTING_DOORS.liveConversation)}
           actionLabel="Voices"
+        />
+        <SettingsLink
+          label="Intelligence"
+          description="See what runs your flashcards — the deck generator and the study tutor — duplicate it to change it, or use your own agent."
+          href={featureIntelligenceHref("flashcards")}
+          actionLabel="Open intelligence"
           last
         />
       </SettingsSection>

@@ -2,7 +2,7 @@
 // from the shared section primitives + axis config — the one entry point that
 // routes users into all five discovery axes, the content engine, and the tools.
 // 100% server-rendered. Tracks VISION-education-hub.md.
-import { GraduationCap, Upload, BrainCircuit, Trophy, ArrowRight, Library, BookOpen } from "lucide-react";
+import { GraduationCap, Upload, Trophy, ArrowRight, Library, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import { AuthedWorkspaceCTA } from "@/features/auth/components/module-landing/AuthedWorkspaceCTA";
@@ -18,6 +18,7 @@ import {
   eduHref,
 } from "../../constants";
 import type { EduSection, EduStatusCard } from "../../types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /**
  * The hub's tool discovery section — DATA-DRIVEN off EDU_TOOLS (never a second,
@@ -105,7 +106,7 @@ export function EducationHub() {
       subheading: "The capabilities no single competitor has matched.",
       columns: 2,
       items: [
-        { icon: BrainCircuit, title: "FastFire", description: "Rapid-fire spoken recall, graded live and adapting mid-session.", href: eduHref("features", "fastfire") },
+        { icon: AGENT_ICON, title: "FastFire", description: "Rapid-fire spoken recall, graded live and adapting mid-session.", href: eduHref("features", "fastfire") },
         { icon: GraduationCap, title: "An AI tutor that knows everything", description: "Your sets, your history, your exam dates — present at every surface.", href: eduHref("features", "ai-tutor") },
         { icon: Upload, title: "Ingest anything", description: "PDF, video, audio, photos, YouTube, live lectures — all become study material.", href: "/education/start" },
         { icon: Trophy, title: "Graded the way you actually answer", description: "Spoken, written, typed, and handwritten — all graded with feedback.", href: eduHref("features", "ai-grading") },

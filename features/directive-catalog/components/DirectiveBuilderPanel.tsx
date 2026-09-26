@@ -18,7 +18,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { BrainCircuit, Check, Copy, Loader2, Play, Search } from "lucide-react";
+import { Check, Copy, Loader2, Play, Search } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { cn } from "@/lib/utils";
@@ -70,6 +70,7 @@ import {
   type NounDirectives,
 } from "@/features/directive-catalog/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -314,7 +315,7 @@ export function DirectiveBuilderPanel({
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-3">
       <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-        <BrainCircuit className="h-4 w-4 text-primary" />
+        <AGENT_ICON className="h-4 w-4 text-primary" />
         Build &amp; test an action
       </div>
 

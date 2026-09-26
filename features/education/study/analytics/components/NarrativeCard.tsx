@@ -16,7 +16,7 @@
 // React Compiler is on: no manual memo.
 
 import { useRouter } from "next/navigation";
-import { ChevronRight, Loader2, RefreshCw, BrainCircuit } from "lucide-react";
+import { ChevronRight, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
@@ -24,6 +24,7 @@ import type { StudyAnalyticsNarrative } from "@/features/content-ir/kinds/genera
 import { blockHref } from "../../planner/blockLinks";
 import type { PlanBlockKind } from "../../planner/types";
 import type { NarrativeReport } from "../narrative";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const STUDY_ANALYTICS_NARRATIVE_KIND = "study_analytics_narrative" as const;
 
@@ -124,7 +125,7 @@ export function NarrativeCard({
     <section className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 to-transparent p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <BrainCircuit className="h-4 w-4 text-primary" />
+          <AGENT_ICON className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold text-foreground">
             What your data says
           </h2>

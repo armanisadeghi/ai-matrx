@@ -16,12 +16,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FileText, BrainCircuit } from "lucide-react";
+import { FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { studyMediaService } from "@/features/education/media/service";
 import type { StudyMediaRow } from "@/features/education/media/types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function SummaryHome() {
   const [rows, setRows] = useState<StudyMediaRow[]>([]);
@@ -46,7 +47,7 @@ export function SummaryHome() {
         <div className="flex items-center justify-end">
           <Button asChild size="sm" className="gap-1.5">
             <Link href="/education/start">
-              <BrainCircuit className="h-4 w-4" />
+              <AGENT_ICON className="h-4 w-4" />
               Summarize something
             </Link>
           </Button>
@@ -66,7 +67,7 @@ export function SummaryHome() {
             </p>
             <Button asChild size="sm" className="gap-1.5">
               <Link href="/education/start">
-                <BrainCircuit className="h-4 w-4" />
+                <AGENT_ICON className="h-4 w-4" />
                 Create a study kit
               </Link>
             </Button>

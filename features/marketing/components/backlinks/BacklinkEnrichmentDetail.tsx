@@ -5,7 +5,6 @@ import type { ComponentProps, ReactNode } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
-  BrainCircuit,
   Camera,
   ExternalLink,
   Loader2,
@@ -43,6 +42,7 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 function fact(label: string, value: ReactNode) {
   return (
@@ -493,7 +493,7 @@ export function BacklinkEnrichmentDetail({
                 {running || analysisAction.inProgress ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <BrainCircuit className="h-3.5 w-3.5" />
+                  <AGENT_ICON className="h-3.5 w-3.5" />
                 )}
                 {analysisAction.label}
               </Button>
@@ -699,7 +699,7 @@ export function BacklinkEnrichmentDetail({
                     {running || analysisAction.inProgress ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      <BrainCircuit className="h-3.5 w-3.5" />
+                      <AGENT_ICON className="h-3.5 w-3.5" />
                     )}
                     {analysisAction.label}
                   </Button>
@@ -833,7 +833,7 @@ export function BacklinkEnrichmentDetail({
                 {running || analysisAction.inProgress ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <BrainCircuit className="h-3.5 w-3.5" />
+                  <AGENT_ICON className="h-3.5 w-3.5" />
                 )}
                 {analysisAction.label}
               </Button>

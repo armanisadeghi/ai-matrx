@@ -11,11 +11,12 @@
 // Modeled after a build-preview pane (Vercel deploy preview): the artifact
 // materializes piece by piece, never a lone spinner.
 
-import { ImageIcon, Clapperboard, FileText, AudioLines, ExternalLink, BrainCircuit } from "lucide-react";
+import { ImageIcon, Clapperboard, FileText, AudioLines, ExternalLink } from "lucide-react";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import type { MediaSlot, PodcastRunState } from "@/features/podcasts/generator/types";
 import { cn } from "@/lib/utils";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function StreamingResults({ state }: { state: PodcastRunState }) {
   const hasMeta = !!state.title || !!state.description;
@@ -27,7 +28,7 @@ export function StreamingResults({ state }: { state: PodcastRunState }) {
       {hasMeta ? (
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
-            <BrainCircuit className="h-3 w-3" />
+            <AGENT_ICON className="h-3 w-3" />
             Episode
           </div>
           <h2
@@ -125,7 +126,7 @@ function MetaPlaceholder() {
   return (
     <div className="rounded-2xl border border-dashed border-border bg-card/40 p-5">
       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-        <BrainCircuit className="h-4 w-4 animate-pulse" />
+        <AGENT_ICON className="h-4 w-4 animate-pulse" />
         Shaping the episode…
       </div>
       <div className="mt-3 space-y-2">

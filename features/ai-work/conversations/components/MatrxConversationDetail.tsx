@@ -15,7 +15,6 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  BrainCircuit,
   Info,
   MessagesSquare,
   Network,
@@ -29,6 +28,7 @@ import { ConversationOrganizationPanel } from "@/features/ai-work/components/Con
 import type { ProviderConversation } from "@/features/ai-work/service/providerConversation";
 import { conversationTypeLabel } from "../presentation";
 import { ConversationProvenancePanel } from "./ConversationProvenancePanel";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function MatrxConversationDetail({
   conversation,
@@ -93,7 +93,7 @@ export function MatrxConversationDetail({
             value="analyze"
             className="min-h-10 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
           >
-            <BrainCircuit className="h-3.5 w-3.5" />
+            <AGENT_ICON className="h-3.5 w-3.5" />
             Analyze
           </TabsTrigger>
           <TabsTrigger

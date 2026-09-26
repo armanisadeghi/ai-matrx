@@ -32,7 +32,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
-  BrainCircuit,
   CalendarClock,
   ChevronDown,
   ChevronRight,
@@ -86,6 +85,7 @@ import {
   layoutOrgChart,
   type OrgLayout,
 } from "./layout";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 // ── The fetch ───────────────────────────────────────────────────────────────
 
@@ -436,7 +436,7 @@ export function HrOrgChart() {
 
         {/* ── The natural-language query box ────────────────────────────── */}
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2 sm:px-4">
-          <BrainCircuit
+          <AGENT_ICON
             className="h-4 w-4 shrink-0 text-muted-foreground"
             aria-hidden
           />

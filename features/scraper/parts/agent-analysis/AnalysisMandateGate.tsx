@@ -8,12 +8,13 @@
  * The tab never silently runs a hardcoded agent id.
  */
 
-import { BrainCircuit } from "lucide-react";
+import {  } from "lucide-react";
 import { Card } from "@/components/official/PageTemplate";
 import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import { useMandateDisplayName } from "@/features/mandates/useMandateDisplayName";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 
 export function AnalysisMandateGate({
   mandateKey,
@@ -35,7 +36,7 @@ export function AnalysisMandateGate({
     <Card title={`${title} — no agent assigned`}>
       <div className="flex flex-col gap-3 p-4">
         <p className="flex items-start gap-2 text-sm text-muted-foreground">
-          <BrainCircuit className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/70" />
+          <INTELLIGENCE_ICON className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/70" />
           <span>
             {title} runs through the {jobName} job, which has no agent bound
             yet. Bind one to turn this tab on.

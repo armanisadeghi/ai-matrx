@@ -8,7 +8,7 @@ import {
   Layers,
   ListChecks,
   Rows3,
-  BrainCircuit,
+  ClipboardList,
   Tags,
   Zap,
 } from "lucide-react";
@@ -39,7 +39,7 @@ const FEATURES = [
       "Use the group field to split a list into sections — the same data drives grouped dropdowns and dependent picklists.",
   },
   {
-    icon: BrainCircuit,
+    icon: ClipboardList,
     title: "Every option, richly described",
     description:
       "Each item carries a label, description, help text, group, and icon — enough for menus, cards, forms, or in-app guidance.",

@@ -67,7 +67,7 @@ import { extractErrorMessage } from "@/utils/errors";
 
 import { planKeys } from "../../data/hooks";
 import { marketingKeys } from "@/features/marketing/data/hooks";
-import { BrainCircuit } from "lucide-react";
+import {  } from "lucide-react";
 import { AdminDocHint } from "@/features/admin/components/AdminDocHint";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 
@@ -127,6 +127,7 @@ import type { CmsFacts } from "../readiness";
 import { SetupSection } from "./SetupSection";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 type BridgeAction =
   | "link"
@@ -931,7 +932,7 @@ export function SetupBridgeSection({
                   void announceComingSoon("content-plan.design-vision-agent")
                 }
               >
-                <BrainCircuit className="h-3 w-3" />
+                <AGENT_ICON className="h-3 w-3" />
                 Generate a design vision
               </Button>
               <AdminDocHint

@@ -430,7 +430,7 @@ export const ICON_OPTIONS = [
   { value: "FileText", label: "File text" },
   { value: "Target", label: "Target" },
   { value: "CalendarDays", label: "Calendar" },
-  { value: "BrainCircuit", label: "Brain circuit" },
+  { value: "Webhook", label: "Webhook" },
 ] as const;
 
 export const CATEGORY_OPTIONS = [
@@ -493,7 +493,7 @@ export const TEMPLATE_TREATMENT: TreatmentValues = {
   displayMode: "inline",
   hideVariables: true,
   autoRun: true,
-  iconName: "BrainCircuit",
+  iconName: "Webhook",
   categoryId: "cat-uncategorized",
 };
 

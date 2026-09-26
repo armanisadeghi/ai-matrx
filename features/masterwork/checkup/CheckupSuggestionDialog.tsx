@@ -27,7 +27,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { BrainCircuit, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -49,6 +49,7 @@ import { RuleFields, type RuleFieldValues } from "../components/detail/RuleField
 import { useRuleImproveRun } from "../review/useRuleImproveRun";
 import type { Rulebook, RuleSeverity } from "../types";
 import type { CheckupFinding, CheckupProposedRule } from "./types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export type CheckupSuggestionMode = "improve" | "edit" | "reject";
 
@@ -320,7 +321,7 @@ export function CheckupSuggestionDialog({
               {improve.isRunning ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <BrainCircuit className="h-4 w-4" />
+                <AGENT_ICON className="h-4 w-4" />
               )}
               Rewrite it
             </GatedActionButton>

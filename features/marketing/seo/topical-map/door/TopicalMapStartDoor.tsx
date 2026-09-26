@@ -14,7 +14,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { BrainCircuit, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { BrandPicker } from "@/features/marketing/components/brands/BrandPicker";
@@ -30,6 +30,7 @@ import { MapLinkProvider } from "../links";
 import { MAP_AUTHOR_SOURCE_KINDS, type MapAuthorSourceKind } from "../map-author";
 import { StartMapScreen } from "../start/StartMapScreen";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function TopicalMapStartDoor() {
   const search = useSearchParams();
@@ -63,7 +64,7 @@ export function TopicalMapStartDoor() {
       <div className="grid w-full gap-4 p-4 pt-[calc(var(--shell-header-h)+1rem)] sm:p-6 sm:pt-[calc(var(--shell-header-h)+1.5rem)]">
         <section className="rounded-xl border border-border bg-card p-5">
           <h1 className="flex items-center gap-2 text-lg font-semibold">
-            <BrainCircuit className="h-5 w-5" aria-hidden />
+            <AGENT_ICON className="h-5 w-5" aria-hidden />
             Start a topical map
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">

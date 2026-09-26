@@ -25,7 +25,6 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Ban,
-  BrainCircuit,
   CheckCircle2,
   Clock,
   DollarSign,
@@ -108,6 +107,7 @@ import { cn } from "@/lib/utils";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { humanizeBackendError } from "@/utils/errors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const BACKLINKS_SURFACE_NAME = "matrx-user/marketing-backlinks";
 const KEYWORD_EXPANDER_ROLE = "keyword_expander";
@@ -789,7 +789,7 @@ function SerpSetupPanel({ prospects }: { prospects: SerpProspects }) {
               className="h-6 gap-1 px-2 text-[11px]"
               title="An AI keyword assistant hasn't been assigned yet — enter keywords manually."
             >
-              <BrainCircuit className="h-3 w-3" />
+              <AGENT_ICON className="h-3 w-3" />
               Expand with AI
             </Button>
           )}

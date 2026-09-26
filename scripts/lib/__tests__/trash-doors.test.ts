@@ -136,9 +136,37 @@ describe("Trash coverage (judgeTrashCoverage)", () => {
   });
 
   test("RED: an exemption for a thing Trash now covers is stale and fails (the list only shrinks)", () => {
-    const found = judgeTrashCoverage([{ thing: "entity:rulebook", covered: true }]);
+    const found = judgeTrashCoverage([{ thing: "entity:hr_leave_policy", covered: true }]);
     expect(found).toHaveLength(1);
     expect(found[0]!.problem).toContain("stale");
+  });
+
+  // lane TRASH-COVERAGE-2: the 31 kinds that became Trash kinds may never be excused again — if one
+  // loses its Trash kind the coverage pass fails (RED), and with its kind it passes (GREEN).
+  const TRASH_COVERAGE_2_KINDS = [
+    "rulebook", "folder", "war_room", "thread", "scope_type", "scope", "context_item",
+    "working_document", "user_memory", "wbx_highlight", "browser_profile", "media_source_library",
+    "learn_doc", "seo_topical_map", "seo_rank_target", "hr_employee", "hr_employment",
+    "hr_jurisdiction_rule_org_decision", "crm_blocklist_entry", "commerce_intake_batch",
+    "interview_decision_interview", "workflow_runtime_surface", "workflow_trigger",
+    "product_capture_item", "category", "flexible_data", "shared_canvas_item", "sch_task",
+    "user_feedback", "agent_mandate_note", "processed_document",
+  ].map((k) => `entity:${k}`);
+
+  test("RED: any TRASH-COVERAGE-2 kind that is not findable in Trash fails — none is excused", () => {
+    for (const thing of TRASH_COVERAGE_2_KINDS) expect(TRASH_COVERAGE_EXEMPT[thing]).toBeUndefined();
+    const found = judgeTrashCoverage(TRASH_COVERAGE_2_KINDS.map((thing) => ({ thing, covered: false })));
+    expect(found.map((f) => f.door)).toEqual(TRASH_COVERAGE_2_KINDS);
+  });
+
+  test("GREEN: the TRASH-COVERAGE-2 kinds pass once each is findable in Trash", () => {
+    expect(judgeTrashCoverage(TRASH_COVERAGE_2_KINDS.map((thing) => ({ thing, covered: true })))).toEqual([]);
+  });
+
+  test("an entry that is not a true excuse says so (STORE GAP), never dressed as one", () => {
+    for (const k of ["store:field", "store:rule", "store:relation", "store:doc_template", "store:dashboard"]) {
+      expect(TRASH_COVERAGE_EXEMPT[k]).toMatch(/^STORE GAP, not an excuse/);
+    }
   });
 
   test("the store's Trash kinds are exactly Table and Record, and never exempted", () => {

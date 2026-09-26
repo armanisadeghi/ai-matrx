@@ -15,7 +15,7 @@
  * row), assist chips inline, one action cluster on the right.
  */
 import { useState } from "react";
-import { ExternalLink, Loader2, PenLine, BrainCircuit, X } from "lucide-react";
+import { ExternalLink, Loader2, PenLine, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -41,6 +41,7 @@ import { AgentPayloadButton } from "./AgentPayloadSheet";
 import { ResearchTopicSelect } from "./ResearchTopicSelect";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /** A small icon button whose disabled state IS information. */
 function StatusActionButton({
@@ -314,7 +315,7 @@ export function PlanToolbar({
                 className="h-6 gap-1 px-2 text-xs"
                 onClick={onBulkDeepen}
               >
-                <BrainCircuit className="h-3 w-3" />
+                <AGENT_ICON className="h-3 w-3" />
                 Deepen {emptyBriefCount}
               </Button>
             </TooltipTrigger>
@@ -334,7 +335,7 @@ export function PlanToolbar({
                     size="sm"
                     className="h-6 gap-1 px-2 text-xs"
                   >
-                    <BrainCircuit className="h-3 w-3" />
+                    <AGENT_ICON className="h-3 w-3" />
                     Generate
                   </Button>
                 </PopoverTrigger>
@@ -404,7 +405,7 @@ export function PlanToolbar({
                   });
                 }}
               >
-                <BrainCircuit className="h-3.5 w-3.5" />
+                <AGENT_ICON className="h-3.5 w-3.5" />
                 Run the generator
               </Button>
             </PopoverContent>

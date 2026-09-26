@@ -25,7 +25,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BookText,
-  BrainCircuit,
   Building2,
   Loader2,
   User,
@@ -59,6 +58,7 @@ import {
 } from "@/features/surfaces/services/surfaces.service";
 import { Button } from "@/components/ui/button";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const USER_CLIENT_PREFIX = "matrx-user/";
 
@@ -199,7 +199,7 @@ export function SurfaceHubDetailPage({ segments }: { segments: string[] }) {
               <SettingsSection
                 title="Agent roles"
                 description="Which agent fills each position this surface plugs agents into. The strongest tier wins: platform default → org → you."
-                icon={BrainCircuit}
+                icon={AGENT_ICON}
               >
                 <div className="flex flex-col gap-3">
                   {Object.values(roles)
@@ -393,7 +393,7 @@ function RoleRow({
                 {busy ? (
                   <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
                 ) : (
-                  <BrainCircuit className="h-3.5 w-3.5 shrink-0 text-primary" />
+                  <AGENT_ICON className="h-3.5 w-3.5 shrink-0 text-primary" />
                 )}
                 <span className="truncate text-xs text-foreground">
                   {effective

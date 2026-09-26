@@ -40,7 +40,7 @@ import {
   GitFork,
   Loader2,
   AlertCircle,
-  BrainCircuit,
+  Library,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -283,7 +283,7 @@ export function LibraryPreviewPage({
                 ? [
                     {
                       label: "Knowledge Assets",
-                      icon: BrainCircuit,
+                      icon: Library,
                       onPress: () => setAssetsOpen(true),
                     },
                     {

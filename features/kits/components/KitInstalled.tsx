@@ -10,7 +10,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowUpRight,
-  BrainCircuit,
   Eye,
   Loader2,
   Play,
@@ -40,6 +39,7 @@ import type { KitAgent, KitEntry, KitInstallRecord, KitManifest } from "../types
 import { InstallStepper } from "./InstallPanel";
 import { ErrorNotice } from "./ErrorNotice";
 import { KitIcon } from "./KitIcon";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 function Panel({ icon, title, children, aside }: { icon: React.ReactNode; title: string; children: React.ReactNode; aside?: React.ReactNode }) {
   return (
@@ -351,7 +351,7 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
             const id = steps.agents?.[a.key];
             return id ? (
               <Link key={a.key} href={KIT_ROUTES.agent(id)} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground hover:border-primary/40">
-                <BrainCircuit className="h-3.5 w-3.5 text-primary" />
+                <AGENT_ICON className="h-3.5 w-3.5 text-primary" />
                 {a.name}
                 <ArrowUpRight className="h-3 w-3 text-muted-foreground" />
               </Link>
@@ -420,7 +420,7 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
               return (
                 <Panel
                   key={a.key}
-                  icon={<BrainCircuit className="h-3.5 w-3.5" />}
+                  icon={<AGENT_ICON className="h-3.5 w-3.5" />}
                   title={a.name}
                   aside={
                     <Link href={KIT_ROUTES.agent(id)} className="inline-flex items-center gap-0.5 text-xs font-medium text-primary hover:underline">

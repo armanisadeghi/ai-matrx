@@ -17,7 +17,6 @@
 
 import { useState } from "react";
 import {
-  BrainCircuit,
   ChevronDown,
   CircleHelp,
   GitBranch,
@@ -36,6 +35,7 @@ import {
   type MappingSource,
   type PlaceBinding,
 } from "./mock-data";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const SOURCE_META: Record<
   MappingSource,
@@ -102,7 +102,7 @@ function BindingRow({
 }) {
   const [open, setOpen] = useState(false);
   const c = completeness(binding);
-  const HolderIcon = binding.holder.type === "workflow" ? GitBranch : BrainCircuit;
+  const HolderIcon = binding.holder.type === "workflow" ? GitBranch : AGENT_ICON;
 
   /** The whole rule, resolved for THIS row. */
   const behaviour = autoRun

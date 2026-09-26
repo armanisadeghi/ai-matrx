@@ -22,7 +22,6 @@
 
 import { useEffect, useState } from "react";
 import {
-  BrainCircuit,
   ExternalLink,
   FileText,
   Files,
@@ -56,6 +55,7 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay, selectOpenInstances } from "@/lib/redux/slices/overlaySlice";
 import { cn } from "@/lib/utils";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface TopicalMapWindowProps {
   onClose: () => void;
@@ -182,7 +182,7 @@ export default function TopicalMapWindow({
                 })
               }
             >
-              <BrainCircuit className="h-3.5 w-3.5" aria-hidden />
+              <AGENT_ICON className="h-3.5 w-3.5" aria-hidden />
             </button>
             <a
               href={marketingRoutes.topicalMapDoor(mapId)}

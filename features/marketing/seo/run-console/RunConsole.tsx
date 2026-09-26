@@ -33,7 +33,6 @@ import { startTransition, useEffect, useRef, useState } from "react";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
-  BrainCircuit,
   Check,
   Gauge,
   Loader2,
@@ -102,6 +101,7 @@ import {
 } from "@/features/marketing/seo/keyword/keyword-actions";
 import { unavailableHere } from "@/features/context-menu-v3/utils/availability";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 function pct(part: number, whole: number): number {
   return whole > 0 ? (part / whole) * 100 : 0;
@@ -429,7 +429,7 @@ function SituationalEngineView({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5">
-        <BrainCircuit className="h-4 w-4 shrink-0 text-primary" />
+        <AGENT_ICON className="h-4 w-4 shrink-0 text-primary" />
         <div className="min-w-0">
           <h1 className="text-sm font-semibold leading-tight text-foreground">
             Run console — {engine.label}
@@ -754,7 +754,7 @@ function TopicPlacementConsole({
     <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
       {/* ── Control bar ──────────────────────────────────────────────────── */}
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5">
-        <BrainCircuit className="h-4 w-4 shrink-0 text-primary" />
+        <AGENT_ICON className="h-4 w-4 shrink-0 text-primary" />
         <div className="min-w-0">
           <h1 className="text-sm font-semibold leading-tight text-foreground">
             Run console — {engine.label}

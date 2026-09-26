@@ -30,7 +30,7 @@ import {
   AppWindow,
   AudioLines,
   BookOpen,
-  BrainCircuit,
+  Cpu,
   Boxes,
   CalendarClock,
   CalendarDays,
@@ -234,7 +234,7 @@ function detailRecordHref(token: string, id: string): string {
 const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   // ─── Agents / Apps / Skills (utilities) ───────────────────────────────────
   ai_model: {
-    Icon: BrainCircuit,
+    Icon: Cpu,
     labelPlural: "AI Models",
   },
   agent: {

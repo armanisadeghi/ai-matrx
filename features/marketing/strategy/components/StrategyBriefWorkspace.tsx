@@ -17,7 +17,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  BrainCircuit,
   Check,
   Compass,
   ExternalLink,
@@ -49,6 +48,7 @@ import {
   useStrategyHistory,
   useStrategyRuling,
 } from "../hooks";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const SCOPE_NOUN: Record<StrategyScope, string> = {
   brand: "brand strategy",
@@ -248,7 +248,7 @@ export function StrategyBriefWorkspace({
               {current ? (
                 <RefreshCw className="size-3.5" aria-hidden />
               ) : (
-                <BrainCircuit className="size-3.5" aria-hidden />
+                <AGENT_ICON className="size-3.5" aria-hidden />
               )}
               {current ? "Write a new version" : `Write the ${noun}`}
             </Button>

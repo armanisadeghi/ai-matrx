@@ -20,7 +20,7 @@
  * settings in the header Agents panel.
  */
 import { useState } from "react";
-import { Loader2, BrainCircuit } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-fea
 import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
 import { useSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { cn } from "@/lib/utils";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function SurfaceRoleAgentButton({
   surfaceName,
@@ -110,7 +111,7 @@ export function SurfaceRoleAgentButton({
       {launching ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
       ) : (
-        <BrainCircuit className="h-3.5 w-3.5" aria-hidden />
+        <AGENT_ICON className="h-3.5 w-3.5" aria-hidden />
       )}
       {label ?? role.role.label}
     </Button>

@@ -8,13 +8,13 @@ import {
   Wrench,
   Upload,
   LayoutPanelTop,
-  BrainCircuit
 } from "lucide-react";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const CREATION_OPTIONS = [
   {
     href: "/agents/new/studio",
-    icon: BrainCircuit,
+    icon: AGENT_ICON,
     iconClass: "text-amber-600 dark:text-amber-400",
     title: "Agent Studio",
     description:

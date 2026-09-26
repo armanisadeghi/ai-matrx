@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  BrainCircuit,
   Check,
   Compass,
   Gauge,
@@ -13,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export const metadata = createRouteMetadata("/why-ai-matrx", {
   title: "Why AI Matrx",
@@ -163,7 +163,7 @@ const WINS: WinCard[] = [
     durabilityTone: "strongest",
   },
   {
-    icon: BrainCircuit,
+    icon: AGENT_ICON,
     name: "Better, not just cheaper",
     plain:
       "Our workflow on a cheap model produces better work than the frontier model with every advantage money can buy.",

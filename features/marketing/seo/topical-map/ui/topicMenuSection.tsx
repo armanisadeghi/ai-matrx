@@ -20,7 +20,6 @@
  */
 
 import {
-  BrainCircuit,
   Copy,
   CornerUpRight,
   ExternalLink,
@@ -34,6 +33,7 @@ import type {
   ContextMenuExtraItem,
 } from "@/features/context-menu-v3/types";
 import { needs, withAvailability } from "@/features/context-menu-v3/utils/availability";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /**
  * The subset of `MapLinks` (CONTRACTS §2) this section needs.
@@ -152,7 +152,7 @@ export function buildTopicMenuSection({
       kind: "item",
       id: "topic-ask-agent",
       label: "Ask the topic agent",
-      icon: BrainCircuit,
+      icon: AGENT_ICON,
       onSelect: actions.onAskAgent ?? NOOP,
     },
   ];

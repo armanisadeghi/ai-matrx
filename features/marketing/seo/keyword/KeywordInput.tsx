@@ -17,7 +17,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { BrainCircuit, Database, Loader2, Search } from "lucide-react";
+import { Search, Database, Loader2 } from "lucide-react";
 
 import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
@@ -188,7 +188,7 @@ export function KeywordInput({
             title="Open Keyword Intelligence — market data, relationships, rankings, SERP"
             className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <BrainCircuit className="h-4 w-4" />
+            <Search className="h-4 w-4" />
           </button>
         ) : null}
       </div>

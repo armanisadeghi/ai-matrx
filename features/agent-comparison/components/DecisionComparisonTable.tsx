@@ -20,7 +20,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Check, Loader2 } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { labelConversations } from "@/features/agents/decision-review/service";
+import { ReviewAnswersLink } from "@/features/agents/decision-review/components/ReviewAnswersLink";
 import {
   selectActiveBattleColumns,
   selectMountedBattleSetId,
@@ -105,6 +107,7 @@ function ColumnAnswerCell({
 }
 
 export function DecisionComparisonTable() {
+  const dispatch = useAppDispatch();
   const columns = useAppSelector(selectActiveBattleColumns);
   const setId = useAppSelector(selectMountedBattleSetId);
 
@@ -175,6 +178,31 @@ export function DecisionComparisonTable() {
       try {
         const next = await saveDecisionVerdict(setId, questionName, draft);
         setVerdicts(next);
+        // The same truth labels every column's answer in the decision review
+        // store (platform.judge_verdict), so a battle verdict feeds each
+        // answering agent version's calibration.
+        if (draft.trim()) {
+          const conversationIds = answersByColumn
+            .filter((c) => c.view?.answers.some((a) => a.name === questionName))
+            .map((c) => columns.find((col) => col.columnId === c.columnId)?.conversationId)
+            .filter((id): id is string => Boolean(id));
+          if (conversationIds.length > 0) {
+            try {
+              const labeled = await labelConversations(dispatch, conversationIds, questionName, draft);
+              const skipped = Object.values(labeled.skipped ?? {});
+              if (skipped.length > 0) {
+                setVerdictError(
+                  `Saved on the comparison, but not recorded for calibration on ${skipped.length} column(s): ${skipped[0]}`,
+                );
+              }
+            } catch (labelError) {
+              console.error("[decision-verdicts] calibration label failed", labelError);
+              setVerdictError(
+                "Saved on the comparison, but not recorded for calibration — label it from Review answers instead.",
+              );
+            }
+          }
+        }
       } catch (error) {
         console.error("[decision-verdicts] save failed", error);
         setVerdictError(
@@ -184,7 +212,7 @@ export function DecisionComparisonTable() {
         setSavingName(null);
       }
     },
-    [setId, drafts, verdicts],
+    [setId, drafts, verdicts, answersByColumn, columns, dispatch],
   );
 
   if (answering.length === 0) {
@@ -195,8 +223,15 @@ export function DecisionComparisonTable() {
     );
   }
 
+  const reviewAgentId = columns.find((c) => c.agentId)?.agentId ?? null;
+
   return (
     <div className="flex flex-col gap-2 p-2">
+      {reviewAgentId && (
+        <div className="flex justify-end">
+          <ReviewAnswersLink agentId={reviewAgentId} force />
+        </div>
+      )}
       {answering.length < 2 && (
         <p className="text-[11px] text-muted-foreground">
           Only one column has answered — the delta fills in when a second one

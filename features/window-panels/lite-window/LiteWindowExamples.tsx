@@ -22,7 +22,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
-import { BrainCircuit, PanelTop, Plus, SquareStack } from "lucide-react";
+import { PanelTop, Plus, SquareStack } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -54,6 +54,7 @@ import {
   selectScopeTypesLoadedForOrg,
 } from "@/features/scopes/redux/selectors/admin";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const WindowPanel = dynamic(
   () => import("@/features/window-panels/WindowPanel"),
@@ -167,7 +168,7 @@ export function LiteWindowExamples() {
           variant="outline"
           onClick={() => setWorkbenchOpen(true)}
         >
-          <BrainCircuit className="mr-1.5 h-4 w-4" />
+          <AGENT_ICON className="mr-1.5 h-4 w-4" />
           Open the heavy workbench
         </Button>
 

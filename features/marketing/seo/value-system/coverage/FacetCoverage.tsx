@@ -47,7 +47,6 @@ import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
-  BrainCircuit,
   Check,
   Loader2,
   ShieldAlert,
@@ -76,6 +75,7 @@ import {
   type FacetCoverage as Coverage,
 } from "./data";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 function share(part: number, whole: number): number {
   return whole > 0 ? (part / whole) * 100 : 0;
@@ -339,7 +339,7 @@ export function FacetCoverage({ siteId }: { siteId: string }) {
       )}
     >
       <header className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-border px-3 py-2">
-        <BrainCircuit className="h-4 w-4 shrink-0 text-primary" />
+        <AGENT_ICON className="h-4 w-4 shrink-0 text-primary" />
         <h2 className="text-sm font-semibold text-foreground">
           Universal facets
         </h2>
@@ -428,7 +428,7 @@ export function FacetCoverage({ siteId }: { siteId: string }) {
             {running ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <BrainCircuit className="h-3.5 w-3.5" />
+              <AGENT_ICON className="h-3.5 w-3.5" />
             )}
             {running ? "Classifying…" : "Classify next"}
           </Button>

@@ -22,7 +22,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Archive, BrainCircuit, Link2, Network } from "lucide-react";
+import { Archive, Link2, Network } from "lucide-react";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,7 @@ import { useMapLinks } from "../links";
 import type { TopicalMap } from "../types";
 import { TopicStatusMark } from "../ui/TopicStatusMark";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const PICK_SITE = "__pick__";
 
@@ -392,7 +393,7 @@ function SiteRow({
         )}
         <Button asChild size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs">
           <Link href={extendHref} title="Run the map author on this map from the site's crawl, keywords and plan; new topics land as proposals">
-            <BrainCircuit className="h-3.5 w-3.5" aria-hidden />
+            <AGENT_ICON className="h-3.5 w-3.5" aria-hidden />
             Extend from the site
           </Link>
         </Button>

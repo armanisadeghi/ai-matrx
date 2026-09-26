@@ -21,7 +21,7 @@
  */
 
 import { useState } from "react";
-import { CircleAlert, Loader2, Play, BrainCircuit } from "lucide-react";
+import { CircleAlert, Loader2, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -32,6 +32,7 @@ import {
   type ConversationAnalysisKind,
 } from "./catalog";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 type RunState =
   | { phase: "idle" }
@@ -99,7 +100,7 @@ export function ConversationAnalyzePanel({
   return (
     <section>
       <div className="flex items-start gap-3">
-        <BrainCircuit className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+        <AGENT_ICON className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-foreground">
             Analyze this conversation

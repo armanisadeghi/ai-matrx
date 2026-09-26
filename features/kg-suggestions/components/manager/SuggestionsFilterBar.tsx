@@ -8,7 +8,7 @@
 
 "use client";
 
-import { Search, Star, BrainCircuit, X } from "lucide-react";
+import { Search, Star, X } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 import {
   Select,
@@ -30,6 +30,7 @@ import {
   KG_SUGGESTION_STAGE_FILTERS,
   KG_SUGGESTION_STATUSES,
 } from "@/features/kg-suggestions/constants";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const STATUSES = KG_SUGGESTION_STATUSES;
 
@@ -225,7 +226,7 @@ export function SuggestionsFilterBar({
         <ToggleChip
           active={!!query.unseenOnly}
           onClick={() => patchQuery({ unseenOnly: !query.unseenOnly })}
-          icon={<BrainCircuit className="h-3 w-3" />}
+          icon={<AGENT_ICON className="h-3 w-3" />}
           label="Unseen"
         />
 

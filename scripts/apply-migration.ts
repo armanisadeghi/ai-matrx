@@ -568,7 +568,7 @@ async function connect(env: DbEnv): Promise<pg.Client> {
     const colour = severity.startsWith("W") ? C.yellow : C.dim;
     console.log(`${colour}[${severity}]${C.reset} ${n.message ?? ""}`);
     if (n.hint) console.log(`${C.dim}        hint: ${n.hint}${C.reset}`);
-  });
+  }, { migrationRunner: true }); // the one sanctioned exception to the production guard
 }
 
 /**
@@ -4416,7 +4416,7 @@ async function restoreLedger(path: string, target: Target): Promise<number> {
     return 1;
   }
   assertConfiguredHostMatchesTarget(env, target, loadBranchRef(ROOT, undefined));
-  const client = await connectDirect(env, "db:apply --restore-ledger");
+  const client = await connectDirect(env, "db:apply --restore-ledger", undefined, { migrationRunner: true });
   try {
     const row = await ledgerRow(client, filename);
     if (!row) {
@@ -4491,7 +4491,7 @@ async function amendIdempotent(path: string, target: Target, statementTimeout: s
   // The same host assertion every apply makes: amending a ledger on the wrong database would
   // move a checksum that belongs to the other one.
   assertConfiguredHostMatchesTarget(env, target, loadBranchRef(ROOT, undefined));
-  const client = await connectDirect(env, "db:apply --amend-idempotent");
+  const client = await connectDirect(env, "db:apply --amend-idempotent", undefined, { migrationRunner: true });
   try {
     const row = await ledgerRow(client, filename);
     if (!row) {

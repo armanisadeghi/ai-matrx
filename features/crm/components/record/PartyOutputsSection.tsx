@@ -32,12 +32,13 @@
 // question, answered by the Written-by column in the grid and the contact's own
 // stamp, not by this list.
 
-import { BrainCircuit } from "lucide-react";
+import {  } from "lucide-react";
 import {
   AnchorRecordsList,
   useAnchorRecords,
 } from "@/features/content-ir/records/AnchorRecordsList";
 import { SectionCard } from "./SectionCard";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface PartyOutputsSectionProps {
   partyId: string;
@@ -52,7 +53,7 @@ export function PartyOutputsSection({
   const state = useAnchorRecords({ type: "party", id: partyId });
 
   return (
-    <SectionCard title="Outputs about this customer" Icon={BrainCircuit}>
+    <SectionCard title="Outputs about this customer" Icon={AGENT_ICON}>
       <div className="p-2.5">
         <AnchorRecordsList
           state={state}

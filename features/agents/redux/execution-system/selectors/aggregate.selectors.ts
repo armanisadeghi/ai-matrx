@@ -37,7 +37,10 @@ import type {
 } from "@/types/python-generated/stream-events";
 import type { ShortcutContext } from "@/features/agents/redux/agent-shortcuts/types";
 import { selectHasMessages } from "../messages/messages.selectors";
-import { deriveAnswerText } from "../active-requests/active-requests.selectors";
+import {
+  deriveAnswerText,
+  deriveDecisionResultText,
+} from "../active-requests/active-requests.selectors";
 import {
   selectAutoClearConversation,
   selectShowAutoClearToggle,
@@ -170,6 +173,11 @@ export const selectLatestAccumulatedText = (conversationId: string) =>
       if (!requestIds || requestIds.length === 0) return "";
       const latest = byRequestId[requestIds[requestIds.length - 1]];
       if (!latest) return "";
+      // A decision turn has no text — its verdict is one `decision_answers`
+      // block — so without this every string consumer (the toast preview
+      // above all) showed nothing, or "Waiting...", over a finished run.
+      const decision = deriveDecisionResultText(latest);
+      if (decision !== null) return decision;
       const { renderBlockOrder, renderBlocks } = latest;
       if (!renderBlockOrder || renderBlockOrder.length === 0) return "";
       return renderBlockOrder

@@ -6,10 +6,11 @@
 // whole row / whole table) each one reads. When one table feeds several agents, the
 // fan IS the lesson — edit one row, every agent follows.
 
-import { ArrowDown, BrainCircuit, Table2, Workflow } from "lucide-react";
+import { ArrowDown, Table2, Workflow } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { count } from "../format";
 import type { KitAgent, KitBinding, KitManifest } from "../types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /** `{{model_selection_guidance}}`, breakable only at its underscores — never mid-word. */
 function VariableName({ name }: { name: string }) {
@@ -148,7 +149,7 @@ export function HowItWorks({ manifest }: { manifest: KitManifest }) {
                       <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
                         <div className="flex items-center gap-2">
                           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                            <BrainCircuit className="h-3.5 w-3.5" />
+                            <AGENT_ICON className="h-3.5 w-3.5" />
                           </span>
                           <span className="min-w-0 truncate text-sm font-medium text-foreground">{b.agent.name}</span>
                         </div>

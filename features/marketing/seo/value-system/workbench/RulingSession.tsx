@@ -39,7 +39,6 @@
 import { useEffect, useRef, useState } from "react";
 import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import {
-  BrainCircuit,
   CheckCircle2,
   Gavel,
   Loader2,
@@ -79,6 +78,7 @@ import { VerifyPanel } from "./session/VerifyPanel";
 import type { SessionRuling } from "./session/trial";
 import { trialDimensionSlug } from "./session/trial";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface SessionRulingInput {
   keywordIds: string[];
@@ -407,7 +407,7 @@ export function RulingSession({
               onClick={() => setTrialOpen(true)}
               title={`Have the system answer ${trialDimension?.label.toLowerCase()} for the next ${trialBatch} the way you just did`}
             >
-              <BrainCircuit className="h-3.5 w-3.5" />
+              <AGENT_ICON className="h-3.5 w-3.5" />
               Let the system try the next {trialBatch}
             </Button>
           ) : null}

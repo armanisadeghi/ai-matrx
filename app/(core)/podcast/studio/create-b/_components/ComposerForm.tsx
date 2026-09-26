@@ -24,7 +24,6 @@ import {
   Users,
   Workflow,
   SlidersHorizontal,
-  BrainCircuit,
   FlaskConical,
   ArrowRight,
   Library,
@@ -55,6 +54,7 @@ import type {
   PodcastFormat,
 } from "@/features/podcasts/generator/types";
 import { SettingPill, PopoverHeader } from "./SettingPill";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function ComposerForm({ onGenerate }: { onGenerate: () => void }) {
   const [sourceKind, setSourceKind] = useState<PodcastSourceKind>("topic");
@@ -136,7 +136,7 @@ export function ComposerForm({ onGenerate }: { onGenerate: () => void }) {
         {/* The composer for the selected source. */}
         <div className="p-3">
           <p className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <BrainCircuit className="h-3.5 w-3.5 text-primary" />
+            <AGENT_ICON className="h-3.5 w-3.5 text-primary" />
             {activeSource.helper}
           </p>
           {activeSource.control === "urls" ? (
@@ -494,7 +494,7 @@ export function ComposerForm({ onGenerate }: { onGenerate: () => void }) {
           disabled={!canGenerate}
           className="gap-2 shadow-md"
         >
-          <BrainCircuit className="h-4.5 w-4.5" />
+          <AGENT_ICON className="h-4.5 w-4.5" />
           Generate episode
           <ArrowRight className="h-4 w-4" />
         </Button>

@@ -1,6 +1,7 @@
 import { AgentModeController } from "../shared/AgentModeController";
 import { AgentSaveStatus } from "../shared/AgentSaveStatus";
 import { AgentOptionsMenu } from "../shared/AgentOptionsMenu";
+import { ReviewAnswersLink } from "@/features/agents/decision-review/components/ReviewAnswersLink";
 import Link from "next/link";
 import { AgentSelectorIsland } from "../shared/AgentSelectorIsland";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
@@ -49,6 +50,7 @@ export function AgentRunHeader({
       </div>
       <div className="flex items-center gap-1.5 pt-0.5 shrink-0">
         <AgentSaveStatus agentId={agentId} />
+        {basePath === "/agents" && <ReviewAnswersLink agentId={agentId} />}
         <AgentOptionsMenu agentId={agentId} basePath={basePath} />
       </div>
     </div>

@@ -6,6 +6,7 @@
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { DictionaryManager } from "@/features/dictionary/components/DictionaryManager";
+import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 
 export default function DictionaryTab() {
   const userId = useAppSelector(selectUserId);
@@ -21,7 +22,10 @@ export default function DictionaryTab() {
   return (
     <div className="p-4 md:p-6 space-y-3">
       <div>
-        <h2 className="text-base font-semibold text-foreground">Personal dictionary</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-base font-semibold text-foreground">Personal dictionary</h2>
+          <MandateDoorLink feature="dictionary" label="Dictionary intelligence" />
+        </div>
         <p className="text-sm text-muted-foreground">
           Terms and pronunciations that travel with you — used today to correct how names and
           jargon are spoken back when AI Matrx reads to you, and to steer chat models toward your

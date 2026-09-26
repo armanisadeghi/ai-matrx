@@ -14,7 +14,8 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { BrainCircuit, CircleCheck } from "lucide-react";
+import { CircleCheck } from "lucide-react";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 interface PartialQuizQuestion {
   question?: string;
@@ -56,7 +57,7 @@ export default function SmartQuizLoader({ value }: { value: PartialQuizValue }) 
       {/* header */}
       <div className="mb-5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <BrainCircuit className="h-5 w-5 animate-pulse text-primary" />
+          <AGENT_ICON className="h-5 w-5 animate-pulse text-primary" />
           <div>
             <p className="text-sm font-semibold text-foreground">
               {value.title || "Building your quiz"}

@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/collapsible";
 import {
   Play,
-  BrainCircuit,
   Loader2,
   CheckCircle,
   XCircle,
@@ -27,6 +26,7 @@ import {
 import { toast } from "@/lib/toast";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import type { ToolStreamEvent } from "@/features/tool-call-visualization/testing/types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 // ─── Event icon/color mapping ───────────────────────────────────────────────
 
@@ -47,7 +47,7 @@ function getEventIcon(eventType: string) {
     case "phase":
       return <Wifi className="h-3 w-3 text-muted-foreground" />;
     case "reasoning_chunk":
-      return <BrainCircuit className="h-3 w-3 text-info" />;
+      return <AGENT_ICON className="h-3 w-3 text-info" />;
     case "warning":
       return <AlertTriangle className="h-3 w-3 text-warning" />;
     case "info":

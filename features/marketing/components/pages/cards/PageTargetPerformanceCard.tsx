@@ -21,7 +21,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { BrainCircuit, Crosshair } from "lucide-react";
+import { Crosshair } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -51,6 +51,7 @@ import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow"
 import type { MarketingPage } from "@/features/marketing/types";
 import { GscClassBar } from "@/features/marketing/search-console/components/ambassador/GscClassBar";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /** hostname+path, lowercased, www/trailing-slash stripped — URL identity. */
 function normalizeUrlForMatch(value: string | null | undefined): string | null {
@@ -206,7 +207,7 @@ export function PageTargetPerformanceCard({ page }: { page: MarketingPage }) {
       }
       className="flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-primary"
     >
-      <BrainCircuit className="h-3.5 w-3.5" />
+      <AGENT_ICON className="h-3.5 w-3.5" />
     </button>
   );
 

@@ -40,7 +40,6 @@ import {
   ListPlus,
   Loader2,
   RefreshCw,
-  BrainCircuit,
   SkipForward,
   TriangleAlert,
   Undo2,
@@ -90,6 +89,7 @@ import {
   type SortPile,
 } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 type Phase = "setup" | "sorting" | "boundary" | "done";
 type CaseDoor = "paste" | "sheet" | "records" | "write";
@@ -196,7 +196,7 @@ const DOORS: { key: CaseDoor; label: string; hint: string; icon: typeof ListPlus
   { key: "paste", label: "Paste a list", hint: "One case per line", icon: ListPlus },
   { key: "sheet", label: "A spreadsheet", hint: "CSV or Excel", icon: FileUp },
   { key: "records", label: "Records you keep", hint: "Files, rows, past work", icon: Layers },
-  { key: "write", label: "Write them for me", hint: "From your own craft", icon: BrainCircuit },
+  { key: "write", label: "Write them for me", hint: "From your own craft", icon: AGENT_ICON },
 ];
 
 export function SortingTablePage({

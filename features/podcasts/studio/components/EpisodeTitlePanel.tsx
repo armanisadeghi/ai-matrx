@@ -16,12 +16,13 @@
 // never grows mid-run, so the episode content below it does not shift.
 
 import { useEffect, useState } from "react";
-import { BrainCircuit, Loader2, RefreshCw, Type } from "lucide-react";
+import { Loader2, RefreshCw, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import EpisodeTitleOptionsBlock from "@/components/mardown-display/blocks/episode-title-options/EpisodeTitleOptionsBlock";
 import { podcastService } from "@/features/podcasts/service";
 import { useEpisodeTitleOptions } from "@/features/podcasts/generator/useEpisodeTitleOptions";
 import type { PcEpisodeWithShow } from "@/features/podcasts/types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function EpisodeTitlePanel({
   episodeId,
@@ -69,7 +70,7 @@ export function EpisodeTitlePanel({
           ) : hasOptions ? (
             <RefreshCw className="h-3.5 w-3.5" />
           ) : (
-            <BrainCircuit className="h-3.5 w-3.5" />
+            <AGENT_ICON className="h-3.5 w-3.5" />
           )}
           {busy ? "Suggesting…" : hasOptions ? "More options" : "Suggest titles"}
         </Button>

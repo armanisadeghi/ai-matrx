@@ -11,13 +11,14 @@
 // glance (Airtable/Linear bar: status and action in the same place).
 
 import type { ReactNode } from "react";
-import { BrainCircuit, MessageSquareText, User2 } from "lucide-react";
+import { MessageSquareText, User2 } from "lucide-react";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { timeCell, Muted } from "@/lib/entity-list/columns";
 import { shapeInstancePermalink } from "@/features/content-ir/studio/constants";
 import { ConfirmationBadge } from "@/features/content-ir/records/ConfirmationBadge";
 import type { KindRecordRow } from "./types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /** One property of the kind's emitted schema, as a column needs to see it. */
 export interface SchemaField {
@@ -176,7 +177,7 @@ function writerCell(row: KindRecordRow, ctx: RecordColumnContext): ReactNode {
         ? (ctx.creatorNames.get(row.createdBy) ?? "A teammate")
         : null;
   const name = isMachine ? "An agent" : (personName ?? "Unattributed");
-  const Icon = isMachine ? BrainCircuit : User2;
+  const Icon = isMachine ? AGENT_ICON : User2;
   const title = isMachine
     ? [
         `Written by an agent (${row.createdByTier}) — nobody has stood behind it unless it is confirmed`,

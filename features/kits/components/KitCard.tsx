@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, BrainCircuit, Lightbulb, Table2, Workflow } from "lucide-react";
+import { ArrowUpRight, Lightbulb, Table2, Workflow } from "lucide-react";
 import { KIT_ROUTES } from "../constants";
 import type { KitEntry } from "../types";
 import { KitIcon } from "./KitIcon";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 function plural(n: number, one: string, many: string) {
   return `${n} ${n === 1 ? one : many}`;
@@ -14,7 +15,7 @@ export function WhatYouGet({ kit, className }: { kit: KitEntry; className?: stri
   const m = kit.manifest;
   const items = [
     { icon: Table2, text: plural(m.tables.length, "table", "tables"), show: m.tables.length > 0 },
-    { icon: BrainCircuit, text: plural(m.agents.length, "agent", "agents"), show: m.agents.length > 0 },
+    { icon: AGENT_ICON, text: plural(m.agents.length, "agent", "agents"), show: m.agents.length > 0 },
     { icon: Workflow, text: plural(m.workflows.length, "workflow", "workflows"), show: m.workflows.length > 0 },
   ].filter((i) => i.show);
   return (

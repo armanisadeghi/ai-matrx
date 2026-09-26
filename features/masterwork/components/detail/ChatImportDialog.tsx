@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, FileUp, BrainCircuit, X } from "lucide-react";
+import { ExternalLink, FileUp, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -137,6 +137,7 @@ import { createSittingStore, type SittingBase } from "../../sitting/sitting";
 import { useDialogSitting } from "../../sitting/useDialogSitting";
 import { SittingResumed } from "../../sitting/SittingResumed";
 import { RunStages } from "../RunStages";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 interface ChatImportSitting extends SittingBase {
   text: string;
@@ -653,7 +654,7 @@ export function ChatImportDialog({
 
             {tab !== "matrx" ? (
               <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 p-2">
-                <BrainCircuit className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <AGENT_ICON className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <Input
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}

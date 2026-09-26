@@ -33,7 +33,7 @@
  */
 
 import Link from "next/link";
-import { BrainCircuit, ExternalLink, FlaskConical, Info } from "lucide-react";
+import { ExternalLink, FlaskConical, Info } from "lucide-react";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
@@ -43,6 +43,7 @@ import { useMapLinks } from "../links";
 import type { AuthorTopicalMapResult } from "../map-author";
 import { MapTopicProposalView } from "../proposals/MapTopicProposalView";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function StartMapResult({
   result,
@@ -78,7 +79,7 @@ export function StartMapResult({
                 variant="outline"
                 onClick={() => onBuildFromResearch(result.research_topic_id as string)}
               >
-                <BrainCircuit className="h-4 w-4" aria-hidden />
+                <AGENT_ICON className="h-4 w-4" aria-hidden />
                 Build the map from it when it finishes
               </Button>
             ) : null}

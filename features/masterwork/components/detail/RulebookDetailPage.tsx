@@ -23,7 +23,6 @@ import {
   RefreshCw,
   RotateCcw,
   Quote,
-  BrainCircuit,
   Workflow,
   Library,
   Signature,
@@ -193,6 +192,7 @@ import { useOpenBuildWindow } from "@/features/overlays/openers/masterworkBuildW
 import { BuildInFlightNotice } from "../../build/BuildInFlightNotice";
 import { useOpenMasterworkYourWordsWindow } from "@/features/overlays/openers/masterworkYourWordsWindow";
 import { RulePassageLink } from "../../kept-sources/RulePassageLink";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /**
  * The Expert surface: read your Rulebook, correct it, grow it. Rules are
@@ -746,7 +746,7 @@ export function RuleRow({
               </Button>
               {!retired && !rejected ? (
                 <Button size="sm" variant="outline" onClick={onImprove}>
-                  <BrainCircuit className="h-3.5 w-3.5" />
+                  <AGENT_ICON className="h-3.5 w-3.5" />
                   Improve
                 </Button>
               ) : null}
@@ -2787,7 +2787,7 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                           className="h-8 w-full min-w-0 justify-center px-2 text-xs"
                           onClick={() => setConductorOpen(true)}
                         >
-                          <BrainCircuit className="h-3.5 w-3.5" />
+                          <AGENT_ICON className="h-3.5 w-3.5" />
                           Build with me
                         </Button>
                       </TooltipTrigger>

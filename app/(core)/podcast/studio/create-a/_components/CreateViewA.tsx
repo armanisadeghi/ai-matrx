@@ -28,7 +28,6 @@ import {
   ArrowLeft,
   Podcast,
   AudioLines,
-  BrainCircuit,
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -49,6 +48,7 @@ import type {
 import { SourcePicker } from "./SourcePicker";
 import { SettingsBar } from "./SettingsBar";
 import { MoreOptions } from "./MoreOptions";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function CreateViewA() {
   const router = useRouter();
@@ -105,7 +105,7 @@ export function CreateViewA() {
           New episode
         </h1>
         <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-glass-edge bg-glass px-2.5 py-1 text-[11px] font-medium text-muted-foreground backdrop-blur-glass backdrop-saturate-glass">
-          <BrainCircuit className="h-3 w-3 text-primary" />
+          <AGENT_ICON className="h-3 w-3 text-primary" />
           AI-produced
         </span>
       </div>

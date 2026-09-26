@@ -22,7 +22,6 @@ import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCo
 import {
   AppWindow,
   Braces,
-  BrainCircuit,
   Building,
   ClipboardCopy,
   FileText,
@@ -129,6 +128,7 @@ import type {
   PlacementVisibility,
 } from "../types";
 import { MANAGED_CONTEXT_MENU_AGENT_CONFIG } from "../managed-agent-launch";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared menu-model constants + pure helpers (used by both renderers).
@@ -1043,7 +1043,7 @@ export function useContextMenuActions(
           id: `sa:${section.key}:${agent.agentId}`,
           label: agent.name,
           description: section.label,
-          icon: BrainCircuit,
+          icon: AGENT_ICON,
           onSelect: () => void handleBoundAgentExecute(agent),
         });
       }
@@ -1121,7 +1121,7 @@ export function useContextMenuActions(
       kind: "submenu",
       id: "surface:agents",
       label: "Agents on this page",
-      icon: BrainCircuit,
+      icon: AGENT_ICON,
       children: surfaceAgentItems,
     },
     ...(relatedItems.length > 0

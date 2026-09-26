@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  BrainCircuit,
   CheckCircle2,
   Loader2,
   RotateCcw,
@@ -37,6 +36,7 @@ import { RULE_RELATION_LABELS } from "../types";
 import { useCheckup } from "./useCheckup";
 import { useCleanCorpusRun } from "./useCleanCorpusRun";
 import { chosenProposal, type CheckupProposedRule } from "./types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /**
  * THE FINAL CHECKUP — the window an Expert opens when they feel done.
@@ -443,7 +443,7 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
             className="h-7"
             onClick={approveWithAi}
           >
-            <BrainCircuit className="h-3.5 w-3.5" />
+            <AGENT_ICON className="h-3.5 w-3.5" />
             {AI_PASS_LABEL(aiEligibleCount)}
           </Button>
         ) : null}

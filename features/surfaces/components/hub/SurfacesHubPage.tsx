@@ -15,7 +15,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { BrainCircuit, ChevronRight, Loader2, SlidersHorizontal } from "lucide-react";
+import { ChevronRight, Loader2, SlidersHorizontal } from "lucide-react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { getAllManifests } from "@/features/surfaces/manifests/registry";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
@@ -23,6 +23,7 @@ import { listSurfaceOptions } from "@/features/surfaces/services/surfaces.servic
 import type { SurfaceManifest } from "@/features/surfaces/types";
 import { cn } from "@/lib/utils";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const USER_CLIENT_PREFIX = "matrx-user/";
 
@@ -167,7 +168,7 @@ export function SurfacesHubPage() {
                         <div className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground">
                           {roleCount > 0 && (
                             <span className="inline-flex items-center gap-1 rounded-full border border-border/60 px-2 py-0.5">
-                              <BrainCircuit className="h-3 w-3" />
+                              <AGENT_ICON className="h-3 w-3" />
                               {roleCount} role{roleCount === 1 ? "" : "s"}
                             </span>
                           )}

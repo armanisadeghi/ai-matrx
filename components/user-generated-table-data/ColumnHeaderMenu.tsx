@@ -98,6 +98,11 @@ interface ColumnHeaderMenuProps {
   /** Make this column the table's row label. Omitted on read-only mounts and when it already is. */
   onUseAsRowLabel?: () => void;
   /**
+   * Open this menu from outside (the header's right-click "Filter this
+   * column…"). Each new non-zero number opens it once.
+   */
+  openRequest?: number;
+  /**
    * Remove this column. Omitted on read-only mounts and on the last remaining
    * column. Goes through the same confirm + RPC as the settings dialog — there
    * is exactly one delete-column path.
@@ -148,9 +153,13 @@ const ColumnHeaderMenu = ({
   onHide,
   onUseAsRowLabel,
   onDelete,
+  openRequest = 0,
 }: ColumnHeaderMenuProps) => {
   const hasFilter = isActiveFilter(filter);
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (openRequest > 0) setOpen(true);
+  }, [openRequest]);
   const [facets, setFacets] = useState<ColumnFacets | null>(null);
   const [facetError, setFacetError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

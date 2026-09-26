@@ -11,7 +11,7 @@
  */
 
 import { useState } from "react";
-import { Crosshair, Loader2, BrainCircuit, SearchCheck } from "lucide-react";
+import { Crosshair, Loader2, SearchCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
@@ -30,6 +30,7 @@ import type { MarketingPage } from "@/features/marketing/types";
 import { useGscKeywordValueByText } from "@/features/marketing/search-console/hooks/useGscQuery";
 import { buildGscValueColumns } from "@/features/marketing/search-console/lib/columns";
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function PageQueriesCard({ page }: { page: MarketingPage }) {
   const { site } = useMarketingSite();
@@ -158,7 +159,7 @@ export function PageQueriesCard({ page }: { page: MarketingPage }) {
                 }
                 className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
               >
-                <BrainCircuit className="h-3.5 w-3.5" />
+                <AGENT_ICON className="h-3.5 w-3.5" />
               </button>
               {isCurrent(row.query) ? (
                 <Badge variant="success" className="text-[9px]">

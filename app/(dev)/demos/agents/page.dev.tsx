@@ -1,7 +1,8 @@
 import { join } from "path";
-import { BrainCircuit } from "lucide-react";
+import {  } from "lucide-react";
 import { RouteIndexPage } from "@/components/ssr/RouteIndexPage";
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export const metadata = createRouteMetadata("/demos/agents", {
   title: "Agent demos",
@@ -15,7 +16,7 @@ export default async function AgentsDemosIndexPage() {
       basePath="/demos/agents"
       title="Agent demos"
       description="Agent UI experiments and component playgrounds."
-      icon={BrainCircuit}
+      icon={AGENT_ICON}
     />
   );
 }

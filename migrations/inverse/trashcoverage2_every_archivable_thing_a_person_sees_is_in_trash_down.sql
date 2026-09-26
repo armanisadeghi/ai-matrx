@@ -1,9 +1,18 @@
--- chair-step: lane TRASH-COVERAGE-2 inverse. Puts back the pre-TRASH-COVERAGE-2 bodies of public._trash_kind_rows, public._trash_kind_counts, public.org_trash_restore, public.entity_undelete and workflow._cascade_definition_soft_delete (captured live 2026-09-26), drops platform.archived_parent_of, public.restore_scope, public.restore_context_item and the workflow restore trigger with their door rows, takes the 30 Trash kinds off the registry and gives working_document back its label. No archived or live row is touched.
+-- chair-step: lane TRASH-COVERAGE-2 inverse. Puts back the pre-TRASH-COVERAGE-2 bodies of public._trash_kind_rows, public._trash_kind_counts, public.org_trash_restore, public.entity_undelete, workflow._cascade_definition_soft_delete and docproc.cascade_file_softdelete_to_documents (captured live 2026-09-26), drops platform.archived_parent_of, public.restore_scope, public.restore_context_item (with their door rows) and workflow.restore_triggers_archived_with, takes the 31 Trash kinds off the registry and gives working_document back its label. No archived or live row is touched.
 -- INVERSE of migrations/campaign/trashcoverage2_every_archivable_thing_a_person_sees_is_in_trash.sql
 -- lane: TRASH-COVERAGE-2
-BASEDON_PLACEHOLDER
+-- based-on: docproc.cascade_file_softdelete_to_documents() fc8123f1b1398c64cf1521b74406e80e5cfab7d269b6dcc56b2de9b0d9e1ed09
+-- based-on: platform.archived_parent_of(text, uuid) b3c36b9b28b7d391234e2cbb0020d1960f73d3031ae6c9b6da4e9b26b12d8266
+-- based-on: public._trash_kind_counts(uuid, uuid, uuid) 469afca97b00ffe263f4a417b58c614c20d632cbe0d2a415f617323a0e177b05
+-- based-on: public._trash_kind_rows(uuid, uuid, uuid, text[], integer, integer) e98e8d20706dbbd8da3d56ef24704036a5b3c882fb6ccd61b5415812a7f4bbd0
+-- based-on: public.entity_undelete(text, uuid) 68e847e771eb48c40e3477ce66eb06710124b5cfda36e6b1aab256c775575f43
+-- based-on: public.org_trash_restore(uuid, text, uuid) f996440c5230fa43c04d16490bf3eadb0a4f08cd8806bd128e821f09e8036597
+-- based-on: public.restore_context_item(uuid) 41648cc8c698e7717727672e904b4a8e58472d60e836f4a7b69bc571bd68bf93
+-- based-on: public.restore_scope(uuid) fc609d14a676e7eff768a8bf68ba84901b70c5b48307c498effa656149657db3
+-- based-on: workflow._cascade_definition_soft_delete() 57f930ff6fe7e70da4cccb1acc2295c8c7cfdcb1117efc0491604d202b3ed382
+-- based-on: workflow.restore_triggers_archived_with(uuid, timestamp with time zone) dfa5b75a989a28746ddde8295ea38a66a3ae7d7533d3fe12185c4e8150666ccb
 
-set local lock_timeout = '30s';
+-- (lock and statement ceilings are the runner's: pnpm db:apply / db:rehearse set them.)
 
 create or replace function public._trash_kind_rows(p_uid uuid, p_org uuid, p_member uuid, p_kinds text[], p_limit integer, p_offset integer)
  RETURNS TABLE(artifact_kind text, entity_token text, label text, id uuid, title text, deleted_at timestamp with time zone, organization_id uuid, is_mine boolean, owner_id uuid)
@@ -534,8 +543,74 @@ BEGIN
   RETURN NEW;
 END $function$;
 
-drop trigger if exists _cascade_soft_restore on workflow.definition;
-drop function if exists workflow._cascade_definition_soft_restore();
+create or replace function docproc.cascade_file_softdelete_to_documents()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'docproc', 'files', 'rag'
+AS $function$
+declare
+  v_doc_ids uuid[] := '{}';
+begin
+  if old.deleted_at is null and new.deleted_at is not null then
+    with stamped as (
+      update docproc.processed_documents
+         set deleted_at = new.deleted_at,
+             metadata = jsonb_set(coalesce(metadata, '{}'::jsonb),
+                                   '{deleted_via}', '"file_cascade"', true)
+       where source_kind = 'cld_file'
+         and source_id = new.id::text
+         and deleted_at is null
+       returning id)
+    select coalesce(array_agg(id), '{}') into v_doc_ids from stamped;
+
+    update rag.kg_chunks c
+       set deleted_at = new.deleted_at
+     where c.deleted_at is null
+       and (c.processed_document_id = any(v_doc_ids)
+            or (c.source_kind = 'cld_file' and c.source_id = new.id::text));
+
+    update rag.data_store_members m
+       set deleted_at = new.deleted_at
+     where m.deleted_at is null
+       and ((m.source_kind = 'cld_file' and m.source_id = new.id::text)
+            or (m.source_kind = 'processed_document'
+                and m.source_id in (select unnest(v_doc_ids)::text)));
+
+  elsif old.deleted_at is not null and new.deleted_at is null then
+    with restored as (
+      update docproc.processed_documents
+         set deleted_at = null,
+             metadata = metadata - 'deleted_via'
+       where source_kind = 'cld_file'
+         and source_id = new.id::text
+         and deleted_at is not null
+         and metadata->>'deleted_via' = 'file_cascade'
+       returning id)
+    select coalesce(array_agg(id), '{}') into v_doc_ids from restored;
+
+    update rag.kg_chunks c
+       set deleted_at = null
+     where c.deleted_at is not null
+       and (c.processed_document_id = any(v_doc_ids)
+            or (c.source_kind = 'cld_file' and c.source_id = new.id::text
+                and c.processed_document_id is null
+                and c.deleted_at >= old.deleted_at));
+
+    update rag.data_store_members m
+       set deleted_at = null
+     where m.deleted_at is not null
+       and m.deleted_at >= old.deleted_at
+       and ((m.source_kind = 'cld_file' and m.source_id = new.id::text)
+            or (m.source_kind = 'processed_document'
+                and m.source_id in (select unnest(v_doc_ids)::text)));
+  end if;
+
+  return new;
+end
+$function$;
+
+drop function if exists workflow.restore_triggers_archived_with(uuid, timestamptz);
 
 delete from platform.client_callable_door
  where (schema_name, function_name) in (('public', 'restore_scope'), ('public', 'restore_context_item'),
@@ -554,7 +629,7 @@ update platform.entity_types e
     'hr_jurisdiction_rule_org_decision', 'crm_blocklist_entry', 'commerce_intake_batch',
     'interview_decision_interview', 'workflow_runtime_surface', 'workflow_trigger',
     'product_capture_item', 'category', 'flexible_data', 'shared_canvas_item', 'sch_task',
-    'user_feedback', 'agent_mandate_note']);
+    'user_feedback', 'agent_mandate_note', 'processed_document']);
 
 update platform.entity_types set label = 'Working Documents'
  where token = 'working_document' and label = 'Working Document';

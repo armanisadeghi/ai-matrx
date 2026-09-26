@@ -18,7 +18,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { recordToast, toast } from "@/lib/toast";
 import {
   ArrowLeft,
-  BrainCircuit,
   Layers,
   FileSearch,
   Type,
@@ -72,6 +71,7 @@ import type {
 import { KIND_CONFIG, type KindConfig } from "../kindConfig";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const FIELD = "text-base"; // 16px+ prevents iOS zoom-on-focus
 
@@ -770,7 +770,7 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
                 onClick={() => void handleGenerate()}
                 disabled={!canGenerate || entitlement.isChecking}
               >
-                <BrainCircuit className="mr-1.5 h-4 w-4" />
+                <AGENT_ICON className="mr-1.5 h-4 w-4" />
                 Generate
               </Button>
             </div>

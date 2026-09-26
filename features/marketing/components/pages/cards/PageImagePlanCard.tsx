@@ -21,7 +21,6 @@ import {
   ImagePlus,
   ListTodo,
   Loader2,
-  BrainCircuit,
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -63,6 +62,7 @@ import type {
   MarketingPage,
 } from "@/features/marketing/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const IMAGE_PRODUCER_ROLE = "image_producer";
 
@@ -420,7 +420,7 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
                           {generating ? (
                             <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                           ) : (
-                            <BrainCircuit className="mr-1.5 h-3.5 w-3.5" />
+                            <AGENT_ICON className="mr-1.5 h-3.5 w-3.5" />
                           )}
                           {entry.file_id ? "Regenerate" : "Generate"}
                         </Button>

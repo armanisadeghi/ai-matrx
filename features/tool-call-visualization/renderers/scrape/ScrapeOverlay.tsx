@@ -14,11 +14,10 @@
 
 import React, { useMemo, useState } from "react";
 import {
-    Globe,
-    ExternalLink,
-    FileText,
-    BrainCircuit,
-    BookOpenText,
+  Globe,
+  ExternalLink,
+  FileText,
+  BookOpenText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InlineMediaRef } from "@ai-matrx/media/react";
@@ -26,6 +25,7 @@ import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown
 import type { ToolRendererProps } from "../../types";
 import { getFaviconUrl } from "../search/parseSearch";
 import { parseScrape } from "./parseScrape";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const Favicon: React.FC<{ url: string; className?: string }> = ({
     url,
@@ -153,7 +153,7 @@ export const ScrapeOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
 
                             {current.aiReview && (
                                 <div className="mb-4 flex items-start gap-2 rounded-md border border-primary/15 bg-primary/5 p-3">
-                                    <BrainCircuit className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                                    <AGENT_ICON className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
                                     <div className="text-sm leading-relaxed text-foreground/90">
                                         {current.aiReview}
                                     </div>

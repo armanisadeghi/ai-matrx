@@ -5,7 +5,6 @@ import { useSwipeable } from "react-swipeable";
 import {
   BadgeCheck,
   BookmarkCheck,
-  BrainCircuit,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -25,6 +24,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/styles/themes/utils";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 type DemoSource = "chat" | "education" | "canvas";
 type DisplayStyle = "focused" | "embedded" | "review";
@@ -261,10 +261,10 @@ function CanonicalFlashcardPlayer({ deck, style }: CanonicalPlayerProps) {
   const assistActions: Array<{
     kind: AssistKind;
     label: string;
-    icon: typeof BrainCircuit;
+    icon: typeof AGENT_ICON;
   }> = [
     { kind: "ask", label: "Ask AI", icon: MessageCircleQuestion },
-    { kind: "explain", label: "Explain", icon: BrainCircuit },
+    { kind: "explain", label: "Explain", icon: AGENT_ICON },
     { kind: "hint", label: "Hint", icon: Lightbulb },
     { kind: "memory", label: "Memory aid", icon: BookmarkCheck },
   ];
@@ -425,7 +425,7 @@ function CanonicalFlashcardPlayer({ deck, style }: CanonicalPlayerProps) {
             setActionsOpen(true);
           }}
         >
-          <BrainCircuit className="h-4 w-4" />
+          <AGENT_ICON className="h-4 w-4" />
           Learning tools
           <ChevronDown className="h-4 w-4 rotate-180" />
         </button>
@@ -480,7 +480,7 @@ function CanonicalFlashcardPlayer({ deck, style }: CanonicalPlayerProps) {
             {assistKind && (
               <div className="rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm leading-relaxed text-foreground [@starting-style]:translate-y-2 [@starting-style]:opacity-0 transition-all">
                 <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
-                  <BrainCircuit className="h-3.5 w-3.5" />
+                  <AGENT_ICON className="h-3.5 w-3.5" />
                   Demo action result
                 </div>
                 {card.assist[assistKind]}

@@ -32,7 +32,6 @@ import {
 import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
-  BrainCircuit,
   CheckCircle2,
   Loader2,
   MousePointerClick,
@@ -72,6 +71,7 @@ import {
 } from "@/features/surfaces/manifests/keyword-quick-answers.manifest";
 import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export interface QuickAnswersSurfaceHandle {
   /** Full live window scope, assembled only when a launcher asks for it. */
@@ -365,7 +365,7 @@ export function QuickAnswers({
                   className="flex items-center gap-1.5 text-sm font-medium text-foreground"
                   data-surface-value="active_dimension_label"
                 >
-                  <BrainCircuit className="h-4 w-4 shrink-0 text-primary" />
+                  <AGENT_ICON className="h-4 w-4 shrink-0 text-primary" />
                   {activeDimension?.label ?? "Pick a question"}
                 </p>
                 <p

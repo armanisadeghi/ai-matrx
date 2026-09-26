@@ -14,7 +14,6 @@ import {
   BookOpen,
   ListChecks,
   Loader2,
-  BrainCircuit,
   ExternalLink,
   Eye,
   EyeOff,
@@ -31,6 +30,7 @@ import type {
   PcArticleKind,
   PcEpisodeWithShow,
 } from "@/features/podcasts/types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const KINDS: {
   kind: PcArticleKind;
@@ -159,7 +159,7 @@ export function EpisodeContentStudio({ episodeId }: { episodeId: string }) {
                   ) : article ? (
                     <RefreshCw className="h-3.5 w-3.5" />
                   ) : (
-                    <BrainCircuit className="h-3.5 w-3.5" />
+                    <AGENT_ICON className="h-3.5 w-3.5" />
                   )}
                   {isBusy ? "Writing…" : article ? "Regenerate" : "Generate"}
                 </Button>

@@ -43,7 +43,9 @@ import {
   CopyPlus,
   Eraser,
   EyeOff,
+  Filter,
   History,
+  KeyRound,
   Link,
   Paintbrush,
   Palette,
@@ -467,6 +469,8 @@ export function buildGridColumnMenuSection(opts: {
     canColorBy: boolean;
     /** True when the table is currently colored BY this column. */
     isColorBy: boolean;
+    /** True when this column already names the table's rows (row-label.ts). */
+    isRowLabel?: boolean;
     /** The view's summary for this column and the kinds its type allows (column-summaries.ts). */
     summary?: string | null;
     summaryKinds?: readonly { kind: string; label: string }[];
@@ -492,8 +496,10 @@ export function buildGridColumnMenuSection(opts: {
     highlight: (fieldName: string, color: StyleColor | null) => void;
     /** Color rows by this column's option colors, or stop (`false`). */
     colorBy: (fieldName: string, on: boolean) => void;
-    /** Open the table-wide Colors dialog (color-by + rules). */
-    colors: () => void;
+    /** Make this column the table's row label (what its rows are called everywhere). */
+    useAsRowLabel: (fieldName: string) => void;
+    /** Open this column's own filter (its header menu, with the value list). */
+    filter: (fieldName: string) => void;
     /** Set or clear the summary shown under this column (view state). */
     summarize?: (fieldName: string, kind: string | null) => void;
   };
@@ -506,6 +512,9 @@ export function buildGridColumnMenuSection(opts: {
 
   // Ordered the way a header click is used: name it, arrange it, add beside
   // it, color it, and the destructive row last (Airtable's field menu order).
+  // EVERY item here is about THIS column (Arman, 2026-09-21: the header menu
+  // read as table options). Table-wide doors — the Colors dialog, table
+  // settings — live only in the Table section beneath it.
   const items: ContextMenuExtraItem[] = [
     {
       kind: "item",
@@ -520,6 +529,15 @@ export function buildGridColumnMenuSection(opts: {
       label: "Column settings…",
       icon: Settings2,
       onSelect: () => name && on.configure(name),
+    },
+    {
+      kind: "item",
+      id: "grid-col-row-label",
+      label: column?.isRowLabel ? "Row label (this column)" : "Use as row label",
+      description: "Rows are called by this column wherever they are referred to",
+      icon: KeyRound,
+      hint: column?.isRowLabel ? "✓" : undefined,
+      onSelect: () => name && !column?.isRowLabel && on.useAsRowLabel(name),
     },
     { kind: "separator", id: "grid-col-sep-name" },
     {
@@ -542,6 +560,13 @@ export function buildGridColumnMenuSection(opts: {
       label: "Clear sort",
       icon: ArrowUpDown,
       onSelect: () => on.clearSort(),
+    },
+    {
+      kind: "item",
+      id: "grid-col-filter",
+      label: "Filter this column…",
+      icon: Filter,
+      onSelect: () => name && on.filter(name),
     },
     {
       kind: "item",
@@ -610,13 +635,6 @@ export function buildGridColumnMenuSection(opts: {
       icon: Palette,
       onSelect: () => name && on.colorBy(name, !column?.isColorBy),
     },
-    {
-      kind: "item",
-      id: "grid-col-colors",
-      label: "Table colors…",
-      icon: Paintbrush,
-      onSelect: () => on.colors(),
-    },
     { kind: "separator", id: "grid-col-sep-delete" },
     {
       kind: "item",
@@ -652,8 +670,10 @@ export function buildGridColumnMenuSection(opts: {
         (column && !column.canColorBy
           ? "Works on a choice or checkbox column"
           : undefined),
-      "grid-col-colors": viewOnlyGate(readOnly, opts.readOnlyReason),
       "grid-col-configure": writeGate,
+      "grid-col-row-label":
+        writeGate ?? (column?.isRowLabel ? "Rows are already called by this column" : undefined),
+      "grid-col-filter": noColumn,
       "grid-col-delete":
         writeGate ?? (isOnlyColumn ? "A table keeps at least one column" : undefined),
       ...opts.unavailable,

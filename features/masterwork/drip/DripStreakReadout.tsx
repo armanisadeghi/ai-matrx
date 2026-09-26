@@ -21,7 +21,7 @@
 // failing"; a zero with the sentence reads as "nothing has happened yet",
 // which is the truth.
 
-import { BrainCircuit, Flame, MessageSquareQuote, PauseCircle } from "lucide-react";
+import { Flame, MessageSquareQuote, PauseCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   answeredDays,
@@ -31,6 +31,7 @@ import {
   isPaused,
   type DailyDrip,
 } from "./scoring";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function DripStreakReadout({
   drip,
@@ -90,7 +91,7 @@ export function DripStreakReadout({
           tone="plain"
         />
         <Stat
-          icon={<BrainCircuit className="h-3.5 w-3.5" />}
+          icon={<AGENT_ICON className="h-3.5 w-3.5" />}
           value={`${report.rules}`}
           label={report.rules === 1 ? "rule from this" : "rules from this"}
           tone={report.rules > 0 ? "good" : "plain"}

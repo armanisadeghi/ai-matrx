@@ -23,7 +23,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { BrainCircuit, Loader2, Network } from "lucide-react";
+import { Loader2, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -34,6 +34,7 @@ import {
   type KeywordTableSurface,
 } from "@/features/marketing/seo/keyword-table/KeywordTable";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const ASSIGN_TOPICS_PATH = "/seo/keywords/assign-topics";
 
@@ -180,7 +181,7 @@ export function UnplacedQueue({
                   {assigner.running ? (
                     <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
                   ) : (
-                    <BrainCircuit className="mr-1.5 h-3 w-3" />
+                    <AGENT_ICON className="mr-1.5 h-3 w-3" />
                   )}
                   Assigner: {batch.length || "select keywords"}
                 </Button>

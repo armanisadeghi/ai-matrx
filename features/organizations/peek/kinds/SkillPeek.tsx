@@ -8,7 +8,7 @@
  */
 
 import React from "react";
-import { BrainCircuit } from "lucide-react";
+import { Puzzle } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
@@ -50,7 +50,7 @@ export default function SkillPeek({ id, open, onClose }: PeekProps) {
       open={open}
       onClose={onClose}
       title={row?.label || "Skill"}
-      icon={<BrainCircuit className="h-4 w-4 text-violet-600 dark:text-violet-400" />}
+      icon={<Puzzle className="h-4 w-4 text-violet-600 dark:text-violet-400" />}
       href={peekHref("skill", id)}
       loading={loading}
     >

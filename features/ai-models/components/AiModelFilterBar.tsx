@@ -15,7 +15,7 @@ import {
   Search,
   X,
   FilterX,
-  BrainCircuit,
+  Cpu,
   Plus,
   RefreshCcw,
   ChevronDown,
@@ -198,7 +198,7 @@ export default function AiModelFilterBar({
       <div className="flex flex-wrap items-center gap-1.5 px-2 py-1.5 xl:flex-nowrap">
         {/* Brand */}
         <div className="flex items-center gap-1.5 shrink-0 mr-1 max-xl:w-full">
-          <BrainCircuit className="h-4 w-4 text-muted-foreground shrink-0" />
+          <Cpu className="h-4 w-4 text-muted-foreground shrink-0" />
           <h1 className="text-sm font-semibold whitespace-nowrap">AI Models</h1>
           <Badge
             variant="secondary"

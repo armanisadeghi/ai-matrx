@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, BrainCircuit, Check, Network } from "lucide-react";
+import { Loader2, Check, Network } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,6 +15,7 @@ import type {
   ResearchDataEvent,
 } from "../../types";
 import { CrossCuttingTagsExportButton } from "./CrossCuttingTagsExportButton";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 interface CrossCuttingTagsPanelProps {
   /** Fired after suggestions are applied so the parent can refetch its tag list. */
@@ -295,7 +296,7 @@ export function CrossCuttingTagsPanel({
             {generating ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <BrainCircuit className="h-3.5 w-3.5 text-primary" />
+              <AGENT_ICON className="h-3.5 w-3.5 text-primary" />
             )}
             {generating
               ? "Discovering…"

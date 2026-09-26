@@ -23,7 +23,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LiveGenerationPreview } from "./LiveGenerationPreview";
 import { recordToast, toast } from "@/lib/toast";
-import { Layers, BrainCircuit, ArrowLeft, Loader2 } from "lucide-react";
+import { Layers, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
@@ -55,6 +55,7 @@ import {
   ASSISTANT_MESSAGE_COLUMN_CLASS,
   ASSISTANT_MESSAGE_COLUMN_INSET_CLASS,
 } from "@/features/agents/components/shared/assistant-message-layout";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -416,7 +417,7 @@ export function CreateFromTopic() {
                   {busy ? (
                     <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                   ) : (
-                    <BrainCircuit className="mr-1.5 h-4 w-4" />
+                    <AGENT_ICON className="mr-1.5 h-4 w-4" />
                   )}
                   {isNavigating ? "Opening…" : "Generate"}
                 </Button>

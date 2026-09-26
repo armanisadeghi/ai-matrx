@@ -7,7 +7,6 @@
 
 import {
   BadgeCheck,
-  BrainCircuit,
   Building2,
   ChevronRight,
   Globe,
@@ -30,6 +29,7 @@ import {
   WRITTEN_BY_FILTERS,
   WRITTEN_BY_FILTER_LABEL,
 } from "../types";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const DATE_BUCKET_OPTIONS = DATE_BUCKETS.map((b) => ({
   value: b.value,
@@ -71,7 +71,7 @@ function writtenByBadge(row: PartyListRow) {
       {edited ? (
         <PenLine className="h-3 w-3" aria-hidden />
       ) : (
-        <BrainCircuit className="h-3 w-3" aria-hidden />
+        <AGENT_ICON className="h-3 w-3" aria-hidden />
       )}
       {edited ? "Agent, edited" : "An agent"}
     </span>

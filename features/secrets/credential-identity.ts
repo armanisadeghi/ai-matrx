@@ -15,7 +15,7 @@
 import {
   BarChart3,
   Braces,
-  BrainCircuit,
+  Cpu,
   Briefcase,
   Cloud,
   CreditCard,
@@ -72,7 +72,7 @@ interface FamilyLook {
 
 const FAMILY_LOOK: Record<CredentialFamily, FamilyLook> = {
   generic: { icon: KeyRound, accent: "muted" },
-  ai_providers: { icon: BrainCircuit, accent: "secondary" },
+  ai_providers: { icon: Cpu, accent: "secondary" },
   source_control: { icon: GitBranch, accent: "primary" },
   cloud_infrastructure: { icon: Cloud, accent: "info" },
   databases: { icon: Database, accent: "info" },

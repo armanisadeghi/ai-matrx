@@ -29,7 +29,6 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  BrainCircuit,
   Check,
   Circle,
   EyeOff,
@@ -100,6 +99,7 @@ import { ThreadSearchBox } from "./ThreadSearchBox";
 import { roomColorOf, roomIconOf } from "./roomIdentity";
 import { THREAD_KIND_ORDER, threadKindOf } from "./threadKind";
 import { useRoomView, type Density, type RoomMode } from "./roomViewContext";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /** Radio sentinel for "no projected tab" — each tile keeps its own view. */
 const PROJECT_OWN = "__own__";
@@ -450,7 +450,7 @@ export function RoomHeader({
               }}
             />
             <SheetRow
-              Icon={BrainCircuit}
+              Icon={AGENT_ICON}
               label={roomAgentOpen ? "Close Room Agent" : "Room Agent"}
               active={roomAgentOpen}
               onPress={() => {
@@ -562,7 +562,7 @@ function RoomAgentToggle({
       )}
       title="Chat with an agent that sees every thread in this room"
     >
-      <BrainCircuit className="size-3.5 shrink-0" />
+      <AGENT_ICON className="size-3.5 shrink-0" />
       <span className="@max-2xl:hidden">Room Agent</span>
     </button>
   );

@@ -64,6 +64,11 @@ export function buildDatasetTableMenuSection(opts: {
    * `features/context-menu-v3/utils/availability.ts`.
    */
   unavailable?: AvailabilityMap;
+  /**
+   * The host's own table-wide doors (the grid's Colors dialog), listed after
+   * the dataset's. Table-wide items belong HERE, never in a column's section.
+   */
+  extraItems?: ContextMenuExtraItem[];
 }): ContextMenuExtraSection {
   const { getRow } = opts;
   const row = getRow();
@@ -90,6 +95,7 @@ export function buildDatasetTableMenuSection(opts: {
       },
       disabled: !row,
     },
+    ...(opts.extraItems ?? []),
   ];
 
   return withAvailability(

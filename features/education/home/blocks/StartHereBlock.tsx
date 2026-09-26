@@ -16,10 +16,10 @@ import {
   ArrowRight,
   FilePlus2,
   LibraryBig,
-  BrainCircuit,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const DOORS = [
   {
@@ -36,7 +36,7 @@ const DOORS = [
   },
   {
     href: "/education/tutor",
-    icon: BrainCircuit,
+    icon: AGENT_ICON,
     title: "Just ask a question",
     tile: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
   },

@@ -12,7 +12,6 @@ import {
   Layers,
   Lock,
   PlayCircle,
-  BrainCircuit,
 } from "lucide-react";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import { EDU_ORIGIN } from "../../constants";
@@ -25,6 +24,7 @@ import type {
 import { youTubeThumbnail } from "../youtube";
 import { YouTubeEmbed } from "./YouTubeEmbed";
 import { EnrollButton } from "./EnrollButton";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 const RESOURCE_META: Record<string, { label: string; icon: typeof Layers }> = {
   fc_set: { label: "Flashcards", icon: Layers },
@@ -55,7 +55,7 @@ function SectionHeading({
 
 /** A featured free tool — instantly usable, drives signups. */
 function FreeToolCard({ item }: { item: FeaturedResource }) {
-  const meta = RESOURCE_META[item.resourceType] ?? { label: "Resource", icon: BrainCircuit };
+  const meta = RESOURCE_META[item.resourceType] ?? { label: "Resource", icon: AGENT_ICON };
   const Icon = meta.icon;
   const cardCount = item.extra?.cardCount;
   return (
@@ -222,7 +222,7 @@ export function CreatorLandingPage({ page }: { page: CreatorPublicPage }) {
           </div>
         ) : null}
         <p className="mt-6 inline-flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
-          <BrainCircuit className="h-4 w-4 text-primary" />
+          <AGENT_ICON className="h-4 w-4 text-primary" />
           Free tools are instantly usable — no account needed. Sign up to save your progress.
         </p>
       </header>

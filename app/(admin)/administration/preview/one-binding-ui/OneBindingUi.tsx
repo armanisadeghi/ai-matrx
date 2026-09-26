@@ -29,7 +29,6 @@ import {
   Circle,
   MessageCircleQuestion,
   Rocket,
-  BrainCircuit,
   Type,
   Zap,
 } from "lucide-react";
@@ -52,6 +51,7 @@ import {
   type SourceMode,
 } from "./mock";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 
 const MODES: { id: SourceMode; label: string; icon: typeof Rocket }[] = [
   { id: "holder_default", label: "Mandate Holder Default", icon: Rocket },
@@ -618,7 +618,7 @@ function AiMapTab({ onAccept }: { onAccept: () => void }) {
   return (
     <div className="space-y-3 p-3">
       <p className="flex items-start gap-1.5 text-[11px] leading-relaxed text-muted-foreground">
-        <BrainCircuit className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+        <INTELLIGENCE_ICON className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
         A mandate read this place&apos;s {PLACE.declaredCount} offered values and
         the Mandate Holder&apos;s {INPUTS.length} inputs and proposed a map. Nothing is
         applied until you accept it.

@@ -14,6 +14,7 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { blockMediaFileId } from "@/features/agents/redux/execution-system/utils/block-media-identity";
 import { DECISION_ANSWERS_BLOCK_TYPE } from "@/features/content-ir/kinds/decision-answers";
+import { decisionAnswersText } from "@/features/agents/decision-answers/read";
 import type { RootState } from "@/lib/redux/store";
 import type {
   ActiveRequest,
@@ -239,6 +240,75 @@ export const selectAccumulatedText = (requestId: string) =>
         .filter(Boolean)
         .join("\n");
     },
+  );
+
+/**
+ * A run's RESULT as a string — the accumulated text, or, for a decision turn,
+ * its answers as readable text (`decisionAnswersText`).
+ *
+ * WHY. A decision agent's turn is ONE `decision_answers` render block with
+ * `content: null` and no text at all. Every surface that shows a run as a
+ * string — the toast preview, agent apps (`response`, public `/p/<slug>`
+ * included), a shortcut's `responseText` — read `selectAccumulatedText` and
+ * got "": the toast sat on "Waiting..." forever and an agent app painted
+ * nothing over a paid, finished verdict. Chat surfaces draw the block itself
+ * and keep using `selectAccumulatedText`; this is for the string surfaces.
+ *
+ * A verbalized decision can also leave the raw structured-output JSON as a
+ * text block beside the parsed answers — that duplicate is dropped (the same
+ * rule `verbalizedDecisionJsonTextBlockIds` applies to the live chat view),
+ * and so is chain-of-thought: on a decision turn the string is the verdict.
+ */
+export function deriveResultText(
+  request:
+    | Pick<ActiveRequest, "renderBlockOrder" | "renderBlocks" | "editedText">
+    | undefined,
+): string {
+  if (!request) return "";
+  const { renderBlockOrder: order, renderBlocks: blocks, editedText } = request;
+  if (editedText !== null && editedText !== undefined) return editedText;
+  const decision = deriveDecisionResultText(request);
+  if (decision !== null) return decision;
+  if (!order || !blocks || order.length === 0) return "";
+  return order
+    .map((id) => blocks[id]?.content ?? "")
+    .filter(Boolean)
+    .join("\n");
+}
+
+/**
+ * The decision half of {@link deriveResultText}: `null` when the request
+ * carries no `decision_answers` block (so callers keep their own text rule),
+ * otherwise the verdict as text plus any real prose beside it — never the
+ * verbalized JSON duplicate, never chain-of-thought.
+ */
+export function deriveDecisionResultText(
+  request: Pick<ActiveRequest, "renderBlockOrder" | "renderBlocks"> | undefined,
+): string | null {
+  const order = request?.renderBlockOrder;
+  const blocks = request?.renderBlocks;
+  if (!order || !blocks || order.length === 0) return null;
+  const ordered = order.map((id) => blocks[id]).filter(Boolean);
+  if (!ordered.some((b) => b.type === DECISION_ANSWERS_BLOCK_TYPE)) return null;
+  const jsonDuplicates = verbalizedDecisionJsonTextBlockIds(ordered);
+  return ordered
+    .map((b) => {
+      if (b.type === DECISION_ANSWERS_BLOCK_TYPE) {
+        const data = b.data as { payload?: unknown } | null | undefined;
+        return decisionAnswersText(data?.payload) ?? "";
+      }
+      if (jsonDuplicates.has(b.blockId)) return "";
+      if (NON_ANSWER_BLOCK_TYPES.has(b.type)) return "";
+      return b.content ?? "";
+    })
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+export const selectResultText = (requestId: string) =>
+  createSelector(
+    (state: RootState) => state.activeRequests.byRequestId[requestId],
+    (request): string => deriveResultText(request),
   );
 
 /**

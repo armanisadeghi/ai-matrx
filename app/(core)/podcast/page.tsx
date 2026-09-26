@@ -3,6 +3,7 @@ import type { PcShow } from '@/features/podcasts/types';
 import { mapPcShowRow } from '@/features/podcasts/types';
 import { PC_SHOW_PUBLIC_SELECT } from '@/features/podcasts/publicColumns';
 import PageHeader from '@/features/shell/components/header/PageHeader';
+import { MandateDoorLink } from '@/features/mandates/components/MandateDoorLink';
 import { PodcastIndexClient } from './PodcastIndexClient';
 
 export const revalidate = 3600;
@@ -38,6 +39,7 @@ export default async function PodcastsIndexPage() {
         <>
             <PageHeader>
                 <span className="ml-2 text-sm font-medium text-foreground truncate">Podcasts</span>
+                <MandateDoorLink feature="podcast" label="Podcast agents" className="ml-auto" />
             </PageHeader>
             <PodcastIndexClient published={published} />
         </>
