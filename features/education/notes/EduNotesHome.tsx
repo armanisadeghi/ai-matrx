@@ -3,8 +3,9 @@
 // The list-first "savior" home for Smart Notes (/education/notes) — never a
 // forced editor. Lists the student's notes (recent-first, searchable, filterable),
 // New → creates a real platform note and opens it. Notes ARE platform notes
-// (workbench-backed via NotesAPI); "education" is the conversion + capture layer
-// on top, so anything you jot can become study material.
+// (workbench-backed via NotesAPI), but this list shows ONLY the notes marked for
+// Education (`listEducationNotes`) — a plain note lives in the Notes app until
+// the person moves it into Study Notes.
 
 "use client";
 
@@ -18,6 +19,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { cn } from "@/lib/utils";
 import { NotesAPI } from "@/features/notes/service/notesApi";
+import { EDUCATION_NOTE_CREATE_FIELDS, listEducationNotes } from "@/features/education/notes/education-notes";
 import type { NoteListItem } from "@/features/notes/types";
 import { formatRelativeTime } from "@/utils/datetime";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -91,7 +93,7 @@ export function EduNotesHome() {
     void (async () => {
       setLoading(true);
       try {
-        const items = await NotesAPI.listItems();
+        const items = await listEducationNotes();
         if (cancelled) return;
         setError(null);
         setRows(items);
@@ -119,7 +121,7 @@ export function EduNotesHome() {
     setCreating(true);
     try {
       const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
-      const note = await NotesAPI.create({ label: "Untitled note", content: "", organization_id: capturedOrganizationId });
+      const note = await NotesAPI.create({ label: "Untitled note", content: "", ...EDUCATION_NOTE_CREATE_FIELDS, organization_id: capturedOrganizationId });
       startTransition(() => router.push(`/education/notes/${note.id}`));
     } catch (e) {
       if (isOrganizationSelectionCancelled(e)) {

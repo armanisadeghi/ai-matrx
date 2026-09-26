@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotesAPI } from "@/features/notes/service/notesApi";
+import { EDUCATION_NOTE_CREATE_FIELDS } from "@/features/education/notes/education-notes";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
@@ -34,7 +35,7 @@ export function EduNoteNew() {
         const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
         if (started.current) return;
         started.current = true;
-        const note = await NotesAPI.create({ label: "Untitled note", content: "", organization_id: capturedOrganizationId });
+        const note = await NotesAPI.create({ label: "Untitled note", content: "", ...EDUCATION_NOTE_CREATE_FIELDS, organization_id: capturedOrganizationId });
         router.replace(`/education/notes/${note.id}`);
       } catch (e) {
         if (isOrganizationSelectionCancelled(e)) return;

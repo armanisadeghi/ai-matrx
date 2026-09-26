@@ -77,6 +77,9 @@ describe("EduNoteNew organization hydration", () => {
     expect(create).toHaveBeenCalledWith({
       label: "Untitled note",
       content: "",
+      // A note made from Education is marked for Education, or it would vanish
+      // from the Education list the moment it was created.
+      folder_name: "Study Notes",
       organization_id: organizationId,
     });
     expect(replace).toHaveBeenCalledWith("/education/notes/note-after-hydration");

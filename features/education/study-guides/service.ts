@@ -1,9 +1,7 @@
 import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
-import { requireUserId } from "@/utils/auth/getUserId";
 import { NotesAPI } from "@/features/notes/service/notesApi";
-import { STUDY_NOTES_FOLDER } from "@/features/education/notes/study-notes-folder";
-import { hydrateNoteContextLinks } from "@/features/notes/service/noteContextAssociations";
+import { listEducationNotes } from "@/features/education/notes/education-notes";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import type { Note, NoteListItem } from "@/features/notes/types";
 
@@ -15,24 +13,12 @@ export interface StudyTerm {
 }
 
 /**
- * Personal study-guide library: my notes in the Education study folder (where
- * the notes generator writes). An ordinary draft or chat save is a note, not a
- * guide, so it never lists here. A guide's direct URL still opens ANY note I
- * can read through the normal RLS record door (the Notes action bar links it).
+ * Personal study-guide library: my notes marked for Education (the one
+ * Education selector). An ordinary draft or chat save is a note, not a guide,
+ * so it never lists here. A guide's direct URL still opens ANY note I can read
+ * through the normal RLS record door (the Notes action bar links it).
  */
-export async function loadStudyGuideIndex(): Promise<NoteListItem[]> {
-  const userId = requireUserId();
-  const rows = await readAllRows(
-    ({ from, to }) => supabase.schema("workbench").from("notes")
-      .select("id,created_by,label,folder_name,folder_id,tags,updated_at,position,organization_id,visibility,version", { count: "exact" })
-      .eq("created_by", userId).is("deleted_at", null)
-      .eq("folder_name", STUDY_NOTES_FOLDER)
-      .is("custom_fields->studyAnnotation", null)
-      .order("updated_at", { ascending: false }).order("id").range(from, to),
-    { label: "workbench.notes study guides" },
-  );
-  return hydrateNoteContextLinks(rows);
-}
+export const loadStudyGuideIndex = (): Promise<NoteListItem[]> => listEducationNotes({ owner: "mine" });
 
 export const loadStudyGuide = (noteId: string): Promise<Note | null> => NotesAPI.getById(noteId, { failureMode: "throw" });
 
