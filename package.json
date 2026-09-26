@@ -680,6 +680,8 @@
     "check:mandate-sharing-lanes": "tsx scripts/check-mandate-sharing-lanes.ts",
     "check:mandate-member-counts": "tsx scripts/check-mandate-member-counts.ts",
     "check:mandate-owner-writes": "tsx scripts/check-mandate-owner-writes.ts",
+    "check:defaults-are-organization": "tsx scripts/check-defaults-are-organization.ts",
+    "check:defaults-are-organization:self-test": "tsx scripts/check-defaults-are-organization.ts --self-test",
     "check:people-lists-stay-in-your-organizations": "tsx scripts/check-people-lists-stay-in-your-organizations.ts",
     "check:people-lists-stay-in-your-organizations:self-test": "tsx scripts/check-people-lists-stay-in-your-organizations.ts --self-test",
     "check:fields-stay-masked:self-test": "tsx scripts/check-fields-stay-masked.ts --self-test",

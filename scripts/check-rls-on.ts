@@ -49,8 +49,8 @@
  *       a screen that shows nothing and explains nothing (law 4).
  *   D — a registered view-backed token with no composition parent. A view cannot
  *       carry a generated policy, so its class can only come from its parent;
- *       `iam.class_lanes` resolves a parentless component to `private`, which is an
- *       orphan's default and not a decision anyone made. Two today before
+ *       `iam.class_lanes` resolves a parentless component to `organization` (the
+ *       access ladder's default), which is an orphan's default and not a decision anyone made. Two today before
  *       `dd161_view_backed_tokens_declare_their_parent.sql`, zero after.
  *
  * WHAT IT ONLY REPORTS
@@ -704,7 +704,7 @@ async function main(): Promise<number> {
 
   if (armD.length > 0) {
     findings++;
-    console.log(`  ${C.r}✗${C.x} ARM D — ${armD.length} registered view-backed token(s) with ${C.b}no composition parent${C.x}. A view cannot carry a generated policy, so its class can only come from its parent — and \`iam.class_lanes\` resolves a parentless component to \`private\`, which is an orphan's default, not a decision.`);
+    console.log(`  ${C.r}✗${C.x} ARM D — ${armD.length} registered view-backed token(s) with ${C.b}no composition parent${C.x}. A view cannot carry a generated policy, so its class can only come from its parent — and \`iam.class_lanes\` resolves a parentless component to \`organization\` (the default), which is an orphan's default, not a decision.`);
     printRows(armD);
   } else {
     console.log(`  ${C.g}✓${C.x} ARM D — every registered view-backed token inherits from a declared parent`);

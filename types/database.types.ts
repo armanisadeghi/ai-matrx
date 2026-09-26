@@ -57160,6 +57160,13 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      reach_containers_worth_asking: {
+        Args: { p_ids: string[]; p_types: string[]; p_uid: string }
+        Returns: {
+          container_id: string
+          container_type: string
+        }[]
+      }
       read_lane_v2_auth_reads_id: { Args: { p_rel: unknown }; Returns: boolean }
       read_lane_v2_depth: {
         Args: { p_path?: string[]; p_token: string }
@@ -65437,6 +65444,48 @@ export type Database = {
           },
         ]
       }
+      class_approval_by_arman: {
+        Row: {
+          application_name: string | null
+          approved_on: string
+          arman_words: string
+          id: number
+          level: Database["platform"]["Enums"]["data_class"]
+          recorded_at: string
+          recorded_by_role: string | null
+          recorded_by_session: string
+          recorded_by_user: string | null
+          token: string
+          txid: unknown
+        }
+        Insert: {
+          application_name?: string | null
+          approved_on: string
+          arman_words: string
+          id?: never
+          level: Database["platform"]["Enums"]["data_class"]
+          recorded_at?: string
+          recorded_by_role?: string | null
+          recorded_by_session?: string
+          recorded_by_user?: string | null
+          token: string
+          txid?: unknown
+        }
+        Update: {
+          application_name?: string | null
+          approved_on?: string
+          arman_words?: string
+          id?: never
+          level?: Database["platform"]["Enums"]["data_class"]
+          recorded_at?: string
+          recorded_by_role?: string | null
+          recorded_by_session?: string
+          recorded_by_user?: string | null
+          token?: string
+          txid?: unknown
+        }
+        Relationships: []
+      }
       client_callable_door: {
         Row: {
           anonymous_callers: boolean
@@ -71406,6 +71455,27 @@ export type Database = {
         }
         Relationships: []
       }
+      strict_class_probe: {
+        Row: {
+          id: number
+          level: Database["platform"]["Enums"]["data_class"]
+          token: string
+          txid: unknown
+        }
+        Insert: {
+          id?: never
+          level: Database["platform"]["Enums"]["data_class"]
+          token: string
+          txid?: unknown
+        }
+        Update: {
+          id?: never
+          level?: Database["platform"]["Enums"]["data_class"]
+          token?: string
+          txid?: unknown
+        }
+        Relationships: []
+      }
       taxonomy_node: {
         Row: {
           anchors: Json
@@ -72398,6 +72468,15 @@ export type Database = {
           status: string
         }[]
       }
+      _record_arman_class_approval: {
+        Args: {
+          p_approved_on: string
+          p_arman_words: string
+          p_level: Database["platform"]["Enums"]["data_class"]
+          p_token: string
+        }
+        Returns: number
+      }
       _reopen_declared_doors_after_revoke_impl: {
         Args: never
         Returns: undefined
@@ -72405,6 +72484,17 @@ export type Database = {
       _report_undeclared_confirmation_write: {
         Args: { p_org: string; p_relid: unknown; p_user: string }
         Returns: undefined
+      }
+      _set_table_strict_class: {
+        Args: {
+          p_approved_on: string
+          p_arman_words: string
+          p_level: Database["platform"]["Enums"]["data_class"]
+          p_rls_variant: string
+          p_set_class_now: boolean
+          p_token: string
+        }
+        Returns: Json
       }
       _store_pick_list_document: {
         Args: { p_list_id: string; p_shape?: string; p_viewer: string }
@@ -72987,6 +73077,13 @@ export type Database = {
       declared_actor_agent: { Args: never; Returns: string }
       declared_actor_system: { Args: never; Returns: string }
       declared_actor_tier: { Args: never; Returns: string }
+      defaults_that_lock_people_out: {
+        Args: never
+        Returns: {
+          check_name: string
+          detail: string
+        }[]
+      }
       definer_access_decision_regex: { Args: never; Returns: string }
       definer_access_decision_regex_strong: { Args: never; Returns: string }
       definer_body_decides_access: {
@@ -74277,6 +74374,26 @@ export type Database = {
         }
         Returns: Json
       }
+      set_table_confidential_arman_explicitly_approved: {
+        Args: {
+          p_approved_on: string
+          p_arman_words: string
+          p_rls_variant?: string
+          p_set_class_now?: boolean
+          p_token: string
+        }
+        Returns: Json
+      }
+      set_table_private_arman_explicitly_approved: {
+        Args: {
+          p_approved_on: string
+          p_arman_words: string
+          p_rls_variant?: string
+          p_set_class_now?: boolean
+          p_token: string
+        }
+        Returns: Json
+      }
       settle_deferred_checks: {
         Args: { p_immediate: boolean; p_rel: unknown }
         Returns: number
@@ -74315,6 +74432,24 @@ export type Database = {
           remedy: string
           what: string
         }[]
+      }
+      strict_class_probe_that_can_never_commit: {
+        Args: {
+          p_level: Database["platform"]["Enums"]["data_class"]
+          p_token: string
+        }
+        Returns: undefined
+      }
+      strict_class_refusal: {
+        Args: {
+          p_is_insert: boolean
+          p_new_class: Database["platform"]["Enums"]["data_class"]
+          p_new_variant: string
+          p_old_class: Database["platform"]["Enums"]["data_class"]
+          p_old_variant: string
+          p_token: string
+        }
+        Returns: string
       }
       sweep_orphaned_associations: {
         Args: { p_dry_run?: boolean }
