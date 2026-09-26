@@ -58,25 +58,36 @@ adapter). Registered in `features/admin/constants/admin-categories.ts` (Reportin
 
 - Every item the store can hold has a REPO HOME: `ops.proof_check` refuses a static check without
   a `repo` (constraint `proof_check_static_identity`), and only static checks get items. So an
-  accept is always a commit to the check's own allowlist, never a database write: the dialog
-  takes a required reason and shows the exact `findings accept` command (P2-COMMANDS.md) with the
-  reason filled in, and a copy button (`copyToClipboard`, manual-copy dialog on refusal).
-- matrx-frontend checks with no adapter (`accept: null` in the registry) get "No accept — why?"
-  instead, showing the registry's own `noAccept` words. aidream's adapter list is not visible
-  from here; its command refuses by name when a check has none.
+  accept is always a commit to the check's own allowlist, never a database-only write.
+- **The button.** The dialog takes a required reason and "Mark OK" calls aidream
+  `POST /admin/checks/accept` (super admin only; `acceptApi.ts` → typed client). The server
+  (`aidream/services/platform_checks/accept.py`) uses THE CLI's adapter — aidream's
+  `scripts/findings.py` `Adapter.edit`, or this repo's `scripts/findings/accept-rules.json` rule
+  applied by its Python twin only after it reproduces `scripts/findings/accept-corpus.json`
+  byte for byte — confirms the key against main's newest `repo-only-checks` artifact, and commits
+  one fast-forward commit to main (author = the admin, co-author = the platform).
+- **The in-between state** is `ops.check_item.metadata.pending_accept`, written only by the
+  server-only `ops.check_item_accept_begin/_finish` (`migrations/ops_check_item_accept_marker_2026_09_26g.sql`).
+  `model.ts` `pendingAcceptView`: *Marked OK — landing* (commit link) until the next ingested run
+  marks the item accepted; *Mark OK failed* with the server's error + remedy (claimable again);
+  *interrupted* for a committing marker older than 5 min; *accept landed, still reported* when a
+  run that started after the commit still lists it. A second click is a no-op (`already_landed`).
+- The one-line `findings accept` command stays in the dialog as the secondary path ("Prefer a
+  terminal?").
+- matrx-frontend checks with no adapter get "No accept — why?" with the rules file's own
+  `no_accept` words; the server refuses those (and aidream's) in the registry's words too.
 - `ops.check_item_db_accept` (the DB accept for an item with no repo home) is server-only and
-  no item can reach it today, so the page offers no control for it. If a check without a repo
-  ever becomes possible, it needs a super-admin door (`public.is_super_admin()`, a
-  `platform.client_callable_door` row before the GRANT — precedent
-  `migrations/sch_admin_doors_close_the_staff_write_arm_2026_09_26.sql`) and a button here.
+  no item can reach it today, so the page offers no control for it.
 
 ## Known gaps
 
 - Accepted-by-allowlist items show "in the <repo> allowlist": the reason, who and when live in
   that file, not in the database.
 - "First seen" is the item row's `created_at` (ingest time), not the first run's commit time.
-- Production had 0 runs and 0 items on 2026-09-26: no ingest has run there yet
-  (`aidream/scripts/checks/ingest.py` is hand-run; no schedule approved).
+- Production holds ONE check today (`visibility-vocabulary`, two owner hand-run ingests on
+  2026-09-26); no schedule is approved, so nothing else arrives until one is.
+- At a ~800px-wide window the findings table's Actions column (Mark OK) is not reachable by
+  scrolling; it shows at ~1500px. Not fixed here.
 
 ---
 
@@ -85,3 +96,7 @@ adapter). Registered in `features/admin/constants/admin-categories.ts` (Reportin
 - `2026-09-26` — Created: board, per-check findings by work unit, state filters, Mark OK via the
   allowlist command. Empty state verified live on localhost; populated state verified with an
   uncommitted fixture route (never shipped).
+- `2026-09-26` — Mark OK is a real button: server commit via aidream `POST /admin/checks/accept`,
+  "Marked OK — landing" marker, loud failure with remedy, copy-command kept as secondary. Verified
+  on localhost as admin@admin.com against a real production ingest: commit `6d263b0bff` landed on
+  main, the next ingest marked the item accepted (basis allowlist).
