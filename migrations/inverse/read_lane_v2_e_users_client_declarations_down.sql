@@ -2,4 +2,4 @@
 update platform.entity_types set client_read_only_columns = null
  where token = 'integration_connection' and client_read_only_columns = array['credential_present', 'credential_stable', 'capability_health'];
 update platform.entity_types set client_deletes_refused = false
- where token = 'credential_attachment' and client_deletes_refused;
+ where token in ('credential_attachment', 'integration_connection') and client_deletes_refused;
