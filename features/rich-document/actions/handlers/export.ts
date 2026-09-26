@@ -11,7 +11,7 @@ import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbac
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { getMarkdownStylesheet } from "@ai-matrx/print/markdown";
 import { registerAction } from "../registry";
-import { getErrorMessage, serializeError } from "../utils";
+import { getErrorMessage, serializeError, contentForDestination } from "../utils";
 import { acknowledgedPreparedSource, prepareContentEdit, savePreparedContentEdit } from "./preparedEdit";
 
 registerAction({
@@ -103,7 +103,7 @@ registerAction({
   order: 1,
   run: async (ctx) => {
     try {
-      await copyToClipboard(ctx.content, {
+      await copyToClipboard(contentForDestination(ctx), {
         isMarkdown: true,
         formatForWordPress: true,
         showHtmlPreview: true,
@@ -143,7 +143,7 @@ registerAction({
         openOverlay({
           overlayId: "emailDialog",
           data: {
-            content: ctx.content,
+            content: contentForDestination(ctx),
             metadata: ctx.metadata ?? null,
           },
         }),
@@ -155,7 +155,7 @@ registerAction({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          content: ctx.content,
+          content: contentForDestination(ctx),
           metadata: {
             ...ctx.metadata,
             timestamp: new Date().toLocaleString(),

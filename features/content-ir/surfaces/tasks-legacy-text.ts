@@ -30,11 +30,8 @@
 import { parseMarkdownChecklist } from "@/components/mardown-display/blocks/tasks/tasklist-parser";
 import type { TaskItemType } from "@/components/mardown-display/blocks/tasks/TaskChecklist";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import { fenceParts } from "@ai-matrx/content-ir/source";
 
-/** Opening fence line, e.g. ```tasks (with optional trailing annotations). */
-const OPENING_FENCE_RE = /^\s*```+[ \t]*tasks[^\n]*\n?/i;
-/** Trailing closing fence, tolerant of trailing whitespace. */
-const CLOSING_FENCE_RE = /\n?[ \t]*```+[ \t]*$/;
 
 function toKindItem(item: TaskItemType): Record<string, unknown> {
   const out: Record<string, unknown> = {
@@ -70,9 +67,8 @@ function hasCheckableItem(items: TaskItemType[]): boolean {
 export function tasksLegacyTextToKindValue(
   regionText: string,
 ): Record<string, unknown> | null {
-  const inner = regionText
-    .replace(OPENING_FENCE_RE, "")
-    .replace(CLOSING_FENCE_RE, "");
+  // Fence framing by THE one code-range rule; the body is the payload.
+  const inner = fenceParts(regionText)?.body ?? regionText;
 
   const parsed = parseMarkdownChecklist(inner);
   if (parsed.length === 0 || !hasCheckableItem(parsed)) return null;

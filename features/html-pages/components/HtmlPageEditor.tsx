@@ -49,6 +49,7 @@ import {
   DESCRIPTION_LIMITS,
   TITLE_LIMITS,
 } from "@/features/marketing/seo/serp/metrics";
+import { fenceOpenerOf } from "@ai-matrx/content-ir/source";
 
 type EditorTab = "meta" | "html" | "preview";
 
@@ -349,7 +350,7 @@ export default function HtmlPageEditor({
         throw new Error(
           "page_html_content expects a non-empty string containing the complete HTML document — the raw markup as plain text, not JSON and not JSON-encoded. Do not wrap it in an object and do not escape the newlines.",
         );
-      if (/^\s*```/.test(value))
+      if (fenceOpenerOf(value.trimStart().split("\n", 1)[0] ?? "")?.char === "`")
         throw new Error(
           "page_html_content rejected — the value was wrapped in a markdown code fence. Send the raw HTML document itself, starting with <!doctype html>.",
         );

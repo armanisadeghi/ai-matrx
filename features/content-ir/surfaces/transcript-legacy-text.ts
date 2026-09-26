@@ -25,11 +25,9 @@
 
 import { parseTranscript } from "@/components/mardown-display/blocks/transcripts/transcript-parser";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import { fenceParts } from "@ai-matrx/content-ir/source";
 
 /** Opening fence line, e.g. ```transcript (optional info suffix) — host framing. */
-const OPENING_FENCE_RE = /^\s*```transcript[^\n]*\n?/i;
-/** Trailing closing fence on its own line. */
-const CLOSING_FENCE_RE = /\n?\s*```\s*$/;
 
 /**
  * Completed ```transcript region text → canonical transcript value, or null
@@ -43,8 +41,8 @@ const CLOSING_FENCE_RE = /\n?\s*```\s*$/;
 export function transcriptLegacyTextToKindValue(
   regionText: string,
 ): Record<string, unknown> | null {
-  let inner = regionText.replace(OPENING_FENCE_RE, "");
-  inner = inner.replace(CLOSING_FENCE_RE, "");
+  // Fence framing by THE one code-range rule; the body is the transcript.
+  const inner = fenceParts(regionText)?.body ?? regionText;
 
   const parsed = parseTranscript(inner);
   if (parsed.segments.length === 0) return null;

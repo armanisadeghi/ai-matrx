@@ -112,6 +112,8 @@ import {
 
 import type { RulebookRule } from "./types";
 import { ruleAnchorId } from "./components/detail/RuleRelations";
+import { codeSpanText, findCodeRanges } from "@ai-matrx/content-ir/source";
+import { replaceFences, unwrapCodeSpans } from "@/lib/markdown/code-ranges";
 
 /** The length `kebabRuleId` cuts a minted id to. Named once, never retyped. */
 export const RULE_ID_MINT_LENGTH = 48;
@@ -228,8 +230,52 @@ export function ruleForHandle(
  * autolink, and a bare URL. Ordered longest-construct-first so a fence wins
  * over the inline-code run inside it.
  */
-const PROTECTED =
-  /```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`|!?\[[^\]\n]*\]\([^)\n]*\)|<[^>\s]+>|https?:\/\/\S+/g;
+const LINKISH = /!?\[[^\]\n]*\]\([^)\n]*\)|<[^>\s]+>|https?:\/\/\S+/g;
+
+interface Protected {
+  start: number;
+  end: number;
+  /** A code span (its content may name a rule or a field). */
+  span: boolean;
+}
+
+/**
+ * The protected constructs, in order and non-overlapping: code by THE one
+ * code-range rule (@ai-matrx/content-ir/source — fences and spans), then links,
+ * autolinks and bare URLs in the prose between them.
+ */
+function protectedRanges(markdown: string): Protected[] {
+  const code = findCodeRanges(markdown);
+  const out: Protected[] = [];
+  let at = 0;
+  const prose = (from: number, to: number) => {
+    const slice = markdown.slice(from, to);
+    LINKISH.lastIndex = 0;
+    for (let m = LINKISH.exec(slice); m !== null; m = LINKISH.exec(slice)) {
+      out.push({ start: from + m.index, end: from + m.index + m[0].length, span: false });
+    }
+  };
+  for (const range of code) {
+    if (range.start < at) continue;
+    prose(at, range.start);
+    out.push({ start: range.start, end: range.end, span: range.kind === "span" });
+    at = range.end;
+  }
+  prose(at, markdown.length);
+  return out;
+}
+
+/** The prose between the protected constructs. */
+function proseSegments(markdown: string, ranges: Protected[]): string[] {
+  const segments: string[] = [];
+  let at = 0;
+  for (const range of ranges) {
+    segments.push(markdown.slice(at, range.start));
+    at = range.end;
+  }
+  segments.push(markdown.slice(at));
+  return segments;
+}
 
 /**
  * A kebab handle: two or more lowercase alphanumeric segments.
@@ -558,30 +604,22 @@ function resolveDocument(
   render: CiteRender,
 ): string {
   if (markdown === "") return markdown;
+  const ranges = protectedRanges(markdown);
   const provenElsewhere =
     index && (index.byHandle.size > 0 || index.byPrefix.size > 0)
-      ? provenUnresolvedTokens(markdown.split(PROTECTED), index)
+      ? provenUnresolvedTokens(proseSegments(markdown, ranges), index)
       : new Set<string>();
   let out = "";
   let cursor = 0;
-  PROTECTED.lastIndex = 0;
-  for (
-    let match = PROTECTED.exec(markdown);
-    match !== null;
-    match = PROTECTED.exec(markdown)
-  ) {
+  for (const range of ranges) {
     out += resolveInProse(
-      markdown.slice(cursor, match.index),
+      markdown.slice(cursor, range.start),
       index,
       render,
       provenElsewhere,
     );
-    const construct = match[0];
-    const inlineCode =
-      construct.startsWith("`") &&
-      !construct.startsWith("```") &&
-      construct.endsWith("`");
-    const inner = inlineCode ? construct.slice(1, -1).trim() : null;
+    const construct = markdown.slice(range.start, range.end);
+    const inner = range.span ? codeSpanText(construct).trim() : null;
     // A span that names a rule is that rule — decided FIRST, so a citation is
     // never mistaken for a field name.
     const rule = inner !== null ? ruleForHandle(index, inner) : null;
@@ -593,7 +631,7 @@ function resolveDocument(
     } else {
       out += (inner === null ? null : fieldSpanWords(inner)) ?? construct;
     }
-    cursor = match.index + construct.length;
+    cursor = range.end;
   }
   return (
     out + resolveInProse(markdown.slice(cursor), index, render, provenElsewhere)
@@ -657,8 +695,8 @@ export function deliverableLine(
  * a link keeps its text, a heading keeps its words, a list keeps its item.
  */
 export function stripMarkdownMarks(markdown: string): string {
-  return markdown
-    .replace(/```[\s\S]*?```/g, " ")
+  // Code by THE one code-range rule: a fence is dropped, a span keeps its words.
+  return unwrapCodeSpans(replaceFences(markdown, () => " "))
     .replace(/^\s{0,3}#{1,6}\s+/gm, "")
     .replace(/^\s{0,3}>\s?/gm, "")
     .replace(/^\s{0,3}(?:[-*+]|\d+\.)\s+/gm, "")
@@ -668,7 +706,6 @@ export function stripMarkdownMarks(markdown: string): string {
     .replace(/(\*\*\*|___)(.+?)\1/g, "$2")
     .replace(/(\*\*|__)(.+?)\1/g, "$2")
     .replace(/(?<![*\w])([*_])(?!\s)(.+?)(?<!\s)\1(?![*\w])/g, "$2")
-    .replace(/`([^`]*)`/g, "$1")
     .replace(/^\s*\|.*\|\s*$/gm, (row) =>
       /^[\s|:-]+$/.test(row) ? " " : row.replace(/\|/g, " "),
     );

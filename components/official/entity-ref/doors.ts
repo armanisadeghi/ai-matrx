@@ -27,6 +27,7 @@
 import type { LucideIcon } from "lucide-react";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { hasPeek } from "@/features/organizations/peek/kinds-list";
+import { codeSpanText, findCodeRanges } from "@ai-matrx/content-ir/source";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -257,7 +258,6 @@ const UUID_IN_TEXT_RE =
  * a sentence renderer, not a markdown engine. Anything else — an unmatched
  * backtick, a fenced block — stays exactly as it was typed.
  */
-const INLINE_CODE_RE = /`([^`\n]+)`/g;
 
 /**
  * Split a server-authored sentence into prose, inline code and openable ids.
@@ -277,17 +277,14 @@ export function segmentSentenceIds(
 ): SentenceSegment[] {
   const out: SentenceSegment[] = [];
   let prose = 0;
-  INLINE_CODE_RE.lastIndex = 0;
-  for (
-    let match = INLINE_CODE_RE.exec(text);
-    match !== null;
-    match = INLINE_CODE_RE.exec(text)
-  ) {
-    if (match.index > prose) {
-      out.push(...segmentIdsOnly(text.slice(prose, match.index), defaultToken));
+  // Inline code by THE one code-range rule (@ai-matrx/content-ir/source).
+  for (const range of text.includes("`") ? findCodeRanges(text) : []) {
+    if (range.kind !== "span" || range.start < prose) continue;
+    if (range.start > prose) {
+      out.push(...segmentIdsOnly(text.slice(prose, range.start), defaultToken));
     }
-    out.push({ kind: "code", text: match[1] });
-    prose = match.index + match[0].length;
+    out.push({ kind: "code", text: codeSpanText(text.slice(range.start, range.end)) });
+    prose = range.end;
   }
   if (out.length === 0) return segmentIdsOnly(text, defaultToken);
   if (prose < text.length) {

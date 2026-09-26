@@ -1,3 +1,4 @@
+import { fenceLineKinds } from "@ai-matrx/content-ir/source";
 // components/markdown-studio/lab/sync-scroll.ts
 //
 // Block-paired scroll sync between a raw markdown textarea and its rendered
@@ -33,6 +34,8 @@ export interface TextSegment {
  */
 export function parseTextSegments(text: string): TextSegment[] {
   const lines = text.split("\n");
+  // Fenced code by THE one code-range rule (@ai-matrx/content-ir/source).
+  const kinds = fenceLineKinds(text);
   const segments: TextSegment[] = [];
   let i = 0;
 
@@ -47,20 +50,14 @@ export function parseTextSegments(text: string): TextSegment[] {
       continue;
     }
 
-    // Fenced code block (``` or ~~~)
-    if (/^(`{3,}|~{3,})/.test(trimmed)) {
-      const fence = trimmed.match(/^(`{3,}|~{3,})/)?.[1] ?? "```";
-      const fenceChar = fence[0];
-      const fenceLen = fence.length;
+    // Fenced code block
+    if (kinds[i] === "open") {
       const start = i;
       i++;
-      while (i < lines.length) {
-        const lt = lines[i].trim();
-        if (new RegExp(`^${fenceChar}{${fenceLen},}$`).test(lt)) {
-          i++;
-          break;
-        }
+      while (i < lines.length && (kinds[i] === "body" || kinds[i] === "close")) {
+        const closes = kinds[i] === "close";
         i++;
+        if (closes) break;
       }
       segments.push({ startLine: start, endLine: i, type: "code" });
       continue;
@@ -137,7 +134,7 @@ export function parseTextSegments(text: string): TextSegment[] {
         if (
           lt === "" ||
           /^#{1,6}\s/.test(lt) ||
-          /^(`{3,}|~{3,})/.test(lt) ||
+          kinds[i] === "open" ||
           /^(-{3,}|\*{3,}|_{3,})$/.test(lt) ||
           /^[-*+]\s|^\d+[.)]\s/.test(lt) ||
           lt.startsWith(">")

@@ -5,6 +5,7 @@
 // chat-specific bits factored out so they're reusable across all sources.
 
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   selectConversationTitle,
@@ -227,4 +228,18 @@ export function chatWriteBackBlocked(ctx: RichDocumentActionContext): boolean {
   const ext = chatExtensions(ctx);
   if (!ext) return false;
   return ext.contentIsStructuredRaw || ext.role === "user";
+}
+
+
+/**
+ * THE ONE "prepare content for a destination" step. Every action that sends
+ * this content somewhere else — a note, a task, a file, a clipboard, a
+ * webpage, an email, the composer, the speaker — takes it from here, so the
+ * store's internal `<artifact …>` envelopes never leak into what a person
+ * reads. Actions that WRITE BACK to the source (edit, apply, compare) keep
+ * `ctx.content`: the envelopes are part of the stored bytes.
+ * Guarded by `actions/__tests__/destinationContent.test.ts`.
+ */
+export function contentForDestination(ctx: RichDocumentActionContext): string {
+  return unwrapKindEnvelopes(ctx.content);
 }

@@ -87,7 +87,10 @@ export function ErrorAlchemyMenu({
 export function readRenderedError(root: Element | null): ErrorAlchemyInput {
   if (!root) return { message: "An error is shown on this page.", source: "alert" };
   const clone = root.cloneNode(true) as Element;
-  clone.querySelectorAll("[data-error-alchemy-menu]").forEach((n) => n.remove());
+  // The menu and the render's own controls (Retry, Dismiss…) are not the error.
+  clone
+    .querySelectorAll("[data-error-alchemy-menu], button, [role=button]")
+    .forEach((n) => n.remove());
   const titleEl = clone.querySelector("[data-error-title], h1, h2, h3, h4, h5, h6");
   const title = titleEl?.textContent?.trim() || undefined;
   titleEl?.remove();

@@ -1,3 +1,4 @@
+import { replaceFences } from "@/lib/markdown/code-ranges";
 // features/podcasts/generator/script.ts
 //
 // The pipeline's `script` (and the early `create_script` stage preview) is a
@@ -92,7 +93,7 @@ export function parseScript(raw: string): ParsedScript {
   } else {
     // No tags — strip fenced code blocks (```json … ```) and the end marker,
     // then parse whatever speaker lines remain.
-    dialogue = raw.replace(/```[\s\S]*?```/g, "");
+    dialogue = replaceFences(raw, () => "");
   }
   dialogue = dialogue
     .replace(/\[END OF EPISODE\]/gi, "")

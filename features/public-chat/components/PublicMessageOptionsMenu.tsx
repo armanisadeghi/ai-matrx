@@ -38,6 +38,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { removeCodeSpans, replaceFences } from "@/lib/markdown/code-ranges";
 
 // Key used to store pending actions across the auth redirect
 const PENDING_ACTION_KEY = "matrx_pending_post_auth_action";
@@ -173,9 +174,8 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
       return;
     }
     // Strip markdown syntax for cleaner speech
-    const plainText = content
-      .replace(/```[\s\S]*?```/g, "code block")
-      .replace(/`[^`]+`/g, "")
+    // Code by THE one code-range rule: a fence is heard as "code block".
+    const plainText = removeCodeSpans(replaceFences(content, () => "code block"))
       .replace(/#{1,6}\s/g, "")
       .replace(/\*\*([^*]+)\*\*/g, "$1")
       .replace(/\*([^*]+)\*/g, "$1")

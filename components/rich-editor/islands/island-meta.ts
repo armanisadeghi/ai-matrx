@@ -24,6 +24,7 @@ import {
   Workflow,
   type LucideIcon,
 } from "lucide-react";
+import { fenceOpenerOf } from "@ai-matrx/content-ir/source";
 
 export type IslandEditorLanguage = "markdown" | "json" | "xml" | "code" | "math";
 
@@ -43,8 +44,9 @@ export function kindOf(raw: string): string | null {
   return KIND_RE.exec(raw)?.[1] ?? null;
 }
 
-function fenceLanguage(raw: string): string {
-  return /^(?:`{3,}|~{3,})[ \t]*([^\s`]*)/.exec(raw)?.[1] ?? "";
+/** A fence island's language — THE one code-range rule's opener parse. */
+export function fenceLanguage(raw: string): string {
+  return fenceOpenerOf(raw.split("\n", 1)[0] ?? "")?.lang ?? "";
 }
 
 function xmlTag(raw: string): string {
@@ -166,7 +168,12 @@ export const CODE_LANGUAGES = [
 
 /** Rewrite a fence's info string, keeping its fence characters and body bytes. */
 export function withFenceLanguage(raw: string, language: string): string {
-  return raw.replace(/^(`{3,}|~{3,})[^\n]*/, (_whole, fence: string) => `${fence}${language}`);
+  const newline = raw.indexOf("\n");
+  const first = newline === -1 ? raw : raw.slice(0, newline);
+  const opener = fenceOpenerOf(first);
+  if (!opener) return raw;
+  const indent = first.slice(0, first.length - first.trimStart().length);
+  return `${indent}${opener.char.repeat(opener.ticks)}${language}${newline === -1 ? "" : raw.slice(newline)}`;
 }
 
 /** The TeX inside `$$…$$` / `\[…\]` / `$…$`. */

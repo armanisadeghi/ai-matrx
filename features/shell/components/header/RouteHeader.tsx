@@ -32,6 +32,9 @@
 //     fit beside a title of TITLE_MIN_PX, the leftmost fold into ONE "…" overflow that
 //     opens them as a glass strip. Order your actions lowest-priority first, primary
 //     last. A single wrapper component is one action and cannot fold — pass siblings.
+//   - The PRIMARY (last) action stays visible. Secondary actions fold first; then a
+//     labelled tap button (`label` + `icon`) goes icon-only — caption kept as its
+//     accessible name and tooltip — instead of folding into "…".
 //   - LEFT always ellipsizes. Loose text inside a flex/grid host element is wrapped in a
 //     truncating span (see route-header-layout.tsx), so a clipped title ends in "…".
 
@@ -46,12 +49,15 @@ import {
 import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
 import PageHeader from "./PageHeader";
 import {
+  COMPACT_ACTION_PX,
   DEFAULT_ACTION_PX,
   TITLE_FLOOR_PX,
   TITLE_MIN_PX,
   ellipsizeLooseText,
+  fitActions,
   flattenActions,
-  foldCount,
+  iconOnlyLabel,
+  toIconOnly,
 } from "./route-header-layout";
 
 interface RouteHeaderProps {
@@ -113,17 +119,21 @@ export default function RouteHeader({
   const widthsRef = useRef(new Map<string, number>());
   const [boundedCenterWidth, setBoundedCenterWidth] = useState(0);
   const [folded, setFolded] = useState(0);
+  const [compactPrimary, setCompactPrimary] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
 
   const actions = flattenActions(right);
   const leftNode = ellipsizeLooseText(left);
   const actionKeys = actions.map((a) => a.key).join("|");
   const fold = Math.min(folded, actions.length);
+  const primary = actions.length > 0 ? actions[actions.length - 1] : null;
+  const primaryCanCompact = primary != null && iconOnlyLabel(primary.node) != null;
+  const compact = compactPrimary && primaryCanCompact;
 
   // Latest render's inputs for the (stable) observer callback.
-  const liveRef = useRef({ actions, fold });
+  const liveRef = useRef({ actions, fold, compact });
   useLayoutEffect(() => {
-    liveRef.current = { actions, fold };
+    liveRef.current = { actions, fold, compact };
   });
 
   useLayoutEffect(() => {
@@ -132,14 +142,22 @@ export default function RouteHeader({
     const measure = () => {
       const leftEl = leftRef.current;
       const rightEl = rightRef.current;
-      const { actions: current, fold: currentFold } = liveRef.current;
+      const {
+        actions: current,
+        fold: currentFold,
+        compact: currentCompact,
+      } = liveRef.current;
 
       // Record every action currently in the row; folded ones keep their last width.
+      // An icon-only primary records under its own key so its labelled width survives.
       rightEl
         ?.querySelectorAll<HTMLElement>("[data-route-header-action]")
         .forEach((el) => {
           const key = el.dataset.routeHeaderAction;
-          if (key) widthsRef.current.set(key, el.offsetWidth);
+          if (!key) return;
+          const slot =
+            el.dataset.routeHeaderCompact != null ? `${key}#icon-only` : key;
+          widthsRef.current.set(slot, el.offsetWidth);
         });
 
       // The title keeps TITLE_MIN_PX of TEXT beside any back chevron, or its
@@ -152,13 +170,21 @@ export default function RouteHeader({
       const widths = current.map(
         (a) => widthsRef.current.get(a.key) ?? DEFAULT_ACTION_PX,
       );
-      const nextFold = foldCount(
+      const last = current[current.length - 1];
+      const compactWidth =
+        last && iconOnlyLabel(last.node) != null
+          ? (widthsRef.current.get(`${last.key}#icon-only`) ?? COMPACT_ACTION_PX)
+          : undefined;
+      const next = fitActions(
         widths,
         root.clientWidth - reserve,
         overflowWidth,
         root.clientWidth - floor,
+        compactWidth,
       );
-      if (nextFold !== currentFold) setFolded(nextFold);
+      if (next.fold !== currentFold) setFolded(next.fold);
+      if (next.compactPrimary !== currentCompact)
+        setCompactPrimary(next.compactPrimary);
 
       setBoundedCenterWidth(
         centerSlotWidth(
@@ -185,7 +211,7 @@ export default function RouteHeader({
     };
     // Re-measure when the row mounts and whenever the set of actions or the
     // fold point changes.
-  }, [root, actionKeys, fold]);
+  }, [root, actionKeys, fold, compact]);
 
   const overflowActions = actions.slice(0, fold);
   const rowActions = actions.slice(fold);
@@ -246,15 +272,19 @@ export default function RouteHeader({
               </PopoverContent>
             </Popover>
           ) : null}
-          {rowActions.map((a) => (
-            <div
-              key={a.key}
-              data-route-header-action={a.key}
-              className="flex shrink-0 items-center"
-            >
-              {a.node}
-            </div>
-          ))}
+          {rowActions.map((a) => {
+            const iconOnly = compact && a === primary;
+            return (
+              <div
+                key={a.key}
+                data-route-header-action={a.key}
+                data-route-header-compact={iconOnly ? "" : undefined}
+                className="flex shrink-0 items-center"
+              >
+                {iconOnly ? toIconOnly(a.node) : a.node}
+              </div>
+            );
+          })}
         </div>
         {center ? (
           <div

@@ -14,7 +14,7 @@ import { toast } from "@/lib/toast";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { selectInstanceContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 import { registerAction } from "../registry";
-import { chatIds, deriveContentTitle } from "../utils";
+import { chatIds, deriveContentTitle, contentForDestination } from "../utils";
 import type { RichDocumentActionContext } from "../../types";
 
 /** The context key every quote lands under — one list per conversation. */
@@ -22,7 +22,7 @@ export const QUOTED_PASSAGES_CONTEXT_KEY = "quoted_passages";
 
 function quote(ctx: RichDocumentActionContext): boolean {
   const { conversationId, messageId } = chatIds(ctx);
-  const text = ctx.content.trim();
+  const text = contentForDestination(ctx).trim();
   if (!conversationId || !text) return false;
   const existing = selectInstanceContextEntry(
     conversationId,

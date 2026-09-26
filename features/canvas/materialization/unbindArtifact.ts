@@ -44,6 +44,7 @@ import {
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { planMaterialization } from "./planMaterialization";
 import type { PersistRewrite } from "./materializeBlocks";
+import { fenceOpenerOf } from "@ai-matrx/content-ir/source";
 
 function isTextBlock(b: CxContentBlock): b is CxTextContent {
   return (b as { type?: string }).type === "text";
@@ -92,7 +93,8 @@ export function buildUnbindReplacement(
         ? metadata.language
         : "";
     // Only fence when the payload isn't already fenced.
-    if (!markdown.trimStart().startsWith("```")) {
+    // THE one fence rule: is the first line already a backtick fence opener?
+    if (fenceOpenerOf(markdown.trimStart().split("\n", 1)[0] ?? "")?.char !== "`") {
       markdown = `\`\`\`${language}\n${markdown.replace(/\n$/, "")}\n\`\`\``;
     }
   }

@@ -135,6 +135,68 @@ describe("undo of an island edit is the person's own act", () => {
   });
 });
 
+describe("emphasis edges: whitespace never sits inside the delimiters (verify-RC-B4 R3-4)", () => {
+  it("text typed at the start of bold moves its leading space outside the **", () => {
+    const { editor, save } = open("| Result |\n|---|\n| **fail** |");
+    const pos = find(editor.state.doc, (node) => node.isText === true && node.text === "fail");
+    editor.commands.command(({ tr }) => {
+      tr.insertText(" hard", pos, pos);
+      return true;
+    });
+    expect(save()).toBe("| Result |\n|---|\n|  **hardfail** |");
+  });
+
+  it("a trailing space typed inside italic lands after the closing *", () => {
+    const { editor, save } = open("Read *before* your shift.");
+    const pos = find(editor.state.doc, (node) => node.isText === true && node.text === "before");
+    editor.commands.command(({ tr }) => {
+      tr.insertText(" it", pos + 6);
+      tr.insertText(" ", pos + 9);
+      return true;
+    });
+    // The typed space is real content: it lands after the closing delimiter.
+    expect(save()).toBe("Read *before it*  your shift.");
+  });
+
+  it("a mark covering only whitespace is dropped, not written as empty delimiters", () => {
+    const { editor, save } = open("Plain text here.");
+    const pos = find(editor.state.doc, (node) => node.isText === true);
+    editor.commands.command(({ tr }) => {
+      tr.addMark(pos + 5, pos + 6, editor.schema.marks.bold.create());
+      return true;
+    });
+    expect(save()).toBe("Plain text here.");
+  });
+});
+
+describe("pasted literal markdown characters stay literal (verify-RC-B4 R3-5)", () => {
+  beforeAll(() => {
+    if (typeof globalThis.ClipboardEvent === "undefined") {
+      (globalThis as { ClipboardEvent?: unknown }).ClipboardEvent = class extends Event {
+        readonly clipboardData = null;
+      };
+    }
+  });
+  const GOOGLE_DOCS = `<meta charset="utf-8"><b style="font-weight:normal;" id="docs-internal-guid-1"><p dir="ltr"><span>*important* for finance, file_name and a \`tick\`</span></p></b>`;
+
+  it("the Source converter escapes them", () => {
+    expect(htmlToMarkdown(GOOGLE_DOCS, schema)).toBe("\\*important\\* for finance, file_name and a \\`tick\\`");
+  });
+
+  it("Visual shows the characters and stores them escaped", () => {
+    const { editor, save } = open("Notes:");
+    editor.commands.focus("end");
+    editor.commands.enter();
+    editor.view.pasteHTML(GOOGLE_DOCS);
+    expect(editor.state.doc.textContent).toContain("*important* for finance, file_name and a `tick`");
+    expect(save()).toBe("Notes:\n\n\\*important\\* for finance, file_name and a \\`tick\\`");
+  });
+
+  it("real formatting in the pasted HTML still becomes markdown", () => {
+    expect(htmlToMarkdown("<p>Ship <strong>today</strong>, not <em>tomorrow</em>.</p>", schema)).toBe("Ship **today**, not *tomorrow*.");
+  });
+});
+
 describe("tables", () => {
   it("editing one cell rewrites only that row", () => {
     const { editor, save } = open(PICKUP_TABLE);

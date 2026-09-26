@@ -18,6 +18,7 @@ import {
   waitForAnswerText,
 } from "@/features/marketing/lib/generate-page-image";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { soleFence } from "@/lib/markdown/code-ranges";
 
 /**
  * The Mandate that decides WHICH agent writes video metadata (system default:
@@ -52,7 +53,7 @@ export function extractVideoMetadata(
   const raw = match?.[1]?.trim();
   if (!raw) return null;
   // The agent may fence the JSON inside the wrapper — strip a ``` fence.
-  const unfenced = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
+  const unfenced = soleFence(raw, { allowUnclosed: true })?.body ?? raw;
   // JSON.parse can only produce Json-shaped values.
   let parsed: Json;
   try {

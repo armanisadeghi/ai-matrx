@@ -22,7 +22,7 @@ import { Contact } from "lucide-react";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { looksLikeContact } from "@/features/crm/agent-context/parseContactSelection";
 import { registerAction } from "../registry";
-import { requireAuth } from "../utils";
+import { requireAuth, contentForDestination } from "../utils";
 
 registerAction({
   id: "save-to-contact",
@@ -51,7 +51,7 @@ registerAction({
         overlayId: "saveContactFromSelection",
         instanceId: ctx.instanceKey("save-contact"),
         data: {
-          selection: ctx.content,
+          selection: contentForDestination(ctx),
           origin:
             typeof window !== "undefined"
               ? `Saved from ${window.location.pathname}`

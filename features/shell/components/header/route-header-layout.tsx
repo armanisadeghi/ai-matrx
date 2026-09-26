@@ -6,7 +6,10 @@
 //      actions (fragments are expanded; a single wrapper component stays one action). When
 //      they do not all fit beside a title of `TITLE_MIN_PX`, the lowest-priority actions —
 //      the leftmost, since a row's primary action sits at its trailing edge — fold into ONE
-//      "…" overflow. `foldCount` is the decision.
+//      "…" overflow. The primary (trailing) action never folds when it can go icon-only:
+//      a labelled tap button (`label` + `icon`) drops its caption and keeps its icon, its
+//      accessible name and a tooltip — the Linear / Notion / Apple phone header, where the
+//      page's one primary action stays one tap away. `fitActions` is the decision.
 //
 //   2. A CLIPPED TITLE ALWAYS ENDS WITH AN ELLIPSIS. `text-overflow: ellipsis` cannot reach
 //      loose text that sits directly inside a flex or grid container (the text becomes an
@@ -33,6 +36,8 @@ export const TITLE_MIN_PX = 96;
 export const TITLE_FLOOR_PX = 56;
 /** Fallback width of an action we have never measured, and of the "…" trigger. */
 export const DEFAULT_ACTION_PX = 36;
+/** Fallback width of an icon-only primary action we have never measured (a 44pt tap target). */
+export const COMPACT_ACTION_PX = 44;
 
 export interface FlatAction {
   key: string;
@@ -59,22 +64,80 @@ export function flattenActions(node: ReactNode, prefix = ""): FlatAction[] {
   return out;
 }
 
+export interface ActionFit {
+  /** How many leading (lowest-priority) actions fold into the "…" overflow. */
+  fold: number;
+  /** Whether the primary (last) action renders icon-only instead of folding. */
+  compactPrimary: boolean;
+}
+
 /**
- * How many leading actions must fold into the overflow so the rest (plus the "…"
- * trigger, when anything folds) fit in `available` px.
+ * Decide how the actions fit in `available` px. Secondary actions fold first; then the
+ * primary goes icon-only when it can (`compactPrimaryWidth` given), and only a primary
+ * that cannot go icon-only ever folds — and then only when keeping it would push the
+ * title below its floor (`primaryAvailable`).
  */
-export function foldCount(
+export function fitActions(
   widths: readonly number[],
   available: number,
   overflowWidth: number = DEFAULT_ACTION_PX,
   /** Room when the title yields down to TITLE_FLOOR_PX to keep the primary action. */
   primaryAvailable: number = available,
-): number {
+  /** Width of the primary rendered icon-only; omit when the primary cannot go icon-only. */
+  compactPrimaryWidth?: number,
+): ActionFit {
   const n = widths.length;
   const fold = foldSecondary(widths, available, overflowWidth);
-  if (fold < n || n === 0) return fold;
+  if (fold < n || n === 0) return { fold, compactPrimary: false };
+  if (compactPrimaryWidth !== undefined) return { fold: n - 1, compactPrimary: true };
   const primary = widths[n - 1] + (n > 1 ? overflowWidth : 0);
-  return primary <= primaryAvailable ? n - 1 : n;
+  return {
+    fold: primary <= primaryAvailable ? n - 1 : n,
+    compactPrimary: false,
+  };
+}
+
+/** `fitActions` for a primary that cannot go icon-only — how many actions fold. */
+export function foldCount(
+  widths: readonly number[],
+  available: number,
+  overflowWidth: number = DEFAULT_ACTION_PX,
+  primaryAvailable: number = available,
+): number {
+  return fitActions(widths, available, overflowWidth, primaryAvailable).fold;
+}
+
+interface LabelledActionProps {
+  label?: unknown;
+  icon?: unknown;
+  ariaLabel?: unknown;
+  tooltip?: unknown;
+}
+
+/**
+ * The caption of an action that can go icon-only: a labelled tap button (a `label`
+ * string beside an `icon`). Anything else returns null and keeps its natural shape.
+ */
+export function iconOnlyLabel(node: ReactNode): string | null {
+  if (!isValidElement(node)) return null;
+  const { label, icon } = node.props as LabelledActionProps;
+  if (typeof label !== "string" || label.trim() === "" || icon == null) return null;
+  return label;
+}
+
+/**
+ * The same action without its caption. The caption survives as the accessible name
+ * and the tooltip, so an icon-only primary is never an unlabeled icon.
+ */
+export function toIconOnly(node: ReactNode): ReactNode {
+  const label = iconOnlyLabel(node);
+  if (label == null || !isValidElement(node)) return node;
+  const props = node.props as LabelledActionProps;
+  return cloneElement(node as ReactElement<LabelledActionProps>, {
+    label: undefined,
+    ariaLabel: typeof props.ariaLabel === "string" ? props.ariaLabel : label,
+    tooltip: typeof props.tooltip === "string" ? props.tooltip : label,
+  });
 }
 
 function foldSecondary(

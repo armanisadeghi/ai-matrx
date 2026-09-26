@@ -2,8 +2,11 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
   ellipsizeLooseText,
+  fitActions,
   flattenActions,
   foldCount,
+  iconOnlyLabel,
+  toIconOnly,
 } from "./route-header-layout";
 
 describe("foldCount — actions fold, they never eat the title", () => {
@@ -106,5 +109,58 @@ describe("foldCount — the primary action outlasts the title's comfort width", 
   it("folds even the primary when the title would drop below its floor", () => {
     // /documents: a 137px labelled "New document" beside a 169px row.
     expect(foldCount([137], 73, 44, 113)).toBe(1);
+  });
+});
+
+describe("fitActions — the primary action goes icon-only, never into the …", () => {
+  it("folds secondaries first, then keeps the primary icon-only", () => {
+    // [copy, export, New document] with room for neither the label nor the secondaries.
+    expect(fitActions([36, 36, 137], 73, 36, 113, 44)).toEqual({
+      fold: 2,
+      compactPrimary: true,
+    });
+  });
+
+  it("keeps the labelled primary when it fits after the secondaries fold", () => {
+    expect(fitActions([36, 36, 90], 130, 36, 170, 44)).toEqual({
+      fold: 2,
+      compactPrimary: false,
+    });
+  });
+
+  it("goes icon-only even where a non-compactable primary would fold", () => {
+    expect(fitActions([137], 20, 36, 30, 44)).toEqual({
+      fold: 0,
+      compactPrimary: true,
+    });
+    expect(fitActions([137], 20, 36, 30)).toEqual({
+      fold: 1,
+      compactPrimary: false,
+    });
+  });
+});
+
+describe("toIconOnly — the caption survives as name and tooltip", () => {
+  function Tap(_: { label?: string; icon?: unknown; ariaLabel?: string; tooltip?: string }) {
+    return null;
+  }
+
+  it("drops the caption and keeps it as ariaLabel + tooltip", () => {
+    const node = <Tap icon={<svg />} label="New document" />;
+    expect(iconOnlyLabel(node)).toBe("New document");
+    const compact = toIconOnly(node) as React.ReactElement<{
+      label?: string;
+      ariaLabel?: string;
+      tooltip?: string;
+    }>;
+    expect(compact.props.label).toBeUndefined();
+    expect(compact.props.ariaLabel).toBe("New document");
+    expect(compact.props.tooltip).toBe("New document");
+  });
+
+  it("leaves actions without an icon + label alone", () => {
+    const node = <Tap label="All schedules" />;
+    expect(iconOnlyLabel(node)).toBeNull();
+    expect(toIconOnly(node)).toBe(node);
   });
 });

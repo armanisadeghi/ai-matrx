@@ -17,6 +17,9 @@ import {
   createAgent,
 } from "@/features/agents/redux/agent-definition/thunks";
 import { toast } from "@/lib/toast-service";
+import { toast as nameTakenToast } from "@/lib/toast";
+import { agentNameTaken } from "@/features/agents/redux/agent-definition/agentNameTaken";
+import { setAgentField } from "@/features/agents/redux/agent-definition/slice";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -135,7 +138,22 @@ export function useAgentSaveAction(
       if (modelMissing) {
         setShowModelWarning(true);
       }
-    } catch {
+    } catch (e) {
+      // THE CATALOG'S OWN SENTENCE, WITH ITS OFFER (V24-TAILS): a name already taken in this
+      // organization is refused in words, and one press takes the free name and saves again.
+      const taken = agentNameTaken(e);
+      if (taken && agentId) {
+        nameTakenToast.error(taken.sentence, {
+          action: {
+            label: `Use "${taken.suggestion}"`,
+            onClick: () => {
+              dispatch(setAgentField({ id: agentId, field: "name", value: taken.suggestion }));
+              void handleSave();
+            },
+          },
+        });
+        return;
+      }
       toast.error(
         isNewRoute ? "Failed to create agent." : "Failed to save agent.",
       );

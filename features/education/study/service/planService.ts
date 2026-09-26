@@ -18,7 +18,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import type { Json } from "@/types/database.types";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { StudyResult } from "../types";
@@ -57,6 +57,23 @@ function planPayload(draft: PlanDraft): Record<string, unknown> {
     rationale: draft.rationale ?? null,
     config: draft.config ?? {},
     last_planned_at: new Date().toISOString(),
+  };
+}
+
+/** The plan columns `education.regenerate_study_plan` reads, as JSON. */
+function regeneratePlanPayload(draft: PlanDraft): Json {
+  return {
+    title: draft.title,
+    start_date: draft.startDate,
+    end_date: draft.endDate ?? null,
+    daily_minutes: draft.dailyMinutes,
+    daily_item_cap: draft.dailyItemCap ?? null,
+    rest_days: draft.restDays,
+    goal_id: draft.goalId ?? null,
+    generated_by: draft.generatedBy,
+    generator_agent_id: draft.generatorAgentId ?? null,
+    rationale: draft.rationale ?? null,
+    config: (draft.config ?? {}) as Json,
   };
 }
 
@@ -255,56 +272,50 @@ export const planService = {
 
   /**
    * Adaptive re-plan: rewrite an existing plan's days + blocks in place (the
-   * plan keeps its id, so the surface visibly re-plans). Old child rows are
-   * hard-deleted (they're cheap, regenerable, and versioned by trigger).
+   * plan keeps its id, so the surface visibly re-plans). ALL OR NOTHING:
+   * `education.regenerate_study_plan` (SECURITY INVOKER — RLS decides) updates
+   * the plan FIRST — the proof the person may write it — then replaces its
+   * children, in ONE transaction. A refused update (42501) or any failed insert
+   * rolls everything back, so the old days and blocks are still there. It used
+   * to be four round trips that deleted the children before the refusal could
+   * be seen, leaving the plan empty.
+   * Migration: migrations/education_regenerate_study_plan_atomic.sql.
    */
   async regeneratePlan(
     planId: string,
     draft: PlanDraft,
   ): Promise<StudyResult<{ id: string }>> {
     try {
-      // The re-planned children belong to the PLAN's organization, not to
-      // whichever organization happens to be selected now — the parent record
-      // is the authority for a child row.
-      const { data: planRow, error: planErr } = await EDU()
-        .from("study_plan")
-        .select("organization_id")
-        .eq("id", planId)
-        .single();
-      if (planErr) return fail("regeneratePlan(plan)", planErr);
-      const organizationId = (planRow as { organization_id: string | null })
-        ?.organization_id;
-      if (!organizationId) {
-        return fail(
-          "regeneratePlan",
-          "This plan has no organization on it, so its days and blocks cannot be filed. Reload the plan and try again.",
-        );
+      const { error } = await EDU().rpc("regenerate_study_plan", {
+        p_plan_id: planId,
+        p_plan: regeneratePlanPayload(draft),
+        p_days: draft.days.map((d) => ({
+          day_date: d.dayDate,
+          target_minutes: d.targetMinutes,
+          is_rest_day: d.isRestDay,
+          rationale: d.rationale ?? null,
+        })),
+        p_blocks: draft.days.flatMap((d) =>
+          d.blocks.map((b) => ({
+            parent_day_date: d.dayDate,
+            day_date: b.dayDate,
+            target_kind: b.targetKind,
+            item_type: b.itemType ?? null,
+            target_ref: b.targetRef ?? {},
+            label: b.label,
+            estimated_minutes: b.estimatedMinutes,
+            estimated_items: b.estimatedItems ?? null,
+            method: b.method ?? null,
+            ordering: b.ordering,
+            rationale: b.rationale ?? null,
+          })),
+        ),
+      });
+      if (error) {
+        // The function's refusal is already a sentence for a person.
+        if (error.code === "42501") return { data: null, error: error.message };
+        return fail("regeneratePlan", error);
       }
-
-      // Blocks first (they FK day rows), then days.
-      const delBlocks = await EDU()
-        .from("study_plan_block")
-        .delete()
-        .eq("plan_id", planId);
-      if (delBlocks.error) return fail("regeneratePlan(delBlocks)", delBlocks.error);
-      const delDays = await EDU()
-        .from("study_plan_day")
-        .delete()
-        .eq("plan_id", planId);
-      if (delDays.error) return fail("regeneratePlan(delDays)", delDays.error);
-
-      const { error: updErr } = await tryWriteOne(
-        EDU()
-          .from("study_plan")
-          .update(planPayload(draft) as never)
-          .eq("id", planId)
-          .select("id"),
-        { action: "update", noun: "study plan" },
-      );
-      if (updErr) return fail("regeneratePlan(update)", updErr);
-
-      const childRes = await insertDraftChildren(planId, draft, organizationId);
-      if (childRes.error) return { data: null, error: childRes.error };
       return { data: { id: planId }, error: null };
     } catch (e) {
       return fail("regeneratePlan", e);

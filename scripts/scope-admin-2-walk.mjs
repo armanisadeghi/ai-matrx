@@ -117,10 +117,10 @@ try {
     await until("lens chip", async () => (await chip.count()) > 0, 120000);
     const sameSession = (await page.evaluate(() => window.__sameSession)) === docId;
     await chip.click();
-    // Filter the lens tree to the new type; the row's own text is exactly its label (the
-    // "Created “Pickup Zones”" toast is not, so it can never satisfy this).
-    await page.getByPlaceholder("Search...").last().fill("Pickup");
-    const listed = (await until("lens lists the new type", async () => (await page.getByText(LENS_TYPE.plural, { exact: true }).count()) > 0, 60000)).v === true;
+    // Filter the lens tree to the new type; the type row reads "All <plural>" (the
+    // "Created “Pickup Zones”" toast never matches this anchored pattern).
+    await page.getByPlaceholder("Search…").last().fill("Pickup");
+    const listed = (await until("lens lists the new type", async () => (await page.getByText(new RegExp(`^(All )?${LENS_TYPE.plural}$`)).count()) > 0, 60000)).v === true;
     await shot("lens-chip-lists-type-same-session");
     step({ step: "C lens chip lists a type created in the same page session", created, sameSession, listed });
     await page.keyboard.press("Escape");

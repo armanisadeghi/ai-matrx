@@ -1,3 +1,4 @@
+import { fenceLineKinds } from "@ai-matrx/content-ir/source";
 // features/podcasts/blogLayout.ts
 //
 // Pure helpers for laying out the public blog article (PodcastBlogPage).
@@ -30,9 +31,10 @@ export function splitMarkdownForEmbed(md: string | null | undefined): {
   // Tokenize into top-level blocks separated by blank lines, keeping fenced
   // code blocks intact (a fence is atomic even if it contains blank lines).
   const lines = text.split("\n");
+  // Fences by THE one code-range rule (@ai-matrx/content-ir/source).
+  const kinds = fenceLineKinds(text);
   const blocks: string[] = [];
   let current: string[] = [];
-  let fence: string | null = null;
 
   const flush = () => {
     if (current.length) {
@@ -41,22 +43,16 @@ export function splitMarkdownForEmbed(md: string | null | undefined): {
     }
   };
 
-  for (const line of lines) {
-    const trimmed = line.trimStart();
-    const fenceMatch = /^(```|~~~)/.exec(trimmed);
-
-    if (fence) {
+  for (const [index, line] of lines.entries()) {
+    const kind = kinds[index];
+    if (kind === "body" || kind === "close") {
       current.push(line);
-      if (fenceMatch && trimmed.startsWith(fence)) {
-        fence = null;
-        flush(); // the code block is its own atomic block
-      }
+      if (kind === "close") flush(); // the code block is its own atomic block
       continue;
     }
-    if (fenceMatch) {
+    if (kind === "open") {
       flush(); // start the code block as a fresh block
       current.push(line);
-      fence = fenceMatch[1];
       continue;
     }
     if (line.trim() === "") {

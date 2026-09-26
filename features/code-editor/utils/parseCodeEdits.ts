@@ -16,6 +16,8 @@
  * ```
  */
 
+import { replaceFences } from "@/lib/markdown/code-ranges";
+
 export interface CodeEdit {
   search: string;
   replace: string;
@@ -60,10 +62,8 @@ export function parseCodeEdits(response: string): ParseResult {
     console.log('=== END RAW RESPONSE ===');
     
     // Remove markdown code fences if present (but keep the content)
-    let cleanedResponse = response.replace(/```[\s\S]*?```/g, (match) => {
-      // Extract content inside code fence
-      return match.replace(/```[a-z]*\n?/g, '').replace(/\n?```/g, '');
-    });
+    // Fences by THE one code-range rule: keep the content, drop the fence lines.
+    let cleanedResponse = replaceFences(response, ({ body }) => body);
 
     // Use regex to extract SEARCH/REPLACE blocks with STRICT line-based matching
     // Delimiters MUST be on their own lines

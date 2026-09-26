@@ -32,6 +32,20 @@ export type { RichShellActions } from "./shortcut-handlers";
 const slashKey = new PluginKey("richEditorSlash");
 const variableKey = new PluginKey("richEditorVariable");
 
+/**
+ * A node view's own controls (the pencil, copy, delete, pickers) and its
+ * embedded editors are not document content: ProseMirror must not treat a
+ * click on them as a click on the node. It used to — the first pencil click
+ * after load made ProseMirror select the leaf on mouseup against a document
+ * the click had just changed, and threw `RangeError: Selection passed to
+ * setSelection must point at the current document` (verify-RC-B4 R3-3).
+ */
+function stopControlEvents({ event }: { event: Event }): boolean {
+  const target = event.target;
+  if (!(target instanceof Element)) return false;
+  return Boolean(target.closest("button, input, textarea, select, [role='button'], .cm-editor, [data-node-controls]"));
+}
+
 /** True while the `/` or `{{` menu is open. */
 export function suggestionOpen(state: EditorState): boolean {
   const active = (key: PluginKey) => (key.getState(state) as { active?: boolean } | undefined)?.active === true;
@@ -57,13 +71,13 @@ export function createVisualExtensions(options: {
   }).map((extension) => {
     switch (extension.name) {
       case "islandBlock":
-        return extension.extend({ addNodeView: () => ReactNodeViewRenderer(IslandBlockView) });
+        return extension.extend({ addNodeView: () => ReactNodeViewRenderer(IslandBlockView, { stopEvent: stopControlEvents }) });
       case "sourceLocked":
-        return extension.extend({ addNodeView: () => ReactNodeViewRenderer(SourceLockedView) });
+        return extension.extend({ addNodeView: () => ReactNodeViewRenderer(SourceLockedView, { stopEvent: stopControlEvents }) });
       case "inlineIsland":
-        return extension.extend({ addNodeView: () => ReactNodeViewRenderer(InlineIslandView) });
+        return extension.extend({ addNodeView: () => ReactNodeViewRenderer(InlineIslandView, { stopEvent: stopControlEvents }) });
       case "blockquote":
-        return extension.extend({ addNodeView: () => ReactNodeViewRenderer(CalloutView) });
+        return extension.extend({ addNodeView: () => ReactNodeViewRenderer(CalloutView, { stopEvent: stopControlEvents }) });
       default:
         return extension;
     }

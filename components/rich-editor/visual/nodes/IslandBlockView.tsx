@@ -20,13 +20,11 @@ import {
   CODE_LANGUAGES,
   islandMeta,
   texOf,
+  fenceLanguage as fenceLanguageOf,
   withFenceLanguage,
 } from "../../islands/island-meta";
 import { consumeAutoEdit } from "../auto-edit";
 
-function fenceLanguageOf(raw: string): string {
-  return /^(?:`{3,}|~{3,})[ \t]*([^\s`]*)/.exec(raw)?.[1] ?? "";
-}
 
 export function IslandBlockView({ node, updateAttributes, deleteNode, selected, editor, getPos }: NodeViewProps) {
   const context = useRichEditorContext();

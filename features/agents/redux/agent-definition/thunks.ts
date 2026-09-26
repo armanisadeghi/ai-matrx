@@ -47,6 +47,7 @@ import type { AgentSummary } from "@ai-matrx/agents/catalog";
 import { getAgentCatalog } from "@/lib/agents/catalog";
 import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 import { pgErrorToError } from "@ai-matrx/data";
+import { agentNameTakenError } from "./agentNameTaken";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { withRetry } from "@ai-matrx/data/net";
 import { ConnectTimeoutError } from "@ai-matrx/data/net";
@@ -468,7 +469,7 @@ export const fetchAgentExecutionMinimal = createAsyncThunk<
 
     if (error) {
       dispatch(setAgentError({ id: agentId, error: error.message }));
-      throw pgErrorToError(error);
+      throw agentNameTakenError(error) ?? pgErrorToError(error);
     }
 
     const raw = Array.isArray(data) ? data[0] : data;
@@ -507,7 +508,7 @@ export const fetchAgentExecutionFull = createAsyncThunk<void, string, ThunkApi>(
 
     if (error) {
       dispatch(setAgentError({ id: agentId, error: error.message }));
-      throw pgErrorToError(error);
+      throw agentNameTakenError(error) ?? pgErrorToError(error);
     }
 
     const raw = Array.isArray(data) ? data[0] : data;
@@ -551,7 +552,7 @@ export const fetchFullAgent = createAsyncThunk<void, string, ThunkApi>(
 
     if (error) {
       dispatch(setAgentError({ id: agentId, error: error.message }));
-      throw pgErrorToError(error);
+      throw agentNameTakenError(error) ?? pgErrorToError(error);
     }
 
     dispatch(upsertAgent(dbRowToAgentDefinition(data)));
@@ -928,7 +929,7 @@ export const saveAgentField = createAsyncThunk<
     if (error) {
       dispatch(rollbackAgentOptimisticUpdate({ id: agentId, snapshot }));
       dispatch(setAgentError({ id: agentId, error: error.message }));
-      throw pgErrorToError(error);
+      throw agentNameTakenError(error) ?? pgErrorToError(error);
     }
 
     if (data) {
@@ -1011,7 +1012,7 @@ export const setAgentAutoToolsDisabled = createAsyncThunk<
     if (error) {
       dispatch(mergePartialAgent({ id: agentId, autoToolsDisabled: previous }));
       dispatch(setAgentError({ id: agentId, error: error.message }));
-      throw pgErrorToError(error);
+      throw agentNameTakenError(error) ?? pgErrorToError(error);
     }
 
     if (data) {
@@ -1073,7 +1074,7 @@ export const setAgentAutoContextDisabled = createAsyncThunk<
         mergePartialAgent({ id: agentId, autoContextDisabled: previous }),
       );
       dispatch(setAgentError({ id: agentId, error: error.message }));
-      throw pgErrorToError(error);
+      throw agentNameTakenError(error) ?? pgErrorToError(error);
     }
 
     if (data) {
@@ -1126,7 +1127,7 @@ export const saveAgent = createAsyncThunk<void, string, ThunkApi>(
     if (error) {
       dispatch(rollbackAgentOptimisticUpdate({ id: agentId, snapshot }));
       dispatch(setAgentError({ id: agentId, error: error.message }));
-      throw pgErrorToError(error);
+      throw agentNameTakenError(error) ?? pgErrorToError(error);
     }
 
     if (data) {
@@ -1232,7 +1233,8 @@ export const createAgent = createAsyncThunk<
     .select()
     .single();
 
-  if (error) throw pgErrorToError(error);
+  // A duplicate name is refused by the catalog in words (V24-TAILS); the sentence alone reaches the person.
+  if (error) throw agentNameTakenError(error) ?? pgErrorToError(error);
 
   const newAgent = dbRowToAgentDefinition(data);
   dispatch(upsertAgent(newAgent));

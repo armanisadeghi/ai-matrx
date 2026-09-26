@@ -1,3 +1,11 @@
+import { replaceFences, unwrapCodeSpans } from "@/lib/markdown/code-ranges";
+
+/** Languages a listener hears by name ("Please see the python code provided."). */
+const SPOKEN_CODE_LANGUAGES: ReadonlySet<string> = new Set([
+  "javascript", "js", "typescript", "ts", "python", "py", "java", "csharp", "cs", "cpp", "c++", "c",
+  "go", "rust", "php", "ruby", "swift", "kotlin", "scala", "sql", "bash", "shell", "powershell",
+  "yaml", "yml", "json", "xml", "html", "css", "markdown", "md",
+]);
 /** A term→spoken-form substitution applied before any other speech parsing. */
 export interface SpeechPronunciation {
   from: string;
@@ -387,15 +395,15 @@ export function parseMarkdownToText(
       : markdown,
   );
 
-  let result = stripLeadingMarkdown(stripReasoningTags(source))
-    // Handle Mermaid diagrams first (before other processing)
-    .replace(/```mermaid[\s\S]*?```/g, "Please see the diagram provided.")
-    // Replace code blocks (programming languages)
-    .replace(
-      /```(javascript|js|typescript|ts|python|py|java|csharp|cs|cpp|c\+\+|c|go|rust|php|ruby|swift|kotlin|scala|sql|bash|shell|powershell|yaml|yml|json|xml|html|css|markdown|md)[\s\S]*?```/g,
-      "Please see the $1 code provided.",
-    )
-    .replace(/```[\s\S]*?```/g, "Please see the code provided.")
+  // Code blocks FIRST, by THE one code-range rule (@ai-matrx/content-ir/source):
+  // a diagram, a named language, or plain code — each spoken as one sentence.
+  let result = unwrapCodeSpans(replaceFences(stripLeadingMarkdown(stripReasoningTags(source)), ({ lang }) => {
+    const language = lang.toLowerCase();
+    if (language === "mermaid") return "Please see the diagram provided.";
+    return SPOKEN_CODE_LANGUAGES.has(language)
+      ? `Please see the ${language} code provided.`
+      : "Please see the code provided.";
+  }))
     // Replace tables BEFORE any other processing that would corrupt pipe/dash syntax
     .replace(
       /(\|[^\n]+\|[ \t]*\n)([ \t]*\|[ \t]*[-:]+[ \t]*(?:\|[ \t]*[-:]+[ \t]*)*\|?[ \t]*\n)((?:[ \t]*\|[^\n]*\|[ \t]*\n?)*)/gm,
@@ -432,8 +440,6 @@ export function parseMarkdownToText(
     )
     // Replace any remaining table-like structures (fallback)
     .replace(/^\|.*\|[ \t]*$/gm, "")
-    // Replace inline code
-    .replace(/`([^`]+)`/g, "$1")
     // Replace numeric ranges (e.g. 0-2, 10-20) with "X to Y" before any dash stripping
     .replace(
       /\b(\d+)\s*[-–—]\s*(\d+)\b/g,

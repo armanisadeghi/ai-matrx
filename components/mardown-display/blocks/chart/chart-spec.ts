@@ -10,6 +10,8 @@
  *   { "type": "pie", "data": [ { "label": "A", "value": 45 }, ... ] }
  */
 
+import { soleFence } from "@/lib/markdown/code-ranges";
+
 export type ChartType = "bar" | "line" | "area" | "pie" | "scatter";
 
 export interface ChartSeries {
@@ -76,8 +78,9 @@ const PIE_VALUE_KEYS = ["value", "y", "count", "amount", "total"];
 /** Strip trailing commas + a stray ```json wrapper so brittle JSON still parses. */
 function tolerantParse(raw: string): unknown {
   let s = raw.trim();
-  const fenced = /^```(?:json|chart)?\s*\n([\s\S]*?)\n?```$/.exec(s);
-  if (fenced) s = fenced[1].trim();
+  // A wrapping fence by THE one code-range rule.
+  const fenced = soleFence(s);
+  if (fenced && ["", "json", "chart"].includes(fenced.lang.toLowerCase())) s = fenced.body.trim();
   try {
     return JSON.parse(s);
   } catch {

@@ -5,6 +5,7 @@ import type {
   TroubleshootingSolution as TroubleshootingSolutionKind,
   TroubleshootingStep as TroubleshootingStepKind,
 } from "@/features/content-ir/kinds/generated/kinds.generated";
+import { fenceLineKinds } from "@ai-matrx/content-ir/source";
 
 /**
  * THE SHAPES COME FROM THE REGISTRY. The parser adds `id` (a render key) and
@@ -70,6 +71,8 @@ export type TroubleshootingData = Omit<
  */
 export function parseTroubleshootingMarkdown(content: string): TroubleshootingData {
   const lines = content.split('\n').filter(line => line.trim());
+  // Fence opener/closer lines by THE one code-range rule (@ai-matrx/content-ir/source).
+  const fenceKinds = fenceLineKinds(lines.join('\n'));
   
   let title = 'Troubleshooting Guide';
   let description: string | undefined;
@@ -91,7 +94,7 @@ export function parseTroubleshootingMarkdown(content: string): TroubleshootingDa
     if (!line) continue;
 
     // Handle code blocks
-    if (line.startsWith('```')) {
+    if (fenceKinds[i] === 'open' || (inCodeBlock && fenceKinds[i] === 'close')) {
       if (inCodeBlock) {
         // End of code block - add to current step if exists
         if (currentStep && codeBlockContent.length > 0) {

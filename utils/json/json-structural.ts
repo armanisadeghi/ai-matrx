@@ -1,3 +1,4 @@
+import { fenceParts, findCodeRanges } from "@ai-matrx/content-ir/source";
 /**
  * Layer 0 — Structural Primitives
  *
@@ -116,70 +117,29 @@ export interface FencedBlock {
   isComplete: boolean;
 }
 
-const FENCE_OPEN_RE = /```(\w*)\s*\n?/g;
-
 /**
- * Scan `text` for all triple-backtick fenced blocks. Returns them in
- * document order. Incomplete blocks (no closing fence) are included
- * with `isComplete: false` and content running to end-of-string.
+ * Every fenced block in `text`, in document order — THE one code-range rule
+ * (@ai-matrx/content-ir/source): a fence opens only where a line starts with
+ * it (never a mid-sentence ```), closes by the renderer's closer, and an
+ * unclosed fence runs to the end (`isComplete: false`).
  */
 export function findAllFencedBlocks(text: string): FencedBlock[] {
   const blocks: FencedBlock[] = [];
-  FENCE_OPEN_RE.lastIndex = 0;
-
-  let match: RegExpExecArray | null;
-  while ((match = FENCE_OPEN_RE.exec(text)) !== null) {
-    const language = (match[1] || "").toLowerCase();
-    const fenceStart = match.index;
-    const contentStart = fenceStart + match[0].length;
-
-    const closeIndex = findClosingFence(text, contentStart);
-
-    if (closeIndex !== -1) {
-      blocks.push({
-        content: text.slice(contentStart, closeIndex),
-        language,
-        fenceStart,
-        contentStart,
-        fenceEnd: closeIndex + 3,
-        isComplete: true,
-      });
-      FENCE_OPEN_RE.lastIndex = closeIndex + 3;
-    } else {
-      blocks.push({
-        content: text.slice(contentStart),
-        language,
-        fenceStart,
-        contentStart,
-        fenceEnd: text.length,
-        isComplete: false,
-      });
-      break;
-    }
+  for (const range of findCodeRanges(text)) {
+    if (range.kind !== "fence") continue;
+    const parts = fenceParts(text.slice(range.start, range.end));
+    const openerEnd = text.indexOf("\n", range.start);
+    const contentStart = openerEnd === -1 || openerEnd >= range.end ? range.end : openerEnd + 1;
+    blocks.push({
+      content: parts?.body ?? text.slice(contentStart, range.end),
+      language: (parts?.opener.lang ?? "").toLowerCase(),
+      fenceStart: range.start,
+      contentStart,
+      fenceEnd: range.end,
+      isComplete: parts?.closed ?? false,
+    });
   }
-
   return blocks;
-}
-
-/**
- * Find the closing ``` for a fenced block, starting search from `from`.
- * Skips nested fenced blocks if any appear (rare, but defensive).
- */
-function findClosingFence(text: string, from: number): number {
-  let i = from;
-  while (i < text.length) {
-    const idx = text.indexOf("```", i);
-    if (idx === -1) return -1;
-
-    const lineStart = text.lastIndexOf("\n", idx - 1) + 1;
-    const prefix = text.slice(lineStart, idx).trim();
-    if (prefix === "") {
-      return idx;
-    }
-
-    i = idx + 3;
-  }
-  return -1;
 }
 
 // =============================================================================

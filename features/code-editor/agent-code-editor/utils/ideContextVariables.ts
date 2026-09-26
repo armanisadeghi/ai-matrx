@@ -20,6 +20,7 @@ import {
   CONTEXT_LABELS,
 } from "../constants";
 import type { IdeState } from "@/features/agents/types/agent-api-types";
+import { fenceParts, findCodeRanges } from "@ai-matrx/content-ir/source";
 
 /**
  * Shape the instanceContext.setContextEntries action accepts. Matches
@@ -32,12 +33,16 @@ export interface IdeContextEntry {
   label: string;
 }
 
+/** The whole value is exactly one closed fenced block (THE one code-range rule). */
 function isWrappedInCodeBlock(code: string): boolean {
   const trimmed = code.trim();
+  const ranges = findCodeRanges(trimmed);
   return (
-    trimmed.startsWith("```") &&
-    trimmed.endsWith("```") &&
-    trimmed.split("```").length >= 3
+    ranges.length === 1 &&
+    ranges[0]!.kind === "fence" &&
+    ranges[0]!.start === 0 &&
+    ranges[0]!.end === trimmed.length &&
+    fenceParts(trimmed)?.closed === true
   );
 }
 

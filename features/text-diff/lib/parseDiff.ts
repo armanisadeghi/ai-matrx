@@ -34,6 +34,8 @@
  * ```
  */
 
+import { replaceFences } from "@/lib/markdown/code-ranges";
+
 export interface SearchReplaceDiff {
   type: 'search-replace';
   id: string;
@@ -79,9 +81,7 @@ export function parseDiff(response: string): ParseDiffResult {
     console.log('Response length:', response.length);
     
     // Remove markdown code fences but keep content
-    let cleanedResponse = response.replace(/```[\s\S]*?```/g, (match) => {
-      return match.replace(/```[a-z]*\n?/g, '').replace(/\n?```/g, '');
-    });
+    let cleanedResponse = replaceFences(response, ({ body }) => body);
 
     // Extract explanation (text before first diff block)
     const explanation = cleanedResponse.split(/SEARCH:|LINES:/i)[0].trim();

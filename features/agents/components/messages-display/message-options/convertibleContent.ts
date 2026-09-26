@@ -11,6 +11,8 @@
  * Pure module — unit-tested in `__tests__/convertibleContent.test.ts`.
  */
 
+import { replaceFences } from "@/lib/markdown/code-ranges";
+
 /** A table row: `| a | b |` (leading pipe required, at least two cells). */
 const TABLE_ROW = /^\s*\|.*\|\s*$/;
 /** The header separator row: `| --- | :---: |` variants. */
@@ -22,7 +24,7 @@ const MIN_LIST_ITEMS = 3;
 
 /** Drop fenced code blocks (``` / ~~~) so their contents can't false-match. */
 function stripCodeFences(content: string): string {
-  return content.replace(/^(```|~~~)[^\n]*\n[\s\S]*?^\1\s*$/gm, "");
+  return replaceFences(content, () => ""); // THE one code-range rule
 }
 
 /**

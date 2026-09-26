@@ -180,6 +180,14 @@ async function requestSummary(userId: string, site: CmsSiteAccessRecord) {
   };
 }
 
+/** Denied, not the owner, not a member of the site's organization: a stranger to it. */
+function isStranger(target: ResolvedTarget, caller: CmsCaller, userId: string): boolean {
+  if (target.access !== "denied") return false;
+  if (target.site.owner_user_id && target.site.owner_user_id === userId) return false;
+  const org = target.site.organization_id;
+  return !(org && caller.memberOrgIds.includes(org));
+}
+
 async function resolvedPayload(
   target: ResolvedTarget,
   caller: CmsCaller,
@@ -486,6 +494,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // THE STRANGER'S ANSWER IS THE MISSING ANSWER (V24-TAILS, chair ruling 2026-09-25), exactly
+    // as `public.access_denied_context` answers every other token: a signed-in person who cannot
+    // open this site, does not own it and is not in the organization that holds it is told what a
+    // random id is told — never the owner, never the organization.
+    if (isStranger(resolved.target, caller, user.id)) {
+      return NextResponse.json(missingPayload(resolved.target.token));
+    }
     return NextResponse.json(
       await resolvedPayload(resolved.target, caller, user.id),
     );

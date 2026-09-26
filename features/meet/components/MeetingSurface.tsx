@@ -191,6 +191,11 @@ function MemberRoom({ meeting }: { meeting: MeetingRecord }) {
             feature="meet"
             mandateKeys={MEETING_JOBS}
             label="The AI jobs in this meeting (live notes, answers, the wrap-up)"
+            size="md"
+            // The meeting stage is dark in both themes (--mx-meet-stage-bg), so the
+            // page-default primary-on-light chip reads as a dim dot here. Stage text
+            // on a light glass, a 44pt target on touch, 36px from `sm` up.
+            className="h-11 w-11 border-white/30 bg-white/10 text-[color:var(--mx-meet-stage-text)] hover:bg-white/20 focus-visible:ring-white/60 sm:h-9 sm:w-9 [&_svg]:h-[18px] [&_svg]:w-[18px]"
           />
         }
       />

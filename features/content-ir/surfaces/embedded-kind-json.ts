@@ -13,6 +13,7 @@
  */
 
 import { readXmlTag } from "@/components/mardown-display/blocks/xml/readXmlTag";
+import { findCodeRanges } from "@ai-matrx/content-ir/source";
 
 export interface EmbeddedKindJsonRegion {
   start: number;
@@ -192,34 +193,24 @@ function declaredKind(candidate: string): string | null {
   }
 }
 
-/** Literal markdown/XML regions do not grant embedded JSON a new render owner. */
+/**
+ * Literal markdown/XML regions do not grant embedded JSON a new render owner:
+ * code (fences and spans, by THE one code-range rule — @ai-matrx/content-ir/
+ * source; an unpaired backtick is text, never "literal to the end"), HTML
+ * comments, CDATA and XML tags.
+ */
 function literalRanges(source: string): Array<[number, number]> {
   const ranges: Array<[number, number]> = [];
-  let fence: { start: number; char: "`" | "~"; ticks: number } | null = null;
+  const code = findCodeRanges(source);
+  let next = 0;
   let cursor = 0;
-  const lineEndAt = (offset: number) => {
-    const newline = source.indexOf("\n", offset);
-    return newline === -1 ? source.length : newline;
-  };
   while (cursor < source.length) {
-    const lineStart = cursor === 0 || source[cursor - 1] === "\n";
-    const lineEnd = fence || lineStart ? lineEndAt(cursor) : cursor;
-    if (fence) {
-      const line = source.slice(cursor, lineEnd);
-      const marker = /^[ \t]*(`{3,}|~{3,})(.*)$/.exec(line);
-      if (
-        marker &&
-        marker[1][0] === fence.char &&
-        marker[1].length >= fence.ticks &&
-        marker[2].trim() === ""
-      ) {
-        ranges.push([
-          fence.start,
-          lineEnd < source.length ? lineEnd + 1 : lineEnd,
-        ]);
-        fence = null;
-      }
-      cursor = lineEnd < source.length ? lineEnd + 1 : lineEnd;
+    while (next < code.length && code[next]!.start < cursor) next++;
+    const range = code[next];
+    if (range && range.start === cursor) {
+      ranges.push([range.start, range.end]);
+      cursor = range.end;
+      next++;
       continue;
     }
     if (source.startsWith("<!--", cursor)) {
@@ -236,21 +227,6 @@ function literalRanges(source: string): Array<[number, number]> {
       cursor = rangeEnd;
       continue;
     }
-    // Fence openings exist only at a physical line start (after indentation).
-    if (lineStart) {
-      const marker = /^[ \t]*(`{3,}|~{3,})(.*)$/.exec(
-        source.slice(cursor, lineEnd),
-      );
-      if (marker) {
-        fence = {
-          start: cursor,
-          char: marker[1][0] as "`" | "~",
-          ticks: marker[1].length,
-        };
-        cursor = lineEnd < source.length ? lineEnd + 1 : lineEnd;
-        continue;
-      }
-    }
     if (source[cursor] === "<") {
       const tag = readXmlTag(source, cursor);
       if (tag) {
@@ -260,33 +236,8 @@ function literalRanges(source: string): Array<[number, number]> {
         continue;
       }
     }
-    if (source[cursor] === "`") {
-      let markerEnd = cursor;
-      while (source[markerEnd] === "`") markerEnd++;
-      let slashes = 0;
-      for (let slash = cursor - 1; source[slash] === "\\"; slash--) slashes++;
-      if (slashes % 2 === 0) {
-        const ticks = markerEnd - cursor;
-        let close = markerEnd;
-        while (close < source.length) {
-          if (source[close] !== "`") {
-            close++;
-            continue;
-          }
-          let closeEnd = close;
-          while (source[closeEnd] === "`") closeEnd++;
-          if (closeEnd - close === ticks) break;
-          close = closeEnd;
-        }
-        const rangeEnd = close >= source.length ? source.length : close + ticks;
-        ranges.push([cursor, rangeEnd]);
-        cursor = rangeEnd;
-        continue;
-      }
-    }
     cursor++;
   }
-  if (fence) ranges.push([fence.start, source.length]);
   return ranges;
 }
 

@@ -22,6 +22,7 @@ import { toast } from "@/lib/toast";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
+import { soleFence } from "@/lib/markdown/code-ranges";
 
 interface DiffSpec {
   title?: string;
@@ -47,8 +48,9 @@ function str(v: unknown): string {
 
 function parseDiff(raw: string): DiffSpec | { error: string } {
   let s = raw.trim();
-  const fenced = /^```(?:json|diff)?\s*\n([\s\S]*?)\n?```$/.exec(s);
-  if (fenced) s = fenced[1].trim();
+  // A wrapping fence by THE one code-range rule.
+  const fenced = soleFence(s);
+  if (fenced && ["", "json", "diff"].includes(fenced.lang.toLowerCase())) s = fenced.body.trim();
   let obj: unknown;
   try {
     obj = JSON.parse(s);

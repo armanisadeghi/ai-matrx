@@ -6,6 +6,7 @@ import { formatBubbleTime } from "../../shared/relative-time";
 import { MessageStatusTicks } from "../MessageStatusTicks";
 import { ReplyQuote } from "../ReplyQuote";
 import type { WAMessage } from "../../types";
+import { codeSpanText, findCodeRanges } from "@ai-matrx/content-ir/source";
 
 interface TextBubbleProps {
   message: WAMessage;
@@ -58,13 +59,19 @@ function InlineCode({ children }: { children: string }) {
 }
 
 function renderInline(text: string) {
-  const parts = text.split(/(`[^`]+`)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith("`") && part.endsWith("`")) {
-      return <InlineCode key={i}>{part.slice(1, -1)}</InlineCode>;
-    }
-    return <span key={i}>{part}</span>;
-  });
+  // Code spans by THE one code-range rule (@ai-matrx/content-ir/source).
+  const parts: Array<{ code: boolean; text: string }> = [];
+  let at = 0;
+  for (const range of findCodeRanges(text)) {
+    if (range.kind !== "span" || range.start < at) continue;
+    if (range.start > at) parts.push({ code: false, text: text.slice(at, range.start) });
+    parts.push({ code: true, text: codeSpanText(text.slice(range.start, range.end)) });
+    at = range.end;
+  }
+  if (at < text.length) parts.push({ code: false, text: text.slice(at) });
+  return parts.map((part, i) =>
+    part.code ? <InlineCode key={i}>{part.text}</InlineCode> : <span key={i}>{part.text}</span>,
+  );
 }
 
 export function TextBubble({ message }: TextBubbleProps) {

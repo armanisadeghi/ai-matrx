@@ -20,6 +20,7 @@ import {
     fileNameFromUrl,
     recognizeOurFileUrl,
 } from "@/lib/media/our-file-sources";
+import { findCodeRanges } from "@ai-matrx/content-ir/source";
 
 // ─── Discriminated union ────────────────────────────────────────────────────
 
@@ -223,8 +224,6 @@ export function looksLikeMarkdown(value: string): boolean {
         /^[-*+]\s+\S/m, // unordered list item
         /^\d+\.\s+\S/m, // ordered list item
         /^>\s+\S/m, // blockquote
-        /```/, // fenced code
-        /^ {0,3}~{3,}/m, // tilde code fence
         /\[[^\]]+\]\([^)]+\)/, // [text](link)
         /!\[[^\]]*\]\([^)]+\)/, // image
         /\*\*[^*\n]+\*\*/, // bold
@@ -232,11 +231,11 @@ export function looksLikeMarkdown(value: string): boolean {
         /(^|[^\w])\*[^*\s](?:[^*\n]*[^*\s])?\*(?=$|[^\w])/, // emphasis
         /(^|[^\w])_[^_\s](?:[^_\n]*[^_\s])?_(?=$|[^\w])/, // underscore emphasis, not snake_case
         /~~[^~\n]+~~/, // GFM strikethrough
-        /(^|\s)`[^`\n]+`/, // inline code
         /^\|.+\|.*$/m, // table row
         /^\s*[-*_]{3,}\s*$/m, // thematic break
     ];
-    return signals.some((re) => re.test(value));
+    // Code (a fence or a span) by THE one code-range rule.
+    return signals.some((re) => re.test(value)) || (value.includes("`") || value.includes("~~~")) && findCodeRanges(value).length > 0;
 }
 
 // ─── OUR files — never a link, always the canonical component ───────────────

@@ -45,6 +45,7 @@ import type {
 import { LocaleType } from "@univerjs/presets";
 
 import { defaultDocumentPageStyle } from "./document-page-style";
+import { codeSpanText, fenceLineKinds, mapCodeRanges } from "@ai-matrx/content-ir/source";
 
 // ─── inline parsing ──────────────────────────────────────────────────────────
 
@@ -63,9 +64,39 @@ interface Segment extends InlineStyle {
 // links are matched atomically. Link target excludes whitespace to avoid
 // swallowing trailing prose.
 const INLINE_RE =
-  /(\*\*|__)([\s\S]+?)\1|(\*|_)([\s\S]+?)\3|`([^`]+)`|~~([\s\S]+?)~~|\[([^\]]+)\]\(([^)\s]+)\)/g;
+  /(\*\*|__)([\s\S]+?)\1|(\*|_)([\s\S]+?)\3|~~([\s\S]+?)~~|\[([^\]]+)\]\(([^)\s]+)\)/g;
 
+const CODE_TOKEN = /\uE400(\d+)\uE401/g;
+
+/**
+ * Inline markdown → styled segments. Code spans come from THE one code-range
+ * rule (@ai-matrx/content-ir/source) and are held behind placeholders, so the
+ * emphasis pattern never reads inside code and code inside **bold** stays code.
+ */
 function parseInline(text: string, base: InlineStyle = {}): Segment[] {
+  const codes: string[] = [];
+  const held = text.includes("`")
+    ? mapCodeRanges(text, (range, raw) => {
+        if (range.kind !== "span") return raw;
+        codes.push(codeSpanText(raw));
+        return `\uE400${codes.length - 1}\uE401`;
+      })
+    : text;
+  if (codes.length === 0) return parseStyled(held, base);
+  return parseStyled(held, base).flatMap((seg) => {
+    const out: Segment[] = [];
+    let at = 0;
+    for (const m of seg.text.matchAll(CODE_TOKEN)) {
+      if ((m.index ?? 0) > at) out.push({ ...seg, text: seg.text.slice(at, m.index) });
+      out.push({ ...seg, text: codes[Number(m[1])] ?? "", code: true });
+      at = (m.index ?? 0) + m[0].length;
+    }
+    if (at < seg.text.length) out.push({ ...seg, text: seg.text.slice(at) });
+    return out.filter((s) => s.text.length > 0);
+  });
+}
+
+function parseStyled(text: string, base: InlineStyle = {}): Segment[] {
   const segs: Segment[] = [];
   let last = 0;
   let m: RegExpExecArray | null;
@@ -73,16 +104,14 @@ function parseInline(text: string, base: InlineStyle = {}): Segment[] {
   while ((m = re.exec(text)) !== null) {
     if (m.index > last) segs.push({ text: text.slice(last, m.index), ...base });
     if (m[1] !== undefined) {
-      segs.push(...parseInline(m[2], { ...base, bold: true }));
+      segs.push(...parseStyled(m[2], { ...base, bold: true }));
     } else if (m[3] !== undefined) {
-      segs.push(...parseInline(m[4], { ...base, italic: true }));
+      segs.push(...parseStyled(m[4], { ...base, italic: true }));
     } else if (m[5] !== undefined) {
-      segs.push({ text: m[5], ...base, code: true });
+      segs.push(...parseStyled(m[5], { ...base, strike: true }));
     } else if (m[6] !== undefined) {
-      segs.push(...parseInline(m[6], { ...base, strike: true }));
-    } else if (m[7] !== undefined) {
       // Link → render the link text only (normal content, no markdown syntax).
-      segs.push(...parseInline(m[7], base));
+      segs.push(...parseStyled(m[6], base));
     }
     last = re.lastIndex;
   }
@@ -252,6 +281,8 @@ export function markdownToUniverDoc(
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n");
   const lines = cleaned.split("\n");
+  // Fenced code by THE one code-range rule (@ai-matrx/content-ir/source).
+  const kinds = fenceLineKinds(cleaned);
 
   let i = 0;
   let paragraphBuf: string[] = [];
@@ -274,18 +305,16 @@ export function markdownToUniverDoc(
       continue;
     }
 
-    // Fenced code block (``` or ~~~).
-    const fence = trimmed.match(/^(```|~~~)/);
-    if (fence) {
+    // Fenced code block.
+    if (kinds[i] === "open") {
       flushParagraph();
-      const marker = fence[1];
       i++;
       const code: string[] = [];
-      while (i < lines.length && !lines[i].trim().startsWith(marker)) {
+      while (i < lines.length && kinds[i] === "body") {
         code.push(lines[i]);
         i++;
       }
-      i++; // consume closing fence
+      if (kinds[i] === "close") i++; // consume the closing fence
       for (const c of code) {
         builder.addParagraph([{ text: c.length ? c : " ", code: true }], {
           mono: true,

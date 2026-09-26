@@ -31,13 +31,13 @@ import {
   isOrganizationSelectionCancelled,
 } from "@/lib/organization/organization-gate";
 import { registerAction } from "../registry";
-import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
 import {
   chatIds,
   contentFileName,
   deriveContentTitle,
   getErrorMessage,
   requireAuth,
+  contentForDestination,
 } from "../utils";
 import type { RichDocumentActionContext } from "../../types";
 
@@ -96,7 +96,7 @@ registerAction({
       openOverlay({
         overlayId: "addToRulebookDialog",
         data: {
-          initialContent: ctx.content,
+          initialContent: contentForDestination(ctx),
           initialConversationId: conversationId,
           // Provenance: the exact turn the draft came from.
           initialMessageId: messageId,
@@ -131,7 +131,7 @@ registerAction({
     ctx.dispatch(
       openOverlay({
         overlayId: "setContextValueWindow",
-        data: { initialContent: ctx.content },
+        data: { initialContent: contentForDestination(ctx) },
       }),
     );
     ctx.onClose();
@@ -160,7 +160,7 @@ registerAction({
       openOverlay({
         overlayId: "quickMessageTemplateSaveWindow",
         data: {
-          initialContent: ctx.content,
+          initialContent: contentForDestination(ctx),
           defaultName: deriveContentTitle(ctx),
           defaultRole: "assistant",
         },
@@ -191,7 +191,7 @@ registerAction({
     const name = contentFileName(ctx, ctx.source.type === "chat-message" ? "message" : ctx.source.type);
     try {
       const { fileHandler } = await import("@/features/files/handler/handler");
-      const file = new File([ctx.content], `${name}.md`, {
+      const file = new File([contentForDestination(ctx)], `${name}.md`, {
         type: "text/markdown",
       });
       const uploaded = await fileHandler.upload(
@@ -244,7 +244,7 @@ registerAction({
         import("@ai-matrx/print/document"),
         import("@/features/files/handler/handler"),
       ]);
-      const exp = await exportDocument(unwrapKindEnvelopes(ctx.content), "pdf");
+      const exp = await exportDocument(contentForDestination(ctx), "pdf");
       const blob = new Blob([exp.bytes as Uint8Array<ArrayBuffer>], { type: "application/pdf" });
       const name = contentFileName(ctx, ctx.source.type === "chat-message" ? "message" : ctx.source.type);
       const file = new File([blob], `${name}.pdf`, { type: "application/pdf" });
@@ -312,7 +312,7 @@ registerAction({
         "@/features/content-ir/studio/constants"
       );
       const saved = await saveKindInstancesFromMessage({
-        text: ctx.content,
+        text: contentForDestination(ctx),
         organizationId,
         // Provenance rides with the save (DD-131 slice 1): HOMED in this
         // conversation with a `produced_by` edge back to this message.
@@ -420,6 +420,6 @@ registerAction({
   run: (ctx) => {
     ctx.onClose();
     // The answer is what the reader SEES — never the storage envelope.
-    ctx.callbacks?.onRequestFlashcard?.(unwrapKindEnvelopes(ctx.content).trim());
+    ctx.callbacks?.onRequestFlashcard?.(contentForDestination(ctx).trim());
   },
 });

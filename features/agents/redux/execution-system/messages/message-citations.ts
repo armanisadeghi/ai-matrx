@@ -34,6 +34,7 @@
  */
 
 import type { NormalizedCitation as WireNormalizedCitation } from "@/types/python-generated/stream-events";
+import { findCodeRanges } from "@ai-matrx/content-ir/source";
 
 /**
  * Canonical per-text-block citation — the generated wire schema with every
@@ -389,88 +390,11 @@ export function computeCodeRegions(
   if (!text.includes("`") && !text.includes("~")) return [];
   const cached = _codeRegionsCache.get(text);
   if (cached) return cached;
-  const regions: Array<readonly [number, number]> = [];
-
-  // --- Fenced blocks (line-based) ---
-  const fenceRe = /^(?:[ \t]*>)*[ \t]*(`{3,}|~{3,})/;
-  let fenceStart = -1;
-  let fenceChar = "";
-  let fenceLen = 0;
-  let lineStart = 0;
-  const textLen = text.length;
-  while (lineStart <= textLen) {
-    const nl = text.indexOf("\n", lineStart);
-    const lineEnd = nl === -1 ? textLen : nl;
-    const line = text.slice(lineStart, lineEnd);
-    const m = fenceRe.exec(line);
-    if (m) {
-      const run = m[1];
-      if (fenceStart === -1) {
-        // Opening fence.
-        fenceStart = lineStart;
-        fenceChar = run[0];
-        fenceLen = run.length;
-      } else if (
-        run[0] === fenceChar &&
-        run.length >= fenceLen &&
-        line.slice(m[0].length).trim() === ""
-      ) {
-        // Closing fence: region ends just after the closing run.
-        regions.push([fenceStart, lineStart + m[0].length] as const);
-        fenceStart = -1;
-      }
-    }
-    if (nl === -1) break;
-    lineStart = nl + 1;
-  }
-  if (fenceStart !== -1) regions.push([fenceStart, textLen] as const);
-
-  // --- Inline code spans (outside fence regions) ---
-  // Fence regions are sorted and non-overlapping by construction; binary
-  // search keeps the char scan O(n log k) (the previous `.some` over a
-  // growing array was quadratic on backtick-dense pathological texts).
-  const fenceRegions = regions.slice();
-  const insideFence = (i: number) => {
-    let lo = 0;
-    let hi = fenceRegions.length - 1;
-    while (lo <= hi) {
-      const mid = (lo + hi) >> 1;
-      const [s, e] = fenceRegions[mid];
-      if (i < s) hi = mid - 1;
-      else if (i >= e) lo = mid + 1;
-      else return true;
-    }
-    return false;
-  };
-  let i = 0;
-  while (i < textLen) {
-    if (text[i] !== "`" || insideFence(i)) {
-      i += 1;
-      continue;
-    }
-    let runEnd = i;
-    while (runEnd < textLen && text[runEnd] === "`") runEnd += 1;
-    const runLen = runEnd - i;
-    // Find the next run of EXACTLY this length (the CommonMark closer).
-    let j = runEnd;
-    let closed = false;
-    while (j < textLen) {
-      if (text[j] !== "`" || insideFence(j)) {
-        j += 1;
-        continue;
-      }
-      let jEnd = j;
-      while (jEnd < textLen && text[jEnd] === "`") jEnd += 1;
-      if (jEnd - j === runLen) {
-        regions.push([i, jEnd] as const);
-        i = jEnd;
-        closed = true;
-        break;
-      }
-      j = jEnd;
-    }
-    if (!closed) i = runEnd; // Unpaired run — literal backticks.
-  }
+  // Fences and inline code spans by THE one code-range rule
+  // (@ai-matrx/content-ir/source): what the renderer draws as code.
+  const regions: Array<readonly [number, number]> = findCodeRanges(text).map(
+    (range) => [range.start, range.end] as const,
+  );
 
   if (_codeRegionsCache.size >= _CODE_REGIONS_CACHE_MAX) {
     const oldest = _codeRegionsCache.keys().next().value;

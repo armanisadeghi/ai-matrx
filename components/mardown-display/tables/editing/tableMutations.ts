@@ -12,6 +12,8 @@
  * has completed.
  */
 
+import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";
+
 export type TableShape = {
   headers: string[];
   rows: string[][];
@@ -19,11 +21,10 @@ export type TableShape = {
 };
 
 const cleanHeaderForKey = (header: string): string =>
-  header
+  unwrapCodeSpans(header)
     .replace(/\*\*([^*]+)\*\*/g, "$1")
     .replace(/\*([^*]+)\*/g, "$1")
     .replace(/(?<![A-Za-z0-9])_([^_\n]+?)_(?![A-Za-z0-9])/g, "$1")
-    .replace(/`([^`]+)`/g, "$1")
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1|$2")
     .trim();
 

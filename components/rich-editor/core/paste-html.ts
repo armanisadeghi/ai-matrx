@@ -138,11 +138,82 @@ function squareTable(table: HTMLTableElement): number {
   return added;
 }
 
-/** Normalize every table in pasted HTML (see header). Tables only; the rest is untouched. */
+const LITERAL_SKIP = new Set(["CODE", "PRE", "KBD", "SAMP", "SCRIPT", "STYLE", "TEXTAREA"]);
+
+/**
+ * The characters in pasted TEXT that markdown would read as syntax: `*`
+ * unless it stands alone between spaces (`5 * 3`), `` ` `` and `\\` always,
+ * `_` unless inside a word (`file_name`) or alone, `~` next to another `~`,
+ * `<` before a tag name. A Google Docs cell reading `*important*` used to be
+ * stored as `*important*` and render italic — the
+ * asterisks the person pasted vanished (verify-RC-B4 R3-5).
+ */
+function literalAt(text: string, index: number): boolean {
+  const ch = text[index];
+  const prev = text[index - 1] ?? "";
+  const next = text[index + 1] ?? "";
+  // A delimiter with whitespace (or nothing) on BOTH sides can never open or
+  // close emphasis — `5 * 3` stays as it is.
+  const loose = (/\s/.test(prev) || !prev) && (/\s/.test(next) || !next);
+  if (ch === "`" || ch === "\\") return true;
+  if (ch === "*") return !loose;
+  if (ch === "_") return !loose && !(/[\p{L}\p{N}]/u.test(prev) && /[\p{L}\p{N}]/u.test(next));
+  if (ch === "~") return prev === "~" || next === "~";
+  if (ch === "<") return /[A-Za-z/!?]/.test(next);
+  return false;
+}
+
+/**
+ * Wrap every literal markdown character in pasted text in the editor's escape
+ * span, so both views keep it as text: the schema's `mdEscape` mark (Visual
+ * shows the character; the serializer writes `\*`). Real formatting —
+ * `<strong>`, `<em>`, `<code>`, `<pre>` — is untouched.
+ */
+function escapeLiteralMarkdown(root: DocumentFragment | HTMLElement): void {
+  const doc = root.ownerDocument ?? document;
+  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const texts: Text[] = [];
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    let parent = node.parentElement;
+    let skip = false;
+    while (parent) {
+      if (LITERAL_SKIP.has(parent.tagName) || parent.hasAttribute("data-md-escape")) {
+        skip = true;
+        break;
+      }
+      parent = parent.parentElement;
+    }
+    if (!skip && /[*`\\_~<]/.test(node.data)) texts.push(node as Text);
+  }
+  for (const node of texts) {
+    const data = node.data;
+    const fragment = doc.createDocumentFragment();
+    let run = "";
+    for (let index = 0; index < data.length; index += 1) {
+      if (!literalAt(data, index)) {
+        run += data[index];
+        continue;
+      }
+      if (run) fragment.append(doc.createTextNode(run));
+      run = "";
+      const span = doc.createElement("span");
+      span.setAttribute("data-md-escape", "");
+      span.textContent = data[index] ?? "";
+      fragment.append(span);
+    }
+    if (run) fragment.append(doc.createTextNode(run));
+    node.replaceWith(fragment);
+  }
+}
+
+/** Normalize pasted HTML (see header): literal markdown characters escaped, tables squared. */
 export function normalizePastedHtml(html: string): PastedHtmlResult {
-  if (!/<table[\s>]/i.test(html)) return { html, mergedCellsSplit: 0, tables: 0 };
+  const hasTable = /<table[\s>]/i.test(html);
+  if (!hasTable && !/[*`\\_~<]/.test(html.replace(/<[^>]*>/g, ""))) return { html, mergedCellsSplit: 0, tables: 0 };
   const template = document.createElement("template");
   template.innerHTML = html;
+  escapeLiteralMarkdown(template.content);
+  if (!hasTable) return { html: template.innerHTML, mergedCellsSplit: 0, tables: 0 };
   const tables = Array.from(template.content.querySelectorAll("table")).filter(
     // Outermost tables only: a nested one is flattened into its parent's cell.
     (table) => !table.parentElement?.closest("table"),

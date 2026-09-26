@@ -21,6 +21,7 @@ import type {
   ProtectedRegion,
   ProtectionConfidence,
 } from "./types";
+import { fenceParts, findCodeRanges } from "@ai-matrx/content-ir/source";
 
 interface LineInfo {
   start: number;
@@ -110,42 +111,23 @@ function detectFrontMatter(
   return null;
 }
 
-function detectFenced(text: string, lines: LineInfo[]): ProtectedRegion[] {
+function detectFenced(text: string, _lines: LineInfo[]): ProtectedRegion[] {
+  // THE one code-range rule (@ai-matrx/content-ir/source): what the renderer
+  // draws as a fence; an unclosed fence runs to the end.
   const regions: ProtectedRegion[] = [];
-  let i = 0;
-  while (i < lines.length) {
-    const open = /^( {0,3})(`{3,}|~{3,})(.*)$/.exec(lines[i].text);
-    if (!open) {
-      i++;
-      continue;
-    }
-    const fenceChar = open[2][0];
-    const fenceLen = open[2].length;
-    const info = open[3].trim();
-    const start = lines[i].start;
-    const closeRe = new RegExp(
-      `^ {0,3}\\${fenceChar}{${fenceLen},}\\s*$`,
-    );
-    let end = text.length;
-    let closeLine = lines.length - 1;
-    for (let j = i + 1; j < lines.length; j++) {
-      if (closeRe.test(lines[j].text)) {
-        end = lines[j].end;
-        closeLine = j;
-        break;
-      }
-    }
+  for (const range of findCodeRanges(text)) {
+    if (range.kind !== "fence") continue;
+    const info = fenceParts(text.slice(range.start, range.end))?.opener.lang ?? "";
     regions.push(
       makeRegion(
         text,
-        start,
-        end,
+        range.start,
+        range.end,
         "fenced-code",
         "certain",
         info ? `Fenced code block (${info})` : "Fenced code block",
       ),
     );
-    i = closeLine + 1;
   }
   return regions;
 }
@@ -332,27 +314,16 @@ function detectJson(
 
 function detectInlineCode(
   text: string,
-  lines: LineInfo[],
+  _lines: LineInfo[],
   masked: (offset: number) => boolean,
 ): ProtectedRegion[] {
+  // Code spans by THE one code-range rule (left to right, escapes honoured).
   const regions: ProtectedRegion[] = [];
-  for (const line of lines) {
-    const re = /`[^`\n]+`/g;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(line.text)) !== null) {
-      const start = line.start + m.index;
-      if (masked(start)) continue;
-      regions.push(
-        makeRegion(
-          text,
-          start,
-          start + m[0].length,
-          "inline-code",
-          "certain",
-          "Inline code",
-        ),
-      );
-    }
+  for (const range of findCodeRanges(text)) {
+    if (range.kind !== "span" || masked(range.start)) continue;
+    regions.push(
+      makeRegion(text, range.start, range.end, "inline-code", "certain", "Inline code"),
+    );
   }
   return regions;
 }

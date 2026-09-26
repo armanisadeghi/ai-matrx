@@ -15,6 +15,7 @@ import { toast } from "@/lib/toast";
 
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
+import { soleFence } from "@/lib/markdown/code-ranges";
 
 interface StatItem {
   label: string;
@@ -36,8 +37,9 @@ export interface StatsBlockProps {
 
 function parseStats(raw: string): StatsSpec | { error: string } {
   let s = raw.trim();
-  const fenced = /^```(?:json|stats)?\s*\n([\s\S]*?)\n?```$/.exec(s);
-  if (fenced) s = fenced[1].trim();
+  // A wrapping fence by THE one code-range rule.
+  const fenced = soleFence(s);
+  if (fenced && ["", "json", "stats"].includes(fenced.lang.toLowerCase())) s = fenced.body.trim();
   let obj: unknown;
   try {
     obj = JSON.parse(s);

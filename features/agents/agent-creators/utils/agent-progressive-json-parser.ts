@@ -16,6 +16,8 @@
  * streams.
  */
 
+import { fenceParts, findCodeRanges } from "@ai-matrx/content-ir/source";
+
 export interface PartialAgentData {
   name?: string;
   description?: string;
@@ -91,25 +93,21 @@ export function findAgentJsonBlockSpan(
 
   // ── Format 1 + 2: fenced ──────────────────────────────────────────────
   // Try ```json first, then plain ``` with a JSON-looking body.
-  const fenceMatch =
-    /```json\s*\n/.exec(text) ?? /```\s*\n(?=\s*[\{\[])/.exec(text);
-  if (fenceMatch) {
-    const bodyStart = fenceMatch.index + fenceMatch[0].length;
-    const closeIdx = text.indexOf("```", bodyStart);
-    if (closeIdx === -1) {
-      // Open fence, no close yet — body is everything we have so far.
-      return {
-        start: fenceMatch.index,
-        end: text.length,
-        body: text.slice(bodyStart).trim(),
-        isClosed: false,
-      };
-    }
+  // Fences by THE one code-range rule (@ai-matrx/content-ir/source): a ```json
+  // fence first, else the first plain fence whose body opens a JSON value. An
+  // open fence (still streaming) runs to the end.
+  const fences = findCodeRanges(text)
+    .filter((range) => range.kind === "fence")
+    .map((range) => ({ range, parts: fenceParts(text.slice(range.start, range.end)) }));
+  const pick =
+    fences.find((f) => f.parts?.opener.lang.toLowerCase() === "json") ??
+    fences.find((f) => f.parts?.opener.lang === "" && /^\s*[{[]/.test(f.parts.body));
+  if (pick?.parts) {
     return {
-      start: fenceMatch.index,
-      end: closeIdx + 3,
-      body: text.slice(bodyStart, closeIdx).trim(),
-      isClosed: true,
+      start: pick.range.start,
+      end: pick.range.end,
+      body: pick.parts.body.trim(),
+      isClosed: pick.parts.closed,
     };
   }
 

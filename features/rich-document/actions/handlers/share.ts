@@ -13,6 +13,7 @@ import {
   deriveContentTitle,
   getErrorMessage,
   requireAuth,
+  contentForDestination,
 } from "../utils";
 
 registerAction({
@@ -42,7 +43,7 @@ registerAction({
       );
       const { conversationId, messageId } = chatIds(ctx);
       const { url } = await shareMessageAsWebpage({
-        content: ctx.content,
+        content: contentForDestination(ctx),
         title: deriveContentTitle(ctx) ?? "Shared AI response",
         messageId,
         conversationId,
@@ -96,7 +97,7 @@ registerAction({
           import("@/features/google-workspace/export/proposedWrite"),
         ]);
       const result = await sendContentToGoogleDoc(
-        ctx.content,
+        contentForDestination(ctx),
         deriveContentTitle(ctx) ?? "AI Matrx message",
       );
       if (!result.ok && result.reason === "failed") {

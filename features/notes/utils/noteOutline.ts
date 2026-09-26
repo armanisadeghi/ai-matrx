@@ -1,3 +1,5 @@
+import { fenceLineKinds } from "@ai-matrx/content-ir/source";
+import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";
 // noteOutline — pure markdown heading parser for the floating outline panel.
 //
 // One O(lines) scan. Fenced code blocks (``` / ~~~) are skipped so a `# comment`
@@ -18,15 +20,13 @@ export interface NoteOutlineItem {
 }
 
 const HEADING_RE = /^(#{1,6})\s+(.*)$/;
-const FENCE_RE = /^(\s{0,3})(`{3,}|~{3,})/;
 
 /** Strip the inline markdown that commonly decorates a heading. */
 function cleanHeadingText(raw: string): string {
-  return raw
+  return unwrapCodeSpans(raw)
     .replace(/\s+#+\s*$/, "") // trailing closing hashes: "## Title ##"
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1") // images → alt
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") // links → text
-    .replace(/`([^`]*)`/g, "$1") // inline code
     .replace(/(\*\*|__)(.*?)\1/g, "$2") // bold
     .replace(/(\*|_)(.*?)\1/g, "$2") // italic
     .replace(/~~(.*?)~~/g, "$1") // strikethrough
@@ -37,20 +37,12 @@ export function parseNoteOutline(content: string): NoteOutlineItem[] {
   if (!content) return [];
   const items: NoteOutlineItem[] = [];
   let offset = 0;
-  let inFence = false;
-  let fenceMarker = "";
   let headingIndex = 0;
+  // Fenced code holds no headings — THE one code-range rule.
+  const kinds = fenceLineKinds(content);
 
-  for (const line of content.split("\n")) {
-    const fence = FENCE_RE.exec(line);
-    if (fence) {
-      if (!inFence) {
-        inFence = true;
-        fenceMarker = fence[2][0];
-      } else if (fence[2][0] === fenceMarker) {
-        inFence = false;
-      }
-    } else if (!inFence) {
+  for (const [lineIndex, line] of content.split("\n").entries()) {
+    if (kinds[lineIndex] === "prose") {
       const m = HEADING_RE.exec(line);
       if (m) {
         const text = cleanHeadingText(m[2]);

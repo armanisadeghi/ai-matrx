@@ -81,9 +81,11 @@ export function FindReplacePanel({ showReplace, onFind, onReplace, onReplaceAll,
           }}
           placeholder="Find"
           aria-label="Find"
-          className="h-8 min-w-0 flex-1 rounded-md border border-border bg-background px-2 text-base sm:text-sm"
+          // A phone gives the search term its own full row; the count and the
+          // toggles wrap below it (it was squeezed to 49 px, verify-RC-B4 R3-6).
+          className="h-8 w-full min-w-0 rounded-md border border-border bg-background px-2 text-base sm:w-auto sm:flex-1 sm:text-sm"
         />
-        <span className={cn("w-24 shrink-0 text-xs text-muted-foreground", state.error && "text-destructive")} aria-live="polite">
+        <span className={cn("shrink-0 text-xs text-muted-foreground sm:w-24", state.error && "text-destructive")} aria-live="polite">
           {summary}
         </span>
         <Toggle on={Boolean(options.caseSensitive)} onClick={() => toggle("caseSensitive")} label="Match case">

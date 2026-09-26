@@ -9,7 +9,7 @@ import { toast } from "@/lib/toast";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { registerAction } from "../registry";
 import { extractFlatText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { getErrorMessage } from "../utils";
+import { getErrorMessage, contentForDestination } from "../utils";
 
 registerAction({
   id: "copy",
@@ -95,7 +95,7 @@ registerAction({
         : undefined;
     const fullContent = record
       ? extractFlatText(record, { includeThinking: true })
-      : ctx.content;
+      : contentForDestination(ctx);
     await copyToClipboard(fullContent, {
       isMarkdown: true,
       includeThinking: true,

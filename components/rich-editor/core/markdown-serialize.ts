@@ -480,10 +480,51 @@ interface OpenMark {
   close: string;
 }
 
+const EDGE_SENSITIVE_MARKS = new Set(["bold", "italic", "strike"]);
+
+/**
+ * CommonMark only reads `**x**` as bold when no whitespace sits just inside a
+ * delimiter; `** x**` is literal asterisks. So whitespace at the edge of a
+ * bold/italic/strike run is moved OUTSIDE the mark before writing (text typed
+ * at the start of a bold cell used to store `** hardfail**`, verify-RC-B4
+ * R3-4), and a run of nothing but whitespace loses the mark.
+ */
+function hoistEdgeWhitespace(items: PMNode[]): PMNode[] {
+  const out = [...items];
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 0; i < out.length && !changed; i += 1) {
+      const node = out[i];
+      if (!node?.isText || !node.text) continue;
+      const text = node.text;
+      for (const mark of node.marks) {
+        if (!EDGE_SENSITIVE_MARKS.has(mark.type.name)) continue;
+        const startsRun = !mark.isInSet(out[i - 1]?.marks ?? []);
+        const endsRun = !mark.isInSet(out[i + 1]?.marks ?? []);
+        const lead = startsRun ? (/^\s+/.exec(text)?.[0] ?? "") : "";
+        const trail = endsRun && lead.length < text.length ? (/\s+$/.exec(text)?.[0] ?? "") : "";
+        if (!lead && !trail) continue;
+        const bare = mark.removeFromSet(node.marks);
+        const body = text.slice(lead.length, text.length - trail.length);
+        const pieces: PMNode[] = [];
+        if (lead) pieces.push(node.type.schema.text(lead, bare));
+        if (body) pieces.push(node.type.schema.text(body, node.marks));
+        if (trail) pieces.push(node.type.schema.text(trail, bare));
+        out.splice(i, 1, ...pieces);
+        changed = true;
+        break;
+      }
+    }
+  }
+  return out;
+}
+
 /** Serialize a textblock's inline content — marks nested as the source nested them. */
 export function serializeInline(parent: PMNode): string {
-  const items: PMNode[] = [];
-  parent.forEach((child) => items.push(child));
+  const children: PMNode[] = [];
+  parent.forEach((child) => children.push(child));
+  const items = hoistEdgeWhitespace(children);
   const runEnd = (from: number, mark: Mark): number => {
     let end = from;
     while (end < items.length && mark.isInSet(items[end]?.marks ?? [])) end += 1;

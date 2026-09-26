@@ -1,4 +1,5 @@
 import { parseMarkdownTable } from "../bock-processors/parse-markdown-table";
+import { fenceLineKinds, fenceOpenerOf } from "@ai-matrx/content-ir/source";
 
 export interface ListItem {
     name: string;
@@ -33,6 +34,8 @@ export interface ParsedContent {
 
 export function separatedMarkdownParser(markdown: string): ParsedContent {
     const allLines = markdown.split("\n");
+    // Fence opener/closer lines by THE one code-range rule (@ai-matrx/content-ir/source).
+    const fenceKinds = fenceLineKinds(markdown);
     const isHeading = (line: string) => /^#{1,3}\s+/.test(line.trim());
     const isBoldHeading = (line: string) => /^\*\*[^*]+\*\*$/.test(line.trim());
     const isDivider = (line: string) => /^(?:={3,}|-{3,}|\*{3,}|_{3,})$/.test(line.trim());
@@ -67,7 +70,7 @@ export function separatedMarkdownParser(markdown: string): ParsedContent {
         const rawLine = allLines[i];
         const trimmed = rawLine.trim();
 
-        if (trimmed.startsWith("```")) {
+        if (fenceKinds[i] === "open" || (inCodeBlock && fenceKinds[i] === "close")) {
             if (inCodeBlock) {
                 const codeContent = codeBlockContent.join("\n");
                 if (!currentSection) {
@@ -104,7 +107,7 @@ export function separatedMarkdownParser(markdown: string): ParsedContent {
                 codeBlockLanguage = "plaintext";
             } else {
                 inCodeBlock = true;
-                codeBlockLanguage = trimmed.slice(3).trim() || "plaintext";
+                codeBlockLanguage = fenceOpenerOf(rawLine)?.lang || "plaintext";
             }
             i++;
             continue;

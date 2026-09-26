@@ -6,6 +6,8 @@
  * and hidden from the UI.
  */
 
+import { fenceParts, findCodeRanges } from "@ai-matrx/content-ir/source";
+
 export interface CodeEditorContext {
   /** The full current file content */
   currentCode: string;
@@ -39,10 +41,17 @@ export function isSpecialVariable(variableName: string): boolean {
 /**
  * Detect if code is already wrapped in a markdown code block
  */
+/** The whole value is exactly one closed fenced block (THE one code-range rule). */
 function isWrappedInCodeBlock(code: string): boolean {
   const trimmed = code.trim();
-  // Check if it starts with ``` and ends with ```
-  return trimmed.startsWith('```') && trimmed.endsWith('```') && trimmed.split('```').length >= 3;
+  const ranges = findCodeRanges(trimmed);
+  return (
+    ranges.length === 1 &&
+    ranges[0]!.kind === "fence" &&
+    ranges[0]!.start === 0 &&
+    ranges[0]!.end === trimmed.length &&
+    fenceParts(trimmed)?.closed === true
+  );
 }
 
 /**

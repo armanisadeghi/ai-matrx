@@ -30,6 +30,7 @@
 
 import { KIND_KEY } from "@ai-matrx/content-ir";
 import { STRUCTURED_INFO_DEFAULT_TITLE } from "../kinds/structured-info";
+import { fenceParts } from "@ai-matrx/content-ir/source";
 
 export const STRUCTURED_INFO_LEGACY_TEXT_STRATEGY =
   "structured_info_legacy_text";
@@ -49,9 +50,6 @@ const BOLD_LABEL_RE = /^\*\*([^*]+?):?\*\*:?\s+(.+)$/;
  */
 const PLAIN_LABEL_RE = /^([^:`*_|[\]]{1,60}?):\s+(.+)$/;
 
-/** Fence framing (accumulator region text may include the literal fence). */
-const OPENING_FENCE_RE = /^\s*```[ \t]*structured_info[^\n]*\n/i;
-const CLOSING_FENCE_RE = /\n?```\s*$/;
 
 interface MutableSection {
   heading: string;
@@ -106,9 +104,8 @@ function finishSection(
 export function structuredInfoLegacyTextToKindValue(
   regionText: string,
 ): Record<string, unknown> | null {
-  const inner = regionText
-    .replace(OPENING_FENCE_RE, "")
-    .replace(CLOSING_FENCE_RE, "");
+  // Fence framing by THE one code-range rule; the body is the payload.
+  const inner = fenceParts(regionText)?.body ?? regionText;
   if (inner.trim() === "") return null;
 
   const lines = inner.split("\n");

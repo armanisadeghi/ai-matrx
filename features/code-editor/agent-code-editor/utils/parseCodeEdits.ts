@@ -19,6 +19,8 @@
  * utility is pure and has no dependency on the prompt or agent systems.
  */
 
+import { replaceFences } from "@/lib/markdown/code-ranges";
+
 export interface CodeEdit {
   search: string;
   replace: string;
@@ -56,9 +58,8 @@ export function parseCodeEdits(response: string): ParseResult {
     const rawResponse = response;
 
     // Remove markdown code fences if present (but keep the content)
-    const cleanedResponse = response.replace(/```[\s\S]*?```/g, (match) => {
-      return match.replace(/```[a-z]*\n?/g, "").replace(/\n?```/g, "");
-    });
+    // Fences by THE one code-range rule: keep the content, drop the fence lines.
+    const cleanedResponse = replaceFences(response, ({ body }) => body);
 
     // Try each delimiter set separately to ensure proper pairing.
     // Priority: <<< ... >>> (most common), then << ... >>, then < ... >

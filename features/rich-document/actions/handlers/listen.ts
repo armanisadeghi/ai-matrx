@@ -21,7 +21,7 @@ import {
   selectSurfaceConfigEntry,
 } from "@/features/surfaces/redux/surfaceConfigSlice";
 import { registerAction } from "../registry";
-import { getErrorMessage } from "../utils";
+import { getErrorMessage, contentForDestination } from "../utils";
 import type { RichDocumentActionContext } from "../../types";
 
 /** The effective `spoken_summary` agent, or null when none is bound. */
@@ -40,7 +40,7 @@ async function openListen(
   ctx: RichDocumentActionContext,
   autoPlay: boolean,
 ): Promise<void> {
-  const text = ctx.content;
+  const text = contentForDestination(ctx);
   if (!text.trim()) return;
   // This click is the ONLY user gesture before speech starts (the audio itself
   // begins from a websocket callback) — unlock iOS/WebKit output now, before
@@ -117,7 +117,7 @@ function speechStatus(ctx: RichDocumentActionContext): SpeechStatus {
   if (!playbackApi) return null;
   const snap = playbackApi.getPlaybackSnapshot();
   const item = snap.items.find(
-    (i) => i.id === snap.currentId && i.text === ctx.content,
+    (i) => i.id === snap.currentId && i.text === contentForDestination(ctx),
   );
   if (!item) return null;
   if (item.status === "playing") return "playing";
@@ -179,7 +179,7 @@ registerAction({
         for (const item of snap.items) {
           if (
             item.status === "error" &&
-            item.text === ctx.content &&
+            item.text === contentForDestination(ctx) &&
             !announcedSpeechErrors.has(item.id)
           ) {
             announcedSpeechErrors.add(item.id);
@@ -207,6 +207,6 @@ registerAction({
     const { speak } = await import("@/features/audio/service/speak");
     // Queue identity is the FULL content (so the toggle can find it); a
     // selection plays as its own utterance.
-    speak({ text: selectedText(ctx) ?? ctx.content, label: "Read aloud" });
+    speak({ text: selectedText(ctx) ?? contentForDestination(ctx), label: "Read aloud" });
   },
 });

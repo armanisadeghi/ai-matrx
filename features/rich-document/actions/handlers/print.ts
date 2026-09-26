@@ -7,6 +7,7 @@
 import { Printer, ScanLine } from "lucide-react";
 import { printMarkdownContent } from "@/features/conversation/utils/markdown-print";
 import { registerAction } from "../registry";
+import { contentForDestination } from "../utils";
 
 registerAction({
   id: "print",
@@ -30,7 +31,7 @@ registerAction({
               : ctx.source.type === "scraper-result"
                 ? "Scraper result"
                 : "Content";
-    printMarkdownContent(ctx.content, title);
+    printMarkdownContent(contentForDestination(ctx), title);
   },
 });
 

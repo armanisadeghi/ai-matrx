@@ -24,6 +24,7 @@ import {
   type RulebookStatus,
   type RulebookVisibility,
 } from "./types";
+import { soleFence } from "@/lib/markdown/code-ranges";
 
 /**
  * Direct supabase-js data layer for Rulebooks (platform.rulebook).
@@ -808,8 +809,9 @@ export interface MasterworkRunVerdict {
 function correctedProse(raw: string | null): string | null {
   if (!raw) return null;
   // Models fence their JSON as often as they emit it bare — accept both.
-  const fenced = /^```(?:json)?\s*\n([\s\S]*?)\n?```$/.exec(raw.trim());
-  const trimmed = (fenced ? fenced[1] : raw).trim();
+  // A wrapping fence by THE one code-range rule.
+  const fenced = soleFence(raw);
+  const trimmed = (fenced && (fenced.lang === "" || fenced.lang.toLowerCase() === "json") ? fenced.body : raw).trim();
   if (!trimmed.startsWith("{")) return raw;
   try {
     const parsed: unknown = JSON.parse(trimmed);

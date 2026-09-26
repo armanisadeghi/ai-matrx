@@ -23,7 +23,7 @@ import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils"
 import { cleanMarkdown } from "@/utils/markdown-processors/clean-markdown-to-text";
 import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
 import { registerAction } from "../registry";
-import { contentFileName, getErrorMessage } from "../utils";
+import { contentFileName, getErrorMessage, contentForDestination } from "../utils";
 import { parseFirstMarkdownTable, tableToDelimited } from "../markdownTable";
 import type { RichDocumentActionContext } from "../../types";
 
@@ -90,7 +90,7 @@ registerAction({
   supportedSources: "*",
   renderSlot: "overflow",
   order: 4,
-  run: (ctx) => copyText(ctx.content, "Markdown copied"),
+  run: (ctx) => copyText(contentForDestination(ctx), "Markdown copied"),
 });
 
 registerAction({
@@ -102,7 +102,7 @@ registerAction({
   supportedSources: "*",
   renderSlot: "overflow",
   order: 5,
-  run: (ctx) => copyText(toPlainText(ctx.content), "Plain text copied"),
+  run: (ctx) => copyText(toPlainText(contentForDestination(ctx)), "Plain text copied"),
 });
 
 registerAction({
@@ -119,8 +119,8 @@ registerAction({
   run: async (ctx) => {
     try {
       const { markdownToHtml } = await import("@ai-matrx/print/markdown");
-      const html = markdownToHtml(ctx.content);
-      const plain = cleanMarkdown(ctx.content);
+      const html = markdownToHtml(contentForDestination(ctx));
+      const plain = cleanMarkdown(contentForDestination(ctx));
       if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
         // No rich clipboard in this browser — say so and give the reader the
         // plain text instead of silently copying less than they asked for.
@@ -152,7 +152,7 @@ registerAction({
   run: async (ctx) => {
     try {
       const { markdownToHtml } = await import("@ai-matrx/print/markdown");
-      await copyText(markdownToHtml(ctx.content), "HTML copied");
+      await copyText(markdownToHtml(contentForDestination(ctx)), "HTML copied");
     } catch (error) {
       toast.error(getErrorMessage(error, "Failed to copy HTML"));
     }
@@ -228,7 +228,7 @@ registerAction({
     try {
       const { renderMarkdownDocument } = await import("@ai-matrx/print/markdown");
       const name = fileBase(ctx);
-      const html = renderMarkdownDocument(unwrapKindEnvelopes(ctx.content), {
+      const html = renderMarkdownDocument(contentForDestination(ctx), {
         title: name,
       });
       downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), `${name}.html`);
@@ -255,7 +255,7 @@ registerAction({
       // selectable and searchable, a few KB. The old path screenshotted the
       // page into PNGs — a 5-row answer came out at 6.4 MB (RC-B6 verify).
       const { exportDocument } = await import("@ai-matrx/print/document");
-      const exp = await exportDocument(unwrapKindEnvelopes(ctx.content), "pdf", {
+      const exp = await exportDocument(contentForDestination(ctx), "pdf", {
         fileName: fileBase(ctx),
       });
       downloadBlob(new Blob([exp.bytes as Uint8Array<ArrayBuffer>], { type: exp.mime }), exp.fileName);
@@ -288,7 +288,7 @@ registerAction({
       const { exportDocument, downloadDocumentExport } = await import(
         "@ai-matrx/print/document"
       );
-      const exp = await exportDocument(unwrapKindEnvelopes(ctx.content), "docx", {
+      const exp = await exportDocument(contentForDestination(ctx), "docx", {
         fileName: fileBase(ctx),
       });
       downloadDocumentExport(exp);

@@ -18,6 +18,7 @@ import {
   splitFrontmatter,
   type MermaidDiagramType,
 } from "./diagram-type";
+import { soleFence } from "@/lib/markdown/code-ranges";
 
 export interface MermaidFix {
   rule: string;
@@ -75,8 +76,9 @@ const NORMALIZERS: Normalizer[] = [
     rule: "strip-wrapping-fence",
     detail: "Removed a stray ```mermaid fence wrapped around the diagram body",
     apply: (s) => {
-      const m = /^\s*```(?:mermaid|mmd)?\s*\n([\s\S]*?)\n?\s*```\s*$/.exec(s);
-      return m ? m[1] : s;
+      // A wrapping fence by THE one code-range rule.
+      const fenced = soleFence(s);
+      return fenced && ["", "mermaid", "mmd"].includes(fenced.lang.toLowerCase()) ? fenced.body : s;
     },
   },
   {

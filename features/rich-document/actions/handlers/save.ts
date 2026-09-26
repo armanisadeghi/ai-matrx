@@ -30,8 +30,8 @@ import {
   buildTaskTitle,
   contentFileName,
   deriveContentTitle,
+  contentForDestination,
 } from "../utils";
-import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
 import { CHAT_SAVES_FOLDER } from "@/features/notes/constants/defaultFolders";
 import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectMessagePosition } from "@/features/agents/redux/execution-system/messages/messages.selectors";
@@ -117,7 +117,7 @@ registerAction({
       // title auto-derived, saved immediately.
       await NotesAPI.create({
         label: deriveContentTitle(ctx) ?? "New Note",
-        content: ctx.content,
+        content: contentForDestination(ctx),
         folder_name: "Scratch",
         tags: [],
         organization_id: organizationId,
@@ -155,7 +155,7 @@ registerAction({
       openOverlay({
         overlayId: "quickNoteSaveWindow",
         data: {
-          initialContent: ctx.content,
+          initialContent: contentForDestination(ctx),
           defaultFolder:
             ctx.source.type === "chat-message" ? CHAT_SAVES_FOLDER : undefined,
           defaultNoteName: deriveContentTitle(ctx),
@@ -247,7 +247,7 @@ registerAction({
         overlayId: "saveToCode",
         instanceId: ctx.instanceKey("save-code"),
         data: {
-          initialContent: code.trim() ? code : ctx.content,
+          initialContent: code.trim() ? code : contentForDestination(ctx),
           initialLanguage: language ?? "plaintext",
           suggestedName: undefined,
           defaultFolderId: null,
@@ -272,7 +272,7 @@ registerAction({
         ctx,
         ctx.source.type === "chat-message" ? "message" : ctx.source.type,
       );
-      const blob = new Blob([ctx.content], {
+      const blob = new Blob([contentForDestination(ctx)], {
         type: "text/markdown;charset=utf-8",
       });
       const url = URL.createObjectURL(blob);
@@ -317,7 +317,7 @@ registerAction({
       const { pushMarkdownToDocument } =
         await import("@/features/data-tables/export-targets");
       const res = await pushMarkdownToDocument(
-        ctx.content,
+        contentForDestination(ctx),
         deriveContentTitle(ctx),
         organizationId,
       );
@@ -368,7 +368,7 @@ registerAction({
       ctx.dispatch(
         setPendingSource(
           buildTaskSeedFromMessage({
-            content: unwrapKindEnvelopes(ctx.content),
+            content: contentForDestination(ctx),
             messageId: messageId || null,
             conversationId: conversationId || null,
             conversationTitle: conversationId
@@ -385,7 +385,7 @@ registerAction({
       ctx.onClose();
       return;
     }
-    const readable = unwrapKindEnvelopes(ctx.content);
+    const readable = contentForDestination(ctx);
     const preview = readable.slice(0, 400);
     const seedTitle = buildTaskTitle(readable);
     const entityLink = sourceToEntityType(ctx.source);

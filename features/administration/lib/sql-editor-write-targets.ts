@@ -18,6 +18,8 @@
  * doctrine block for the full "order vs fire" reasoning.
  */
 
+import { fenceOpenerOf, findCodeRanges } from "@ai-matrx/content-ir/source";
+
 /**
  * Upper bound on a staged query. Real admin SQL on this console runs a few
  * hundred characters (`sql_query` declares `typicalCharCount: 400`); 20k is
@@ -27,8 +29,15 @@
  */
 export const SQL_QUERY_WRITE_MAX_CHARS = 20000;
 
-/** Markdown code fences — the single most common way an agent mangles SQL. */
-const FENCE_PATTERN = /^\s*```|```\s*$/;
+/**
+ * Markdown code fences — the single most common way an agent mangles SQL: an
+ * opening or closing fence line at either end, by THE one code-range rule.
+ */
+function hasFenceFraming(value: string): boolean {
+  const lines = value.trim().split("\n");
+  const last = lines[lines.length - 1] ?? "";
+  return fenceOpenerOf(lines[0] ?? "") !== null || fenceOpenerOf(last) !== null || findCodeRanges(last).some((r) => r.kind === "fence");
+}
 
 /**
  * Validate a `sql_query` write value into the exact string to stage into the
@@ -42,7 +51,7 @@ export function validateSqlQueryWrite(value: unknown): string {
       }.`,
     );
   }
-  if (FENCE_PATTERN.test(value)) {
+  if (hasFenceFraming(value)) {
     throw new Error(
       "sql_query must be raw SQL, not a markdown code block. Remove the ``` fences and send the query text on its own.",
     );

@@ -14,6 +14,7 @@ import type { Editor } from "@tiptap/core";
 import { Fragment, type Node as PMNode } from "@tiptap/pm/model";
 import { NodeSelection, TextSelection } from "@tiptap/pm/state";
 import { PAGE_BREAK_MARKDOWN } from "@ai-matrx/print/directives";
+import { fenceOpenerOf } from "@ai-matrx/content-ir/source";
 
 export type CalloutType = "NOTE" | "TIP" | "IMPORTANT" | "WARNING" | "CAUTION";
 export const CALLOUT_TYPES: readonly CalloutType[] = ["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"];
@@ -277,8 +278,12 @@ export function moveBlock(editor: Editor, direction: "up" | "down"): boolean {
 export function fenceFromParagraph(editor: Editor): boolean {
   const { $from, empty } = editor.state.selection;
   if (!empty || !$from.parent.isTextblock || $from.parent.type.name !== "paragraph") return false;
-  const match = /^(`{3,}|~{3,})([\w+#.-]*)$/.exec($from.parent.textContent);
-  if (!match) return false;
+  // THE one fence rule's opener parse; the paragraph must be ONLY the opener.
+  const text = $from.parent.textContent;
+  const opener = fenceOpenerOf(text);
+  const fence = opener ? opener.char.repeat(opener.ticks) : "";
+  if (!opener || text !== `${fence}${opener.lang}` || !/^[\w+#.-]*$/.test(opener.lang)) return false;
+  const match = [text, fence, opener.lang] as const;
   const pos = $from.before($from.depth);
   const island = editor.state.schema.nodes.islandBlock?.create({
     raw: `${match[1]}${match[2]}\n\n${match[1]}`,

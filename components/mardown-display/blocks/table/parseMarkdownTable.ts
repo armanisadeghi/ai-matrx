@@ -8,6 +8,8 @@
  * yet) and of leading/trailing pipes.
  */
 
+import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";
+
 export interface ParsedTable {
   headers: string[];
   rows: string[][];
@@ -17,11 +19,10 @@ export interface ParsedTable {
 
 /** Strip inline markdown from a header so it forms a clean object key. */
 export function cleanTableHeaderKey(header: string): string {
-  return header
+  return unwrapCodeSpans(header)
     .replace(/\*\*([^*]+)\*\*/g, "$1")
     .replace(/\*([^*]+)\*/g, "$1")
     .replace(/(?<![A-Za-z0-9])_([^_\n]+?)_(?![A-Za-z0-9])/g, "$1")
-    .replace(/`([^`]+)`/g, "$1")
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1|$2")
     .trim();
 }

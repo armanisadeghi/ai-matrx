@@ -18,7 +18,7 @@
 -- (plus association labels, RC-A5d, and mandate labels naming platform agents — not private).
 --
 -- THE CLASS FIX — a declared reference gate, read by every place access is decided:
---   1. platform.reference_gate(token) is the declaration: which (type column, id column) of a
+--   1. platform.reference_gate_columns(token) is the declaration (platform.reference_gate is its row form): which (type column, id column) of a
 --      token's row names the record it points at. Declared: thread, war_room (anchor_type,
 --      anchor_id). A new token is gated by adding its line here (a CREATE OR REPLACE with its
 --      based-on line) — nothing else changes.
@@ -35,26 +35,33 @@
 
 set local lock_timeout = '2s';
 
+create or replace function platform.reference_gate_columns(p_token text)
+returns text[]
+language sql
+immutable
+as $fn$
+  -- RC-A2c: THE DECLARATION — the one list. A row of this token names the record it points at with
+  -- (type column, id column); iam.has_access_for_base, iam.accessible_entity_ids and the
+  -- generator's ref_target_gate policy all read it, so a row is never readable by someone who
+  -- cannot read its target. A plain CASE with no SET clause so the planner inlines it: the kernel
+  -- asks it on every node of every walk. Add a token only with a forcing test beside it.
+  select case p_token
+           when 'thread'   then array['anchor_type', 'anchor_id']  -- workspace.threads: a War Room thread's subject
+           when 'war_room' then array['anchor_type', 'anchor_id']  -- workspace.war_rooms: a War Room's subject
+         end
+$fn$;
+
+comment on function platform.reference_gate_columns(text) is
+  'RC-A2c: {type column, id column} of a token''s row that names the record it points at, or null. A gated row is readable only by someone who can read its target (kernel, set form and the generated ref_target_gate policy). common-docs/projects/rich-content-unification/REGISTER.md RC-A2c.';
+
 create or replace function platform.reference_gate(p_token text)
 returns table(type_column text, id_column text)
 language sql
 immutable
-set search_path to 'pg_catalog'
 as $fn$
-  -- RC-A2c: THE DECLARATION. A row of `token` names the record it points at with
-  -- (type_column, id_column); iam.has_access_for_base, iam.accessible_entity_ids and the
-  -- generator's ref_target_gate policy all read this list, so a row is never readable by someone
-  -- who cannot read its target. Add a token here only with a forcing test beside it.
-  select g.type_column, g.id_column
-    from (values
-      ('thread',   'anchor_type', 'anchor_id'),   -- workspace.threads: a War Room thread's subject
-      ('war_room', 'anchor_type', 'anchor_id')    -- workspace.war_rooms: a War Room's subject
-    ) as g(token, type_column, id_column)
-   where g.token = p_token
+  -- RC-A2c: the declaration as rows (platform.reference_gate_columns is the one list).
+  select c[1], c[2] from (select platform.reference_gate_columns(p_token) as c) x where c is not null
 $fn$;
-
-comment on function platform.reference_gate(text) is
-  'RC-A2c: which (type column, id column) of a token''s row names the record it points at. A gated row is readable only by someone who can read its target (kernel, set form and the generated ref_target_gate policy). common-docs/projects/rich-content-unification/REGISTER.md RC-A2c.';
 
 do $patch$
 declare
@@ -70,7 +77,7 @@ $a$  v_variant text; v_detail jsonb; v_detail_type text; v_detail_id uuid; v_det
 $a$,
 $a$  v_variant text; v_detail jsonb; v_detail_type text; v_detail_id uuid; v_detail_author uuid;
   -- RC-A2c: the reference gate (platform.reference_gate).
-  v_gate_type_col text; v_gate_id_col text; v_gate_type text; v_gate_id uuid;
+  v_gate_cols text[]; v_gate_type_col text; v_gate_id_col text; v_gate_type text; v_gate_id uuid;
 $a$),
       -- 2b. kernel: read the declaration with the registry row, and gate the node
       (2, 'iam.has_access_for_base(uuid,text,uuid,permission_level,boolean,text[])',
@@ -78,12 +85,11 @@ $a$    select et.schema_name, et.table_name, et.rls_variant into v_schema, v_tab
     from platform.entity_types et where et.token = v_type and et.is_active;
     continue walk when v_schema is null;
 $a$,
-$a$    select et.schema_name, et.table_name, et.rls_variant, g.type_column, g.id_column
-      into v_schema, v_table, v_variant, v_gate_type_col, v_gate_id_col
-    from platform.entity_types et
-    left join lateral platform.reference_gate(et.token) g on true
-    where et.token = v_type and et.is_active;
+$a$    select et.schema_name, et.table_name, et.rls_variant, platform.reference_gate_columns(et.token)
+      into v_schema, v_table, v_variant, v_gate_cols
+    from platform.entity_types et where et.token = v_type and et.is_active;
     continue walk when v_schema is null;
+    v_gate_type_col := v_gate_cols[1]; v_gate_id_col := v_gate_cols[2];
     -- 🚨 RC-A2c (2026-09-25) — A RECORD THAT POINTS AT ANOTHER RECORD IS READ ONLY BY PEOPLE WHO
     -- CAN READ WHAT IT POINTS AT. A War Room thread / room names its subject (anchor_type,
     -- anchor_id) and copies its name; read by its own 'internal' visibility, 13 threads were

@@ -75,6 +75,7 @@ import {
   type LiveCitationIndex,
   type MessageCitationSource,
 } from "@/features/agents/redux/execution-system/messages/message-citations";
+import { soleFence } from "@/lib/markdown/code-ranges";
 
 /** Stable fallbacks — never inline `?? []` in selector outputs. */
 export const EMPTY_REQUEST_IDS: string[] = [];
@@ -885,8 +886,9 @@ export function isJsonOnlyText(content: string | null | undefined): boolean {
   if (!content) return false;
   let trimmed = content.trim();
   if (!trimmed) return false;
-  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-  if (fenced) trimmed = fenced[1].trim();
+  // A wrapping fence by THE one code-range rule.
+  const fenced = soleFence(trimmed);
+  if (fenced && (fenced.lang === "" || fenced.lang.toLowerCase() === "json")) trimmed = fenced.body.trim();
   if (!trimmed) return false;
   const first = trimmed[0];
   const last = trimmed[trimmed.length - 1];

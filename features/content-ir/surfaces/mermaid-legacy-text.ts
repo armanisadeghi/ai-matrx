@@ -25,11 +25,8 @@
 
 import { extractMermaidTitle } from "@/components/mermaid/diagram-type";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import { fenceParts } from "@ai-matrx/content-ir/source";
 
-/** Opening fence line with the mermaid/mmd language token — host framing. */
-const OPENING_FENCE_RE = /^\s*(?:`{3,}|~{3,})\s*(?:mermaid|mmd)[^\n]*\n/i;
-/** Trailing closing fence line — host framing. */
-const CLOSING_FENCE_RE = /\n\s*(?:`{3,}|~{3,})\s*$/;
 
 /**
  * Completed mermaid fence region text → canonical mermaid_diagram value, or
@@ -39,9 +36,9 @@ const CLOSING_FENCE_RE = /\n\s*(?:`{3,}|~{3,})\s*$/;
 export function mermaidLegacyTextToKindValue(
   regionText: string,
 ): Record<string, unknown> | null {
-  const inner = regionText
-    .replace(OPENING_FENCE_RE, "")
-    .replace(CLOSING_FENCE_RE, "");
+  // The fence framing (opener + closer) is host framing, read by THE one
+  // code-range rule (@ai-matrx/content-ir/source); the body is the diagram.
+  const inner = fenceParts(regionText)?.body ?? regionText;
 
   // Whole-document trim only: leading/trailing blank space is insignificant
   // to mermaid and normalizing it makes both host framings value-identical.

@@ -1,4 +1,5 @@
 import { MarkdownTableData } from "@/components/mardown-display/types";
+import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";
 
 type NormalizedTableData = Array<{ [key: string]: string }>;
 
@@ -179,11 +180,10 @@ export const parseMarkdownTable = (
 
         // Clean markdown formatting for normalized data - preserve links in a structured way
         const cleanText = (text: string) => {
-            return text
+            return unwrapCodeSpans(text)
                 .replace(/\*\*([^*]+)\*\*/g, "$1")
                 .replace(/\*([^*]+)\*/g, "$1")
                 .replace(/(?<![A-Za-z0-9])_([^_\n]+?)_(?![A-Za-z0-9])/g, "$1")
-                .replace(/`([^`]+)`/g, "$1")
                 // Keep links as "text|url" format for JSON data
                 .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1|$2")
                 .replace(/#{1,6}\s*/g, "")
@@ -288,11 +288,10 @@ export const parseMarkdownTables = (
 
             // Clean markdown formatting for normalized data - preserve links in a structured way
             const cleanText = (text: string) => {
-                return text
+                return unwrapCodeSpans(text)
                     .replace(/\*\*([^*]+)\*\*/g, "$1")
                     .replace(/\*([^*]+)\*/g, "$1")
                     .replace(/(?<![A-Za-z0-9])_([^_\n]+?)_(?![A-Za-z0-9])/g, "$1")
-                    .replace(/`([^`]+)`/g, "$1")
                     // Keep links as "text|url" format for JSON data
                     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1|$2")
                     .replace(/#{1,6}\s*/g, "")

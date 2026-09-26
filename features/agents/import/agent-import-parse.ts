@@ -1,5 +1,6 @@
 import { flexibleJsonParse } from "@/utils/json/json-utils";
 import type { ParseResult } from "./import-types";
+import { soleFence } from "@/lib/markdown/code-ranges";
 
 /**
  * Robustly parses whatever the user pastes.
@@ -24,10 +25,10 @@ export function parsePasted(raw: string): ParseResult {
 
   let text = raw.trim();
 
-  const fenceRe = /^```[\w]*\n?([\s\S]*?)\n?```$/;
-  const fenceMatch = fenceRe.exec(text);
-  if (fenceMatch) {
-    text = fenceMatch[1].trim();
+  // A wrapping fence by THE one code-range rule.
+  const fenced = soleFence(text);
+  if (fenced) {
+    text = fenced.body.trim();
     warnings.push("Stripped markdown code fences.");
   }
 
