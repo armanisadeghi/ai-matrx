@@ -14,7 +14,11 @@ import {
   getAllManifests,
   getRawManifest,
 } from "@/features/surfaces/manifests/registry";
-import { resolveSurfaceUrlPattern } from "@/features/surfaces/utils/surface-url-pattern";
+import type { SurfaceSyncPlan } from "@ai-matrx/alchemy/checks";
+import {
+  planManifestSync,
+  toPackageResolved,
+} from "@/features/surfaces/declare/surface-declare";
 import { emitSurfaceSyncSql } from "./emit-surface-sync-sql";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
 
@@ -82,110 +86,59 @@ function rowsByKey(rows: readonly Row[]): Map<string, Row> {
   );
 }
 
-function expectedKeys(manifests: ReturnType<typeof getAllManifests>) {
-  return {
-    values: manifests.flatMap((m) =>
-      m.values.map((v) => `${m.surfaceName}::${v.name}`),
-    ),
-    roles: manifests.flatMap((m) =>
-      (m.agentRoles ?? []).map((v) => `${m.surfaceName}::${v.name}`),
-    ),
-    targets: manifests.flatMap((m) =>
-      (m.writeTargets ?? []).map((v) => `${m.surfaceName}::${v.name}`),
-    ),
-    tools: manifests.flatMap((m) =>
-      (m.clientTools ?? []).map((v) => `${m.surfaceName}::${v.name}`),
-    ),
-  };
+/** The ONE sync plan (ALC-14) for these manifests; --check compares the DB to it. */
+function syncPlan(
+  manifests: ReturnType<typeof getAllManifests>,
+  organizationId: string,
+): SurfaceSyncPlan {
+  return planManifestSync(toPackageResolved(manifests, getRawManifest), {
+    organizationId,
+    syncedFrom: "check",
+  });
+}
+
+const CHILD_TABLES = [
+  ["ui_surface_value", "value"],
+  ["ui_surface_agent_role", "agent role"],
+  ["ui_surface_write_target", "write target"],
+  ["ui_surface_client_tool", "client tool"],
+] as const;
+
+const NOT_COMPARED = new Set(["organization_id", "visibility", "synced_by", "synced_from"]);
+
+function planRows(plan: SurfaceSyncPlan, table: string): readonly Row[] {
+  return plan.tables.find((t) => t.table === `ui.${table}`)?.rows ?? [];
 }
 
 function childMetadataFailures(
-  manifests: ReturnType<typeof getAllManifests>,
+  plan: SurfaceSyncPlan,
   rows: readonly Row[][],
 ): string[] {
   const failures: string[] = [];
-  const actual = rows.map(rowsByKey);
-  const compare = (
-    table: number,
-    key: string,
-    expected: Record<string, unknown>,
-  ) => {
-    const row = actual[table].get(key);
-    if (!row) return;
-    for (const [column, value] of Object.entries(expected)) {
-      if (canonical(row[column]) !== canonical(value))
-        failures.push(`${key}: ${column} differs`);
+  CHILD_TABLES.forEach(([table], index) => {
+    const actual = rowsByKey(rows[index] ?? []);
+    for (const expected of planRows(plan, table)) {
+      const key = `${expected.surface_name}::${expected.name}`;
+      const row = actual.get(key);
+      if (!row) continue;
+      for (const [column, value] of Object.entries(expected)) {
+        if (NOT_COMPARED.has(column)) continue;
+        if (canonical(row[column]) !== canonical(value))
+          failures.push(`${key}: ${column} differs`);
+      }
     }
-  };
-  for (const m of manifests) {
-    for (const v of m.values)
-      compare(0, `${m.surfaceName}::${v.name}`, {
-        label: v.label,
-        description: v.description,
-        value_type: v.valueType,
-        always_available: v.alwaysAvailable,
-        typical_char_count: v.typicalCharCount,
-        sort_order: v.sortOrder ?? 1000,
-        auto_context: v.autoContext ?? true,
-        group_key: v.groupKey ?? v.group ?? "general",
-      });
-    for (const r of m.agentRoles ?? [])
-      compare(1, `${m.surfaceName}::${r.name}`, {
-        label: r.label,
-        description: r.description,
-        kind: r.kind,
-        default_agent_id: r.defaultAgentId,
-        mandate_key: r.mandateKey ?? null,
-        max_agents: r.maxAgents ?? 1,
-        allow_custom: r.allowCustom ?? true,
-        auto_run: r.autoRun ?? "user-choice",
-        sort_order: r.sortOrder ?? 1000,
-      });
-    for (const t of m.writeTargets ?? [])
-      compare(2, `${m.surfaceName}::${t.name}`, {
-        label: t.label,
-        description: t.description,
-        value_type: t.valueType,
-        mode: t.mode,
-        updates_value: t.updatesValue ?? null,
-        group_key: t.group ?? "general",
-        sort_order: t.sortOrder ?? 1000,
-        apply_policy: t.applyPolicy ?? "manual",
-        kind_key: t.valueKind ?? null,
-      });
-    for (const t of m.clientTools ?? [])
-      compare(3, `${m.surfaceName}::${t.name}`, {
-        label: t.label,
-        description: t.description,
-        input_schema: t.inputSchema,
-        mode: t.mode ?? "ui",
-      });
-  }
+  });
   return failures;
 }
 
 function expectedMetadata(
-  manifest: ReturnType<typeof getAllManifests>[number],
+  surface: SurfaceSyncPlan["surfaces"][number],
   row: Row,
 ): string[] {
-  const [clientName] = manifest.surfaceName.split("/");
-  const pairs: Array<[string, unknown]> = [
-    ["client_name", clientName],
-    ["label", manifest.label],
-    ["value_groups", manifest.groups ?? []],
-    ["readiness", manifest.readiness],
-    ["readiness_note", manifest.readinessNote ?? null],
-  ];
-  if (manifest.overlayId) pairs.push(["overlay_id", manifest.overlayId]);
-  const urlPattern = resolveSurfaceUrlPattern(manifest);
-  if (urlPattern) pairs.push(["url_pattern", urlPattern]);
-  if (manifest.intro?.trim()) pairs.push(["intro", manifest.intro.trim()]);
-  const parent = getRawManifest(manifest.surfaceName)?.inheritsFrom;
-  if (parent) pairs.push(["parent_surface_name", parent]);
-  return pairs.flatMap(([key, expected]) =>
+  return Object.entries(surface.update).flatMap(([key, expected]) =>
     canonical(row[key]) === canonical(expected)
       ? []
-      : [`surface ${manifest.surfaceName}: ${key} differs`],
+      : [`surface ${surface.name}: ${key} differs`],
   );
 }
 
@@ -236,18 +189,13 @@ async function main() {
       );
     } else await client.query("BEGIN READ ONLY");
 
+    const plan = syncPlan(manifests, organizationId);
     const surfaceRows = await client.query<Row>(
-      "select name, client_name, is_active, label, value_groups, readiness, readiness_note, overlay_id, url_pattern, intro, parent_surface_name from ui.ui_surface where name = any($1::text[])",
+      "select name, client_name, execution_mode, description, is_active, label, value_groups, readiness, readiness_note, overlay_id, url_pattern, intro, parent_surface_name from ui.ui_surface where name = any($1::text[])",
       [namesSql],
     );
-    const childTables = [
-      "ui_surface_value",
-      "ui_surface_agent_role",
-      "ui_surface_write_target",
-      "ui_surface_client_tool",
-    ] as const;
     const childRows: QueryResult<Row>[] = [];
-    for (const table of childTables) {
+    for (const [table] of CHILD_TABLES) {
       childRows.push(
         await client.query<Row>(
           `select * from ui.${table} where surface_name = any($1::text[])`,
@@ -270,39 +218,30 @@ async function main() {
           failures.push(
             `surface ${manifest.surfaceName}: ui.ui_surface row is inactive (reported only; this tool never activates rows)`,
           );
-        if (!registrationOnly)
-          failures.push(...expectedMetadata(manifest, row));
+        const planned = plan.surfaces.find((p) => p.name === manifest.surfaceName);
+        if (!registrationOnly && planned)
+          failures.push(...expectedMetadata(planned, row));
       }
     }
-    const expected = expectedKeys(manifests);
-    const labels = [
-      "value",
-      "agent role",
-      "write target",
-      "client tool",
-    ] as const;
-    for (let i = 0; i < childRows.length; i += 1) {
-      const rows = rowsByKey(childRows[i].rows);
-      for (const key of expected[
-        ["values", "roles", "targets", "tools"][i] as keyof ReturnType<
-          typeof expectedKeys
-        >
-      ]) {
+    CHILD_TABLES.forEach(([table, label], index) => {
+      const rows = rowsByKey(childRows[index]?.rows ?? []);
+      for (const expected of planRows(plan, table)) {
+        const key = `${expected.surface_name}::${expected.name}`;
         const row = rows.get(key);
         if (!row) {
-          failures.push(`${labels[i]} ${key}: missing`);
+          failures.push(`${label} ${key}: missing`);
           continue;
         }
         if (row.organization_id !== organizationId)
-          failures.push(`${labels[i]} ${key}: organization_id is not system`);
+          failures.push(`${label} ${key}: organization_id is not system`);
         if (row.visibility !== "public")
-          failures.push(`${labels[i]} ${key}: visibility is not public`);
+          failures.push(`${label} ${key}: visibility is not public`);
       }
-    }
+    });
     if (!registrationOnly)
       failures.push(
         ...childMetadataFailures(
-          manifests,
+          plan,
           childRows.map((result) => result.rows),
         ),
       );
@@ -429,7 +368,9 @@ async function runSelfTest() {
     );
     if (clientsBefore.rows[0]?.count !== clientsAfter.rows[0]?.count)
       throw new Error("SELF-TEST failed: emitter created ui_client rows");
-    const keys = expectedKeys([manifest]);
+    const selfPlan = syncPlan([manifest], organizationId);
+    const keysOf = (table: string) =>
+      planRows(selfPlan, table).map((row) => `${row.surface_name}::${row.name}`);
     const surface = await client.query<Row>(
       "select name, is_active from ui.ui_surface where name = $1",
       [fixture],
@@ -438,12 +379,9 @@ async function runSelfTest() {
       throw new Error(
         "SELF-TEST failed: emitted surface was not registered as active",
       );
-    const checks: Array<[string, readonly string[]]> = [
-      ["ui_surface_value", keys.values],
-      ["ui_surface_agent_role", keys.roles],
-      ["ui_surface_write_target", keys.targets],
-      ["ui_surface_client_tool", keys.tools],
-    ];
+    const checks: Array<[string, readonly string[]]> = CHILD_TABLES.map(
+      ([table]) => [table, keysOf(table)],
+    );
     for (const [table, expected] of checks) {
       const rows = await client.query<Row>(
         `select surface_name, name, organization_id, visibility from ui.${table} where surface_name = $1`,

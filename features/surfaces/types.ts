@@ -17,6 +17,14 @@
  *   - `features/surfaces/services/manifest-sync.service.ts` (drift + sync)
  */
 
+import type {
+  DeclaredValue,
+  ExecutionMode,
+  Sensitivity,
+  SurfaceDeclaration,
+  ValueGroup,
+  ValueType,
+} from "@ai-matrx/alchemy/declare";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import type { components } from "@/types/python-generated/api-types";
@@ -26,8 +34,7 @@ import type { components } from "@/types/python-generated/api-types";
 // ---------------------------------------------------------------------------
 
 /** Logical type of a surface value. Most are stringified for LLMs at runtime. */
-export type SurfaceValueType =
-  "string" | "number" | "boolean" | "object" | "array" | "document";
+export type SurfaceValueType = ValueType;
 
 // ---------------------------------------------------------------------------
 // SurfaceValueGroup — canonical named grouping of a surface's values.
@@ -41,7 +48,7 @@ export type SurfaceValueType =
  * manifests may NOT declare. Mirrored to `ui_surface.value_groups` (JSONB) and
  * per value to `ui_surface_value.group_key`.
  */
-export interface SurfaceValueGroup {
+export interface SurfaceValueGroup extends ValueGroup {
   /** lower_snake_case, unique within the surface (e.g. `seo_signals`). */
   key: string;
   /** The ONE canonical human label for this group. */
@@ -58,24 +65,13 @@ export const RESERVED_GROUP_KEYS = {
   inheritedPrefix: "inherited:",
 } as const;
 
-/** How sensitive a value is. Independent from automatic agent context inclusion. */
-export interface SurfaceValueSensitivity {
-  /** false = never leaves through Alchemy. Default true. */
-  exportable?: boolean;
-  /** Secret and credential values are excluded from every Alchemy format. Default "ordinary". */
-  classification?: "ordinary" | "secret" | "credential";
-  /** Initial preparation section selection, not an authorization boundary. Default true. */
-  includedByDefault?: boolean;
-}
+/** How sensitive a value is (`@ai-matrx/alchemy/declare` `Sensitivity`; every field defaults). */
+export type SurfaceValueSensitivity = Partial<Sensitivity>;
 
 /** `ui.ui_surface.execution_mode` (ui_surface_execution_mode_check). */
-export type SurfaceExecutionMode =
-  | "python-stream"
-  | "nextjs-stream"
-  | "browser-realtime"
-  | "local-runtime";
+export type SurfaceExecutionMode = ExecutionMode;
 
-export interface SurfaceValue {
+export interface SurfaceValue extends DeclaredValue {
   /**
    * Lower-snake-case key, unique within the surface (e.g. `selection`,
    * `current_file`, `open_tabs`). Becomes the key in `ApplicationScope`.
@@ -463,7 +459,12 @@ export interface SurfaceClientTool {
  */
 export type SurfaceReadiness = "verified" | "partial" | "stub";
 
-export interface SurfaceManifest {
+/**
+ * A surface manifest IS an `@ai-matrx/alchemy/declare` `SurfaceDeclaration`
+ * plus the agent-owned extension slots (roster mode, roles, client tools),
+ * validated and synced through `features/surfaces/declare/surface-declare.ts`.
+ */
+export interface SurfaceManifest extends SurfaceDeclaration {
   /** Matches `ui_surface.name`. */
   surfaceName: string;
   /**

@@ -33,8 +33,14 @@ import { storedMandateKey } from "@/features/mandates/mandate-key";
 import type { Database, Json } from "@/types/database.types";
 import {
   ALL_MANIFESTS,
+  getRawManifest,
   getRegisteredSurfaceNames,
 } from "@/features/surfaces/manifests/registry";
+import {
+  planManifestSync,
+  toPackageResolved,
+} from "@/features/surfaces/declare/surface-declare";
+import { executeSyncPlan } from "@/features/surfaces/services/execute-sync-plan";
 import { listRegisteredNamespaces } from "@/features/surfaces/config/namespace-registry";
 import { readAllRows } from "@ai-matrx/data/db";
 import { formatDurationMs } from "@ai-matrx/kit/format";
@@ -73,20 +79,12 @@ import {
 
 type Sb = SupabaseClient<Database>;
 type UiSurfaceValueRow = Database["ui"]["Tables"]["ui_surface_value"]["Row"];
-type UiSurfaceValueInsert =
-  Database["ui"]["Tables"]["ui_surface_value"]["Insert"];
 type UiSurfaceAgentRoleRow =
   Database["ui"]["Tables"]["ui_surface_agent_role"]["Row"];
-type UiSurfaceAgentRoleInsert =
-  Database["ui"]["Tables"]["ui_surface_agent_role"]["Insert"];
 type UiSurfaceWriteTargetRow =
   Database["ui"]["Tables"]["ui_surface_write_target"]["Row"];
-type UiSurfaceWriteTargetInsert =
-  Database["ui"]["Tables"]["ui_surface_write_target"]["Insert"];
 type UiSurfaceClientToolRow =
   Database["ui"]["Tables"]["ui_surface_client_tool"]["Row"];
-type UiSurfaceClientToolInsert =
-  Database["ui"]["Tables"]["ui_surface_client_tool"]["Insert"];
 
 const VALUE_TYPES = [
   "string",
@@ -112,40 +110,6 @@ type SyncSurfaceValue = SurfaceValue & { groupKey?: string };
 
 /** SurfaceWriteTarget projected onto the DB's `group_key` column name. */
 type SyncSurfaceWriteTarget = SurfaceWriteTarget & { groupKey?: string };
-
-/**
- * PROVENANCE ON EVERY MIRROR WRITE.
- *
- * The four mirror tables carry `synced_by` / `synced_from` (migration
- * `ui_surface_mirror_provenance.sql`). Every row this service writes stamps
- * BOTH — on insert and on the conflict-update alike, because a row whose
- * provenance is only set at creation lies the moment a later sync touches it.
- * The values come from the CALLER (`applyManifestSync`'s `provenance` option),
- * never from anything guessed in here: see `sync-provenance.ts`.
- */
-function manifestRowFor(
-  surfaceName: string,
-  v: SyncSurfaceValue,
-  provenance: MirrorSyncProvenance,
-  organizationId: string,
-): UiSurfaceValueInsert {
-  return {
-    organization_id: organizationId,
-    visibility: "public",
-    surface_name: surfaceName,
-    name: v.name,
-    label: v.label,
-    description: v.description,
-    value_type: v.valueType,
-    always_available: v.alwaysAvailable,
-    typical_char_count: v.typicalCharCount,
-    auto_context: v.autoContext ?? true,
-    sort_order: v.sortOrder ?? 1000,
-    group_key: v.groupKey ?? v.group ?? "general",
-    synced_by: provenance.syncedBy,
-    synced_from: provenance.syncedFrom,
-  };
-}
 
 function dbRowToSurfaceValue(row: UiSurfaceValueRow): SyncSurfaceValue {
   return {
@@ -205,109 +169,6 @@ function diffSurfaceValue(
     if (m !== d) diff[k] = { manifest: m, db: d };
   }
   return Object.keys(diff).length > 0 ? diff : undefined;
-}
-
-function manifestRoleRowFor(
-  surfaceName: string,
-  r: SurfaceAgentRole,
-  provenance: MirrorSyncProvenance,
-  organizationId: string,
-): UiSurfaceAgentRoleInsert {
-  return {
-    organization_id: organizationId,
-    visibility: "public",
-    synced_by: provenance.syncedBy,
-    synced_from: provenance.syncedFrom,
-    surface_name: surfaceName,
-    name: r.name,
-    label: r.label,
-    description: r.description,
-    kind: r.kind,
-    default_agent_id: r.defaultAgentId,
-    mandate_key: r.mandateKey ?? null,
-    max_agents: r.maxAgents ?? 1,
-    allow_custom: r.allowCustom ?? true,
-    auto_run: r.autoRun ?? "user-choice",
-    sort_order: r.sortOrder ?? 1000,
-  };
-}
-
-/**
- * The WRITE half of the manifest, mirrored to the DB so the SERVER can see it.
- *
- * Read values told an agent what a surface SHOWS. Without this, nothing
- * server-side knew what a surface ACCEPTS — so an agent bound to a surface
- * could read the page and had no way to learn it was allowed to change
- * anything. That is the missing half of the 360 loop; this row is what closes
- * it (aidream reads these into the surface manifest feed).
- *
- * Code stays truth: the row is a projection, never edited by hand.
- */
-function manifestWriteTargetRowFor(
-  surfaceName: string,
-  t: SurfaceWriteTarget,
-  provenance: MirrorSyncProvenance,
-  organizationId: string,
-): UiSurfaceWriteTargetInsert {
-  return {
-    organization_id: organizationId,
-    visibility: "public",
-    surface_name: surfaceName,
-    name: t.name,
-    label: t.label,
-    description: t.description,
-    value_type: t.valueType,
-    mode: t.mode,
-    // THE VALUE CONTRACT, mirrored: `valueKind` names the registered Kind whose
-    // emitted schema IS the shape this target accepts, and the server half of
-    // the 360 loop prints it beside the target. Absent = no declared contract,
-    // written as NULL rather than omitted so a target that DROPS its kind
-    // clears the column on the next sync instead of keeping a dead slug.
-    kind_key: t.valueKind ?? null,
-    // Default "manual" is the SAFE default and is written explicitly: a target
-    // that omits the field must never drift into agent-writable.
-    apply_policy: t.applyPolicy ?? "manual",
-    updates_value: t.updatesValue ?? null,
-    group_key: t.group ?? "general",
-    sort_order: t.sortOrder ?? 1000,
-    synced_by: provenance.syncedBy,
-    synced_from: provenance.syncedFrom,
-  };
-}
-
-/**
- * The ACTION half of the manifest, mirrored to the DB for the same reason the
- * write half is: the inline tool specs are assembled on the CLIENT at launch,
- * so without this row nothing server-side knows a surface offers tools at all.
- *
- * A row here means DECLARED, not live — the page must also be mounted with a
- * registered handler before the tool is actually offered on a run. The
- * mirror deliberately reports the declaration, since that is the stable,
- * code-owned fact; liveness is a per-run property of the client.
- *
- * Code stays truth: the row is a projection, never edited by hand.
- */
-function manifestClientToolRowFor(
-  surfaceName: string,
-  t: SurfaceClientTool,
-  provenance: MirrorSyncProvenance,
-  organizationId: string,
-): UiSurfaceClientToolInsert {
-  return {
-    organization_id: organizationId,
-    visibility: "public",
-    synced_by: provenance.syncedBy,
-    synced_from: provenance.syncedFrom,
-    surface_name: surfaceName,
-    name: t.name,
-    label: t.label,
-    description: t.description,
-    input_schema: t.inputSchema,
-    // Omitted mode reads as "ui" (ephemeral view state) — the safe reading,
-    // written explicitly so a tool never drifts into a stronger mode by
-    // omission. Matches the DB column default.
-    mode: t.mode ?? "ui",
-  };
 }
 
 function dbRowToSurfaceAgentRole(row: UiSurfaceAgentRoleRow): SurfaceAgentRole {
@@ -401,7 +262,7 @@ function dbRowToSurfaceWriteTarget(
 /**
  * Field-by-field write-target comparison, with the SAME default-normalization
  * discipline as `diffSurfaceValue` — the DB column defaults are what
- * `manifestWriteTargetRowFor` writes, so an omitted optional in code must
+ * the sync plan (`planManifestSync`) writes, so an omitted optional in code must
  * compare equal to the default sitting in the row. Getting this wrong would
  * report all 360 declared targets as drifted the moment one field is optional.
  */
@@ -1579,232 +1440,73 @@ export async function applyManifestSync(
 
   const skippedMissingSurface: string[] = [];
   const targetManifests = ALL_MANIFESTS;
-  const missingNames = targetManifests
-    .filter((m) => !existingSurfaces.has(m.surfaceName))
-    .map((m) => m.surfaceName);
-  if (!createMissingSurfaces && missingNames.length > 0) {
-    throw new Error(
-      `Surface sync refused before writing: missing registrations: ${missingNames.join(", ")}. Enable Create missing surfaces and sync again.`,
-    );
-  }
 
-  // 2. Register missing code-owned surfaces before their mirror children.
-  if (createMissingSurfaces) {
-    const missing = targetManifests
-      .filter((m) => !existingSurfaces.has(m.surfaceName))
-      .map((m) => {
-        // surface name pattern is `<client>/<slug>` — the client must exist already.
-        const [clientName] = m.surfaceName.split("/");
-        const urlPattern = resolveSurfaceUrlPattern(m);
-        return {
-          name: m.surfaceName,
-          client_name: clientName ?? "matrx-user",
-          description: "",
-          label: m.label,
-          value_groups: m.groups ?? [],
-          ...(urlPattern ? { url_pattern: urlPattern } : {}),
-          ...(m.intro?.trim() ? { intro: m.intro.trim() } : {}),
-        };
-      });
-    if (missing.length > 0) {
-      const ins = await sb
+  // 2–3c. ONE SYNC PATH (ALC-14): every row this service writes comes from
+  // @ai-matrx/alchemy/checks' plan (planManifestSync); the SQL emitter
+  // renders the same plan. Governance columns are insert-only.
+  const parentRowsBefore = await readAllRows(
+    ({ from, to }) =>
+      // VIEW LAW: completeness audit of the system catalog — every row is the job.
+      sb
         .schema("ui")
         .from("ui_surface")
-        .upsert(missing, { onConflict: "name", ignoreDuplicates: true });
-      if (ins.error) throw ins.error;
-    }
-  }
-
-  // 3. Upsert all manifest values.
-  const upsertRows: UiSurfaceValueInsert[] = [];
-  for (const manifest of targetManifests) {
-    for (const v of manifest.values) {
-      upsertRows.push(
-        manifestRowFor(
-          manifest.surfaceName,
-          v,
-          provenance,
-          systemOrganizationId,
-        ),
-      );
-    }
-  }
-  const upserted: ApplyManifestSyncResult["upserted"] = [];
-  if (upsertRows.length > 0) {
-    const upsertRes = await sb
-      .schema("ui")
-      .from("ui_surface_value")
-      .upsert(upsertRows, { onConflict: "surface_name,name" })
-      .select("surface_name, name");
-    if (upsertRes.error) throw upsertRes.error;
-    for (const row of upsertRes.data ?? []) {
-      upserted.push({ surfaceName: row.surface_name, valueName: row.name });
-    }
-  }
-
-  // 3b. Upsert all manifest agent roles.
-  const roleUpsertRows: UiSurfaceAgentRoleInsert[] = [];
-  for (const manifest of targetManifests) {
-    for (const r of manifest.agentRoles ?? []) {
-      roleUpsertRows.push(
-        manifestRoleRowFor(
-          manifest.surfaceName,
-          r,
-          provenance,
-          systemOrganizationId,
-        ),
-      );
-    }
-  }
-  const roleUpserted: ApplyManifestSyncResult["roleUpserted"] = [];
-  if (roleUpsertRows.length > 0) {
-    const roleUpsertRes = await sb
-      .schema("ui")
-      .from("ui_surface_agent_role")
-      .upsert(roleUpsertRows, { onConflict: "surface_name,name" })
-      .select("surface_name, name");
-    if (roleUpsertRes.error) throw roleUpsertRes.error;
-    for (const row of roleUpsertRes.data ?? []) {
-      roleUpserted.push({ surfaceName: row.surface_name, roleName: row.name });
-    }
-  }
-
-  // 3b2. Upsert all manifest WRITE TARGETS — what agents may write into each
-  //      surface. Same code-is-truth contract as values and roles.
-  const writeTargetRows: UiSurfaceWriteTargetInsert[] = [];
-  for (const manifest of targetManifests) {
-    for (const t of manifest.writeTargets ?? []) {
-      writeTargetRows.push(
-        manifestWriteTargetRowFor(
-          manifest.surfaceName,
-          t,
-          provenance,
-          systemOrganizationId,
-        ),
-      );
-    }
-  }
+        .select("name, parent_surface_name", { count: "exact" })
+        .order("name", { ascending: true })
+        .range(from, to),
+    { label: "ui.ui_surface" },
+  );
+  const dbParentByName = new Map(
+    parentRowsBefore.map((r) => [r.name, r.parent_surface_name]),
+  );
+  const plan = planManifestSync(
+    toPackageResolved(targetManifests, getRawManifest),
+    {
+      organizationId: systemOrganizationId,
+      syncedFrom: provenance.syncedFrom,
+      syncedBy: provenance.syncedBy,
+    },
+  );
+  const executed = await executeSyncPlan(sb, plan, {
+    existingSurfaces,
+    createMissingSurfaces,
+  });
+  const writtenBy = (tableName: string) =>
+    executed.tables.find((t) => t.table === tableName)?.written ?? [];
+  const upserted: ApplyManifestSyncResult["upserted"] = writtenBy(
+    "ui.ui_surface_value",
+  ).map((row) => ({
+    surfaceName: String(row.surface_name),
+    valueName: String(row.name),
+  }));
+  const roleUpserted: ApplyManifestSyncResult["roleUpserted"] = writtenBy(
+    "ui.ui_surface_agent_role",
+  ).map((row) => ({
+    surfaceName: String(row.surface_name),
+    roleName: String(row.name),
+  }));
   const writeTargetUpserted: ApplyManifestSyncResult["writeTargetUpserted"] =
-    [];
-  if (writeTargetRows.length > 0) {
-    const wtRes = await sb
-      .schema("ui")
-      .from("ui_surface_write_target")
-      .upsert(writeTargetRows, { onConflict: "surface_name,name" })
-      .select("surface_name, name");
-    if (wtRes.error) throw wtRes.error;
-    for (const row of wtRes.data ?? []) {
-      writeTargetUpserted.push({
-        surfaceName: row.surface_name,
-        targetName: row.name,
-      });
-    }
-  }
-
-  // 3b3. Upsert all manifest CLIENT TOOLS — what agents may DO on each
-  //      surface. Same code-is-truth contract as values, roles, write targets.
-  const clientToolRows: UiSurfaceClientToolInsert[] = [];
-  for (const manifest of targetManifests) {
-    for (const t of manifest.clientTools ?? []) {
-      clientToolRows.push(
-        manifestClientToolRowFor(
-          manifest.surfaceName,
-          t,
-          provenance,
-          systemOrganizationId,
-        ),
-      );
-    }
-  }
-  const clientToolUpserted: ApplyManifestSyncResult["clientToolUpserted"] = [];
-  if (clientToolRows.length > 0) {
-    const ctRes = await sb
-      .schema("ui")
-      .from("ui_surface_client_tool")
-      .upsert(clientToolRows, { onConflict: "surface_name,name" })
-      .select("surface_name, name");
-    if (ctRes.error) throw ctRes.error;
-    for (const row of ctRes.data ?? []) {
-      clientToolUpserted.push({
-        surfaceName: row.surface_name,
-        toolName: row.name,
-      });
-    }
-  }
-
-  // 3c. Mirror the canonical label + value_groups + url_pattern (and
-  //     manifest-declared intro) onto ui_surface for registered manifests.
-  //     `label` and `value_groups` are ALWAYS written — THE NAMING LAW makes
-  //     the manifest the only authority on them. A manifest WITHOUT `intro`
-  //     does NOT clear a DB-authored intro (code-first ownership applies only
-  //     to what the manifest actually declares — same rule as
-  //     parent_surface_name).
-  const urlPatternsUpdated: ApplyManifestSyncResult["urlPatternsUpdated"] = [];
-  for (const manifest of targetManifests) {
-    const urlPattern = resolveSurfaceUrlPattern(manifest);
-    const intro = manifest.intro?.trim() || null;
-    const upd = await sb
-      .schema("ui")
-      .from("ui_surface")
-      .update({
-        label: manifest.label,
-        value_groups: manifest.groups ?? [],
-        readiness: manifest.readiness,
-        readiness_note: manifest.readinessNote ?? null,
-        ...(manifest.overlayId ? { overlay_id: manifest.overlayId } : {}),
-        ...(urlPattern ? { url_pattern: urlPattern } : {}),
-        ...(intro ? { intro } : {}),
-      })
-      .eq("name", manifest.surfaceName)
-      .select("name");
-    if (upd.error) throw upd.error;
-    if (urlPattern && (upd.data ?? []).length > 0) {
-      urlPatternsUpdated.push({
-        surfaceName: manifest.surfaceName,
-        urlPattern,
-      });
-    }
-  }
-
-  // 3c-2. Mirror `inheritsFrom` → ui_surface.parent_surface_name for
-  //        registered manifests, so the DB tree (admin map, related-surfaces
-  //        chrome, RLS ancestor reads) matches the code-first hierarchy.
-  //        Only rows that differ are written; a manifest WITHOUT inheritsFrom
-  //        does NOT clear a DB-authored parent (code-first ownership applies
-  //        only to what the manifest actually declares).
-  const parentsUpdated: ApplyManifestSyncResult["parentsUpdated"] = [];
-  {
-    const parentRowsRes = await sb
-      .schema("ui")
-      .from("ui_surface")
-      .select("name, parent_surface_name")
-      .in(
-        "name",
-        targetManifests.map((m) => m.surfaceName),
-      );
-    if (parentRowsRes.error) throw parentRowsRes.error;
-    const dbParentByName = new Map(
-      (parentRowsRes.data ?? []).map((r) => [r.name, r.parent_surface_name]),
+    writtenBy("ui.ui_surface_write_target").map((row) => ({
+      surfaceName: String(row.surface_name),
+      targetName: String(row.name),
+    }));
+  const clientToolUpserted: ApplyManifestSyncResult["clientToolUpserted"] =
+    writtenBy("ui.ui_surface_client_tool").map((row) => ({
+      surfaceName: String(row.surface_name),
+      toolName: String(row.name),
+    }));
+  const urlPatternsUpdated: ApplyManifestSyncResult["urlPatternsUpdated"] =
+    executed.updatedSurfaces.flatMap(({ name, update }) =>
+      typeof update.url_pattern === "string"
+        ? [{ surfaceName: name, urlPattern: update.url_pattern }]
+        : [],
     );
-    for (const manifest of targetManifests) {
-      const declared = manifest.inheritsFrom ?? null;
-      if (!declared) continue;
-      if (dbParentByName.get(manifest.surfaceName) === declared) continue;
-      const upd = await sb
-        .schema("ui")
-        .from("ui_surface")
-        .update({ parent_surface_name: declared })
-        .eq("name", manifest.surfaceName)
-        .select("name");
-      if (upd.error) throw upd.error;
-      if ((upd.data ?? []).length > 0) {
-        parentsUpdated.push({
-          surfaceName: manifest.surfaceName,
-          parentSurfaceName: declared,
-        });
-      }
-    }
-  }
+  const parentsUpdated: ApplyManifestSyncResult["parentsUpdated"] =
+    executed.updatedSurfaces.flatMap(({ name, update }) =>
+      typeof update.parent_surface_name === "string" &&
+      dbParentByName.get(name) !== update.parent_surface_name
+        ? [{ surfaceName: name, parentSurfaceName: update.parent_surface_name }]
+        : [],
+    );
 
   // 3d. Backfill url_pattern for any other ui_surface row still empty when a
   //     route-map entry or client/local heuristic exists.

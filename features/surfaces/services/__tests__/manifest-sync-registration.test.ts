@@ -2,6 +2,9 @@ jest.mock("@/features/surfaces/manifests/registry", () => ({
   ALL_MANIFESTS: [
     {
       surfaceName: "matrx-user/education-flashcard-set",
+      client: "matrx-user",
+      executionMode: "python-stream",
+      description: "",
       label: "Flashcard set",
       values: [],
       groups: [],
@@ -9,6 +12,7 @@ jest.mock("@/features/surfaces/manifests/registry", () => ({
     },
   ],
   getRegisteredSurfaceNames: () => ["matrx-user/education-flashcard-set"],
+  getRawManifest: () => undefined,
 }));
 jest.mock("@/features/surfaces/config/namespace-registry", () => ({
   listRegisteredNamespaces: () => [],

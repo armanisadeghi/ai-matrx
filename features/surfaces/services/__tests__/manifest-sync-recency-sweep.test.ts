@@ -35,6 +35,9 @@ const TEST_SURFACE = "cascade-electronics/pickup-intake";
 
 const testManifest = {
   surfaceName: TEST_SURFACE,
+  client: "cascade-electronics",
+  executionMode: "python-stream",
+  description: "A recycling company's pickup intake form.",
   label: "Cascade Electronics Pickup Intake",
   readiness: "stub",
   values: [],
@@ -47,6 +50,7 @@ const testManifest = {
 jest.mock("@/features/surfaces/manifests/registry", () => ({
   ALL_MANIFESTS: [testManifest],
   getRegisteredSurfaceNames: () => [testManifest.surfaceName],
+  getRawManifest: () => undefined,
 }));
 
 import { applyManifestSync } from "../manifest-sync.service";
