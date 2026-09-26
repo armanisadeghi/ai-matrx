@@ -26,6 +26,14 @@ describe("route-manifest source SHA", () => {
     ).toThrow(`${ROUTE_MANIFEST_SOURCE_SHA_ENV} must name that exact commit, not an alias`);
   });
 
+  it("surfaces the local-commit refusal when the verifier cannot resolve the override", () => {
+    expect(() =>
+      resolveRouteManifestSourceSha(RELEASE_SHA, () => RELEASE_SHA, () => {
+        throw new Error(`${ROUTE_MANIFEST_SOURCE_SHA_ENV} does not resolve to a local commit`);
+      }),
+    ).toThrow(`${ROUTE_MANIFEST_SOURCE_SHA_ENV} does not resolve to a local commit`);
+  });
+
   it("keeps HEAD for manual non-release syncs", () => {
     expect(resolveRouteManifestSourceSha(undefined, () => RELEASE_SHA, () => "")).toBe(RELEASE_SHA);
   });

@@ -39,6 +39,12 @@ const REPO = path.resolve(SCRIPTS, "..");
 const RELEASE = readFileSync(path.join(SCRIPTS, "release.sh"), "utf8");
 const PACKAGE = JSON.parse(readFileSync(path.join(REPO, "package.json"), "utf8"));
 
+function shellFunction(name) {
+  const match = RELEASE.match(new RegExp(`${name}\\(\\) \\{([\\s\\S]*?)^\\}`, "m"));
+  assert.ok(match, `scripts/release.sh no longer defines ${name}`);
+  return match[1];
+}
+
 test("the release path publishes the route manifest", () => {
   assert.match(
     RELEASE,
@@ -63,6 +69,25 @@ test("it publishes ONLY on a proven-green rollout", () => {
     greenBranch[1],
     /after_publish_route_manifest/,
     "the publish is not on the green-rollout branch: " + greenBranch[1],
+  );
+
+  const publish = shellFunction("after_publish_route_manifest");
+  assert.match(
+    publish,
+    /ROUTE_MANIFEST_SOURCE_SHA="\$RELEASE_SHA" pnpm -s route-manifest:sync/,
+    "the post-READY sync no longer stamps the exact release SHA",
+  );
+
+  // The command-like remediation text below must not be mistaken for an
+  // executable sync. One shell invocation, in this function, prevents a
+  // premature manifest claim before the rollout has been proven READY.
+  const executableSyncs = RELEASE.match(/pnpm -s route-manifest:sync/g) ?? [];
+  assert.equal(executableSyncs.length, 1, "the sync has an additional executable release path");
+  assert.match(publish, /pnpm -s route-manifest:sync/);
+  assert.equal(
+    (RELEASE.match(/\bafter_publish_route_manifest\b/g) ?? []).length,
+    2,
+    "the manifest publish function is called outside its single post-READY branch",
   );
 });
 
