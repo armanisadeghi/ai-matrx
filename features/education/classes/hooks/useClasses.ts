@@ -9,7 +9,8 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   CLASS_SCOPE_TYPE_SLUG,
@@ -50,9 +51,19 @@ export interface UseClassesReturn {
   classTypeId: string | null;
   loading: boolean;
   orgId: string | null;
-  /** Ensure the Class scope type exists; returns its id. Idempotent. */
-  ensureClassType: () => Promise<string | null>;
-  createClass: (input: CreateClassInput) => Promise<StudyClass | null>;
+  /**
+   * Ensure the Class scope type exists in `forOrgId` (default: the selected
+   * workspace); returns its id, or null when no workspace is selected.
+   * Idempotent.
+   */
+  ensureClassType: (forOrgId?: string) => Promise<string | null>;
+  /**
+   * Create a class. With no workspace selected this ASKS the person which one
+   * (the org gate) and continues with their answer; it throws
+   * `OrganizationSelectionCancelled` if they close the picker. Never a silent
+   * no-op.
+   */
+  createClass: (input: CreateClassInput) => Promise<StudyClass>;
   updateClass: (
     id: string,
     patch: { name?: string; description?: string; settings?: ClassSettings },
@@ -106,34 +117,49 @@ export function useClasses(): UseClassesReturn {
 
   const loading = !typesLoaded || (classTypeId != null && !scopesLoaded);
 
-  const ensureClassType = useCallback(async (): Promise<string | null> => {
-    if (!orgId) return null;
-    if (classTypeId) return classTypeId;
-    // Re-check freshly (avoids a double-create race across mounts).
-    if (!typesLoaded) await dispatch(ensureScopeTree());
-    const created = await dispatch(
-      createScopeType({
-        org_id: orgId,
-        label_singular: CLASS_SCOPE_TYPE_SEED.labelSingular,
-        label_plural: CLASS_SCOPE_TYPE_SEED.labelPlural,
-        icon: CLASS_SCOPE_TYPE_SEED.icon,
-        color: CLASS_SCOPE_TYPE_SEED.color,
-        description: CLASS_SCOPE_TYPE_SEED.description,
-        slug: CLASS_SCOPE_TYPE_SLUG,
-      }),
-    ).then(unwrapScopesRpc);
-    return created.id;
-  }, [dispatch, orgId, classTypeId, typesLoaded]);
+  const store = useAppStore();
+
+  const ensureClassType = useCallback(
+    async (forOrgId?: string): Promise<string | null> => {
+      const org = forOrgId ?? orgId;
+      if (!org) return null;
+      if (org === orgId && classTypeId) return classTypeId;
+      // Re-check freshly from the store (avoids a double-create race across
+      // mounts, and covers a workspace chosen after this render).
+      if (!selectScopeTypesLoadedForOrg(store.getState(), org))
+        await dispatch(ensureScopeTree());
+      const existing = selectScopeTypesByOrg(store.getState(), org).find(
+        (t) => t.slug === CLASS_SCOPE_TYPE_SLUG,
+      );
+      if (existing) return existing.id;
+      const created = await dispatch(
+        createScopeType({
+          org_id: org,
+          label_singular: CLASS_SCOPE_TYPE_SEED.labelSingular,
+          label_plural: CLASS_SCOPE_TYPE_SEED.labelPlural,
+          icon: CLASS_SCOPE_TYPE_SEED.icon,
+          color: CLASS_SCOPE_TYPE_SEED.color,
+          description: CLASS_SCOPE_TYPE_SEED.description,
+          slug: CLASS_SCOPE_TYPE_SLUG,
+        }),
+      ).then(unwrapScopesRpc);
+      return created.id;
+    },
+    [dispatch, store, orgId, classTypeId],
+  );
 
   const createClass = useCallback(
-    async (input: CreateClassInput): Promise<StudyClass | null> => {
-      if (!orgId) return null;
-      const typeId = await ensureClassType();
-      if (!typeId) return null;
+    async (input: CreateClassInput): Promise<StudyClass> => {
+      // No workspace selected → ask which one, then carry on (never a silent
+      // no-op: the Create button and agent writes both land here).
+      const org = await ensureOrgId(orgId);
+      const typeId = await ensureClassType(org);
+      if (!typeId)
+        throw new Error("Could not find or create the Class type in this workspace.");
       const settings = { ...emptySettings(), ...input.settings };
       const scope = (await dispatch(
         createScope({
-          org_id: orgId,
+          org_id: org,
           type_id: typeId,
           name: input.name.trim(),
           description: input.description?.trim() ?? "",

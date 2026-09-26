@@ -135,6 +135,7 @@ import { educationFastfireManifest } from "./education-fastfire.manifest";
 import { educationAssessmentManifest } from "./education-assessment.manifest";
 import { educationGradeWorkManifest } from "./education-grade-work.manifest";
 import { educationPlannerManifest } from "./education-planner.manifest";
+import { educationClassesManifest } from "./education-classes.manifest";
 import { educationMindMapsManifest } from "./education-mind-maps.manifest";
 import { educationMemoryManifest } from "./education-memory.manifest";
 import { educationPracticeOralManifest } from "./education-practice-oral.manifest";
@@ -375,6 +376,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   educationAssessmentManifest,
   educationGradeWorkManifest,
   educationPlannerManifest,
+  educationClassesManifest,
   educationMindMapsManifest,
   educationMemoryManifest,
   educationPracticeOralManifest,
