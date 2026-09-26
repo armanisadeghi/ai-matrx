@@ -61844,6 +61844,7 @@ export type Database = {
           host: string | null
           id: string
           known_count: number
+          malformed_count: number
           metadata: Json
           new_count: number
           organization_id: string
@@ -61875,6 +61876,7 @@ export type Database = {
           host?: string | null
           id?: string
           known_count?: number
+          malformed_count?: number
           metadata?: Json
           new_count?: number
           organization_id: string
@@ -61906,6 +61908,7 @@ export type Database = {
           host?: string | null
           id?: string
           known_count?: number
+          malformed_count?: number
           metadata?: Json
           new_count?: number
           organization_id?: string
@@ -62645,6 +62648,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_catalog_rename: {
+        Args: { p_new_id: string; p_old_id: string; p_repo: string }
+        Returns: string
+      }
+      check_catalog_retire: {
+        Args: { p_declared: string[]; p_repo: string }
+        Returns: number
+      }
       check_catalog_upsert: {
         Args: {
           p_category: string
@@ -72170,6 +72181,16 @@ export type Database = {
     }
     Functions: {
       _action_request_gone: { Args: never; Returns: string }
+      _carried_back_value: {
+        Args: {
+          p_older_type: string
+          p_options: string
+          p_org: string
+          p_store_type: string
+          p_value: Json
+        }
+        Returns: Json
+      }
       _cf_as_double: { Args: { p_value: Json }; Returns: number }
       _cf_int_opt: { Args: { p_name: string; p_rules: Json }; Returns: number }
       _cf_num_opt: { Args: { p_name: string; p_rules: Json }; Returns: number }
@@ -72182,6 +72203,17 @@ export type Database = {
       _cf_valid_date: { Args: { p_value: string }; Returns: boolean }
       _cf_valid_datetime: { Args: { p_value: string }; Returns: boolean }
       _confirmation_admission: { Args: { p_relid: unknown }; Returns: string }
+      _cutover_carry_back: {
+        Args: {
+          p_accepted?: boolean
+          p_actor?: string
+          p_apply: boolean
+          p_last: Database["platform"]["Tables"]["cutover_seam_press"]["Row"]
+          p_org: string
+          p_press?: string
+        }
+        Returns: Json
+      }
       _cutover_copy_resync: {
         Args: { p_actor: string; p_org: string; p_press: string }
         Returns: Json
@@ -72225,6 +72257,10 @@ export type Database = {
       }
       _cutover_seam_reverse_readiness: {
         Args: { p_org: string; p_seam: string }
+        Returns: Json
+      }
+      _decorations_in_older_words: {
+        Args: { p_decorations: Json; p_style: Json; p_table: string }
         Returns: Json
       }
       _door_follows_its_function_impl: {
@@ -72797,6 +72833,7 @@ export type Database = {
       }
       cutover_seam_press: {
         Args: {
+          p_accept_not_carried?: boolean
           p_note?: string
           p_organization_id: string
           p_seam_key: string
@@ -72806,6 +72843,14 @@ export type Database = {
       }
       cutover_seams: { Args: { p_organization_id: string }; Returns: Json }
       cutover_tables_copied: { Args: { p_org: string }; Returns: Json }
+      data_tables_born_in_the_new_system_for_me: {
+        Args: never
+        Returns: {
+          organization_id: string
+          organization_name: string
+          table_id: string
+        }[]
+      }
       data_tables_switched_for_me: {
         Args: never
         Returns: {
