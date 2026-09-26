@@ -103,6 +103,12 @@ const config: Config = {
         // `remend` (the streaming markdown healer) ships an import-only
         // `exports` map, which Jest's resolver does not read.
         "^remend$": "<rootDir>/node_modules/remend/dist/index.js",
+        // `require("webpack")` in next.config.js / utils/next-config: under
+        // `next` it resolves through Next's own require hook to its compiled
+        // copy (next/dist/server/config-utils.js: 'webpack' ->
+        // 'next/dist/compiled/webpack/webpack-lib'); `webpack` is not a direct
+        // dependency. A suite that loads next.config.js resolves it the same way.
+        "^webpack$": "<rootDir>/node_modules/next/dist/compiled/webpack/webpack-lib.js",
         // Our own published `@ai-matrx/*` packages ship an `exports` subpath
         // map. Jest's default resolver does NOT honour `exports`, so a shipped
         // import like `@ai-matrx/agents/stream/ndjson` resolves to nothing and
