@@ -41,7 +41,8 @@ export async function saveDerivative({
   derivationKind,
   derivationMetadata,
 }: SaveDerivativeParams): Promise<{ docId: string | null; error: string | null }> {
-  // 1. The derivative lives in its PARENT's tenant — a derived document can
+  // 1. The derivative lives in its PARENT's tenant, at its PARENT's
+  //    visibility (NOT NULL, no database default) — a derived document can
   //    never sit in a different organization from the document it came from,
   //    and it is never left for a database default to choose. Read it first,
   //    before spending an upload, and refuse with the remedy when the parent
@@ -49,7 +50,7 @@ export async function saveDerivative({
   const { data: parentRow, error: parentError } = await supabase
     .schema("docproc")
     .from("processed_documents")
-    .select("organization_id")
+    .select("organization_id, visibility")
     .eq("id", parent.id)
     .single();
   if (parentError) {
@@ -94,6 +95,7 @@ export async function saveDerivative({
     .insert({
       name: result.filename.replace(/\.pdf$/i, ""),
       organization_id: parentRow.organization_id,
+      visibility: parentRow.visibility,
       source_kind: "cld_file",
       source_id: fileId,
       source_hash: "",

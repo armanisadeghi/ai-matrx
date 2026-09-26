@@ -38,6 +38,7 @@ function snapshotRow(id: string): PageSnapshot {
     organization_id: "org-1",
     page_id: "page",
     perf: {},
+    processed_document_id: null,
     seo_metrics: null,
     session_id: "session-1",
     site_id: "site",

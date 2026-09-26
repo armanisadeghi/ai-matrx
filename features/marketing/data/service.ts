@@ -961,11 +961,11 @@ export async function listBrandOptions(
 
 /** Every `web.page` column — ONE list so selects can never drift per call site. */
 export const PAGE_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, site_id, canonical_page_id, url, url_hash, path, provenance, status, first_seen, last_seen, http_status_last, content_type_last, target_keyword, meta_title_desired, meta_description_desired, seo_metrics_desired, desired_values, latest_snapshot_id, launch_tracking, link_score, link_score_computed_at";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, site_id, canonical_page_id, url, url_hash, path, provenance, status, first_seen, last_seen, http_status_last, content_type_last, target_keyword, meta_title_desired, meta_description_desired, seo_metrics_desired, desired_values, latest_snapshot_id, launch_tracking, link_score, link_score_computed_at, processed_document_id";
 
 /** Every `web.snapshot` column — ONE list so selects can never drift per call site. */
 export const SNAPSHOT_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_file_id, markdown_file_id, head_tags, headings, links_summary, images, structured_data, perf, extracted, seo_metrics, audit_metrics";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_file_id, markdown_file_id, head_tags, headings, links_summary, images, structured_data, perf, extracted, seo_metrics, audit_metrics, processed_document_id";
 
 /**
  * Source-disagreement coverage filters over the canonical page registry.

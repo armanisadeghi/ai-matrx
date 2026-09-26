@@ -3,14 +3,14 @@
  * webpage, a Google Doc, an email, the clipboard, print) never carries the
  * internal `<artifact …>` envelope. RC-B6 round 2: Save to Notes stored the raw
  * tag while Create Task stripped it — one writer used the shared projection,
- * the others read `ctx.content` directly. Every handler hands `outboundContent(ctx)`
+ * the others read `ctx.content` directly. Every handler hands `contentForDestination(ctx)`
  * (the one projection) to a destination; `ctx.content` itself goes only where
  * the envelope is the point (extracting the kind blocks) or where the text
  * stays home (edit-in-place, compare, read-aloud of what is shown).
  */
 import * as fs from "fs";
 import * as path from "path";
-import { outboundContent } from "../utils";
+import { contentForDestination } from "../utils";
 
 const HANDLERS = path.join(__dirname, "../handlers");
 
@@ -31,7 +31,7 @@ describe("outbound content", () => {
     const ctx = {
       content: 'Intro\n\n<artifact type="table" id="t1" version="1" title="Table 1">\n| a | b |\n|---|---|\n| 1 | 2 |\n</artifact>\n',
     } as never;
-    const out = outboundContent(ctx);
+    const out = contentForDestination(ctx);
     expect(out).not.toContain("<artifact");
     expect(out).toContain("| a | b |");
   });

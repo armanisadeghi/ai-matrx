@@ -29,6 +29,7 @@ const SNAPSHOT: InspectionSnapshotRow = {
   word_count: 421,
   body_file_id: "file-1",
   markdown_file_id: null,
+  processed_document_id: null,
   head_tags: {
     title: "About Example",
     meta_description: "Meet the Example team.",

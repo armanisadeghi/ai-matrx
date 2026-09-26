@@ -10,7 +10,10 @@ import type {
   InspectionSnapshotRow,
   LinkGraphEdgeResult,
 } from "@/features/marketing/data/inspection-types";
-import { assertFound } from "@/features/marketing/data/service";
+import {
+  assertFound,
+  SNAPSHOT_COLUMNS,
+} from "@/features/marketing/data/service";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 
@@ -24,8 +27,9 @@ const CRAWL_LINK_SELECT =
 const SITE_LINK_SELECT =
   "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, snapshot_id, source_page_id, target_url, target_page_id, is_internal, rel, anchor_text, http_status, position, source_page:page!link_edge_source_page_id_fkey(url), target_page:page!link_edge_target_page_id_fkey(url)";
 
-const SNAPSHOT_SELECT =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, page_id, session_id, captured_at, final_url, http_status, content_hash, word_count, body_file_id, markdown_file_id, head_tags, headings, links_summary, images, structured_data, perf, extracted, seo_metrics, audit_metrics, page:page(url)";
+// Derived from the ONE snapshot column list, so a new `web.snapshot` column
+// reaches this select the moment it reaches SNAPSHOT_COLUMNS.
+const SNAPSHOT_SELECT = `${SNAPSHOT_COLUMNS}, page:page(url)` as const;
 
 const SCREENSHOT_SELECT =
   "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, custom_fields, site_id, page_id, snapshot_id, kind, file_id, width, height, captured_at, page:page(url)";

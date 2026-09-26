@@ -30,7 +30,11 @@ registerAction({
       Boolean(ctx.sourceAdapter.edit) &&
       !ctx.source.readOnly &&
       !(ctx.extensions?.type === "chat-message" && ctx.extensions.contentIsStructuredRaw);
-    const prepared = canSave ? await prepareContentEdit(ctx) : { source: ctx.source, content: ctx.content };
+    // Read-only: nothing is edited in place, so the page is purely outbound
+    // and carries the envelope-free projection like every other destination.
+    const prepared = canSave
+      ? await prepareContentEdit(ctx)
+      : { source: ctx.source, content: contentForDestination(ctx) };
     let preparedSource = prepared.source;
     // What the editor opened on — a display projection for chat — so the
     // adapter splices only the changed span into the stored text.
