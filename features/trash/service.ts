@@ -11,6 +11,8 @@
  */
 import { supabase } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 
 export type TrashItem =
   Database["public"]["Functions"]["trash_list"]["Returns"][number];
@@ -286,3 +288,28 @@ export function parseVaultRecoveryPreview(raw: unknown): VaultRecoveryPreview {
     reason,
   };
 }
+
+/**
+ * THE ONE ARCHIVE for any registered record Trash lists: the person's own write of `deleted_at`
+ * on the record's table (RLS decides), the mirror of `restoreFromTrash`. Surfaces never write a
+ * record-specific soft delete of their own for a kind this can reach — they mount
+ * `<ArchiveRecordButton token id />` (verify RC-B11 round 2: a studio document had no way out).
+ * Throws a plain sentence; "not found" means it is already archived or not yours to archive.
+ */
+export async function archiveRecord(token: string, id: string, noun = "this"): Promise<void> {
+  const info = tryGetEntityInfo(token);
+  if (!info) throw new Error(`This kind of record (${token}) can't be archived from here yet.`);
+  const table = (supabase.schema(info.schema as never) as unknown as {
+    from: (t: string) => {
+      update: (v: Record<string, unknown>) => {
+        eq: (c: string, v: string) => { is: (c: string, v: null) => { select: (c: string) => PromiseLike<{ data: { id: string }[] | null; error: unknown }> } };
+      };
+    };
+  }).from(info.table);
+  const { error } = await tryWriteOne(
+    table.update({ deleted_at: new Date().toISOString() }).eq("id", id).is("deleted_at", null).select("id"),
+    { action: "archive", noun },
+  );
+  if (error) throw error;
+}
+

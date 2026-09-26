@@ -33,6 +33,7 @@ import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-c
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { fenceOpenerOf } from "@ai-matrx/content-ir/source";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ArchiveRecordButton } from "@/features/trash/components/ArchiveRecordButton";
 
 /** A heading, else the first line of prose — never a directive, fence or front-matter line. */
 function titleFrom(bufferTitle: string | null, buffer: string): string {
@@ -51,6 +52,7 @@ export function AnnotateView({
   buffer,
   bufferTitle,
   onOpenDocument,
+  onArchived,
 }: {
   /** The loaded content.document, when the studio has one open. */
   documentId: string | null;
@@ -58,6 +60,8 @@ export function AnnotateView({
   buffer: string;
   bufferTitle: string | null;
   onOpenDocument: (id: string) => void;
+  /** The open document was archived (it is restorable from Trash): close it. */
+  onArchived?: () => void;
 }) {
   const [doc, setDoc] = useState<LoadedDocument | null>(null);
   const [loading, setLoading] = useState(false);
@@ -165,6 +169,8 @@ export function AnnotateView({
           <div className="flex items-center gap-2 border-b border-border px-3 py-1.5 text-xs">
             <span className="truncate font-medium text-foreground">{doc.title}</span>
             <span className="shrink-0 text-muted-foreground">version {doc.contentVersion}</span>
+            {/* The ONE shared archive control (features/trash) — the document is restorable from Trash. */}
+            <ArchiveRecordButton token="document" id={doc.id} what={`"${doc.title}"`} onArchived={onArchived} className="h-7 px-2 text-xs" />
             <Button
               size="sm"
               variant={editing ? "default" : "outline"}

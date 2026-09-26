@@ -652,6 +652,7 @@ export function MarkdownStudio() {
               buffer={content}
               bufferTitle={loadedSampleName}
               onOpenDocument={(id) => void loadFromSource("document", id)}
+              onArchived={() => setLoadedSource(null)}
             />
           ) : mode === "editor" ? (
             <StudioEditorMode
