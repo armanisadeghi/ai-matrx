@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-26T16:22:01.873Z",
+  "generated_at": "2026-09-26T18:58:16.685Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -2396,6 +2396,12 @@
       "checksum": "94d3d0c41f11db359e03067a12eaf46036def0a596762cef273c471316dd8d01",
       "applied_at": "2026-09-19 14:47:44.046798+00"
     },
+    "migrations/campaign/heldtails_the_approval_setting_is_named_where_it_lives.sql": {
+      "source": "matrx-frontend",
+      "filename": "heldtails_the_approval_setting_is_named_where_it_lives.sql",
+      "checksum": "7db7d96135f3691e5b647116385347bf9242af255c0c18795d65df676929764a",
+      "applied_at": "2026-09-26 18:58:15.764611+00"
+    },
     "migrations/campaign/hierarchycascade_an_agent_app_can_be_tagged_with_scopes.sql": {
       "source": "campaign",
       "filename": "hierarchycascade_an_agent_app_can_be_tagged_with_scopes.sql",
@@ -2917,6 +2923,12 @@
       "filename": "lockhyg_a_lock_row_carries_a_lease.sql",
       "checksum": "b9e7ee8b9391b935b0ba8d00b9c497c8a9ac68e48afb1cde210502b048022772",
       "applied_at": "2026-09-22 18:01:09.235786+00"
+    },
+    "migrations/campaign/merge7_the_merged_grid_is_a_feature_knob.sql": {
+      "source": "matrx-frontend",
+      "filename": "merge7_the_merged_grid_is_a_feature_knob.sql",
+      "checksum": "32a725c11c733ca7b4de1d1083fc2cee2bc0ba97aaa4feb48e08293cd3ac9c43",
+      "applied_at": "2026-09-26 18:47:48.420117+00"
     },
     "migrations/campaign/mergehist_a_compound_operation_signs_its_revision.sql": {
       "source": "matrx-frontend",
