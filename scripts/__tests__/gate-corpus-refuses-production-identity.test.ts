@@ -34,18 +34,64 @@
  */
 
 import { describe, expect, it } from "@jest/globals";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import {
   assertConfiguredHostMatchesTarget,
   assertServerMatchesTarget,
+  branchIsRetired,
+  loadBranchDbEnv,
   loadBranchRef,
 } from "../lib/migration-target";
 import { RUNNERS, checkFiles } from "../gate-corpus/seed-contract";
 
 const ROOT = resolve(__dirname, "..", "..");
 const GATE = join(ROOT, "scripts", "gate-corpus");
-const ref = loadBranchRef(ROOT);
+// The real BRANCH-REF names no branch since the rehearsal branch was deleted 2026-09-26
+// (section R below). The judgment is still tested on a FIXTURE branch whose parent is
+// production's REAL identity, read from the real file.
+const realRef = loadBranchRef(ROOT);
+const fixtureDir = mkdtempSync(join(tmpdir(), "branch-ref-fixture-"));
+writeFileSync(
+  join(fixtureDir, "BRANCH-REF"),
+  [
+    "branch_ref = fixturebranchrefxxxxx",
+    `parent_ref = ${realRef.parentRef}`,
+    "pooler_host = aws-0-us-east-1.pooler.supabase.com",
+    "pooler_port = 5432",
+    "pooler_user = postgres.fixturebranchrefxxxxx",
+    "database = postgres",
+    "password_env_var = FIXTURE_BRANCH_DATABASE_URL",
+    "system_identifier = 1111111111111111111",
+    `parent_system_identifier = ${realRef.parentSystemIdentifier}`,
+  ].join("\n"),
+);
+const ref = loadBranchRef(ROOT, join(fixtureDir, "BRANCH-REF"));
+
+describe("R. the real BRANCH-REF is retired", () => {
+  it("names no branch, keeps production's identity, and a branch connection refuses", () => {
+    expect(branchIsRetired(realRef)).toBe(true);
+    expect(realRef.parentSystemIdentifier).toBeTruthy();
+    expect(() => loadBranchDbEnv(ROOT, realRef)).toThrow(/operations\/clone\/CURRENT\.md/);
+  });
+
+  it("an empty branch ref never makes production look like a branch", () => {
+    expect(() =>
+      assertConfiguredHostMatchesTarget(
+        {
+          user: `postgres.${realRef.parentRef}`,
+          host: "aws-0-us-east-1.pooler.supabase.com",
+          port: 6543,
+          database: "postgres",
+          from: "test",
+        },
+        "production",
+        realRef,
+      ),
+    ).not.toThrow();
+  });
+});
 
 /** A server that answers pg_control_system() with whatever identity we hand it. */
 const serverSaying = (sysid: string) => async (_sql: string) => ({
