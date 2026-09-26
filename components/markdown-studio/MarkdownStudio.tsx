@@ -57,6 +57,7 @@ import { createMarkdownStudioScope } from "@/features/surfaces/manifests/markdow
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderToggle from "@/features/shell/components/header/variants/variants/HeaderToggle";
 import type { HeaderAction } from "@/features/shell/components/header/variants/types";
+import { ArchiveRecordButton } from "@/features/trash/components/ArchiveRecordButton";
 
 /**
  * The studio's two modes — the ONE vocabulary. `StudioMode` derives from it, so
@@ -540,6 +541,10 @@ export function MarkdownStudio() {
             >
               {STUDIO_SOURCES[loadedSource.kind].label} · read-only copy
             </Badge>
+          )}
+          {loadedSource?.kind === "document" && (
+            // The studio's own record kind: archivable where it is named (door law), restorable from Trash.
+            <ArchiveRecordButton token="document" id={loadedSource.id} what={`"${contentLabel}"`} onArchived={() => setLoadedSource(null)} className="h-5 px-1.5 text-[10px]" />
           )}
           {loadedSource?.notice && (
             <span className="hidden items-center gap-1 text-muted-foreground md:flex">
