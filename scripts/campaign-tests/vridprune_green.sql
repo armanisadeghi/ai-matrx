@@ -38,6 +38,10 @@
 \endif
 
 begin;
+-- ONE SNAPSHOT for the oracle and the door. Under READ COMMITTED each statement sees its own
+-- snapshot, and on a database other lanes are writing to (the clone, 2026-09-26) the full walk and
+-- the door disagreed by four ids that were written between them — a false R1 BROKEN.
+set transaction isolation level repeatable read;
 set local statement_timeout = '600s';
 set local lock_timeout = '3s';
 -- Function-level counters for THIS transaction only (pg_stat_xact_user_functions); V2 reads them.

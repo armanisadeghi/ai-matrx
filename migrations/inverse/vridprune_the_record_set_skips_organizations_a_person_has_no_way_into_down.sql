@@ -1,5 +1,5 @@
--- chair-step: rule-27 rehearsal inverse of vridprune_a_person_is_asked_only_about_organizations_they_have_a_way_into.sql — puts back the pre-VRID-PRUNE body of custom.visible_record_ids verbatim, which walks every (organization, Table) pair on the database again (25-38 s per person on production). Same answers; only the cost returns. Never needed on production except to rule the prune out while diagnosing a refusal.
--- based-on: PENDING
+-- chair-step: rule-27 rehearsal inverse of rehearsal/vridprune_the_record_set_skips_organizations_a_person_has_no_way_into.sql — puts back the pre-VRID-PRUNE body of custom.visible_record_ids verbatim, which walks every (organization, Table) pair on the database again (25-38 s per person on production). Same answers; only the cost returns. Never needed on production except to rule the prune out while diagnosing a refusal.
+-- based-on: custom.visible_record_ids(uuid, permission_level) 49b469f255f0f07108f7fa258d28d384bb826385faafff1f3cc548014a205024
 --
 -- The body below is pg_get_functiondef(custom.visible_record_ids) as it stood on production on
 -- 2026-09-25 (sha256 a99682186e83ae0581e5708b4d9cfe5f9c2af9f7c17b8a10a4289aeab8c6d5b1).
