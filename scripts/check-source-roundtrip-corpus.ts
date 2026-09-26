@@ -135,7 +135,7 @@ async function main(): Promise<number> {
   console.log(`Database connection from ${env.from}; session READ ONLY.`);
   const cx = await connectDirect(env, "source-roundtrip-corpus");
   await cx.query("set session characteristics as transaction read only");
-  await cx.query("set statement_timeout = '120s'");
+  await cx.query("set statement_timeout = '30s'");
 
   const report: Record<string, SourceStats> = {};
   const started = Date.now();
