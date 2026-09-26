@@ -79,6 +79,13 @@ export function errorRootFor(menu: Element | null): Element | null {
     return (clone.textContent ?? "").trim();
   };
   while (el && !wordsBesideMenu(el) && el.parentElement) el = el.parentElement;
+  // A title alone ("Couldn't load the saved artifact") reads better with the
+  // sentence beside it: take the small card it heads, never a whole page.
+  const parent = el?.parentElement;
+  if (el && parent && parent !== document.body && wordsBesideMenu(el).length < 80) {
+    const cardWords = wordsBesideMenu(parent);
+    if (cardWords.length > wordsBesideMenu(el).length && cardWords.length <= 600) return parent;
+  }
   return el;
 }
 

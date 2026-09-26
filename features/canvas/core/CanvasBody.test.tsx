@@ -141,7 +141,10 @@ describe("CanvasBody persisted artifacts", () => {
       "Couldn't load the saved artifact",
     );
 
-    const retry = view.container.querySelector("button");
+    // The error also carries the Copy-for-AI menu, so pick the retry by name.
+    const retry = [...view.container.querySelectorAll("button")].find(
+      (button) => button.textContent === "Try again",
+    );
     await act(async () => retry?.click());
     expect(refetch).toHaveBeenCalledTimes(1);
 

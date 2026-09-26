@@ -26,3 +26,10 @@ it("still reads an alert region when the menu is nested deeper inside it", () =>
   // The immediate parent is an empty wrapper; the words live in the alert.
   expect(readRenderedError(errorRootFor(menu)).message).toContain("query failed");
 });
+
+it("reads a title together with the sentence of the small card it heads", () => {
+  document.body.innerHTML =
+    '<div class="card"><p>Couldn\'t load the saved artifact<span data-error-alchemy-menu=""></span></p><p>The Canvas kept its identity, but the saved content was not available.</p></div>';
+  const read = readRenderedError(errorRootFor(document.querySelector("[data-error-alchemy-menu]")));
+  expect(read.message).toContain("saved content was not available");
+});

@@ -6,6 +6,7 @@ import {
 
 const listByKind = jest.fn();
 
+jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 jest.mock("@/components/agent-copy/AlchemySurfaceBridge", () => ({
   AlchemySurfaceBridge: ({ children }: { children: ReactNode }) => children,
 }));

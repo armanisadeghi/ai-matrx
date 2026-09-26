@@ -66,8 +66,8 @@ describe("pickDeclaredSurfaceValues", () => {
       { document_id: "d", api_key: "sk-live", undeclared: 1, hidden: "h" },
       [
         { name: "document_id" },
-        { name: "api_key", classification: "secret" },
-        { name: "hidden", exportable: false },
+        { name: "api_key", sensitivity: { classification: "secret" } },
+        { name: "hidden", sensitivity: { exportable: false } },
       ],
     );
     expect(picked).toEqual({ document_id: "d" });
@@ -196,5 +196,32 @@ describe("the network error behind the sentence (RC-B12 verify F7)", () => {
       surface,
     );
     expect((payload.data as { error: Record<string, unknown> }).error).toMatchObject({ code: "OWN", status: 409 });
+  });
+});
+
+describe("choosing the captured error when several failed at once", () => {
+  const now = 2_000_000;
+  const same = "forced failure";
+  const captured = [
+    { source: "supabase", lastAt: now - 1_000, route: "/schedules", relation: "user_preferences", code: "XX500", status: 500, message: same },
+    { source: "supabase", lastAt: now - 3_000, route: "/schedules", relation: "sch_task", code: "XX500", status: 500, message: same },
+  ];
+
+  it("prefers the one whose relation the sentence names", () => {
+    const matched = matchCapturedErrors(`readAllRows(scheduler.sch_task roster): query failed — ${same}`, "/schedules", captured, now);
+    expect(matched[0].relation).toBe("sch_task");
+    const data = buildErrorAlchemyPayload({ message: "x", captured: matched }, surface).data as { error: Record<string, unknown> };
+    expect(data.error.relation).toBe("sch_task");
+  });
+
+  it("does not pin one of several equally-likely errors on the sentence", () => {
+    const matched = matchCapturedErrors(`Couldn't load: ${same}`, "/schedules", captured, now);
+    expect(matched).toHaveLength(2);
+    const data = buildErrorAlchemyPayload({ message: `Couldn't load: ${same}`, captured: matched }, surface).data as {
+      error: Record<string, unknown>;
+      captured_errors: unknown[];
+    };
+    expect(data.error.relation).toBeUndefined();
+    expect(data.captured_errors).toHaveLength(2);
   });
 });

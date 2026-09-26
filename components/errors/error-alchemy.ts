@@ -104,13 +104,34 @@ export function matchCapturedErrors(
   captured: readonly CapturedErrorLike[],
   now: number = Date.now(),
 ): CapturedErrorLike[] {
-  const recent = captured
+  const lower = sentence.toLowerCase();
+  const scored = captured
     .filter((c) => route !== null && c.route === route && now - c.lastAt <= CAPTURE_WINDOW_MS)
-    .sort((a, b) => b.lastAt - a.lastAt);
-  const same = recent.filter(
-    (c) => overlaps(sentence, c.message) || (c.userMessage ? overlaps(sentence, c.userMessage) : false),
-  );
-  return (same.length > 0 ? same : recent).slice(0, 3);
+    .map((c) => ({
+      c,
+      score:
+        (c.relation && lower.includes(c.relation.toLowerCase()) ? 2 : 0) +
+        (overlaps(sentence, c.message) || (c.userMessage ? overlaps(sentence, c.userMessage) : false) ? 1 : 0),
+    }))
+    .sort((a, b) => b.score - a.score || b.c.lastAt - a.c.lastAt);
+  const best = scored[0]?.score ?? 0;
+  return (best > 0 ? scored.filter((s) => s.score === best) : scored).slice(0, 3).map((s) => s.c);
+}
+
+/**
+ * The one captured error that certainly belongs to the sentence: the only
+ * candidate, or the only one whose relation the sentence names. Several
+ * equally likely errors are listed, never pinned on the sentence.
+ */
+function certainCapture(
+  sentence: string,
+  captured: readonly CapturedErrorLike[] | undefined,
+): CapturedErrorLike | undefined {
+  if (!captured || captured.length === 0) return undefined;
+  if (captured.length === 1) return captured[0];
+  const lower = sentence.toLowerCase();
+  const named = captured.filter((c) => c.relation && lower.includes(c.relation.toLowerCase()));
+  return named.length === 1 ? named[0] : undefined;
 }
 
 function capturedFields(c: CapturedErrorLike): Record<string, unknown> {
@@ -235,14 +256,17 @@ export function pickDeclaredSurfaceValues(
   scope: Record<string, unknown>,
   declared: ReadonlyArray<{
     name: string;
-    exportable?: boolean;
-    classification?: "ordinary" | "secret" | "credential";
+    sensitivity?: {
+      exportable?: boolean;
+      classification?: "ordinary" | "secret" | "credential";
+    };
   }>,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const value of declared) {
-    if (value.exportable === false) continue;
-    if (value.classification === "secret" || value.classification === "credential") continue;
+    const sensitivity = value.sensitivity;
+    if (sensitivity?.exportable === false) continue;
+    if (sensitivity?.classification === "secret" || sensitivity?.classification === "credential") continue;
     if (!Object.hasOwn(scope, value.name)) continue;
     const v = scope[value.name];
     if (v === undefined) continue;
@@ -293,7 +317,7 @@ export function buildErrorAlchemyPayload(
   surface: ErrorSurfaceSnapshot,
 ): AgentPayloadInput {
   const described = describeError(input.error);
-  const best = input.captured?.[0];
+  const best = certainCapture(input.message, input.captured);
   const code = input.code ?? described.code ?? best?.code;
   const status = input.status ?? described.status ?? best?.status;
   const error: DescribedError & { relation?: string; request_id?: string } = {
