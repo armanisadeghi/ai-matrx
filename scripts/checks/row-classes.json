@@ -451,7 +451,7 @@
     "route-metadata-and-favicons": {
       "class": "repo-only",
       "cmd": "pnpm check:route-metadata:strict",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "pattern-patrol-manifest-contracts": {
@@ -481,13 +481,13 @@
     "ui-primitives-check": {
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/check-ui-primitives.ts --strict",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "canonical-agent-model-pickers": {
       "class": "repo-only",
       "cmd": "pnpm check:canonical-pickers",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "archived-items-law-every-list-has-an-archive-control": {
@@ -517,7 +517,7 @@
     "scroll-chain-clipped-tables-lists": {
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/check-scroll-chain.ts --strict",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "no-blocking-dialogs-ai-stays-reachable": {
@@ -1032,7 +1032,7 @@
     "package-logic-re-grown-outside-its-package": {
       "class": "repo-only",
       "cmd": "pnpm check:package-twins:strict",
-      "reason": "no database access in 7 file(s) reached",
+      "reason": "no database access in 8 file(s) reached",
       "evidence": []
     },
     "a-doc-or-skill-teaches-a-hand-rolled-recipe-the-package-owns": {
@@ -1412,8 +1412,8 @@
     },
     "no-dead-ends-door-law": {
       "class": "repo-only",
-      "cmd": "pnpm exec tsx scripts/dead-ends/check-dead-ends.ts --limit=15",
-      "reason": "no database access in 7 file(s) reached",
+      "cmd": "pnpm exec tsx scripts/dead-ends/check-dead-ends.ts",
+      "reason": "no database access in 8 file(s) reached",
       "evidence": []
     },
     "unwired-work-finish-purpose-built-artifacts": {
@@ -1437,7 +1437,7 @@
     "access-errors-surfaces-that-guess-why-a-read-failed": {
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/access-errors/check-access-errors.ts",
-      "reason": "no database access in 1 file(s) reached",
+      "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
     "media-durability-mismatch-class": {
@@ -1512,7 +1512,7 @@
     "surfaces-running-an-agent-without-naming-it": {
       "class": "repo-only",
       "cmd": "pnpm check:agent-disclosure",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "unacknowledged-ddl-guard-firings": {
@@ -1529,7 +1529,7 @@
     "type-escape-hatch-ratchet": {
       "class": "repo-only",
       "cmd": "pnpm check:hatches",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "generated-api-type-shadow-ratchet": {
