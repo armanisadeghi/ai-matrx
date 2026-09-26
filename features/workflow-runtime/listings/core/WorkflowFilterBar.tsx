@@ -10,6 +10,11 @@ import {
   ScanSearch,
 } from "lucide-react";
 import { FilterChip } from "@ai-matrx/agents/catalog/react";
+import {
+  agentArchiveFilterChipLabel,
+  agentArchiveFilterControlLabel,
+  type AgentArchFilter,
+} from "@ai-matrx/agents/catalog";
 import type { RightPanel } from "@ai-matrx/agents/catalog/react";
 import { WORKFLOW_SORT_OPTIONS } from "../types";
 import type { WorkflowListControls } from "../useWorkflowListCore";
@@ -91,9 +96,15 @@ export function WorkflowFilterBar({
           onClick={() => onFilterChipClick("tags")}
         />
       )}
+      {/* THE ARCHIVED-ITEMS LAW's one control, in the platform's own words —
+          the same chip and states as the agent picker. It used to read "All"
+          while it was HIDING archived rows, and "All" again when it showed
+          them, so a click offered archived workflows to someone who thought
+          they were opening a list of everything live (2026-09-26). */}
       <FilterChip
         icon={Archive}
-        label={controls.archived === "archived" ? "Archived" : "All"}
+        label={agentArchiveFilterChipLabel(archFilterOf(controls.archived))}
+        ariaLabel={agentArchiveFilterControlLabel(archFilterOf(controls.archived))}
         active={controls.archived !== "active"}
         onClick={() =>
           controls.setArchived(
@@ -122,4 +133,9 @@ export function WorkflowFilterBar({
       )}
     </div>
   );
+}
+
+/** The workflow reader's archive states, in the platform filter's vocabulary. */
+export function archFilterOf(archived: "active" | "all" | "archived"): AgentArchFilter {
+  return archived === "all" ? "both" : archived;
 }
