@@ -359,13 +359,15 @@ function statusLabel(state: ProJsonValidationState) {
 }
 
 function ValidationPanel({ state }: { state: ProJsonValidationState }) {
-  if (state.isEmpty || state.issues.length === 0) {
+  // Nothing typed yet: nothing to report, so no filler row ("Validation will
+  // run as you type." under a green tick read as a pass — punch list
+  // 2026-09-26).
+  if (state.isEmpty) return null;
+  if (state.issues.length === 0) {
     return (
       <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
         <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
-        {state.isEmpty
-          ? "Validation will run as you type."
-          : "No JSON issues found."}
+        No JSON issues found.
       </div>
     );
   }
@@ -639,8 +641,16 @@ export const ProJsonTextarea = React.forwardRef<
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge
+            // An empty field has passed nothing: never green (UX punch list
+            // 2026-09-26 — a green "Empty" on a required input read as OK).
             variant={
-              hasErrors ? "destructive" : hasWarnings ? "warning" : "success"
+              validationState.isEmpty
+                ? "outline"
+                : hasErrors
+                  ? "destructive"
+                  : hasWarnings
+                    ? "warning"
+                    : "success"
             }
             className="font-mono text-[10px]"
           >

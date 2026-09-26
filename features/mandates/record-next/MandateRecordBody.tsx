@@ -29,7 +29,6 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, Copy, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
@@ -90,7 +89,6 @@ import {
   type MandateAlchemyCapture,
 } from "@/features/mandates/workspace/MandateAlchemy";
 import type { ResolvedMandateHolder } from "@/features/mandates/service";
-import { updateMandateDefinition } from "@/features/mandates/admin/service";
 import {
   ladderRowChangesHolder,
   ladderRowIsBroken,
@@ -399,8 +397,6 @@ function OneMandateRecordBody({
           data={data}
           feature={feature}
           homeName={nameOfOrg(data.mandate.organization_id)}
-          canToggle={isSuperAdmin}
-          onChanged={refresh}
         />
         <TriadGoalSection
           data={data}
@@ -592,23 +588,18 @@ function OneMandateRecordBody({
 /**
  * One line instead of three "Label: value" rows (register 6b). Where the job
  * lives comes from its HOME organization — a system job reads "System" on
- * every host — then its feature. Enabled is only mentioned when it is off, and
- * a super admin gets the switch that changes it.
+ * every host — then its feature. Enabled/Disabled is the header status
+ * control's job, never repeated here.
  */
 function MandateFactsLine({
   data,
   feature,
   homeName,
-  canToggle,
-  onChanged,
 }: {
   data: MandateWorkspaceData;
   feature: string;
   homeName: string | null;
-  canToggle: boolean;
-  onChanged: () => void;
 }) {
-  const [saving, setSaving] = useState(false);
   const home = data.mandate.organization_id;
   // Say what is true: the platform, a named organization, one the viewer is
   // not a member of, or no home at all — never a generic "Organization".
@@ -617,41 +608,14 @@ function MandateFactsLine({
     : home.toLowerCase() === SYSTEM_ORGANIZATION_ID.toLowerCase()
       ? "System"
       : (homeName ?? "An organization you are not in");
-  const enabled = data.mandate.is_enabled !== false;
-
-  const toggle = async (next: boolean) => {
-    setSaving(true);
-    try {
-      await updateMandateDefinition(data.mandate.id, { is_enabled: next });
-      toast.success(next ? "Mandate enabled." : "Mandate disabled.");
-      onChanged();
-    } catch (error: unknown) {
-      toast.error(
-        error instanceof Error ? error.message : "That change was not saved.",
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
-
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
       <span className="font-medium text-foreground">{homeLabel}</span>
       <span aria-hidden>·</span>
       <span>{feature}</span>
-      {canToggle ? (
-        <label className="ml-auto inline-flex items-center gap-1.5">
-          <Switch
-            checked={enabled}
-            disabled={saving}
-            onCheckedChange={(next) => void toggle(next)}
-            aria-label="Enabled"
-          />
-          {enabled ? "Enabled" : "Disabled"}
-        </label>
-      ) : !enabled ? (
-        <StatusToken status="neutral" label="Disabled" />
-      ) : null}
+      {/* Enabled/Disabled is the header's status control — never a second
+          switch here (UX punch list 2026-09-26: "Active" pill + "Enabled"
+          toggle were two words for one fact). */}
     </div>
   );
 }

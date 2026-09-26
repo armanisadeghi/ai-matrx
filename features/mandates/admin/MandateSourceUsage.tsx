@@ -45,6 +45,55 @@ export interface SourceUsageFallback {
   importFailed: boolean;
 }
 
+/**
+ * What each reference type MEANS, in words a person reads — never the
+ * scanner's snake_case vocabulary (UX punch list 2026-09-26: "seed holder",
+ * "constant" were jargon). Unknown types fall back to spaced words so a new
+ * scanner type is still shown, never hidden.
+ */
+const REFERENCE_TYPE_WORDS: Record<string, string> = {
+  declaration: "Declared here",
+  family_declaration: "Declared as a family",
+  resolution: "Resolved here",
+  execution: "Runs here",
+  constant: "Key named in code",
+  dynamic_family: "Key built at runtime",
+  passthrough: "Passed through",
+  db_authored: "Authored in the database",
+  user_selected_agent: "Person picks the agent",
+  seed_holder: "Sets the default Mandate Holder",
+  bypass: "Bypasses the mandate",
+  unclassified: "Not yet classified",
+};
+
+export function referenceTypeWords(type: string): string {
+  return REFERENCE_TYPE_WORDS[type] ?? type.replaceAll("_", " ");
+}
+
+/**
+ * `repo/dir/file.py:3716` → the file name first (what a person scans for),
+ * the repository and folder muted beside it. The full path stays one click
+ * away on the copy button.
+ */
+export function splitLocation(location: string): {
+  file: string;
+  line: string | null;
+  where: string;
+} {
+  const match = /^(.*?)(?::(\d+))?$/.exec(location);
+  const path = match?.[1] ?? location;
+  const line = match?.[2] ?? null;
+  const parts = path.split("/");
+  const file = parts.pop() ?? path;
+  const repo = parts.shift() ?? "";
+  const folder = parts.join("/");
+  return {
+    file,
+    line,
+    where: [repo, folder].filter(Boolean).join(" · "),
+  };
+}
+
 function RowLine({
   row,
   singleSiteByDesign,
@@ -63,11 +112,9 @@ function RowLine({
             aria-label="Problem reported"
           />
         ) : null}
-        <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
-          {row.location}
-        </span>
+        <LocationText location={row.location} />
         <span className="shrink-0 text-xs text-muted-foreground">
-          {row.reference_type.replaceAll("_", " ")}
+          {referenceTypeWords(row.reference_type)}
         </span>
         <CopyButton content={row.location} label={copyLabel} size="sm" />
       </div>
@@ -83,6 +130,23 @@ function RowLine({
         </p>
       ) : null}
     </div>
+  );
+}
+
+function LocationText({ location }: { location: string }) {
+  const { file, line, where } = splitLocation(location);
+  return (
+    <span className="min-w-0 flex-1" title={location}>
+      <span className="font-medium [overflow-wrap:anywhere]">{file}</span>
+      {line ? (
+        <span className="text-muted-foreground"> · line {line}</span>
+      ) : null}
+      {where ? (
+        <span className="block truncate text-xs text-muted-foreground">
+          {where}
+        </span>
+      ) : null}
+    </span>
   );
 }
 
@@ -206,9 +270,7 @@ export function MandateSourceUsage({
           ) : usesFallbackDeclaration ? (
             <div className="px-3 py-2">
               <div className="flex items-center gap-3">
-                <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
-                  {fallback.declaration}
-                </span>
+                <LocationText location={fallback.declaration ?? ""} />
                 <CopyButton
                   content={fallback.declaration ?? ""}
                   label="Copy declaration location"
@@ -216,9 +278,8 @@ export function MandateSourceUsage({
                 />
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                From the older import-time discovery (
-                <code>GET /mandates/code-truth</code>), not from a reported
-                scan — no scanner has reported a declaration for this key yet.
+                Found by the older, partial discovery — no code scan has
+                reported a declaration for this job yet.
               </p>
             </div>
           ) : (

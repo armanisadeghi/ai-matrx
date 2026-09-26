@@ -19,7 +19,7 @@ import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
  * collapsible sections so the fix is never buried under machinery.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { isValidElement, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -1341,16 +1341,42 @@ function FactsPanel({
         ),
       },
     ];
+    // 🚨 A ROW THAT SAYS NOTHING IS NOT SHOWN (UX punch list 2026-09-26: the
+    // Health tab was five rows of "Unknown" / "Not yet evaluated" / "Not
+    // applicable"). A fact with no answer is dropped, and what was not
+    // measured is said ONCE, in a sentence, with the reason.
+    const saysNothing = (value: unknown) =>
+      value === unknown ||
+      (isValidElement(value) &&
+        value.type === StatusToken &&
+        (value.props as { status?: string }).status === "unknown");
+    const shown = facts.filter(
+      (fact) =>
+        !saysNothing(fact.value) &&
+        !(wave1.provisionKey && fact.fact === "Code / contract check"),
+    );
+    const notMeasured = wave1.provisionKey
+      ? "The code comparison does not apply to this job: its inputs come from its provision and are checked on the Binding tab."
+      : !declarationFound
+        ? "No code declaration was found for this job, so its code inputs and variable flow are not measured."
+        : null;
     return (
-      <ConfigurationTable label="Code diagnostics" columns={columns}>
-        {facts.map((fact) => (
-          <ConfigurationTableRow
-            key={fact.fact}
-            columns={columns}
-            cells={fact}
-          />
-        ))}
-      </ConfigurationTable>
+      <div className="space-y-2">
+        {shown.length > 0 ? (
+          <ConfigurationTable label="Code diagnostics" columns={columns}>
+            {shown.map((fact) => (
+              <ConfigurationTableRow
+                key={fact.fact}
+                columns={columns}
+                cells={fact}
+              />
+            ))}
+          </ConfigurationTable>
+        ) : null}
+        {notMeasured ? (
+          <p className="text-xs text-muted-foreground">{notMeasured}</p>
+        ) : null}
+      </div>
     );
   }
   return (

@@ -74,6 +74,11 @@ export interface EntityHeaderAction {
    * behavior — a "leaves this page" glyph on a same-tab link is a lie.
    */
   newTab?: boolean;
+  /**
+   * Show the NAME beside the icon on desktop (glass, not solid). For a page
+   * whose icon-only actions would otherwise read as unlabeled glyphs.
+   */
+  showLabel?: boolean;
 }
 
 export interface EntityModeHeaderProps {
@@ -127,6 +132,11 @@ function DesktopAction({ action }: { action: EntityHeaderAction }) {
   }
   if (action.primary) {
     return <TapTargetButtonSolid {...shared} label={action.label} />;
+  }
+  if (action.showLabel) {
+    return (
+      <TapTargetButton {...shared} ariaLabel={action.label} label={action.label} />
+    );
   }
   return <TapTargetButton {...shared} ariaLabel={action.label} />;
 }

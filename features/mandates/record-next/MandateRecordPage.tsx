@@ -15,18 +15,15 @@
 // header's mode pill, which shares the bar with the name and the actions and
 // collapsed eleven tabs to a single "Definition" pill at 1440px.)
 
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Bot, Trash2, Workflow } from "lucide-react";
+import { Bot, Workflow } from "lucide-react";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "@/lib/toast";
 import { pushAppHref } from "@/lib/deployment/navigate";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
-import { softDeleteMandate } from "@/features/mandates/admin/service";
 import { PromoteToSystemMandateButton } from "@/features/mandates/admin/mandate-actions";
 import { useStartMandateWorkflow } from "@/features/mandates/useStartMandateWorkflow";
 import {
@@ -232,42 +229,14 @@ function RecordHeader({
   useRecordTitle(name);
   const { starting, startWorkflow } = useStartMandateWorkflow();
   const userId = useAppSelector(selectUserId);
-  const [removing, setRemoving] = useState(false);
   const canRemove = recordCanRemove(data.mandate, { level, userId, orgId, canManageOrg });
-  // Sharing is the creator's call, on their own soft mandate (person seat).
+  // Sharing is the creator's call, on their own soft mandate — from the person seat or an
+  // organization seat alike (the list kebab uses the same rule: canShareMemberRow).
   const canShare =
-    level === "person" &&
+    level !== "system" &&
     data.mandate.origin !== "code" &&
     Boolean(userId) &&
     data.mandate.created_by === userId;
-
-  // The consequence first, then the soft removal — the same service call and
-  // the same words as the original page's Remove control.
-  const remove = async () => {
-    const ok = await confirm({
-      title: `Remove ${name}?`,
-      description:
-        "This mandate will disappear from pickers and stop resolving. " +
-        "Anything bound to it — every rung's Mandate Holder and mapping — stops applying with it. " +
-        "This is a soft removal: the record and its history are kept, so an admin can restore it if this was a mistake.",
-      confirmLabel: "Remove it",
-      cancelLabel: "Keep it",
-      variant: "destructive",
-    });
-    if (!ok) return;
-    setRemoving(true);
-    try {
-      await softDeleteMandate(data.mandate.id);
-      toast.success("Mandate removed.");
-      pushAppHref(router, listHref);
-    } catch (error: unknown) {
-      toast.error(
-        error instanceof Error ? error.message : "That mandate was not removed.",
-      );
-    } finally {
-      setRemoving(false);
-    }
-  };
 
   return (
     <EntityModeHeader
@@ -275,8 +244,11 @@ function RecordHeader({
       entityLabel={name}
       right={
         <div className="flex items-center gap-1">
-          {/* THE STATUS — big, colour-coded, and the control for a seat that
-              may change it (the same seat that may remove it). */}
+          {/* THE STATUS — big, colour-coded, and the ONE control for a seat
+              that may change it: Enable, Disable and Archive (the soft
+              removal) all live in its menu. A separate red "Remove" and a
+              body "Enabled" switch used to repeat it (UX punch list
+              2026-09-26). */}
           <MandateStatusControl
             mandateId={data.mandate.id}
             name={name}
@@ -312,6 +284,7 @@ function RecordHeader({
               {
                 label: "New agent",
                 icon: Bot,
+                showLabel: true,
                 onPress: () => onTabChange("create-agent"),
               },
             ]
@@ -322,6 +295,7 @@ function RecordHeader({
               {
                 label: starting ? "Starting workflow…" : "New workflow",
                 icon: Workflow,
+                showLabel: true,
                 disabled: starting,
                 onPress: () =>
                   void startWorkflow(data.mandate.mandate_key).then((created) => {
@@ -329,17 +303,6 @@ function RecordHeader({
                   }),
               },
             ]),
-        ...(canRemove
-          ? [
-              {
-                label: removing ? "Removing…" : "Remove",
-                icon: Trash2,
-                destructive: true,
-                disabled: removing,
-                onPress: () => void remove(),
-              },
-            ]
-          : []),
       ]}
     />
   );

@@ -42,6 +42,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { readMandateAddress } from "@/features/mandates/mandate-address";
 import type { RecordTabId } from "./record-tabs";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { MandateHealthSummary } from "./MandateHealthSummary";
 
 type AdminSection = "test" | "permissions" | "source" | "diagnostics";
 
@@ -198,6 +199,13 @@ export function RecordAdminPanels({
 
   return (
     <div hidden={!section} className={section ? "mt-3" : "hidden"}>
+      {/* Health opens on the verdict — open problems against THIS job, or
+          "No open problems" — before the code diagnostics below it. */}
+      {section === "diagnostics" ? (
+        <div className="mb-3">
+          <MandateHealthSummary mandateKey={mandate?.mandate_key ?? mandateKey} />
+        </div>
+      ) : null}
       {loadError ? (
         <div role="alert" className="flex items-center gap-2 text-sm text-destructive">
           {loadError}
