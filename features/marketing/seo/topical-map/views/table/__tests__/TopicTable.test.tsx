@@ -46,6 +46,7 @@ const openTopicPanel = jest.fn();
 const patchMutateAsync = jest.fn();
 
 jest.mock("@ai-matrx/design-system/data-table", () => ({
+  ...jest.requireActual("@ai-matrx/design-system/data-table"),
   MatrxDataTable: (props: MatrxDataTableProps<MapTableRow>) => {
     tableProps = props;
     return null;

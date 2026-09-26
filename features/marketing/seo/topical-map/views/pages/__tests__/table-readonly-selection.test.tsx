@@ -30,6 +30,7 @@ let lastTableProps: Record<string, unknown> | null = null;
 let bulkActionsRendered = 0;
 
 jest.mock("@ai-matrx/design-system/data-table", () => ({
+  ...jest.requireActual("@ai-matrx/design-system/data-table"),
   MatrxDataTable: (props: Record<string, unknown>) => {
     lastTableProps = props;
     return null;

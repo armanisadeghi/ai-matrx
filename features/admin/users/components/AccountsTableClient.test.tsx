@@ -48,6 +48,7 @@ jest.mock("next/navigation", () => ({
 jest.mock(
   "@ai-matrx/design-system/data-table",
   () => ({
+    ...jest.requireActual("@ai-matrx/design-system/data-table"),
     MatrxDataTable: (props: MatrxDataTableProps<AdminUserRow>) => {
       mockTableProps = props;
       return null;
