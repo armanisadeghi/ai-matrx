@@ -12,11 +12,8 @@
  */
 
 import { replaceFences } from "@/lib/markdown/code-ranges";
+import { isGfmDelimiterRow, opensTable } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
-/** A table row: `| a | b |` (leading pipe required, at least two cells). */
-const TABLE_ROW = /^\s*\|.*\|\s*$/;
-/** The header separator row: `| --- | :---: |` variants. */
-const TABLE_SEPARATOR = /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/;
 /** A bullet or ordered list item with real content. */
 const LIST_ITEM = /^\s*(?:[-*+]|\d{1,3}[.)])\s+\S/;
 
@@ -38,11 +35,9 @@ export function hasConvertibleContent(content: string): boolean {
   let listItems = 0;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (
-      TABLE_ROW.test(line) &&
-      i + 1 < lines.length &&
-      TABLE_SEPARATOR.test(lines[i + 1])
-    ) {
+    // A table by THE GFM rule (gfm-table-lines): a header — edge pipes
+    // optional — over its delimiter row.
+    if (opensTable(lines, i) && isGfmDelimiterRow(lines[i + 1] ?? "")) {
       return true;
     }
     if (LIST_ITEM.test(line)) {

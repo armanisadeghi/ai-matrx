@@ -181,6 +181,10 @@
           "clear"
         ]
       ]
+    },
+    {
+      "table": "| Bay | Status |\n| | |\n| B3 | re-scan |",
+      "notATable": true
     }
   ],
   "documents": [
@@ -333,6 +337,46 @@
         [
           "text",
           "Here is tonight's handover for the Harbor warehouse.\n\n- keep a | b\n--- | ---\n\nOmar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "a 'delimiter' with no dashes is not a table",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\n| Bay | Status |\n| | |\n| B3 | re-scan |\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "text",
+          "| Bay | Status |"
+        ],
+        [
+          "text",
+          "| | |"
+        ],
+        [
+          "text",
+          "| B3 | re-scan |\n\nOmar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "a pipe-less row continues a pipe-led table",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\n| Bay | Status |\n| --- | --- |\nB3 | re-scan\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "table",
+          "| Bay | Status |\n| --- | --- |\nB3 | re-scan"
+        ],
+        [
+          "text",
+          "Omar signs off once bay B3 is re-scanned."
         ]
       ]
     }

@@ -11,7 +11,8 @@
 // admin switches the seat to manage it for everyone in the organization.
 
 import { useEffect, useState } from "react";
-import { BrainCircuit, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -137,7 +138,7 @@ export function FeatureIntelligence({
         <div className="min-w-0">
           {showTitle ? (
             <h1 className="mb-1 flex items-center gap-2 text-[22px] font-semibold tracking-[-0.015em] text-foreground">
-              <BrainCircuit className="h-5 w-5 text-primary" aria-hidden />
+              <INTELLIGENCE_ICON className="h-5 w-5 text-primary" aria-hidden />
               {featureLabel} intelligence
             </h1>
           ) : null}

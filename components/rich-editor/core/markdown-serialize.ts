@@ -22,7 +22,7 @@
 // this serializer reproduces its stored bytes exactly, so contract 2 is
 // measured, not hoped for.
 
-import { assertTableReadsBack, freshRow, respliceRow } from "./table-source";
+import { assertTableReadsBack, freshRow, respliceRow, splitRowSegments } from "./table-source";
 import type { Mark, Node as PMNode } from "@tiptap/pm/model";
 
 export interface Adjacency {
@@ -291,7 +291,7 @@ function alignOfDelimiter(cell: string): ColumnAlign {
  * then the whole row is written fresh.
  */
 function respliceDelimiter(stored: string, aligns: readonly ColumnAlign[], lead: boolean, trail: boolean): string | null {
-  const segments = stored.split("|");
+  const segments = splitRowSegments(stored);
   const first = lead ? 1 : 0;
   const last = trail ? segments.length - 1 : segments.length;
   const cells = segments.slice(first, last);

@@ -1,3 +1,4 @@
+import { findTableEnd, opensTable } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 import { parseMarkdownTable } from "../bock-processors/parse-markdown-table";
 import { fenceLineKinds, fenceOpenerOf } from "@ai-matrx/content-ir/source";
 
@@ -153,10 +154,11 @@ export function separatedMarkdownParser(markdown: string): ParsedContent {
             continue;
         }
 
-        if (trimmed.startsWith("|")) {
+        if (opensTable(allLines, i)) {
             const tableLines: string[] = [];
             let j = i;
-            while (j < allLines.length && allLines[j].trim().startsWith("|")) {
+            const tableEnd = findTableEnd(allLines, i);
+            while (j < tableEnd) {
                 tableLines.push(allLines[j]);
                 j++;
             }

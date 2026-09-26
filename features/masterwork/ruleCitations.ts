@@ -114,6 +114,7 @@ import type { RulebookRule } from "./types";
 import { ruleAnchorId } from "./components/detail/RuleRelations";
 import { codeSpanText, findCodeRanges } from "@ai-matrx/content-ir/source";
 import { replaceFences, unwrapCodeSpans } from "@/lib/markdown/code-ranges";
+import { isGfmDelimiterRow, isPipeLedRow, rowCells, unescapeCellPipes } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 /** The length `kebabRuleId` cuts a minted id to. Named once, never retyped. */
 export const RULE_ID_MINT_LENGTH = 48;
@@ -706,7 +707,9 @@ export function stripMarkdownMarks(markdown: string): string {
     .replace(/(\*\*\*|___)(.+?)\1/g, "$2")
     .replace(/(\*\*|__)(.+?)\1/g, "$2")
     .replace(/(?<![*\w])([*_])(?!\s)(.+?)(?<!\s)\1(?![*\w])/g, "$2")
-    .replace(/^\s*\|.*\|\s*$/gm, (row) =>
-      /^[\s|:-]+$/.test(row) ? " " : row.replace(/\|/g, " "),
-    );
+    // Table rows by THE GFM rule (gfm-table-lines): the delimiter row is dropped,
+    // a row reads as its cells (`\|` stays a pipe inside its cell).
+    .split("\n")
+    .map((line) => (isGfmDelimiterRow(line) ? " " : isPipeLedRow(line) ? rowCells(line).map(unescapeCellPipes).join(" ") : line))
+    .join("\n");
 }

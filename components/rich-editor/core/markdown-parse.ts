@@ -347,8 +347,10 @@ function blockJSON(token: Token, state: ParseState): JSONContent | null {
       const lines = body.split("\n");
       if (lines.length !== table.rows.length + 2) return null;
       const header = lines[0] ?? "";
-      const leadPipe = header.trimStart().startsWith("|");
-      const trailPipe = header.trimEnd().endsWith("|");
+      // Edge pipes by THE splitter: an empty first/last segment (a trailing `\|` is cell text, not an edge).
+      const headerSegs = splitRowSegments(header);
+      const leadPipe = headerSegs.length > 1 && (headerSegs[0] ?? "").trim() === "";
+      const trailPipe = headerSegs.length > 1 && (headerSegs[headerSegs.length - 1] ?? "").trim() === "";
       const pipes = leadPipe && trailPipe ? "both" : leadPipe ? "lead" : trailPipe ? "trail" : "none";
       const aligns = table.align.map((align) => align ?? null);
       const cellJSON = (cell: Tokens.TableCell, isHeader: boolean, index: number): JSONContent => {

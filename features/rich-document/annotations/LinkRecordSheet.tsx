@@ -15,7 +15,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useEffect, useState } from "react";
 import type { EntityTypeToken } from "@ai-matrx/associations";
-import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import { listableTokens } from "@/features/scopes/registry/entityRegistry";
 import { useSidecar } from "./AnnotationSidecar";
 import { linkableKinds } from "./service";
 import type { TextAnchor } from "./anchor";
@@ -47,9 +47,12 @@ export function LinkRecordSheet({
     setKindsError(null);
     linkableKinds(source.token)
       .then((tokens) => {
-        // Only kinds this client can list and open (a registered pair for a kind with no
-        // list door could not be picked anyway).
-        if (live) setKinds(tokens.filter((t) => !!tryGetEntityInfo(t)) as EntityTypeToken[]);
+        // Registered pair AND a lister that exists — the SAME check the picker uses to list
+        // candidates (registry.listableTokens: pickable + a title column or a host lister). A
+        // kind that can link but cannot be listed is not offered (verify RC-B11 round 3: Documents,
+        // Flashcards and Records were offered, listed nothing and showed a developer message).
+        const listable = new Set<string>(listableTokens());
+        if (live) setKinds(tokens.filter((t) => listable.has(t)) as EntityTypeToken[]);
       })
       .catch((e: unknown) => { if (live) setKindsError(e instanceof Error ? e.message : String(e)); });
     return () => { live = false; };

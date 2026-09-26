@@ -1,4 +1,11 @@
 import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";
+import {
+  findTableEnd,
+  isGfmDelimiterRow,
+  opensTable,
+  rowCells,
+  unescapeCellPipes,
+} from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 // features/rich-document/actions/markdownTable.ts
 //
 // The first GitHub-flavoured markdown table in a piece of content, as plain
@@ -11,28 +18,9 @@ export interface ParsedTable {
   rows: string[][];
 }
 
-const SEPARATOR = /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/;
-
+/** A row's cells by THE GFM rule (gfm-table-lines): `\|` stays in its cell and reads as `|`. */
 function splitRow(line: string): string[] {
-  let body = line.trim();
-  if (body.startsWith("|")) body = body.slice(1);
-  if (body.endsWith("|") && !body.endsWith("\\|")) body = body.slice(0, -1);
-  const cells: string[] = [];
-  let current = "";
-  for (let i = 0; i < body.length; i += 1) {
-    const ch = body[i];
-    if (ch === "\\" && body[i + 1] === "|") {
-      current += "|";
-      i += 1;
-    } else if (ch === "|") {
-      cells.push(current);
-      current = "";
-    } else {
-      current += ch;
-    }
-  }
-  cells.push(current);
-  return cells.map((c) => cleanCell(c));
+  return rowCells(line).map((cell) => cleanCell(unescapeCellPipes(cell)));
 }
 
 export function cleanCell(text: string): string {
@@ -50,15 +38,13 @@ export function cleanCell(text: string): string {
 export function parseFirstMarkdownTable(content: string): ParsedTable | null {
   const lines = content.split("\n");
   for (let i = 0; i + 1 < lines.length; i += 1) {
-    const header = lines[i];
-    if (!header.includes("|") || !SEPARATOR.test(lines[i + 1])) continue;
-    const headers = splitRow(header);
-    if (headers.length < 2 && !header.trim().startsWith("|")) continue;
+    // THE table rule: a header (edge pipes optional) over its delimiter row.
+    if (!opensTable(lines, i) || !isGfmDelimiterRow(lines[i + 1] ?? "")) continue;
+    const headers = splitRow(lines[i]);
     const rows: string[][] = [];
-    for (let j = i + 2; j < lines.length; j += 1) {
-      const line = lines[j];
-      if (!line.includes("|") || line.trim() === "") break;
-      const cells = splitRow(line);
+    const end = findTableEnd(lines, i);
+    for (let j = i + 2; j < end; j += 1) {
+      const cells = splitRow(lines[j]);
       // Pad / trim to the header width so every row is rectangular.
       rows.push(headers.map((_, k) => cells[k] ?? ""));
     }

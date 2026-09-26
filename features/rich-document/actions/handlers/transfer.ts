@@ -26,6 +26,13 @@ import { registerAction } from "../registry";
 import { contentFileName, getErrorMessage, contentForDestination } from "../utils";
 import { parseFirstMarkdownTable, tableToDelimited } from "../markdownTable";
 import type { RichDocumentActionContext } from "../../types";
+import {
+  findTableEnd,
+  isGfmDelimiterRow,
+  opensTable,
+  rowCells,
+  unescapeCellPipes,
+} from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 async function copyText(text: string, done: string): Promise<void> {
   await copyToClipboard(text, {
@@ -60,20 +67,19 @@ function fileBase(ctx: RichDocumentActionContext): string {
 function toPlainText(content: string): string {
   const lines = unwrapKindEnvelopes(content).split("\n");
   const out: string[] = [];
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (/^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?$/.test(trimmed)) continue;
-    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
-      out.push(
-        trimmed
-          .slice(1, -1)
-          .split("|")
-          .map((cell) => cell.trim())
-          .join("\t"),
-      );
+  for (let i = 0; i < lines.length; i += 1) {
+    // THE table rule (gfm-table-lines): a header — edge pipes optional — over
+    // its delimiter row; `\|` stays in its cell and reads as `|`.
+    if (opensTable(lines, i) && isGfmDelimiterRow(lines[i + 1] ?? "")) {
+      const end = findTableEnd(lines, i);
+      for (let j = i; j < end; j += 1) {
+        if (j === i + 1) continue; // the `|---|` rule
+        out.push(rowCells(lines[j]).map(unescapeCellPipes).join("\t"));
+      }
+      i = end - 1;
       continue;
     }
-    out.push(line);
+    out.push(lines[i]);
   }
   return cleanMarkdown(out.join("\n"));
 }

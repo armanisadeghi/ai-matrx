@@ -28,6 +28,7 @@ import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { isPipeLedRow, rowCells } from "../components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");
@@ -253,9 +254,11 @@ const claims: Claim[] = [
     where: "CLAUDE.md § Route groups",
     check: () => {
       const documented = new Set(
-        [...CLAUDE_MD.matchAll(/^\|\s*`(\([a-z-]+\))`\s*\|/gm)].map(
-          (m) => m[1],
-        ),
+        // Rows of the route-group table, read by THE GFM row rule (gfm-table-lines).
+        CLAUDE_MD.split("\n")
+          .filter(isPipeLedRow)
+          .map((row) => /^`(\([a-z-]+\))`$/.exec(rowCells(row)[0] ?? "")?.[1])
+          .filter((group): group is string => Boolean(group)),
       );
       if (documented.size === 0) return null; // table restructured; nothing to compare
       // A running build/dev server parks excluded groups as `_<name>_build_excluded`

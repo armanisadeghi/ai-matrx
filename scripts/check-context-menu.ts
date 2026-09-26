@@ -113,6 +113,7 @@ import { readFileSync, globSync } from "node:fs";
 import { basename, join } from "node:path";
 import ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { isGfmDelimiterRow, isPipeLedRow, rowCells } from "../components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 const ROOT = process.cwd();
 const ARGV = process.argv.slice(2);
@@ -1036,8 +1037,10 @@ function registryFindings(files: Map<string, string>): Finding[] {
   }
   // Table rows: | Identity | `builder` | `path` | Consumers |
   for (const line of md.split("\n")) {
-    if (!line.startsWith("|") || line.includes("---")) continue;
-    const cells = line.split("|").map((c) => c.trim());
+    // THE GFM row rule (gfm-table-lines), kept on the old column numbering:
+    // cells[0] is the empty edge before the first pipe.
+    if (!isPipeLedRow(line) || isGfmDelimiterRow(line)) continue;
+    const cells = ["", ...rowCells(line)];
     if (cells.length < 5) continue;
     const builders = [...cells[2].matchAll(/`([^`]+)`/g)].map((m) => m[1]);
     const filePath = cells[3].match(/`([^`]+)`/)?.[1];

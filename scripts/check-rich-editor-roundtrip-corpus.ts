@@ -71,6 +71,7 @@ import { planSave } from "../components/rich-editor/core/save-plan";
 import { rewriteTableSource, splitRowSegments, TableWriteRefused } from "../components/rich-editor/core/table-source";
 import { parseMarkdownTable } from "../components/mardown-display/blocks/table/parseMarkdownTable";
 import { oracleTableGrid } from "./lib/gfm-table-oracle";
+import { isGfmDelimiterRow } from "../components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 const args = process.argv.slice(2);
 const argValue = (flag: string): string | undefined => {
@@ -362,7 +363,6 @@ function addedLeadPipe(before: string[], after: string[]): void {
   if (after.length === before.length + 1 && (after[0] ?? "").trim() === "" && (before[0] ?? "").trim() !== "") after.shift();
 }
 
-const TABLE_DELIM = /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/;
 
 /** The in-body answer table path on every table in the text's prose blocks. Returns a reason or null. */
 function judgeAnswerTables(text: string, stats: SourceStats): string | null {
@@ -371,7 +371,7 @@ function judgeAnswerTables(text: string, stats: SourceStats): string | null {
     if (block.kind !== "prose") continue;
     const lines = block.raw.split("\n");
     for (let i = 0; i + 1 < lines.length; i += 1) {
-      if (!(lines[i] ?? "").includes("|") || !TABLE_DELIM.test(lines[i + 1] ?? "")) continue;
+      if (!(lines[i] ?? "").includes("|") || !isGfmDelimiterRow(lines[i + 1] ?? "")) continue;
       let end = i + 2;
       while (end < lines.length && (lines[end] ?? "").trim() && (lines[end] ?? "").includes("|")) end += 1;
       const table = lines.slice(i, end).join("\n");

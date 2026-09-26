@@ -1,5 +1,6 @@
 // parser.ts
 
+import { findTableEnd, opensTable } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 import { parseMarkdownTable } from "../bock-processors/parse-markdown-table";
 import { ParsedContent, Section } from "@/components/mardown-display/types";
 
@@ -79,13 +80,14 @@ export function enhancedMarkdownParser(markdown: string): ParsedContent {
       continue;
     }
 
-    // 3. Check if line starts with "|". If so, we might parse a table block
-    //    We'll gather consecutive lines that start with "|"
-    if (trimmed.startsWith("|")) {
+    // 3. A table opens here (THE GFM rule, gfm-table-lines: pipe-led or pipe-less)
+    //    — gather its lines to the table's end
+    if (opensTable(allLines, i)) {
       // Collect consecutive table lines
       const tableLines: string[] = [];
       let j = i;
-      while (j < allLines.length && allLines[j].trim().startsWith("|")) {
+      const tableEnd = findTableEnd(allLines, i);
+      while (j < tableEnd) {
         tableLines.push(allLines[j]);
         j++;
       }

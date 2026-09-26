@@ -1250,16 +1250,29 @@ export const selectUnifiedSlots = (requestId: string) =>
             typeof (entry.data as { content_ir?: unknown }).content_ir ===
               "object" &&
             (entry.data as { content_ir?: unknown }).content_ir !== null;
+          const dataType = entry.data.type;
+          // EVERY data event that produced its own block is emitted HERE, at
+          // its chronological spot — not only the kinds someone remembered to
+          // list. process-stream stamps `entry.blockId` exactly when the event
+          // created (or updated) a render block, so the id IS the pairing.
+          //
+          // The class this closes (2026-09-26, Model Battle): a verbalized
+          // `decision_answers` event was not in the old list, so its block was
+          // on screen only if the reasoning-end sweep happened to catch it —
+          // a race that a slow stream (Sonnet: heartbeat inside the token-less
+          // reasoning bracket) won and a fast one (Gemini: bracket + answer in
+          // one burst) lost, leaving the column with an action bar and no
+          // answer. Guard: thunks/__tests__/decision-stream-every-provider.test.ts.
           if (
             entry.blockId !== undefined &&
             (dataKind === "value_store.stored" ||
               dataKind === "value_store.groomed" ||
-              hasContentIr)
+              hasContentIr ||
+              !(dataType && MEDIA_DATA_TYPES.has(dataType)))
           ) {
             pendingStatus = null;
             pushBlock(entry.blockId);
           }
-          const dataType = entry.data.type;
           if (dataType && MEDIA_DATA_TYPES.has(dataType)) {
             pendingStatus = null;
             if (entry.blockId !== undefined) {

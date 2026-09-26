@@ -14,7 +14,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, BrainCircuit } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import {
   Popover,
   PopoverContent,
@@ -118,7 +119,7 @@ export function IntelligenceIndicator({
                 className,
               )}
             >
-              <BrainCircuit className={size === "sm" ? "h-3 w-3" : "h-3.5 w-3.5"} aria-hidden />
+              <INTELLIGENCE_ICON className={size === "sm" ? "h-3 w-3" : "h-3.5 w-3.5"} aria-hidden />
             </button>
           </PopoverTrigger>
         </TooltipTrigger>

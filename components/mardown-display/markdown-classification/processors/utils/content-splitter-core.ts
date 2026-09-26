@@ -35,7 +35,7 @@ import {
   DirectiveContainerTracker,
 } from "@/components/markdown-core/directive-container";
 import { TITLED_IMAGE_LINE } from "@/components/markdown-core/image-figure";
-import { continuesTable, isGfmDelimiterRow, startsPipelessTable } from "./gfm-table-lines";
+import { continuesTable, isGfmDelimiterRow, opensTable } from "./gfm-table-lines";
 import type {
   TypedRenderBlock,
   ServerOnlyBlockType,
@@ -1472,20 +1472,13 @@ function extractCodeBlock(
   };
 }
 
-function detectTableRow(line: string): boolean {
-  const trimmed = normalizeLine(line).trim();
-  return trimmed.startsWith("|") && trimmed.includes("|", 1);
-}
-
 function isTableSeparator(line: string): boolean {
-  const trimmed = normalizeLine(line).trim();
-  return /^\|[:\s|\-]+\|?$/.test(trimmed) || isGfmDelimiterRow(trimmed);
+  return isGfmDelimiterRow(normalizeLine(line).trim());
 }
 
 /** A table opens here: a pipe-led row, or a GFM header without edge pipes over its delimiter row (R5-3). */
 function detectTableStart(lines: string[], index: number): boolean {
-  const line = lines[index] ?? "";
-  return detectTableRow(line) || startsPipelessTable(normalizeLine(line), lines[index + 1]);
+  return opensTable(lines, index);
 }
 
 function extractTable(startIndex: number, lines: string[]): ExtractionResult {

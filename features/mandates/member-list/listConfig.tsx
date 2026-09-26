@@ -5,14 +5,18 @@
 // The non-admin mandate list as an entity-list config, built per LEVEL from the
 // admin list's shape (../admin-list/listConfig.tsx): the name is a real link to
 // the record, a row click opens the quick look, and the row menu carries Quick
-// look / Open / new tab / copy — plus Remove, only on a mandate this seat owns
-// (my own soft mandate, or this organization's when I manage it).
+// look / Open / new tab / copy — plus Share, on a soft mandate I created (either
+// seat — the workflows pattern: Share in the list kebab and on the record), and
+// Remove, only on a mandate this seat owns (my own soft mandate, or this
+// organization's when I manage it).
 
 import { useState } from "react";
-import { Copy, ExternalLink, Eye, Trash2 } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Copy, ExternalLink, Eye, Share2, Trash2 } from "lucide-react";
 import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { softDeleteMandate } from "@/features/mandates/admin/service";
+import { invalidateMandateCache } from "@/features/mandates/service";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import type {
   EntityListConfig,
@@ -26,6 +30,15 @@ import { mandateStatusLabel } from "@/features/mandates/status/mandate-status";
 import { MandateMemberPeek } from "./MandateMemberPeek";
 import { memberMandateListHref, memberMandateRecordHref } from "./routes";
 import type { MandateListLevel, MandateMemberRow } from "./types";
+
+// Heavy, conditional, and only ever needed after a user action (the workflows list does the same).
+const ShareModal = dynamic(
+  () =>
+    import("@/features/sharing/components/ShareModal").then((m) => ({
+      default: m.ShareModal,
+    })),
+  { ssr: false },
+);
 
 function copy(text: string, what: string) {
   void navigator.clipboard.writeText(text).then(() => toast.success(`Copied ${what}`));
@@ -46,6 +59,15 @@ export function canRemoveMemberRow(row: MandateMemberRow, options: MemberListCon
   if (row.origin !== "soft" || row.isSystem) return false;
   if (options.level === "person") return row.createdByMe;
   return Boolean(options.canManageOrg) && row.organizationId === options.orgId;
+}
+
+/**
+ * May this viewer share the row? Sharing is the creator's call on their own soft
+ * mandate, from either seat — the same rule as the record page's Share. Pure —
+ * exported for tests.
+ */
+export function canShareMemberRow(row: MandateMemberRow): boolean {
+  return row.origin === "soft" && !row.isSystem && row.createdByMe;
 }
 
 async function removeMandate(row: MandateMemberRow, onChanged: () => void): Promise<void> {
@@ -80,6 +102,7 @@ export function memberMandateListConfig(
     list: EntityListController<MandateMemberRow>,
   ): EntityRowActionsResult<MandateMemberRow> {
     const [peekId, setPeekId] = useState<string | null>(null);
+    const [shareRow, setShareRow] = useState<MandateMemberRow | null>(null);
     const menuFor = (row: MandateMemberRow) => (): ItemMenuConfig => {
       const href = hrefFor(row);
       return {
@@ -105,6 +128,16 @@ export function memberMandateListConfig(
               { id: "copy-key", label: "Copy key", icon: Copy, onSelect: () => copy(row.mandateKey, "key") },
             ],
           },
+          ...(canShareMemberRow(row)
+            ? [
+                {
+                  id: "connect",
+                  items: [
+                    { id: "share", label: "Share", icon: Share2, onSelect: () => setShareRow(row) },
+                  ],
+                },
+              ]
+            : []),
           ...(canRemoveMemberRow(row, options)
             ? [
                 {
@@ -126,27 +159,46 @@ export function memberMandateListConfig(
     };
     return {
       actions: { menuFor, onOpenRow: (row) => setPeekId(row.id) },
-      modals: peekId ? (
-        <MandateMemberPeek
-          rowId={peekId}
-          rows={list.rows}
-          level={options.level}
-          hrefFor={hrefFor}
-          onClose={() => setPeekId(null)}
-          canManage={(row) => canRemoveMemberRow(row, options)}
-          onChanged={options.onChanged}
-        />
-      ) : null,
+      modals: (
+        <>
+          {peekId ? (
+            <MandateMemberPeek
+              rowId={peekId}
+              rows={list.rows}
+              level={options.level}
+              hrefFor={hrefFor}
+              onClose={() => setPeekId(null)}
+              canManage={(row) => canRemoveMemberRow(row, options)}
+              onChanged={options.onChanged}
+            />
+          ) : null}
+          {shareRow ? (
+            <ShareModal
+              isOpen
+              onClose={() => {
+                setShareRow(null);
+                // Visibility or grants may have changed; the lanes re-read.
+                invalidateMandateCache(shareRow.mandateKey);
+                options.onChanged();
+              }}
+              resourceType="mandate"
+              resourceId={shareRow.id}
+              resourceName={shareRow.name}
+              resourceNoun="mandate"
+            />
+          ) : null}
+        </>
+      ),
     };
   }
 
   const scopes: ListScopeKind[] =
-    // The four lanes (mine · organization · community · world) in the platform scope
-    // vocabulary, plus what I was handed and the platform's own. `public` is the published
-    // lane — a mandate someone outside my organizations shared with everyone.
+    // The platform lane order, the same as agents and workflows: mine · orgs · shared ·
+    // public, plus the platform's own. `public` is the published lane — a mandate someone
+    // outside my organizations shared with everyone.
     options.level === "organization"
       ? ["orgs", "public", "system"]
-      : ["mine", "shared", "orgs", "public", "system"];
+      : ["mine", "orgs", "shared", "public", "system"];
   const surfaceKey =
     options.level === "organization" ? "org-mandates-list-preview" : "user-mandates-list-preview";
 

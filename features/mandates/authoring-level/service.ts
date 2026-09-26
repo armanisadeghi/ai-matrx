@@ -89,7 +89,9 @@ export async function createSoftMandate(
       ...(home ? { scopeOverrides: { organization_id: home } } : {}),
     }),
   );
-  if (result.error) throw new Error(parseCallApiError(result.error).userMessage);
+  // The BackendApiError itself (its message IS the server's user message), so a
+  // caller can tell a 409 "key taken" from any other refusal.
+  if (result.error) throw parseCallApiError(result.error);
   const data = result.data as {
     mandate_key: string;
     mandate_id: string;

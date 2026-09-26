@@ -1,4 +1,5 @@
 import { fenceLineKinds } from "@ai-matrx/content-ir/source";
+import { isGfmDelimiterRow, opensTable } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 // components/markdown-studio/lab/sync-scroll.ts
 //
 // Block-paired scroll sync between a raw markdown textarea and its rendered
@@ -108,11 +109,8 @@ export function parseTextSegments(text: string): TextSegment[] {
     }
 
     // Table (line with pipes)
-    if (
-      trimmed.includes("|") &&
-      i + 1 < lines.length &&
-      /^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?$/.test(lines[i + 1]?.trim())
-    ) {
+    // THE GFM table rule (gfm-table-lines): a header over its delimiter row.
+    if (opensTable(lines, i) && isGfmDelimiterRow(lines[i + 1] ?? "")) {
       const start = i;
       i++;
       while (

@@ -9,6 +9,7 @@ import {
   isValidStringArray,
   isValidString
 } from './viewer-utilities';
+import { rowCells, unescapeCellPipes } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 export interface SectionData {
   section: string;
@@ -156,9 +157,9 @@ const renderSectionContent = (section: SectionData) => {
                 <tbody>
                   {item.split('\n').map((row, rowIndex) => (
                     <tr key={rowIndex} className="border-b border-border">
-                      {row.split('|').map((cell, cellIndex) => (
+                      {rowCells(row).map((cell, cellIndex) => (
                         <td key={cellIndex} className="px-4 py-2 text-gray-700 dark:text-gray-300">
-                          {cell.trim()}
+                          {unescapeCellPipes(cell)}
                         </td>
                       ))}
                     </tr>

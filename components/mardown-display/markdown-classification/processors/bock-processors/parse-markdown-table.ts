@@ -1,5 +1,12 @@
 import { MarkdownTableData } from "@/components/mardown-display/types";
 import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";
+import {
+    continuesTable,
+    findTableEnd,
+    findTableStart,
+    isGfmDelimiterRow,
+    rowCells,
+} from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 type NormalizedTableData = Array<{ [key: string]: string }>;
 
@@ -48,7 +55,7 @@ const tableCache = new Map<string, {
 const analyzeTableCompletion = (content: string, isStreamActive: boolean = false): TableState => {
     const lines = content.split('\n').filter(line => line.trim().length > 0);
     
-    const tableStartIndex = lines.findIndex(line => line.trim().startsWith("|"));
+    const tableStartIndex = findTableStart(lines);
     if (tableStartIndex === -1) {
         return { isComplete: false, completeRows: [], bufferRow: [], totalRows: 0, completeRowCount: 0 };
     }
@@ -64,17 +71,13 @@ const analyzeTableCompletion = (content: string, isStreamActive: boolean = false
     let bufferRow: string[] = [];
     let totalRows = 0;
 
-    const processRow = (line: string) => {
-        const cells = line.split("|").map(cell => cell.trim());
-        if (cells.length > 0 && cells[0] === "") cells.shift();
-        if (cells.length > 0 && cells[cells.length - 1] === "") cells.pop();
-        return cells;
-    };
+    // THE GFM row rule (gfm-table-lines): an escaped `\|` stays in its cell.
+    const processRow = rowCells;
 
     for (let i = 0; i < dataLines.length; i++) {
         const line = dataLines[i].trim();
         
-        if (line.startsWith("|") && line.includes("|", 1)) {
+        if (continuesTable(line)) {
             totalRows++;
             const row = processRow(line);
             
@@ -124,7 +127,7 @@ export const parseMarkdownTable = (
         const cached = tableCache.get(cacheKey);
         
         const lines = content.split("\n").filter((line) => line.trim().length > 0);
-        const tableStartIndex = lines.findIndex((line) => line.trim().startsWith("|"));
+        const tableStartIndex = findTableStart(lines);
         
         if (tableStartIndex === -1) return { markdown: null, data: null };
 
@@ -133,20 +136,15 @@ export const parseMarkdownTable = (
 
         // More robust separator validation
         const separatorLine = tableLines[1].trim();
-        if (!separatorLine.includes("-") || !separatorLine.match(/^\|[:\s|\-]+\|?$/)) {
+        if (!isGfmDelimiterRow(separatorLine)) {
             if (!isStreamActive && process.env.NODE_ENV === 'development') {
                 console.warn("Invalid table separator format:", separatorLine);
             }
             return { markdown: null, data: null };
         }
 
-        // Process rows, preserving empty cells
-        const processRow = (line: string) => {
-            const cells = line.split("|").map((cell) => cell.trim());
-            if (cells.length > 0 && cells[0] === "") cells.shift();
-            if (cells.length > 0 && cells[cells.length - 1] === "") cells.pop();
-            return cells;
-        };
+        // Process rows, preserving empty cells — THE GFM row rule
+        const processRow = rowCells;
 
         const headers = processRow(tableLines[0]);
         if (headers.length === 0) return { markdown: null, data: null };
@@ -239,32 +237,22 @@ export const parseMarkdownTables = (
 
         let currentIndex = 0;
         while (currentIndex < lines.length) {
-            // Find the start of a table
-            const tableStartIndex = lines
-                .slice(currentIndex)
-                .findIndex((line) => line.trim().startsWith("|"));
-            if (tableStartIndex === -1) break;
-
-            // Adjust the global index
-            const globalStartIndex = currentIndex + tableStartIndex;
-            const tableLines = lines.slice(globalStartIndex);
+            // Find the start of a table (pipe-led, or a pipe-less GFM header)
+            const globalStartIndex = findTableStart(lines, currentIndex);
+            if (globalStartIndex === -1) break;
+            const tableLines = lines.slice(globalStartIndex, findTableEnd(lines, globalStartIndex));
             if (tableLines.length < 3) {
                 currentIndex = globalStartIndex + 1;
                 continue;
             }
 
-            if (!tableLines[1].includes("-")) {
+            if (!isGfmDelimiterRow(tableLines[1] ?? "")) {
                 currentIndex = globalStartIndex + 1;
                 continue;
             }
 
-            // Process rows, preserving empty cells
-            const processRow = (line: string) => {
-                const cells = line.split("|").map((cell) => cell.trim());
-                if (cells.length > 0 && cells[0] === "") cells.shift();
-                if (cells.length > 0 && cells[cells.length - 1] === "") cells.pop();
-                return cells;
-            };
+            // Process rows, preserving empty cells — THE GFM row rule
+            const processRow = rowCells;
 
             const headers = processRow(tableLines[0]);
             if (headers.length === 0) {
@@ -277,9 +265,8 @@ export const parseMarkdownTables = (
                 .map(processRow)
                 .filter((row) => row.some((cell) => cell.length > 0));
 
-            // Stop processing this table when a non-table line is encountered
-            const tableEndIndex = tableLines.findIndex((line, i) => i >= 2 && !line.trim().startsWith("|"));
-            const tableLength = tableEndIndex === -1 ? tableLines.length : tableEndIndex + 2;
+            // The table already stops at its first non-table line (findTableEnd).
+            const tableLength = tableLines.length;
 
             if (rows.length === 0) {
                 currentIndex = globalStartIndex + tableLength;

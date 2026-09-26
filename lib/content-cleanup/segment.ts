@@ -22,6 +22,7 @@ import type {
   ProtectionConfidence,
 } from "./types";
 import { fenceParts, findCodeRanges } from "@ai-matrx/content-ir/source";
+import { isGfmDelimiterRow } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 interface LineInfo {
   start: number;
@@ -140,13 +141,12 @@ function detectTables(
   masked: (offset: number) => boolean,
 ): ProtectedRegion[] {
   const regions: ProtectedRegion[] = [];
-  // Delimiter row: pipe-bounded dashes, e.g. | --- | :--: |
-  const delim = /^\s*\|?\s*:?-{1,}:?\s*(\|\s*:?-{1,}:?\s*)*\|?\s*$/;
   const hasPipe = (s: string) => s.includes("|");
   let i = 1;
   while (i < lines.length) {
+    // Delimiter row by THE GFM table rule (gfm-table-lines), e.g. | --- | :--: |
     const isDelim =
-      delim.test(lines[i].text) &&
+      isGfmDelimiterRow(lines[i].text) &&
       hasPipe(lines[i].text) &&
       hasPipe(lines[i - 1].text) &&
       lines[i - 1].text.trim() !== "";

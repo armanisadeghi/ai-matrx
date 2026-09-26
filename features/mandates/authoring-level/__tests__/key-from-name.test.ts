@@ -1,32 +1,62 @@
 /**
- * A soft mandate's key is MADE from its name (review 2026-09-25: asking a
- * person for a "lowercase, dot-separated" key "code calls forever" was a
- * developer question put to a user). The made key must satisfy the server's
- * shape — `^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$` — for any name a person types.
+ * A soft mandate's key is MADE from its name, in the seat's namespace. The made
+ * key must pass the SERVER's rule, not only its regex: the first version made
+ * `custom.<words>`, matched the shape, and every create was refused because
+ * aidream forbids `custom` as a generic namespace. So this test carries the
+ * server's forbidden namespaces and Holder words (aidream
+ * aidream/services/mandates/service.py `_FORBIDDEN_MANDATE_NAMESPACES`,
+ * `_FORBIDDEN_HOLDER_JOB_WORDS`) and the server side pins that the two seat
+ * namespaces are accepted (`test_soft_mandate_seat_namespaces_are_accepted`).
  */
-jest.mock("@/features/shell/components/header/RouteHeader", () => () => null);
-jest.mock("@ai-matrx/tap-target/buttons", () => ({ ChevronLeftTapButton: () => null }));
-
-import { keyFromName } from "../NewSoftMandatePage";
+import { keyFromName, softMandateNamespace } from "../soft-key";
 
 const SERVER_SHAPE = /^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*$/;
+const SERVER_FORBIDDEN_NAMESPACES = new Set([
+  "system", "platform", "core", "shared", "common", "misc", "miscellaneous", "generic",
+  "general", "utility", "utilities", "helper", "helpers", "default", "builtin", "custom",
+  "temp", "temporary", "test", "testing", "demo", "sample", "other", "unknown",
+]);
+const HOLDER_SUFFIX =
+  /_(?:agent|assistant|bot|model|worker|runner|handler|processor|manager|service|task|job|helper)$/;
+const HOLDER_WORDS = /^(?:agent|assistant|bot|model|worker|runner|handler|processor|manager|service|task|job|helper)$/;
+
+function serverAccepts(key: string): boolean {
+  if (!SERVER_SHAPE.test(key)) return false;
+  const [namespace, ...jobs] = key.split(".");
+  if (SERVER_FORBIDDEN_NAMESPACES.has(namespace)) return false;
+  if (key.split(/[._]/).includes("internal")) return false;
+  return jobs.every((part) => !HOLDER_WORDS.test(part) && !HOLDER_SUFFIX.test(part));
+}
+
+const personal = softMandateNamespace("user");
+const org = softMandateNamespace("organization", "Rincon Field Services");
 
 test.each([
-  ["Goal writer", "custom.goal_writer"],
-  ["  Weekly Sales Recap!! ", "custom.weekly_sales_recap"],
-  ["Café résumé", "custom.cafe_resume"],
-  ["2024 plan", "custom.job_2024_plan"],
-])("%p → %p", (name, key) => {
-  expect(keyFromName(name)).toBe(key);
-  expect(keyFromName(name)).toMatch(SERVER_SHAPE);
+  ["Goal writer", personal, "personal.goal_writer"],
+  ["  Weekly Sales Recap!! ", personal, "personal.weekly_sales_recap"],
+  ["Café résumé", personal, "personal.cafe_resume"],
+  ["2024 plan", personal, "personal.mandate_2024_plan"],
+  ["Research assistant", personal, "personal.research"],
+  ["Dispatch summary", org, "org_rincon_field_services.dispatch_summary"],
+])("%p in %p → %p, and the server accepts it", (name, namespace, key) => {
+  expect(keyFromName(name, 1, namespace)).toBe(key);
+  expect(serverAccepts(keyFromName(name, 1, namespace))).toBe(true);
 });
 
-test("a taken key is bumped, still in the server's shape", () => {
-  expect(keyFromName("Goal writer", 3)).toBe("custom.goal_writer_3");
-  expect(keyFromName("Goal writer", 3)).toMatch(SERVER_SHAPE);
+test("a taken key is bumped, still accepted", () => {
+  expect(keyFromName("Goal writer", 3, personal)).toBe("personal.goal_writer_3");
+  expect(serverAccepts(keyFromName("Goal writer", 3, personal))).toBe(true);
+});
+
+test("an organization with no usable name, or one named like plumbing, still gets an accepted namespace", () => {
+  for (const orgName of ["", "!!!", "Internal", "Custom", "Test", "123 Holdings"]) {
+    const key = keyFromName("Weekly recap", 1, softMandateNamespace("organization", orgName));
+    expect(serverAccepts(key)).toBe(true);
+  }
 });
 
 test("a name with nothing to make a key from makes none (Advanced opens)", () => {
-  expect(keyFromName("")).toBe("");
-  expect(keyFromName("!!!")).toBe("");
+  expect(keyFromName("", 1, personal)).toBe("");
+  expect(keyFromName("!!!", 1, personal)).toBe("");
+  expect(keyFromName("Agent", 1, personal)).toBe("");
 });

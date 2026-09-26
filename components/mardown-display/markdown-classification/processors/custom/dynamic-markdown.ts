@@ -1,3 +1,4 @@
+import { continuesTable, isGfmDelimiterRow, opensTable, rowCells } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 interface TableData {
     headers: string[];
     rows: string[][];
@@ -33,8 +34,8 @@ export function parseMarkdownContent(markdown: string): ParsedContent {
     const isHeading = (line: string) => /^#{1,3}\s+/.test(line.trim());
     const isBoldHeading = (line: string) => /^\*\*[^*]+\*\*$/.test(line.trim());
     const isDivider = (line: string) => /^={3,}$/.test(line.trim());
-    const isTableSeparator = (line: string) => /^\|\s*[-\s|]+\|$/.test(line.trim());
-    const isTableRow = (line: string) => /^\|.*\|$/.test(line.trim());
+    // Tables: THE GFM rule (gfm-table-lines) — pipe-less tables too, `\|` stays in its cell.
+    const isTableSeparator = isGfmDelimiterRow;
     const isListItem = (line: string) => /^[*-]\s+|^\d+\.\s+/.test(line.trim());
 
     // Remove inline bold markers
@@ -90,7 +91,8 @@ export function parseMarkdownContent(markdown: string): ParsedContent {
     }
 
     // Process each line in sequence
-    for (let line of lines) {
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+        let line = lines[lineIndex] ?? "";
         // Always work with the raw line for whitespace-checking, but let's define a trimmed version too
         const trimmed = line.trim();
 
@@ -143,25 +145,18 @@ export function parseMarkdownContent(markdown: string): ParsedContent {
 
         // Check if line might belong to a table
         // If we see a table row and we're NOT parsing a table, that starts a new table
-        if (!isParsingTable && isTableRow(trimmed)) {
+        if (!isParsingTable && opensTable(lines, lineIndex)) {
             isParsingTable = true;
             // The first table row is the headers
-            tableHeaders = trimmed
-                .split("|")
-                .map((x) => x.trim())
-                .filter((x) => x.length > 0);
+            tableHeaders = rowCells(trimmed);
             continue;
         }
 
         // If we are parsing a table
         if (isParsingTable) {
             // If this line is still a table row (and not a separator line)
-            if (isTableRow(trimmed) && !isTableSeparator(trimmed)) {
-                const rowCells = trimmed
-                    .split("|")
-                    .map((c) => c.trim())
-                    .filter((x) => x.length > 0);
-                tableRows.push(rowCells);
+            if (continuesTable(trimmed) && !isTableSeparator(trimmed)) {
+                tableRows.push(rowCells(trimmed));
                 continue;
             } else {
                 // Table has ended if we hit a non-table row or a blank line

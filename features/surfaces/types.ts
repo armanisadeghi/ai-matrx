@@ -58,6 +58,23 @@ export const RESERVED_GROUP_KEYS = {
   inheritedPrefix: "inherited:",
 } as const;
 
+/** How sensitive a value is. Independent from automatic agent context inclusion. */
+export interface SurfaceValueSensitivity {
+  /** false = never leaves through Alchemy. Default true. */
+  exportable?: boolean;
+  /** Secret and credential values are excluded from every Alchemy format. Default "ordinary". */
+  classification?: "ordinary" | "secret" | "credential";
+  /** Initial preparation section selection, not an authorization boundary. Default true. */
+  includedByDefault?: boolean;
+}
+
+/** `ui.ui_surface.execution_mode` (ui_surface_execution_mode_check). */
+export type SurfaceExecutionMode =
+  | "python-stream"
+  | "nextjs-stream"
+  | "browser-realtime"
+  | "local-runtime";
+
 export interface SurfaceValue {
   /**
    * Lower-snake-case key, unique within the surface (e.g. `selection`,
@@ -98,12 +115,11 @@ export interface SurfaceValue {
    */
   autoContext?: boolean;
 
-  /** Alchemy export policy; independent from automatic agent context inclusion. */
-  exportable?: boolean;
-  /** Secret and credential values are excluded from every Alchemy format. */
-  classification?: "ordinary" | "secret" | "credential";
-  /** Initial preparation section selection, not an authorization boundary. */
-  includedByDefault?: boolean;
+  /**
+   * Alchemy sensitivity (CONTRACT 2.1 `Sensitivity`). Every field defaults:
+   * exportable true, classification "ordinary", includedByDefault true.
+   */
+  sensitivity?: SurfaceValueSensitivity;
 
   /** Optional sort order within the surface; defaults to 1000 in DB. */
   sortOrder?: number;
@@ -450,6 +466,15 @@ export type SurfaceReadiness = "verified" | "partial" | "stub";
 export interface SurfaceManifest {
   /** Matches `ui_surface.name`. */
   surfaceName: string;
+  /**
+   * The client that owns the surface (`ui_surface.client_name`). Always the
+   * `surfaceName` prefix before the first `/`; the checks refuse a mismatch.
+   */
+  client?: string;
+  /** `ui_surface.execution_mode`. Backfilled from the live row (ALC-14 S1). */
+  executionMode?: SurfaceExecutionMode;
+  /** One sentence on what this surface is (`ui_surface.description`). */
+  description?: string;
   /**
    * Whether this surface has a bindable roster of agents in the shell's
    * existing Agents menu. `bound` is the default. `universal` is reserved for

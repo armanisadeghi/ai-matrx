@@ -54,34 +54,14 @@ import {
   writeLevelDraft,
 } from "./level-draft";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { BackendApiError } from "@/lib/api/errors";
+import { keyFromName, softMandateNamespace } from "./soft-key";
 
 export interface NewSoftMandatePageProps {
   level: MandateListLevel;
   /** Organization level: the organization the mandate belongs to. */
   orgId?: string | null;
   orgName?: string | null;
-}
-
-/**
- * THE KEY IS MADE FOR YOU (review 2026-09-25). A soft mandate is found by its
- * name; nobody's code calls it, so asking a person for a "lowercase,
- * dot-separated" key was a developer question put to a user. The key is built
- * from the name (`custom.<words_of_the_name>`, the shape the server requires),
- * bumped with a number when that key is already taken, and stays editable
- * under Advanced. Exported for tests.
- */
-export function keyFromName(name: string, attempt = 1): string {
-  const words = name
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 60)
-    .replace(/_+$/g, "");
-  if (!words) return "";
-  const body = /^[a-z]/.test(words) ? words : `job_${words}`;
-  return attempt > 1 ? `custom.${body}_${attempt}` : `custom.${body}`;
 }
 
 export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewSoftMandatePageProps) {
@@ -98,7 +78,8 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
   const [autoAttempt, setAutoAttempt] = useState(1);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const keyIsAuto = typedMandateKey.trim() === "";
-  const mandateKey = keyIsAuto ? keyFromName(label, autoAttempt) : typedMandateKey;
+  const keyNamespace = softMandateNamespace(level === "organization" ? "organization" : "user", orgName);
+  const mandateKey = keyIsAuto ? keyFromName(label, autoAttempt, keyNamespace) : typedMandateKey;
   const [goal, setGoal] = useState("");
   const [draftInputs, setDraftInputs] = useState<DraftInput[]>([
     { description: "" },
@@ -157,7 +138,7 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
     // A key that is just the one the name makes is not a choice the person
     // made — restore it as "follow the name", so renaming still moves it.
     setMandateKey(
-      saved.mandateKey === keyFromName(saved.label) ? "" : saved.mandateKey,
+      saved.mandateKey === keyFromName(saved.label, 1, keyNamespace) ? "" : saved.mandateKey,
     );
     setGoal(saved.goal);
     setOutputKind(saved.outputKind);
@@ -165,8 +146,8 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
     setDraftInputs(saved.draftInputs);
     setRestoredAt(saved.savedAt);
     /* eslint-enable react-hooks/set-state-in-effect */
-    // `restored` makes this run once even though the key is a dependency.
-  }, [draftKey]);
+    // `restored` makes this run once even though the keys are dependencies.
+  }, [draftKey, keyNamespace]);
 
   // Every change is written down. `dirty` gates it so an empty form does not
   // resurrect itself, and the refusal to store is shown rather than swallowed.
@@ -259,16 +240,33 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
     setCreating(true);
     setServerError(null);
     try {
-      const created = await createSoftMandate(dispatch, {
-        level,
-        organizationId: orgId,
-        mandateKey,
-        label,
-        goal,
-        outputKind,
-        outputConstraints,
-        draftInputs,
-      });
+      // A made key can be taken by a mandate this person cannot see (someone
+      // else's private one) — the probe reads through RLS and says "free", the
+      // server says 409. That is still not the person's problem: the next
+      // number is tried. A key typed under Advanced is theirs, and is refused.
+      let attempt = autoAttempt;
+      let made: Awaited<ReturnType<typeof createSoftMandate>> | null = null;
+      while (!made) {
+        const key = keyIsAuto ? keyFromName(label, attempt, keyNamespace) : mandateKey;
+        try {
+          made = await createSoftMandate(dispatch, {
+            level,
+            organizationId: orgId,
+            mandateKey: key,
+            label,
+            goal,
+            outputKind,
+            outputConstraints,
+            draftInputs,
+          });
+        } catch (error: unknown) {
+          const taken = error instanceof BackendApiError && error.status === 409;
+          if (!keyIsAuto || !taken || attempt >= 50) throw error;
+          attempt += 1;
+        }
+      }
+      const created = made;
+      if (attempt !== autoAttempt) setAutoAttempt(attempt);
       recordToast.success(
         { type: "mandate", id: created.mandateId, title: label.trim() },
         level === "organization"
@@ -394,7 +392,7 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
                     // on screen — it goes with it.
                     setServerError(null);
                   }}
-                  placeholder={keyFromName(label, autoAttempt) || "custom.my_job"}
+                  placeholder={keyFromName(label, autoAttempt, keyNamespace) || `${keyNamespace}.weekly_recap`}
                   className="h-8 w-72 font-mono text-[12.5px]"
                   aria-label="Mandate key"
                 />

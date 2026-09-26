@@ -30,6 +30,8 @@ export const DOCUMENT_INPUTS: ReadonlyArray<{ name: string; text: string }> = [
   { name: "prose with a pipe and no delimiter row", text: `${INTRO}\nUse a | b for either.\n\n${OUTRO}` },
   { name: "header wider than its delimiter row", text: `${INTRO}\n\nBay | Status | Crew\n--- | ---\nB3 | re-scan | Omar\n\n${OUTRO}` },
   { name: "list item with a pipe over a rule", text: `${INTRO}\n\n- keep a | b\n--- | ---\n\n${OUTRO}` },
+  { name: "a 'delimiter' with no dashes is not a table", text: `${INTRO}\n\n| Bay | Status |\n| | |\n| B3 | re-scan |\n\n${OUTRO}` },
+  { name: "a pipe-less row continues a pipe-led table", text: `${INTRO}\n\n| Bay | Status |\n| --- | --- |\nB3 | re-scan\n\n${OUTRO}` },
 ];
 
 export const ROW_INPUTS: readonly string[] = [
@@ -55,4 +57,11 @@ export const CELL_INPUTS: readonly string[] = [
   "`a \\| b` and err\\|warn",
 ];
 
-export const TABLE_INPUTS: readonly string[] = [THREE, TWO, ESCAPED, PIPED, "Bay | Status\n--- | ---\n | \nB4 | clear"];
+export const TABLE_INPUTS: readonly string[] = [
+  THREE,
+  TWO,
+  ESCAPED,
+  PIPED,
+  "Bay | Status\n--- | ---\n | \nB4 | clear",
+  "| Bay | Status |\n| | |\n| B3 | re-scan |",
+];

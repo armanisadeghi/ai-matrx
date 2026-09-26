@@ -11,13 +11,13 @@
 //
 // `icon` (default) is the Intelligence icon itself — the same mark every
 // intelligence door wears, with its popover of the feature's jobs. `inline` is
-// a text link for a body action row. Icon is BrainCircuit, always — Sparkles
+// a text link for a body action row. Icon is INTELLIGENCE_ICON (BrainCircuit, reserved), always — Sparkles
 // is banned for AI (CLAUDE.md).
 // Law: ../../../../../common-docs/policies/no-dead-ends.md
 // Contract: features/mandates/feature-intelligence/FEATURE.md.
 
 import Link from "next/link";
-import { BrainCircuit } from "lucide-react";
+import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import { cn } from "@/lib/utils";
 import { featureIntelligenceHref } from "../feature-intelligence/hrefs";
 import { IntelligenceIndicator } from "../feature-intelligence/IntelligenceIndicator";
@@ -54,7 +54,7 @@ export function MandateDoorLink({
           className,
         )}
       >
-        <BrainCircuit className="h-3.5 w-3.5" />
+        <INTELLIGENCE_ICON className="h-3.5 w-3.5" />
         {label}
       </Link>
     );

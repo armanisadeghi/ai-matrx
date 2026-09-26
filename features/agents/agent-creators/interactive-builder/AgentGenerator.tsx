@@ -44,6 +44,11 @@ import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/th
 import { useDebugContext } from "@/hooks/useDebugContext";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
+import { extractErrorMessage } from "@/utils/errors";
 
 const GENERATOR_SHORTCUT = getSystemShortcut("agent-generator-01");
 
@@ -572,14 +577,40 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
           {/* Generator readiness banner — shortcut is being fetched, or a
               load failure means Generate is not wired. Separate from the
               streaming state so users know why the button is disabled. */}
-          {!shortcutReady && !generatorLoadError && (
+          {/* 🚨 NO WORKSPACE CHOSEN IS A QUESTION, NOT A SPINNER (UX punch
+              list, 2026-09-26). `useMandate` already retried once before it
+              reports `organizationPending`, so by now nothing is loading —
+              the person simply has no workspace selected. Spinning forever
+              here was a screen that lied. One line, one button that opens
+              the workspace picker; the choice re-resolves the job. */}
+          {holderDraftWaiting ? (
+            <div
+              data-testid="generator-needs-workspace"
+              className="flex items-center gap-2 rounded-md border border-border bg-muted/50 px-2.5 py-1.5 text-xs text-muted-foreground"
+            >
+              <span className="flex-1">Choose a workspace to generate.</span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7"
+                onClick={() => {
+                  void ensureOrganizationContext().catch((err: unknown) => {
+                    if (isOrganizationSelectionCancelled(err)) return;
+                    toast.error(extractErrorMessage(err), {
+                      position: TOAST_POSITION,
+                    });
+                  });
+                }}
+              >
+                Choose workspace
+              </Button>
+            </div>
+          ) : !shortcutReady && !generatorLoadError ? (
             <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50 border border-border text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              {holderDraftWaiting
-                ? "Waiting for your workspace to finish loading…"
-                : "Loading generator configuration…"}
+              Loading generator configuration…
             </div>
-          )}
+          ) : null}
           {generatorLoadError && mandateMode ? (
             // NOTHING FAILS SILENTLY — and never a paragraph: one line, one
             // button that opens the job so it can be bound (Arman, 2026-09-24).
@@ -890,10 +921,10 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Generating...
                 </>
-              ) : !shortcutReady && !generatorLoadError ? (
+              ) : !shortcutReady && !generatorLoadError && !holderDraftWaiting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Loading...
+                  Preparing…
                 </>
               ) : (
                 <>

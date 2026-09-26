@@ -45,6 +45,13 @@ import type {
 import { LocaleType } from "@univerjs/presets";
 
 import { defaultDocumentPageStyle } from "./document-page-style";
+import {
+  findTableEnd,
+  isGfmDelimiterRow,
+  opensTable,
+  rowCells,
+  unescapeCellPipes,
+} from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 import { codeSpanText, fenceLineKinds, mapCodeRanges } from "@ai-matrx/content-ir/source";
 
 // ─── inline parsing ──────────────────────────────────────────────────────────
@@ -220,12 +227,9 @@ class DocBuilder {
 
 const TABLE_CELL_SEP = "   |   ";
 
-function splitTableRow(line: string): string[] {
-  const cells = line.split("|").map((c) => c.trim());
-  if (cells.length > 0 && cells[0] === "") cells.shift();
-  if (cells.length > 0 && cells[cells.length - 1] === "") cells.pop();
-  return cells;
-}
+// THE GFM row rule (gfm-table-lines): an escaped `\|` stays in its cell and
+// shows as `|` (the one cell-pipe rule), exactly as chat and Studio draw it.
+const splitTableRow = (line: string): string[] => rowCells(line).map(unescapeCellPipes);
 
 function addTable(builder: DocBuilder, tableLines: string[]): void {
   const header = splitTableRow(tableLines[0]);
@@ -342,16 +346,13 @@ export function markdownToUniverDoc(
       continue;
     }
 
-    // GFM table: a `|`-row immediately followed by a separator row.
-    if (
-      trimmed.startsWith("|") &&
-      i + 1 < lines.length &&
-      lines[i + 1].includes("-") &&
-      /^\|?[\s:|-]+\|?$/.test(lines[i + 1].trim())
-    ) {
+    // GFM table (THE rule, gfm-table-lines): a header — with or without edge
+    // pipes — immediately followed by its delimiter row.
+    if (opensTable(lines, i) && isGfmDelimiterRow(lines[i + 1] ?? "")) {
       flushParagraph();
       const tableLines: string[] = [];
-      while (i < lines.length && lines[i].trim().startsWith("|")) {
+      const tableEnd = findTableEnd(lines, i);
+      while (i < tableEnd) {
         tableLines.push(lines[i].trim());
         i++;
       }

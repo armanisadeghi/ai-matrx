@@ -6,7 +6,6 @@
 
 import Link from "next/link";
 import {
-  BrainCircuit,
   Copy,
   ExternalLink,
   Loader2,
@@ -15,6 +14,7 @@ import {
   UserRoundCog,
   Workflow,
 } from "lucide-react";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -163,7 +163,7 @@ export function IntelligenceJobCard({
   const hasSavedChoice = Boolean(ladder.rows.find((entry) => entry.rung === ownRung)?.binding_id);
   const canDuplicate =
     Boolean(row.holderId) && (row.holderType === "agent" || row.holderType === "workflow");
-  const HolderIcon = row.holderType === "workflow" ? Workflow : BrainCircuit;
+  const HolderIcon = row.holderType === "workflow" ? Workflow : AGENT_ICON;
   const about = row.description || row.goal?.split(/(?<=[.!?])\s+/)[0] || row.goal;
 
   return (

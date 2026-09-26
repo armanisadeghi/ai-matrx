@@ -28,6 +28,7 @@
  */
 
 import { findCodeRanges } from "@ai-matrx/content-ir/source";
+import { continuesTable, startsLikeTableRow } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 type OpType = "eq" | "del" | "ins";
 /** del = only in the first text, ins = only in the second. */
@@ -271,7 +272,8 @@ function isStructuralEscape(text: string, i: number): boolean {
     const leEnd = text.indexOf("\n", i);
     const le = leEnd === -1 ? text.length : leEnd;
     const line = text.slice(ls, le);
-    if (x === "|" && /^\s*\|/.test(line)) return true; // table cell content
+    // Table cell content, by THE GFM table rule (gfm-table-lines): edge pipes optional.
+    if (x === "|" && (startsLikeTableRow(line) || continuesTable(line))) return true;
     const prefix = text.slice(ls, i);
     const after = text[i + 2];
     const spaceAfter = after === undefined || after === " " || after === "\t" || after === "\n";

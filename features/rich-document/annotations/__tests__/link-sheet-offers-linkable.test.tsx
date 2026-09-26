@@ -26,8 +26,10 @@ jest.mock("@ai-matrx/design-system", () => ({
 }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "me" }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "me" }));
+// The picker's own lister check: pickable kinds with a title column or a host lister. Mirrors the
+// live registry for this source — fc_card, document and record link but cannot be listed.
 jest.mock("@/features/scopes/registry/entityRegistry", () => ({
-  tryGetEntityInfo: (t: string) => (["conversation", "note", "fc_card", "document", "task"].includes(t) ? { token: t } : null),
+  listableTokens: () => ["assessment", "conversation", "fc_set", "note", "study_media", "task"],
 }));
 jest.mock("../AnnotationSidecar", () => ({ useSidecar: () => ({ source: { token: "note", id: "guide-1" } }) }));
 const linkableKinds = jest.fn();
@@ -52,11 +54,12 @@ async function render() {
   for (let i = 0; i < 4; i++) await act(async () => { await Promise.resolve(); });
 }
 
-it("offers only kinds the registry lets link here, and only ones this client can list", async () => {
-  linkableKinds.mockResolvedValue(["conversation", "document", "fc_card", "note", "study_media"]);
+it("offers only kinds the registry lets link here AND the picker can list", async () => {
+  linkableKinds.mockResolvedValue(["assessment", "conversation", "document", "fc_card", "fc_set", "note", "record", "study_media"]);
   await render();
   expect(linkableKinds).toHaveBeenCalledWith("note");
-  expect(pickerProps.at(-1)?.tokens).toEqual(["conversation", "document", "fc_card", "note"]);
+  // Registered AND listable only: document, fc_card and record would list nothing — not offered.
+  expect(pickerProps.at(-1)?.tokens).toEqual(["assessment", "conversation", "fc_set", "note", "study_media"]);
   expect(container.textContent).not.toContain("task");
 });
 

@@ -21,6 +21,9 @@ import {
     recognizeOurFileUrl,
 } from "@/lib/media/our-file-sources";
 import { findCodeRanges } from "@ai-matrx/content-ir/source";
+import { findTableStart } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+
+const hasMarkdownTable = (value: string): boolean => findTableStart(value.split("\n")) !== -1;
 
 // ─── Discriminated union ────────────────────────────────────────────────────
 
@@ -219,7 +222,7 @@ export function humanizeEnumValue(value: string): string | null {
  */
 export function looksLikeMarkdown(value: string): boolean {
     if (value.length > 280) return true;
-    const signals: RegExp[] = [
+    const signals: Array<{ test: (value: string) => boolean }> = [
         /^#{1,6}\s+\S/m, // atx heading
         /^[-*+]\s+\S/m, // unordered list item
         /^\d+\.\s+\S/m, // ordered list item
@@ -231,7 +234,7 @@ export function looksLikeMarkdown(value: string): boolean {
         /(^|[^\w])\*[^*\s](?:[^*\n]*[^*\s])?\*(?=$|[^\w])/, // emphasis
         /(^|[^\w])_[^_\s](?:[^_\n]*[^_\s])?_(?=$|[^\w])/, // underscore emphasis, not snake_case
         /~~[^~\n]+~~/, // GFM strikethrough
-        /^\|.+\|.*$/m, // table row
+        { test: hasMarkdownTable }, // a table, by THE GFM rule (gfm-table-lines)
         /^\s*[-*_]{3,}\s*$/m, // thematic break
     ];
     // Code (a fence or a span) by THE one code-range rule.

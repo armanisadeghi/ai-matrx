@@ -85,3 +85,27 @@ describe("a lone trailing backtick while streaming", () => {
     );
   });
 });
+
+// verify-RC-B4 R5-3 (the one GFM table rule, gfm-table-lines): a table written
+// WITHOUT edge pipes is held back the same way while its delimiter arrives, and
+// prose that merely holds a pipe is never held.
+describe("a pipe-less table while streaming", () => {
+  const INTRO = "Tonight's handover:\n\n";
+  it.each([
+    // [prefix on screen, expected healed text]
+    [`${INTRO}Step | Task | Who\n---`, INTRO],
+    [`${INTRO}Step | Task | Who\n--- | ---`, INTRO],
+    [`${INTRO}Step | Task | Who\n--- | --- | ---`, `${INTRO}Step | Task | Who\n--- | --- | ---`],
+    [`${INTRO}Step | Task | Who\n--- | --- | ---\n1 | Drain the queue | Tom`, `${INTRO}Step | Task | Who\n--- | --- | ---\n1 | Drain the queue | Tom`],
+  ])("holds back %j", (prefix, expected) => {
+    expect(healStreamingMarkdown(prefix)).toBe(expected);
+  });
+
+  it.each([
+    "Use a | b to match either level.",
+    "Use a | b to match either level.\nThen restart the shipper.",
+    "Use a | b to match either level.\n| Bay | Status |\n| --- | --- |",
+  ])("never holds prose with a pipe: %j", (prefix) => {
+    expect(healStreamingMarkdown(prefix)).toBe(prefix);
+  });
+});

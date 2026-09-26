@@ -1,4 +1,6 @@
 import { MarkdownTableData } from "@/components/mardown-display/types";
+import { parseMarkdownTable as parseCanonicalTable } from "@/components/mardown-display/blocks/table/parseMarkdownTable";
+import { findTableEnd, findTableStart } from "./gfm-table-lines";
 
 
 
@@ -11,37 +13,19 @@ export const parseMarkdownTable = (content: string): {
 } => {
     try {
         const lines = content.split('\n').filter(line => line.trim().length > 0);
-        
-        // Check if we have at least the start of a table
-        const tableStartIndex = lines.findIndex(line => line.trim().startsWith('|'));
+
+        // THE table rule (gfm-table-lines) finds the table — pipe-led or pipe-less —
+        // and THE parser reads it: an escaped `\|` stays in its cell.
+        const tableStartIndex = findTableStart(lines);
         if (tableStartIndex === -1) return { markdown: null, data: null };
+        const tableLines = lines.slice(tableStartIndex, findTableEnd(lines, tableStartIndex));
 
         // For streaming, we need at least 3 lines (header, separator, and 1+ rows) to process
-        const tableLines = lines.slice(tableStartIndex);
         if (tableLines.length < 3) return { markdown: null, data: null };
 
-        // Verify we have a separator line (contains dashes)
-        if (!tableLines[1].includes('-')) return { markdown: null, data: null };
-
-        // Process headers and rows
-        const processRow = (line: string) =>
-            line
-                .split('|')
-                .map(cell => cell.trim())
-                .filter(cell => cell.length > 0);
-
-        const headers = processRow(tableLines[0]);
-        
-        // Skip processing if header is incomplete in this chunk
-        if (headers.length === 0) return { markdown: null, data: null };
-
-        const rows = tableLines
-            .slice(2)
-            .map(processRow)
-            .filter(row => row.length > 0); // Only process non-empty rows
-
-        // If we have no complete rows yet, wait for more data
-        if (rows.length === 0) return { markdown: null, data: null };
+        const parsed = parseCanonicalTable(tableLines.join('\n'));
+        if (!parsed || parsed.headers.length === 0 || parsed.rows.length === 0) return { markdown: null, data: null };
+        const { headers, rows } = parsed;
 
         // Convert to normalized data
         const normalizedData = rows.map(row => {

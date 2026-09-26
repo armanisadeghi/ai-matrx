@@ -21,8 +21,11 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import { fenceLineKinds } from "@ai-matrx/content-ir/source";
-const TABLE_ROW = /^\s*\|/;
-const TABLE_DELIMITER = /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/;
+import {
+  isGfmDelimiterRow,
+  startsLikeTableRow,
+  trailingTableStart,
+} from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 const TEX_SIGNAL = /\\[A-Za-z]+|[\\^_{}]/;
 
 /** Offset where an open fenced code block starts, or -1 when none is open. */
@@ -47,17 +50,17 @@ function holdBackTable(text: string): string {
   const lines = text.split("\n");
   let end = lines.length;
   while (end > 0 && lines[end - 1].trim() === "") end--;
-  let start = end;
-  while (start > 0 && TABLE_ROW.test(lines[start - 1])) start--;
+  // THE GFM table rule (gfm-table-lines) finds the table still arriving — edge pipes optional.
+  const start = trailingTableStart(lines, end);
   if (start === end) return text;
   const rows = lines.slice(start, end);
-  const hasDelimiter = rows.some((row) => TABLE_DELIMITER.test(row));
+  const hasDelimiter = rows.some((row) => isGfmDelimiterRow(row));
   if (!hasDelimiter) {
     // Header (and maybe more) without the delimiter row: not a table yet.
     return lines.slice(0, start).join("\n");
   }
   const last = rows[rows.length - 1].trimEnd();
-  if (end === lines.length && !last.endsWith("|")) {
+  if (end === lines.length && startsLikeTableRow(rows[0]) && !last.endsWith("|")) {
     // The last row is still arriving.
     return lines.slice(0, end - 1).join("\n");
   }

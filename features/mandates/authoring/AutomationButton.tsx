@@ -56,6 +56,14 @@ import { toast } from "@/lib/toast";
 import { useMandate } from "../useMandate";
 import { useMandateInputSurface } from "../input-surface";
 import { planInvocation, type KnownValues } from "../invoke/supplied-values";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
+import { extractErrorMessage } from "@/utils/errors";
+
+/** The one line shown when the only thing missing is a chosen workspace. */
+export const CHOOSE_WORKSPACE_LINE = "Choose a workspace to use this.";
 
 export function notifyMissingAutomationMandate(mandateKey: string): void {
   toast.info(
@@ -127,9 +135,10 @@ export function AutomationButton({
 }) {
   // optional: an absent automation mandate is the expected starting state —
   // the screen says so; it is not a console error.
-  const { mandate, loading, error, absent } = useMandate(mandateKey, {
-    optional: true,
-  });
+  const { mandate, loading, error, absent, organizationPending } = useMandate(
+    mandateKey,
+    { optional: true },
+  );
   const available = mandate !== null;
   // THREE FACTS, THREE SENTENCES (F4). "This job does not exist" is `absent`
   // and only `absent`; anything else that stopped the resolution says so in the
@@ -202,6 +211,36 @@ export function AutomationButton({
   );
 
   if (loading) return button;
+
+  // 🚨 NO WORKSPACE CHOSEN IS NOT A BROKEN JOB (UX punch list, 2026-09-26).
+  // This printed a disabled button beside two lines of resolver prose with the
+  // dot-notation key in it. The only thing missing is the person's choice of
+  // workspace, so the control stays live and ASKS: a click opens the
+  // workspace picker, the choice invalidates the mandate cache, and this
+  // re-resolves into the ordinary working button. Nothing is chosen for them.
+  if (organizationPending) {
+    return (
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 gap-1.5 text-[12px]"
+          onClick={() => {
+            void ensureOrganizationContext().catch((err: unknown) => {
+              if (isOrganizationSelectionCancelled(err)) return;
+              toast.error(extractErrorMessage(err));
+            });
+          }}
+        >
+          <BrainCircuit className="h-3.5 w-3.5" />
+          {label}
+        </Button>
+        <span className="text-[11px] leading-snug text-muted-foreground">
+          {CHOOSE_WORKSPACE_LINE}
+        </span>
+      </div>
+    );
+  }
 
   if (refusedReason !== null) {
     return (

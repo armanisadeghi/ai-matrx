@@ -55,3 +55,12 @@ describe("UserMenuPanel — theme toggle is not under ADMIN", () => {
     expect(groupHeader).not.toMatch(/label="Admin"/i);
   });
 });
+
+describe("UserMenuPanel — Intelligence is a person-level destination", () => {
+  it("links /intelligence outside the admin group", () => {
+    const source = readSource();
+    const anchor = source.indexOf('href="/intelligence"');
+    expect(anchor).toBeGreaterThan(-1);
+    expect(adminGroupBlock(source)).not.toContain('href="/intelligence"');
+  });
+});

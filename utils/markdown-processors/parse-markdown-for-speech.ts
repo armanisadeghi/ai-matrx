@@ -1,4 +1,40 @@
 import { replaceFences, unwrapCodeSpans } from "@/lib/markdown/code-ranges";
+import {
+  findTableEnd,
+  isGfmDelimiterRow,
+  isPipeLedRow,
+  opensTable,
+  rowCells,
+  unescapeCellPipes,
+} from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+
+/**
+ * Every table — with or without edge pipes (THE GFM rule, gfm-table-lines) —
+ * becomes one spoken sentence naming its row count and columns.
+ */
+function speakTables(text: string): string {
+  const lines = text.split("\n");
+  const out: string[] = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    if (!opensTable(lines, i) || !isGfmDelimiterRow(lines[i + 1] ?? "")) {
+      out.push(lines[i] ?? "");
+      continue;
+    }
+    const end = findTableEnd(lines, i);
+    const headers = rowCells(lines[i] ?? "").map(unescapeCellPipes).filter((h) => h.length > 0);
+    const rowCount = lines.slice(i + 2, end).filter((line) => line.trim().length > 1).length;
+    const headerText =
+      headers.length > 1
+        ? headers.slice(0, -1).join(", ") + ", and " + headers[headers.length - 1]
+        : headers.length === 1
+          ? headers[0]
+          : "unlabeled columns";
+    const rowText = rowCount === 1 ? "one row" : rowCount > 0 ? `${rowCount} rows` : "no rows";
+    out.push(`There is a table with ${rowText} of data provided for ${headerText}.`);
+    i = end - 1;
+  }
+  return out.join("\n");
+}
 
 /** Languages a listener hears by name ("Please see the python code provided."). */
 const SPOKEN_CODE_LANGUAGES: ReadonlySet<string> = new Set([
@@ -397,49 +433,18 @@ export function parseMarkdownToText(
 
   // Code blocks FIRST, by THE one code-range rule (@ai-matrx/content-ir/source):
   // a diagram, a named language, or plain code — each spoken as one sentence.
-  let result = unwrapCodeSpans(replaceFences(stripLeadingMarkdown(stripReasoningTags(source)), ({ lang }) => {
+  // Then tables (speakTables), BEFORE any other processing that would corrupt pipe/dash syntax.
+  let result = speakTables(unwrapCodeSpans(replaceFences(stripLeadingMarkdown(stripReasoningTags(source)), ({ lang }) => {
     const language = lang.toLowerCase();
     if (language === "mermaid") return "Please see the diagram provided.";
     return SPOKEN_CODE_LANGUAGES.has(language)
       ? `Please see the ${language} code provided.`
       : "Please see the code provided.";
-  }))
-    // Replace tables BEFORE any other processing that would corrupt pipe/dash syntax
-    .replace(
-      /(\|[^\n]+\|[ \t]*\n)([ \t]*\|[ \t]*[-:]+[ \t]*(?:\|[ \t]*[-:]+[ \t]*)*\|?[ \t]*\n)((?:[ \t]*\|[^\n]*\|[ \t]*\n?)*)/gm,
-      (_fullMatch, headerRow, _separatorRow, dataRows) => {
-        const headers = headerRow
-          .split("|")
-          .map((h: string) => h.trim())
-          .filter((h: string) => h.length > 0);
-
-        const rowCount = dataRows
-          .split("\n")
-          .filter(
-            (line: string) =>
-              line.trim().startsWith("|") && line.trim().length > 1,
-          ).length;
-
-        const headerText =
-          headers.length > 1
-            ? headers.slice(0, -1).join(", ") +
-              ", and " +
-              headers[headers.length - 1]
-            : headers.length === 1
-              ? headers[0]
-              : "unlabeled columns";
-        const rowText =
-          rowCount === 1
-            ? "one row"
-            : rowCount > 0
-              ? `${rowCount} rows`
-              : "no rows";
-
-        return `There is a table with ${rowText} of data provided for ${headerText}.\n`;
-      },
-    )
-    // Replace any remaining table-like structures (fallback)
-    .replace(/^\|.*\|[ \t]*$/gm, "")
+  })))
+    // Blank any remaining pipe-led row that was not a whole table (fallback)
+    .split("\n")
+    .map((line) => (isPipeLedRow(line) && line.trimEnd().endsWith("|") ? "" : line))
+    .join("\n")
     // Replace numeric ranges (e.g. 0-2, 10-20) with "X to Y" before any dash stripping
     .replace(
       /\b(\d+)\s*[-–—]\s*(\d+)\b/g,

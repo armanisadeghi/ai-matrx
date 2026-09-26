@@ -52,6 +52,10 @@ export default function UserMenuPanel({
 
       {divider}
 
+      <LinkMenuItem href="/intelligence" icon="Intelligence" label="Intelligence" />
+
+      {divider}
+
       <MenuGroup id="quick" icon="Rocket" label="Quick Access">
         {QUICK_ACCESS_ITEMS.map((item) => (
           <OverlayMenuItem key={item.overlayId} {...item} />

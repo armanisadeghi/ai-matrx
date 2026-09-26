@@ -10,6 +10,7 @@
 
 import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";
 import { rowCells } from "@/components/rich-editor/core/table-source";
+import { isGfmDelimiterRow } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 export interface ParsedTable {
   headers: string[];
@@ -41,8 +42,7 @@ export function parseMarkdownTable(content: string): ParsedTable | null {
     // Second line must be a delimiter row — GFM's rule: every cell is `:?-+:?`,
     // edge pipes optional (`--- | ---` is as valid as `|---|---|`).
     const separatorLine = lines[1];
-    const delimiters = rowCells(separatorLine);
-    if (!separatorLine.includes("-") || !delimiters.length || !delimiters.every((cell) => /^:?-+:?$/.test(cell))) return null;
+    if (!isGfmDelimiterRow(separatorLine)) return null;
 
     // An escaped `\|` is part of its cell, never a boundary (the table writer
     // reads rows the same way: components/rich-editor/core/table-source.ts).

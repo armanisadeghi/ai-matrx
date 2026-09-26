@@ -59,6 +59,7 @@ import {
   SHAPES_ROUTE_BASE,
 } from "@/features/content-ir/studio/constants";
 import { NAV_WINDOW_PANEL_ICON } from "./nav-window-panels";
+import { AGENT_ICON_NAME, INTELLIGENCE_ICON_NAME } from "@/components/icons/domain-icons";
 import { USER_LAUNCHPAD_PATH } from "@/features/launchpad/constants";
 
 export type { ShellNavPanelActionId };
@@ -495,7 +496,7 @@ export const primaryNavItems: ShellNavItem[] = [
     label: "Agents",
     href: "/agents/all",
     guestHref: "/agents",
-    iconName: "Webhook",
+    iconName: AGENT_ICON_NAME,
     section: "primary",
     dockOrder: 3,
     profileMenu: true,
@@ -981,7 +982,7 @@ export const primaryNavItems: ShellNavItem[] = [
     // top-level items.
     label: "Intelligence",
     href: "/mandates/list-preview",
-    iconName: "BrainCircuit",
+    iconName: INTELLIGENCE_ICON_NAME,
     section: "primary",
     profileMenu: false,
     dashboard: false,

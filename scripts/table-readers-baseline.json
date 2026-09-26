@@ -1,0 +1,4 @@
+{
+  "about": "Shrink-only baseline for `pnpm check:table-readers`: files with a private markdown-table reader (pipe split, leading-pipe detection, delimiter regex) instead of processors/utils/gfm-table-lines.ts. Prune with --prune-baseline; never add entries by hand.",
+  "sites": {}
+}

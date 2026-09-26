@@ -39,12 +39,18 @@ import {
   notifyMissingAutomationMandate,
 } from "./AutomationButton";
 import { KIND_CONVERTER_MANDATE_KEY } from "./constants";
+import { CHOOSE_WORKSPACE_LINE } from "./AutomationButton";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { useMandate, type MandateState } from "../useMandate";
 
 jest.mock("@/lib/toast", () => ({
   toast: { error: jest.fn(), info: jest.fn() },
 }));
 jest.mock("../useMandate", () => ({ useMandate: jest.fn() }));
+jest.mock("@/lib/organization/organization-gate", () => ({
+  ensureOrganizationContext: jest.fn(() => Promise.resolve("org-1")),
+  isOrganizationSelectionCancelled: jest.fn(() => false),
+}));
 // The seam reads the job's SERVED inputs before it can run. These cases are
 // about the KEY resolving, so the surface is held at a known-good empty
 // surface; the seam's own rules are pinned in
@@ -265,5 +271,29 @@ describe("the inline ask captures EVERY character, then submits it", () => {
     expect(onRun).toHaveBeenCalledTimes(1);
     // THE REGRESSION: this used to be "M".
     expect(onRun.mock.calls[0][0]).toEqual({ brief: typed });
+  });
+});
+
+describe("AutomationButton — no workspace chosen yet (UX punch list 2026-09-26)", () => {
+  it("stays a live control that asks for a workspace, in one line with no key and no resolver prose", () => {
+    mockedUseMandate.mockReturnValue({
+      mandate: null,
+      loading: false,
+      error:
+        'mandate "mandate.goal_writer" cannot resolve yet: no organization is selected.',
+      absent: false,
+      organizationPending: true,
+    });
+    const { button, text } = mount(GOAL_WRITER);
+
+    // THE REGRESSION: this was a disabled button beside two lines of
+    // developer prose naming the dot-notation key.
+    expect(button.disabled).toBe(false);
+    expect(text).toContain(CHOOSE_WORKSPACE_LINE);
+    expect(text).not.toContain("mandate.goal_writer");
+    expect(text).not.toContain("cannot resolve");
+
+    act(() => button.click());
+    expect(ensureOrganizationContext).toHaveBeenCalledTimes(1);
   });
 });

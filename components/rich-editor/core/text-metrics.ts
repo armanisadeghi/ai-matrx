@@ -8,6 +8,7 @@
 // stored text, never from one editor's model.
 
 import { tokenizeSource } from "@ai-matrx/content-ir/source";
+import { isGfmDelimiterRow } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 export interface TextMetrics {
   words: number;
@@ -28,7 +29,10 @@ function proseOf(raw: string): string {
     .replace(/<https?:[^>]+>/g, " ")
     .replace(/^ {0,3}(#{1,6}|>|[-*+]|\d{1,9}[.)])[ \t]+/gm, "")
     .replace(/^ {0,3}[-*_](?:[ \t]*[-*_]){2,}[ \t]*$/gm, "")
-    .replace(/^\|?[ \t:|-]+\|[ \t:|-]*$/gm, "")
+    // Delimiter rows by THE GFM table rule (gfm-table-lines).
+    .split("\n")
+    .map((line) => (isGfmDelimiterRow(line) ? "" : line))
+    .join("\n")
     .replace(/\[[ xX]\][ \t]/g, "")
     .replace(/[*_~`|]+/g, "");
 }

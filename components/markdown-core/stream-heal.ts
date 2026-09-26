@@ -27,6 +27,12 @@ import remend, {
 } from "remend";
 import { looksLikeOpenInlineMath, singleDollarMathEnd } from "@ai-matrx/content-ir/source";
 import { SYNTAX_STREAM_HANDLERS } from "./syntax/stream-heal-syntax";
+import {
+  isGfmDelimiterRow,
+  rowCells,
+  startsLikeTableRow,
+  trailingTableStart,
+} from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 const TRAILING_REFERENCE_DEFINITION = /(^|\n) {0,3}\[[^\]\n]+\]:[^\n]*$/;
 
@@ -193,12 +199,8 @@ const pendingInlineMath: RemendHandler = {
   },
 };
 
-const TABLE_ROW = /^\s*\|/;
-const DELIMITER_CELL = /^\s*:?-+:?\s*$/;
-
-function tableCells(row: string): string[] {
-  return row.trim().replace(/^\|/, "").replace(/\|$/, "").split("|");
-}
+// THE GFM table rule (gfm-table-lines): rows split by THE splitter, `\|` never a boundary.
+const tableCells = rowCells;
 
 /**
  * A table whose header has arrived but whose delimiter row has not (or is
@@ -211,22 +213,24 @@ const pendingTable: RemendHandler = {
   priority: 3,
   handle: (text) => {
     const lines = text.split("\n");
-    let start = lines.length;
-    while (start > 0 && TABLE_ROW.test(lines[start - 1])) start -= 1;
+    // The table still arriving at the tail — edge pipes optional; a lone
+    // pipe-less line (maybe prose) is never claimed.
+    const start = trailingTableStart(lines);
     if (start === lines.length) return text;
     const offset = lines.slice(0, start).join("\n").length + (start > 0 ? 1 : 0);
     if (isWithinCodeBlock(text, offset)) return text;
     const rows = lines.slice(start);
+    const pipeLed = startsLikeTableRow(rows[0]);
     const headerCells = tableCells(rows[0]).length;
     const delimiter = rows[1];
     const delimiterWhole =
       delimiter !== undefined &&
-      tableCells(delimiter).every((cell) => DELIMITER_CELL.test(cell)) &&
+      isGfmDelimiterRow(delimiter) &&
       tableCells(delimiter).length === headerCells &&
-      (rows.length > 2 || delimiter.trimEnd().endsWith("|"));
+      (rows.length > 2 || delimiter.trimEnd().endsWith("|") || !pipeLed);
     if (!delimiterWhole) return text.slice(0, offset).replace(/\n$/, "\n");
     const last = rows[rows.length - 1];
-    if (rows.length > 2 && !last.trimEnd().endsWith("|")) {
+    if (rows.length > 2 && pipeLed && !last.trimEnd().endsWith("|")) {
       return lines.slice(0, lines.length - 1).join("\n");
     }
     return text;
