@@ -209,6 +209,16 @@ test("a headline ending in a colon carries its first item; tsc errors name their
   assert.equal(tsc.count, 2);
 });
 
+test("a line the check marks as its failure is the headline, even when every line is indented", () => {
+  const verdict = judge({ label: "Generated API types are fresh" }, 1, [
+    "  check:api-types-fresh \u2014 regenerating the contract from the aidream checkout to compare...",
+    "  \u2717 THE COMMITTED GENERATED API CONTRACT IS NOT WHAT THE GENERATOR PRODUCES.",
+    "    \u2022 types/python-generated/openapi.json does not describe the aidream checkout.",
+    " ELIFECYCLE  Command failed with exit code 1.",
+  ].join("\n"));
+  assert.match(verdict.title, /^Generated API types are fresh: THE COMMITTED GENERATED API CONTRACT/);
+});
+
 test("the same defect with a different first offender keeps its fingerprint", () => {
   assert.equal(
     fingerprint("x", "Gate: 3 findings — first features/a/b.ts:12"),

@@ -252,13 +252,17 @@ export function judge(row, code, output) {
   }
   // The headline: the first top-level line that introduces an indented list (a composite check
   // prints its passing sub-checks first), else the first top-level line, else the first line.
+  // A line the check marked as its failure wins outright (some checks indent everything).
   const nested = (l) => /^\s{2,}/.test(l);
-  let at = signal.findIndex((l, i) => !nested(l) && signal[i + 1] !== undefined && nested(signal[i + 1]));
+  let at = signal.findIndex((l) => /^\s*(?:✗|✘|❌|🚨|FAIL\b)/u.test(l));
+  if (at < 0) at = signal.findIndex((l, i) => !nested(l) && signal[i + 1] !== undefined && nested(signal[i + 1]));
   if (at < 0) at = Math.max(0, signal.findIndex((l) => !nested(l)));
   let headline = stripPrefix(signal[at]);
   // "check failed:" says nothing until its first item follows it.
   if (/:$/.test(headline) && headline.length < 60 && signal[at + 1]) headline = `${headline} ${stripPrefix(signal[at + 1])}`;
-  const offenders = [...new Set(signal.filter((l) => l !== signal[at]).map((l) => l.match(LOCATION)?.[0]).filter(Boolean))];
+  // Offenders are what the check lists AFTER its headline — a composite check's earlier passing
+  // sub-checks name files too ("… — allowlisted").
+  const offenders = [...new Set(signal.slice(at + 1).map((l) => l.match(LOCATION)?.[0]).filter(Boolean))];
   const headlineLocation = headline.match(LOCATION)?.[0];
   if (headlineLocation) offenders.unshift(headlineLocation);
   // Count what the check listed: its offenders, else its bulleted items, else the headline's number.
