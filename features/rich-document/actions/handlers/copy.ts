@@ -4,7 +4,7 @@
 // which only makes sense for chat assistant messages (those have reasoning
 // blocks; notes / prompts / artifacts don't).
 
-import { Copy, FileText, FileType, Brain } from "lucide-react";
+import { Copy, FileText, Brain } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { registerAction } from "../provider";
@@ -29,9 +29,13 @@ registerAction({
   },
 });
 
+// ONE formatted copy (ALC-15, chair ruling on finding 5): "Copy for Google
+// Docs" and "Copy for Word" wrote byte-identical clipboard content, so two
+// rows offered a choice that did not exist. The rich clipboard skin pastes
+// correctly into Docs, Word, Pages and email alike.
 registerAction({
-  id: "copy-google-docs",
-  label: "Copy for Google Docs",
+  id: "copy-formatted",
+  label: "Copy formatted",
   icon: FileText,
   iconColor: "text-green-500 dark:text-green-400",
   category: "copy",
@@ -42,29 +46,9 @@ registerAction({
     await copyToClipboard(content, {
       isMarkdown: true,
       formatForGoogleDocs: true,
-      onSuccess: () => toast.success("Formatted for Google Docs"),
+      onSuccess: () => toast.success("Copied with formatting"),
       onError: (error) =>
-        toast.error(getErrorMessage(error, "Failed to copy for Docs")),
-    });
-  },
-});
-
-registerAction({
-  id: "copy-word",
-  label: "Copy for Word",
-  icon: FileType,
-  iconColor: "text-blue-600 dark:text-blue-400",
-  category: "copy",
-  supportedSources: "*",
-  renderSlot: "overflow",
-  order: 2,
-  run: async ({ content }) => {
-    await copyToClipboard(content, {
-      isMarkdown: true,
-      formatForGoogleDocs: true,
-      onSuccess: () => toast.success("Formatted for Microsoft Word"),
-      onError: (error) =>
-        toast.error(getErrorMessage(error, "Failed to copy for Word")),
+        toast.error(getErrorMessage(error, "Failed to copy with formatting")),
     });
   },
 });

@@ -90,3 +90,12 @@ describe("rich-document provider", () => {
     expect(saveNotes?.section).toBeUndefined();
   });
 });
+
+describe("one formatted copy (ALC-15 finding 5)", () => {
+  it("offers ONE 'Copy formatted' row, never two byte-identical Docs/Word rows", () => {
+    const listed = resolveActions(chatContext("assistant")).map((a) => a.id);
+    expect(listed).toContain("copy-formatted");
+    expect(listed.filter((id) => /google-docs|copy-word/.test(id))).toEqual([]);
+    expect(getAction("copy-formatted")?.label).toBe("Copy formatted");
+  });
+});

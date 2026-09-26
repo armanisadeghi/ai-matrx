@@ -120,8 +120,7 @@ export type RichDocumentActionId =
   | "thumbs-down"
   // Copy
   | "copy"
-  | "copy-google-docs"
-  | "copy-word"
+  | "copy-formatted"
   | "copy-with-thinking"
   // Save
   | "save-as-file"

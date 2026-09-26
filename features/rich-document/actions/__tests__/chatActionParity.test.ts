@@ -31,8 +31,9 @@ const FORMER_CHAT_ACTIONS: Record<
 > = {
   // Copy family
   "copy-plain": { id: "copy", role: "assistant" },
-  "copy-docs": { id: "copy-google-docs", role: "assistant" },
-  "copy-word": { id: "copy-word", role: "assistant" },
+  // Docs and Word were byte-identical: one "Copy formatted" (ALC-15).
+  "copy-docs": { id: "copy-formatted", role: "assistant" },
+  "copy-word": { id: "copy-formatted", role: "assistant" },
   "copy-thinking": { id: "copy-with-thinking", role: "assistant" },
   "copy-html": { id: "copy-html-page", role: "assistant" },
   // Primary doors + actions
