@@ -23,7 +23,7 @@ jest.mock("@/features/shell/components/header/RouteHeader", () => ({
     <header data-route-header>{left}</header>
   ),
 }));
-jest.mock("@/ai-matrx/tap-target/buttons", () => ({
+jest.mock("@ai-matrx/tap-target/buttons", () => ({
   ChevronLeftTapButton: ({
     href,
     ariaLabel,
@@ -51,8 +51,8 @@ beforeEach(() => {
   mockRedirect.mockReset();
 });
 
-afterEach(() => {
-  root.unmount();
+afterEach(async () => {
+  await act(async () => root.unmount());
   container.remove();
 });
 
@@ -63,7 +63,7 @@ it("keeps the restricted route under the core header with a Files back path", as
     "Google Drive",
   );
   expect(
-    container.querySelector('a[aria-label="Back to Files"]'),
-  ).toHaveAttribute("href", "/files");
+    container.querySelector('a[aria-label="Back to Files"]')?.getAttribute("href"),
+  ).toBe("/files");
   expect(mockRedirect).not.toHaveBeenCalled();
 });
