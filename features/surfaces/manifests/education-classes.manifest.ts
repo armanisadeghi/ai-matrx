@@ -138,7 +138,7 @@ const surfaceSpecific: SurfaceValue[] = [
 ];
 
 const CLASS_FIELDS =
-  'name: string (required, plain text, e.g. "AP Biology"), description?: string, teacher?: string, term?: string (e.g. "Fall 2026"), period?: string (e.g. "3"), access_mode?: "open" | "closed" | "paid" (default "closed" — a private class; "open" is publicly listed and anyone can join; "paid" needs price), price?: number (US dollars, at least 1; required when access_mode is "paid", not allowed otherwise), exam_dates?: [{ title: string, date: "YYYY-MM-DD" }]';
+  'name: string (plain text, e.g. "AP Biology"; required when creating), description?: string, teacher?: string, term?: string (e.g. "Fall 2026"), period?: string (e.g. "3"), access_mode?: "open" | "closed" | "paid" (default "closed" — a private class; "open" is publicly listed and anyone can join; "paid" needs price), price?: number (US dollars, at least 1; required when access_mode is "paid", not allowed otherwise), exam_dates?: [{ title: string, date: "YYYY-MM-DD" }]';
 
 const writeTargets: SurfaceWriteTarget[] = [
   {
