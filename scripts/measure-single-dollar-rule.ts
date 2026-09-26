@@ -98,10 +98,13 @@ function afterOf(text: string, close: number, mode: AfterMode): string | undefin
  *     closer is glued to the next `${`;
  *   - `shell-variable-chain`: `$USER$HOSTNAME`, `A=$A$B`, `df$col$sub`, `$name.$ext`,
  *     `PS1='$USER@$HOST'` — an identifier span whose closer is glued to the next name;
- *   - `php-perl-member`: `$this->$prop`, `$obj->$method`, `$class::$instance`.
+ *   - `php-perl-member`: `$this->$prop`, `$obj->$method`, `$class::$instance`;
+ *   - `shell-arithmetic` `$((1+2))` and `powershell-pipeline` `$_.Name`.
  */
 function spanClass(content: string, afterName: string): string {
   if (/^\{[A-Za-z_][\w.]*\}$/.test(content) || afterName.startsWith("{")) return "template-literal";
+  if (/^\(\(.*\)\)$/.test(content)) return "shell-arithmetic";
+  if (/^_[.[]/.test(content)) return "powershell-pipeline";
   if (/^[A-Za-z_][A-Za-z0-9_]*(?:->|::)$/.test(content) && /^[A-Za-z0-9_]/.test(afterName)) return "php-perl-member";
   if (/^[A-Za-z_][A-Za-z0-9_]*[.@-]?$/.test(content) && /^[A-Za-z0-9_]/.test(afterName)) return "shell-variable-chain";
   return "other";
