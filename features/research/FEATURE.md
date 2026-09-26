@@ -111,6 +111,12 @@ via `<CostValue>`/`useCostDisplay`; never `toFixed(2)` a dollar figure in a rese
 
 ## Change log
 
+- 2026-09-26 — Topic Agents page: "Deep research" card (`components/agents/DeepResearchMandateCard.tsx`)
+  runs the mandate `research.topic_deep_research` (topic + up to 40 included sources + the question,
+  as variables) through `launchMandate` into the flexible agent panel; listed as the "Agents" place in
+  `components/intelligence/places.ts`. The old `GoogleBackgroundAgentCard` (direct Google call, model
+  picked in the browser) stays below it labelled "Old direct path" until Arman approves removal
+  (common-docs mandates UI-REGISTER).
 - 2026-09-20 — New derived resource kind `page.entities` (what every analysed, kept page NAMED —
   products/services, organisations, places — with its URL), fed by a parallel `rs_source.page_analysis`
   read beside the manifest like the experts; the topical-map output card now names the bundle it reads
