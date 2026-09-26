@@ -230,6 +230,12 @@ attributable to this page in analytics.
 
 ## Change Log
 
+- 2026-09-26 — **Ratings and ranks survive a reload.** A reopened conversation now carries its run
+  history (`fetchConversationBundle` reads `chat.request`/`user_request` when the bundle RPC omits
+  them), so the feedback bar and run numbers come back; feedback is keyed by the server's run id
+  (`serverRequestId`), never the live `req_*` id. Ratings saved before this under `req_*` ids do not
+  reappear.
+
 - 2026-09-26 — **Conversation mode joins the battle system:** slice, saved battle + URL, mounted
   mode (fork ranking works), shared header without Submit all. **Every non-Model mode is the
   `matrx-user/agent-battle` surface** (`BattleSurfaceRuntime`, scope = `buildBattleSnapshot`), so
