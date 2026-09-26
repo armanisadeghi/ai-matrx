@@ -24,11 +24,11 @@ import { readFileSync } from "node:fs";
 export const BUDGETS = {
   KEY_100KB_MS_PER_KEY: 50,
   KEY_1MB_MS_PER_KEY: 50,
-  // Dominated by mermaid drawing the ~50 diagrams in the first 600 blocks
-  // (its own getBBox text measuring) — lazy diagram drawing is the next cut.
-  RENDER_5MB_MAX_TASK_MS: 10000,
-  // A fully mounted 5 MB document grew past 2 GB before the scroll-driven mount.
-  RENDER_5MB_HEAP_MB: 800,
+  // Measured 1,580 ms once diagrams draw only near the viewport (8,697 ms when
+  // every one of ~50 drew on paste). Budget keeps ~1 s of headroom for load.
+  RENDER_5MB_MAX_TASK_MS: 2500,
+  // Measured 517 MB (a fully mounted 5 MB document grew past 2 GB).
+  RENDER_5MB_HEAP_MB: 700,
   REPLAY_HEAP_GROWTH_MB: 30,
 };
 

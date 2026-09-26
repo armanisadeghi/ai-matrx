@@ -9,6 +9,7 @@
 //
 // React Compiler is on: no manual memo.
 
+import { printLivePage } from "@/components/mermaid/lazy-draw";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -95,7 +96,7 @@ export function LearningGainReportView({
               size="sm"
               variant="outline"
               className="gap-1.5"
-              onClick={() => window.print()}
+              onClick={() => void printLivePage()}
             >
               <Printer className="h-4 w-4" />
               Print / Save as PDF

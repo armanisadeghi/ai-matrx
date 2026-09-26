@@ -1,5 +1,6 @@
 "use client";
 
+import { printLivePage } from "@/components/mermaid/lazy-draw";
 import { useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -273,7 +274,7 @@ export function MarketingReportsWorkspace() {
                   variant="ghost"
                   size="icon"
                   className="h-11 w-11 lg:h-7 lg:w-7"
-                  onClick={() => window.print()}
+                  onClick={() => void printLivePage()}
                   aria-label="Print or save report as PDF"
                   title="Print / Save PDF"
                 >
@@ -574,7 +575,7 @@ export function MarketingReportsWorkspace() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => window.print()}
+                      onClick={() => void printLivePage()}
                     >
                       <Printer className="h-4 w-4" /> Print / Save PDF
                     </Button>

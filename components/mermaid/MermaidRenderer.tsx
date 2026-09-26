@@ -18,6 +18,7 @@ console.log(
   "%c[MERMAID IMPORT TEST] components/mermaid/MermaidRenderer.tsx",
   "color: #fff; background: #7c3aed; font-weight: bold; padding: 2px 6px; border-radius: 3px;",
 );
+import { useDrawWhenNear } from "./lazy-draw";
 import { Copy, TriangleAlert } from "lucide-react";
 import { toast } from "@/lib/toast";
 
@@ -78,6 +79,10 @@ export function MermaidRenderer({
   const epochRef = useRef(0);
   const rendererId = useId();
   const onLadderResultRef = useRef(onLadderResult);
+  // Drawn when near the viewport, or when a print/capture asks for every
+  // diagram (lazy-draw.ts). The placeholder below is what waits.
+  const frameRef = useRef<HTMLElement | null>(null);
+  const { shouldDraw, markDrawn } = useDrawWhenNear(frameRef);
   useEffect(() => {
     onLadderResultRef.current = onLadderResult;
   });
@@ -90,6 +95,7 @@ export function MermaidRenderer({
 
   useEffect(() => {
     const trimmed = source.trim();
+    if (!shouldDraw) return undefined;
     if (!trimmed) {
       // Don't clear state here (setState-in-effect) — the empty source is
       // handled by deriving `hasSource` below, which hides any stale render.
@@ -161,7 +167,12 @@ export function MermaidRenderer({
       clearTimeout(timer);
       supersedeMermaidRender(rendererId);
     };
-  }, [source, optionsKey, isStreamActive, rendererId]);
+  }, [source, optionsKey, isStreamActive, rendererId, shouldDraw]);
+
+  // A drawn diagram (or an honest failure card) is no longer pending.
+  useEffect(() => {
+    if (lastGoodSvg || failure) markDrawn();
+  });
 
   const diagramType = detectDiagramType(source);
   const label = getCatalogEntry(diagramType).label;
@@ -186,8 +197,12 @@ export function MermaidRenderer({
   if (!showSvg) {
     return (
       <div
+        ref={(el) => {
+          frameRef.current = el;
+        }}
         className={cn("space-y-2 p-3", fillHeight && "h-full", className)}
         aria-busy="true"
+        aria-label={shouldDraw ? "Drawing the diagram" : "Diagram — drawn when it scrolls into view"}
       >
         <Skeleton className="h-4 w-1/3" />
         <Skeleton className="h-32 w-full" />
@@ -197,6 +212,9 @@ export function MermaidRenderer({
 
   return (
     <figure
+      ref={(el) => {
+        frameRef.current = el;
+      }}
       role="img"
       aria-label={title ?? `${label} diagram`}
       className={cn("m-0", fillHeight && "flex h-full flex-col", className)}
