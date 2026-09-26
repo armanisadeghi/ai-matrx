@@ -62667,6 +62667,14 @@ export type Database = {
         }
         Returns: Json
       }
+      check_item_accept_begin: {
+        Args: { p_by: Json; p_item_id: string; p_reason: string }
+        Returns: Json
+      }
+      check_item_accept_finish: {
+        Args: { p_detail: Json; p_item_id: string; p_status: string }
+        Returns: Json
+      }
       check_item_db_accept: {
         Args: {
           p_check_id: string
@@ -89093,6 +89101,7 @@ export type Database = {
         Row: {
           agent_id: string | null
           agent_type: string | null
+          capture_version: number | null
           content: string | null
           content_structured: Json | null
           created_at: string | null
@@ -89117,6 +89126,7 @@ export type Database = {
         Insert: {
           agent_id?: string | null
           agent_type?: string | null
+          capture_version?: number | null
           content?: string | null
           content_structured?: Json | null
           created_at?: string | null
@@ -89141,6 +89151,7 @@ export type Database = {
         Update: {
           agent_id?: string | null
           agent_type?: string | null
+          capture_version?: number | null
           content?: string | null
           content_structured?: Json | null
           created_at?: string | null

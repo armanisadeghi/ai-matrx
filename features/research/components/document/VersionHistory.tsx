@@ -31,8 +31,8 @@ export function VersionHistory({ open, onOpenChange, topicId, currentVersion, on
                 <div key={doc.id} className="flex items-center justify-between rounded-lg border border-border p-3">
                     <div>
                         <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">Version {doc.version}</span>
-                            {doc.version === currentVersion && (
+                            <span className="text-sm font-medium">Version {doc.capture_version ?? "—"}</span>
+                            {doc.capture_version === currentVersion && (
                                 <Badge variant="default" className="text-[10px]">Current</Badge>
                             )}
                         </div>

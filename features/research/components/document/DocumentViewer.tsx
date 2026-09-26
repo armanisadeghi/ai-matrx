@@ -129,7 +129,7 @@ export default function DocumentViewer() {
             {
               title: document.title,
               content: document.content,
-              version: document.version,
+              version: document.capture_version,
             },
             null,
             2,
@@ -351,9 +351,11 @@ export default function DocumentViewer() {
           <span className="text-xs font-medium text-foreground/80 truncate">
             {document.title ?? "Document"}
           </span>
-          <Badge variant="secondary" className="text-[9px] h-4 px-1.5">
-            v{document.version}
-          </Badge>
+          {document.capture_version != null && (
+            <Badge variant="secondary" className="text-[9px] h-4 px-1.5">
+              v{document.capture_version}
+            </Badge>
+          )}
           <span className="text-[10px] text-muted-foreground">
             {document.created_at
               ? new Date(document.created_at).toLocaleDateString()
@@ -500,7 +502,7 @@ export default function DocumentViewer() {
                 metadata: {
                   topicId,
                   documentId: document.id,
-                  version: document.version,
+                  version: document.capture_version,
                   title: document.title ?? null,
                   created_at: document.created_at,
                   ...(docTokenUsage ? { token_usage: docTokenUsage } : {}),
@@ -516,7 +518,7 @@ export default function DocumentViewer() {
         open={showHistory}
         onOpenChange={setShowHistory}
         topicId={topicId}
-        currentVersion={document.version ?? 0}
+        currentVersion={document.capture_version ?? 0}
         onCompare={(old, current) => {
           setDiffDocs([old, current]);
           setShowHistory(false);

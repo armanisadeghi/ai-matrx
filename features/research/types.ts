@@ -1091,7 +1091,8 @@ export interface ResearchDocument {
   agent_id: string | null;
   model_id: string | null;
   token_usage: Json | null;
-  version: number | null;
+  /** Which assembly of the report this is (v1, v2…) — what screens show. */
+  capture_version: number | null;
   created_at: string | null;
   is_current: boolean;
 }

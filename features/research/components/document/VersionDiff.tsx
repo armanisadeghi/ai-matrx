@@ -26,17 +26,17 @@ export function VersionDiff({ oldDoc, newDoc, onClose }: VersionDiffProps) {
         </Button>
         <h2 className="text-lg font-bold">Version Comparison</h2>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary">v{oldDoc.version}</Badge>
+          <Badge variant="secondary">v{oldDoc.capture_version ?? "—"}</Badge>
           <span className="text-muted-foreground">&rarr;</span>
-          <Badge variant="default">v{newDoc.version}</Badge>
+          <Badge variant="default">v{newDoc.capture_version ?? "—"}</Badge>
         </div>
       </div>
       <div className="flex-1 min-h-0 overflow-hidden rounded-lg border border-border">
         <DiffViewer
           original={oldDoc.content ?? ""}
           modified={newDoc.content ?? ""}
-          originalLabel={`v${oldDoc.version}`}
-          modifiedLabel={`v${newDoc.version}`}
+          originalLabel={`v${oldDoc.capture_version ?? "—"}`}
+          modifiedLabel={`v${newDoc.capture_version ?? "—"}`}
           engine="light"
           defaultView="inline"
         />

@@ -1730,6 +1730,8 @@ export async function restoreOriginalContent(
 
 // ============================================================================
 // Documents
+// A document is numbered by `capture_version` (which assembly: v1, v2…);
+// `version` is the platform's row-edit counter and orders nothing here.
 // ============================================================================
 
 export async function getDocument(
@@ -1740,7 +1742,7 @@ export async function getDocument(
     .from("rs_document")
     .select("*")
     .eq("topic_id", topicId)
-    .order("version", { ascending: false })
+    .order("capture_version", { ascending: false, nullsFirst: false })
     .limit(1)
     .maybeSingle();
   if (error) throw error;
@@ -1764,7 +1766,7 @@ export async function getLatestSuccessfulDocument(
     .select("*")
     .eq("topic_id", topicId)
     .eq("status", "success")
-    .order("version", { ascending: false })
+    .order("capture_version", { ascending: false, nullsFirst: false })
     .limit(1)
     .maybeSingle();
   if (error) throw error;
@@ -1779,7 +1781,7 @@ export async function getDocumentVersions(
     .from("rs_document")
     .select("*")
     .eq("topic_id", topicId)
-    .order("version", { ascending: false });
+    .order("capture_version", { ascending: false, nullsFirst: false });
   if (error) throw error;
   return data ?? [];
 }
