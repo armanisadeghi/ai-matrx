@@ -135,6 +135,10 @@ describe("check:schema --refresh (check-schema.ts)", () => {
     mkdirSync(dir, { recursive: true });
     cpSync(HERE, dir, { recursive: true, filter: (src) => !src.endsWith("current-schema.json") });
     writeFileSync(join(dir, "current-schema.json"), COMMITTED);
+    // The orchestrator's one import from outside its own directory
+    // (context.ts → ../lib/repo-files, 9d642020f8).
+    mkdirSync(join(fe, "scripts", "lib"), { recursive: true });
+    copyFileSync(join(REPO, "scripts", "lib", "repo-files.ts"), join(fe, "scripts", "lib", "repo-files.ts"));
     symlinkSync(join(REPO, "node_modules"), join(fe, "node_modules"));
     const { server, url } = await serve(401, JSON.stringify({ code: "42501", message: "permission denied for function schema_truth_snapshot" }));
     try {
