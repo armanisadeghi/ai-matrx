@@ -55,6 +55,7 @@ import {
   AiToolRef,
 } from "@/components/official/entity-ref/AiIdentityRef";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { unwrapAgentDefinition } from "../utils/agent-config-extractor";
 
 export interface AgentJsonDisplayProps {
   /** Raw streamed text — may contain pre/post markdown around the json block. */
@@ -189,8 +190,11 @@ function AgentJsonDisplayInner({
   const agentData = useMemo<PartialAgentData>(() => {
     // Prefer the execution system's already-parsed object when available.
     // It's the cleaner source — no regex surgery required.
-    if (extracted && typeof extracted === "object") {
-      return normalizeFromExtracted(extracted);
+    // The agent builder answers with a create-agent directive envelope; the
+    // agent is its first item (2026-09-26: Pretty rendered empty for it).
+    const agent = unwrapAgentDefinition(extracted);
+    if (agent && typeof agent === "object") {
+      return normalizeFromExtracted(agent as Record<string, unknown>);
     }
     return parsePartialAgentJson(content);
   }, [content, extracted]);
