@@ -1937,6 +1937,22 @@ function normalizeLine(text: string): string {
   return text.trim() === "" ? "" : text;
 }
 
+/**
+ * How many lines of front matter open the text (0 when none): the first line
+ * is exactly `---` or `+++`, and the region ends at the same fence (YAML also
+ * `...`) — markdown-core `splitFrontmatter`'s grammar. The core hides the
+ * region as document properties, so nothing inside it is ever a block: a
+ * `<artifact>` in a YAML value must not open a card (RC-B3r R1).
+ */
+function frontMatterLineCount(lines: readonly string[]): number {
+  const opener = lines[0];
+  if (lines.length < 2 || (opener !== "---" && opener !== "+++")) return 0;
+  for (let k = 1; k < lines.length; k++) {
+    if (lines[k] === opener || (opener === "---" && lines[k] === "...")) return k + 1;
+  }
+  return 0;
+}
+
 // ============================================================================
 // MAIN SPLITTER
 // ============================================================================
@@ -1953,6 +1969,14 @@ export const splitContentIntoBlocksWith = (
   // Keyed by the synthetic tagAndRest string that was spliced into `lines`.
   // Consumed once by step 3a so extractAttributeXmlBlock gets the correct rawXml.
   const pendingRawXmlOverrides = new Map<string, string>();
+
+  const frontMatterLines = frontMatterLineCount(lines);
+  if (frontMatterLines > 0) {
+    currentText =
+      lines.slice(0, frontMatterLines).map(normalizeLine).join("\n") +
+      (frontMatterLines < lines.length ? "\n" : "");
+    i = frontMatterLines;
+  }
 
   while (i < lines.length) {
     const line = lines[i];
@@ -2238,6 +2262,16 @@ export const splitContentIntoBlocksWith = (
           sameLineOpener = idx;
           sameLineLen = opener.length;
         }
+      }
+      // Prose BEFORE the opener on its line: the span sits inside a sentence
+      // (`The planner writes a <thinking> note </thinking> and answers.`) —
+      // an INLINE span, as the source tokenizer reads it (xml_inline) and the
+      // live accumulator keeps it. Cutting it out breaks the sentence into
+      // three blocks and the aside vanishes from chat (verify-RC-B3 RC-B3r R2).
+      if (sameLineOpener >= 0 && orphanClose.before.slice(0, sameLineOpener).trim()) {
+        currentText += processedLine + (i < lines.length - 1 ? "\n" : "");
+        i++;
+        continue;
       }
       if (sameLineOpener >= 0) {
         const proseBefore = `${currentText}${orphanClose.before.slice(0, sameLineOpener)}`;

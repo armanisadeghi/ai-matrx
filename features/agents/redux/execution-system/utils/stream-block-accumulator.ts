@@ -179,6 +179,8 @@ type BlockSubState =
   | { kind: "table" }
   /** Inside a `:::name` directive container — every line stays in the text block. */
   | { kind: "directive"; tracker: DirectiveContainerTracker }
+  /** Front matter (`---` / `+++` on the first line) until its closing fence — plain text, never parsed. */
+  | { kind: "frontmatter"; fence: string }
   | { kind: "generic_xml"; tracker: UnrecognizedXmlContainerTracker }
   | {
       kind: "bare_json";
@@ -845,8 +847,29 @@ export class StreamBlockAccumulator {
     }
   }
 
+  /** Lines this accumulator has read (the first may open front matter). */
+  private linesRead = 0;
+
   private processLineNow(rawLine: string, dispatch: DispatchFn): void {
     const trimmed = rawLine.trim();
+    const isFirstLine = this.linesRead === 0;
+    this.linesRead++;
+
+    // Front matter (`---` / `+++` as the very first line, until the same fence
+    // or YAML's `...`) is document properties the core hides — never parsed
+    // for blocks: a `<artifact>` inside a YAML value must not open a card
+    // that swallows the document (RC-B3r R1; same rule as the static
+    // splitter and markdown-core `splitFrontmatter`).
+    const fenceLine = rawLine.replace(/\r$/, "");
+    if (this.subState.kind === "none" && isFirstLine && (fenceLine === "---" || fenceLine === "+++")) {
+      if (this.currentBlockType !== "text") {
+        this.closeCurrentBlock(dispatch);
+        this.openBlock("text", dispatch);
+      }
+      this.appendToCurrentBlock(rawLine);
+      this.subState = { kind: "frontmatter", fence: fenceLine };
+      return;
+    }
 
     // If we're inside a multi-line sub-state, delegate to the appropriate handler
     if (this.subState.kind !== "none") {
@@ -1251,6 +1274,14 @@ export class StreamBlockAccumulator {
       case "directive": {
         this.appendToCurrentBlock(rawLine);
         if (this.subState.tracker.consume(rawLine)) this.subState = { kind: "none" };
+        return;
+      }
+      case "frontmatter": {
+        this.appendToCurrentBlock(rawLine);
+        const line = rawLine.replace(/\r$/, "");
+        if (line === this.subState.fence || (this.subState.fence === "---" && line === "...")) {
+          this.subState = { kind: "none" };
+        }
         return;
       }
       case "code_fence": {

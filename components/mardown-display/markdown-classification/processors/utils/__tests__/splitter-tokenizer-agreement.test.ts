@@ -51,7 +51,9 @@ function streamed(source: string, chunk = 7) {
 
 /**
  * Every non-prose block the splitter emits must sit inside an island the
- * tokenizer protects (its content is found within one island's raw bytes).
+ * tokenizer protects — ALL of it: its whole content is found within one
+ * island's raw bytes. (Checking only the first 60 characters let a block that
+ * starts inside an island and runs past it through — RC-B3r R1.)
  */
 function disagreements(text: string): string[] {
   // Block islands, plus inline islands inside prose (a same-line
@@ -62,7 +64,7 @@ function disagreements(text: string): string[] {
   ]);
   return split(text)
     .filter((b) => !["text", "table", "matrx_file", "image", "accent-divider", "heavy-divider"].includes(b.type))
-    .filter((b) => !islands.some((raw) => raw.includes(b.content.trim().slice(0, 60))))
+    .filter((b) => !islands.some((raw) => raw.includes(b.content.trim())))
     .map((b) => `${b.type}${(b as { language?: string }).language ? "/" + (b as { language?: string }).language : ""}`);
 }
 
@@ -79,6 +81,8 @@ const CASES = {
     `The canvas reads \`<artifact type="plan" id="…">\`, rendering one card per artifact.\n\n**Shape of the tag:**\n\n${F}\n<artifact type="<type>" id="<uuid>"> ... body ... </artifact>\n${F}\n\n${PROSE.repeat(20)}`,
   "4 · shell heredoc":
     `Save the notes:\n\ncat > "$HOME/.config/route-notes.md" <<'EOF_ID'\n# Route notes\n\nNorth Industrial runs Tuesday.\nEOF_ID\nchmod 644 "$HOME/.config/route-notes.md" || true\n\nDone.`,
+  "R1 · artifact tag inside a YAML literal value in front matter":
+    `---\ntitle: Kiln log\nnotes: |\n  use <artifact> sparingly\n  and <thinking> never\nsummary: >\n  folded <decision> text\n---\n\n${PROSE}`,
   "5 · same-line thinking span after long prose":
     `${PROSE.repeat(30)}\nThe planner writes a <thinking> short scratch note about the Harbor route </thinking> and then answers.\n\n${PROSE}`,
 } as const;
@@ -88,16 +92,23 @@ describe("renderer splitter agrees with the source tokenizer", () => {
     expect(disagreements(text)).toEqual([]);
   });
 
-  it("5 · the thinking block is only the tagged span, and the prose stays prose", () => {
+  it("R1 · tags inside front matter open nothing — static or live", () => {
+    const text = CASES["R1 · artifact tag inside a YAML literal value in front matter"];
+    expect(split(text).map((b) => b.type)).toEqual(["text"]);
+    expect(streamed(text).map((b) => b.type)).toEqual(["text"]);
+    expect(disagreements(text)).toEqual([]);
+  });
+
+  it("5 · a thinking span inside a sentence stays inside its sentence (RC-B3r R2)", () => {
+    // The tokenizer reads it as an inline island and the live accumulator
+    // keeps it in its text block; cutting it out broke the sentence into
+    // three blocks and the aside vanished from /chat, live and on reload.
     const text = CASES["5 · same-line thinking span after long prose"];
-    const thinking = split(text).filter((b) => b.type === "thinking");
-    expect(thinking.map((b) => b.content.trim())).toEqual([
-      "short scratch note about the Harbor route",
-    ]);
+    expect(split(text).filter((b) => b.type === "thinking")).toEqual([]);
     const prose = split(text).filter((b) => b.type === "text").map((b) => b.content).join("\n");
-    expect(prose).toContain("The planner writes a");
-    expect(prose).toContain("and then answers.");
+    expect(prose).toContain("The planner writes a <thinking> short scratch note about the Harbor route </thinking> and then answers.");
     expect(prose.split("Dispatch reviews").length - 1).toBe(31);
+    expect(streamed(text).filter((b) => b.type === "thinking")).toEqual([]);
   });
 
   it.each([
