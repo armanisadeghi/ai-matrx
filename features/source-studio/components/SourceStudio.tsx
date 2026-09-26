@@ -28,6 +28,8 @@ import { useRouter } from "next/navigation";
 import { useRef, useState, type ReactNode } from "react";
 import {
   Bookmark,
+  Boxes,
+  ListTree,
   Download,
   FileText,
   Library,
@@ -51,6 +53,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { RichContent } from "@/components/rich-content/RichContent";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -104,7 +113,9 @@ import {
   seekForPortion,
   sourceAsMarkdown,
   sourceUrl,
+  studioLayout,
   type SeekRequest,
+  type StudioPaneKey,
   type SourceDeepLink,
   type StudioPortion,
 } from "@/features/source-studio/sourceStudioModel";
@@ -114,7 +125,7 @@ import { SourceSidePanes, type SideTab } from "./SourceSidePanes";
 /** The surface the standalone reader has always emitted — agents keep their context. */
 const SOURCE_SURFACE = "matrx-user/knowledge-viewer";
 
-type TextPaneKey = "original" | "clean" | "raw";
+type TextPaneKey = StudioPaneKey;
 const PANE_LABEL: Record<TextPaneKey, string> = {
   original: "Original",
   clean: "Clean",
@@ -187,6 +198,8 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
   const canSeek = !!view && originalSeeks(view);
   const goToPortion = (pageIndex: number) => {
     setActiveIndex(pageIndex);
+    setPartsSheetOpen(false);
+    setSideSheetOpen(false);
     const p = portions.find((x) => x.pageIndex === pageIndex);
     const next = seekForPortion(p?.locator, canSeek, seekNonce.current + 1);
     if (next) {
@@ -222,7 +235,14 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
   const [panes, setPanes] = useState<Set<TextPaneKey>>(
     () => new Set<TextPaneKey>(["original", "clean"]),
   );
-  const togglePane = (p: TextPaneKey) =>
+  const togglePane = (p: TextPaneKey) => {
+    if (!tablet) {
+      setPhonePane(p);
+      return;
+    }
+    setPanesToggled(p);
+  };
+  const setPanesToggled = (p: TextPaneKey) =>
     setPanes((cur) => {
       const next = new Set(cur);
       if (next.has(p)) next.delete(p);
@@ -230,6 +250,14 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
       return next;
     });
   const [sideTab, setSideTab] = useState<SideTab>("chunks");
+  // Nothing vanishes at a narrower width (studioLayout): the right column and,
+  // on a phone, the Parts list move behind header sheets.
+  const wide = useMediaQuery("(min-width: 1280px)");
+  const tablet = useMediaQuery("(min-width: 768px)");
+  const [phonePane, setPhonePane] = useState<StudioPaneKey>("clean");
+  const layout = studioLayout(wide ? 1280 : tablet ? 768 : 375, panes, phonePane);
+  const [sideSheetOpen, setSideSheetOpen] = useState(false);
+  const [partsSheetOpen, setPartsSheetOpen] = useState(false);
   const [assetsOpen, setAssetsOpen] = useState(deepLink.assets);
 
   // ── Actions ────────────────────────────────────────────────────────────
@@ -361,6 +389,7 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
                 onPress: () => {
                   if (!active) return;
                   setPanes((cur) => new Set(cur).add("clean"));
+                  setPhonePane("clean");
                   setEditing({
                     pageIndex: active.pageIndex,
                     text: readableText(active),
@@ -437,6 +466,47 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
           : "",
     });
 
+  const sidePanes = (
+    <SourceSidePanes
+                tab={sideTab}
+                onTabChange={setSideTab}
+                chunks={chunksRead.chunks}
+                chunkTotal={chunksRead.total}
+                chunksLoading={chunksRead.loading}
+                chunksError={chunksRead.error}
+                highlightChunkId={deepLink.chunkId}
+                chunkGoLabel={chunkGoLabel}
+                onChunkGo={goToChunk}
+                search={search}
+                onSearchSubmit={() =>
+                  void search.run().then((pages) => {
+                    if (pages.length > 0) goToPage(pages[0]);
+                  })
+                }
+                onJumpToPage={goToPage}
+                activePageNumber={active?.pageNumber ?? 0}
+                indexing={!!facts?.indexing}
+                processing={processing}
+                onProcessNow={doc ? () => void processNow() : null}
+                entities={entitiesRead.entities}
+                entitiesLoading={entitiesRead.loading}
+                entitiesError={entitiesRead.error}
+                entitiesTruncated={entitiesRead.truncated}
+                onEntityGo={goToEntity}
+                attachments={facts ? facts.attachments : version.loading ? [] : null}
+                onAttach={doc ? () => setSaveOpen(true) : null}
+              />
+  );
+  const partsList = (
+    <PortionsList
+        portions={portions}
+        loading={portionsRead.loading}
+        error={portionsRead.error}
+        activeIndex={active?.pageIndex ?? null}
+        onSelect={goToPortion}
+        canSeek={canSeek}
+      />
+  );
   const unavailable = !docLoading && !doc;
 
   return (
@@ -510,19 +580,31 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
               fallbackLabel="Your Sources"
             />
           ) : (
-            <div className="grid min-h-0 flex-1 grid-cols-1 divide-x overflow-hidden md:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_360px]">
-              <PortionsList
-                portions={portions}
-                loading={portionsRead.loading}
-                error={portionsRead.error}
-                activeIndex={active?.pageIndex ?? null}
-                onSelect={goToPortion}
-                canSeek={canSeek}
-              />
+            <div
+              className={cn(
+                "grid min-h-0 flex-1 divide-x overflow-hidden",
+                layout.sideInline
+                  ? "grid-cols-[240px_minmax(0,1fr)_360px]"
+                  : layout.partsInline
+                    ? "grid-cols-[220px_minmax(0,1fr)]"
+                    : "grid-cols-1",
+              )}
+            >
+              {layout.partsInline && partsList}
               <div className="flex min-h-0 min-w-0 flex-col">
-                <PaneStrip panes={panes} onToggle={togglePane} />
+                <PaneStrip
+                  panes={new Set(layout.visiblePanes)}
+                  onToggle={togglePane}
+                  tabs={layout.paneStripIsTabs}
+                  onOpenParts={
+                    layout.partsInline ? null : () => setPartsSheetOpen(true)
+                  }
+                  partsCount={portions.length}
+                  onOpenSide={layout.sideInline ? null : () => setSideSheetOpen(true)}
+                  chunkCount={chunksRead.loading ? null : chunksRead.total}
+                />
                 <div className="flex min-h-0 flex-1 divide-x">
-                  {panes.has("original") && (
+                  {layout.visiblePanes.includes("original") && (
                     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                       <PaneHeader
                         title="Original"
@@ -550,7 +632,7 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
                     </div>
                   )}
                   {(["clean", "raw"] as const).map((key) =>
-                    panes.has(key) ? (
+                    layout.visiblePanes.includes(key) ? (
                       <PortionTextPane
                         key={key}
                         field={key}
@@ -569,47 +651,49 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
                       />
                     ) : null,
                   )}
-                  {panes.size === 0 && (
+                  {layout.visiblePanes.length === 0 && (
                     <p className="p-6 text-sm text-muted-foreground">
                       Every pane is hidden. Turn one back on above.
                     </p>
                   )}
                 </div>
               </div>
-              <div className="hidden min-h-0 xl:flex xl:flex-col">
-                <SourceSidePanes
-                  tab={sideTab}
-                  onTabChange={setSideTab}
-                  chunks={chunksRead.chunks}
-                  chunkTotal={chunksRead.total}
-                  chunksLoading={chunksRead.loading}
-                  chunksError={chunksRead.error}
-                  highlightChunkId={deepLink.chunkId}
-                  chunkGoLabel={chunkGoLabel}
-                  onChunkGo={goToChunk}
-                  search={search}
-                  onSearchSubmit={() =>
-                    void search.run().then((pages) => {
-                      if (pages.length > 0) goToPage(pages[0]);
-                    })
-                  }
-                  onJumpToPage={goToPage}
-                  activePageNumber={active?.pageNumber ?? 0}
-                  indexing={!!facts?.indexing}
-                  processing={processing}
-                  onProcessNow={doc ? () => void processNow() : null}
-                  entities={entitiesRead.entities}
-                  entitiesLoading={entitiesRead.loading}
-                  entitiesError={entitiesRead.error}
-                  entitiesTruncated={entitiesRead.truncated}
-                  onEntityGo={goToEntity}
-                  attachments={facts ? facts.attachments : version.loading ? [] : null}
-                  onAttach={doc ? () => setSaveOpen(true) : null}
-                />
-              </div>
+              {layout.sideInline && (
+                <div className="flex min-h-0 flex-col">{sidePanes}</div>
+              )}
             </div>
           )}
         </div>
+
+        {!layout.sideInline && (
+          <Drawer
+            open={sideSheetOpen}
+            onOpenChange={setSideSheetOpen}
+            direction={tablet ? "right" : "bottom"}
+          >
+            <DrawerContent className={tablet ? "w-[420px] max-w-[90vw]" : "h-[85dvh]"}>
+              {/* One column child: a side drawer lays its children in a row. */}
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                <DrawerHeader className="px-4">
+                  <DrawerTitle>Chunks, entities and attachments</DrawerTitle>
+                </DrawerHeader>
+                <div className="flex min-h-0 flex-1 flex-col">{sidePanes}</div>
+              </div>
+            </DrawerContent>
+          </Drawer>
+        )}
+        {!layout.partsInline && (
+          <Drawer open={partsSheetOpen} onOpenChange={setPartsSheetOpen} direction="bottom">
+            <DrawerContent className="h-[85dvh]">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                <DrawerHeader className="px-4">
+                  <DrawerTitle>Parts</DrawerTitle>
+                </DrawerHeader>
+                <div className="flex min-h-0 flex-1 flex-col">{partsList}</div>
+              </div>
+            </DrawerContent>
+          </Drawer>
+        )}
 
         <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
           <DialogContent className="max-w-lg">
@@ -711,7 +795,7 @@ function PortionsList({
         ? "Parts"
         : "Pages";
   return (
-    <div className="hidden min-h-0 flex-col md:flex">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="flex h-9 shrink-0 items-center border-b px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {loading ? "Parts…" : `${heading} (${portions.length})`}
       </div>
@@ -772,20 +856,40 @@ function PortionsList({
 function PaneStrip({
   panes,
   onToggle,
+  tabs,
+  onOpenParts,
+  partsCount,
+  onOpenSide,
+  chunkCount,
 }: {
   panes: Set<TextPaneKey>;
   onToggle: (p: TextPaneKey) => void;
+  /** Phone: pick one pane (tabs); wider: toggle several side by side. */
+  tabs: boolean;
+  /** When the Parts list is not in the grid (phone): opens its sheet. */
+  onOpenParts: (() => void) | null;
+  partsCount: number;
+  /** When the right column is not in the grid (under 1280px): opens its sheet. */
+  onOpenSide: (() => void) | null;
+  chunkCount: number | null;
 }) {
   return (
-    <div className="flex h-9 shrink-0 items-center gap-1 border-b px-2 text-xs">
+    <div
+      className="flex h-9 shrink-0 items-center gap-1 border-b px-2 text-xs"
+      role={tabs ? "tablist" : undefined}
+      aria-label="Panes"
+    >
       {(Object.keys(PANE_LABEL) as TextPaneKey[]).map((p) => (
         <button
           key={p}
           type="button"
-          aria-pressed={panes.has(p)}
+          role={tabs ? "tab" : undefined}
+          aria-selected={tabs ? panes.has(p) : undefined}
+          aria-pressed={tabs ? undefined : panes.has(p)}
           onClick={() => onToggle(p)}
           className={cn(
-            "h-7 rounded-md px-2.5 font-medium transition-colors",
+            "h-7 shrink-0 whitespace-nowrap rounded-md font-medium transition-colors",
+            tabs ? "px-2" : "px-2.5",
             panes.has(p)
               ? "bg-accent text-accent-foreground"
               : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -794,6 +898,32 @@ function PaneStrip({
           {PANE_LABEL[p]}
         </button>
       ))}
+      <span className="ml-auto flex shrink-0 items-center gap-1">
+        {onOpenParts && (
+          <button
+            type="button"
+            onClick={onOpenParts}
+            title={`All ${partsCount} parts`}
+            className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md px-1.5 font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <ListTree className="h-3.5 w-3.5" /> Parts
+          </button>
+        )}
+        {onOpenSide && (
+          <button
+            type="button"
+            onClick={onOpenSide}
+            title={
+              chunkCount != null
+                ? `${chunkCount} searchable pieces, entities and attachments`
+                : "Searchable pieces, entities and attachments"
+            }
+            className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md px-1.5 font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <Boxes className="h-3.5 w-3.5" /> Chunks
+          </button>
+        )}
+      </span>
     </div>
   );
 }

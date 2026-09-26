@@ -394,3 +394,41 @@ export function snapshotDocument(html: string, url: string | null): string {
   if (/<head[^>]*>/i.test(html)) return html.replace(/<head[^>]*>/i, (m) => `${m}${base}`);
   return `${base}${html}`;
 }
+
+// ── Responsive layout ─────────────────────────────────────────────────────
+
+export type StudioPaneKey = "original" | "clean" | "raw";
+export const STUDIO_PANE_ORDER: StudioPaneKey[] = ["original", "clean", "raw"];
+
+export interface StudioLayout {
+  /** The panes drawn side by side in the middle column. */
+  visiblePanes: StudioPaneKey[];
+  /** The pane strip picks ONE pane (tabs) instead of toggling several. */
+  paneStripIsTabs: boolean;
+  /** Parts list in the grid (else behind the header's "Parts" sheet). */
+  partsInline: boolean;
+  /** Chunks / Entities / Attached to in the grid (else behind a header sheet). */
+  sideInline: boolean;
+}
+
+/**
+ * What the Source screen draws at a width. Nothing ever vanishes: below 1280px
+ * the right column moves behind a header action; on a phone (under 768px) the
+ * Parts list does too and the middle column shows one pane at a time, so a
+ * 375px screen never scrolls sideways.
+ */
+export function studioLayout(
+  widthPx: number,
+  toggled: ReadonlySet<StudioPaneKey>,
+  phonePane: StudioPaneKey,
+): StudioLayout {
+  const phone = widthPx < 768;
+  return {
+    visiblePanes: phone
+      ? [phonePane]
+      : STUDIO_PANE_ORDER.filter((p) => toggled.has(p)),
+    paneStripIsTabs: phone,
+    partsInline: !phone,
+    sideInline: widthPx >= 1280,
+  };
+}

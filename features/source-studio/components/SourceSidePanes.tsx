@@ -82,7 +82,7 @@ const TABS: { key: SideTab; label: string }[] = [
 export function SourceSidePanes(props: SourceSidePanesProps) {
   const { tab, onTabChange } = props;
   return (
-    <div className="flex min-h-0 flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="flex h-9 shrink-0 items-center border-b border-border px-2">
         <div
           role="tablist"
