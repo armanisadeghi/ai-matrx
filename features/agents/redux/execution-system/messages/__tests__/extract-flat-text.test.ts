@@ -252,3 +252,19 @@ describe("extractFlatText with citation markers", () => {
     );
   });
 });
+
+describe("extractFlatText — the render path keeps reasoning written inside text (RC-B3r R2)", () => {
+  const sentence = "The planner writes a <thinking> short scratch note </thinking> and then answers.";
+  it("copy/TTS text stays answer-only", () => {
+    expect(extractFlatText(record([{ type: "text", text: sentence }]))).not.toContain("short scratch note");
+  });
+  it("the rendered text keeps the span, so the renderer can draw it", () => {
+    const rec = record([
+      { type: "thinking", text: "provider reasoning" },
+      { type: "text", text: sentence },
+    ]);
+    const rendered = extractFlatText(rec, { keepInlineThinking: true });
+    expect(rendered).toBe(sentence);
+    expect(rendered).not.toContain("provider reasoning");
+  });
+});

@@ -192,6 +192,19 @@ export function preprocessProse(rawContent: string): string {
 
   let processed = rawContent;
 
+  // A reasoning aside INSIDE a sentence (`The planner writes a <thinking>
+  // short note </thinking> and answers.`) is part of the sentence: the source
+  // tokenizer reads it as an inline island and the splitters leave it in its
+  // text block. Show its words as an italic aside — never the raw tags (the
+  // escape below would print them) and never dropped (RC-B3r R2). Code spans
+  // pass through untouched; a region on its own lines is the splitter's
+  // "Thought process" block and never reaches this pass.
+  processed = processed.replace(
+    /(`+)([\s\S]*?)\1|<(thinking|think|reasoning)>([^\n<>]*?)<\/\3>/g,
+    (match, backticks, _code, _tag, aside: string | undefined) =>
+      backticks !== undefined ? match : aside?.trim() ? `<i>${aside.trim()}</i>` : "",
+  );
+
   // Pre-escape XML/HTML-style angle-bracket tokens.
   //
   // Without this, CommonMark treats `<tag>` at the start of a line as the

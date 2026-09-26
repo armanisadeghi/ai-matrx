@@ -62,6 +62,17 @@ export interface ExtractFlatTextOptions {
    * shared with `selectMessageInterleavedContent` (never re-implement it).
    */
   withCitationMarkers?: boolean;
+  /**
+   * RENDER PATH ONLY: keep `<thinking>` / `<reasoning>` regions and spans
+   * that sit INSIDE text parts (separate `thinking` parts are still skipped —
+   * they render as their own segments). The renderer's splitter draws them
+   * (a "Thought process" block, or an inline span inside a sentence); strip
+   * them first and the renderer never sees them — a sentence loses its middle
+   * (RC-B3r R2: "The planner writes a <thinking> note </thinking> and…"
+   * rendered as "The planner writes a / and…"). Copy / TTS / share keep the
+   * default answer-only text.
+   */
+  keepInlineThinking?: boolean;
 }
 
 const EMPTY_RECORDS: MessageRecord[] = [];
@@ -402,7 +413,7 @@ export function extractFlatText(
       prevWasText = isText;
     }
   }
-  if (!includeThinking && out.length > 0) {
+  if (!includeThinking && !options?.keepInlineThinking && out.length > 0) {
     out = removeThinkingContent(out);
   }
   return out;

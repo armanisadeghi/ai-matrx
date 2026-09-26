@@ -253,9 +253,13 @@ export function AgentAssistantMessage({
     [record],
   );
   const hasCitations = citationIndex.sources.length > 0;
-  const renderedText = hasCitations
-    ? extractFlatText(record, { withCitationMarkers: true })
-    : flatText;
+  // The RENDERED text keeps reasoning written inside text parts: the renderer
+  // draws it (never the copy/TTS text) — stripping it here destroyed content
+  // the screen was meant to show (RC-B3r R2).
+  const renderedText = useMemo(
+    () => extractFlatText(record, { withCitationMarkers: hasCitations, keepInlineThinking: true }),
+    [record, hasCitations],
+  );
 
   // An ASSISTANT turn's generated media is CONTENT, not an attachment: an
   // image, an audio clip, or a video the model produced renders inline with
