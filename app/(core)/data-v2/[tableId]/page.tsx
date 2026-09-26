@@ -57,6 +57,8 @@ import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { tableCopyEvaluation, useTableCopyEvaluation } from "@/features/unified-data/tableCopyEvaluation";
 import { replaceAddressWithoutNavigating, currentPathWithSearch } from "@/lib/url-state/addressWithoutNavigating";
 import { RECORDS_FILES } from "@/features/unified-data/recordsFiles";
+import { RECORDS_TEXT } from "@/features/unified-data/recordsCleanText";
+import { RecordStoreTableSurface, useGridContextChannel } from "@/features/unified-data/grid-agent-context/RecordStoreTableSurface";
 import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
 import { tablePageCapture } from "@/components/agent-copy/page-capture/pageCapture";
 import { PageCaptureButton } from "@/components/agent-copy/page-capture/PageCaptureButton";
@@ -181,6 +183,8 @@ export default function UnifiedDataTableRoute({
   // THE ONE-GRID MERGE, WALKED BEHIND ITS SWITCH (merge steps 5-8): `?grid=merged` draws the
   // package grid with the older /data grid's controls on it; without it the grid is as it was.
   const mergedGrid = searchParams.get("grid") === "merged";
+  // THE AGENT'S VIEW OF THE MERGED GRID (merge 6l): the grid tells the channel, the surface reads it.
+  const gridContext = useGridContextChannel();
   /**
    * WHICH RAIL, AND WHICH THING IN IT — `?rail=forms&item=<form>`, and the same
    * for notifications, portals and share (records-ui 0.82.0).
@@ -820,6 +824,8 @@ export default function UnifiedDataTableRoute({
               density: "condensed",
               // records-ui 0.87+: the merged grid's control layer (ignored by an older build).
               ...(mergedGrid ? { grid: "merged" as const } : {}),
+              // The merged grid's side-chat context (6l), Clean HTML (6m) and row-action icons (6j).
+              ...(mergedGrid ? { onGridContext: gridContext.onGridContext, ...RECORDS_TEXT } : {}),
               // The page's toasts: the where-it-lives chip's "now lives in …" outlives the
               // re-read that re-mounts the header (UI-FIX-19).
               notify: RECORDS_NOTIFY,
@@ -888,26 +894,28 @@ export default function UnifiedDataTableRoute({
                 tell us if the prop was ever renamed. It is passed by name now,
                 so a rename is a build failure instead of a dashboard that
                 silently stops opening. */}
-            <TablePage
-              tableId={tableId}
-              /* THE WAY BACK NAMES THE TABLE'S ORGANIZATION (ACCESS-FIX-18, VERIFIER-18 H4).
-                 Archiving calls this; it used to land on the bare list, which reads the ACTIVE
-                 organization and, with none picked, said "An organization is needed for data
-                 records" about a table that had just named its own. */
-              onLeave={() => router.push(allTablesHref)}
-              activeDashboardId={activeDashboardId}
-              activeRecordId={activeRecordId}
-              activeView={activeView}
-              activeGroupField={activeGroupField}
-              {...shownViewReport}
-              cameFrom={cameFrom}
-              filter={filter}
-              onViewChanged={onViewChanged}
-              activeRail={activeRail}
-              activeItemId={activeItemId}
-              menuExtras={menuExtras}
-              {...pageHeader}
-            />
+            <RecordStoreTableSurface channel={gridContext} enabled={mergedGrid}>
+              <TablePage
+                tableId={tableId}
+                /* THE WAY BACK NAMES THE TABLE'S ORGANIZATION (ACCESS-FIX-18, VERIFIER-18 H4).
+                   Archiving calls this; it used to land on the bare list, which reads the ACTIVE
+                   organization and, with none picked, said "An organization is needed for data
+                   records" about a table that had just named its own. */
+                onLeave={() => router.push(allTablesHref)}
+                activeDashboardId={activeDashboardId}
+                activeRecordId={activeRecordId}
+                activeView={activeView}
+                activeGroupField={activeGroupField}
+                {...shownViewReport}
+                cameFrom={cameFrom}
+                filter={filter}
+                onViewChanged={onViewChanged}
+                activeRail={activeRail}
+                activeItemId={activeItemId}
+                menuExtras={menuExtras}
+                {...pageHeader}
+              />
+            </RecordStoreTableSurface>
           </RecordsMount>
         )}
         </div>
