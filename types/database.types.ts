@@ -59794,39 +59794,6 @@ export type Database = {
           },
         ]
       }
-      reference_archive: {
-        Row: {
-          archived_at: string
-          id: string
-          identity_hash: string
-          kept_id: string | null
-          revision: string
-          revision_kind: string
-          row_created_at: string
-          row_data: Json
-        }
-        Insert: {
-          archived_at?: string
-          id: string
-          identity_hash: string
-          kept_id?: string | null
-          revision: string
-          revision_kind: string
-          row_created_at: string
-          row_data: Json
-        }
-        Update: {
-          archived_at?: string
-          id?: string
-          identity_hash?: string
-          kept_id?: string | null
-          revision?: string
-          revision_kind?: string
-          row_created_at?: string
-          row_data?: Json
-        }
-        Relationships: []
-      }
       scan: {
         Row: {
           absent_against_revision: string | null
@@ -60517,10 +60484,6 @@ export type Database = {
           subject_user_id: string
           version_live: boolean
         }[]
-      }
-      archive_redundant_references_batch: {
-        Args: { p_after: string; p_identities?: number }
-        Returns: Record<string, unknown>
       }
       binding_holder_runnable: {
         Args: {
