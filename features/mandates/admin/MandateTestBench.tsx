@@ -71,6 +71,7 @@ import {
 } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { buildInstanceBaseSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/base-settings";
 import { OutputPreview } from "./bench-output-preview";
+import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 import { TryItNowPanel } from "./TryItNowPanel";
 import {
   clearMandateBenchSnapshot,
@@ -316,6 +317,7 @@ function ResultRow({
             <OutputPreview
               output={result.output ?? ""}
               artifact={result.artifact}
+              outputKind={structural.output_kind ?? null}
             />
           </>
         )}
@@ -609,6 +611,7 @@ function ReferenceRow({ exemplar }: { exemplar: MandateExemplarRow }) {
         <OutputPreview
           output={exemplar.reference_output ?? ""}
           artifact={exemplar.reference_artifact}
+          title="Reference output"
         />
       </div>
     </details>
@@ -1251,13 +1254,13 @@ export function MandateTestBench({
                         cells={{
                           input: displayLabelForKey(name),
                           value: (
-                            <span className="whitespace-pre-wrap break-words">
-                              {value === ""
-                                ? "Empty"
-                                : typeof value === "string"
-                                  ? value
-                                  : JSON.stringify(value, null, 2)}
-                            </span>
+                            value !== null && typeof value === "object" ? (
+                              <StructuredValueView value={value} density="inline" footer={false} />
+                            ) : (
+                              <span className="whitespace-pre-wrap break-words">
+                                {value === "" ? "Empty" : String(value)}
+                              </span>
+                            )
                           ),
                         }}
                       />

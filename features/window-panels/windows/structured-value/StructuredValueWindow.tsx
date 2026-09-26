@@ -22,13 +22,19 @@
  * in place for a glance, and hands the whole structure to this window when the
  * reader wants to actually read it — beside their table, not on top of it.
  *
+ * A value that names its kind (`__kind`) renders through that kind's own
+ * component, and a text value as settled markdown — both through
+ * `AnswerValueView`, whose floor is `StructuredValueView` — so a run's whole
+ * answer opened from a cramped result box reads exactly as the box does
+ * (2026-09-26: mandate test results, "results always in the canonical viewer").
+ *
  * MULTI-INSTANCE by design: comparing two rows' payloads side by side is the
  * normal reason to open one at all, so a second cell opens a second window
  * rather than replacing the first.
  */
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface StructuredValueWindowProps {
@@ -72,7 +78,7 @@ export default function StructuredValueWindow({
           {subtitle ? (
             <p className="mb-2 text-[11px] text-muted-foreground">{subtitle}</p>
           ) : null}
-          <StructuredValueView value={value} density="full" footer={false} />
+          <AnswerValueView value={value} density="full" />
         </div>
       </NonEditableContextMenu>
     </WindowPanel>

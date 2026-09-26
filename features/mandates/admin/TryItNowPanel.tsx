@@ -1,5 +1,6 @@
 "use client";
 
+import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 import { normalizeTransferJson } from "@ai-matrx/kit/content-transfer";
 import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
 import { storedMandateKey } from "@/features/mandates/mandate-key";
@@ -634,9 +635,9 @@ export function TryItNowPanel({
                   value={
                     field.pinnedValue == null
                       ? "Provided at run time"
-                      : typeof field.pinnedValue === "string"
-                        ? field.pinnedValue
-                        : JSON.stringify(field.pinnedValue)
+                      : typeof field.pinnedValue === "object"
+                        ? <StructuredValueView value={field.pinnedValue} density="inline" footer={false} />
+                        : String(field.pinnedValue)
                   }
                 />
               ) : structured ? (
@@ -810,10 +811,10 @@ export function TryItNowPanel({
                           ) : (
                             "No"
                           )
-                        ) : typeof value === "string" ? (
-                          value
+                        ) : value !== null && typeof value === "object" ? (
+                          <StructuredValueView value={value} density="inline" footer={false} />
                         ) : (
-                          JSON.stringify(value)
+                          String(value)
                         ),
                     }}
                   />
@@ -894,6 +895,7 @@ export function TryItNowPanel({
               <OutputPreview
                 output={result.output ?? ""}
                 artifact={result.artifact}
+                outputKind={structure?.output_kind ?? null}
               />
               <PropertyRow
                 label="Inputs changed since test"

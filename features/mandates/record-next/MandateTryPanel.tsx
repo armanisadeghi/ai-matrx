@@ -23,6 +23,7 @@
 //     output kind's own component, the structured-value floor, markdown for
 //     text, inline media for a file — never a JSON dump.
 
+import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 import { useState } from "react";
 import Link from "next/link";
 import { ExternalLink, FlaskConical, Loader2 } from "lucide-react";
@@ -61,7 +62,7 @@ import {
   type MandateTestResponse,
 } from "@/features/mandates/test-run";
 import { runMandateTry, type MandateTryCandidate } from "./owner-service";
-import { MandateTryResultView } from "./MandateTryResultView";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type CandidateMode = "current" | "candidate";
@@ -286,9 +287,9 @@ export function MandateTryPanel({
                   value={
                     field.pinnedValue == null
                       ? "Provided at run time"
-                      : typeof field.pinnedValue === "string"
-                        ? field.pinnedValue
-                        : JSON.stringify(field.pinnedValue)
+                      : typeof field.pinnedValue === "object"
+                        ? <StructuredValueView value={field.pinnedValue} density="inline" footer={false} />
+                        : String(field.pinnedValue)
                   }
                 />
               ) : isStructured(field) ? (
@@ -406,10 +407,10 @@ function TryResult({ result }: { result: MandateTestResponse }) {
         </div>
       ) : null}
       <ServerNotes heading="What this run did" notes={result.notes ?? []} />
-      <MandateTryResultView
-        output={result.output ?? ""}
-        artifact={result.artifact ?? null}
-        outputKind={result.structural.output_kind ?? null}
+      <AnswerValueView
+        value={result.artifact ?? null}
+        text={result.output ?? ""}
+        kind={result.structural.output_kind ?? null}
       />
     </div>
   );
