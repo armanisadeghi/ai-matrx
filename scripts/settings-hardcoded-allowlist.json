@@ -6153,10 +6153,6 @@
       "name": "TEASER_LIMIT"
     },
     {
-      "file": "matrx-frontend/features/rag/components/library/LibraryPage.tsx",
-      "name": "POLL_INTERVAL_MS"
-    },
-    {
       "file": "matrx-frontend/features/rag/components/library/PageContentHeader.tsx",
       "name": "MAX_SEGMENTS"
     },

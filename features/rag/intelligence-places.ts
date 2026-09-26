@@ -25,14 +25,6 @@ export const RAG_PLACES: FeaturePlaces = {
       sources: ["features/rag/components/search/RagSearchExperience.tsx"],
     },
     {
-      id: "library-document",
-      label: "A library document",
-      trigger: "Process or re-process the document (page cleanup stage)",
-      urlPattern: "/rag/library",
-      mandateKeys: [K.rag__pdf_page_cleaner],
-      sources: ["features/rag/components/library/LibraryDocDetailSheet.tsx"],
-    },
-    {
       id: "pdf-studio",
       label: "PDF studio",
       trigger: "AI clean on a long document (page by page)",

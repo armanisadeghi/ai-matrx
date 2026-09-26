@@ -1,5 +1,5 @@
 /**
- * `LibraryDocDetailSheet.tsx`'s "Delete file" confirm called
+ * (History) `LibraryDocDetailSheet.tsx`'s "Delete file" confirm called
  * `fn_delete_library_document_and_source`, whose own success toast says
  * "moved to trash ... Restorable from the trash" — the exact same soft
  * delete `LibraryTrashSheet.tsx` restores from — yet the confirm dialog and
@@ -7,7 +7,9 @@
  * continuing GATES-TAIL #4's census).
  *
  * Class guard: scans every file that calls
- * `fn_delete_library_document_and_source` for permanence wording.
+ * `fn_delete_library_document_and_source` for permanence wording. The sheet
+ * was retired 2026-09-26 with the old library page; the Sources page's bulk
+ * delete (SOURCE-CONVERGENCE §8.1) is the surface guarded by name now.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -59,12 +61,15 @@ describe("library document 'delete file' confirm is honest about a soft delete",
     expect(offences).toEqual([]);
   });
 
-  it("the sheet names the truth: trash and restore, not permanence", () => {
+  it("the Sources page's bulk delete names the truth: trash and restore, not permanence", () => {
     const source = readFileSync(
-      join(REPO_ROOT, "features/rag/components/library/LibraryDocDetailSheet.tsx"),
+      join(REPO_ROOT, "features/sources/components/SourcesPage.tsx"),
       "utf8",
     );
-    expect(source).toMatch(/Move this document and its source file to the trash\. Restorable from the trash\./);
-    expect(source).toMatch(/This moves the document family to the trash; an admin can restore it from there\./);
+    // The confirm sits in an AlertDialog and says where the Sources go and how they come back.
+    expect(source).toMatch(/AlertDialog/);
+    expect(source).toMatch(/to the\s+trash\.\s+Restorable from the trash\./);
+    expect(source).toMatch(/goes to the trash together with its file/);
+    expect(source).toMatch(/Move to trash/);
   });
 });

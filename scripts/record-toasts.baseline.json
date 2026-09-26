@@ -201,8 +201,6 @@
     "features/rag/components/data-stores/DataStoresPage.tsx::`Failed to bind ${p.fileName}: ${err instanceof Error ? err.message : String(err)}`",
     "features/rag/components/data-stores/DataStoresPage.tsx::`Upload failed for ${file.name}`",
     "features/rag/components/data-stores/RichMemberTable.tsx::`Removed ${confirmRemove.name}`",
-    "features/rag/components/library/LibraryPage.tsx::`Moved \"${doc.name}\" and its documents to trash`",
-    "features/rag/components/library/LibraryPage.tsx::`Moved \"${doc.name}\" to trash`",
     "features/rag/components/search/RagContentActions.tsx::`${label} copied to clipboard`",
     "features/rag/components/search/RagContentActions.tsx::`Could not copy ${label}`",
     "features/research/components/curation/CurationTable.tsx::`${label} ${selected.size} source(s)`",
