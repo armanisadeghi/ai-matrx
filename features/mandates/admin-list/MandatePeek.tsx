@@ -12,6 +12,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  PEEK_CONTENT_PROPS,
+  useTransientPeek,
+} from "@/features/organizations/peek/useTransientPeek";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { adminMandateRecordHref as adminMandateHref } from "@/features/mandates/admin-routes";
@@ -109,6 +113,7 @@ export function MandatePeek({
 }) {
   const [currentId, setCurrentId] = useState(rowId);
   useEffect(() => setCurrentId(rowId), [rowId]);
+  useTransientPeek(true, onClose);
 
   const index = rows.findIndex((r) => r.id === currentId);
   const row = index >= 0 ? rows[index] : null;
@@ -141,6 +146,7 @@ export function MandatePeek({
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent
+        {...PEEK_CONTENT_PROPS}
         className="max-w-lg gap-2 border border-border bg-card p-4"
         onClick={(event) => event.stopPropagation()}
       >

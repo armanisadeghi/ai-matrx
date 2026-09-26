@@ -32,6 +32,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { usePeekHrefOverride } from "./peekHrefOverride";
+import { PEEK_CONTENT_PROPS, useTransientPeek } from "./useTransientPeek";
 
 export interface PeekDialogProps {
   open: boolean;
@@ -64,6 +65,7 @@ export function PeekDialog({
   children,
 }: PeekDialogProps) {
   const router = useRouter();
+  useTransientPeek(open, onClose);
   // The caller that OPENED this peek wins. It knows things a token cannot —
   // notably which surface the viewer is on when one record has both a user and
   // an admin route. Without this, a control could hand its new-tab link the
@@ -78,7 +80,7 @@ export function PeekDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg max-h-[80dvh] flex flex-col gap-0 p-0">
+      <DialogContent {...PEEK_CONTENT_PROPS} className="max-w-lg max-h-[80dvh] flex flex-col gap-0 p-0">
         <DialogHeader className="px-5 pt-5 pb-3 border-b border-border">
           <DialogTitle className="flex items-center gap-2 text-base">
             {icon}

@@ -61,6 +61,10 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast-service";
 import { setPeekedAgentId } from "./agent-peek-tracker";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import {
+  PEEK_CONTENT_PROPS,
+  useTransientPeek,
+} from "@/features/organizations/peek/useTransientPeek";
 
 const OVERVIEW_MESSAGE_PREVIEW_CHARS = 200;
 
@@ -828,6 +832,7 @@ export function AgentSneakPeekModal({
   }, [isOpen, agentId]);
 
   const bodyRef = useRef<HTMLDivElement>(null);
+  useTransientPeek(isOpen, onClose);
 
   // Surface-runtime visibility: record which agent is being peeked so the
   // Agents Hub emitter (AgentsGrid getScope) can report it at trigger time.
@@ -890,6 +895,7 @@ export function AgentSneakPeekModal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
+        {...PEEK_CONTENT_PROPS}
         className="max-w-xl bg-card border border-border p-5 gap-3"
         onClick={(e) => e.stopPropagation()}
       >

@@ -46,6 +46,10 @@ import {
   type MandateRung,
 } from "../workspace/useMandateLadder";
 import { inputDisplayLabel } from "./input-label";
+import {
+  PEEK_CONTENT_PROPS,
+  useTransientPeek,
+} from "@/features/organizations/peek/useTransientPeek";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -253,6 +257,7 @@ export interface MandatePeekModalProps {
 
 export function MandatePeekModal({ mandate, isOpen, onClose, href }: MandatePeekModalProps) {
   const facts = useMandateFacts(mandate, isOpen);
+  useTransientPeek(isOpen, onClose);
   const override = usePeekHrefOverride();
   const organizationId = useAppSelector(selectOrganizationId);
   const ready = facts.status === "ready" ? facts.facts : null;
@@ -280,6 +285,7 @@ export function MandatePeekModal({ mandate, isOpen, onClose, href }: MandatePeek
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
+        {...PEEK_CONTENT_PROPS}
         className="max-w-xl gap-3 border border-border bg-card p-5"
         onClick={(event) => event.stopPropagation()}
       >
