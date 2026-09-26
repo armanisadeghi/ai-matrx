@@ -1155,18 +1155,10 @@ export function upsertHrEngagement(
   );
 }
 
-export function upsertHrEmergencyContact(
-  payload: Record<string, unknown>,
-): Promise<HrResult<HrWriteAck>> {
-  return callHrWrite(
-    "hr_emergency_contact_upsert",
-    { p_payload: payload },
-    {
-      envelope: true,
-      whatFailed: "This emergency contact",
-    },
-  );
-}
+// Emergency contacts are NOT collected by HR: they live once on the person's
+// profile (users.user_form_profile.emergency_contacts) and HR reads that list
+// (HR DECISIONS 2026-09-26). The writer for the duplicate hr.emergency_contact
+// was removed so a second editor cannot grow on it.
 
 export function upsertHrExternalIdentity(
   payload: Record<string, unknown>,

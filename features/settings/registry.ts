@@ -639,7 +639,7 @@ export const settingsRegistry: SettingsTabDef[] = [
     icon: ShieldAlert,
     parentId: "account",
     description:
-      "People to reach if something goes wrong. Visible only to you.",
+      "People to reach if something goes wrong — kept once, on your profile.",
     searchKeywords: ["emergency", "contact", "next of kin", "icoe", "ice"],
     component: ProfileEmergencyTab,
     persistence: "synced",

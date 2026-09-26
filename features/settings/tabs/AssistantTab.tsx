@@ -2,7 +2,6 @@
 
 import { PenLine, SquareStack, User } from "lucide-react";
 import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
-import { SettingsSlider } from "@/components/official/settings/primitives/SettingsSlider";
 import { SettingsTextInput } from "@/components/official/settings/primitives/SettingsTextInput";
 import { SettingsLink } from "@/components/official/settings/primitives/SettingsLink";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
@@ -12,22 +11,11 @@ import { CHAT_DEFAULT_MODEL_KNOB } from "@/features/ai-models/preferredChatModel
 import { useSetting } from "../hooks/useSetting";
 
 export default function AssistantTab() {
-  const [alwaysActive, setAlwaysActive] = useSetting<boolean>(
-    "userPreferences.assistant.alwaysActive",
-  );
-  const [alwaysWatching, setAlwaysWatching] = useSetting<boolean>(
-    "userPreferences.assistant.alwaysWatching",
-  );
-  const [useAudio, setUseAudio] = useSetting<boolean>(
-    "userPreferences.assistant.useAudio",
-  );
-  const [isPersonal, setIsPersonal] = useSetting<boolean>(
-    "userPreferences.assistant.isPersonal",
-  );
+  // Settings truth sweep (2026-09-26): Always active, Always watching, Use
+  // audio, Personal mode and Memory level were removed from this screen —
+  // nothing in any app read them, so each switch promised a behavior that
+  // never happened. Their stored values are left untouched.
   const [name, setName] = useSetting<string>("userPreferences.assistant.name");
-  const [memoryLevel, setMemoryLevel] = useSetting<number>(
-    "userPreferences.assistant.memoryLevel",
-  );
   const [restoreUnsentDrafts, setRestoreUnsentDrafts] = useSetting<boolean>(
     "userPreferences.prompts.restoreUnsentDrafts",
   );
@@ -40,29 +28,6 @@ export default function AssistantTab() {
         icon={SquareStack}
       />
 
-      <SettingsSection title="Activation">
-        <SettingsSwitch
-          label="Always active"
-          description="Keep the assistant running even when no conversation is open."
-          checked={alwaysActive}
-          onCheckedChange={setAlwaysActive}
-        />
-        <SettingsSwitch
-          label="Always watching"
-          description="Observe screen context even when not explicitly invoked."
-          warning="May consume extra resources."
-          checked={alwaysWatching}
-          onCheckedChange={setAlwaysWatching}
-        />
-        <SettingsSwitch
-          label="Use audio"
-          description="Respond with spoken audio in addition to text."
-          checked={useAudio}
-          onCheckedChange={setUseAudio}
-          last
-        />
-      </SettingsSection>
-
       <SettingsSection title="Identity" icon={User}>
         <SettingsTextInput
           label="Assistant name"
@@ -72,12 +37,6 @@ export default function AssistantTab() {
           placeholder="e.g., Assistant, Jarvis"
           commitOnBlur
           stacked
-        />
-        <SettingsSwitch
-          label="Personal mode"
-          description="Use a more casual, personalized tone."
-          checked={isPersonal}
-          onCheckedChange={setIsPersonal}
           last
         />
       </SettingsSection>
@@ -88,22 +47,6 @@ export default function AssistantTab() {
           description="If you reload or crash while writing a message, we keep what you typed in that tab and put it back in the box, per conversation. A sent message is never put back."
           checked={restoreUnsentDrafts !== false}
           onCheckedChange={setRestoreUnsentDrafts}
-          last
-        />
-      </SettingsSection>
-
-      <SettingsSection title="Memory">
-        <SettingsSlider
-          label="Memory level"
-          description="How much conversation history the assistant retains between sessions."
-          value={memoryLevel}
-          onValueChange={setMemoryLevel}
-          min={0}
-          max={10}
-          step={1}
-          minLabel="Minimal"
-          midLabel="Moderate"
-          maxLabel="Maximum"
           last
         />
       </SettingsSection>

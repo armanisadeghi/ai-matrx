@@ -810,7 +810,7 @@ function EmergencySection({
     <SectionAnchor
       id={PROFILE_SECTION_IDS.emergency}
       title="Emergency contacts"
-      description="People to reach if something goes wrong. Visible only to you and never shared with other users."
+      description="People to reach if something goes wrong. Kept once, here on your profile, so the list follows you across organizations. Other people using AI Matrx cannot see it."
       icon={ShieldAlert}
       footer={<SaveBar dirty={dirty} saving={saving} onSave={onSave} />}
     >

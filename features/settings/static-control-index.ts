@@ -33,18 +33,6 @@ export const staticSettingsControlIndex = [
     "controlId": "settings-control-language-defaults-text-generation"
   },
   {
-    "tabId": "general.language",
-    "label": "Flashcards",
-    "description": "Default language for study content.",
-    "controlId": "settings-control-language-defaults-flashcards"
-  },
-  {
-    "tabId": "general.privacy",
-    "label": "Always watching",
-    "description": "Whether the assistant may observe screen context even when not invoked. Set on the Assistant tab, alongside its other activation controls.",
-    "controlId": "settings-control-assistant-always-watching"
-  },
-  {
     "tabId": "general.privacy",
     "label": "Desktop notifications",
     "description": "Whether new-message banners show on your desktop. Set on the Messaging tab, where turning it on also asks your browser for permission.",
@@ -137,45 +125,15 @@ export const staticSettingsControlIndex = [
   },
   {
     "tabId": "ai.assistants",
-    "label": "Always active",
-    "description": "Keep the assistant running even when no conversation is open.",
-    "controlId": "settings-control-activation-always-active"
-  },
-  {
-    "tabId": "ai.assistants",
-    "label": "Always watching",
-    "description": "Observe screen context even when not explicitly invoked.",
-    "controlId": "settings-control-activation-always-watching"
-  },
-  {
-    "tabId": "ai.assistants",
-    "label": "Use audio",
-    "description": "Respond with spoken audio in addition to text.",
-    "controlId": "settings-control-activation-use-audio"
-  },
-  {
-    "tabId": "ai.assistants",
     "label": "Assistant name",
     "description": "What the assistant calls itself.",
     "controlId": "settings-control-identity-assistant-name"
   },
   {
     "tabId": "ai.assistants",
-    "label": "Personal mode",
-    "description": "Use a more casual, personalized tone.",
-    "controlId": "settings-control-identity-personal-mode"
-  },
-  {
-    "tabId": "ai.assistants",
     "label": "Put unsent drafts back",
     "description": "If you reload or crash while writing a message, we keep what you typed in that tab and put it back in the box, per conversation. A sent message is never put back.",
     "controlId": "settings-control-composing-put-unsent-drafts-back"
-  },
-  {
-    "tabId": "ai.assistants",
-    "label": "Memory level",
-    "description": "How much conversation history the assistant retains between sessions.",
-    "controlId": "settings-control-memory-memory-level"
   },
   {
     "tabId": "ai.assistants",
@@ -207,6 +165,7 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "ai.imageGeneration",
     "label": "Model",
+    "description": "Leave on the AI Matrx default to use whichever image model the platform has set for image generation.",
     "controlId": "settings-control-output-model"
   },
   {
@@ -465,6 +424,12 @@ export const staticSettingsControlIndex = [
     "label": "Tutor voice",
     "description": "The voice tutor is one of AI Matrx's live assistants, so it speaks in your live conversation voice (Eve unless you pick one).",
     "controlId": "settings-control-tutor-tutor-voice"
+  },
+  {
+    "tabId": "learning.flashcards",
+    "label": "Intelligence",
+    "description": "See what runs your flashcards — the deck generator and the study tutor — duplicate it to change it, or use your own agent.",
+    "controlId": "settings-control-tutor-intelligence"
   },
   {
     "tabId": "organizations",
