@@ -10,6 +10,7 @@ import type {
 } from "@/features/agents/types/mcp.types";
 import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
+import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 
 // ---------------------------------------------------------------------------
 // Catalog
@@ -44,19 +45,23 @@ export interface UpsertConnectionParams {
 export async function connectMcpServer(
   params: UpsertConnectionParams,
 ): Promise<string> {
-  const { data, error } = await supabase.rpc("upsert_mcp_connection", {
-    p_server_id: params.serverId,
-    p_config_id: params.configId,
-    p_transport: params.transport,
-    p_endpoint_override: params.endpointOverride,
-    // A NEW connection is filed in the organization the person is working in —
-    // named explicitly, never chosen by the database (the row stays personal).
-    p_organization_id: requireSelectedOrgId(),
+  // With no organization selected the person is TOLD nothing was connected and
+  // why (the four callers render only their own generic failure).
+  return withOrganizationRefusalShown("connected", async () => {
+    const { data, error } = await supabase.rpc("upsert_mcp_connection", {
+      p_server_id: params.serverId,
+      p_config_id: params.configId,
+      p_transport: params.transport,
+      p_endpoint_override: params.endpointOverride,
+      // A NEW connection is filed in the organization the person is working in —
+      // named explicitly, never chosen by the database (the row stays personal).
+      p_organization_id: requireSelectedOrgId(),
+    });
+
+    if (error) throw new Error(`Failed to connect MCP server: ${error.message}`);
+
+    return data as string;
   });
-
-  if (error) throw new Error(`Failed to connect MCP server: ${error.message}`);
-
-  return data as string;
 }
 
 // ---------------------------------------------------------------------------

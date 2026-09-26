@@ -36,7 +36,6 @@
     "features/marketing/search-console/data-dig.ts",
     "features/marketing/seo/value-system/rules/data.ts",
     "features/memory/service/memoryService.ts",
-    "features/messaging/service/sendDirectActionMessage.ts",
     "features/notes/hooks/useActiveNote.ts",
     "features/page-extraction/services/run-from-draft.ts",
     "features/pdf/scanner/api.ts",
@@ -52,7 +51,6 @@
     "features/tool-registry/shared/toolBindings.service.ts",
     "features/transcripts/service/transcriptsService.ts",
     "hooks/canvas/useCanvasLike.ts",
-    "hooks/useApiAuth.ts",
     "lib/api/hr-contract-client.ts",
     "lib/api/matrx-transport.ts",
     "providers/usePreferenceSync.ts"

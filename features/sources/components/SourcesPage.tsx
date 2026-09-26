@@ -82,6 +82,8 @@ import {
 } from "@/lib/redux/slices/appContextSlice";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
+import { organizationRefusalMessage } from "@/lib/organizations/organizationRefusalToast";
 import { supabase } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
 import { writeOne } from "@/utils/supabase/writeOne";
@@ -385,7 +387,11 @@ export function SourcesPage() {
       );
     } catch (err) {
       if (isOrganizationSelectionCancelled(err)) return;
-      setAddError(errorSentence(err));
+      setAddError(
+        isOrganizationRequiredError(err)
+          ? organizationRefusalMessage({ act: "added" })
+          : errorSentence(err),
+      );
     } finally {
       setAdding(false);
     }
@@ -421,7 +427,11 @@ export function SourcesPage() {
       );
     } catch (err) {
       if (isOrganizationSelectionCancelled(err)) return;
-      setAddError(errorSentence(err));
+      setAddError(
+        isOrganizationRequiredError(err)
+          ? organizationRefusalMessage({ act: "added" })
+          : errorSentence(err),
+      );
     } finally {
       setAdding(false);
     }
