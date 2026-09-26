@@ -93623,7 +93623,7 @@ export type Database = {
           language?: string
           metadata?: Json
           normalized_phrase: string
-          organization_id?: string
+          organization_id: string
           phrase: string
           updated_at?: string
           updated_by?: string | null
@@ -94031,7 +94031,7 @@ export type Database = {
           metrics_fetched_at?: string | null
           metrics_task_id?: string | null
           monthly_searches?: Json
-          organization_id?: string
+          organization_id: string
           raw?: Json | null
           search_volume?: number | null
           seasonality_index?: number | null
@@ -97552,7 +97552,7 @@ export type Database = {
           metadata?: Json
           name: string
           node_type: string
-          organization_id?: string
+          organization_id: string
           parent_id?: string | null
           slug: string
           updated_at?: string
