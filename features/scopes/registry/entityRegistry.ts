@@ -443,7 +443,10 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   // flashcard-set entity (legacy education.flashcard_data merged 2026-08-12).
   fc_set: {
     Icon: Layers,
-    labelPlural: "Flashcards",
+    // "Flashcard Sets", never "Flashcards": fc_card is "Flashcards" — two kinds with one plural read
+    // as a duplicate choice in every picker (RC-B11 link picker, 2026-09-26). Guard:
+    // features/scopes/registry/__tests__/entity-plural-labels-are-distinct.test.ts.
+    labelPlural: "Flashcard Sets",
     hrefFor: (id) => `/education/flashcards/${id}`,
   },
   // A quiz SESSION (education.quiz_sessions) is a taking, not the quiz — the
@@ -567,7 +570,7 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   // /tasks/<id> — the wrong record.
   sch_task: {
     Icon: CalendarClock,
-    labelPlural: "Schedules",
+    // Plural from the registry label ("Scheduled Task"), not "Schedules" — hr_schedule is "Schedules".
     hrefFor: (id) => `/schedules/${id}`,
   },
   war_room: {
