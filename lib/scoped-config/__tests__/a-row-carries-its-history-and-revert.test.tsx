@@ -125,13 +125,18 @@ test("History lists the changes with who and which door, and reverts through the
   expect(text).toContain("10 → 12");
   expect(text).toContain("in the app");
   expect(text).toContain("Platform value: 6 → 8");
-  // Two entries at this rung are revertable; the platform entry is not.
+  // The newest entry at this rung offers Undo, the older one Revert; the platform entry neither.
   const reverts = button(/Revert to this/);
-  expect(reverts).toHaveLength(2);
-  await act(async () => reverts[1]!.click());
-  expect(overrideDoor).toHaveBeenCalledWith(expect.objectContaining({
+  expect(reverts).toHaveLength(1);
+  expect(button(/^Undo$/)).toHaveLength(1);
+  await act(async () => reverts[0]!.click());
+  expect(overrideDoor).toHaveBeenLastCalledWith(expect.objectContaining({
     feature: "orchestration.loop_guard", key: "failure_threshold", scopeKind: "organization", scopeId: ORG, organizationId: ORG, value: 10,
   }));
+  // Undo of the newest change restores what was there before it (10), through the same door.
+  overrideDoor.mockClear();
+  await act(async () => button(/^Undo$/)[0]!.click());
+  expect(overrideDoor).toHaveBeenLastCalledWith(expect.objectContaining({ value: 10 }));
 });
 
 test("the system register's History reads the platform rung and reverts through feature_knob_set", async () => {
@@ -141,8 +146,8 @@ test("the system register's History reads the platform rung and reverts through 
   mount({ canWrite: true, registeredDefault: 8 });
   await act(async () => button(/^History of /)[0]!.click());
   expect(history).toHaveBeenCalledWith(expect.objectContaining({ organizationId: null, scopeKind: null }));
-  await act(async () => button(/Revert to this/)[0]!.click());
-  expect(platformDoor).toHaveBeenCalledWith("orchestration.loop_guard", "failure_threshold", 8);
+  await act(async () => button(/^Undo$/)[0]!.click());
+  expect(platformDoor).toHaveBeenCalledWith("orchestration.loop_guard", "failure_threshold", 6);
 });
 
 test("the row states what a change affects before it is saved", () => {

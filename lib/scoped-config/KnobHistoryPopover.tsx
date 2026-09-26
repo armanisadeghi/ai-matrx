@@ -9,7 +9,7 @@
 // is itself one more history row and passes the same permission gate.
 
 import { useState } from "react";
-import { History, RotateCcw } from "lucide-react";
+import { History, RotateCcw, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -67,8 +67,16 @@ export function KnobHistoryPopover(props: {
     }
   };
 
-  const revert = async (entry: KnobHistoryEntry) => {
-    const target = entry.action === "clear" ? null : entry.new_value;
+  // "Revert to this" restores the value an entry SET; "Undo" on the newest entry
+  // restores what was there BEFORE it — for a first-ever value, that is no own value.
+  const revert = async (entry: KnobHistoryEntry, undo = false) => {
+    const target = undo
+      ? entry.action === "set"
+        ? null
+        : entry.old_value
+      : entry.action === "clear"
+        ? null
+        : entry.new_value;
     const ok = await confirm({
       title: `Revert ${label}?`,
       description:
@@ -76,7 +84,7 @@ export function KnobHistoryPopover(props: {
           ? scopeKind === "platform"
             ? "The platform value returns to its registered default. Every organization without its own value follows it."
             : "This value is removed here, and the setting follows the level above it again."
-          : `${label} becomes ${displayValue(target)} again, as it was set on ${when(entry.at)}. The change is recorded in this history.`,
+          : `${label} becomes ${displayValue(target)} again, as it was ${undo ? "before" : "set"} on ${when(entry.at)}. The change is recorded in this history.`,
       confirmLabel: "Revert",
     });
     if (!ok) return;
@@ -109,7 +117,7 @@ export function KnobHistoryPopover(props: {
             </p>
           ) : (
             <ul className="divide-y divide-border">
-              {entries.map((entry) => {
+              {entries.map((entry, index) => {
                 const otherRung = !entry.is_this_rung;
                 const rungWord =
                   entry.scope_kind === "platform"
@@ -131,6 +139,7 @@ export function KnobHistoryPopover(props: {
                   canRevert &&
                   !otherRung &&
                   (entry.action === "set" || entry.action === "update" || entry.action === "clear");
+                const newestHere = revertable && entries.findIndex((e) => e.is_this_rung) === index;
                 return (
                   <li key={entry.id} className="space-y-1 px-3 py-2">
                     <div className="flex items-start justify-between gap-2">
@@ -138,7 +147,18 @@ export function KnobHistoryPopover(props: {
                         {rungWord && otherRung ? <span className="text-muted-foreground">{rungWord}: </span> : null}
                         {verb}
                       </p>
-                      {revertable && (
+                      {newestHere && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 shrink-0 gap-1 px-2 text-xs"
+                          onClick={() => void revert(entry, true)}
+                        >
+                          <Undo2 className="h-3 w-3" />
+                          Undo
+                        </Button>
+                      )}
+                      {revertable && !newestHere && (
                         <Button
                           size="sm"
                           variant="ghost"
