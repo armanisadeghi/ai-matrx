@@ -14,6 +14,7 @@ import {
   updateList as updateListSvc,
 } from "@/features/user-lists/service";
 import type { UserList, UserListItem } from "@/features/user-lists/types";
+import { storeListsOf } from "@/features/user-lists/where-lists-live";
 
 export interface PicklistSummary extends UserList {
   item_count: number;
@@ -49,6 +50,8 @@ export function useStructuredLists() {
   const [error, setError] = useState<string | null>(null);
 
   const itemsCache = useRef<Record<string, UserListItem[]>>({});
+  /** lane LISTS-AFTER-SWITCH: ids of the lists that live in the new system (opened at /lists/<id>). */
+  const storeIds = useRef<Set<string>>(new Set());
 
   // ── Initial load ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -74,8 +77,24 @@ export function useStructuredLists() {
           created_at: row.created_at,
           updated_at: row.updated_at,
           item_count: row.udt_structured_list_items?.[0]?.count ?? 0,
+          lives_in: "older" as const,
         }));
-        setLists(mapped);
+        // lane LISTS-AFTER-SWITCH: the person's lists that live in the new system (their
+        // organization switched its Data tables) are listed beside the older ones.
+        const seen = new Set(mapped.map((l) => l.id));
+        let inStore: PicklistSummary[] = [];
+        try {
+          inStore = userId
+            ? (await storeListsOf(supabase, userId))
+                .filter((l) => !seen.has(l.id))
+                .map((l) => ({ ...l, item_count: l.item_count ?? 0, lives_in: "record" as const }))
+            : [];
+        } catch (e) {
+          setError(e instanceof Error ? e.message : "Your lists in the new system could not be loaded");
+        }
+        if (cancelled) return;
+        storeIds.current = new Set(inStore.map((l) => l.id));
+        setLists([...mapped, ...inStore]);
         if (mapped.length > 0) setActiveListId((id) => id ?? mapped[0]!.id);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load lists");
@@ -86,7 +105,7 @@ export function useStructuredLists() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [userId]);
 
   // ── Items load on active change ─────────────────────────────────────────
   useEffect(() => {
@@ -140,14 +159,39 @@ export function useStructuredLists() {
         return null;
       }
       try {
-        const id = (await createList({
+        // create_user_list answers the new list's document (`list_id`, and `lives_in` —
+        // "record" when this organization's Data tables switched and the list was born in the
+        // new system). It never answered a bare id; reading it as one made every new list's id
+        // an object.
+        const made = (await createList({
           p_list_name: name,
           p_description: "",
           p_user_id: userId,
           p_is_public: false,
           p_public_read: true,
           p_organization_id: organizationId,
-        })) as unknown as string;
+        })) as unknown as { list_id?: string; lives_in?: "older" | "record" } | null;
+        const id = made?.list_id;
+        if (!id) throw new Error("The new list did not come back.");
+        if (made?.lives_in === "record") {
+          storeIds.current.add(id);
+          setLists((ls) => [
+            {
+              id,
+              list_name: name,
+              description: null,
+              user_id: userId,
+              is_public: false,
+              public_read: false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              item_count: 0,
+              lives_in: "record",
+            },
+            ...ls,
+          ]);
+          return id;
+        }
         const fresh: PicklistSummary = {
           id,
           list_name: name,
@@ -342,6 +386,8 @@ export function useStructuredLists() {
     error,
     clearError: () => setError(null),
     createNewList,
+    /** lane LISTS-AFTER-SWITCH: does this list live in the new system (open it at /lists/<id>)? */
+    isInStore: (listId: string) => storeIds.current.has(listId),
     patchList,
     removeList,
     addItem,

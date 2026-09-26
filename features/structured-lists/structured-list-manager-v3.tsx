@@ -160,6 +160,10 @@ import { MobilePanelShell } from "@/features/shell/components/header/templates/M
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useRouter } from "next/navigation";
+import { listAddress, storeListsOf } from "@/features/user-lists/where-lists-live";
+import { createList as createListWhereItIsBorn } from "@/features/user-lists/service";
+import { whereANewTableIsBorn } from "@/features/data-tables/data-source/where-a-table-is-born";
 
 // ---------- Types ----------
 
@@ -174,6 +178,8 @@ type Picklist = {
   user_id: string | null;
   created_at: string;
   updated_at: string | null;
+  /** lane LISTS-AFTER-SWITCH: "record" = it lives in the new system; it opens at /lists/<id>. */
+  lives_in?: "older" | "record";
 };
 
 type PicklistItem = {
@@ -346,6 +352,7 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
   // filed in the organization the user picked, and it refuses when there is
   // none rather than landing in their personal workspace by default.
   const activeOrganizationId = useAppSelector(selectOrganizationId);
+  const router = useRouter();
   const [lists, setLists] = React.useState<Picklist[]>([]);
   const [items, setItems] = React.useState<PicklistItem[]>([]);
   const [activeId, setActiveId] = React.useState<string | null>(null);
@@ -379,9 +386,33 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
       }
       if (cancelled) return;
 
-      const fetched = listsData ?? [];
+      const older: Picklist[] = (listsData ?? []).map((l) => ({ ...l, lives_in: "older" as const }));
+      // lane LISTS-AFTER-SWITCH: the lists that live in the new system (their organization
+      // switched its Data tables) are listed beside the older ones and open at /lists/<id>.
+      let inStore: Picklist[] = [];
+      try {
+        const seen = new Set(older.map((l) => l.id));
+        inStore = (await storeListsOf(supabase, userId))
+          .filter((l) => !seen.has(l.id))
+          .map((l) => ({
+            id: l.id,
+            list_name: l.list_name,
+            description: l.description,
+            organization_id: null,
+            is_public: false,
+            public_read: false,
+            user_id: userId,
+            created_at: l.created_at,
+            updated_at: l.updated_at,
+            lives_in: "record" as const,
+          }));
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Your lists in the new system could not be loaded");
+      }
+      if (cancelled) return;
+      const fetched = [...older, ...inStore];
       setLists(fetched);
-      const first = fetched[0]?.id ?? null;
+      const first = older[0]?.id ?? null;
       setActiveId(first);
 
       if (first) {
@@ -441,6 +472,30 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
       toast.error(
         "Choose an organization first — a picklist has to be filed in one. Pick it from the menu under your avatar.",
       );
+      return;
+    }
+    // lane LISTS-AFTER-SWITCH: an organization whose Data tables switched makes its new lists in
+    // the new system (create_user_list is born there); the list opens on its own page.
+    const born = await whereANewTableIsBorn(activeOrganizationId);
+    if (!born.ok) {
+      toast.error(born.error);
+      return;
+    }
+    if (born.store === "record") {
+      setSaveStatus("saving");
+      try {
+        const made = (await createListWhereItIsBorn({
+          p_list_name: "New list",
+          p_user_id: userId,
+          p_organization_id: activeOrganizationId,
+        })) as { list_id?: string } | null;
+        if (!made?.list_id) throw new Error("The new list did not come back.");
+        setSaveStatus("idle");
+        router.push(listAddress(made.list_id));
+      } catch (e) {
+        setSaveStatus("error");
+        toast.error(e instanceof Error ? e.message : "Couldn't create picklist");
+      }
       return;
     }
     const optimistic: Picklist = {
@@ -890,7 +945,9 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
                   )}
                 >
                   <button
-                    onClick={() => setActiveId(l.id)}
+                    onClick={() =>
+                      l.lives_in === "record" ? router.push(listAddress(l.id)) : setActiveId(l.id)
+                    }
                     className="flex min-w-0 flex-1 flex-col items-start gap-0.5 px-2 py-1.5 text-left"
                   >
                     <span className="line-clamp-1 w-full text-sm leading-tight">
@@ -904,6 +961,9 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
                       <span className="text-[11px] text-muted-foreground">
                         {itemCount} item{itemCount === 1 ? "" : "s"}
                       </span>
+                    )}
+                    {l.lives_in === "record" && (
+                      <span className="text-[11px] text-muted-foreground">In the new system</span>
                     )}
                   </button>
                   <EntityDoorControls

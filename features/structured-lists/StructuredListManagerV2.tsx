@@ -33,6 +33,8 @@ import type { UserListItem } from "@/features/user-lists/types";
 import { useStructuredLists, type PicklistSummary } from "./useStructuredLists";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useRouter } from "next/navigation";
+import { listAddress } from "@/features/user-lists/where-lists-live";
 
 interface StructuredListManagerV2Props {
   /** Pin to a specific list and hide the switcher (e.g. in a modal). */
@@ -53,6 +55,11 @@ export function StructuredListManagerV2({
   className,
 }: StructuredListManagerV2Props) {
   const q = useStructuredLists();
+  const router = useRouter();
+  const openNewList = async () => {
+    const id = await q.createNewList();
+    if (id && q.isInStore(id)) router.push(listAddress(id));
+  };
   useEffect(() => {
     if (forcedListId) q.setActiveListId(forcedListId);
   }, [forcedListId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -74,8 +81,11 @@ export function StructuredListManagerV2({
         lists={q.lists}
         loadingLists={q.loadingLists}
         forced={!!forcedListId}
-        onSelect={(id) => q.setActiveListId(id)}
-        onNewList={() => q.createNewList()}
+        onSelect={(id) =>
+          // lane LISTS-AFTER-SWITCH: a list in the new system opens on its own page.
+          q.isInStore(id) ? router.push(listAddress(id)) : q.setActiveListId(id)
+        }
+        onNewList={openNewList}
         onPatchList={(patch) => activeList && q.patchList(activeList.id, patch)}
         onDeleteList={() =>
           activeList ? q.removeList(activeList.id) : undefined
@@ -95,7 +105,7 @@ export function StructuredListManagerV2({
         <EmptyState
           loading={q.loadingLists}
           hasLists={q.lists.length > 0}
-          onNew={() => q.createNewList()}
+          onNew={openNewList}
         />
       )}
 

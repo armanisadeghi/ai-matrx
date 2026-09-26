@@ -31,7 +31,7 @@
 // same screen /data-v2/<id> is — under one line saying where the table lives; "older" mounts the
 // older viewer exactly as before. Same id, same address; no redirect.
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -49,7 +49,7 @@ import { supabase } from "@/utils/supabase/client";
 import { tableLivesIn } from "@/features/unified-data/tableLivesIn";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { Button } from "@ai-matrx/design-system";
-import UnifiedDataTableRoute from "@/app/(core)/data-v2/[tableId]/page";
+import { LivesInTheNewSystem } from "@/app/(core)/data-v2/[tableId]/LivesInTheNewSystem";
 
 /** Where this id is read and written, asked of the store once per id. */
 type Home =
@@ -80,21 +80,11 @@ function useWhereThisTableLives(tableId: string): Home & { retry: () => void } {
  * under one line that says so; the line names where to switch back.
  */
 function MovedTable({ tableId }: { tableId: string }) {
-  const params = useMemo(() => Promise.resolve({ tableId }), [tableId]);
   return (
-    <div className="flex h-full flex-col">
-      <p
-        className="shrink-0 px-4 pb-1 pt-[calc(var(--shell-header-h)+0.25rem)] text-xs text-muted-foreground"
-        data-testid="table-lives-in-new-system"
-      >
-        This table now lives in the new system. Same table, same address; its organization switched its
-        Data tables. <Link href="/data" className="text-primary underline-offset-2 hover:underline">All tables</Link>
-      </p>
-      {/* The table page pads itself below the shell header; the line above already sits there. */}
-      <div className="min-h-0 flex-1 [--shell-header-h:0px]">
-        <UnifiedDataTableRoute params={params} />
-      </div>
-    </div>
+    <LivesInTheNewSystem tableId={tableId} testId="table-lives-in-new-system">
+      This table now lives in the new system. Same table, same address; its organization switched its
+      Data tables. <Link href="/data" className="text-primary underline-offset-2 hover:underline">All tables</Link>
+    </LivesInTheNewSystem>
   );
 }
 

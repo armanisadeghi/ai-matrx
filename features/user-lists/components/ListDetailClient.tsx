@@ -2,6 +2,8 @@
 
 import React, { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { LIST_LIVES_IN_NEW_SYSTEM, listAddress } from "../where-lists-live";
 import { ListChecks, Pencil, Plus, Share2, Trash2 } from "lucide-react";
 import type { UserListWithItems, GroupedItem } from "../types";
 import { getListVisibility } from "../types";
@@ -61,7 +63,28 @@ interface ListDetailClientProps {
   getSurfaceScopeOverride?: () => Record<string, unknown>;
 }
 
-export function ListDetailClient({
+/**
+ * A list that lives in the new system (lane LISTS-AFTER-SWITCH: its organization switched its Data
+ * tables, so it is a Table of choices in the record store, same id) is edited on its own page, the
+ * new table page at /lists/<id> — never here, where every write targets the older list. A host that
+ * hands one in (a floating workspace, a picker) shows that, with the way there.
+ */
+export function ListDetailClient(props: ListDetailClientProps) {
+  if (props.list.lives_in === "record") {
+    return (
+      <div className="m-4 flex flex-col items-start gap-2 rounded-md border border-dashed p-6" data-testid="list-lives-in-new-system">
+        <p className="text-sm font-medium">{props.list.list_name}</p>
+        <p className="max-w-prose text-xs text-muted-foreground">{LIST_LIVES_IN_NEW_SYSTEM}</p>
+        <Link href={listAddress(props.list.list_id)} className="text-sm text-primary underline-offset-2 hover:underline">
+          Open the list
+        </Link>
+      </div>
+    );
+  }
+  return <OlderListDetailClient {...props} />;
+}
+
+function OlderListDetailClient({
   list,
   userId,
   asRoute = false,

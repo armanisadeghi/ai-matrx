@@ -149,6 +149,16 @@ import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorC
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  LIST_LIVES_IN_NEW_SYSTEM,
+  listAddress,
+  listLivesIn,
+  storeListsOf,
+} from "@/features/user-lists/where-lists-live";
+import { createList as createListWhereItIsBorn } from "@/features/user-lists/service";
+import { whereANewTableIsBorn } from "@/features/data-tables/data-source/where-a-table-is-born";
 
 // ---------- Types ----------
 
@@ -163,6 +173,8 @@ type Picklist = {
   user_id: string | null;
   created_at: string;
   updated_at: string | null;
+  /** lane LISTS-AFTER-SWITCH: "record" = it lives in the new system; it opens at /lists/<id>. */
+  lives_in?: "older" | "record";
 };
 
 type PicklistItem = {
@@ -347,6 +359,9 @@ export function StructuredListManagerV1({
   // filed in the organization the user picked, and it refuses when there is
   // none rather than landing in their personal workspace by default.
   const activeOrganizationId = useAppSelector(selectOrganizationId);
+  const router = useRouter();
+  /** lane LISTS-AFTER-SWITCH: the forced list lives in the new system; it is edited on its own page. */
+  const [forcedLivesInStore, setForcedLivesInStore] = React.useState(false);
   const [lists, setLists] = React.useState<Picklist[]>([]);
   const [items, setItems] = React.useState<PicklistItem[]>([]);
   const [activeId, setActiveId] = React.useState<string | null>(
@@ -386,6 +401,16 @@ export function StructuredListManagerV1({
         ]);
         if (cancelled) return;
         if (listRes.error || !listRes.data) {
+          const home = await listLivesIn(supabase, forcedListId);
+          if (cancelled) return;
+          if (home.ok && home.livesIn === "record") {
+            setForcedLivesInStore(true);
+            setLists([]);
+            setItems([]);
+            setActiveId(null);
+            setLoading(false);
+            return;
+          }
           toast.error("Couldn't load this picklist");
           setLists([]);
           setItems([]);
@@ -415,9 +440,33 @@ export function StructuredListManagerV1({
       }
       if (cancelled) return;
 
-      const fetched = listsData ?? [];
+      const older: Picklist[] = (listsData ?? []).map((l) => ({ ...l, lives_in: "older" as const }));
+      // lane LISTS-AFTER-SWITCH: the lists that live in the new system (their organization
+      // switched its Data tables) are listed beside the older ones and open at /lists/<id>.
+      let inStore: Picklist[] = [];
+      try {
+        const seen = new Set(older.map((l) => l.id));
+        inStore = (await storeListsOf(supabase, userId))
+          .filter((l) => !seen.has(l.id))
+          .map((l) => ({
+            id: l.id,
+            list_name: l.list_name,
+            description: l.description,
+            organization_id: null,
+            is_public: false,
+            public_read: false,
+            user_id: userId,
+            created_at: l.created_at,
+            updated_at: l.updated_at,
+            lives_in: "record" as const,
+          }));
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Your lists in the new system could not be loaded");
+      }
+      if (cancelled) return;
+      const fetched = [...older, ...inStore];
       setLists(fetched);
-      const first = fetched[0]?.id ?? null;
+      const first = older[0]?.id ?? null;
       setActiveId(first);
 
       if (first) {
@@ -473,6 +522,30 @@ export function StructuredListManagerV1({
       toast.error(
         "Choose an organization first — a picklist has to be filed in one. Pick it from the menu under your avatar.",
       );
+      return;
+    }
+    // lane LISTS-AFTER-SWITCH: an organization whose Data tables switched makes its new lists in
+    // the new system (create_user_list is born there); the list opens on its own page.
+    const born = await whereANewTableIsBorn(activeOrganizationId);
+    if (!born.ok) {
+      toast.error(born.error);
+      return;
+    }
+    if (born.store === "record") {
+      setSaveStatus("saving");
+      try {
+        const made = (await createListWhereItIsBorn({
+          p_list_name: "New list",
+          p_user_id: userId,
+          p_organization_id: activeOrganizationId,
+        })) as { list_id?: string } | null;
+        if (!made?.list_id) throw new Error("The new list did not come back.");
+        setSaveStatus("idle");
+        router.push(listAddress(made.list_id));
+      } catch (e) {
+        setSaveStatus("error");
+        toast.error(e instanceof Error ? e.message : "Couldn't create picklist");
+      }
       return;
     }
     const optimistic: Picklist = {
@@ -803,6 +876,17 @@ export function StructuredListManagerV1({
 
   // ------- Render -------
 
+  if (forcedLivesInStore && forcedListId) {
+    return (
+      <div className="m-4 flex flex-col items-start gap-2 rounded-md border border-dashed p-6" data-testid="list-lives-in-new-system">
+        <p className="max-w-prose text-xs text-muted-foreground">{LIST_LIVES_IN_NEW_SYSTEM}</p>
+        <Link href={listAddress(forcedListId)} className="text-sm text-primary underline-offset-2 hover:underline">
+          Open the list
+        </Link>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex h-[600px] items-center justify-center text-sm text-muted-foreground">
@@ -862,7 +946,9 @@ export function StructuredListManagerV1({
                 )}
               >
                 <button
-                  onClick={() => setActiveId(l.id)}
+                  onClick={() =>
+                    l.lives_in === "record" ? router.push(listAddress(l.id)) : setActiveId(l.id)
+                  }
                   className="flex min-w-0 flex-1 flex-col items-start gap-0.5 px-2 py-1.5 text-left"
                 >
                   <span className="line-clamp-1 w-full text-sm leading-tight">
@@ -876,6 +962,9 @@ export function StructuredListManagerV1({
                     <span className="text-[11px] text-muted-foreground">
                       {itemCount} item{itemCount === 1 ? "" : "s"}
                     </span>
+                  )}
+                  {l.lives_in === "record" && (
+                    <span className="text-[11px] text-muted-foreground">In the new system</span>
                   )}
                 </button>
                 <EntityDoorControls

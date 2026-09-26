@@ -8,6 +8,7 @@ import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import type { UserListWithItems } from "@/features/user-lists/types";
 import { ListDetailClient } from "@/features/user-lists/components/ListDetailClient";
+import { StoreListPage } from "./StoreListPage";
 
 /**
  * Per-list detail/editor route — the canonical deep link for a picklist
@@ -37,6 +38,9 @@ const loadList = cache(
       // database.types.ts to guard against) — this is the sanctioned
       // Json-direct RPC cast per the type-safety skill's supabase-patterns.
       const list = data as unknown as UserListWithItems;
+      // lane LISTS-AFTER-SWITCH: a list that lives in the new system (a Table of choices, same
+      // id) has no older row to read an owner from — the store's table page decides who edits.
+      if (list.lives_in === "record") return list;
 
       // The RPC's payload has NO `user_id` (list_id, list_name, description,
       // created_at, updated_at, is_public, public_read, items_grouped only),
@@ -123,6 +127,15 @@ export default async function ListDetailPage({ params }: PageProps) {
           fallbackHref="/lists"
           fallbackLabel="Your picklists"
         />
+      </div>
+    );
+  }
+
+  // lane LISTS-AFTER-SWITCH: a list that lives in the new system opens here as the new table page.
+  if (list.lives_in === "record") {
+    return (
+      <div className="h-full overflow-hidden">
+        <StoreListPage listId={id} />
       </div>
     );
   }

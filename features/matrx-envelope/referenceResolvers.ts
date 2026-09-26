@@ -308,7 +308,15 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
         .eq("id", ref.list_id)
         .is("deleted_at", null)
         .maybeSingle();
-      if (error || !data) return undefined;
+      if (error || !data) {
+        // lane LISTS-AFTER-SWITCH: a list that lives in the new system (its organization
+        // switched its Data tables) has no live older row; the selection door answers it
+        // from its Table of choices, same id.
+        const moved = await supabase.rpc("get_structured_list_for_selection", { p_list_id: ref.list_id });
+        const doc = (moved.data ?? null) as { list_name?: string | null; description?: string | null } | null;
+        if (moved.error || !doc) return undefined;
+        return stringify(doc.list_name) ?? stringify(doc.description);
+      }
       const row = data as {
         list_name?: string | null;
         description?: string | null;
@@ -340,6 +348,19 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
         .eq("id", ref.item_id)
         .is("deleted_at", null)
         .maybeSingle();
+      if ((error || !data) && ref.list_id) {
+        // lane LISTS-AFTER-SWITCH: a choice of a list that lives in the new system is read from
+        // its Table of choices through the list door (which shows a description to an editor).
+        const moved = await supabase.rpc("get_user_list_with_items", { p_list_id: ref.list_id });
+        const doc = (moved.data ?? null) as {
+          lives_in?: string;
+          items_grouped?: Record<string, Array<{ id: string; label?: string | null; description?: string | null }>> | null;
+        } | null;
+        if (moved.error || doc?.lives_in !== "record") return undefined;
+        const item = Object.values(doc.items_grouped ?? {}).flat().find((i) => i.id === ref.item_id);
+        if (!item) return undefined;
+        return stringify(item.description) ?? stringify(item.label);
+      }
       if (error || !data) return undefined;
       const row = data as {
         description?: string | null;

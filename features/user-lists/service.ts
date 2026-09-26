@@ -16,6 +16,7 @@ import type {
   StructuredListForSelection,
 } from "./types";
 import { normalizeUserList } from "./types";
+import { storeListsOf } from "./where-lists-live";
 
 // ─── Summary (index) ──────────────────────────────────────────────────────────
 
@@ -47,7 +48,15 @@ export async function getAccessibleLists(): Promise<UserList[]> {
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (error) throw new Error(`Failed to load lists: ${error.message}`);
-  return (data as UserList[]) ?? [];
+  const older = ((data as UserList[]) ?? []).map((l) => ({ ...l, lives_in: "older" as const }));
+  // lane LISTS-AFTER-SWITCH: the person's lists that live in the new system (their
+  // organization switched its Data tables) sit beside the older ones, marked, same ids.
+  const { data: session } = await supabase.auth.getSession();
+  const userId = session.session?.user?.id;
+  if (!userId) return older;
+  const seen = new Set(older.map((l) => l.id));
+  const store = (await storeListsOf(supabase, userId)).filter((l) => !seen.has(l.id));
+  return [...store, ...older].sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
 }
 
 // ─── Detail ────────────────────────────────────────────────────────────────────

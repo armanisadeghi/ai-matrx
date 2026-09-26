@@ -19,7 +19,16 @@ export interface UserList {
   // Populated by get_user_lists_summary RPC
   item_count?: number;
   group_count?: number;
+  /**
+   * Where the list is read and written (lane LISTS-AFTER-SWITCH): "record" when it lives in
+   * the new system as a Table of choices (its organization switched its Data tables, or it was
+   * born there), "older" for an older list. Absent = older (a direct table read).
+   */
+  lives_in?: ListLivesIn;
 }
+
+/** Where a pick list lives — the database's word (custom.where_lists_live). */
+export type ListLivesIn = "older" | "record";
 
 /** Raw row returned by get_user_lists_summary RPC — uses list_id instead of id */
 export interface UserListSummaryRaw {
@@ -33,6 +42,7 @@ export interface UserListSummaryRaw {
   updated_at: string | null;
   item_count: number;
   group_count: number;
+  lives_in?: ListLivesIn;
 }
 
 /** Normalize RPC summary rows to the standard UserList shape */
@@ -48,6 +58,7 @@ export function normalizeUserList(raw: UserListSummaryRaw): UserList {
     updated_at: raw.updated_at,
     item_count: raw.item_count,
     group_count: raw.group_count,
+    lives_in: raw.lives_in ?? "older",
   };
 }
 
@@ -76,6 +87,8 @@ export interface UserListWithItems {
   is_public: boolean;
   public_read: boolean;
   user_id?: string;
+  /** "record" when the list lives in the new system (answered from its Table of choices). */
+  lives_in?: ListLivesIn;
   items_grouped: Record<string, GroupedItem[]> | null;
 }
 
@@ -106,6 +119,7 @@ export interface StructuredListForSelection {
   description: string | null; // list-level metadata (not the secret item description)
   is_public: boolean;
   public_read: boolean;
+  lives_in?: ListLivesIn;
   items_grouped: Record<string, PicklistSelectionItem[]> | null;
 }
 

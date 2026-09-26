@@ -34,8 +34,18 @@ export default function ListPeek({ id, open, onClose }: PeekProps) {
         .eq("id", id)
         .is("deleted_at", null)
         .maybeSingle();
+      let found = (data as ListRow) ?? null;
+      if (!found) {
+        // lane LISTS-AFTER-SWITCH: a list that lives in the new system (its organization
+        // switched its Data tables) is answered by the list door from its Table of choices.
+        const moved = await supabase.rpc("get_user_list_with_items", { p_list_id: id });
+        const doc = (moved.data ?? null) as { lives_in?: string; description?: string | null; list_name?: string | null; created_at?: string } | null;
+        if (!moved.error && doc?.lives_in === "record") {
+          found = { description: doc.description ?? doc.list_name ?? null, created_at: doc.created_at ?? null } as ListRow;
+        }
+      }
       if (!cancelled) {
-        setRow((data as ListRow) ?? null);
+        setRow(found);
         setLoading(false);
       }
     })();
