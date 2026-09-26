@@ -18,6 +18,10 @@ import { DEFAULT_ARCHIVE_FILTER } from "@ai-matrx/design-system";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import {
+  forgetOrganizationMemberRows,
+  readOrganizationMemberRows,
+} from "@/features/organizations/service/orgMemberRows";
+import {
   invitationsService,
   type Invitation,
 } from "@/features/organizations/service/invitationsService";
@@ -488,12 +492,8 @@ export async function getOrganizationMembers(
   orgId: string,
 ): Promise<OrganizationMemberWithUser[]> {
   try {
-    const { data, error } = await supabase.rpc(
-      "get_organization_members_with_users",
-      { p_org_id: orgId },
-    );
-
-    if (error) throw pgErrorToError(error);
+    // THE ONE ROSTER READ — joined while in flight, reused for 30 s.
+    const data = await readOrganizationMemberRows(orgId);
 
     // Transform RPC result to application format
     return data.map((row) => ({
@@ -528,6 +528,7 @@ export async function updateMemberRole(
   userId: string,
   newRole: OrgRole,
 ): Promise<OperationResult> {
+  forgetOrganizationMemberRows(orgId);
   try {
     // Prevent changing the last owner. Read the org's members via the canonical
     // membership RPC (iam.memberships).
@@ -595,6 +596,7 @@ export async function removeMember(
   orgId: string,
   userId: string,
 ): Promise<OperationResult> {
+  forgetOrganizationMemberRows(orgId);
   try {
     // Prevent removing the last owner. Read members via the canonical RPC.
     const membersResult = await membershipsService.listForContainer(
@@ -942,6 +944,7 @@ export async function resendInvitation(
 export async function acceptInvitation(
   token: string,
 ): Promise<OrganizationResult> {
+  forgetOrganizationMemberRows();
   try {
     requireUserId();
 

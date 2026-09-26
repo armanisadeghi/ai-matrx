@@ -111,6 +111,10 @@ jest.mock("@/features/organizations/types", () => ({
 }));
 
 import { useUserConnections } from "../useUserConnections";
+import { forgetOrganizationMemberRows } from "@/features/organizations/service/orgMemberRows";
+
+// The roster read is shared for 30 s across callers; each test starts cold.
+beforeEach(() => forgetOrganizationMemberRows());
 
 type Options = Parameters<typeof useUserConnections>[0];
 

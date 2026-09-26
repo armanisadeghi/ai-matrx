@@ -17,6 +17,7 @@
  * sentence.
  */
 
+import { readOrganizationMemberRows } from "@/features/organizations/service/orgMemberRows";
 import React, { useEffect, useState } from "react";
 import { Building2, CheckCircle, Loader2, Users, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createClient } from "@/utils/supabase/client";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -68,12 +68,9 @@ export interface AddEveryoneInOrgProps {
 type Outcome = { ok: boolean; say: string };
 
 async function readMembers(orgId: string): Promise<OrgMemberPerson[]> {
-  const { data, error } = await createClient().rpc(
-    "get_organization_members_with_users",
-    { p_org_id: orgId },
-  );
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => ({
+  // THE ONE ROSTER READ (joined in flight, reused for 30 s).
+  const data = await readOrganizationMemberRows(orgId);
+  return data.map((row) => ({
     userId: row.user_id,
     email: row.user_email ?? "",
     name: row.user_display_name || row.user_email || "Unnamed person",

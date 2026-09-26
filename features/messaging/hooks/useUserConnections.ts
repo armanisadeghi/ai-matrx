@@ -28,6 +28,10 @@
  * Every other caller - share, assign, invite, approve - names its organization.
  */
 
+import {
+  readOrganizationMemberRows,
+  type OrganizationMemberRow,
+} from "@/features/organizations/service/orgMemberRows";
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -153,7 +157,7 @@ export function useUserConnections(
   useEffect(() => {
     if (!fetchKey) return;
     let active = true;
-    const [userId, invitationOrgId, , orgs] = JSON.parse(fetchKey) as [
+    const [userId, invitationOrgId, refreshCount, orgs] = JSON.parse(fetchKey) as [
       string,
       string | null,
       number,
@@ -167,6 +171,8 @@ export function useUserConnections(
           invitationOrganizationId: invitationOrgId,
           // A superseded sweep stops at the next organization instead of finishing the lot.
           isActive: () => active,
+          // A refresh re-reads; a first load reuses a roster another picker just read.
+          fresh: refreshCount > 0,
         });
         if (active) setResolved({ key: fetchKey, orgConnections, error: null });
       } catch (err) {
@@ -264,11 +270,14 @@ async function fetchOrgConnections(
     organizations,
     invitationOrganizationId,
     isActive,
+    fresh = false,
   }: {
     currentUserId: string;
     organizations: ScopeOrg[];
     invitationOrganizationId: string | null;
     isActive: () => boolean;
+    /** An explicit refresh re-reads rather than reusing a settled roster. */
+    fresh?: boolean;
   },
 ): Promise<ConnectionUser[]> {
   const usersMap = new Map<string, ConnectionUser>();
@@ -280,18 +289,18 @@ async function fetchOrgConnections(
     if (!isActive()) break;
     try {
       // Fetch members via RPC
-      const { data: members, error: membersError } = await supabase.rpc(
-        "get_organization_members_with_users",
-        { p_org_id: org.id },
-      );
-
-      if (membersError) {
+      // THE ONE ROSTER READ — joined while in flight, reused for 30 s, so
+      // every picker on a page shares one request per organization.
+      let members: OrganizationMemberRow[];
+      try {
+        members = await readOrganizationMemberRows(org.id, { client: supabase, fresh });
+      } catch (membersError) {
         console.error(`Error fetching members for org ${org.id}:`, membersError);
         continue;
       }
 
       // Add members (excluding current user)
-      ((members as unknown as OrgMemberRow[]) || []).forEach((member) => {
+      (members as unknown as OrgMemberRow[]).forEach((member) => {
         if (member.user_id !== currentUserId && !usersMap.has(member.user_id)) {
           usersMap.set(member.user_id, {
             user_id: member.user_id,

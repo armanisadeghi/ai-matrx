@@ -59,6 +59,10 @@ jest.mock("@/lib/redux/hooks", () => ({
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => ME }));
 
 import { AddEveryoneInOrg } from "@/features/sharing/components/AddEveryoneInOrg";
+import { forgetOrganizationMemberRows } from "@/features/organizations/service/orgMemberRows";
+
+// The roster read is shared for 30 s across callers; each test starts cold.
+beforeEach(() => forgetOrganizationMemberRows());
 
 let host: HTMLDivElement;
 let root: Root;

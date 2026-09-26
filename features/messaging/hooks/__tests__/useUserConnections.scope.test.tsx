@@ -107,6 +107,10 @@ jest.mock("@/features/organizations/types", () => ({
 }));
 
 import { useUserConnections } from "../useUserConnections";
+import { forgetOrganizationMemberRows } from "@/features/organizations/service/orgMemberRows";
+
+// The roster read is shared for 30 s across callers; each test starts cold.
+beforeEach(() => forgetOrganizationMemberRows());
 
 describe("useUserConnections — a people list stays in one organization", () => {
   beforeEach(() => rpc.mockClear());
