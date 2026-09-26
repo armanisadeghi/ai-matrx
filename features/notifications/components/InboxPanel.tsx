@@ -41,6 +41,7 @@ import { useOpenMessagesWindow } from "@/features/overlays/openers/messagesWindo
 import { useOpenApprovalsWindow } from "@/features/overlays/openers/approvalsWindow";
 import { useInboxCounts, useInboxList } from "../useInbox";
 import type { InboxNotification } from "../types";
+import { NotificationBody } from "./NotificationBody";
 
 export const NOTIFICATIONS_ROUTE = "/notifications";
 
@@ -128,9 +129,7 @@ function NotificationRow({
           {title}
         </span>
         {row.body ? (
-          <span className="block line-clamp-2 text-xs text-muted-foreground">
-            {row.body}
-          </span>
+          <NotificationBody body={row.body} className="block line-clamp-2 text-xs text-muted-foreground" />
         ) : null}
         <span className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
           {relative(row.created_at)}
