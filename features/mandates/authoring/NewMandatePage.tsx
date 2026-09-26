@@ -360,7 +360,7 @@ export function NewMandatePage() {
         </header>
 
         {/* THE TRIAD */}
-        <Section title="Input" hint="describe them — formalize later">
+        <Section title="Input" hint="what the job is given">
           <div className="rounded-xl border border-border/60 bg-card p-4">
             <DraftInputsEditor items={draftInputs} onChange={setDraftInputs} />
           </div>
@@ -368,7 +368,7 @@ export function NewMandatePage() {
 
         <TriadFlowMark />
 
-        <Section title="Goal" hint="lives only here — give it your best words">
+        <Section title="Goal" hint="what it must achieve">
           <div className="rounded-xl border border-primary/25 bg-card p-4">
             <ProTextarea
               value={goal}

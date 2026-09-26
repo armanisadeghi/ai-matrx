@@ -30,6 +30,7 @@ import type { MandateWorkspaceData } from "@/features/mandates/workspace/useMand
 import type { OfferedValue } from "@/features/mandates/provision-shapes";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 import { buildHolderDraftBrief } from "./holder-draft-brief";
+import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
 import type { HolderDraft } from "./ScopeHolderBar";
 import {
   RequestAccess,
@@ -126,25 +127,28 @@ export function HolderDraftPanel({
               <Fact
                 label="Values it will be given"
                 value={
+                  // Plain names, never the machine keys (UX punch list
+                  // 2026-09-26: "prompt_object, sample_response…" in mono).
                   offeredValues.length > 0
-                    ? offeredValues.map((v) => v.name).join(", ")
+                    ? offeredValues.map((v) => displayLabelForKey(v.name)).join(", ")
                     : "None — this job offers no values."
                 }
-                mono={offeredValues.length > 0}
               />
               <Fact
                 label="Answer it must produce"
                 value={
                   [
                     data.mandate.output_kind
-                      ? `kind: ${data.mandate.output_kind}`
+                      ? displayLabelForKey(data.mandate.output_kind)
                       : null,
                     data.contract.requiredOutputKeys.length > 0
-                      ? `keys: ${data.contract.requiredOutputKeys.join(", ")}`
+                      ? `with ${data.contract.requiredOutputKeys
+                          .map((k) => displayLabelForKey(k))
+                          .join(", ")}`
                       : null,
                   ]
                     .filter(Boolean)
-                    .join(" · ") || "No output contract declared."
+                    .join(" ") || "No output contract declared."
                 }
               />
               <Fact label="Owner" value={ownerLine} />

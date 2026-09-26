@@ -46,8 +46,8 @@ export function DraftInputsEditor({
           <Input
             value={item.name ?? ""}
             onChange={(e) => update(index, { name: e.target.value || undefined })}
-            placeholder="name — later"
-            className="h-8 w-32 font-mono text-[11.5px] max-sm:hidden"
+            placeholder="Name (optional)"
+            className="h-8 w-32 text-[11.5px] max-sm:hidden"
             aria-label={`Input ${index + 1} name (optional)`}
           />
           {/* D2 — one example, so whoever binds this job later can SEE what
@@ -57,15 +57,15 @@ export function DraftInputsEditor({
           <Input
             value={item.example ?? ""}
             onChange={(e) => update(index, { example: e.target.value || undefined })}
-            placeholder="example — optional"
+            placeholder="Example (optional)"
             className="h-8 w-40 text-[11.5px] max-lg:hidden"
             aria-label={`Input ${index + 1} example (optional)`}
           />
           <Input
             value={item.kind ?? ""}
             onChange={(e) => update(index, { kind: e.target.value || undefined })}
-            placeholder="kind — later"
-            className="h-8 w-28 font-mono text-[11.5px] max-md:hidden"
+            placeholder="Format (optional)"
+            className="h-8 w-28 text-[11.5px] max-md:hidden"
             aria-label={`Input ${index + 1} kind (optional)`}
           />
           <Button

@@ -61,11 +61,11 @@ export function OutputKindPicker({
     <CreatablePicker
       value={value ?? ""}
       options={[
-        { value: "", label: "No kind yet", hint: "decide later" },
+        { value: "", label: "Not chosen yet", hint: "optional" },
         ...(options ?? []),
       ]}
       onSelect={(next) => onSelect(next || null)}
-      placeholder="No kind yet"
+      placeholder="Not chosen yet"
       searchPlaceholder="Search kinds…"
       noun="kind"
       disabled={disabled}
