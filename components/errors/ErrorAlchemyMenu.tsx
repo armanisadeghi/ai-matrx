@@ -34,6 +34,7 @@ export type ErrorAlchemyMenuProps = {
   records?: ErrorAlchemyInput["records"];
   unsavedInput?: unknown;
   error?: unknown;
+  details?: Record<string, unknown>;
   size?: "xs" | "icon" | "sm";
   className?: string;
   /** The toast/alert label; defaults to the error's title. */
@@ -53,6 +54,7 @@ export function ErrorAlchemyMenu({
   records,
   unsavedInput,
   error,
+  details,
 }: ErrorAlchemyMenuProps) {
   const surface = useErrorSurfaceSnapshot();
   const self = useRef<HTMLSpanElement | null>(null);
@@ -68,6 +70,7 @@ export function ErrorAlchemyMenu({
       ...(records ? { records } : {}),
       ...(unsavedInput !== undefined ? { unsavedInput } : {}),
       ...(error !== undefined ? { error } : {}),
+      ...(details ? { details } : {}),
     }));
   const staticTitle = typeof input === "function" ? undefined : input.title;
   return (
