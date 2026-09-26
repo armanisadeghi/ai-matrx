@@ -145,7 +145,13 @@ describe("getResourceVisibility", () => {
 
     await expect(
       getResourceVisibility("agent_card", AGENT_CARD_ID),
-    ).resolves.toEqual({ isPublic: true, visibility: "public" });
+    ).resolves.toEqual({
+      isPublic: true,
+      visibility: "public",
+      // The capability names no organization column for a card, so the row's
+      // home organization is honestly unknown — never guessed.
+      homeOrganizationId: null,
+    });
 
     expect(mockRequests).toEqual([
       capabilitiesRequest("agent_card"),
