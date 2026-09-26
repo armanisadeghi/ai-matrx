@@ -53,6 +53,15 @@ export type Seam = {
   mayReverse: boolean;
   /** On the new side only: what must be true before it may go back (nothing left behind). */
   reverseChecks: SeamCheck[];
+  /**
+   * On the new side only (lane SWITCH-BACK-CARRIES): what Switch back will carry from the new tables
+   * into the older ones, one sentence per table (and the tables that stay in the new system), as the
+   * database measures it now — the Switch back dialog shows these before the press.
+   */
+  reverseCarries: string[];
+  /** What Switch back cannot carry, by name. When any, the press needs the person's confirmation. */
+  reverseNotCarried: string[];
+  reverseNeedsConfirm: boolean;
   switched: { direction: SeamState; at: string; by: string | null } | null;
   lastPress: {
     direction: SeamState;
@@ -83,7 +92,14 @@ type RawSeam = {
   needs_first: string;
   reverse_does: string;
   readiness: { ready: boolean; checked_at: string; checks: SeamCheck[] };
-  reverse_readiness?: { ready: boolean; checked_at: string; checks: SeamCheck[] } | null;
+  reverse_readiness?: {
+    ready: boolean;
+    checked_at: string;
+    checks: SeamCheck[];
+    carries?: string[] | null;
+    not_carried?: string[] | null;
+    needs_confirm?: boolean | null;
+  } | null;
   may_flip: boolean;
   may_reverse: boolean;
   switched: { direction: SeamState; at: string; by: string | null } | null;
@@ -144,6 +160,9 @@ export async function readSeamBoard(organizationId: string): Promise<SeamBoard> 
       mayFlip: s.may_flip,
       mayReverse: s.may_reverse,
       reverseChecks: s.reverse_readiness?.checks ?? [],
+      reverseCarries: Array.isArray(s.reverse_readiness?.carries) ? s.reverse_readiness.carries : [],
+      reverseNotCarried: Array.isArray(s.reverse_readiness?.not_carried) ? s.reverse_readiness.not_carried : [],
+      reverseNeedsConfirm: s.reverse_readiness?.needs_confirm === true,
       switched: s.switched,
       lastPress: s.last_press,
     })),
@@ -156,12 +175,15 @@ export async function pressSeam(options: {
   seamKey: string;
   to: SeamState;
   note?: string;
+  /** Switch back only: the person confirmed leaving behind what cannot be carried (named first). */
+  acceptNotCarried?: boolean;
 }): Promise<PressAnswer> {
   const { data, error } = await platformRpc().rpc("cutover_seam_press", {
     p_seam_key: options.seamKey,
     p_organization_id: options.organizationId,
     p_to: options.to,
     p_note: options.note ?? null,
+    p_accept_not_carried: options.acceptNotCarried === true,
   });
   if (error) return { ok: false, reason: "transport", says: `The switch could not be pressed: ${error.message}` };
   const answer = data as { ok: boolean; reason?: string; says?: string; state?: SeamState } | null;

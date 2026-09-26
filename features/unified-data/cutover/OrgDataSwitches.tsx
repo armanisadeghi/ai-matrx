@@ -12,6 +12,7 @@ import { Check, CircleDashed, Copy, Loader2, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { usePageCaptureContribution } from "@/components/agent-copy/page-capture/usePageCapture";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { pressSeam, readSeamBoard, type Seam, type SeamBoard, type SeamState } from "./seamSwitches";
@@ -36,6 +37,8 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
   const [loading, setLoading] = React.useState(true);
   const [pending, setPending] = React.useState<Pending>(null);
   const [pressing, setPressing] = React.useState(false);
+  // Switch back: the person's "leave these in the new system" (lane SWITCH-BACK-CARRIES).
+  const [leaveBehind, setLeaveBehind] = React.useState(false);
   const [outcome, setOutcome] = React.useState<{ seamKey: string; ok: boolean; says: string } | null>(null);
   const dispatch = useAppDispatch();
   // "Copy again" (lane COPY-AGAIN-DOOR): the mover's rerun from this page, then measured again.
@@ -81,10 +84,12 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
       seamKey: pending.seam.key,
       to: pending.to,
       note: pending.to === "new" ? "switched on the organization settings page" : "switched back on the organization settings page",
+      acceptNotCarried: pending.to === "old" && leaveBehind,
     });
     setOutcome({ seamKey: pending.seam.key, ok: answer.ok, says: answer.says });
     setPressing(false);
     setPending(null);
+    setLeaveBehind(false);
     await load();
   };
 
@@ -266,7 +271,10 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
       <ConfirmDialog
         open={pending != null}
         onOpenChange={(open) => {
-          if (!open && !pressing) setPending(null);
+          if (!open && !pressing) {
+            setPending(null);
+            setLeaveBehind(false);
+          }
         }}
         title={
           pending
@@ -282,10 +290,63 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
               : pending.seam.reverseDoes
             : ""
         }
+        content={pending?.to === "old" ? <SwitchBackPlan seam={pending.seam} leaveBehind={leaveBehind} onLeaveBehind={setLeaveBehind} /> : undefined}
         confirmLabel={pending?.to === "new" ? "Switch to the new system" : "Switch back"}
+        confirmDisabled={pending?.to === "old" && pending.seam.reverseNeedsConfirm && !leaveBehind}
         busy={pressing}
         onConfirm={press}
       />
+    </div>
+  );
+}
+
+/**
+ * WHAT SWITCH BACK CARRIES, BEFORE THE PRESS (lane SWITCH-BACK-CARRIES). The database's own plan
+ * (platform._cutover_carry_back): one sentence per older table it writes into, the tables that stay
+ * in the new system, and — by name — what it cannot carry, which the person must agree to leave
+ * behind before the button works.
+ */
+function SwitchBackPlan({
+  seam,
+  leaveBehind,
+  onLeaveBehind,
+}: {
+  seam: Seam;
+  leaveBehind: boolean;
+  onLeaveBehind: (value: boolean) => void;
+}) {
+  if (seam.reverseCarries.length === 0 && seam.reverseNotCarried.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-3 text-sm" data-testid="switch-back-plan">
+      {seam.reverseCarries.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <p className="font-medium">What switching back carries from the new system</p>
+          <ul className="flex flex-col gap-1 text-muted-foreground">
+            {seam.reverseCarries.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {seam.reverseNotCarried.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <p className="font-medium">What cannot be carried back</p>
+          <ul className="flex flex-col gap-1 text-muted-foreground">
+            {seam.reverseNotCarried.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+          <label className="flex items-start gap-2 text-sm">
+            <Checkbox
+              checked={leaveBehind}
+              onCheckedChange={(v) => onLeaveBehind(v === true)}
+              aria-label="Leave these in the new system and switch back"
+              data-testid="switch-back-leave-behind"
+            />
+            <span>Leave these in the new system and switch back.</span>
+          </label>
+        </div>
+      )}
     </div>
   );
 }

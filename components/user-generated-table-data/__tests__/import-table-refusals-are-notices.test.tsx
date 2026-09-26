@@ -18,18 +18,19 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 const bulkWrite = jest.fn();
-jest.mock("@/features/data-tables/service", () => ({ bulkWrite: (...a: unknown[]) => bulkWrite(...a) }));
-// The modal hands the client to the (mocked) createTable and nothing else, but
+const createTable = jest.fn();
+// The modal makes the table through THE ONE BIRTH (the service's createTable, lane
+// SWITCH-BACK-CARRIES) and writes its rows through the service's bulkWrite.
+jest.mock("@/features/data-tables/service", () => ({
+  bulkWrite: (...a: unknown[]) => bulkWrite(...a),
+  createTable: (...a: unknown[]) => createTable(...a),
+}));
+// Modules loaded beside the modal scope the client at import time — so a stand-in that
 // modules loaded beside it scope the client at import time — so a stand-in that
 // answers any chain, and is never asked anything in these clauses.
 jest.mock("@/utils/supabase/client", () => {
   const chain: unknown = new Proxy(function () {}, { get: () => chain, apply: () => chain });
   return { supabase: chain };
-});
-const createTable = jest.fn();
-jest.mock("@/utils/user-table-utls/table-utils", () => {
-  const actual = jest.requireActual("@/utils/user-table-utls/table-utils");
-  return { ...actual, createTable: (...a: unknown[]) => createTable(...a) };
 });
 
 // The description box is the app's voice-enabled textarea, which needs the whole

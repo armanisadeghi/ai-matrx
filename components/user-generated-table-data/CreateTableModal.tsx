@@ -21,10 +21,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  createTable,
   type FieldDefinition,
   VALID_DATA_TYPES,
 } from "@/utils/user-table-utls/table-utils";
+// THE ONE BIRTH (lane SWITCH-BACK-CARRIES found this door bypassing it): the service asks where
+// this organization's tables live, so a switched organization's new table is born in the store.
+import { createTable } from "@/features/data-tables/service";
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
@@ -168,7 +170,7 @@ export default function CreateTableModal({
       const initialFields = addFields && fields.length > 0 ? fields : null;
 
       // Call the utility function
-      const result = await createTable(supabase, {
+      const result = await createTable({
         tableName,
         description,
         isPublic,

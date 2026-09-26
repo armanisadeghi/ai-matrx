@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { supabase } from "@/utils/supabase/client";
 import Papa from "papaparse";
 import {
   Dialog,
@@ -32,7 +31,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  createTable,
   VALID_DATA_TYPES,
   normalizeDataType,
 } from "@/utils/user-table-utls/table-utils";
@@ -47,7 +45,7 @@ import {
   analyzeData,
   type DetectedField,
 } from "@/utils/user-table-utls/type-inference";
-import { bulkWrite } from "@/features/data-tables/service";
+import { bulkWrite, createTable } from "@/features/data-tables/service";
 import {
   isBulkOpError,
   isServiceFailure,
@@ -317,7 +315,7 @@ export default function ImportTableModal({
       }
 
       // Create the table with included fields only
-      const createResult = await createTable(supabase, {
+      const createResult = await createTable({
         tableName: tableName.trim(),
         description:
           description.trim() || `Imported table with ${fullData.length} rows`,

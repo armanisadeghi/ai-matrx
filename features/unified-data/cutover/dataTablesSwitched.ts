@@ -90,6 +90,36 @@ export async function tablesWhereTheyLive(client: SupabaseClient, organizationId
   };
 }
 
+/**
+ * TABLES MADE IN THE NEW SYSTEM, AFTER SWITCH BACK (lane SWITCH-BACK-CARRIES). While an organization
+ * was switched, a person or an agent may have made a table in the new system; it has no older twin,
+ * so once the organization switches back the older list cannot show it. The store says which tables
+ * those are (`platform.data_tables_born_in_the_new_system_for_me`); the home reads them where they
+ * live (`custom.table_list_everywhere`, which decides what I may see) and lists exactly those ids —
+ * never the older tables' same-id copies, which the older list already shows.
+ */
+export async function tablesMadeInTheNewSystem(client: SupabaseClient): Promise<Answer<HomeTable[]>> {
+  const { data, error } = await client
+    .schema("platform" as never)
+    .rpc("data_tables_born_in_the_new_system_for_me" as never);
+  if (error) return { ok: false, why: error.message };
+  const rows = (Array.isArray(data) ? data : []) as Array<Record<string, unknown>>;
+  const byOrg = new Map<string, Set<string>>();
+  for (const r of rows) {
+    if (typeof r.organization_id !== "string" || typeof r.table_id !== "string") continue;
+    const ids = byOrg.get(r.organization_id) ?? new Set<string>();
+    ids.add(r.table_id);
+    byOrg.set(r.organization_id, ids);
+  }
+  const out: HomeTable[] = [];
+  for (const [organizationId, ids] of byOrg) {
+    const answer = await tablesWhereTheyLive(client, organizationId);
+    if (!answer.ok) return answer;
+    out.push(...answer.data.filter((t) => ids.has(t.id)));
+  }
+  return { ok: true, data: out };
+}
+
 /** The settings card where the switch (and Switch back) lives. */
 export function switchBackHref(organizationId: string): string {
   return `/organizations/${organizationId}/settings#data`;

@@ -38,6 +38,7 @@ import {
   movedSentence,
   switchBackHref,
   switchedOrganizations,
+  tablesMadeInTheNewSystem,
   tablesWhereTheyLive,
   type SwitchedOrganization,
 } from "@/features/unified-data/cutover/dataTablesSwitched";
@@ -386,6 +387,18 @@ export default function TableCards() {
           }
         });
         setSwitched(orgs.data);
+        // Tables made in the new system while an organization was switched stay there after
+        // Switch back; list them where they live (lane SWITCH-BACK-CARRIES).
+        const made = await tablesMadeInTheNewSystem(supabase);
+        if (!made.ok) {
+          problems.push(made.why);
+        } else {
+          for (const t of made.data) {
+            if (!t.organization_id) continue;
+            placeTableInRecordStore(t.id, { organizationId: t.organization_id, userId: me });
+            moved.push(t as UserTable);
+          }
+        }
       }
       setMovedError(problems.length ? problems.join(" ") : null);
       const movedIds = new Set(moved.map((t) => t.id));

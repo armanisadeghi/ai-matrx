@@ -55,6 +55,7 @@ beforeEach(() => {
         error: null,
       };
     }
+    if (schema === "platform" && fn === "data_tables_born_in_the_new_system_for_me") return { data: [], error: null };
     if (schema === "custom" && fn === "table_list_everywhere" && args?.p_organization_id === ORG) {
       return {
         data: {
