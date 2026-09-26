@@ -37,13 +37,15 @@ Adopters: `/markdown-studio` → Annotate (`components/markdown-studio/AnnotateV
 
 ## Gates and dependencies (read before changing behaviour)
 
-- `ANCHOR_WRITES_ENABLED = false` (`constants.ts`): every passage write is refused before any request until RC-A5 (association payloads follow endpoint access) AND `migrations/rcb11_comment_collaboration_doors.sql` (a chair step: `cmt_add` p_anchor/p_suggested_text, `cmt_list` returns anchor/resolution/suggestion, `cmt_mention_candidates`, `cmt_mention_notify`) are applied. Flip in the same commit that records both. Until then Resolve/Reopen and people-mentions are absent (the panel probes the doors), not dead.
+- `ANCHOR_WRITES_ENABLED = true` (`constants.ts`) since 2026-09-26: RC-A5 and `migrations/rcb11_comment_collaboration_doors.sql` are applied. Kept as a code constant (never an env toggle); setting it false refuses every passage write before any request with `ANCHOR_WRITES_OFF_SENTENCE`, never retryable, and a passage comment then offers "Post on the whole document".
+- Failed saves never lie: every failure is a `SidecarError` carrying `retryable` — Retry shows only when trying again can work (not for a switched-off capability or a missing permission); unrecognised errors are named by their code (`errors.ts`, `__tests__/honest-failures.test.tsx`).
+- Edits are compare-and-swap against the text/version captured WHEN THE EDITOR OPENED (a realtime reload never moves the base — `__tests__/cas-base-frozen.test.tsx`). The door answers a stale edit with `PT409` (HTTP 409) + the current text; never 40001, which PostgREST retries as a serialization failure (`migrations/rcb11_cmt_edit_conflict_answers_http_conflict.sql`).
 - Edges onto a `content.document` need `@ai-matrx/associations` with the `document` token (regenerated in aidream, awaiting publish); until installed the panel says highlights and links cannot load for that record type, and comments still work.
 - Realtime: `platform.comments` is in `supabase_realtime` (`migrations/rcb11_comments_realtime_publication.sql`, applied 2026-09-25). Associations are not published; highlights/links refresh on own writes and on reconnect.
 
 ## Checks
 
-`npx jest features/rich-document/annotations` (35 tests incl. `sidecar-verify-findings.test.tsx`, 7/12 red on the verified code; mutations proven red: first-match resolver, UTF-16 offsets, projection skip/window, gate on, never-orphan). DB forcing suite: aidream `uv run pytest db/tests/test_rcb11_comment_collaboration.py` (clone, rolled back; `RCB11_BEFORE=1` = 9/9 red).
+`npx jest features/rich-document/annotations` (46 tests incl. `honest-failures`, `cas-base-frozen`; earlier: 35 tests incl. `sidecar-verify-findings.test.tsx`, 7/12 red on the verified code; mutations proven red: first-match resolver, UTF-16 offsets, projection skip/window, gate on, never-orphan). DB forcing suite: aidream `uv run pytest db/tests/test_rcb11_comment_collaboration.py` (clone, rolled back; `RCB11_BEFORE=1` = 9/9 red).
 
 ## Changelog
 
