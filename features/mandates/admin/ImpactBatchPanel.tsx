@@ -91,7 +91,9 @@ import {
   type ImpactVerdict,
   type StandingImpact,
   type WriteContext,
+  ADMIN_WRITE_CONTEXT,
 } from "./impact";
+import { adminDoorOpen } from "@/lib/api/adminDoor";
 import { ImpactAgentCompanion, type CompanionSection } from "./ImpactAgentCompanion";
 import { useImpactAdvance } from "./impact-advance";
 import { useImpactSettingsFix, type SettingsFixOutcome } from "./impact-settings-fix";
@@ -238,10 +240,11 @@ export function ImpactBatchPanel({
   // owner lane for anyone else (the server judges). Never on behalf.
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const actorUserId = useAppSelector(selectUserId);
-  const writeContext: WriteContext = {
-    posture: isSuperAdmin ? "admin" : "mine",
-    actorUserId: actorUserId ?? null,
-  };
+  // THE ADMIN SEAT (Arman, 2026-09-26): opened from the admin section, the
+  // panel never treats the signed-in admin's pins as "your own".
+  const writeContext: WriteContext = adminDoorOpen()
+    ? ADMIN_WRITE_CONTEXT
+    : { posture: isSuperAdmin ? "admin" : "mine", actorUserId: actorUserId ?? null };
   // THE ORG GATE (D2) — the same one MandatesConsole has. A window restored on
   // a full page load mounts before app-context and auth hydrate; `callApi`
   // then fails its own preflight ("Select an organization…") and the panel

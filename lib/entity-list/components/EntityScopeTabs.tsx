@@ -48,7 +48,7 @@ import { cn } from "@/lib/utils";
 import {
   makeScope,
   scopeIndustryId,
-  scopeOrgId,
+  scopeNarrowId,
   type ListScope,
   type ListScopeKind,
 } from "@/lib/list-scope/types";
@@ -102,6 +102,22 @@ const SCOPE_META: Record<
     icon: Landmark,
     title: "Built into the platform by Matrx",
   },
+  // ── Admin platform scopes (never a personal seat) ──
+  platform_orgs: {
+    label: "Organizations",
+    icon: Building2,
+    title: "Every organization's records — narrow to one organization",
+  },
+  platform_users: {
+    label: "Users",
+    icon: User,
+    title: "Every person's own records — narrow to one person",
+  },
+  platform_all: {
+    label: "All",
+    icon: Globe,
+    title: "The whole platform: system, organizations and people",
+  },
 };
 
 function CountPill({ n, active }: { n: number | null; active: boolean }) {
@@ -144,11 +160,9 @@ export function EntityScopeTabs({
         // typed helpers — never by string-splitting the scope key.
         const narrowedId = !active
           ? null
-          : kind === "orgs"
-            ? scopeOrgId(scope)
-            : kind === "industry"
-              ? scopeIndustryId(scope)
-              : null;
+          : kind === "industry"
+            ? scopeIndustryId(scope)
+            : scopeNarrowId(scope);
         const narrowed = narrowedId
           ? options.find((o) => o.id === narrowedId)
           : undefined;

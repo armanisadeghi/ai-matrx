@@ -22,6 +22,7 @@ import type {
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
 import { EMPTY_FACETS, EMPTY_SCOPE_COUNTS } from "@/lib/entity-list/types";
+import { ADMIN_LIST_SCOPES } from "@/lib/list-scope/types";
 import { ADMIN_MANDATES_HOME, adminMandateRecordHref as adminMandateHref } from "@/features/mandates/admin-routes";
 import { ADMIN_MANDATE_COLUMNS } from "./columns";
 import { MandatePeek } from "./MandatePeek";
@@ -120,7 +121,8 @@ export const adminMandateListConfig: EntityListConfig<MandateAdminRow> = {
   entityLabel: { singular: "mandate", plural: "mandates" },
   sourceFeature: "agents-other",
   getRowEntity: (row) => ({ type: "mandate", id: row.id, title: row.name }),
-  scopes: ["mine", "orgs", "system"],
+  // THE ADMIN SEAT (Arman, 2026-09-26): platform scopes only — never Mine / My Orgs.
+  scopes: ADMIN_LIST_SCOPES,
   service: {
     fetchPage: async () => ({ rows: [], total: 0 }),
     fetchCounts: async () => EMPTY_SCOPE_COUNTS,

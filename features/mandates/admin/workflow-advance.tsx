@@ -49,13 +49,14 @@ export interface WorkflowAdvanceEligibility {
 /** Can this workflow rung be moved to its newest published version from a batch? */
 export function workflowAdvanceEligibility(
   verdict: WorkflowImpactVerdict,
-  actorUserId: string | null,
 ): WorkflowAdvanceEligibility {
   if (verdict.blocker) {
     const meta = WORKFLOW_BLOCKER_META[verdict.blocker];
     return { batchable: false, why: `${meta.label}: ${meta.remedy}` };
   }
-  if (verdict.principal_kind === "user" && verdict.subject_user_id !== actorUserId) {
+  // THE ADMIN SEAT (Arman, 2026-09-26): the admin never acts as themselves, so
+  // no person's pin is "mine" here — the signed-in admin's own included.
+  if (verdict.principal_kind === "user") {
     return {
       batchable: false,
       why: "A person's own pin — theirs to advance, never moved on their behalf.",
@@ -83,7 +84,7 @@ function rungWords(verdict: WorkflowImpactVerdict): string {
       ? "the job's default"
       : verdict.principal_kind === "org"
         ? "an organization's answer"
-        : "your own answer";
+        : "a person's own answer";
   return `${verdict.mandate_key} (${where}): ${verdict.workflow_name} ${workflowPinLabel(verdict)} → ${workflowNewestLabel(verdict)} [${verdict.grade}]`;
 }
 

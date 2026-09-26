@@ -17,10 +17,13 @@
 // code-scan cells (Declared in, Called from, Call sites, Language) are read
 // for the page's keys AFTER the paint (./store.ts `ensureMandateSourceFacts`).
 //
-// Scopes (admin list — the creator ruling):
-//   mine    created by the viewer
-//   orgs    homed in one of the viewer's organizations (narrowable to one)
-//   system  homed in the platform's system organization
+// Scopes (admin list — THE ADMIN SEAT, Arman 2026-09-26: "No one acts as
+// themselves in admin"). The corpus is the whole platform; nothing is scoped
+// to the signed-in admin:
+//   system          homed in the platform's system organization
+//   platform_orgs   homed in any organization (narrowable to one)
+//   platform_users  homed in any person's personal organization (narrowable to one person)
+//   platform_all    everything
 
 import type { AppDispatch } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
@@ -60,13 +63,30 @@ import {
 } from "./store";
 import type { MandateAdminRow } from "./types";
 
+/** The admin list's scope kinds → the words `mnd_admin_list` answers. */
+const SERVER_SCOPE: Partial<Record<EntityListQuery["scope"]["kind"], string>> = {
+  system: "system",
+  platform_orgs: "orgs",
+  platform_users: "users",
+  platform_all: "all",
+};
+
 /** The scope half of every call. */
 export function scopeArgs(query: Pick<EntityListQuery, "scope" | "search" | "filters">) {
   const scope = query.scope;
+  const p_scope = SERVER_SCOPE[scope.kind];
+  if (!p_scope) {
+    // A personal-seat scope never reaches the admin list (check:admin-no-personal-seat).
+    throw new Error(
+      `The admin mandate list has no "${scope.kind}" scope. Use System, Organizations, Users or All.`,
+    );
+  }
   return {
-    p_scope: scope.kind,
+    p_scope,
     p_org_id:
-      scope.kind === "orgs" && scope.organizationId ? scope.organizationId : undefined,
+      (scope.kind === "platform_orgs" || scope.kind === "platform_users") && scope.organizationId
+        ? scope.organizationId
+        : undefined,
     p_search: query.search.trim() || undefined,
     p_filters: query.filters as unknown as Json,
   };
@@ -209,7 +229,8 @@ function buildPageRows(
       serves: answer.serves as MandateAdminRow["serves"],
       servesDetail: answer.serves_detail,
       backsCount: answer.backs_count,
-      homeLabel: answer.home_label,
+      homeLabel: answer.owner_label ?? answer.home_label,
+      ownerLevel: answer.owner_level ?? row.ownerLevel,
       contractCheck: answer.contract_check ?? row.contractCheck,
       sources: listState.sourceFacts.get(answer.mandate_key) ?? null,
       sourcesPending: !checked,
@@ -241,17 +262,25 @@ function buildPageRows(
 }
 
 export function countsFromAnswer(answer: MandateAdminCountsAnswer): EntityScopeCounts {
-  const options: ScopeNarrowOption[] = answer.orgs_narrow.map((option) => ({
-    id: option.id,
-    label: option.label,
-    count: option.count,
-  }));
+  const options = (list: MandateAdminCountsAnswer["orgs_narrow"] | undefined): ScopeNarrowOption[] =>
+    (list ?? []).map((option) => ({ id: option.id, label: option.label, count: option.count }));
+  const orgs = options(answer.orgs_narrow);
+  const users = options(answer.users_narrow);
   return {
-    byKind: { mine: answer.mine, orgs: answer.orgs, system: answer.system },
-    narrow: options.length > 0 ? { orgs: options } : {},
-    ...(options.length === 0
-      ? { narrowUnavailable: { orgs: "No organization mandates." } }
-      : {}),
+    byKind: {
+      system: answer.system,
+      platform_orgs: answer.orgs,
+      platform_users: answer.users,
+      platform_all: answer.all,
+    },
+    narrow: {
+      ...(orgs.length > 0 ? { platform_orgs: orgs } : {}),
+      ...(users.length > 0 ? { platform_users: users } : {}),
+    },
+    narrowUnavailable: {
+      ...(orgs.length === 0 ? { platform_orgs: "No organization owns a mandate." } : {}),
+      ...(users.length === 0 ? { platform_users: "No person owns a mandate." } : {}),
+    },
   };
 }
 
@@ -297,9 +326,11 @@ export function createMandateAdminService(
     },
     fetchCounts: async (query) => {
       const reports = await reportsNow();
+      // Counts answer EVERY tab at once, whatever tab is active (the shell
+      // asks with its generic query), so the scope half is the whole platform.
       const args = {
         p_mode: "counts",
-        ...scopeArgs(query),
+        ...scopeArgs({ ...query, scope: { kind: "platform_all" } }),
         p_facts: buildFacts(reports, sectionsFor(query)) as Json,
       };
       const answer = await readDbOnce(JSON.stringify(args), () =>

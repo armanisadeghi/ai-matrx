@@ -25,6 +25,10 @@ export interface MandateAdminPageRow {
   backs_count: number;
   home_label: string;
   feature_label: string;
+  /** The record's OWNER LEVEL — never the viewer (the admin seat, 2026-09-26). */
+  owner_level: "system" | "org" | "user";
+  /** "System", the organization's name, or the person who owns it. */
+  owner_label: string;
   /** "Mismatch" | "Matches" | "Not checked" — the persisted contract verdicts. */
   contract_check: MandateContractState;
 }
@@ -71,11 +75,15 @@ export interface MandateAdminPageAnswer {
   console?: MandateAdminPageConsole;
 }
 
+/** The admin seat's platform scopes — there is no "mine" (Arman, 2026-09-26). */
 export interface MandateAdminCountsAnswer {
-  mine: number;
-  orgs: number;
   system: number;
+  orgs: number;
+  users: number;
+  all: number;
   orgs_narrow: { id: string; label: string; count: number }[];
+  /** One option per person; `id` is that person's personal organization. */
+  users_narrow: { id: string; label: string; count: number }[];
 }
 
 export type MandateAdminFacetsAnswer = Record<string, { value: string; count: number }[]>;

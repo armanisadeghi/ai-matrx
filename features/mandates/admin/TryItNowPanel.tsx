@@ -40,6 +40,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { adminDoorOpen } from "@/lib/api/adminDoor";
 import { toast } from "@/lib/toast";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
 import { OutputPreview } from "./bench-output-preview";
@@ -148,6 +149,11 @@ export function TryItNowPanel({
   const dispatch = useAppDispatch();
   const { launchMandate } = useAgentLauncher();
   const [testMode, setTestMode] = useState<"server" | "display">("server");
+  // THE ADMIN SEAT (Arman, 2026-09-26): in the admin section nobody acts as
+  // themselves, so the "My display preview" (the signed-in admin's own
+  // resolved Holder) is not offered there — the bench tests the record's
+  // system default only.
+  const adminSeat = adminDoorOpen();
   const viewerUserId = useAppSelector(selectUserId);
   // The org this test RUNS UNDER goes on the wire (principal.organization_id),
   // so it must be the org the transport itself would send — the EXPLICIT
@@ -505,8 +511,15 @@ export function TryItNowPanel({
       ) : null}
       <PropertyRow
         label="Test mode"
-        help={`${allowPrincipalSelection ? "Server test executes the selected test context" : "Server test executes the system default"} and returns diagnostics. My display preview executes your resolved Mandate Holder with saved display defaults; it does not reproduce the original feature. Test inputs come from the signed-in organization, so cross-principal input compatibility has not been verified.`}
+        help={
+          adminSeat
+            ? "Server test executes this job's system default and returns diagnostics."
+            : `${allowPrincipalSelection ? "Server test executes the selected test context" : "Server test executes the system default"} and returns diagnostics. My display preview executes your resolved Mandate Holder with saved display defaults; it does not reproduce the original feature. Test inputs come from the signed-in organization, so cross-principal input compatibility has not been verified.`
+        }
         value={
+          adminSeat ? (
+            "Server test"
+          ) : (
           <Select
             value={testMode}
             onValueChange={(value: "server" | "display") => {
@@ -525,9 +538,10 @@ export function TryItNowPanel({
               <SelectItem value="display">My display preview</SelectItem>
             </SelectContent>
           </Select>
+          )
         }
       />
-      {allowPrincipalSelection ? (
+      {allowPrincipalSelection && !adminSeat ? (
         <PropertyRow
           label="Test context"
           value={

@@ -36,7 +36,9 @@ import {
   type ImpactVerdict,
   type RevertWindow,
   type WriteContext,
+  ADMIN_WRITE_CONTEXT,
 } from "./impact";
+import { adminDoorOpen } from "@/lib/api/adminDoor";
 
 export type ImpactWriteBusy = "advance" | "revert" | null;
 
@@ -113,10 +115,15 @@ export function useImpactAdvance({
   const dispatch = useAppDispatch();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const actorUserId = useAppSelector(selectUserId);
-  const writeContext: WriteContext = context ?? {
-    posture: isSuperAdmin ? "admin" : "mine",
-    actorUserId: actorUserId ?? null,
-  };
+  // THE ADMIN SEAT (Arman, 2026-09-26): inside the admin section nobody acts
+  // as themselves — no pin is "mine", so the actor is never the signed-in
+  // admin. The page decides (adminDoorOpen), the same way every shared
+  // component picks its admin door.
+  const writeContext: WriteContext =
+    context ??
+    (adminDoorOpen()
+      ? ADMIN_WRITE_CONTEXT
+      : { posture: isSuperAdmin ? "admin" : "mine", actorUserId: actorUserId ?? null });
   const [batches, setBatches] = useState<AdvanceReport[]>([]);
   // Merged display batch id → the server batches behind it.
   const [parts, setParts] = useState<Record<string, BatchPart[]>>({});
@@ -155,7 +162,7 @@ export function useImpactAdvance({
     const verdicts = legs.flatMap((leg) => leg.verdicts);
     if (verdicts.length === 0) {
       if (chosen.length > 0) {
-        toast.error("None of the chosen pins is yours to move — a person's own pin is theirs to advance.");
+        toast.error("None of the chosen pins can be moved here — a person's own pin is theirs to advance.");
       }
       return null;
     }

@@ -86,18 +86,43 @@ describe("packing the facts", () => {
 });
 
 describe("reading the answers", () => {
-  it("scope arguments: the org narrowing only on the Org tab", () => {
-    expect(scopeArgs(query({ scope: { kind: "orgs", organizationId: "org-1" } })).p_org_id).toBe("org-1");
-    expect(scopeArgs(query({ scope: { kind: "orgs", organizationId: null } })).p_org_id).toBeUndefined();
-    expect(scopeArgs(query({ search: "  " })).p_search).toBeUndefined();
+  it("scope arguments: platform scopes only, narrowing on Organizations and Users", () => {
+    expect(scopeArgs(query({ scope: { kind: "platform_orgs", organizationId: "org-1" } }))).toMatchObject({ p_scope: "orgs", p_org_id: "org-1" });
+    expect(scopeArgs(query({ scope: { kind: "platform_orgs", organizationId: null } })).p_org_id).toBeUndefined();
+    expect(scopeArgs(query({ scope: { kind: "platform_users", organizationId: "p-1" } }))).toMatchObject({ p_scope: "users", p_org_id: "p-1" });
+    expect(scopeArgs(query({ scope: { kind: "platform_all" } })).p_scope).toBe("all");
+    expect(scopeArgs(query({ scope: { kind: "system" }, search: "  " })).p_search).toBeUndefined();
   });
 
-  it("tab counts and org narrowing", () => {
+  it("THE ADMIN SEAT: a personal-seat scope never reaches the admin list", () => {
+    // Arman, 2026-09-26: "No one acts as themselves in admin."
+    expect(() => scopeArgs(query({ scope: { kind: "mine" } }))).toThrow(/no "mine" scope/);
+    expect(() => scopeArgs(query({ scope: { kind: "orgs", organizationId: null } }))).toThrow(/no "orgs" scope/);
+  });
+
+  it("tab counts and owner narrowing", () => {
     expect(
-      countsFromAnswer({ mine: 102, orgs: 103, system: 469, orgs_narrow: [{ id: "o1", label: "Titanium", count: 2 }] }),
-    ).toEqual({ byKind: { mine: 102, orgs: 103, system: 469 }, narrow: { orgs: [{ id: "o1", label: "Titanium", count: 2 }] } });
-    expect(countsFromAnswer({ mine: 0, orgs: 0, system: 1, orgs_narrow: [] }).narrowUnavailable).toEqual({
-      orgs: "No organization mandates.",
+      countsFromAnswer({
+        system: 469,
+        orgs: 3,
+        users: 275,
+        all: 747,
+        orgs_narrow: [{ id: "o1", label: "Titanium", count: 2 }],
+        users_narrow: [{ id: "p1", label: "Aamir Hussain", count: 19 }],
+      }),
+    ).toEqual({
+      byKind: { system: 469, platform_orgs: 3, platform_users: 275, platform_all: 747 },
+      narrow: {
+        platform_orgs: [{ id: "o1", label: "Titanium", count: 2 }],
+        platform_users: [{ id: "p1", label: "Aamir Hussain", count: 19 }],
+      },
+      narrowUnavailable: {},
+    });
+    expect(
+      countsFromAnswer({ system: 1, orgs: 0, users: 0, all: 1, orgs_narrow: [], users_narrow: [] }).narrowUnavailable,
+    ).toEqual({
+      platform_orgs: "No organization owns a mandate.",
+      platform_users: "No person owns a mandate.",
     });
   });
 });

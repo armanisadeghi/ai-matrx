@@ -180,6 +180,15 @@ Invariants the template carries, all of them learned the hard way:
 
 ## Change log
 
+- 2026-09-26 — THE ADMIN SEAT: three admin-only platform kinds join the
+  vocabulary — `platform_orgs` (every organization, narrowable to one),
+  `platform_users` (every person's own records, narrowable to one person by
+  their personal org id) and `platform_all` — exported with `system` as
+  `ADMIN_LIST_SCOPES`; `PERSONAL_SEAT_SCOPES` (mine/orgs/shared) are banned on
+  admin pages (`pnpm check:admin-no-personal-seat`). `scopeNarrowId` /
+  `scopeKey` / `makeScope` carry the narrowing; `applyListScope` refuses them
+  (admin RPCs only). First users: the admin mandate list (`mnd_admin_list`)
+  and the admin System Agents list (`agx_list_scoped`).
 - 2026-08-15 — Scoped-list RPCs now explicitly require qualified relation
   columns so `RETURNS TABLE` output variables cannot shadow source columns.
 - 2026-08-08 — `ListScopeSwitcher` now self-loads organizations through the

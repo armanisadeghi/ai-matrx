@@ -87,15 +87,16 @@ describe("batch advance for workflow pins", () => {
   };
 
   it("moves a pinned rung that is behind a published version", () => {
-    expect(workflowAdvanceEligibility(base, "me").batchable).toBe(true);
+    expect(workflowAdvanceEligibility(base).batchable).toBe(true);
   });
 
   it("refuses, with the reason, everything that cannot move", () => {
-    expect(workflowAdvanceEligibility({ ...base, blocker: "tracks_latest" }, "me")).toMatchObject({ batchable: false });
-    expect(workflowAdvanceEligibility({ ...base, latest_version_id: null }, "me").why).toMatch(/no published version/);
-    expect(workflowAdvanceEligibility({ ...base, behind_latest: false }, "me").why).toMatch(/newest/);
+    expect(workflowAdvanceEligibility({ ...base, blocker: "tracks_latest" })).toMatchObject({ batchable: false });
+    expect(workflowAdvanceEligibility({ ...base, latest_version_id: null }).why).toMatch(/no published version/);
+    expect(workflowAdvanceEligibility({ ...base, behind_latest: false }).why).toMatch(/newest/);
     const theirs = { ...base, holder_kind: "binding" as const, principal_kind: "user" as const, subject_user_id: "someone" };
-    expect(workflowAdvanceEligibility(theirs, "me").why).toMatch(/person's own pin/);
-    expect(workflowAdvanceEligibility({ ...theirs, subject_user_id: "me" }, "me").batchable).toBe(true);
+    expect(workflowAdvanceEligibility(theirs).why).toMatch(/person's own pin/);
+    // THE ADMIN SEAT: even the signed-in admin's own pin is a person's pin.
+    expect(workflowAdvanceEligibility({ ...theirs, subject_user_id: "me" }).batchable).toBe(false);
   });
 });

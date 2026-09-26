@@ -74,8 +74,11 @@ export interface MandateAdminRow extends MandateRow {
 
   createdBy: string | null;
   organizationId: string | null;
-  /** "System" or the owning organization's name. */
+  /** WHO OWNS IT: "System", the owning organization's name, or the person
+   *  whose personal organization homes it. Never the viewer. */
   homeLabel: string;
+  /** The owner LEVEL — what an admin action on this record acts at. */
+  ownerLevel: "system" | "org" | "user";
   isSystem: boolean;
   createdAt: string | null;
 

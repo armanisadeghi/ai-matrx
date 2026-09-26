@@ -594,9 +594,15 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
   facetColumn(
     "homeLabel",
     "Owner",
-    140,
-    (row) => <TextCell value={row.homeLabel} />,
-    { defaultHidden: true },
+    170,
+    (row) => (
+      <span className="flex min-w-0 items-center gap-1.5">
+        <span className="shrink-0 rounded bg-muted px-1 text-[10px] font-medium uppercase text-muted-foreground">
+          {row.ownerLevel === "system" ? "System" : row.ownerLevel === "user" ? "User" : "Org"}
+        </span>
+        {row.ownerLevel === "system" ? null : <TextCell value={row.homeLabel} />}
+      </span>
+    ),
   ),
   {
     id: "goal",

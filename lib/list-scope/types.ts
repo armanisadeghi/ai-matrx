@@ -39,8 +39,29 @@
 // A page renders one tab per scope the surface supports; switching scopes
 // changes the declared query, never silently reinterprets RLS output.
 
+// THE ADMIN SEAT (Arman, 2026-09-26): "No one acts as themselves in admin."
+// An admin page never shows mine / orgs / shared — those are PERSONAL-SEAT
+// questions ("what did I make?", "what does MY team have?"). An admin page
+// answers platform questions instead, and declares ADMIN_LIST_SCOPES:
+//
+//   system          → what does the platform ship?
+//   platform_orgs   → every organization's records   (narrowable to one org)
+//   platform_users  → every person's own records     (narrowable to one person,
+//                                                      by their personal org id)
+//   platform_all    → the whole platform corpus
+//
+// Guarded by `pnpm check:admin-no-personal-seat`.
+
 export type ListScopeKind =
-  "mine" | "orgs" | "shared" | "industry" | "public" | "system";
+  | "mine"
+  | "orgs"
+  | "shared"
+  | "industry"
+  | "public"
+  | "system"
+  | "platform_orgs"
+  | "platform_users"
+  | "platform_all";
 
 export type ListScope =
   | { kind: "mine" }
@@ -51,7 +72,24 @@ export type ListScope =
   | { kind: "industry"; industryId: string | null }
   | { kind: "public" }
   /** Platform-published records. Admin-only, gated again server-side. */
-  | { kind: "system" };
+  | { kind: "system" }
+  /** ADMIN: every organization's records. `organizationId` narrows to one. */
+  | { kind: "platform_orgs"; organizationId: string | null }
+  /** ADMIN: every person's own records. `organizationId` = one person's personal org. */
+  | { kind: "platform_users"; organizationId: string | null }
+  /** ADMIN: the whole platform corpus. */
+  | { kind: "platform_all" };
+
+/** The scopes an ADMIN page declares — never a personal-seat scope. */
+export const ADMIN_LIST_SCOPES: ListScopeKind[] = [
+  "system",
+  "platform_orgs",
+  "platform_users",
+  "platform_all",
+];
+
+/** The personal-seat scopes: legal on user pages, banned on admin pages. */
+export const PERSONAL_SEAT_SCOPES: readonly ListScopeKind[] = ["mine", "orgs", "shared"];
 
 export const DEFAULT_LIST_SCOPE: ListScope = { kind: "mine" };
 
@@ -70,6 +108,9 @@ export const LIST_SCOPE_KINDS: readonly ListScopeKind[] = [
   "industry",
   "public",
   "system",
+  "platform_orgs",
+  "platform_users",
+  "platform_all",
 ];
 
 // ── Narrowing helpers ───────────────────────────────────────────────────────
@@ -132,6 +173,8 @@ export function scopeIndustryId(scope: ListScope): string | null {
  */
 export function scopeNarrowId(scope: ListScope): string | null {
   if (scope.kind === "orgs") return scope.organizationId;
+  if (scope.kind === "platform_orgs" || scope.kind === "platform_users")
+    return scope.organizationId;
   if (scope.kind === "industry") return scope.industryId;
   return null;
 }
@@ -142,6 +185,8 @@ export function scopeKey(scope: ListScope): string {
     return scope.organizationId ? `orgs:${scope.organizationId}` : "orgs";
   if (scope.kind === "industry")
     return scope.industryId ? `industry:${scope.industryId}` : "industry";
+  if (scope.kind === "platform_orgs" || scope.kind === "platform_users")
+    return scope.organizationId ? `${scope.kind}:${scope.organizationId}` : scope.kind;
   return scope.kind;
 }
 
@@ -163,6 +208,12 @@ export function makeScope(
       return { kind: "public" };
     case "system":
       return { kind: "system" };
+    case "platform_orgs":
+      return { kind: "platform_orgs", organizationId: narrowToId };
+    case "platform_users":
+      return { kind: "platform_users", organizationId: narrowToId };
+    case "platform_all":
+      return { kind: "platform_all" };
     default: {
       const _exhaustive: never = kind;
       throw new Error(

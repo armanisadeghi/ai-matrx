@@ -93,6 +93,15 @@ export function applyListScope<Q extends EqCapable<Q>>(
         "[list-scope] applyListScope does not support 'public' — each feature " +
           "names its own published-visibility predicate. Use its *_list_scoped RPC.",
       );
+    case "platform_orgs":
+    case "platform_users":
+    case "platform_all":
+      throw new Error(
+        `[list-scope] applyListScope does not support '${scope.kind}' — the admin ` +
+          "platform scopes are admin-gated and need the org/person classification " +
+          "(system vs organization vs personal), which is a join. Use this feature's " +
+          "admin RPC, which re-verifies public.is_platform_admin() server-side.",
+      );
     default: {
       const _exhaustive: never = scope;
       throw new Error(`[list-scope] unknown scope kind: ${JSON.stringify(_exhaustive)}`);

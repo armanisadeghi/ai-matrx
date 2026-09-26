@@ -4,8 +4,9 @@
 //
 // /administration/intelligence/mandates — the NEW admin mandate list, built
 // beside the old console (features/mandates/admin/MandatesConsole.tsx, left
-// untouched) on the canonical `EntityListPage`. One top row: Mine / Org /
-// System on the left, New mandate on the right; the table's own title row
+// untouched) on the canonical `EntityListPage`. One top row: the PLATFORM
+// scopes — System / Organizations / Users / All (the admin seat never acts as
+// itself: no Mine, no My Orgs, Arman 2026-09-26) — on the left; the table's own title row
 // carries search, saved views and the column picker. The whole query lives in
 // the URL, so Back restores scope, search, filters and sort.
 
@@ -146,7 +147,9 @@ export function MandateAdminListPage() {
         const workflowVerdicts = rows
           .flatMap((row) => row.workflowVerdicts)
           .filter(
-            (v): v is WorkflowImpactVerdict => workflowAdvanceEligibility(v, userId ?? null).batchable,
+            // THE ADMIN SEAT: no pin is "mine" here — a person's own pin is
+            // theirs to advance, the signed-in admin's included.
+            (v): v is WorkflowImpactVerdict => workflowAdvanceEligibility(v).batchable,
           );
         if (verdicts.length === 0 && workflowVerdicts.length === 0) {
           return {
