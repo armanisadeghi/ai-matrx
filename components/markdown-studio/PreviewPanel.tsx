@@ -31,6 +31,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { runV2Parser } from "@/components/admin/markdown-tester/utils/run-v2-parser";
@@ -178,7 +185,7 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
     return (
       <div className="@container flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card/30">
         {/* ONE header row at every width (UI audit B): the mode strip gives up
-            labels and scrolls before anything wraps onto a second row. */}
+            labels before anything wraps onto a second row. */}
         <div className="flex min-w-0 items-center gap-2 border-b border-border px-3 py-1.5">
           {onShowSource && (
             <button
@@ -191,7 +198,30 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
               Source
             </button>
           )}
-          <div className="flex min-w-0 shrink items-center gap-0.5 overflow-x-auto rounded-md border border-border bg-background/40 p-0.5">
+          {/* A phone-width pane: seven modes never fit, so the same slot holds
+              a compact select (control-type rule: >4 options is a select). */}
+          <Select value={mode} onValueChange={(v) => onModeChange(v as PreviewMode)}>
+            <SelectTrigger
+              aria-label="Preview mode"
+              className="h-11 w-auto min-w-0 shrink gap-1.5 px-2 text-xs @md:hidden"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PREVIEW_MODES.map((m) => {
+                const Icon = MODE_META[m].icon;
+                return (
+                  <SelectItem key={m} value={m}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Icon className="h-3.5 w-3.5 shrink-0" />
+                      {MODE_META[m].label}
+                    </span>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+          <div className="hidden min-w-0 shrink items-center gap-0.5 overflow-x-auto rounded-md border border-border bg-background/40 p-0.5 @md:flex">
             {PREVIEW_MODES.map((m) => {
               const Icon = MODE_META[m].icon;
               return (
@@ -210,9 +240,8 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
                 >
                   <Icon className="h-3 w-3 shrink-0" />
                   {/* The half-width desktop split: inactive tabs go icon-only, the
-                      active one stays named. A phone-width pane: all icon-only,
-                      so the header stays ONE row. Measured on the PANE. */}
-                  <span className={cn(mode === m ? "hidden @md:inline" : "hidden @3xl:inline")}>
+                      active one stays named. Measured on the PANE. */}
+                  <span className={cn(mode === m ? "inline" : "hidden @3xl:inline")}>
                     {MODE_META[m].label}
                   </span>
                 </button>
