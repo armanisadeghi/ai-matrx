@@ -27,23 +27,65 @@ const rule = (
 
 export const PLACEMENT_RULES: readonly PlacementRule[] = [
   // ── Agents ────────────────────────────────────────────────────────────────
+  // Arman, 2026-09-26: Agents holds ONLY jobs that create or modify agents
+  // and system prompts. A job belongs where its feature lives, never under
+  // Agents because an agent fills it. (Display sections: index-model.ts.)
   ...rule("agents", "agent-apps", "agent_apps.*", "app.*"),
-  ...rule("agents", "agent-studio", "agent_factory.*", "foundry.*"),
+  ...rule(
+    "agents",
+    "agent-apps",
+    "shortcut.build_ui_for_prompt*",
+    "shortcut.prompt_app_metadata_gen",
+    "shortcut.update_prompt_app_code*",
+  ),
+  ...rule(
+    "agents",
+    "agent-studio",
+    "agent_factory.*",
+    "foundry.*",
+    "shortcut.agent_generator",
+    "shortcut.agent_structure_builder",
+    "shortcut.badass_agent_*",
+    "shortcut.transcript_to_instructions*",
+  ),
+  ...rule(
+    "agents",
+    "prompts",
+    "shortcut.full_prompt_optimizer",
+    "shortcut.full_prompt_structure_builder",
+    "shortcut.improve_system_prompt_concise",
+    "shortcut.matrx_prompt_assistant_sc",
+    "shortcut.simple_system_message_generator",
+    "shortcut.system_prompt_enhancer_*",
+  ),
   ...rule("agents", "agent-memory", "memory.*"),
-  ...rule("agents", "agent-tools", "tools.*", "content_gate.*", "tool_viz.*"),
-  ...rule("agents", "chat", "chat.*", "conversation.*"),
+  ...rule("agents", "agent-tools", "tools.*", "content_gate.*"),
+  ...rule(
+    "agents",
+    "chat",
+    "chat.*",
+    "conversation.*",
+    "shortcut.matrx_custom_chat",
+  ),
   ...rule("agents", "execution-runtime", "orchestration.*"),
   ...rule("agents", "orchestras", "orchestras.*"),
   ...rule("agents", "voice", "voice.*"),
-  // Agent shortcuts and the scroll assistant have no registry Feature yet.
-  ...rule("agents", null, "shortcut.*", "ambient.*"),
+  // Every other shortcut sits with the feature it serves (below); the rest,
+  // and the scroll assistant (`ambient.*`), have no Domain yet.
 
   // ── Clients ───────────────────────────────────────────────────────────────
   ...rule("clients", "desktop", "local.*"),
   ...rule("clients", "extension", "extend.*"),
 
   // ── Coding ────────────────────────────────────────────────────────────────
-  ...rule("coding", "code-workspace", "code_editor.*"),
+  ...rule(
+    "coding",
+    "code-workspace",
+    "code_editor.*",
+    "shortcut.dynamic_context_code_editor",
+    "shortcut.master_code_editor",
+    "shortcut.quick_code_explanation",
+  ),
   ...rule("coding", "coding-session-bridge", "coding_session.*"),
 
   // ── Communications ────────────────────────────────────────────────────────
@@ -56,6 +98,8 @@ export const PLACEMENT_RULES: readonly PlacementRule[] = [
 
   // ── Content IR ────────────────────────────────────────────────────────────
   ...rule("content-ir", "kind-authoring", "content_ir.*"),
+  // Generates the component that displays a tool's result.
+  ...rule("content-ir", "render-blocks", "tool_viz.*"),
 
   // ── CRM ───────────────────────────────────────────────────────────────────
   ...rule("crm", "party", "crm.*"),
@@ -65,6 +109,8 @@ export const PLACEMENT_RULES: readonly PlacementRule[] = [
     "education",
     "flashcards",
     "flashcards.*",
+    "shortcut.flashcard_master",
+    "shortcut.make_flashcards*",
     "education.flashcards_guidance",
     "education.fastfire_guidance",
   ),
@@ -73,6 +119,7 @@ export const PLACEMENT_RULES: readonly PlacementRule[] = [
     "education",
     "quizzes-and-tests",
     "education.quiz_*",
+    "shortcut.generate_quiz",
     "education.quizzes_guidance",
     "education.practice_tests_guidance",
     "education.exam_prep_guidance",
@@ -152,7 +199,15 @@ export const PLACEMENT_RULES: readonly PlacementRule[] = [
   ...rule("knowledge", "knowledge-graph", "kg.*"),
   ...rule("knowledge", "rag", "rag.*", "rag_kinds.*"),
   ...rule("knowledge", "research", "research.*", "research_client.*"),
-  ...rule("knowledge", "scraper", "scraper.*"),
+  ...rule(
+    "knowledge",
+    "scraper",
+    "scraper.*",
+    "shortcut.clean_up_webpage_content",
+  ),
+
+  // ── Legal ─────────────────────────────────────────────────────────────────
+  ...rule("legal", "wc-ratings", "shortcut.wc_medical_legal_report_extractor*"),
 
   // ── Marketing ─────────────────────────────────────────────────────────────
   ...rule("marketing", "commerce", "commerce_intake.*"),
@@ -172,7 +227,7 @@ export const PLACEMENT_RULES: readonly PlacementRule[] = [
     "seo.press_*",
     "seo.digital_pr_reputation_adjudicator",
   ),
-  ...rule("marketing", "seo", "seo.*"),
+  ...rule("marketing", "seo", "seo.*", "shortcut.get_lsi_variations_metadata"),
   // `web` is the Websites node's schema (site endpoint rules).
   ...rule("marketing", "websites-and-brands", "web.*"),
   // Page images, video metadata, endowment analysis: no registry Feature yet.
@@ -221,15 +276,34 @@ export const PLACEMENT_RULES: readonly PlacementRule[] = [
 
   // ── Media ─────────────────────────────────────────────────────────────────
   ...rule("media", "audio-tts", "audio.*"),
-  ...rule("media", "images", "image.*", "image_pipeline.*"),
+  ...rule(
+    "media",
+    "images",
+    "image.*",
+    "image_pipeline.*",
+    "shortcut.generate_image*",
+    "shortcut.create_gemini_image*",
+    "shortcut.get_image_metadata",
+  ),
   ...rule("media", "media-source-catalog", "media_catalog.*"),
-  ...rule("media", "pdf", "pdf.*"),
+  ...rule("media", "pdf", "pdf.*", "shortcut.clean_pdf_extraction"),
   ...rule("media", "podcasts", "podcast.*", "podcast_client.*"),
   ...rule("media", "product-capture", "product_capture.*"),
-  ...rule("media", "transcription", "transcripts.*", "transcript_studio.*"),
+  ...rule(
+    "media",
+    "transcription",
+    "transcripts.*",
+    "transcript_studio.*",
+    "shortcut.live_transcription_cleaner",
+  ),
 
   // ── Platform ──────────────────────────────────────────────────────────────
-  ...rule("platform", "dictionary", "dictionary.*"),
+  ...rule(
+    "platform",
+    "dictionary",
+    "dictionary.*",
+    "shortcut.dictionary_assistant_sc",
+  ),
   ...rule("platform", "observability", "observability.*"),
   ...rule("platform", "proof-runs", "proof_runs.*"),
   ...rule("platform", "purpose-registry", "purpose.*"),
@@ -396,6 +470,9 @@ export function targetPrefixes(target: string): string[] | null {
  * from before the registry grouping): a target when every job the old id's
  * prefix held lands on one, otherwise its Domain's section of the directory.
  */
+/** Old page ids whose remaining jobs have no Domain yet. */
+const ORPHANED_OLD_IDS = new Set(["shortcut", "ambient"]);
+
 export type LegacyDestination = { target: string } | { domain: string } | null;
 
 export function legacyDestination(
@@ -419,6 +496,8 @@ export function legacyDestination(
   );
   if (whole) return { target: whole.feature ?? unassignedTarget(whole.domain) };
   if (registryDomain(oldId)) return { domain: oldId };
+  // Old pages whose leftover jobs have no Domain yet (the rest moved out by key).
+  if (ORPHANED_OLD_IDS.has(oldId)) return { target: NO_DOMAIN_TARGET };
   return null;
 }
 

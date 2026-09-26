@@ -56,7 +56,7 @@ export interface DirectoryFeature {
 }
 
 export interface DirectoryDomain {
-  /** Registry Domain id, or null for the "not yet assigned to a domain" section. */
+  /** Section id: a registry Domain id, or `chat` / `agent-apps` / `unassigned`. */
   domain: string | null;
   label: string;
   features: DirectoryFeature[];
@@ -87,6 +87,33 @@ function humanizeKeyTail(key: string): string {
 }
 
 const FIXTURES = "fixtures";
+
+/** Directory section ids that are not registry Domains (Arman, 2026-09-26). */
+export const CHAT_SECTION = "chat";
+export const AGENT_APPS_SECTION = "agent-apps";
+export const UNASSIGNED_SECTION = "unassigned";
+
+const SECTION_LABELS: Readonly<Record<string, string>> = {
+  [CHAT_SECTION]: "Chat",
+  [AGENT_APPS_SECTION]: "Agent Apps",
+  [UNASSIGNED_SECTION]: "Not yet assigned",
+};
+
+/**
+ * Registry Features shown outside their registry Domain's section. Agents
+ * holds only agent and system-prompt authoring; the rest go where the feature
+ * they serve lives (Arman, 2026-09-26).
+ */
+const SECTION_OF_FEATURE: Readonly<Record<string, string>> = {
+  chat: CHAT_SECTION,
+  voice: CHAT_SECTION, // talking to the AI: /chat/voice, /chat/talk
+  "agent-memory": CHAT_SECTION, // observational memory of conversations
+  "agent-apps": AGENT_APPS_SECTION,
+  orchestras: "workflows", // an Orchestra is a Holder like a Workflow
+  "execution-runtime": "platform",
+  "agent-tools": "platform",
+  "agent-iteration": "agents", // improving an agent is authoring it
+};
 
 function cardLabel(target: string): string {
   if (target === FIXTURES) return "Test fixtures";
@@ -159,31 +186,59 @@ export function buildDomains(
     fixture: target === FIXTURES,
   });
 
-  const out: DirectoryDomain[] = [];
-  const domains = [...REGISTRY_DOMAINS].sort((a, b) =>
-    a.name.localeCompare(b.name),
-  );
-  for (const domain of domains) {
-    const features = [...domain.features]
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((feature) => card(feature.id, domain.id))
+  // Sections follow the registry Domains, with Arman's rulings (2026-09-26)
+  // on top: a job sits with the feature it serves, never under Agents because
+  // an agent fills it. Agents shows only agent and system-prompt authoring;
+  // Chat is its own section; Agent Apps and every "not yet assigned" group
+  // sit at the bottom, each in its own section.
+  const bySection = new Map<string, DirectoryFeature[]>();
+  const push = (section: string, row: DirectoryFeature) => {
+    const list = bySection.get(section) ?? [];
+    list.push(row);
+    bySection.set(section, list);
+  };
+  const gaps: DirectoryFeature[] = [];
+  for (const domain of REGISTRY_DOMAINS) {
+    for (const feature of domain.features) {
+      const row = card(feature.id, domain.id);
       // A registry Feature is a card when it holds jobs or places — an empty
       // node is not intelligence.
-      .filter((row) => row.jobs.length > 0 || row.places.length > 0);
+      if (row.jobs.length === 0 && row.places.length === 0) continue;
+      push(SECTION_OF_FEATURE[feature.id] ?? domain.id, row);
+    }
     const gap = card(`${domain.id}/unassigned`, domain.id);
-    if (gap.jobs.length > 0) features.push(gap);
-    if (features.length > 0)
-      out.push({ domain: domain.id, label: domain.name, features });
+    if (gap.jobs.length > 0) gaps.push({ ...gap, label: domain.name });
   }
+  const sectionLabel = (id: string) =>
+    SECTION_LABELS[id] ?? registryDomain(id)?.name ?? id;
+  const byName = (a: DirectoryFeature, b: DirectoryFeature) =>
+    a.label.localeCompare(b.label);
+  const out: DirectoryDomain[] = [...bySection.entries()]
+    .filter(([id]) => id !== AGENT_APPS_SECTION)
+    .map(([id, features]) => ({
+      domain: id,
+      label: sectionLabel(id),
+      features: features.sort(byName),
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+  const apps = bySection.get(AGENT_APPS_SECTION);
+  if (apps)
+    out.push({
+      domain: AGENT_APPS_SECTION,
+      label: sectionLabel(AGENT_APPS_SECTION),
+      features: apps,
+    });
   const orphans = [card(NO_DOMAIN_TARGET, null), card(FIXTURES, null)].filter(
     (row) => row.jobs.length > 0,
   );
-  if (orphans.length > 0)
+  const bottom = [...gaps.sort(byName), ...orphans];
+  if (bottom.length > 0) {
     out.push({
-      domain: null,
-      label: NOT_ASSIGNED_TO_DOMAIN,
-      features: orphans,
+      domain: UNASSIGNED_SECTION,
+      label: sectionLabel(UNASSIGNED_SECTION),
+      features: bottom,
     });
+  }
   return out;
 }
 

@@ -44,12 +44,16 @@ describe("registry placement", () => {
       expect(ids).not.toContain(`${domain.id}/unassigned`);
   });
 
-  it("places every live job on a Domain; only owner-authored jobs and fixtures have none", () => {
+  it("places every live job on a Domain; only owner-authored jobs, leftover shortcuts, the scroll assistant and fixtures have none", () => {
     const noDomain = LIVE_MANDATE_KEYS_2026_09_26.filter(
       (key) => placementForKey(key).domain === null,
     );
     const unexplained = noDomain.filter(
-      (key) => !OWNER_AUTHORED.has(key) && !placementForKey(key).fixture,
+      (key) =>
+        !OWNER_AUTHORED.has(key) &&
+        !placementForKey(key).fixture &&
+        !key.startsWith("shortcut.") &&
+        !key.startsWith("ambient."),
     );
     expect(unexplained).toEqual([]);
   });
