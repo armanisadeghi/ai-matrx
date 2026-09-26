@@ -1,6 +1,10 @@
 -- chair-step: lane COPY-WRITABLE (chair ruling 2026-09-25, from Arman's words: "Enable full read/write functionality on the new route immediately for testing and validation. Prior to final cutover, sync/pull the latest data from the legacy tables."). REPLACES the bodies of custom._context_copy_fence(), custom._older_table_copy_refusal(uuid), custom.where_tables_live(uuid[]), platform.cutover_tables_copied(uuid), platform._cutover_seam_readiness(text,uuid) and platform._cutover_seam_apply(text,uuid,text,uuid,uuid). ADDS two tables (platform.cutover_evaluation_write — one open row per copy row a person touched, with the row as the mover left it; platform.cutover_evaluation_replaced — the append-only log the switch writes), the person test platform.write_is_a_persons_own(), the fence's verdict custom._older_table_copy_verdict(uuid), the fence's two private steps custom._copy_evaluation_note / custom._copy_evaluation_reimage, the switch's re-sync platform._cutover_copy_resync, the mover's carry platform.cutover_evaluation_carry, and the client door custom.table_copy_evaluation_state(uuid). No row of any existing table is written except door declarations. No foreign key to iam.organizations (a live-database lock, rehearsal-on-live rule).
--- based-on: custom._context_copy_fence() a8f5a2e7d930a46ec548c8401da02aa8 (md5 of pg_get_functiondef, production = clone, 2026-09-25)
--- based-on: custom._older_table_copy_refusal(uuid) 3f179f78778c2a38641c505998ffc071 (md5, production = clone)
+-- based-on: custom._older_table_copy_refusal(uuid) c0623ae788c3162718d7290bdf7f3af84ee2775b4cbb30979b00b8f8ad625b0e
+-- based-on: custom._context_copy_fence() f2b0b58b52f8a7d22bf48995eafc687fb1e682a278c50a027a5153e73331de85
+-- based-on: custom.where_tables_live(uuid[]) 29d195e16e33eaf3521c55b4d1490b3eecd22cfd8b4a86c60871027b266df6f6
+-- based-on: platform.cutover_tables_copied(uuid) 80f7cbaa3ba09aca6edd3dd61c10cdda9191099cc76ee8a458f0eac267f643b7
+-- based-on: platform._cutover_seam_readiness(text, uuid) bb371bb87ddef5c0acabe6a35e18a70a63306b0df03675ba6c3655f2540837a8
+-- based-on: platform._cutover_seam_apply(text, uuid, text, uuid, uuid) 4dc26c950412e51430faa16c08857f1f5f4ce3085daf17a5983fc636d2b4ef45
 -- lane: COPY-WRITABLE
 -- INVERSE: migrations/inverse/copywritable_people_test_the_copy_until_the_switch_down.sql
 --
@@ -29,8 +33,6 @@
 --     the table's ⋯ menu can say "Test copy: your edits here are replaced by the older table at
 --     switch time" without a banner.
 
-set local lock_timeout = '30s';
-set local statement_timeout = '120s';
 
 -- ── 1. WHAT A PERSON TESTED, AND WHAT THE SWITCH REPLACED ─────────────────────────────────────
 create table if not exists platform.cutover_evaluation_write (
@@ -61,10 +63,9 @@ create index if not exists cutover_evaluation_write_table
 
 alter table platform.cutover_evaluation_write enable row level security;
 revoke all on platform.cutover_evaluation_write from public, anon, authenticated, service_role;
--- Our own admin database access is never removed (policy: our-own-admin-database-access.md).
-drop policy if exists platform_admin_read on platform.cutover_evaluation_write;
-create policy platform_admin_read on platform.cutover_evaluation_write for select to authenticated
-  using ((select public.is_platform_admin()));
+-- Our own admin database access: the admin system reads through the server key; the DDL guard
+-- re-grants service_role SELECT on each new table (admin_door_survives_revoke). A platform_admin_read
+-- POLICY takes ACCESS EXCLUSIVE on auth/storage relations (window-class), so it is not added here.
 
 create table if not exists platform.cutover_evaluation_replaced (
   id                 uuid primary key default gen_random_uuid(),
@@ -91,9 +92,6 @@ create index if not exists cutover_evaluation_replaced_org on platform.cutover_e
 
 alter table platform.cutover_evaluation_replaced enable row level security;
 revoke all on platform.cutover_evaluation_replaced from public, anon, authenticated, service_role;
-drop policy if exists platform_admin_read on platform.cutover_evaluation_replaced;
-create policy platform_admin_read on platform.cutover_evaluation_replaced for select to authenticated
-  using ((select public.is_platform_admin()));
 
 create or replace function platform._cutover_evaluation_replaced_is_append_only()
 returns trigger
@@ -106,10 +104,17 @@ begin
 end;
 $$;
 
-drop trigger if exists cutover_evaluation_replaced_append_only on platform.cutover_evaluation_replaced;
-create trigger cutover_evaluation_replaced_append_only
-  before update or delete on platform.cutover_evaluation_replaced
-  for each row execute function platform._cutover_evaluation_replaced_is_append_only();
+-- (No `drop trigger if exists` first: the sql_drop event path takes ACCESS EXCLUSIVE on 24 auth/storage
+-- relations, measured on the clone 2026-09-25; the table is new, so there is nothing to drop.)
+do $trg$
+begin
+  if not exists (select 1 from pg_trigger where tgname = 'cutover_evaluation_replaced_append_only'
+                    and tgrelid = 'platform.cutover_evaluation_replaced'::regclass) then
+    create trigger cutover_evaluation_replaced_append_only
+      before update or delete on platform.cutover_evaluation_replaced
+      for each row execute function platform._cutover_evaluation_replaced_is_append_only();
+  end if;
+end $trg$;
 
 -- ── 2. WHO IS A PERSON ────────────────────────────────────────────────────────────────────────
 create or replace function platform.write_is_a_persons_own()
@@ -195,7 +200,7 @@ $$;
 comment on function custom._older_table_copy_verdict(uuid) is
   'COPY-WRITABLE: the copy fence''s verdict for a write to table <id> in the record store — null (not the copy of a live older table in an organization whose Data tables switch is off: the store''s own doors decide), ''person'' (a person''s own write to a test copy: allowed and noted, replaced by the older table at the switch), or the sentence that refuses an agent''s, automation''s or integration''s write with the older table''s address. Private: called by custom._context_copy_fence() and custom._copy_evaluation_note.';
 
-revoke all on function custom._older_table_copy_verdict(uuid) from public, anon;
+revoke all on function custom._older_table_copy_verdict(uuid) from anon;   -- PUBLIC is cleared at a definer's birth (ddl_guard §6d-4)
 
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, declared_by, reason, signed_in_callers)
@@ -266,7 +271,7 @@ $$;
 comment on function custom._copy_evaluation_note(uuid, uuid, uuid, text) is
   'COPY-WRITABLE: the copy fence''s note of a person''s test write to row <p_id> of test copy <p_table>: the first one keeps the row as it stood before (or created = true), later ones count. Reads the row itself, never an image a caller hands it; refuses a call from outside a trigger. Private.';
 
-revoke all on function custom._copy_evaluation_note(uuid, uuid, uuid, text) from public, anon;
+revoke all on function custom._copy_evaluation_note(uuid, uuid, uuid, text) from anon;   -- PUBLIC is cleared at a definer's birth (ddl_guard §6d-4)
 
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, declared_by, reason, signed_in_callers)
@@ -537,7 +542,7 @@ $$;
 comment on function custom.table_copy_evaluation_state(uuid) is
   'COPY-WRITABLE: the client door to "is this table a test copy, and what have people changed on it?" — test_copy (the same-id copy of a live older table whose organization''s Data tables switch is off), writable_by_people, older_table_live, agents_write (older | record), evaluation_writes_since_copy and row counts, and the sentence the table''s ⋯ menu shows. A table the caller cannot open answers found = false, exactly like a missing one.';
 
-revoke all on function custom.table_copy_evaluation_state(uuid) from public, anon;
+revoke all on function custom.table_copy_evaluation_state(uuid) from anon;   -- PUBLIC is cleared at a definer's birth (ddl_guard §6d-4)
 
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, declared_by, reason, signed_in_callers)

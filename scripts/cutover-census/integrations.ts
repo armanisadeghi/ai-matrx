@@ -671,7 +671,7 @@ export const INTEGRATIONS: Integration[] = [
   {
     id: "X1", repo: "aidream", plan: "found", disposition: "repointed",
     what: "Where a COPIED but not yet switched table is written",
-    why: "copy mode (owner, 2026-09-23) leaves the older table live beside its same-id copy, but every integration asks only \"does the store hold a Table with this id?\" (server table_home, the web app's whereThisTableLives, the extension's store list) — so agents, workflow steps, chat appends and the extension write the COPY while the owner still works in the older table, and the readiness check (older edits after the copy) cannot see it. The rule must be: a live older table with this id is the writer until the switch archives it",
+    why: "copy mode (owner, 2026-09-23) leaves the older table live beside its same-id copy, but every integration asks only \"does the store hold a Table with this id?\" (server table_home, the web app's whereThisTableLives, the extension's store list) — so agents, workflow steps, chat appends and the extension write the COPY while the owner still works in the older table, and the readiness check (older edits after the copy) cannot see it. The rule must be: a live older table with this id is the writer for every integration until the switch archives it (people may test the copy; the switch replaces their test edits with the older table's rows first — lane COPY-WRITABLE)",
     plain: "for a table that has been copied but not switched, agents, workflow steps, chat and the browser extension write into the copy while you are still working in the older table",
     owner: "aidream packages/matrx-records/matrx_records/server/table_home.py; matrx-frontend features/unified-data/whereThisTableLives.ts (+ data-source/locate-table.ts); matrx-extend src/lib/records/tables.ts",
     proofs: [
@@ -706,8 +706,14 @@ export const INTEGRATIONS: Integration[] = [
       },
       {
         kind: "db",
-        sql: "select (to_regprocedure('custom.where_tables_live(uuid[])') is not null and to_regprocedure('platform.table_lives_in(uuid)') is not null and pg_get_functiondef('custom._context_copy_fence()'::regprocedure) like '%_older_table_copy_refusal%') as ok, 'the store answers where a table lives from the switch, and refuses a write to the copy of a live older table' as detail",
-        says: "the store's door and the copy fence are live",
+        // Lane COPY-WRITABLE (chair ruling 2026-09-25): the copy is a TEST copy — a person's own
+        // write through the new pages is allowed and noted, an agent's / automation's /
+        // integration's is still refused by the fence, and the owner's press re-syncs the copy
+        // from the older table (test edits replaced, person-added rows archived, logged) before it
+        // flips. So the proof is the verdict in the fence, the evaluation door, and the re-sync in
+        // the press step.
+        sql: "select (to_regprocedure('custom.where_tables_live(uuid[])') is not null and to_regprocedure('platform.table_lives_in(uuid)') is not null and to_regprocedure('custom.table_copy_evaluation_state(uuid)') is not null and pg_get_functiondef('custom._context_copy_fence()'::regprocedure) like '%_older_table_copy_verdict%' and pg_get_functiondef('platform._cutover_seam_apply(text,uuid,text,uuid,uuid)'::regprocedure) like '%_cutover_copy_resync%') as ok, 'the store answers where a table lives from the switch; the copy fence refuses an agent''s, automation''s or integration''s write to a test copy and notes a person''s; the press re-syncs the copy from the older table before it flips' as detail",
+        says: "the store's door, the copy fence's verdict and the press's re-sync are live",
       },
     ],
   },

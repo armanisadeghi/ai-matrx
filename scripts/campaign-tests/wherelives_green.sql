@@ -80,7 +80,11 @@ begin
   if v_lives is distinct from 'older' then
     raise exception '1a: a copied older table in an organization whose switch is off answered % (the copy-existence defect)', v_lives;
   end if;
-  if v_why !~ 'read-only until an owner switches' then raise exception '1b: the answer does not say why: %', v_why; end if;
+  -- COPY-WRITABLE (2026-09-25): the copy is a test copy people may edit; agents, automations and
+  -- integrations write the older table until the switch.
+  if v_why !~ 'agents, automations and integrations read and write until an owner switches' or v_why !~ 'test copy' then
+    raise exception '1b: the answer does not say why: %', v_why;
+  end if;
 
   -- 2. A moved table (older archived) and a table the older store never held live in the store.
   if (select w.lives_in from custom.where_tables_live(array[c_rincon]) w) is distinct from 'record' then
@@ -93,10 +97,13 @@ begin
     raise exception '2c: the door does not answer each id once';
   end if;
 
-  -- 3. The copy is read-only while the switch is off: the owner's own write through the store's door is refused by name.
+  -- 3. While the switch is off an AGENT's write to the copy (the extension's agent client declares
+  --    itself) is refused by name, with the older table's address. A PERSON's own write is a test
+  --    and is allowed (COPY-WRITABLE; its own suite, copywritable_green.sql, proves the rest).
+  perform set_config('request.headers', '{"x-matrx-actor-tier":"ai","x-matrx-actor-system":"matrx-extend:agent"}', true);
   begin
     perform custom.record_write(c_ws, c_heat, jsonb_build_object('topic', 'Mini-split defrost settings for coastal installs'));
-    raise exception '3a: a person wrote a new row into the copy of a live older table';
+    raise exception '3a: an agent wrote a new row into the copy of a live older table';
   exception when insufficient_privilege then
     get stacked diagnostics v_err = message_text;
     if v_err !~ 'still the one in use' or v_err !~ ('/data/' || c_heat::text) then
@@ -106,9 +113,13 @@ begin
   if v_row is not null then
     begin
       perform custom.record_write(c_ws, c_heat, jsonb_build_object('id', v_row, 'topic', 'Ductless retrofit costs (checked)'));
-      raise exception '3c: a person edited a row of the copy of a live older table';
+      raise exception '3c: an agent edited a row of the copy of a live older table';
     exception when insufficient_privilege then null;
     end;
+  end if;
+  perform set_config('request.headers', '', true);
+  if v_row is not null then
+    perform custom.record_update(c_ws, v_row, jsonb_build_object('topic', 'Ductless retrofit costs (checked by the owner)'), null);
   end if;
 
   -- 4. The store owner's own connection (the mover's rerun, the undo) still writes the copy.
@@ -130,7 +141,7 @@ begin
   v_new := custom.record_write(c_ws, c_heat, jsonb_build_object('topic', 'Mini-split defrost settings for coastal installs'));
   if v_new is null then raise exception '5b: after the switch the owner could not write the table'; end if;
 
-  raise notice 'wherelives_green.sql: GREEN (1 off=older, 2 moved/store=record, 3 copy refused with the address, 4 owner writes, 5 switch on=record and writable)';
+  raise notice 'wherelives_green.sql: GREEN (1 off=older, 2 moved/store=record, 3 an agent write to the copy refused with the address, the owner test write allowed, 4 owner writes, 5 switch on=record and writable)';
 end;
 $t$;
 

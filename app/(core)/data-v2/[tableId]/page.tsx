@@ -52,6 +52,7 @@ import {
   useRowChangeAgentOffer,
 } from "@/features/unified-data/row-change-agent/RowChangeAgentLink";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
+import { tableCopyEvaluation, useTableCopyEvaluation } from "@/features/unified-data/tableCopyEvaluation";
 import { replaceAddressWithoutNavigating, currentPathWithSearch } from "@/lib/url-state/addressWithoutNavigating";
 import { RECORDS_FILES } from "@/features/unified-data/recordsFiles";
 import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
@@ -590,7 +591,39 @@ export default function UnifiedDataTableRoute({
    * offers it; a refusal says why. The organization rides the page header beside the name, so the
    * table's own row takes no `leading` (lane DATA-V2-FACE-2).
    */
-  const menuExtras =
+  /**
+   * A TEST COPY SAYS SO IN THE TABLE MENU, NOT IN A BANNER (lane COPY-WRITABLE, 2026-09-25). While the
+   * organization's Data tables switch is off this page shows the copy of a live older table: people
+   * may test it end to end, agents and integrations keep writing the older table, and the switch
+   * replaces the test edits with the older table's rows. Absent for every other table.
+   */
+  const copyEvaluation = useTableCopyEvaluation(object.state === "found" ? tableId : null);
+  const testCopyExtras =
+    copyEvaluation.state === "test-copy"
+      ? [
+          {
+            key: "test-copy",
+            label: copyEvaluation.says,
+            onSelect: () => {
+              void tableCopyEvaluation(createClient(), tableId).then((now) => {
+                const said = now.state === "test-copy" ? now : copyEvaluation;
+                toast.info(said.says, {
+                  description: said.detail,
+                  ...(object.state === "found"
+                    ? {
+                        action: {
+                          label: "Data switch",
+                          onClick: () => router.push(`/organizations/${object.organizationId}/settings#data`),
+                        },
+                      }
+                    : {}),
+                });
+              });
+            },
+          },
+        ]
+      : [];
+  const rowChangeExtras =
       rowChangeOffer.state === "offered"
         ? [
             {
@@ -611,6 +644,7 @@ export default function UnifiedDataTableRoute({
               },
             ]
           : [];
+  const menuExtras = [...testCopyExtras, ...rowChangeExtras];
 
   // ── The alchemy capture: this table page, what the address chose (view, rail, record,
   //    dashboard, filter), whose table it is, and why it did not open when it did not. ──

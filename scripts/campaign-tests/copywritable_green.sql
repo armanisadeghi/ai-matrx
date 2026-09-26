@@ -39,7 +39,7 @@ declare
   v_a uuid; v_b uuid; v_c uuid; v_new uuid; v_field uuid;
   v jsonb; v_err text; v_n bigint; v_notes_before bigint;
   v_ready jsonb;
-  v_log platform.cutover_evaluation_replaced;
+  v_log record;
   v_tdata jsonb; v_fdata jsonb; v_snap jsonb;
 begin
   -- 0. The door and the log exist; the notes are private.
