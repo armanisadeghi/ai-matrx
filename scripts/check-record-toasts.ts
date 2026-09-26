@@ -66,6 +66,7 @@ import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { emitItem } from "./checks/items.mjs";
 
 const REPO_ROOT = resolve(__dirname, "..");
 const SCANNED_DIRS = ["features", "lib", "app", "components", "hooks"] as const;
@@ -253,6 +254,17 @@ function main(): number {
 
   const baseline = loadBaseline();
   const fresh = findings.filter((f) => !baseline.has(f.id));
+
+  // C5 item line — key = the call-site id, exactly the baseline's entry (file::toast text).
+  for (const f of findings) {
+    emitItem({
+      key: f.id,
+      status: baseline.has(f.id) ? "known" : "new",
+      title: `${f.file}:${f.line} toast.${f.method} names a record outside recordToast`,
+      file: f.file,
+      line: f.line,
+    });
+  }
 
   console.log(
     `[check:record-toasts] ${findings.length} record-naming toast(s) outside the helper; ${baseline.size} baselined; ${fresh.length} NOT baselined.`,

@@ -28,6 +28,7 @@
 import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { emitItem } from "./checks/items.mjs";
 
 const ROOT = join(import.meta.dirname, "..");
 const BASELINE = join(ROOT, "scripts", "api-contracts-baseline.json");
@@ -163,6 +164,11 @@ function run(): number {
   const baseline = new Set(loadBaseline());
   const added = current.filter((f) => !baseline.has(f));
   const converted = [...baseline].filter((f) => !current.includes(f)).sort();
+
+  // C5 item line — key = the file path, exactly the baseline's entry.
+  for (const f of current) {
+    emitItem({ key: f, status: baseline.has(f) ? "known" : "new", title: `${f} imports the raw python client`, file: f });
+  }
 
   if (added.length === 0 && converted.length === 0) {
     console.log(

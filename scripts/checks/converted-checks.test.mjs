@@ -79,6 +79,29 @@ export const CONVERTED = [
     allowKeys: () => [],
     keyShape: /^[^|]+\.tsx?\|[^|]+→[^|]+$/,
   },
+  {
+    // Baseline: scripts/api-contracts-baseline.json, a list of file paths. Stale = "converted".
+    id: "api-contract-ratchet",
+    cmd: "pnpm exec tsx scripts/check-api-contracts.ts --strict",
+    allowKeys: () => json("scripts/api-contracts-baseline.json"),
+    keyShape: /^[^|:\s]+\.tsx?$/,
+    staleKeys: (out) => [...out.matchAll(/^\s*✓ (\S+)$/gm)].map((m) => m[1]),
+  },
+  {
+    // The registry is a vocabulary, not an allowlist of defects: every item is new, keyed by the
+    // registry entry that is missing (registering it fixes every file that stamps it).
+    id: "cx-source-attribution-is-registered",
+    cmd: "pnpm check:source-attribution",
+    allowKeys: () => [],
+    keyShape: /^(duplicate:(SOURCE_APPS|SOURCE_FEATURES)=.+|source_(app|feature)=.*)$/,
+  },
+  {
+    // Baseline: scripts/record-toasts.baseline.json `ids` — `<file>::<toast text>` (no line).
+    id: "record-naming-toasts-carry-their-record",
+    cmd: "pnpm check:record-toasts:strict",
+    allowKeys: () => json("scripts/record-toasts.baseline.json").ids,
+    keyShape: /^[^:]+\.tsx?::.+$/s,
+  },
 ];
 
 for (const check of CONVERTED) {
