@@ -2005,6 +2005,8 @@ on the first.
 
 ## Change Log
 
+- **2026-09-26 — The Surface Context window no longer shows "loaded, and empty" as "not supplied".** A value a surface emits as `[]`, `{}` or `""` — the deliberate signal that data loaded and there is none — rendered with the same grey dot as an omitted key, so the one tool every surface author verifies with erased the distinction the contract requires. It now shows a hollow green dot titled "Supplied, empty" and the actual empty value with one line of explanation. The "N/M supplied" counter is unchanged.
+
 - **2026-09-25 — `matrx-user/artifacts` goes `stub` → `partial` with emitters on both routes, and `pnpm check:surface-drift` is green again.** The 2026-08-17 stub had been declared from a code read and was wrong in places (its status filter was "empty when unfiltered", but the default view hides archived rows; search, visible rows, load status, the preview's content, and the detail's access-gate state were undeclared). Vocabulary 11 → 26 own values, emitted and verified live in the Surface Context window; an independent reviewer then found a failed load reported as 0 rows, whitespace search unreported, and a canvas value that could never be observed (the side canvas's own runtime replaces this one while open) — all fixed. **Platform gap it surfaced, affecting every table-backed list surface:** `MatrxDataTable` applies per-column filters and sort internally and exposes neither the resulting rows nor its query state to the host, so no list surface can report them. Separately, drift was RED on main because `education-learn` and `education-study-guides` both used the label "Study guides"; the public reader is now "Study guide library".
 
 - **2026-09-25 — Drift-report "Remap to / Remove" works again: it writes as
