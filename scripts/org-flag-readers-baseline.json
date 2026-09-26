@@ -1,14 +1,1 @@
-{
-  "scripts/campaign-tests/dorg3_acting_organization_green.sql": 1,
-  "scripts/campaign-tests/dorg3_acting_organization_red.sql": 1,
-  "scripts/campaign-tests/dorg4_acting_organization_green.sql": 1,
-  "scripts/campaign-tests/dorg4_acting_organization_red.sql": 1,
-  "scripts/campaign-tests/fix7b_people_red.sql": 1,
-  "scripts/campaign-tests/orgarch_green.sql": 2,
-  "scripts/campaign-tests/orgarch_red.sql": 1,
-  "scripts/campaign-tests/storeon_red.sql": 2,
-  "scripts/campaign-tests/uichamp_s6_green.sql": 1,
-  "scripts/campaign-tests/w1_org_c7_is_personal_deprecation.sql": 5,
-  "scripts/campaign-tests/w1_org_c7.sql": 3,
-  "scripts/campaign-tests/w1_org_red_is_personal_deprecation.sql": 3
-}
+{}
