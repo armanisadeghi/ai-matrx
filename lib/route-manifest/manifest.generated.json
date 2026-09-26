@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1232,
+  "routeCount": 1267,
   "routes": [
     {
       "pattern": "/",
@@ -739,6 +739,46 @@
       "source": "app/(admin)/administration/hr/jurisdiction-rules/verification/page.tsx"
     },
     {
+      "pattern": "/administration/intelligence",
+      "status": "live",
+      "source": "app/(admin)/administration/intelligence/page.tsx"
+    },
+    {
+      "pattern": "/administration/intelligence/mandates",
+      "status": "live",
+      "source": "app/(admin)/administration/intelligence/mandates/page.tsx"
+    },
+    {
+      "pattern": "/administration/intelligence/mandates/[mandateKey]",
+      "status": "live",
+      "source": "app/(admin)/administration/intelligence/mandates/[mandateKey]/page.tsx"
+    },
+    {
+      "pattern": "/administration/intelligence/mandates/[mandateKey]/overrides",
+      "status": "live",
+      "source": "app/(admin)/administration/intelligence/mandates/[mandateKey]/overrides/page.tsx"
+    },
+    {
+      "pattern": "/administration/intelligence/mandates/dashboard",
+      "status": "live",
+      "source": "app/(admin)/administration/intelligence/mandates/dashboard/page.tsx"
+    },
+    {
+      "pattern": "/administration/intelligence/mandates/health",
+      "status": "live",
+      "source": "app/(admin)/administration/intelligence/mandates/health/page.tsx"
+    },
+    {
+      "pattern": "/administration/intelligence/mandates/unconverted",
+      "status": "live",
+      "source": "app/(admin)/administration/intelligence/mandates/unconverted/page.tsx"
+    },
+    {
+      "pattern": "/administration/intelligence/mandates/window",
+      "status": "live",
+      "source": "app/(admin)/administration/intelligence/mandates/window/page.tsx"
+    },
+    {
       "pattern": "/administration/knowledge",
       "status": "live",
       "source": "app/(admin)/administration/knowledge/page.tsx"
@@ -797,6 +837,11 @@
       "pattern": "/administration/knowledge/research-system",
       "status": "live",
       "source": "app/(admin)/administration/knowledge/research-system/page.tsx"
+    },
+    {
+      "pattern": "/administration/knowledge/search-lab",
+      "status": "live",
+      "source": "app/(admin)/administration/knowledge/search-lab/page.tsx"
     },
     {
       "pattern": "/administration/knowledge/seo-default-rules",
@@ -962,6 +1007,16 @@
       "pattern": "/administration/scopes-context/context-inspector",
       "status": "live",
       "source": "app/(admin)/administration/scopes-context/context-inspector/page.tsx"
+    },
+    {
+      "pattern": "/administration/scopes-context/organizations",
+      "status": "live",
+      "source": "app/(admin)/administration/scopes-context/organizations/page.tsx"
+    },
+    {
+      "pattern": "/administration/scopes-context/organizations/[orgId]",
+      "status": "live",
+      "source": "app/(admin)/administration/scopes-context/organizations/[orgId]/page.tsx"
     },
     {
       "pattern": "/administration/scopes-context/system-context",
@@ -1324,6 +1379,16 @@
       "source": "app/(core)/agents/[id]/page.tsx"
     },
     {
+      "pattern": "/agents/[id]/answers",
+      "status": "live",
+      "source": "app/(core)/agents/[id]/answers/page.tsx"
+    },
+    {
+      "pattern": "/agents/[id]/answers/calibration",
+      "status": "live",
+      "source": "app/(core)/agents/[id]/answers/calibration/page.tsx"
+    },
+    {
       "pattern": "/agents/[id]/apps",
       "status": "live",
       "source": "app/(core)/agents/[id]/apps/page.tsx"
@@ -1424,9 +1489,29 @@
       "source": "app/(core)/agents/battle/model/page.tsx"
     },
     {
+      "pattern": "/agents/battle/model/[setId]",
+      "status": "live",
+      "source": "app/(core)/agents/battle/model/[setId]/page.tsx"
+    },
+    {
+      "pattern": "/agents/battle/open",
+      "status": "live",
+      "source": "app/(core)/agents/battle/open/page.tsx"
+    },
+    {
+      "pattern": "/agents/battle/open/[setId]",
+      "status": "live",
+      "source": "app/(core)/agents/battle/open/[setId]/page.tsx"
+    },
+    {
       "pattern": "/agents/battle/request-mod",
       "status": "live",
       "source": "app/(core)/agents/battle/request-mod/page.tsx"
+    },
+    {
+      "pattern": "/agents/battle/request-mod/[setId]",
+      "status": "live",
+      "source": "app/(core)/agents/battle/request-mod/[setId]/page.tsx"
     },
     {
       "pattern": "/agents/battle/settings",
@@ -1434,9 +1519,19 @@
       "source": "app/(core)/agents/battle/settings/page.tsx"
     },
     {
+      "pattern": "/agents/battle/settings/[setId]",
+      "status": "live",
+      "source": "app/(core)/agents/battle/settings/[setId]/page.tsx"
+    },
+    {
       "pattern": "/agents/battle/system-prompt",
       "status": "live",
       "source": "app/(core)/agents/battle/system-prompt/page.tsx"
+    },
+    {
+      "pattern": "/agents/battle/system-prompt/[setId]",
+      "status": "live",
+      "source": "app/(core)/agents/battle/system-prompt/[setId]/page.tsx"
     },
     {
       "pattern": "/agents/battle/tools",
@@ -1444,14 +1539,29 @@
       "source": "app/(core)/agents/battle/tools/page.tsx"
     },
     {
+      "pattern": "/agents/battle/tools/[setId]",
+      "status": "live",
+      "source": "app/(core)/agents/battle/tools/[setId]/page.tsx"
+    },
+    {
       "pattern": "/agents/battle/tuning",
       "status": "live",
       "source": "app/(core)/agents/battle/tuning/page.tsx"
     },
     {
+      "pattern": "/agents/battle/tuning/[setId]",
+      "status": "live",
+      "source": "app/(core)/agents/battle/tuning/[setId]/page.tsx"
+    },
+    {
       "pattern": "/agents/battle/variations",
       "status": "live",
       "source": "app/(core)/agents/battle/variations/page.tsx"
+    },
+    {
+      "pattern": "/agents/battle/variations/[setId]",
+      "status": "live",
+      "source": "app/(core)/agents/battle/variations/[setId]/page.tsx"
     },
     {
       "pattern": "/agents/browse",
@@ -1602,6 +1712,11 @@
       "pattern": "/auth/desktop-handoff",
       "status": "live",
       "source": "app/auth/desktop-handoff/page.tsx"
+    },
+    {
+      "pattern": "/auth/verifying",
+      "status": "live",
+      "source": "app/auth/verifying/page.tsx"
     },
     {
       "pattern": "/b/[bookingId]",
@@ -2017,6 +2132,11 @@
       "pattern": "/decisions",
       "status": "live",
       "source": "app/(core)/decisions/page.tsx"
+    },
+    {
+      "pattern": "/decisions/review",
+      "status": "live",
+      "source": "app/(core)/decisions/review/page.tsx"
     },
     {
       "pattern": "/detail",
@@ -3196,6 +3316,16 @@
       "source": "app/(public)/import/ai-chats/[provider]/page.tsx"
     },
     {
+      "pattern": "/intelligence",
+      "status": "live",
+      "source": "app/(core)/intelligence/page.tsx"
+    },
+    {
+      "pattern": "/intelligence/[feature]",
+      "status": "live",
+      "source": "app/(core)/intelligence/[feature]/page.tsx"
+    },
+    {
       "pattern": "/invitations/class/accept/[token]",
       "status": "live",
       "source": "app/(core)/invitations/class/accept/[token]/page.tsx"
@@ -3236,6 +3366,21 @@
       "source": "app/(kiosk)/kiosk/[deviceId]/page.tsx"
     },
     {
+      "pattern": "/kits",
+      "status": "live",
+      "source": "app/(core)/kits/page.tsx"
+    },
+    {
+      "pattern": "/kits/[key]",
+      "status": "live",
+      "source": "app/(core)/kits/[key]/page.tsx"
+    },
+    {
+      "pattern": "/kits/[key]/installed",
+      "status": "live",
+      "source": "app/(core)/kits/[key]/installed/page.tsx"
+    },
+    {
       "pattern": "/knowledge",
       "status": "live",
       "source": "app/(core)/knowledge/page.tsx"
@@ -3249,11 +3394,6 @@
       "pattern": "/knowledge/data-stores",
       "status": "live",
       "source": "app/(core)/knowledge/data-stores/page.tsx"
-    },
-    {
-      "pattern": "/knowledge/embeddings",
-      "status": "live",
-      "source": "app/(core)/knowledge/embeddings/page.tsx"
     },
     {
       "pattern": "/knowledge/extractions",
@@ -3439,6 +3579,21 @@
       "pattern": "/mandates/[mandateKey]",
       "status": "live",
       "source": "app/(core)/mandates/[mandateKey]/page.tsx"
+    },
+    {
+      "pattern": "/mandates/list-preview",
+      "status": "live",
+      "source": "app/(core)/mandates/list-preview/page.tsx"
+    },
+    {
+      "pattern": "/mandates/new-preview",
+      "status": "live",
+      "source": "app/(core)/mandates/new-preview/page.tsx"
+    },
+    {
+      "pattern": "/mandates/record-preview/[mandateKey]",
+      "status": "live",
+      "source": "app/(core)/mandates/record-preview/[mandateKey]/page.tsx"
     },
     {
       "pattern": "/maps",
@@ -4771,6 +4926,21 @@
       "source": "app/(core)/organizations/[orgId]/hr/page.tsx"
     },
     {
+      "pattern": "/organizations/[orgId]/mandates",
+      "status": "live",
+      "source": "app/(core)/organizations/[orgId]/mandates/page.tsx"
+    },
+    {
+      "pattern": "/organizations/[orgId]/mandates/[mandateKey]",
+      "status": "live",
+      "source": "app/(core)/organizations/[orgId]/mandates/[mandateKey]/page.tsx"
+    },
+    {
+      "pattern": "/organizations/[orgId]/mandates/new",
+      "status": "live",
+      "source": "app/(core)/organizations/[orgId]/mandates/new/page.tsx"
+    },
+    {
       "pattern": "/organizations/[orgId]/notes",
       "status": "live",
       "source": "app/(core)/organizations/[orgId]/notes/page.tsx"
@@ -5111,6 +5281,11 @@
       "source": "app/(portal)/portal/c/[slug]/page.tsx"
     },
     {
+      "pattern": "/portal/c/[slug]/f/[formId]",
+      "status": "live",
+      "source": "app/(portal)/portal/c/[slug]/f/[formId]/page.tsx"
+    },
+    {
       "pattern": "/portal/c/[slug]/r/[recordId]",
       "status": "live",
       "source": "app/(portal)/portal/c/[slug]/r/[recordId]/page.tsx"
@@ -5261,11 +5436,6 @@
       "source": "app/(core)/rag/data-stores/page.tsx"
     },
     {
-      "pattern": "/rag/embeddings",
-      "status": "live",
-      "source": "app/(core)/rag/embeddings/page.tsx"
-    },
-    {
       "pattern": "/rag/flow",
       "status": "live",
       "source": "app/(core)/rag/flow/page.tsx"
@@ -5404,6 +5574,11 @@
       "pattern": "/research/topics/[topicId]/experts",
       "status": "live",
       "source": "app/(core)/research/topics/[topicId]/experts/page.tsx"
+    },
+    {
+      "pattern": "/research/topics/[topicId]/intelligence",
+      "status": "live",
+      "source": "app/(core)/research/topics/[topicId]/intelligence/page.tsx"
     },
     {
       "pattern": "/research/topics/[topicId]/keywords",
