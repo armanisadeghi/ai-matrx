@@ -22,6 +22,7 @@ import GlassButton from "./GlassButton";
 import BottomSheet from "./BottomSheet";
 import GlassDropdown from "./GlassDropdown";
 import type { HeaderAction } from "../types";
+import type { DeclaresRouteHeaderActions } from "../../route-header-layout";
 
 interface HeaderActionsProps {
   actions: HeaderAction[];
@@ -96,3 +97,21 @@ export default function HeaderActions({
     </>
   );
 }
+
+/**
+ * Inside a RouteHeader, the actions ARE the header's own actions (lane V25-UI-FIXES):
+ * each is one glass icon button named by its declared `label`, so RouteHeader lays
+ * them out and folds the ones that do not fit into its ONE "…" strip, each with its
+ * icon and its name. Handed over whole, the header folded this component as one
+ * action whose buttons sat in a wrapper hidden below `lg`: an empty box with no name
+ * (`/education/flashcards` at 320px, VERIFIER-25).
+ */
+(HeaderActions as typeof HeaderActions & DeclaresRouteHeaderActions<HeaderActionsProps>).routeHeaderActions = ({
+  actions,
+}: HeaderActionsProps) => (
+  <>
+    {actions.map((action) => (
+      <GlassButton key={action.label} icon={action.icon} onClick={action.onPress} ariaLabel={action.label} />
+    ))}
+  </>
+);

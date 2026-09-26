@@ -31,7 +31,10 @@
 //   - RIGHT folds. Pass actions as siblings (fragments are fine); when they do not all
 //     fit beside a title of TITLE_MIN_PX, the leftmost fold into ONE "…" overflow that
 //     opens them as a glass strip. Order your actions lowest-priority first, primary
-//     last. A single wrapper component is one action and cannot fold — pass siblings.
+//     last. A single wrapper component is one action and cannot fold — pass siblings,
+//     or give the component a `routeHeaderActions` static that returns them (HeaderActions
+//     does): each is then its own action, named by the label it declares. A node that is
+//     never drawn (a `hidden` file input) stays mounted but is never an action.
 //   - The PRIMARY (last) action stays visible. Secondary actions fold first; then a
 //     labelled tap button (`label` + `icon`) goes icon-only — caption kept as its
 //     accessible name and tooltip — instead of folding into "…".
@@ -123,7 +126,10 @@ export default function RouteHeader({
   const [compactPrimary, setCompactPrimary] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
 
-  const actions = flattenActions(right);
+  const flat = flattenActions(right);
+  // A never-drawn node (a hidden file input a button opens) stays mounted but is not an action.
+  const actions = flat.filter((a) => !a.inert);
+  const inert = flat.filter((a) => a.inert);
   const leftNode = ellipsizeLooseText(left);
   const actionKeys = actions.map((a) => a.key).join("|");
   const fold = Math.min(folded, actions.length);
@@ -241,6 +247,7 @@ export default function RouteHeader({
           // crushed a phone's header door to an 8px sliver (2026-09-25).
           className="relative z-10 flex shrink-0 items-center justify-end"
         >
+          {inert.map((a) => a.node)}
           {overflowActions.length > 0 ? (
             <Popover open={overflowOpen} onOpenChange={setOverflowOpen}>
               <PopoverTrigger asChild>

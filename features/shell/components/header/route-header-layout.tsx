@@ -42,9 +42,54 @@ export const COMPACT_ACTION_PX = 44;
 export interface FlatAction {
   key: string;
   node: ReactNode;
+  /**
+   * Never drawn at any width — a `hidden` file input a button opens, say. It stays
+   * mounted beside the actions but is not one: it never folds, is never measured and
+   * never becomes an empty box in the "…" strip (`/rag/library`, VERIFIER-25).
+   */
+  inert?: boolean;
 }
 
-/** Expand fragments (at any depth) so each real action is its own foldable item. */
+/**
+ * A component that stands for SEVERAL actions declares them (lane V25-UI-FIXES).
+ * `HeaderActions` draws its actions inline on `lg+` inside a wrapper that is
+ * `hidden` below `lg`; handed to RouteHeader whole, it folded as ONE action whose
+ * button sat inside that hidden wrapper, so the "…" strip showed an empty box with
+ * no name (`/education/flashcards` at 320px, VERIFIER-25). A component carrying this
+ * static is expanded into the actions it returns — each one its own foldable item,
+ * named by the label it DECLARES, never by what its DOM happens to show.
+ */
+export interface DeclaresRouteHeaderActions<P = never> {
+  routeHeaderActions?: (props: P) => ReactNode;
+}
+
+function declaredActions(child: ReactElement): ReactNode | undefined {
+  const type = child.type as unknown;
+  if (typeof type !== "function" && (typeof type !== "object" || type === null)) return undefined;
+  const expand = (type as DeclaresRouteHeaderActions<unknown>).routeHeaderActions;
+  return typeof expand === "function" ? expand(child.props) : undefined;
+}
+
+const RESPONSIVE_DISPLAY = /^(sm|md|lg|xl|2xl|max-\w+|min-\[[^\]]+\]|@\w+):(flex|inline-flex|block|inline-block|inline|grid|inline-grid|contents|table)$/;
+
+/**
+ * A host element that is never drawn at any width: `type="hidden"`, the `hidden`
+ * attribute, or a `hidden` class with no responsive display class beside it
+ * (`hidden lg:flex` IS drawn, on large screens).
+ */
+export function isNeverDrawn(node: ReactNode): boolean {
+  if (!isValidElement(node) || typeof node.type !== "string") return false;
+  const props = node.props as { type?: unknown; hidden?: unknown; className?: unknown };
+  if (props.type === "hidden" || props.hidden === true) return true;
+  if (typeof props.className !== "string") return false;
+  const classes = props.className.split(/\s+/);
+  return classes.includes("hidden") && !classes.some((c) => RESPONSIVE_DISPLAY.test(c));
+}
+
+/**
+ * Expand fragments (at any depth), and components that declare their actions, so each
+ * real action is its own foldable item. A never-drawn node is kept, marked `inert`.
+ */
 export function flattenActions(node: ReactNode, prefix = ""): FlatAction[] {
   const out: FlatAction[] = [];
   Children.toArray(node).forEach((child, index) => {
@@ -56,9 +101,17 @@ export function flattenActions(node: ReactNode, prefix = ""): FlatAction[] {
       out.push(...flattenActions(props.children, key));
       return;
     }
+    if (isValidElement(child)) {
+      const declared = declaredActions(child);
+      if (declared !== undefined) {
+        out.push(...flattenActions(declared, key));
+        return;
+      }
+    }
     out.push({
       key,
       node: isValidElement(child) ? cloneElement(child, { key }) : child,
+      ...(isNeverDrawn(child) ? { inert: true } : {}),
     });
   });
   return out;
@@ -140,10 +193,11 @@ interface OverflowLabelProps {
  */
 export function overflowItemLabel(node: ReactNode): string | null {
   if (!isValidElement(node)) return null;
-  const { ariaLabel, tooltip, label } = node.props as OverflowLabelProps;
-  if (typeof ariaLabel === "string" && ariaLabel.trim() !== "") return ariaLabel;
-  if (typeof tooltip === "string" && tooltip.trim() !== "") return tooltip;
-  if (typeof label === "string" && label.trim() !== "") return label;
+  const props = node.props as OverflowLabelProps & { "aria-label"?: unknown; title?: unknown };
+  // The DECLARED name, in the order a control declares it — never read off the DOM.
+  for (const name of [props.ariaLabel, props["aria-label"], props.tooltip, props.label, props.title]) {
+    if (typeof name === "string" && name.trim() !== "") return name;
+  }
   return null;
 }
 

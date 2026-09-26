@@ -266,7 +266,9 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
       <RouteHeader
         center={<BattleModeNav />}
         right={
-          <div className="flex items-center">
+          // Siblings, not one wrapper: RouteHeader expands HeaderActions into its own
+          // named actions and folds them; Submit all is the primary (lane V25-UI-FIXES).
+          <>
             <HeaderActions
               actions={actions}
               maxInline={1}
@@ -291,7 +293,7 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
               )}
               <span className="max-sm:sr-only">Submit all</span>
             </Button>
-          </div>
+          </>
         }
       />
 
