@@ -116,8 +116,10 @@ Write `workbench_udt_canonical_step4_drop_legacy.sql`:
 1. re-assert the two invariants above (fail loudly if either is non-zero);
 2. `drop trigger _bridge_legacy_owner` on all four + `drop function workbench._bridge_legacy_owner()`;
 3. `alter table … drop column user_id, drop column is_public` on all four;
-4. `alter table … alter column visibility set default 'personal'` — the bridge was filling NULLs,
-   so the column needs a real default once it is gone;
+4. `alter table … alter column visibility set default 'internal'` — the bridge was filling NULLs,
+   so the column needs a real default once it is gone. These are work made for the job, so they sit
+   at the Organization level (`common-docs/policies/access-ladder.md`; their `data_class` is still
+   `private` — FOUND_DEFECTS D193);
 5. `pnpm db-types` here + `python db/generate.py` in aidream.
 
 Order matters: the trigger must go before the columns, and step 4 must not be skipped or every
