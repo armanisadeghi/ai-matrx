@@ -16,6 +16,7 @@ import { Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { PortalWriteOutcome } from "@/app/(portal)/portal/c/[slug]/r/[recordId]/actions";
+import { guardedSave } from "@/lib/save/guardedSave";
 
 export function PortalFieldEditor({
   slug,
@@ -39,7 +40,10 @@ export function PortalFieldEditor({
 }) {
   const [value, setValue] = useState(initialValue);
   const [saved, setSaved] = useState(initialValue);
-  const [refusal, setRefusal] = useState<{ message: string; hint: string | null } | null>(null);
+  const [refusal, setRefusal] = useState<{
+    message: string;
+    hint: string | null;
+  } | null>(null);
   const [justSaved, setJustSaved] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -49,7 +53,13 @@ export function PortalFieldEditor({
     setRefusal(null);
     setJustSaved(false);
     startTransition(async () => {
-      const outcome = await save(slug, recordId, fieldKey, value);
+      const outcome = await guardedSave(
+        () => save(slug, recordId, fieldKey, value),
+        {
+          what: "this field",
+          onRetry: () => onSave(),
+        },
+      );
       if (outcome.ok) {
         setSaved(value);
         setJustSaved(true);
@@ -102,7 +112,9 @@ export function PortalFieldEditor({
       {refusal ? (
         <div className="mt-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
           <p className="font-medium text-destructive">{refusal.message}</p>
-          {refusal.hint ? <p className="mt-1 text-muted-foreground">{refusal.hint}</p> : null}
+          {refusal.hint ? (
+            <p className="mt-1 text-muted-foreground">{refusal.hint}</p>
+          ) : null}
         </div>
       ) : null}
     </div>

@@ -34,7 +34,7 @@ export interface GuardedSaveOptions {
 let nextId = 0;
 
 export async function guardedSave<T>(
-  run: () => Promise<T>,
+  run: () => PromiseLike<T>,
   { what, onRetry, stallMs = SAVE_STALL_MS }: GuardedSaveOptions,
 ): Promise<T> {
   const id = `save-stall-${++nextId}`;

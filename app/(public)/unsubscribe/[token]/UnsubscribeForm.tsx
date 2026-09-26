@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { guardedSave } from "@/lib/save/guardedSave";
 
 type Props = {
   token: string;
@@ -40,14 +41,20 @@ export function UnsubscribeForm({
     setFailed(false);
     startTransition(async () => {
       const supabase = createClient();
-      const { data, error } = await supabase.rpc("outreach_unsubscribe", {
-        p_token: token,
-        // The generated RPC args are optional, not nullable — omit rather than
-        // widening the generated type.
-        p_user_agent:
-          typeof navigator === "undefined" ? undefined : navigator.userAgent,
-        p_reason: reason.trim() || undefined,
-      });
+      const { data, error } = await guardedSave(
+        () =>
+          supabase.rpc("outreach_unsubscribe", {
+            p_token: token,
+            // The generated RPC args are optional, not nullable — omit rather than
+            // widening the generated type.
+            p_user_agent:
+              typeof navigator === "undefined"
+                ? undefined
+                : navigator.userAgent,
+            p_reason: reason.trim() || undefined,
+          }),
+        { what: "your unsubscribe", onRetry: () => handleUnsubscribe() },
+      );
       // The RPC is idempotent and returns ok for an already-unsubscribed token,
       // so anything falsy here is a genuine failure worth showing.
       if (error || !(data as { ok?: boolean } | null)?.ok) {
@@ -70,7 +77,9 @@ export function UnsubscribeForm({
         <p className="text-sm text-muted-foreground">
           {maskedAddress ? (
             <>
-              <span className="font-medium text-foreground">{maskedAddress}</span>{" "}
+              <span className="font-medium text-foreground">
+                {maskedAddress}
+              </span>{" "}
               will not receive any further email from {sender}.
             </>
           ) : (
@@ -78,8 +87,8 @@ export function UnsubscribeForm({
           )}
         </p>
         <p className="text-sm text-muted-foreground">
-          This applies to every one of their campaigns, not just this one, and it
-          takes effect immediately.
+          This applies to every one of their campaigns, not just this one, and
+          it takes effect immediately.
         </p>
       </div>
     );
@@ -94,7 +103,9 @@ export function UnsubscribeForm({
         <p className="text-sm text-muted-foreground">
           {maskedAddress ? (
             <>
-              <span className="font-medium text-foreground">{maskedAddress}</span>{" "}
+              <span className="font-medium text-foreground">
+                {maskedAddress}
+              </span>{" "}
               is subscribed to email from{" "}
               <span className="font-medium text-foreground">{sender}</span>
               {listName ? <> ({listName})</> : null}.
@@ -126,10 +137,14 @@ export function UnsubscribeForm({
 
       {failed ? (
         <p className="text-sm text-destructive">
-          Something went wrong on our end. Please try once more — or reply to the
-          message with the word <span className="font-medium">unsubscribe</span>{" "}
-          and we&apos;ll stop contacting you.{" "}
-          <ErrorAlchemyMenu className="align-middle" operation="Unsubscribe from our messages" />
+          Something went wrong on our end. Please try once more — or reply to
+          the message with the word{" "}
+          <span className="font-medium">unsubscribe</span> and we&apos;ll stop
+          contacting you.{" "}
+          <ErrorAlchemyMenu
+            className="align-middle"
+            operation="Unsubscribe from our messages"
+          />
         </p>
       ) : null}
 
@@ -140,7 +155,9 @@ export function UnsubscribeForm({
         >
           Anything you want to tell them? (optional)
         </label>
-        <ProTextarea enableVoice={false} enableCleanup={false}
+        <ProTextarea
+          enableVoice={false}
+          enableCleanup={false}
           id="unsubscribe-reason"
           value={reason}
           onChange={(e) => setReason(e.target.value)}

@@ -85,6 +85,7 @@ import type {
 } from "../types";
 import type { EduSection } from "../../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { guardedSave } from "@/lib/save/guardedSave";
 
 interface Props {
   initialDocs: LearnDocRecord[];
@@ -211,7 +212,11 @@ export function LearnDocAdmin({ initialDocs }: Props) {
       setPendingId(doc.id);
       startTransition(async () => {
         try {
-          await setLearnDocStatusAction(doc.id, publish);
+          await guardedSave(() => setLearnDocStatusAction(doc.id, publish), {
+            what: publish ? "the publish" : "the unpublish",
+            onRetry: () =>
+              void setLearnDocStatusAction(doc.id, publish).then(refresh),
+          });
           toast.success(publish ? "Published" : "Unpublished");
           await refresh();
         } catch (e) {
@@ -236,7 +241,10 @@ export function LearnDocAdmin({ initialDocs }: Props) {
       setPendingId(doc.id);
       startTransition(async () => {
         try {
-          await deleteLearnDocAction(doc.id);
+          await guardedSave(() => deleteLearnDocAction(doc.id), {
+            what: "the delete",
+            onRetry: () => void deleteLearnDocAction(doc.id).then(refresh),
+          });
           toast.success("Deleted");
           await refresh();
         } catch (e) {
@@ -964,7 +972,9 @@ function LearnDocEditor({
               </div>
               <div className="scale-[0.85] origin-top">
                 {authoredSections.ok ? (
-                  <SectionRendererPreview sections={authoredSections.sections ?? []} />
+                  <SectionRendererPreview
+                    sections={authoredSections.sections ?? []}
+                  />
                 ) : (
                   <div className="p-6 text-sm text-destructive">
                     Fix the incomplete content block to preview.

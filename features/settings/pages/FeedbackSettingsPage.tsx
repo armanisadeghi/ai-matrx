@@ -57,6 +57,7 @@ import {
   getFeedbackScreenshotRefs,
 } from "@/features/feedback/screenshot-refs";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { guardedSave } from "@/lib/save/guardedSave";
 
 // ──────────────────────────────────────────────────
 // Progress Stepper - User-facing stage definitions
@@ -472,7 +473,13 @@ function FeedbackItem({
 
   const handleConfirm = () => {
     startTransition(async () => {
-      const result = await confirmFeedbackResolution(item.id);
+      const result = await guardedSave(
+        () => confirmFeedbackResolution(item.id),
+        {
+          what: "your confirmation",
+          onRetry: () => handleConfirm(),
+        },
+      );
       if (result.success) {
         setConfirmed(true);
       }

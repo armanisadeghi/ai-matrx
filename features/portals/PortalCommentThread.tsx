@@ -13,6 +13,7 @@ import { Loader2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { PortalWriteOutcome } from "@/app/(portal)/portal/c/[slug]/r/[recordId]/actions";
+import { guardedSave } from "@/lib/save/guardedSave";
 
 export interface ThreadComment {
   id: string;
@@ -33,17 +34,27 @@ export function PortalCommentThread({
   slug: string;
   recordId: string;
   comments: ThreadComment[];
-  send: (slug: string, recordId: string, body: string) => Promise<PortalWriteOutcome>;
+  send: (
+    slug: string,
+    recordId: string,
+    body: string,
+  ) => Promise<PortalWriteOutcome>;
 }) {
   const [draft, setDraft] = useState("");
-  const [refusal, setRefusal] = useState<{ message: string; hint: string | null } | null>(null);
+  const [refusal, setRefusal] = useState<{
+    message: string;
+    hint: string | null;
+  } | null>(null);
   const [pending, startTransition] = useTransition();
 
   function onSend() {
     if (!draft.trim()) return;
     setRefusal(null);
     startTransition(async () => {
-      const outcome = await send(slug, recordId, draft);
+      // A comment is not safe to repeat: no Retry, only the honest wait.
+      const outcome = await guardedSave(() => send(slug, recordId, draft), {
+        what: "your comment",
+      });
       if (outcome.ok) {
         setDraft("");
         return;
@@ -59,7 +70,8 @@ export function PortalCommentThread({
     <div>
       {comments.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
-          No messages yet. Anything you write here goes to the team working on this.
+          No messages yet. Anything you write here goes to the team working on
+          this.
         </p>
       ) : (
         <ul className="space-y-3">
@@ -73,10 +85,14 @@ export function PortalCommentThread({
               }
             >
               <p className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">{comment.author}</span>
+                <span className="font-medium text-foreground">
+                  {comment.author}
+                </span>
                 <span className="shrink-0 tabular-nums">{comment.when}</span>
               </p>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{comment.body}</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">
+                {comment.body}
+              </p>
             </li>
           ))}
         </ul>
@@ -101,13 +117,19 @@ export function PortalCommentThread({
           onClick={onSend}
           disabled={pending || !draft.trim()}
         >
-          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          {pending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
           {pending ? "Sending" : "Send"}
         </Button>
         {refusal ? (
           <div className="mt-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
             <p className="font-medium text-destructive">{refusal.message}</p>
-            {refusal.hint ? <p className="mt-1 text-muted-foreground">{refusal.hint}</p> : null}
+            {refusal.hint ? (
+              <p className="mt-1 text-muted-foreground">{refusal.hint}</p>
+            ) : null}
           </div>
         ) : null}
       </div>
