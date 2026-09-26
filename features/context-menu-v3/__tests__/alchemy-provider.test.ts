@@ -92,7 +92,8 @@ describe("context-menu provider", () => {
     const library = resolved.find((r) => r.action.id === "cm:placement:ai-action")?.action;
     expect(library?.section).toEqual({ id: richDocumentSectionId("Improve with AI"), label: "Improve with AI" });
     expect(library?.category).toBe("ai");
-    expect(await library?.expand?.(createClickTarget(), new AbortController().signal)).toEqual([
+    const owned = createClickTarget({ host: { contextMenu: { kind: "context-menu", instanceId: "m1" } } });
+    expect(await library?.expand?.(owned, new AbortController().signal)).toEqual([
       expect.objectContaining({ id: "cm:shortcut:improve", label: "Improve Writing" }),
     ]);
   });
@@ -108,5 +109,51 @@ describe("context-menu provider", () => {
 
   it("instance: another open menu's rows never leak into this target", async () => {
     expect(await resolveFor("m2", "m1")).toEqual([]);
+  });
+});
+
+describe("round 2 findings", () => {
+  function libraries(loading: boolean): MenuModel {
+    const aiActions = {
+      kind: "submenu",
+      id: "placement:ai-action",
+      label: "AI Actions",
+      disabled: loading,
+      loading,
+      children: loading
+        ? []
+        : [
+            { kind: "submenu", id: "cat:writing", label: "Writing", children: [item("shortcut:improve", "Improve Writing")] },
+            { kind: "submenu", id: "cat:enhancers", label: "Agent Enhancers", disabled: true, emptyLabel: "No items in Agent Enhancers", children: [] },
+          ],
+    } as MenuNode;
+    const blocks = { kind: "submenu", id: "placement:content-block", label: "Content Blocks", children: [item("block:sig", "Signature")] } as MenuNode;
+    return { header: null, sections: [{ id: "placements", group: "ai", nodes: [aiActions, blocks] }], roles: {} as MenuModel["roles"] };
+  }
+  const t = (readOnly: boolean) => createClickTarget({ readOnly, host: { contextMenu: { kind: "context-menu", instanceId: "m1" } } });
+
+  it("2: a library still loading is present (never silently absent) and its rows arrive when it loads", async () => {
+    let current = libraries(true);
+    let wake: () => void = () => undefined;
+    const next = () => new Promise<MenuModel>((r) => { wake = () => r(current); });
+    const actions = contextMenuActionsFromModel(current, "m1", { nextModel: next });
+    const lib = actions.find((a) => a.id === "cm:placement:ai-action");
+    expect(lib?.eligible(t(false))).toEqual({ status: "available" });
+    const rows = lib?.expand?.(t(false), new AbortController().signal);
+    current = libraries(false);
+    wake();
+    expect((await rows)?.map((a) => a.id)).toEqual(["cm:cat:writing"]);
+  });
+
+  it("3: an empty category is absent — never a 'No items in …' panel", async () => {
+    const actions = contextMenuActionsFromModel(libraries(false), "m1");
+    const rows = await actions.find((a) => a.id === "cm:placement:ai-action")?.expand?.(t(false), new AbortController().signal);
+    expect(rows?.map((a) => a.id)).toEqual(["cm:cat:writing"]);
+  });
+
+  it("4: Content Blocks insert content, so they are absent on a read-only source", () => {
+    const blocks = contextMenuActionsFromModel(libraries(false), "m1").find((a) => a.id === "cm:placement:content-block");
+    expect(blocks?.eligible(t(true))).toEqual({ status: "absent" });
+    expect(blocks?.eligible(t(false))).toEqual({ status: "available" });
   });
 });

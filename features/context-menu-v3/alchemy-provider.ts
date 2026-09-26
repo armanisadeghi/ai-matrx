@@ -73,6 +73,28 @@ const NON_VERB_CLIPBOARD: Record<string, ActionCategory> = {
   "insert-reference": "edit",
 };
 
+export interface ProviderOptions {
+  /**
+   * Resolves with the NEXT model the engine hook builds. A library still
+   * loading (the first agent fetch) waits on it instead of vanishing.
+   */
+  nextModel?: () => Promise<MenuModel>;
+}
+
+/** Rows that INSERT content into the surface: absent on a read-only source. */
+const INSERTS_CONTENT = new Set(["placement:content-block"]);
+
+function findNodeById(nodes: readonly MenuNode[], id: string): MenuNode | null {
+  for (const n of nodes) {
+    if (n.id === id) return n;
+    if (n.kind === "submenu") {
+      const hit = findNodeById(n.children, id);
+      if (hit) return hit;
+    }
+  }
+  return null;
+}
+
 interface Placement {
   category: ActionCategory;
   section?: Action["section"];
@@ -87,7 +109,7 @@ function icon(node: { icon?: unknown }): string | undefined {
 }
 
 /** One v3 node → one package action (submenus expand to their rows). */
-function toAction(node: MenuNode, place: Placement, instanceId: string): Action | null {
+function toAction(node: MenuNode, place: Placement, instanceId: string, opts: ProviderOptions = {}): Action | null {
   if (node.kind === "separator" || node.kind === "label") return null;
   const id = `cm:${node.id}`;
   const own = (t: ClickTarget) => contextMenuHostOf(t)?.instanceId === instanceId;
@@ -103,15 +125,35 @@ function toAction(node: MenuNode, place: Placement, instanceId: string): Action 
     ...("hint" in node && node.hint ? { hint: node.hint } : {}),
   };
   if (node.kind === "submenu") {
-    const children = node.children;
+    const inserts = INSERTS_CONTENT.has(node.id);
     return {
       ...base,
-      ...(node.emptyLabel ? { emptyLabel: node.emptyLabel } : {}),
-      eligible: (t) => (own(t) && !node.disabled && (node.loading || hasRows(children)) ? available : absent),
-      expand: async () =>
-        children
-          .map((child, index) => toAction(child, { ...place, section: undefined, order: index }, instanceId))
-          .filter((a): a is Action => a !== null),
+      eligible: (t) => {
+        if (!own(t)) return absent;
+        if (inserts && t.readOnly) return absent;
+        // Still loading: SHOWN (as loading), never silently absent (round 2).
+        if (node.loading) return available;
+        return !node.disabled && hasRows(node.children) ? available : absent;
+      },
+      expand: async (t) => {
+        let current: MenuNode = node;
+        // Wait for the library's first load (bounded), then read its rows
+        // from the model that has them.
+        for (let i = 0; current.kind === "submenu" && current.loading && opts.nextModel && i < 20; i++) {
+          const next = await opts.nextModel();
+          const found = next.sections.map((s) => findNodeById(s.nodes, node.id)).find(Boolean);
+          if (!found) return [];
+          current = found;
+        }
+        if (current.kind !== "submenu") return [];
+        void t;
+        return current.children
+          // An empty category (or a row that cannot run) is ABSENT (R1) —
+          // never a "No items in …" panel, never a dead row.
+          .filter((child) => !unusable(child))
+          .map((child, index) => toAction(child, { ...place, section: undefined, order: index }, instanceId, opts))
+          .filter((a): a is Action => a !== null);
+      },
       run: () => undefined,
     };
   }
@@ -142,6 +184,13 @@ function toAction(node: MenuNode, place: Placement, instanceId: string): Action 
   };
 }
 
+/** A row that can never run here: a disabled leaf, or a submenu with nothing to open. */
+function unusable(node: MenuNode): boolean {
+  if (node.kind === "separator" || node.kind === "label") return false;
+  if (node.kind === "submenu") return !node.loading && (Boolean(node.disabled) || !hasRows(node.children));
+  return "disabled" in node && Boolean(node.disabled);
+}
+
 function hasRows(nodes: MenuNode[]): boolean {
   return nodes.some((n) => (n.kind === "submenu" ? n.loading || hasRows(n.children) : n.kind !== "separator" && n.kind !== "label"));
 }
@@ -150,7 +199,7 @@ function hasRows(nodes: MenuNode[]): boolean {
  * The model → the actions this menu instance contributes. Rich-document rows
  * (`rich:` leaves) are skipped: the rich-document provider supplies them.
  */
-export function contextMenuActionsFromModel(model: MenuModel, instanceId: string): Action[] {
+export function contextMenuActionsFromModel(model: MenuModel, instanceId: string, opts: ProviderOptions = {}): Action[] {
   const out: Action[] = [];
   model.sections.forEach((section, sectionIndex) => {
     const base = sectionIndex * 100;
@@ -168,6 +217,7 @@ export function contextMenuActionsFromModel(model: MenuModel, instanceId: string
               order: 5_000 + i * 50 + j,
             },
             instanceId,
+            opts,
           );
           if (a) out.push(a);
         });
@@ -195,6 +245,7 @@ export function contextMenuActionsFromModel(model: MenuModel, instanceId: string
           order: base + i,
         },
         instanceId,
+        opts,
       );
       if (a) out.push(a);
     });

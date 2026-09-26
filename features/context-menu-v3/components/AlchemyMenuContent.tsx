@@ -73,9 +73,21 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
             .map((r) => ({ action: r.action, target: rt }));
         })
       : actions;
-  const actionsRef = React.useRef(withSiteMore(contextMenuActionsFromModel(model, instanceId)));
+  // A library still loading (the first agent fetch) waits for the NEXT model
+  // that changes what the menu draws, instead of vanishing (ALC-15 round 2).
+  const waitersRef = React.useRef<((next: typeof model) => void)[]>([]);
+  const nextModel = () => new Promise<typeof model>((resolve) => waitersRef.current.push(resolve));
+  const actionsRef = React.useRef(withSiteMore(contextMenuActionsFromModel(model, instanceId, { nextModel })));
+  const drawnRef = React.useRef("");
+  const drawn = modelRevision(model);
   React.useLayoutEffect(() => {
-    actionsRef.current = withSiteMore(contextMenuActionsFromModel(model, instanceId));
+    actionsRef.current = withSiteMore(contextMenuActionsFromModel(model, instanceId, { nextModel }));
+    if (drawnRef.current !== drawn) {
+      drawnRef.current = drawn;
+      const waiters = waitersRef.current;
+      waitersRef.current = [];
+      for (const wake of waiters) wake(model);
+    }
   });
   React.useEffect(
     () =>
@@ -126,7 +138,7 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
   if (foldSite && hasRichDocument && richTargetRef.current === null) richTargetRef.current = makeTarget(true);
   // Re-resolve when what the menu would draw moves (agents finish loading, a
   // toggle flips) — the target object itself stays one per open.
-  const revision = modelRevision(model);
+  const revision = drawn;
   const content = m.actionText.source === "none" ? null : m.actionText.text;
   const engine = { revision, content };
 
