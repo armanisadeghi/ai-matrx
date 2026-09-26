@@ -13,6 +13,7 @@ import React from "react";
 import { supabase } from "@/utils/supabase/client";
 import { listOrgShareGrants } from "@/utils/permissions/orgModeration";
 import type { OrgResourceEntry } from "../resource-catalogue";
+import { organizationPickListsInTheNewSystem } from "@/features/user-lists/where-lists-live";
 
 /**
  * No `href` here on purpose: the route for a record comes from the entity
@@ -69,6 +70,7 @@ export function useOrgSharedItems(
             .eq("organization_id", orgId)
             .limit(500);
           if (entry.archivedColumn) q = q.eq(entry.archivedColumn as never, false);
+          if (entry.deletedAtColumn) q = q.is(entry.deletedAtColumn as never, null);
           const { data } = await q;
           // MATRX-EXCEPTION: table + title column are resolved from the org
           // resource catalogue at runtime (any cardable kind), so the row
@@ -81,6 +83,14 @@ export function useOrgSharedItems(
               title: String(row[titleCol] ?? "").trim() || "Untitled",
               source: "owned",
             });
+          }
+        }
+
+        // 1b) The org's own rows that live in the new system (a switched organization's pick
+        // lists). Same ids as the older rows they came from, so each is listed once.
+        if (entry.alsoInTheNewSystem === "pick_lists") {
+          for (const list of await organizationPickListsInTheNewSystem(supabase, orgId)) {
+            ownedById.set(list.id, { id: list.id, title: list.list_name, source: "owned" });
           }
         }
 

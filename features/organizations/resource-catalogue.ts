@@ -177,6 +177,16 @@ export interface OrgResourceEntry {
   hasOrgColumn: boolean;
   /** When set, owned-count excludes rows where this boolean column is true. */
   archivedColumn?: string;
+  /** When set, the org's own rows exclude rows where this timestamp column is set (soft-deleted). */
+  deletedAtColumn?: string;
+  /**
+   * THE NEW SYSTEM HOLDS SOME OF THIS KIND TOO (lane MOVER-DELETIONS, 2026-09-26). After an
+   * organization switches its Data tables, its pick lists live in the record store as Tables of
+   * choices (same ids) and the older rows are archived. `"pick_lists"`: the org's own rows also come
+   * from `custom.organization_pick_lists` (features/user-lists/where-lists-live.ts), counted and
+   * listed once per id.
+   */
+  alsoInTheNewSystem?: "pick_lists";
 
   /**
    * The canonical entity token stored in `permissions.resource_type` for grants
@@ -384,6 +394,8 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     // the prior `false` was stale catalogue drift that hid org-owned lists from
     // both the inventory count and the org shared-items list.
     hasOrgColumn: true,
+    deletedAtColumn: "deleted_at",
+    alsoInTheNewSystem: "pick_lists",
     shareKey: "structured_list",
     titleColumn: STRUCTURED_LIST_INFO.titleColumn,
     orgRoute: null,

@@ -32,6 +32,7 @@
 import React from "react";
 import { supabase } from "@/utils/supabase/client";
 import { ORG_RESOURCE_CATALOGUE } from "../resource-catalogue";
+import { organizationPickListsInTheNewSystem } from "@/features/user-lists/where-lists-live";
 
 interface ContainerCountRow {
   resource_key: string;
@@ -114,6 +115,22 @@ export function useContainerInventory({
         }
       } catch (err) {
         console.error("[useContainerInventory] count rpc threw:", err);
+      }
+
+      // THE NEW SYSTEM'S SHARE OF A KIND (lane MOVER-DELETIONS): a switched organization's pick
+      // lists live in the record store; the RPC above counts only the live older rows.
+      if (column === "organization_id") {
+        for (const entry of ORG_RESOURCE_CATALOGUE) {
+          if (entry.alsoInTheNewSystem !== "pick_lists") continue;
+          try {
+            const inStore = await organizationPickListsInTheNewSystem(supabase, value);
+            if (inStore.length > 0) {
+              ownedByKey.set(entry.key, (ownedByKey.get(entry.key) ?? 0) + inStore.length);
+            }
+          } catch (err) {
+            console.error("[useContainerInventory] lists in the new system failed:", err);
+          }
+        }
       }
 
       if (cancelled) return;

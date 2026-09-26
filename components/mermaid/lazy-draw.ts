@@ -18,6 +18,7 @@
 
 "use client";
 
+import { nearestScrollRoot } from "@/lib/layout/scroll-root";
 import { useEffect, useState, useSyncExternalStore, type RefObject } from "react";
 
 /** How far outside the viewport a diagram starts drawing. */
@@ -33,8 +34,11 @@ const sleepers = new Map<symbol, () => void>();
 /** Asked to draw (near the viewport or by the idle queue) but not drawn yet. */
 const drawing = new Set<symbol>();
 
-/** Diagrams the idle queue wakes per idle period. */
-export const IDLE_BATCH = 2;
+/**
+ * Diagrams the idle queue wakes per idle period. One: a diagram is a single
+ * long task (mermaid measures every label), so two at once doubled the stall.
+ */
+export const IDLE_BATCH = 1;
 let idleScheduled = false;
 
 function scheduleIdleDraws() {
@@ -59,7 +63,11 @@ function scheduleIdleDraws() {
   };
   const ric = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number })
     .requestIdleCallback;
-  if (ric) ric(run, { timeout: 2000 });
+  // TRUE idle only — no timeout. With `{ timeout: 2000 }` a busy page (a
+  // 1 MB document still mounting, a person typing) fired the queue anyway every
+  // two seconds, so "idle" diagrams drew back to back under load: a chat
+  // answer's 1 MB Preview stalled 230 s in total (verifier round 1, row 3).
+  if (ric) ric(run);
   else setTimeout(run, 200);
 }
 
@@ -156,7 +164,8 @@ export function useDrawWhenNear(ref: RefObject<HTMLElement | null>): {
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) setNear(true);
       },
-      { rootMargin: DRAW_MARGIN },
+      // Its own scroller, so the margin holds inside a panel or drawer too.
+      { root: nearestScrollRoot(el), rootMargin: DRAW_MARGIN },
     );
     io.observe(el);
     return () => io.disconnect();

@@ -186,16 +186,18 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
       <div className="@container flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card/30">
         {/* ONE header row at every width (UI audit B): the mode strip gives up
             labels before anything wraps onto a second row. */}
-        <div className="flex min-w-0 items-center gap-2 border-b border-border px-3 py-1.5">
+        <div className="flex min-w-0 items-center gap-1 border-b border-border px-2 py-1.5 @md:gap-2 @md:px-3">
           {onShowSource && (
             <button
               type="button"
               onClick={onShowSource}
-              className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground lg:hidden"
+              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-md px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground lg:hidden"
               title="Show the source"
+              aria-label="Show the source"
             >
               <Type className="h-3.5 w-3.5" />
-              Source
+              {/* A phone-width pane keeps the icon; the mode select needs the room. */}
+              <span className="hidden @md:inline">Source</span>
             </button>
           )}
           {/* A phone-width pane: seven modes never fit, so the same slot holds
@@ -203,9 +205,10 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
           <Select value={mode} onValueChange={(v) => onModeChange(v as PreviewMode)}>
             <SelectTrigger
               aria-label="Preview mode"
-              className="h-11 w-auto min-w-0 shrink gap-1.5 px-2 text-xs @md:hidden"
+              className="h-11 w-auto shrink-0 gap-1.5 px-2 text-xs @md:hidden"
             >
-              <SelectValue />
+              {/* The closed select names the mode; the icons live in the list. */}
+              <SelectValue>{MODE_META[mode].label}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {PREVIEW_MODES.map((m) => {

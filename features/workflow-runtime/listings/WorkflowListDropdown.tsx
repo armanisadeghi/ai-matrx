@@ -94,6 +94,30 @@ export interface WorkflowListDropdownProps {
   wantedOutputKind?: string | null;
 }
 
+/**
+ * 🚨 OPEN BELOW THE CONTROL WHENEVER THERE IS ROOM TO USE IT.
+ *
+ * The panel has a fixed 528px footprint. Radix flips a popover to the side
+ * with more room using the panel's FULL height, so a trigger sitting in the
+ * middle of a dialog (the "Use my own" picker on a 900px screen: 418px below)
+ * sent the whole panel ABOVE it — over the dialog's own title and controls,
+ * reading as a list floating at the top of the screen (2026-09-26). Measuring
+ * the room below at open time and sizing the panel to it keeps it under its
+ * control; it flips only when less than a usable list fits below. The height
+ * is fixed for the whole time it is open, so nothing moves under the cursor.
+ */
+// Same measurement as `panelHeightBelow` in @ai-matrx/agents 0.14.2 (the
+// agent picker's twin); import it from there once that version is consumed.
+function fitBelowHeight(trigger: Element | null): string | null {
+  if (!trigger || typeof window === "undefined") return null;
+  const FULL = 528;
+  const MIN_USABLE = 300;
+  const GAP = 4 + 12; // sideOffset + collisionPadding
+  const below = window.innerHeight - trigger.getBoundingClientRect().bottom - GAP;
+  if (below >= FULL) return null;
+  return below >= MIN_USABLE ? `${Math.floor(below)}px` : null;
+}
+
 export function WorkflowListDropdown({
   onSelect,
   activeWorkflowId = null,
@@ -125,6 +149,8 @@ export function WorkflowListDropdown({
     "sort" | "categories" | "tags" | null
   >(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [fitHeight, setFitHeight] = useState<string | null>(null);
 
   const core = useWorkflowListCore({
     activeWorkflowId,
@@ -144,6 +170,7 @@ export function WorkflowListDropdown({
     if (disabled) return;
     setOpen(nextOpen);
     if (nextOpen) {
+      setFitHeight(contentSide ? null : fitBelowHeight(triggerRef.current));
       core.ensureLoaded();
       if (core.pinnedWorkflow && !isMobile) {
         core.setHoveredWorkflow(core.pinnedWorkflow);
@@ -229,11 +256,11 @@ export function WorkflowListDropdown({
     Trigger: typeof DrawerTrigger | typeof PopoverTrigger,
   ) => {
     if (!showAssignedTooltip) {
-      return <Trigger asChild>{triggerButton}</Trigger>;
+      return <Trigger asChild ref={triggerRef}>{triggerButton}</Trigger>;
     }
     return (
       <Tooltip open={open ? false : undefined}>
-        <Trigger asChild>
+        <Trigger asChild ref={triggerRef}>
           <TooltipTrigger asChild>{triggerButton}</TooltipTrigger>
         </Trigger>
         <TooltipContent side="bottom" className="max-w-xs">
@@ -347,14 +374,14 @@ export function WorkflowListDropdown({
       {wrapTrigger(PopoverTrigger)}
       <PopoverContent
         /* sizing: fixed — fixed-shape panel wider than the content-sizing 28rem ceiling */
-        side={contentSide}
+        side={contentSide ?? (fitHeight ? "bottom" : undefined)}
         align="start"
         sideOffset={4}
         collisionPadding={12}
         sticky="always"
         container={dialogContainer ?? undefined}
         className="w-[680px] overflow-hidden p-0"
-        style={{ height: PANEL_HEIGHT, maxHeight: LIST_MAX_HEIGHT }}
+        style={{ height: fitHeight ?? PANEL_HEIGHT, maxHeight: fitHeight ?? LIST_MAX_HEIGHT }}
       >
         <div className="flex h-full">
           <div className="flex w-[340px] min-w-0 shrink-0 flex-col border-r border-border">

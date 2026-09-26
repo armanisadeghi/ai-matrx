@@ -74,6 +74,29 @@ export async function storeListsOf(client: SupabaseClient, userId: string): Prom
     .map((row) => ({ ...normalizeUserList(row), user_id: row.user_id ?? userId }));
 }
 
+/**
+ * An organization's pick lists that live in the new system (Tables of choices the switch moved, or
+ * lists born there), that the signed-in person may open — the organization's Lists tab and its
+ * count read these beside the org's live older lists (lane MOVER-DELETIONS, 2026-09-26). Answered by
+ * `custom.organization_pick_lists`, which asks the store's own visibility (never the active org).
+ */
+export async function organizationPickListsInTheNewSystem(
+  client: SupabaseClient,
+  organizationId: string,
+): Promise<Array<{ id: string; list_name: string; updated_at: string | null }>> {
+  const { data, error } = await client
+    .schema("custom" as never)
+    .rpc("organization_pick_lists" as never, { p_organization_id: organizationId } as never);
+  if (error) throw new Error(`Failed to load the organization's lists in the new system: ${error.message}`);
+  return ((data ?? []) as Array<{ id?: unknown; list_name?: unknown; updated_at?: unknown }>)
+    .filter((row): row is { id: string; list_name?: unknown; updated_at?: unknown } => typeof row.id === "string")
+    .map((row) => ({
+      id: row.id,
+      list_name: typeof row.list_name === "string" && row.list_name.trim() ? row.list_name : "List",
+      updated_at: typeof row.updated_at === "string" ? row.updated_at : null,
+    }));
+}
+
 /** The sentence a Lists screen shows beside a list that lives in the new system. */
 export const LIST_LIVES_IN_NEW_SYSTEM =
   "This list now lives in the new system as a table of choices. Same list, same address; its organization switched its Data tables.";

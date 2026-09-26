@@ -13,6 +13,7 @@ import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamic
 import { Input } from "@ai-matrx/design-system";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { supabase } from "@/utils/supabase/client";
+import { organizationPickListsInTheNewSystem } from "@/features/user-lists/where-lists-live";
 import { getResourceSharePath } from "@/utils/permissions/registry";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -64,19 +65,24 @@ export function ContainerResourceSheet({
           .limit(300);
         if (entry.archivedColumn)
           q = q.eq(entry.archivedColumn as never, false);
+        if (entry.deletedAtColumn) q = q.is(entry.deletedAtColumn as never, null);
         const { data, error } = await q;
         if (error) throw error;
-        if (cancelled) return;
         // MATRX-EXCEPTION: table + title column are resolved from the org
         // resource catalogue at runtime (any cardable kind), so the row
         // shape cannot be a compile-time DbRpcRow guard.
         const rows = (data ?? []) as unknown as Array<Record<string, unknown>>;
-        setItems(
-          rows.map((r) => ({
-            id: String(r.id),
-            title: String(r[titleCol] ?? "").trim() || "Untitled",
-          })),
+        const byId = new Map<string, Item>(
+          rows.map((r) => [String(r.id), { id: String(r.id), title: String(r[titleCol] ?? "").trim() || "Untitled" }]),
         );
+        // A switched organization's pick lists live in the new system (lane MOVER-DELETIONS).
+        if (entry.alsoInTheNewSystem === "pick_lists" && column === "organization_id") {
+          for (const list of await organizationPickListsInTheNewSystem(supabase, value)) {
+            byId.set(list.id, { id: list.id, title: list.list_name });
+          }
+        }
+        if (cancelled) return;
+        setItems([...byId.values()]);
       } catch (err) {
         if (!cancelled) {
           console.error("[ContainerResourceSheet] load failed:", err);

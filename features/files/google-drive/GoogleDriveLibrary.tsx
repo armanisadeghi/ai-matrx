@@ -191,7 +191,7 @@ export function GoogleDriveLibrary() {
   }
 
   if (organizationState !== "ready") {
-    return <OrganizationContextNotice what="Google Drive review" />;
+    return <OrganizationContextNotice state={organizationState} what="Google Drive review" />;
   }
 
   return (
@@ -409,12 +409,12 @@ export function GoogleDriveLibrary() {
                         type="button"
                         size="sm"
                         variant="ghost"
-                        disabled={checkingFileId !== null}
                         onClick={() => void openInGoogle(file.id)}
                       >
                         {checkingFileId === file.id ? (
                           <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
                         ) : (
+                          // new-tab-icon: openInGoogle opens the file in a new tab (window.open in openGoogleDriveBlankTab); never disabled — each click opens its own tab
                           <ExternalLink className="mr-1 h-3.5 w-3.5" />
                         )}
                         Open in Google

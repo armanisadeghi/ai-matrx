@@ -19,6 +19,7 @@
 
 "use client";
 
+import { nearestScrollRoot } from "@/lib/layout/scroll-root";
 import { startTransition, useEffect, useRef, useState, type ReactNode } from "react";
 
 /** Blocks mounted in the first commit — above any real chat answer. */
@@ -99,7 +100,8 @@ function ScrollSentinel({
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) onVisible();
       },
-      { rootMargin: "1500px 0px" },
+      // Its own scroller, so the margin holds inside a panel or drawer too.
+      { root: nearestScrollRoot(el), rootMargin: "1500px 0px" },
     );
     io.observe(el);
     return () => io.disconnect();

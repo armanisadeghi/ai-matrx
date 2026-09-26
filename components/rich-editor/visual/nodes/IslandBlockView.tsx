@@ -81,7 +81,8 @@ export function IslandBlockView({ node, updateAttributes, deleteNode, selected, 
           <GripVertical className="h-3.5 w-3.5" />
         </span>
         <Icon className="h-3.5 w-3.5 shrink-0" />
-        <span className="min-w-0 truncate font-medium text-foreground/80">{meta.label}</span>
+        {/* On a phone a code block's language select already names it; the room goes to the select. */}
+        <span className={cn("min-w-0 truncate font-medium text-foreground/80", isFence && !readOnly && "hidden sm:inline")}>{meta.label}</span>
         <Lock className="h-3 w-3 shrink-0 opacity-60" aria-label="Protected — never rewritten by the editor" />
         {!complete && (
           <span className="flex shrink-0 items-center gap-1 text-amber-600 dark:text-amber-400" title="This block's closing marker is missing, so it runs to the end of the text. It is kept exactly as written.">
@@ -90,7 +91,7 @@ export function IslandBlockView({ node, updateAttributes, deleteNode, selected, 
         )}
         {isFence && !readOnly && (
           <select
-            className="ml-1 h-6 min-w-0 max-w-[8rem] shrink rounded border border-border bg-background px-1 text-xs text-foreground"
+            className="ml-1 h-6 min-w-[5.5rem] max-w-[8rem] shrink rounded border border-border bg-background px-1 text-xs text-foreground"
             aria-label="Code language"
             value={fenceLanguageOf(raw)}
             onChange={(event) => write(withFenceLanguage(raw, event.target.value))}
