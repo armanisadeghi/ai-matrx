@@ -237,7 +237,13 @@ export default function RichEditorImpl({
 
   const switchView = (next: RichEditorView) => {
     if (next === view) return;
-    flush();
+    try {
+      flush();
+    } catch (error) {
+      // Leaving the view would drop an edit that cannot be written safely — stay, and say why.
+      toast.error(error instanceof Error ? error.message : String(error));
+      return;
+    }
     handle.current?.clearFind();
     setView(next);
     setMountKey((key) => key + 1);
@@ -266,7 +272,14 @@ export default function RichEditorImpl({
 
   const save = () => {
     if (!onSave || readOnly || saving) return;
-    const text = flush();
+    let text: string;
+    try {
+      text = flush();
+    } catch (error) {
+      // A table edit that cannot be written safely: nothing is saved, the draft stays.
+      toast.error(error instanceof Error ? error.message : String(error));
+      return;
+    }
     const plan = planSave(stored, text, { approvedIslands: approved.current });
     if (!plan.changed) {
       if (onNothingToSave) onNothingToSave();

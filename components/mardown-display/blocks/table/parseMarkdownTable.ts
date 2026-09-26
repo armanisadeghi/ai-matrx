@@ -38,9 +38,11 @@ export function parseMarkdownTable(content: string): ParsedTable | null {
     const headerLine = lines[0];
     if (!headerLine.includes("|")) return null;
 
-    // Second line must be a markdown separator row.
+    // Second line must be a delimiter row — GFM's rule: every cell is `:?-+:?`,
+    // edge pipes optional (`--- | ---` is as valid as `|---|---|`).
     const separatorLine = lines[1];
-    if (!separatorLine.match(/^\|[:\s|\-]+\|?$/)) return null;
+    const delimiters = rowCells(separatorLine);
+    if (!separatorLine.includes("-") || !delimiters.length || !delimiters.every((cell) => /^:?-+:?$/.test(cell))) return null;
 
     // An escaped `\|` is part of its cell, never a boundary (the table writer
     // reads rows the same way: components/rich-editor/core/table-source.ts).

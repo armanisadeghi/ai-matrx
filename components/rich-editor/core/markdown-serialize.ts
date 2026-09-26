@@ -379,6 +379,24 @@ function leafText(node: PMNode): string {
   return node.textContent;
 }
 
+/**
+ * A text node as written into the source. A backslash the person TYPED is a
+ * literal character, but markdown reads a backslash before ASCII punctuation as
+ * an escape — so `C:\\new\\` typed into a bold cell was written
+ * `**C:\\new\\**` and its last backslash ate the closing `*`
+ * (verify-RC-B4 R4). A typed backslash is doubled where it would escape
+ * something: before ASCII punctuation, and at the end of a text run that
+ * markup or more text follows. Author escapes (`mdEscape`) and code are
+ * written as they are; a backslash before a letter or space needs nothing.
+ */
+function literalText(node: PMNode, followed: boolean): string {
+  const text = leafText(node);
+  if (!node.isText || node.marks.some((mark) => mark.type.name === "mdEscape" || mark.type.name === "code")) return text;
+  let out = text.replace(/\\(?=[!-/:-@[-`{-~])/g, "\\\\");
+  if (followed && /(^|[^\\])(\\\\)*\\$/.test(out)) out += "\\";
+  return out;
+}
+
 function longestBacktickRun(text: string): number {
   let longest = 0;
   for (const match of text.matchAll(/`+/g)) {
@@ -518,7 +536,7 @@ export function serializeInline(parent: PMNode): string {
       out += open;
       stack.push({ mark, close });
     }
-    out += leafText(node);
+    out += literalText(node, index < items.length - 1 || node.marks.some((mark) => mark.type.name !== "mdEscape"));
   });
   for (let k = stack.length - 1; k >= 0; k -= 1) out += stack[k]?.close ?? "";
   return out;

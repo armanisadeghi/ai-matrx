@@ -15,62 +15,150 @@
 // row split and a second edit deleted the tail (verify-RC-B4 R3-1).
 // Guard: scripts/check-table-writers.ts (no table writer outside this module).
 
-/** A table row's bytes split on its unescaped pipes (edge segments included). */
+/**
+ * THE table-row splitter — GFM's rule, exactly: a `|` is a cell boundary unless
+ * an ODD run of backslashes precedes it (`\|` is a pipe in the cell, `\\|` is
+ * an escaped backslash and then a boundary). Code spans get no special
+ * treatment: GFM splits rows before inline parsing, so an unescaped `|` inside
+ * backticks is a boundary too. The parser, the writer and the renderer's
+ * table readers all split through here; tests and the corpus gate judge it
+ * against an independent GFM parser (scripts/lib/gfm-table-oracle.ts).
+ * Returns the row's bytes between boundaries (edge segments included).
+ */
 export function splitRowSegments(line: string): string[] {
-  return line.split(/(?<!\\)\|/);
+  const segments: string[] = [];
+  let start = 0;
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+    if (ch === "\\") {
+      i += 1; // the escaped character — never a boundary
+      continue;
+    }
+    if (ch === "|") {
+      segments.push(line.slice(start, i));
+      start = i + 1;
+    }
+  }
+  segments.push(line.slice(start));
+  return segments;
 }
 
-/** A row's cell texts as the ONE table parser reads them (trimmed, edge pipes dropped). */
+/** A row's cell texts as GFM reads them (source bytes, trimmed; edge pipes dropped). */
 export function rowCells(line: string): string[] {
   const cells = splitRowSegments(line).map((cell) => cell.trim());
-  if (cells.length > 0 && cells[0] === "") cells.shift();
-  if (cells.length > 0 && cells[cells.length - 1] === "") cells.pop();
+  if (cells.length > 1 && cells[0] === "") cells.shift();
+  if (cells.length > 1 && cells[cells.length - 1] === "") cells.pop();
+  else if (cells.length === 1 && cells[0] === "") cells.pop();
   return cells;
 }
 
-/** A cell the person typed: a literal pipe must be escaped or it splits the cell. */
+/** Length of the run of backslashes ending just before `index`. */
+function backslashRunBefore(text: string, index: number): number {
+  let run = 0;
+  for (let i = index - 1; i >= 0 && text[i] === "\\"; i -= 1) run += 1;
+  return run;
+}
+
+/**
+ * A cell the person typed, made safe for one GFM cell: newlines become spaces
+ * and every `|` that would be a boundary (an EVEN run of backslashes before it,
+ * zero included) gets one more backslash. A pipe already escaped is left alone.
+ */
 export function freshCell(text: string): string {
-  return text.replace(/\n/g, " ").replace(/(?<!\\)\|/g, "\\|");
+  const flat = text.replace(/\r?\n/g, " ");
+  let out = "";
+  for (let i = 0; i < flat.length; i += 1) {
+    if (flat[i] === "|" && backslashRunBefore(flat, i) % 2 === 0) out += "\\";
+    out += flat[i];
+  }
+  return out;
+}
+
+/** True when the text ends in an odd run of backslashes — it would escape the next pipe. */
+function endsInEscape(text: string): boolean {
+  return backslashRunBefore(text, text.length) % 2 === 1;
+}
+
+/** A table edit the writer could not make read back as the intended grid. */
+export class TableWriteRefused extends Error {
+  constructor(
+    readonly row: string,
+    detail: string,
+  ) {
+    super(`The table could not be written without changing other cells (${detail}). Your edit is kept — nothing was saved.`);
+    this.name = "TableWriteRefused";
+  }
+}
+
+/** Every written row must read back — by GFM's own rule — as exactly the cells intended. */
+function assertRowReadsBack(line: string, intended: readonly string[]): string {
+  const got = rowCells(line);
+  if (got.length !== intended.length || got.some((cell, i) => cell !== intended[i])) {
+    throw new TableWriteRefused(line, `expected ${JSON.stringify(intended)}, would read ${JSON.stringify(got)}`);
+  }
+  return line;
+}
+
+/** A cell's new bytes inside its old segment: same leading spaces, padding kept where it fits. */
+function rewriteSegment(seg: string, text: string): string {
+  const lead = /^\s*/.exec(seg)?.[0] ?? "";
+  const core = seg.slice(lead.length).trimEnd();
+  const trail = seg.slice(lead.length + core.length);
+  const fresh = freshCell(text).trim();
+  // A trailing odd backslash would escape the pipe after it: always one space.
+  const pad = Math.max(trail.length > 0 || endsInEscape(fresh) ? 1 : 0, core.length + trail.length - fresh.length);
+  return `${lead}${fresh}${" ".repeat(pad)}`;
 }
 
 /**
  * The stored row with ONLY the edited cells rewritten. A row with MORE stored
  * cells than the header keeps the extra ones verbatim (renderers ignore them;
  * they are still the author's bytes); a SHORT row gains a segment only for a
- * cell the person actually filled. Null only when there are no stored
- * segments or the stored texts do not line up with the new ones.
+ * cell the person actually filled. A row without an edge pipe gets one when
+ * its first or last cell is empty — GFM would otherwise read that empty cell
+ * as the edge and shift the row. The result is read back through the splitter
+ * and REFUSED (TableWriteRefused) unless it holds exactly the intended cells.
+ * Null only when there are no stored segments or the stored texts do not line
+ * up with the new ones.
  */
 export function respliceRow(segs: unknown[] | null, stored: unknown[] | null, texts: readonly string[]): string | null {
   if (!segs || !stored || stored.length !== texts.length || !segs.every((seg) => typeof seg === "string")) return null;
   const parts = segs as string[];
+  const original = rowCells(parts.join("|"));
   const first = parts.length > 1 && (parts[0] ?? "").trim() === "" ? 1 : 0;
   const closed = parts.length > 1 && (parts[parts.length - 1] ?? "").trim() === "";
   const end = closed ? parts.length - 1 : parts.length;
   const cells = parts.slice(first, end);
-  const rewrite = (seg: string, text: string) => {
-    const lead = /^\s*/.exec(seg)?.[0] ?? "";
-    const core = seg.slice(lead.length).trimEnd();
-    const trail = seg.slice(lead.length + core.length);
-    const fresh = freshCell(text);
-    const pad = Math.max(trail.length > 0 ? 1 : 0, core.length + trail.length - fresh.length);
-    return `${lead}${fresh}${" ".repeat(pad)}`;
-  };
+  const edited = new Set<number>();
   texts.forEach((text, index) => {
     if (stored[index] === text) return;
-    if (index < cells.length) cells[index] = rewrite(cells[index] ?? "", text);
+    edited.add(index);
+    if (index < cells.length) cells[index] = rewriteSegment(cells[index] ?? "", text);
     else {
       while (cells.length < index) cells.push(" ");
-      cells.push(` ${freshCell(text)} `);
+      cells.push(` ${freshCell(text).trim()} `);
     }
   });
-  const edge = first ? [parts[0] ?? ""] : [];
-  const tail = closed ? [parts[parts.length - 1] ?? ""] : cells.length > end - first ? [""] : [];
-  return [...edge, ...cells, ...tail].join("|");
+  if (!edited.size) return parts.join("|");
+  const lastIndex = cells.length - 1;
+  const needLead = !first && (cells[0] ?? "").trim() === "";
+  const needTrail = !closed && lastIndex >= 0 && (cells[lastIndex] ?? "").trim() === "";
+  if (needLead && cells[0] === "") cells[0] = " ";
+  if (needTrail && cells[lastIndex] === "") cells[lastIndex] = " ";
+  const edge = first ? [parts[0] ?? ""] : needLead ? [""] : [];
+  const tail = closed ? [parts[parts.length - 1] ?? ""] : needTrail || cells.length > end - first ? [""] : [];
+  const line = [...edge, ...cells, ...tail].join("|");
+  const intended = cells.map((cell, i) => (edited.has(i) ? freshCell(texts[i] ?? "").trim() : (original[i] ?? cell.trim())));
+  return assertRowReadsBack(line, intended);
 }
 
-/** A row the table never stored, in the table's pipe style. */
+/** A row the table never stored, in the table's pipe style (edge pipes added where an empty edge cell needs one). */
 export function freshRow(texts: readonly string[], lead = true, trail = true): string {
-  return `${lead ? "| " : ""}${texts.map(freshCell).join(" | ")}${trail ? " |" : ""}`;
+  const cells = texts.map((text) => freshCell(text).trim());
+  const needLead = lead || cells[0] === "";
+  const needTrail = trail || cells[cells.length - 1] === "" || endsInEscape(cells[cells.length - 1] ?? "");
+  const line = `${needLead ? "| " : ""}${cells.join(" | ")}${needTrail ? " |" : ""}`;
+  return assertRowReadsBack(line, cells);
 }
 
 export interface TableGrid {

@@ -518,10 +518,10 @@ const StreamingTableRendererCore: React.FC<
 
   const toggleGlobalEditMode = () => {
     if (editMode !== "none") {
+      if (!notifyContentChange()) return;
       onSave(tableData);
       setEditMode("none");
       toast.info("Edit mode deactivated");
-      notifyContentChange();
     } else {
       // Snapshot parsedTable into state so edits have a stable base
       setInternalTableData(parsedTable);
@@ -559,10 +559,10 @@ const StreamingTableRendererCore: React.FC<
   };
 
   const handleSave = () => {
+    if (!notifyContentChange()) return;
     onSave(tableData);
     setEditMode("none");
     toast.success("Table data saved");
-    notifyContentChange();
   };
 
   const handleCancel = () => {
@@ -572,11 +572,19 @@ const StreamingTableRendererCore: React.FC<
     toast.info("Edits cancelled");
   };
 
-  const notifyContentChange = () => {
+  /** Write the edited table back; false when the writer refused it (the edit is kept). */
+  const notifyContentChange = (): boolean => {
     if (onContentChange && content) {
-      const updatedMarkdown = generateMarkdownTable();
-      onContentChange(updatedMarkdown);
+      // THE table writer refuses an edit it cannot write back safely
+      // (TableWriteRefused): nothing is saved, edit mode stays open.
+      try {
+        onContentChange(generateMarkdownTable());
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : String(error));
+        return false;
+      }
     }
+    return true;
   };
 
   // ========================================================================

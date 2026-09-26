@@ -240,12 +240,26 @@ DO $rerecord$
 DECLARE
   v_fp text := iam.entity_read_kernel_fingerprint();
   v_members jsonb := iam.entity_read_kernel_members_live();
+  v_before jsonb := iam.entity_read_kernel_members_expected()->'members';
+  v_added text[];
+  v_removed text[];
+  v_changed text[];
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM jsonb_object_keys(v_members) AS k
-    WHERE k LIKE 'platform.detail_parent_access_for(%'
-  ) THEN
-    RAISE EXCEPTION 'rca2h: detail_parent_access_for is not fingerprinted';
+  -- Do not turn a pre-existing, unrelated stale kernel into a trusted baseline.  This migration
+  -- may add exactly its helper and change exactly the six-argument kernel body it patches above.
+  SELECT coalesce(array_agg(k ORDER BY k), '{}'::text[]) INTO v_added
+    FROM jsonb_object_keys(v_members) AS k WHERE NOT v_before ? k;
+  SELECT coalesce(array_agg(k ORDER BY k), '{}'::text[]) INTO v_removed
+    FROM jsonb_object_keys(v_before) AS k WHERE NOT v_members ? k;
+  SELECT coalesce(array_agg(k ORDER BY k), '{}'::text[]) INTO v_changed
+    FROM jsonb_object_keys(v_members) AS k
+   WHERE v_before ? k AND (v_before->>k) IS DISTINCT FROM (v_members->>k);
+  IF cardinality(v_added) <> 1 OR v_added[1] NOT LIKE 'platform.detail_parent_access_for(%'
+     OR cardinality(v_removed) <> 0
+     OR cardinality(v_changed) <> 1
+     OR v_changed[1] NOT LIKE 'iam.has_access_for_base(%p_path text[])' THEN
+    RAISE EXCEPTION 'rca2h: refusing to re-record unrelated kernel drift (added %, removed %, changed %)',
+      v_added, v_removed, v_changed;
   END IF;
   EXECUTE format($ddl$CREATE OR REPLACE FUNCTION iam.entity_read_kernel_expected()
 RETURNS text LANGUAGE sql IMMUTABLE AS $f$ SELECT %L::text $f$$ddl$, v_fp);

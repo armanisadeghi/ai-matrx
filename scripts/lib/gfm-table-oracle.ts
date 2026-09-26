@@ -15,6 +15,7 @@ import remarkGfm from "remark-gfm";
 
 interface Positioned {
   type: string;
+  value?: string;
   children?: Positioned[];
   position?: { start: { offset?: number }; end: { offset?: number } };
 }
@@ -46,4 +47,30 @@ export function oracleTableGrids(markdown: string): string[][][] {
 
 export function oracleTableGrid(markdown: string): string[][] | null {
   return oracleTableGrids(markdown)[0] ?? null;
+}
+
+/** A node's displayed text: text/code values concatenated (what a reader sees, markup gone). */
+function displayed(node: Positioned): string {
+  if (typeof node.value === "string" && node.type !== "html") return node.value;
+  return (node.children ?? []).map(displayed).join("");
+}
+
+/**
+ * The first table's grid as DISPLAYED text (escapes resolved, emphasis/code
+ * markers gone) — what a reader of the rendered table sees in each cell.
+ * Short rows are padded with "" to the header width, as GFM displays them.
+ */
+export function oracleTableText(markdown: string): string[][] | null {
+  const tree = processor.parse(markdown) as unknown as Positioned;
+  let table: Positioned | null = null;
+  const find = (node: Positioned) => {
+    if (table) return;
+    if (node.type === "table") table = node;
+    else for (const child of node.children ?? []) find(child);
+  };
+  find(tree);
+  if (!table) return null;
+  const rows = ((table as Positioned).children ?? []).map((row) => (row.children ?? []).map((cell) => displayed(cell).trim()));
+  const width = rows[0]?.length ?? 0;
+  return rows.map((row) => Array.from({ length: width }, (_v, i) => row[i] ?? ""));
 }

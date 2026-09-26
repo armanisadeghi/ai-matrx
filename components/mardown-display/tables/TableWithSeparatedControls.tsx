@@ -63,8 +63,8 @@ interface TableControlsProps {
   setShowViewModal: (value: boolean) => void;
   onSave: (tableData: { headers: string[]; rows: string[][] }) => void;
   onContentChange?: (updatedMarkdown: string) => void;
-  toggleGlobalEditMode: (notifyContentChange: () => void) => void;
-  handleSave: (notifyContentChange: () => void) => void;
+  toggleGlobalEditMode: (notifyContentChange: () => boolean) => void;
+  handleSave: (notifyContentChange: () => boolean) => void;
   handleCancel: () => void;
 }
 const TableControls: React.FC<TableControlsProps> = ({
@@ -93,12 +93,20 @@ const TableControls: React.FC<TableControlsProps> = ({
     [content, tableData.headers, tableData.rows],
   );
 
-  const notifyContentChange = useCallback(() => {
+  /** Write the edited table back; false when the writer refused it (the edit is kept). */
+  const notifyContentChange = useCallback((): boolean => {
     if (onContentChange && content) {
-      const updatedMarkdown = generateMarkdownTable();
-      onContentChange(updatedMarkdown);
+      // THE table writer refuses an edit it cannot write back safely
+      // (TableWriteRefused): nothing is saved, edit mode stays open.
+      try {
+        onContentChange(generateMarkdownTable());
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : String(error));
+        return false;
+      }
     }
-  }, [onContentChange, content, generateMarkdownTable]);
+    return true;
+  }, [onContentChange, content, generateMarkdownTable, toast]);
 
   const copyTableToClipboard = useCallback(async () => {
     try {
@@ -496,12 +504,12 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
   }, []);
 
   const toggleGlobalEditMode = useCallback(
-    (notifyContentChange: () => void) => {
+    (notifyContentChange: () => boolean) => {
       if (editMode !== "none") {
+        if (!notifyContentChange()) return;
         onSave(tableData);
         setEditMode("none");
         toast.info("Edit mode deactivated");
-        notifyContentChange();
       } else {
         setEditMode("header");
         toast.info("Edit mode activated");
@@ -544,11 +552,11 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
   }, [editMode, onSave, tableData]);
 
   const handleSave = useCallback(
-    (notifyContentChange: () => void) => {
+    (notifyContentChange: () => boolean) => {
+      if (!notifyContentChange()) return;
       onSave(tableData);
       setEditMode("none");
       toast.success("Table data saved");
-      notifyContentChange();
     },
     [onSave, tableData, toast],
   );

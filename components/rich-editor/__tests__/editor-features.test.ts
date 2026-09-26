@@ -143,7 +143,8 @@ describe("emphasis edges: whitespace never sits inside the delimiters (verify-RC
       tr.insertText(" hard", pos, pos);
       return true;
     });
-    expect(save()).toBe("| Result |\n|---|\n|  **hardfail** |");
+    // The typed space moved outside the ** and, at a cell's edge, is padding GFM trims.
+    expect(save()).toBe("| Result |\n|---|\n| **hardfail** |");
   });
 
   it("a trailing space typed inside italic lands after the closing *", () => {

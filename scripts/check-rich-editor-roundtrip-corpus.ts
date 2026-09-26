@@ -67,8 +67,9 @@ import {
   type VisualPlan,
 } from "../components/rich-editor/core/visual-document";
 import { planSave } from "../components/rich-editor/core/save-plan";
-import { rewriteTableSource } from "../components/rich-editor/core/table-source";
+import { rewriteTableSource, splitRowSegments } from "../components/rich-editor/core/table-source";
 import { parseMarkdownTable } from "../components/mardown-display/blocks/table/parseMarkdownTable";
+import { oracleTableGrid } from "./lib/gfm-table-oracle";
 
 const args = process.argv.slice(2);
 const argValue = (flag: string): string | undefined => {
@@ -200,8 +201,44 @@ function judgeMove(editor: Editor, baseline: ReturnType<typeof captureBaseline>,
 const STRUCTURAL = /[\\`[\]{}$<|]/;
 const MAX_CELL_EDITS = 60;
 
-function rowSegments(line: string): string[] {
-  return line.split(/(?<!\\)\|/);
+/** Row segments for the line-level check (the oracle below is the independent judge). */
+const rowSegments = splitRowSegments;
+
+/** The table block (contiguous non-blank lines holding a pipe) around line `at`. */
+function blockAround(lines: readonly string[], at: number): string {
+  let start = at;
+  let end = at;
+  while (start > 0 && (lines[start - 1] ?? "").trim() && (lines[start - 1] ?? "").includes("|")) start -= 1;
+  while (end + 1 < lines.length && (lines[end + 1] ?? "").trim() && (lines[end + 1] ?? "").includes("|")) end += 1;
+  return lines.slice(start, end + 1).join("\n");
+}
+
+/**
+ * The INDEPENDENT judgment (micromark, scripts/lib/gfm-table-oracle.ts — never
+ * the splitter under test): read before and after as GFM tables; exactly one
+ * cell may differ, and it must be the old cell plus " X".
+ */
+function oracleJudge(before: string, after: string, prefix: string): string | null {
+  const g0 = oracleTableGrid(before);
+  const g1 = oracleTableGrid(after);
+  if (!g0) return null;
+  if (!g1) return `${prefix}_oracle_no_table_after`;
+  if (g0.length !== g1.length) return `${prefix}_oracle_row_count_changed`;
+  const diffs: Array<[string, string]> = [];
+  for (let r = 0; r < g0.length; r += 1) {
+    const a = g0[r] ?? [];
+    const b = g1[r] ?? [];
+    for (let c = 0; c < Math.max(a.length, b.length); c += 1) {
+      if ((a[c] ?? "") !== (b[c] ?? "")) diffs.push([a[c] ?? "", b[c] ?? ""]);
+    }
+  }
+  // No visible change: the edit landed in a cell beyond the header width, which GFM
+  // does not display (the line-level check already proved only that cell's bytes moved).
+  if (diffs.length === 0) return null;
+  if (diffs.length !== 1) return `${prefix}_oracle_other_cells_changed`;
+  const [was, now] = diffs[0] as [string, string];
+  if (now !== `${was} X`.trim()) return `${prefix}_oracle_wrong_cell_text`;
+  return null;
 }
 
 /** Append " X" to cells of tables; only that cell's bytes may change. Returns a reason or null. */
@@ -243,6 +280,8 @@ function judgeTableCells(editor: Editor, baseline: ReturnType<typeof captureBase
     if (diff.length !== 1) return "table_cell_edit_changed_neighbour_cell";
     const k = diff[0] as number;
     if ((after[k] ?? "").trim() !== `${(before[k] ?? "").trim()} X`.trim()) return "table_cell_edit_wrong_cell_bytes";
+    const oracle = oracleJudge(blockAround(lines, changed[0] as number), blockAround(out, changed[0] as number), "table_cell_edit");
+    if (oracle) return oracle;
   }
   return null;
 }
@@ -286,6 +325,8 @@ function judgeAnswerTables(text: string, stats: SourceStats): string | null {
         if (diff.length !== 1) return "answer_table_edit_changed_neighbour_cell";
         const k = diff[0] as number;
         if ((after[k] ?? "").trim() !== `${(before[k] ?? "").trim()} X`.trim()) return "answer_table_edit_wrong_cell_bytes";
+        const oracle = oracleJudge(table, out.join("\n"), "answer_table_edit");
+        if (oracle) return oracle;
       }
     }
   }

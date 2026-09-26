@@ -314,11 +314,19 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
   const generateMarkdownTable = () =>
     rewriteTableSource(content, { headers: internalTableData.headers, rows: internalTableData.rows });
 
-  const notifyContentChange = () => {
+  /** Write the edited table back; false when the writer refused it (the edit is kept). */
+  const notifyContentChange = (): boolean => {
     if (onContentChange && content) {
-      const updatedMarkdown = generateMarkdownTable();
-      onContentChange(updatedMarkdown);
+      // THE table writer refuses an edit it cannot write back safely
+      // (TableWriteRefused): nothing is saved, edit mode stays open.
+      try {
+        onContentChange(generateMarkdownTable());
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : String(error));
+        return false;
+      }
     }
+    return true;
   };
 
   const copyTableToClipboard = async () => {
@@ -426,10 +434,10 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
 
   const toggleGlobalEditMode = () => {
     if (editMode !== "none") {
+      if (!notifyContentChange()) return;
       onSave(internalTableData);
       setEditMode("none");
       toast.info("Edit mode deactivated");
-      notifyContentChange();
     } else {
       setEditMode("header");
       toast.info("Edit mode activated");
@@ -468,10 +476,10 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
   };
 
   const handleSave = () => {
+    if (!notifyContentChange()) return;
     onSave(internalTableData);
     setEditMode("none");
     toast.success("Table data saved");
-    notifyContentChange();
   };
 
   const handleCancel = () => {

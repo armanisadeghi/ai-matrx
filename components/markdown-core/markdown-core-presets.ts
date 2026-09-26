@@ -12,6 +12,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import remarkGfm from "remark-gfm";
+import remarkTableCodePipes from "./syntax/remark-table-code-pipes";
 import remarkBreaks from "remark-breaks";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -70,7 +71,8 @@ const PAGE_BREAK: Plugin = remarkMatrxPageBreak;
 // strikethrough is `~~x~~`, as on GitHub.
 const GFM: Plugin = [remarkGfm, { singleTilde: false }];
 const SYNTAX_PARSE: Plugin[] = [[remarkFrontmatter, ["yaml", "toml"]], remarkDirective, remarkDefinitionList];
-const SYNTAX_TRANSFORM: Plugin[] = [remarkMatrxSyntax, remarkGemoji];
+// remarkTableCodePipes: GFM's `\|`-in-code-in-a-table rule (verify-RC-B4 R4-3).
+const SYNTAX_TRANSFORM: Plugin[] = [remarkTableCodePipes, remarkMatrxSyntax, remarkGemoji];
 const SYNTAX_REHYPE: Plugin[] = [rehypeSlug, rehypeMatrxSyntax];
 
 /** Module-scope arrays so plugin identity is stable across renders. */

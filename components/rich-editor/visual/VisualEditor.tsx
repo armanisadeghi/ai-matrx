@@ -14,6 +14,8 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import { getSchema, type Editor } from "@tiptap/core";
 import { TextSelection } from "@tiptap/pm/state";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
+import { TableWriteRefused } from "../core/table-source";
 import { createRichEditorExtensions } from "../core/extensions";
 import {
   buildVisualDocument,
@@ -86,9 +88,28 @@ export function VisualEditor({
   const lastReported = useRef(initialText);
   const findState = useRef<{ matches: VisualMatch[]; index: number }>({ matches: [], index: -1 });
 
-  const report = (editor: Editor): string => {
+  const refusalShown = useRef<string | null>(null);
+  /**
+   * Serialize and report. A table edit the writer cannot make read back as the
+   * intended cells is REFUSED (TableWriteRefused): the draft stays on screen,
+   * the person is told once, the last good text stays reported, and a flush for
+   * Save rethrows so nothing is written (verify-RC-B4 R4).
+   */
+  const report = (editor: Editor, strict = false): string => {
     if (!baseline.current) return lastReported.current;
-    const text = serializeVisualDocument(editor.state.doc, baseline.current);
+    let text: string;
+    try {
+      text = serializeVisualDocument(editor.state.doc, baseline.current);
+      refusalShown.current = null;
+    } catch (error) {
+      if (!(error instanceof TableWriteRefused)) throw error;
+      if (strict) throw error;
+      if (refusalShown.current !== error.message) {
+        refusalShown.current = error.message;
+        toast.error(error.message);
+      }
+      return lastReported.current;
+    }
     if (text !== lastReported.current) {
       lastReported.current = text;
       onChange(text);
@@ -186,7 +207,7 @@ export function VisualEditor({
         window.clearTimeout(timer.current);
         timer.current = null;
       }
-      return report(editor);
+      return report(editor, true);
     },
     scrollToHeading: (slug) => {
       const element = container.current?.querySelector(`[data-heading-slug="${CSS.escape(slug)}"]`);
