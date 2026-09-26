@@ -743,9 +743,10 @@ function BindingDraft({
   // switch made here — a saved map whose Holder later changed its inputs keeps
   // its keys, so that drift is reported rather than silently repaired.
   // Adjustment during render, like the seed below.
+  // Every rung — the mandate's own default carries a map too
+  // (`default_consumption_map`).
   const holderIdentity = holderIdentityOf(holder);
   if (
-    !onDefaultHolderRung &&
     holderIdentity !== mapHolder &&
     holderInputs.status === "ready"
   ) {
