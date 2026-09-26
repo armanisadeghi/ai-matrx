@@ -1904,6 +1904,30 @@
   pointer-events: auto !important;
 }
 
+/* EntityRef keeps secondary doors compact on a fine pointer, but an invisible
+   control must never capture a row click. These are explicit rules rather than
+   Tailwind hover utilities because the global pointer utility above is
+   intentionally `!important`. The data attribute lets keyboard focus expose
+   every door before activation, while coarse-pointer devices always see them. */
+.entity-ref-controls[data-reveal-on-hover="true"] {
+  opacity: 0;
+  pointer-events: none !important;
+  transition: opacity 150ms;
+}
+
+.entity-ref:hover .entity-ref-controls[data-reveal-on-hover="true"],
+.entity-ref-controls[data-reveal-on-hover="true"]:focus-within {
+  opacity: 1;
+  pointer-events: auto !important;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .entity-ref-controls[data-reveal-on-hover="true"] {
+    opacity: 1;
+    pointer-events: auto !important;
+  }
+}
+
 .mask-bottom {
   mask-image: linear-gradient(
     to bottom,

@@ -233,7 +233,7 @@ export function EntityRef({
   return (
     <span
       className={cn(
-        "group/entity-ref inline-flex min-w-0 max-w-full items-center gap-1",
+        "entity-ref group/entity-ref inline-flex min-w-0 max-w-full items-center gap-1",
         className,
       )}
     >
@@ -317,19 +317,10 @@ export function EntityRef({
           is nothing to render. */}
       {hasControls && (
         <span
+          data-entity-ref-controls
+          data-reveal-on-hover={alwaysShowActions ? undefined : "true"}
           className={cn(
-            "inline-flex shrink-0 items-center gap-0.5",
-            // `opacity-0` alone still takes pointer events, which on a touch
-            // device leaves an invisible new-tab link sitting beside every name:
-            // a tap that lands there opens a tab with nothing to explain why.
-            // `pointer-events-none` closes that for the cluster; the Quick look
-            // button opts back in below. A pointer press on that named,
-            // accessibility-exposed control must not fall through to a
-            // clickable row before hover has revealed it.
-            !alwaysShowActions &&
-              "pointer-events-none opacity-0 transition-opacity " +
-                "group-hover/entity-ref:pointer-events-auto group-hover/entity-ref:opacity-100 " +
-                "focus-within:pointer-events-auto focus-within:opacity-100",
+            "entity-ref-controls inline-flex shrink-0 items-center gap-0.5",
           )}
         >
           {canPeek && (
@@ -341,7 +332,7 @@ export function EntityRef({
                 stop(e);
                 setPeekOpen(true);
               }}
-              className={cn(CONTROL_CLASS, "pointer-events-auto")}
+              className={CONTROL_CLASS}
             >
               <Lightbulb className="h-3 w-3" />
             </button>
