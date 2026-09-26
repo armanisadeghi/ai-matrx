@@ -1,5 +1,9 @@
 -- chair-step: rule-27 rehearsal inverse of rca2c_a_reference_follows_its_target.sql — restores the kernel, set-form, generator, policy-catalogue and certifier bodies it patched, regenerates workspace.threads and workspace.war_rooms without ref_target_gate, and drops the declaration. It RE-OPENS the War Room title leak (RC-A2c); never run it on production except as an emergency rollback of a broken kernel.
--- based-on: PENDING
+-- based-on: iam.has_access_for_base(uuid, text, uuid, permission_level, boolean, text[]) 7ff488e310fd62d0c9a475aa10e1d17f5a1a46dc678430b3e88ad2028467cac6
+-- based-on: iam.accessible_entity_ids(text, permission_level, integer, boolean) c6f87f39a912274a3581dd38eaf45160f88ef35d914a1671c799118e5948a507
+-- based-on: iam._apply_rls_unchecked(text, text, text, text) bf478df1ca3b95728d93e630ca7b57b25f278ef9dea066c21638ca4be464fd28
+-- based-on: iam.generated_policy_names() 41fff54e282e90454cd588659b82e05250f4e94e4e1bb879be1c1a6fd9d2bf15
+-- based-on: iam.verify_canonical(text, text, text, text) 12c6f216423cbed4838c3ba9f32d0721a8b17c84825372fc0a3a96c905e49127
 --
 -- Exact textual inverse: every replacement the up file made is swapped back for its anchor (the
 -- same DO block with the two columns exchanged, applied in reverse order), each asserted to occur
