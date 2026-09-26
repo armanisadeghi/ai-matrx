@@ -150,9 +150,19 @@ The table shows exactly ONE affordance per row. `MatrxDataTable`'s own row-copy 
 | Scope    | Question it answers              | Predicate                                                                                             |
 | -------- | -------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | `mine`   | What did I make?                 | `user_id = auth.uid()`                                                                                |
-| `orgs`   | What does my team have?          | created by someone else, in a **non-personal** org I belong to, `visibility IN ('internal','public')` |
+| `orgs`   | What does my team have?          | every agent in an org I belong to (RLS decides reach); my own rows come back `is_owner = true` (2026-09-26) |
 | `shared` | What did someone hand me?        | explicit `iam.permissions` grant (user or org)                                                        |
-| `public` | What has the platform published? | `visibility = 'public'`, not mine                                                                     |
+| `public` | What has a tenant published?     | a user agent whose **card** is public (`card_visibility = 'public'`), not mine — read through `agent.public_card_rows()` |
+
+**The Public lane's single source of truth is `card_visibility` (2026-09-26).** An agent's body can
+never be public (`agent_definition_body_not_public_chk`); publishing (`make_resource_public`) writes
+`card_visibility`, and the card door (`get_agent_public`) reads it — so the lane reads it too. It used
+to read `visibility = 'public'`, which the CHECK forbids, and was always empty. Because
+`agx_list_scoped` is SECURITY INVOKER and RLS hides a stranger's agent body, the public arm reads the
+definer `agent.public_card_rows()`, which returns the card projection only (prompts, messages, settings
+and tools are NULL). Builtins with a public card stay in **System**, never Public (public = what a
+*tenant* published). Workflows use the same rule via `workflow.public_card_rows()`. Guard:
+`pnpm check:list-lane-owner` (migration `list_lanes_owner_and_public_cards.sql`).
 
 `orgs` and `shared` may overlap for the same row. That is correct and intentional — they answer different questions, and hiding an org row because it also carries a grant would make "what does my team have?" lie.
 
