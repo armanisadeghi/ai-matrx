@@ -487,7 +487,6 @@ function ListenVoiceSettings() {
           step={0.05}
           precision={2}
           minLabel="Slower"
-          midLabel="Default"
           maxLabel="Faster"
         />
         <SettingsSelect

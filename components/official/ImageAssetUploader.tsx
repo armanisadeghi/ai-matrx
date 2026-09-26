@@ -72,10 +72,6 @@ import {
   type GeneratedImageFile,
 } from "@/features/image-studio/api/python";
 import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "@/features/image-studio/constants/backend-capabilities";
-import {
-  resolveDefaultModelId,
-  selectPlatformDefaultImageModelId,
-} from "@/features/ai-models/redux/platformDefaultModel";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -619,9 +615,6 @@ function GenerateTabContent({
   // Settings → Image generation seeds style (still freely editable here) and
   // its Model choice is resolved fresh at generate time from the AI catalog.
   const genPrefs = useAppSelector((s) => s.userPreferences.imageGeneration);
-  const platformDefaultModelId = useAppSelector(
-    selectPlatformDefaultImageModelId,
-  );
   const [prompt, setPrompt] = useState("");
   const [size, setSize] = useState<GenSize>("square");
   const [style, setStyle] = useState(genPrefs?.style ?? "");
@@ -643,10 +636,9 @@ function GenerateTabContent({
     setErrorMsg(null);
     setResults([]);
     try {
-      const modelId = resolveDefaultModelId(
-        genPrefs?.defaultModel ?? null,
-        platformDefaultModelId,
-      );
+      // Only a model the person CHOSE is sent; otherwise the server's
+      // image.generate mandate model draws (never a client-side default).
+      const modelId = genPrefs?.defaultModel ?? null;
       const res = await generateImage({
         prompt: trimmed,
         size,
@@ -666,7 +658,7 @@ function GenerateTabContent({
       setGenState("error");
       if (!isNotImpl) onError?.(msg);
     }
-  }, [prompt, size, style, onError, genPrefs?.defaultModel, platformDefaultModelId]);
+  }, [prompt, size, style, onError, genPrefs?.defaultModel]);
 
   const handlePick = useCallback(
     async (result: GeneratedImageFile) => {

@@ -23,10 +23,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAppSelector } from "@/lib/redux/hooks";
-import {
-  resolveDefaultModelId,
-  selectPlatformDefaultImageModelId,
-} from "@/features/ai-models/redux/platformDefaultModel";
+import { useModels } from "@/features/ai-models/hooks/useModels";
+import { SettingDoor } from "@/features/settings/doors/SettingDoor";
+import { settingsControlSearchId } from "@/components/official/settings/searchIdentity";
 import {
   generateImage,
   type GeneratedImageFile,
@@ -59,10 +58,7 @@ export default function GenerateShellClient() {
   const preferredModelId = useAppSelector(
     (s) => s.userPreferences.imageGeneration.defaultModel,
   );
-  const platformDefaultModelId = useAppSelector(
-    selectPlatformDefaultImageModelId,
-  );
-
+  const { models } = useModels();
   const [prompt, setPrompt] = useState("");
   const [style, setStyle] = useState(() => preferredStyle ?? "");
   const [size, setSize] = useState<ImageGenerateSize>("square");
@@ -77,10 +73,10 @@ export default function GenerateShellClient() {
     }
     setBusy(true);
     try {
-      const modelId = resolveDefaultModelId(
-        preferredModelId,
-        platformDefaultModelId,
-      );
+      // Only a model the person CHOSE is sent. With no choice, nothing is
+      // sent and the server's image.generate mandate model draws — a
+      // client-side "default" would silently override the platform's own.
+      const modelId = preferredModelId;
       const res = await generateImage({
         prompt: prompt.trim(),
         size,
@@ -266,6 +262,24 @@ export default function GenerateShellClient() {
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span className="min-w-0 truncate">
+            Model:{" "}
+            {preferredModelId
+              ? (models.find((m) => m.id === preferredModelId)?.common_name ??
+                "your chosen model")
+              : "AI Matrx default"}
+          </span>
+          <SettingDoor
+            target={{
+              scope: "user",
+              tabId: "ai.imageGeneration",
+              controlId: settingsControlSearchId("Output", "Model"),
+            }}
+            label="Change"
+          />
         </div>
 
         <div className="flex flex-col gap-1.5">

@@ -13043,6 +13043,162 @@
     "title": "MediaSelectionJobProgressData",
     "type": "object"
   },
+  "CutoverCopyAgainProgressData": {
+    "additionalProperties": false,
+    "description": "One table done while an organization's older tables are copied again.",
+    "properties": {
+      "type": {
+        "const": "cutover_copy_again_progress",
+        "default": "cutover_copy_again_progress",
+        "title": "Type",
+        "type": "string"
+      },
+      "organization_id": {
+        "title": "Organization Id",
+        "type": "string"
+      },
+      "table_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Table Id"
+      },
+      "table_name": {
+        "title": "Table Name",
+        "type": "string"
+      },
+      "done": {
+        "title": "Done",
+        "type": "integer"
+      },
+      "total": {
+        "title": "Total",
+        "type": "integer"
+      },
+      "refused": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Refused"
+      },
+      "says": {
+        "title": "Says",
+        "type": "string"
+      }
+    },
+    "required": [
+      "organization_id",
+      "table_name",
+      "done",
+      "total",
+      "says"
+    ],
+    "title": "CutoverCopyAgainProgressData",
+    "type": "object"
+  },
+  "CutoverCopyAgainReportData": {
+    "additionalProperties": false,
+    "description": "What copying again did, with the one line a person reads.",
+    "properties": {
+      "type": {
+        "const": "cutover_copy_again_report",
+        "default": "cutover_copy_again_report",
+        "title": "Type",
+        "type": "string"
+      },
+      "organization_id": {
+        "title": "Organization Id",
+        "type": "string"
+      },
+      "organization_name": {
+        "title": "Organization Name",
+        "type": "string"
+      },
+      "table_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Table Id"
+      },
+      "table_name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Table Name"
+      },
+      "ok": {
+        "title": "Ok",
+        "type": "boolean"
+      },
+      "tables": {
+        "title": "Tables",
+        "type": "integer"
+      },
+      "tables_refused": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Tables Refused",
+        "type": "array"
+      },
+      "rows_written": {
+        "default": 0,
+        "title": "Rows Written",
+        "type": "integer"
+      },
+      "carried": {
+        "additionalProperties": {
+          "type": "integer"
+        },
+        "title": "Carried",
+        "type": "object"
+      },
+      "named": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Named",
+        "type": "array"
+      },
+      "says": {
+        "title": "Says",
+        "type": "string"
+      }
+    },
+    "required": [
+      "organization_id",
+      "organization_name",
+      "ok",
+      "tables",
+      "says"
+    ],
+    "title": "CutoverCopyAgainReportData",
+    "type": "object"
+  },
   "ToolStartedData": {
     "additionalProperties": false,
     "properties": {

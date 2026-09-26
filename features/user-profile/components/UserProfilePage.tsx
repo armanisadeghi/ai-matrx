@@ -67,6 +67,7 @@ import { EmailListEditor } from "./EmailListEditor";
 import { SocialHandleListEditor } from "./SocialHandleListEditor";
 import { EmergencyContactListEditor } from "./EmergencyContactListEditor";
 import { AddressFields, type AddressValues } from "./AddressFields";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -1013,22 +1014,16 @@ interface ErrorPanelProps {
 function ErrorPanel({ title, message, onRetry }: ErrorPanelProps) {
   return (
     <div className="mx-auto w-full max-w-2xl p-6">
-      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-        <div className="flex items-start gap-2">
-          <AlertTriangle className="h-4 w-4 flex-shrink-0 text-destructive" />
-          <div className="flex-1">
-            <div className="text-sm font-semibold text-destructive">
-              {title}
-            </div>
-            <div className="mt-1 text-xs text-destructive/80">{message}</div>
-          </div>
-        </div>
-        <div className="mt-3 flex justify-end">
+      <ErrorNotice
+        title={title}
+        message={message}
+        operation={title.replace(/^Couldn't /, "").replace(/^load/, "Load")}
+        actions={
           <Button size="sm" variant="outline" onClick={() => void onRetry()}>
             Try again
           </Button>
-        </div>
-      </div>
+        }
+      />
     </div>
   );
 }

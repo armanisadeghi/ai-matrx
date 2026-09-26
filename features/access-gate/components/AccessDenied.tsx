@@ -58,6 +58,7 @@ import type {
 // LAST, so "Ana Maria Rivera" is AR — this surface previously took first +
 // second and printed "AM".
 import { getInitials } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * One concrete way forward, offered by the surface that knows the feature.
@@ -294,9 +295,30 @@ export function AccessDeniedView({
             <StatusIcon status={context.status} />
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">
-              {title}
-            </h1>
+            <div className="flex items-start gap-2">
+              <h1 className="min-w-0 flex-1 text-xl font-semibold tracking-tight text-foreground">
+                {title}
+              </h1>
+              {/* What stopped the person, copyable for AI (RC-B12). It says no
+                  more than the page does: an absolute door and a missing/stranger
+                  record name no kind, owner or id. */}
+              <ErrorAlchemyMenu
+                size="icon"
+                input={{
+                  title,
+                  message: body || title,
+                  operation:
+                    absolute || context.status === "missing"
+                      ? "Open this record"
+                      : `Open this ${context.entity.label.toLowerCase()}`,
+                  ...(absolute || context.status === "missing"
+                    ? {}
+                    : { records: [{ type: context.entity.token, id }] }),
+                  details: { access_status: context.status },
+                  source: "route-boundary",
+                }}
+              />
+            </div>
 
             {context.entity.title ? (
               <p className="mt-1 truncate text-sm text-muted-foreground">

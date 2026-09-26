@@ -12,11 +12,19 @@ export type SettingDoorTarget =
       requestedValue?: string | null;
     };
 
+/** `FIRST_SCREEN_TAB.id` — the settings index, reached at the base path. */
+export const FIRST_SCREEN_TAB_ID = "firstScreen";
+
 export function settingDoorHref(target: SettingDoorTarget): string {
   if (target.scope === "user") {
     const query = new URLSearchParams({
       control: target.controlId,
     });
+    // The first screen is the settings INDEX (`/user-settings`), not a tab
+    // path — `/user-settings/first-screen` renders "choose a category".
+    if (target.tabId === FIRST_SCREEN_TAB_ID) {
+      return `/user-settings?${query.toString()}`;
+    }
     const path = target.tabId
       .split(".")
       .map((segment) =>

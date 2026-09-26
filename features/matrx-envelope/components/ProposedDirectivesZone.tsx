@@ -59,6 +59,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 interface ProposedDirectivesZoneProps {
   conversationId: string;
@@ -158,12 +159,17 @@ export function ProposedDirectivesZone({
       {/* NOTHING SILENT: "no receipts" and "we could not look" must not render
           the same. The sentence is the reader's, with the reason. */}
       {errors.map((message) => (
-        <div
+        <ErrorNotice
           key={message}
-          className="rounded-lg border border-destructive/40 bg-card px-3 py-2 text-xs text-destructive"
-        >
-          {message}
-        </div>
+          size="compact"
+          message={message}
+          records={[{ type: "conversation", id: conversationId }]}
+          operation={
+            message === loadError
+              ? "Load what this conversation's actions did"
+              : "Read this conversation's messages to find pending actions"
+          }
+        />
       ))}
       {receipts.map((r) => (
         <DirectiveReceiptBlock

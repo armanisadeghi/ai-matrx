@@ -105,7 +105,8 @@ def resolve_any(source: str, filename: str) -> bytes | None:
 _BYTES: dict[str, bytes | None] = {}
 
 
-def later_owners(prod_tsv: str, clone_tsv: str, qualified: str, after: str, exclude: str) -> list[str]:
+def later_owners(prod_tsv: str, clone_tsv: str, qualified: str, after: str, exclude: str,
+                 pending_file: str = "") -> list[str]:
     """Files that ran ON THE CLONE after `after` (the file's own place in production's history)
     and write `qualified` — the owners of the body the clone holds now.
 
@@ -122,6 +123,11 @@ def later_owners(prod_tsv: str, clone_tsv: str, qualified: str, after: str, excl
     clone = _plan.read_tsv(clone_tsv)
     base = exclude[:-len(".sql")] if exclude.endswith(".sql") else exclude
     skip = {exclude, f"{base}_down.sql", f"{base}.inverse.sql", f"inv_{exclude}"}
+    # A later file this same catch-up re-runs AFTER this one is not an owner to protect: its own
+    # turn puts its body back.
+    if pending_file:
+        with open(pending_file, encoding="utf-8") as fh:
+            skip |= {l.strip() for l in fh if l.strip()}
     seen: set[str] = set()
     out: list[str] = []
     for r in clone:
@@ -140,9 +146,63 @@ def later_owners(prod_tsv: str, clone_tsv: str, qualified: str, after: str, excl
     return sorted(out, key=lambda l: l.split(_plan.SEP)[3])
 
 
+def self_test() -> int:
+    """The coordinator's class on its own facts (2026-09-26 05:42:56Z), no database: the replay of
+    copywritable_people_… must find cutoverready_… as the later owner of
+    platform._cutover_seam_readiness — and must not when that file is itself re-run later."""
+    import os
+    import tempfile
+
+    fails = 0
+
+    def check(label: str, ok: bool, detail: object = "") -> None:
+        nonlocal fails
+        print(("  ok   " if ok else "  FAIL ") + label)
+        if not ok:
+            fails += 1
+            print(f"        {detail}")
+
+    up = "copywritable_people_test_the_copy_until_the_switch.sql"
+    later = "cutoverready_the_switch_waits_until_each_copy_matches_its_older_table.sql"
+    fn = "platform._cutover_seam_readiness"
+    d = tempfile.mkdtemp()
+    prod, clone, pend = (os.path.join(d, n) for n in ("p.tsv", "c.tsv", "pending.txt"))
+
+    def write(path: str, rows: list[tuple[str, ...]]) -> None:
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.writelines("\t".join(r) + "\n" for r in rows)
+
+    write(prod, [("campaign", up, "aa" * 32, "2026-09-26 04:55:46+00"),
+                 ("matrx-frontend", later, "bb" * 32, "2026-09-26 05:46:08+00")])
+    write(clone, [("matrx-frontend", up, "aa" * 32, "2026-09-26 04:53:20+00"),
+                  ("matrx-frontend", later, "bb" * 32, "2026-09-26 05:41:39+00")])
+    write(pend, [])
+    if resolve_any("matrx-frontend", later) is None or resolve_any("campaign", up) is None:
+        print("  skip the two files of the incident are not in this checkout")
+        return 0
+    got = later_owners(prod, clone, fn, "2026-09-26 04:55:46+00", up, pend)
+    check("RED the replay of copywritable finds cutoverready as the later owner of the body it would overwrite",
+          len(got) == 1 and later in got[0], got)
+    write(pend, [(later,)])
+    got = later_owners(prod, clone, fn, "2026-09-26 04:55:46+00", up, pend)
+    check("GREEN a later file this same run re-runs afterwards is not an owner to protect", got == [], got)
+    write(pend, [])
+    write(clone, [("matrx-frontend", up, "aa" * 32, "2026-09-26 04:53:20+00")])
+    got = later_owners(prod, clone, fn, "2026-09-26 04:55:46+00", up, pend)
+    check("GREEN a later file production ran but the clone has not is not an owner (nothing of it stands here)",
+          got == [], got)
+    write(clone, [("matrx-frontend", later, "bb" * 32, "2026-09-26 05:41:39+00")])
+    got = later_owners(prod, clone, fn, "2026-09-26 06:00:00+00", up, pend)
+    check("GREEN a file that ran BEFORE this one's place in history owns nothing later", got == [], got)
+    print("clone-catchup-repair self-test: " + ("PASS" if not fails else f"{fails} FAILED"))
+    return 0 if not fails else 1
+
+
 def main() -> int:
-    if len(sys.argv) == 7 and sys.argv[1] == "--later-owners":
-        out = later_owners(*sys.argv[2:7])
+    if sys.argv[1:] == ["--self-test"]:
+        return self_test()
+    if len(sys.argv) in (7, 8) and sys.argv[1] == "--later-owners":
+        out = later_owners(*sys.argv[2:])
         sys.stdout.write("\n".join(out) + ("\n" if out else ""))
         return 0
     if len(sys.argv) == 3 and sys.argv[1] == "--functions-written":

@@ -30,7 +30,8 @@ export function tabIdToHref(
   basePath: string,
   tabId: string | null | undefined,
 ): string {
-  if (!tabId) return basePath;
+  // The first screen IS the index — it has no path of its own.
+  if (!tabId || tabId === "firstScreen") return basePath;
   const slug = tabId.split(".").map(camelToKebab).join("/");
   return `${basePath}/${slug}`;
 }

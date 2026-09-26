@@ -17,7 +17,10 @@
 import { useEffect } from "react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useVoiceAgentInstance } from "@/features/voice-agent/hooks/useVoiceAgentInstance";
+import {
+  useLiveConversationVoice,
+  useVoiceAgentInstance,
+} from "@/features/voice-agent/hooks/useVoiceAgentInstance";
 import { useRealtimeAgentConfig } from "@/features/voice-agent/hooks/useRealtimeAgentConfig";
 import { useXaiVoiceSession } from "@/features/voice-agent/hooks/useXaiVoiceSession";
 import { usePersistVoiceTranscript } from "@/features/voice-agent/hooks/usePersistVoiceTranscript";
@@ -133,6 +136,10 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
     ],
     persist: false,
   });
+  // The voice: the agent's own, or the person's live conversation voice for
+  // AI Matrx's builtin agents (the instance is mounted before the mandate
+  // resolves, so the voice is applied here, not by useVoiceAgentInstance).
+  useLiveConversationVoice({ instanceId, agentId: liveAgentId });
 
   // Resolve the realtime tool set for the scribe-live surface from the mandate's
   // agent — the backend classifies its inline working-doc mutators as `client`

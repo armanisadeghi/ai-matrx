@@ -25026,6 +25026,7 @@ export type Database = {
         Row: {
           chunks_written: number | null
           cost_usd: number | null
+          created_at: string
           created_by: string | null
           current: number | null
           custom_fields: Json
@@ -25034,20 +25035,22 @@ export type Database = {
           error: string | null
           finished_at: string | null
           id: string
-          metadata: Json | null
+          metadata: Json
           organization_id: string
           processed_document_id: string
           started_at: string | null
           status: string
           total: number | null
-          updated_at: string | null
+          updated_at: string
           updated_by: string | null
           user_id: string | null
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           chunks_written?: number | null
           cost_usd?: number | null
+          created_at?: string
           created_by?: string | null
           current?: number | null
           custom_fields?: Json
@@ -25056,20 +25059,22 @@ export type Database = {
           error?: string | null
           finished_at?: string | null
           id?: string
-          metadata?: Json | null
+          metadata?: Json
           organization_id: string
           processed_document_id: string
           started_at?: string | null
           status?: string
           total?: number | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           chunks_written?: number | null
           cost_usd?: number | null
+          created_at?: string
           created_by?: string | null
           current?: number | null
           custom_fields?: Json
@@ -25078,16 +25083,17 @@ export type Database = {
           error?: string | null
           finished_at?: string | null
           id?: string
-          metadata?: Json | null
+          metadata?: Json
           organization_id?: string
           processed_document_id?: string
           started_at?: string | null
           status?: string
           total?: number | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -25242,6 +25248,7 @@ export type Database = {
         Row: {
           chunk_index: number
           cost: number | null
+          created_at: string
           created_by: string | null
           custom_fields: Json
           deleted_at: string | null
@@ -25263,14 +25270,16 @@ export type Database = {
           started_at: string | null
           status: string
           tokens: number | null
-          updated_at: string | null
+          updated_at: string
           updated_by: string | null
           user_id: string | null
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           chunk_index: number
           cost?: number | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -25292,14 +25301,16 @@ export type Database = {
           started_at?: string | null
           status?: string
           tokens?: number | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           chunk_index?: number
           cost?: number | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -25321,10 +25332,11 @@ export type Database = {
           started_at?: string | null
           status?: string
           tokens?: number | null
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -34306,6 +34318,19 @@ export type Database = {
           p_item_id: string
         }
         Returns: boolean
+      }
+      vault_assert_rewrap_current_password: {
+        Args: { p_ciphertext: string; p_field_id: string; p_item_id: string }
+        Returns: boolean
+      }
+      vault_rewrap_revision_rows: {
+        Args: {
+          p_expected_history_revision: number
+          p_expected_rows: Json
+          p_item_id: string
+          p_proposed_rows: Json
+        }
+        Returns: number
       }
       vault_write_revision: {
         Args: {
@@ -72023,6 +72048,7 @@ export type Database = {
         Args: { p_census: Json; p_key: string; p_seam: string }
         Returns: Json
       }
+      cutover_copy_differences: { Args: { p_org: string }; Returns: Json }
       cutover_evaluation_carry: {
         Args: { p_id: string; p_org: string; p_patch: Json }
         Returns: boolean
@@ -87922,6 +87948,7 @@ export type Database = {
           content: string | null
           content_hash: string | null
           content_type: string | null
+          created_at: string
           created_by: string | null
           custom_fields: Json
           deleted_at: string | null
@@ -87959,6 +87986,7 @@ export type Database = {
           content?: string | null
           content_hash?: string | null
           content_type?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -87996,6 +88024,7 @@ export type Database = {
           content?: string | null
           content_hash?: string | null
           content_type?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -88383,6 +88412,7 @@ export type Database = {
           authority_reasoning: string | null
           authority_score: number | null
           authority_tier: string | null
+          created_at: string
           created_by: string | null
           custom_fields: Json
           deleted_at: string | null
@@ -88439,6 +88469,7 @@ export type Database = {
           authority_reasoning?: string | null
           authority_score?: number | null
           authority_tier?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
@@ -88495,6 +88526,7 @@ export type Database = {
           authority_reasoning?: string | null
           authority_score?: number | null
           authority_tier?: string | null
+          created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null

@@ -36,6 +36,15 @@ function authenticatedSession(userId = "admin-user") {
   });
 }
 
+/** Every request names the organization it acts in (the route refuses otherwise). */
+const ORG_ID = "org-under-test";
+function orgRequest(url: string, init: { method?: string } = {}) {
+  return new NextRequest(url, {
+    ...init,
+    headers: { "X-Organization-Id": ORG_ID },
+  });
+}
+
 function completeWirePayload(overrides: Record<string, unknown> = {}) {
   return {
     user_id: "admin-user",
@@ -109,7 +118,7 @@ test("keeps an unreachable tier explicit and never converts it to zero storage",
     .mockRejectedValueOnce(new DOMException("timed out", "TimeoutError"));
 
   const response = await GET(
-    new NextRequest("http://localhost/api/sandbox/persistence"),
+    orgRequest("http://localhost/api/sandbox/persistence"),
   );
   const body = await response.json();
 
@@ -154,7 +163,7 @@ test("bounds a real hanging HTTP persistence response with the abort deadline", 
   const startedAt = Date.now();
   try {
     const response = await GET(
-      new NextRequest("http://localhost/api/sandbox/persistence?tier=hosted"),
+      orgRequest("http://localhost/api/sandbox/persistence?tier=hosted"),
     );
     const body = await response.json();
     expect(Date.now() - startedAt).toBeLessThan(1_000);
@@ -180,7 +189,7 @@ test("does not turn a 404 persistence route into an empty volume", async () => {
     .mockResolvedValueOnce(new Response("missing", { status: 404 }));
 
   const response = await GET(
-    new NextRequest("http://localhost/api/sandbox/persistence"),
+    orgRequest("http://localhost/api/sandbox/persistence"),
   );
   const body = await response.json();
 
@@ -201,7 +210,7 @@ test("refuses an unscoped delete instead of pretending EC2 storage is user-wipea
   const fetch = jest.spyOn(global, "fetch");
 
   const response = await DELETE(
-    new NextRequest("http://localhost/api/sandbox/persistence", {
+    orgRequest("http://localhost/api/sandbox/persistence", {
       method: "DELETE",
     }),
   );
@@ -212,4 +221,19 @@ test("refuses an unscoped delete instead of pretending EC2 storage is user-wipea
   });
   expect(response.status).toBe(400);
   expect(fetch).not.toHaveBeenCalled();
+});
+
+test("forwards the organization to the orchestrator — hosted homes are per organization", async () => {
+  authenticatedSession();
+  const fetch = jest
+    .spyOn(global, "fetch")
+    .mockResolvedValue(
+      new Response(JSON.stringify(completeWirePayload()), { status: 200 }),
+    );
+
+  await GET(orgRequest("http://localhost/api/sandbox/persistence?tier=hosted"));
+
+  expect(fetch).toHaveBeenCalledTimes(1);
+  const calledUrl = new URL(String(fetch.mock.calls[0]?.[0]));
+  expect(calledUrl.searchParams.get("organization_id")).toBe(ORG_ID);
 });

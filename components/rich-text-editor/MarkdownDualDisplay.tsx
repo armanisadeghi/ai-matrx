@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import 'remirror/styles/all.css';
 import './remirror-editor.css';
 import { Remirror, useRemirror, EditorComponent, useCommands } from '@remirror/react';
@@ -10,6 +10,7 @@ import { MarkdownExtension } from 'remirror/extensions';
 import { motion, MotionStyle } from 'motion/react';
 import { useThemeMode } from '@/styles/themes/useThemeMode';
 import { Type } from 'lucide-react';
+import { markdownToSafeHtml } from '@/lib/markdown/safe-html';
 
 const EditorContent: React.FC = () => {
   const commands = useCommands();
@@ -139,7 +140,10 @@ const MarkdownDualDisplay: React.FC = () => {
   );
 };
 
-const Preview: React.FC<{ markdown: string, style?: MotionStyle }> = ({ markdown, style }) => {
+export const Preview: React.FC<{ markdown: string, style?: MotionStyle }> = ({ markdown, style }) => {
+  // The editor hands back MARKDOWN; it is rendered through the allow-list
+  // converter, never set as raw HTML (a typed <img onerror> would run).
+  const html = useMemo(() => markdownToSafeHtml(markdown), [markdown]);
   return (
       <motion.div
           className="w-full sm:w-1/2 h-1/2 sm:h-full overflow-auto p-4 bg-card text-card-foreground"
@@ -148,7 +152,7 @@ const Preview: React.FC<{ markdown: string, style?: MotionStyle }> = ({ markdown
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
       >
-        <div dangerouslySetInnerHTML={{ __html: markdown }} />
+        <div dangerouslySetInnerHTML={{ __html: html }} />
       </motion.div>
   );
 };

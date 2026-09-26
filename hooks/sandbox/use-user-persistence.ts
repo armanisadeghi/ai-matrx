@@ -7,6 +7,8 @@ import type {
   UserPersistenceResponse,
 } from "@/types/sandbox";
 import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 interface UseUserPersistenceState {
   info: UserPersistenceResponse | null;
@@ -53,6 +55,10 @@ export function useUserPersistence(
     error: null,
   });
 
+  // Hosted homes are per organization: a switch in the header must re-read,
+  // or the page shows one organization while "Wipe" deletes another's.
+  const organizationId = useAppSelector(selectOrganizationId);
+
   // Race-guard so a fast user toggle doesn't paint stale data.
   const reqIdRef = useRef(0);
 
@@ -88,7 +94,8 @@ export function useUserPersistence(
         });
       }
     },
-    [tier],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- organizationId re-reads on a switch
+    [tier, organizationId],
   );
 
   useEffect(() => {

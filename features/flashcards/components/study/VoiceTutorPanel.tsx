@@ -29,7 +29,10 @@
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useMandateAgentInstructions } from "@/features/voice-agent/agentInstructions";
-import { useVoiceAgentInstance } from "@/features/voice-agent/hooks/useVoiceAgentInstance";
+import {
+  useLiveConversationVoice,
+  useVoiceAgentInstance,
+} from "@/features/voice-agent/hooks/useVoiceAgentInstance";
 import { useRealtimeAgentConfig } from "@/features/voice-agent/hooks/useRealtimeAgentConfig";
 import { useXaiVoiceSession } from "@/features/voice-agent/hooks/useXaiVoiceSession";
 import { updateConfig } from "@/features/voice-agent/state/voiceAgentSlice";
@@ -112,6 +115,10 @@ export function VoiceTutorPanel({
     tools: [],
     persist: false,
   });
+  // The voice: the agent's own, or the person's live conversation voice for
+  // AI Matrx's builtin agents (the instance is mounted before the mandate
+  // resolves, so the voice is applied here, not by useVoiceAgentInstance).
+  useLiveConversationVoice({ instanceId, agentId: agentId });
 
   useRealtimeAgentConfig({
     instanceId,

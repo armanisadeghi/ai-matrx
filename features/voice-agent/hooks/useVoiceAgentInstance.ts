@@ -246,32 +246,51 @@ export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, instanceId, store]);
 
-  // ── The person's live conversation voice ─────────────────────────
-  // `media.conversation.voice` applies to AI Matrx's OWN (builtin) voice
-  // agents — the assistant, the tutor, Scribe live, the Communicator. An agent
-  // somebody built speaks in the voice its builder chose; a consumer
-  // preference never rewrites a builder's work. Reactive, not one-shot: the
-  // knob answers only once the organization is known, which can land after
-  // the agent loads. Never swapped mid-session.
+  useLiveConversationVoice({ instanceId, agentId: opts.agentId });
+
+  return instanceId;
+}
+
+/**
+ * The voice a live session speaks in, for any mount that knows its agent —
+ * including surfaces that resolve their agent through a mandate and mount the
+ * instance without `agentId` (the flashcard tutor, Scribe live).
+ *
+ * `media.conversation.voice` applies to AI Matrx's OWN (builtin) voice
+ * agents; an agent somebody built speaks in the voice its builder chose — a
+ * consumer preference never rewrites a builder's work. Without a personal
+ * choice the agent's own `settings.voice_id` speaks (the tutor is Eve).
+ * Reactive, not one-shot: the knob answers only once the organization is
+ * known, which can land after the agent loads. Never swapped mid-session.
+ */
+export function useLiveConversationVoice({
+  instanceId,
+  agentId,
+}: {
+  instanceId: string;
+  agentId: string | null | undefined;
+}): void {
+  const dispatch = useAppDispatch();
   const personalVoice = useSessionKnob(LIVE_CONVERSATION_VOICE_KNOB);
   const agentType = useAppSelector((s) =>
-    opts.agentId ? (s.agentDefinition.agents?.[opts.agentId]?.agentType ?? null) : null,
+    agentId ? (s.agentDefinition.agents?.[agentId]?.agentType ?? null) : null,
   );
   const agentSettings = useAppSelector((s) =>
-    opts.agentId ? (s.agentDefinition.agents?.[opts.agentId]?.settings ?? null) : null,
+    agentId ? (s.agentDefinition.agents?.[agentId]?.settings ?? null) : null,
   );
   const sessionIdle = useAppSelector((s) => {
     const status = s.voiceAgent?.instances?.[instanceId]?.status;
     return status === undefined || status === "idle" || status === "error";
   });
   useEffect(() => {
-    if (agentType !== "builtin" || !sessionIdle || !agentSettings) return;
+    if (!agentId || !agentSettings || !sessionIdle) return;
+    const own = readVoiceIdFromAgent(agentSettings);
     const voiceId =
-      typeof personalVoice === "string" && isVoiceId(personalVoice)
+      agentType === "builtin" &&
+      typeof personalVoice === "string" &&
+      isVoiceId(personalVoice)
         ? personalVoice
-        : readVoiceIdFromAgent(agentSettings);
+        : own;
     dispatch(applyAgentConfig({ instanceId, voiceId }));
-  }, [agentType, agentSettings, personalVoice, sessionIdle, dispatch, instanceId]);
-
-  return instanceId;
+  }, [agentId, agentType, agentSettings, personalVoice, sessionIdle, dispatch, instanceId]);
 }

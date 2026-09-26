@@ -36,6 +36,7 @@ import React from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface StaleDataNoticeProps {
   /**
@@ -101,6 +102,17 @@ export function StaleDataNotice({
         <RefreshCw className={cn("h-3.5 w-3.5", retrying && "animate-spin")} />
         {retrying ? "Retrying…" : "Try again"}
       </Button>
+      {/* A failed read is an error on screen: it carries the Alchemy Menu (RC-B12). */}
+      <ErrorAlchemyMenu
+        input={{
+          title: hasData ? `Couldn't refresh ${what}` : `Couldn't load ${what}`,
+          message: detail
+            ? `${hasData ? "Couldn't refresh" : "Couldn't load"} ${what}: ${detail}`
+            : `${hasData ? "Couldn't refresh" : "Couldn't load"} ${what}.`,
+          operation: `${hasData ? "Refresh" : "Load"} ${what}`,
+          details: { rows_on_screen_are_stale: hasData },
+        }}
+      />
     </div>
   );
 }

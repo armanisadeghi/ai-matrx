@@ -54,21 +54,43 @@ interface TravelGuideViewProps extends TravelGuideProps {
   isLoading?: boolean;
 }
 
-// Helper function to convert markdown-style formatting to HTML
-const formatText = (text: string) => {
-  // Bold text
-  let formattedText = text.replace(
-    /\*\*(.*?)\*\*/g,
-    '<span class="font-bold">$1</span>',
-  );
+// Markdown-style **bold** / *italic* → React nodes. Never an HTML string: the
+// text is model output, and innerHTML would run any markup inside it.
+const renderItalic = (text: string, keyPrefix: string): React.ReactNode[] => {
+  const out: React.ReactNode[] = [];
+  let last = 0;
+  let n = 0;
+  for (const m of text.matchAll(/\*(.*?)\*/g)) {
+    const at = m.index ?? 0;
+    if (at > last) out.push(text.slice(last, at));
+    out.push(
+      <span key={`${keyPrefix}i${n++}`} className="italic">
+        {m[1]}
+      </span>,
+    );
+    last = at + m[0].length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+};
 
-  // Italic text
-  formattedText = formattedText.replace(
-    /\*(.*?)\*/g,
-    '<span class="italic">$1</span>',
-  );
-
-  return formattedText;
+const formatText = (text: string): React.ReactNode[] => {
+  const out: React.ReactNode[] = [];
+  let last = 0;
+  let n = 0;
+  for (const m of text.matchAll(/\*\*(.*?)\*\*/g)) {
+    const at = m.index ?? 0;
+    if (at > last) out.push(...renderItalic(text.slice(last, at), `t${n}`));
+    out.push(
+      <span key={`b${n}`} className="font-bold">
+        {renderItalic(m[1] ?? "", `b${n}`)}
+      </span>,
+    );
+    n++;
+    last = at + m[0].length;
+  }
+  if (last < text.length) out.push(...renderItalic(text.slice(last), `t${n}`));
+  return out;
 };
 
 // Icon mapping for different section titles
@@ -101,7 +123,12 @@ interface CollapsibleSectionProps {
   depth?: number;
 }
 
-const CollapsibleSection = ({ title, children, icon, depth = 2 }: CollapsibleSectionProps) => {
+const CollapsibleSection = ({
+  title,
+  children,
+  icon,
+  depth = 2,
+}: CollapsibleSectionProps) => {
   const [isOpen, setIsOpen] = useState(true);
 
   const toggleSection = () => {
@@ -169,22 +196,18 @@ const ListItemComponent = ({ item }: { item: ListItem }) => {
           )}
         </div>
         <div className="flex-1">
-          <div
-            dangerouslySetInnerHTML={{ __html: formatText(item.text) }}
-            className="text-gray-800 dark:text-gray-200"
-          />
+          <div className="text-gray-800 dark:text-gray-200">
+            {formatText(item.text)}
+          </div>
 
           {hasSubItems && isOpen && (
             <ul className="pl-4 mt-2 space-y-1 border-l-2 border-gray-200 dark:border-gray-700">
               {subItems.map((subItem) => (
                 <li key={subItem.id} className="relative pl-4">
                   <div className="absolute left-0 top-2 w-3 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
-                  <div
-                    dangerouslySetInnerHTML={{
-                      __html: formatText(subItem.text),
-                    }}
-                    className="text-gray-700 dark:text-gray-300"
-                  />
+                  <div className="text-gray-700 dark:text-gray-300">
+                    {formatText(subItem.text)}
+                  </div>
                 </li>
               ))}
             </ul>
@@ -212,7 +235,7 @@ const TableComponent = ({
                 scope="col"
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
               >
-                <div dangerouslySetInnerHTML={{ __html: formatText(header) }} />
+                <div>{formatText(header)}</div>
               </th>
             ))}
           </tr>
@@ -232,7 +255,7 @@ const TableComponent = ({
                   key={cellIndex}
                   className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-200"
                 >
-                  <div dangerouslySetInnerHTML={{ __html: formatText(cell) }} />
+                  <div>{formatText(cell)}</div>
                 </td>
               ))}
             </tr>
@@ -352,8 +375,9 @@ const TravelGuide: React.FC<TravelGuideProps> = ({
             <div
               key={section.id}
               className="mb-6 text-gray-800 dark:text-gray-200 leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: formatText(section.content) }}
-            />
+            >
+              {formatText(section.content)}
+            </div>
           );
         }
         return null;
@@ -483,12 +507,9 @@ const TravelGuide: React.FC<TravelGuideProps> = ({
               {/* Hero section with the first paragraph */}
               {data.sections[0] && data.sections[0].type === "paragraph" && (
                 <div className="mb-8 pb-8 border-b border-border">
-                  <div
-                    className="text-lg text-gray-800 dark:text-gray-200 leading-relaxed"
-                    dangerouslySetInnerHTML={{
-                      __html: formatText(data.sections[0].content as string),
-                    }}
-                  />
+                  <div className="text-lg text-gray-800 dark:text-gray-200 leading-relaxed">
+                    {formatText(data.sections[0].content as string)}
+                  </div>
                 </div>
               )}
 

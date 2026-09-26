@@ -252,6 +252,7 @@ import {
   parseDurationMs,
   timeoutOverrideFindings,
 } from "./lib/migration-lock-policy";
+import { judgedAsOfRefusal, parseAppliedAt, ranUnderOlderRules, ruleDatesSelfTest } from "./lib/migration-rule-dates";
 import { judgeTexts as judgeKernelPairing } from "./check-kernel-rerecord-pairing";
 import { judgeOneInverse } from "./check-inverses-leave-the-ground-standing";
 
@@ -762,6 +763,10 @@ interface ApplyOpts {
    *  re-record. Judged together with the file being applied; see the kernel pairing
    *  refusal in applyFile. */
   pairedWith?: readonly string[];
+  /** `--judged-as-of <production applied_at>` (clone only) — the nightly catch-up's grandfathering:
+   *  a refusing rule introduced AFTER this moment prints "ran under older rules" instead
+   *  (scripts/lib/migration-rule-dates.ts; chair ruling 2026-09-26, rule 2). */
+  judgedAsOf?: Date | null;
 }
 
 /** Apply ONE file. The whole of db:apply lives here so --self-test exercises
@@ -1690,6 +1695,16 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
         );
         return 1;
       }
+      // 🚨 GRANDFATHERING (chair ruling 2026-09-26, rule 2). A finding raised by a rule younger than
+      // the moment production ran this file is history production was never held to: announced,
+      // not refused. Only ever at --target clone (the flag is refused elsewhere, in main()).
+      const olderRules = based.findings
+        .map((f) => ({ f, why: f.rule ? ranUnderOlderRules(f.rule, opts.judgedAsOf ?? null) : null }))
+        .filter((x) => x.why !== null);
+      for (const { f, why } of olderRules)
+        console.log(`${TAG.warn}${filename}: ${f.signature} — ${why}`);
+      const standing = based.findings.filter((f) => !olderRules.some((x) => x.f === f));
+      based = { ...based, findings: standing };
       if (based.findings.length) {
         console.error(
           `${TAG.fail}${filename} — ${based.findings.length} problem(s) with what this file would ` +
@@ -1722,7 +1737,12 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     // 13:26 UTC that day. Refused before a byte runs, by file and line.
     // See scripts/lib/migration-lock-policy.ts.
     const statementCeilingMs = parseDurationMs(statementTimeout) || Number.POSITIVE_INFINITY;
-    const overrides = timeoutOverrideFindings(sql, statementCeilingMs);
+    let overrides = timeoutOverrideFindings(sql, statementCeilingMs);
+    const lockOlder = overrides.length ? ranUnderOlderRules("lock-timeout-ceiling", opts.judgedAsOf ?? null) : null;
+    if (lockOlder) {
+      for (const f of overrides) console.log(`${TAG.warn}${overrideSentence(filename, f)} — ${lockOlder}`);
+      overrides = [];
+    }
     if (overrides.length) {
       console.error(
         `${TAG.fail}${filename} raises its own lock wait or statement ceiling past this runner's. ` +
@@ -5317,6 +5337,7 @@ async function main(): Promise<number> {
   }
 
   if (argv.includes("--draft-self-test")) return draftSelfTest();
+  if (argv.includes("--rule-dates-self-test")) return ruleDatesSelfTest();
   if (argv.includes("--campaign-auth-self-test")) return campaignAuthSelfTest(argv);
   if (argv.includes("--policy-only-self-test")) return policyOnlySelfTest();
   if (argv.includes("--window-class-self-test")) return windowClassSelfTest();
@@ -5376,7 +5397,7 @@ async function main(): Promise<number> {
   // `--target branch` (space form) leaves "branch" in argv as a bare word; it is
   // the flag's VALUE, never the migration file. Same for --source and --lane.
   const valueIdxs = new Set<number>();
-  for (const flag of ["--target", "--source", "--lane", "--statement-timeout", "--branch-ref", "--clone-ref"]) {
+  for (const flag of ["--target", "--source", "--lane", "--statement-timeout", "--branch-ref", "--clone-ref", "--judged-as-of"]) {
     const i = argv.indexOf(flag);
     if (i >= 0 && argv[i + 1] && !argv[i + 1]!.startsWith("--")) valueIdxs.add(i + 1);
   }
@@ -5410,6 +5431,15 @@ async function main(): Promise<number> {
     return 1;
   }
 
+  // `--judged-as-of <production applied_at>`: clone only, refused by name anywhere else.
+  const judgedAsOfRaw = valueOf("--judged-as-of");
+  const judgedRefused = judgedAsOfRefusal(target, judgedAsOfRaw);
+  if (judgedRefused) {
+    console.error(`${TAG.fail}${judgedRefused}`);
+    return 1;
+  }
+  const judgedAsOf = judgedAsOfRaw === null ? null : parseAppliedAt(judgedAsOfRaw);
+
   const given = resolve(process.cwd(), positional[0]!);
   const alt = resolve(MIGRATIONS_DIR, positional[0]!);
   const path = existsSync(given) ? given : existsSync(alt) ? alt : null;
@@ -5428,6 +5458,7 @@ async function main(): Promise<number> {
     cloneRefPath: cloneRefOverride(argv),
     confirmedChairSteps,
     pairedWith,
+    judgedAsOf,
   });
 }
 

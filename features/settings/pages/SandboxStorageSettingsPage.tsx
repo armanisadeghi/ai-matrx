@@ -43,6 +43,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { useUserPersistence } from "@/hooks/sandbox/use-user-persistence";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
 import type { SandboxTier, UserPersistenceInfo } from "@/types/sandbox";
 
 const TIER_DESCRIPTIONS: Record<SandboxTier, string> = {
@@ -58,6 +60,7 @@ const TIER_LABELS: Record<SandboxTier, string> = {
 
 export default function SandboxStoragePage() {
   const persistence = useUserPersistence();
+  const organizationName = useAppSelector(selectOrganizationName);
   const [pendingDelete, setPendingDelete] = useState<"hosted" | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -91,10 +94,14 @@ export default function SandboxStoragePage() {
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold">Sandbox Storage</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Persistent per-user storage for your Matrx sandboxes. Anything you
-            save under <code className="font-mono">/home/agent</code> is
-            preserved here and re-mounted on every new sandbox you create on the
-            same tier.
+            Persistent storage for your Matrx sandboxes in{" "}
+            <span className="font-medium text-foreground">
+              {organizationName ?? "the organization you have selected"}
+            </span>
+            . Anything you save under <code className="font-mono">/home/agent</code>{" "}
+            is preserved here and re-mounted on every new sandbox you create in
+            this organization on the same tier. Each organization has its own
+            storage — switch organizations in the header to see another one.
           </p>
         </div>
         <Button

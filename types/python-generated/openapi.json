@@ -11043,6 +11043,88 @@
         }
       }
     },
+    "/cutover/organizations/{organization_id}/copy-again": {
+      "post": {
+        "tags": [
+          "Cutover"
+        ],
+        "summary": "Copy Organization Again",
+        "description": "Copy every older data table of the organization again; streams progress and the report.",
+        "operationId": "copy_organization_again_cutover_organizations__organization_id__copy_again_post",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cutover/tables/{table_id}/copy-again": {
+      "post": {
+        "tags": [
+          "Cutover"
+        ],
+        "summary": "Copy Table Again",
+        "description": "Copy one older data table again; streams progress and the report.",
+        "operationId": "copy_table_again_cutover_tables__table_id__copy_again_post",
+        "parameters": [
+          {
+            "name": "table_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Table Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/organization-secrets/{organization_id}": {
       "get": {
         "tags": [
@@ -13980,6 +14062,67 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/VaultPasswordHistoryRevealResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/items/{item_id}/password-history/restore": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Restore Password History",
+        "operationId": "restore_password_history_vault_items__item_id__password_history_restore_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultPasswordHistoryRestoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultPasswordHistoryRestoreResponse"
                 }
               }
             }
@@ -83410,6 +83553,49 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LandedSource"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sources/{processed_document_id}/restore": {
+      "post": {
+        "tags": [
+          "Sources"
+        ],
+        "summary": "Restore",
+        "description": "Undo a person's edit: the original capture is what people read (and AI searches) again.",
+        "operationId": "restore_sources__processed_document_id__restore_post",
+        "parameters": [
+          {
+            "name": "processed_document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Processed Document Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -160117,20 +160303,49 @@
       "EditBody": {
         "properties": {
           "portions": {
-            "items": {
-              "$ref": "#/components/schemas/Portion"
-            },
-            "type": "array",
-            "minItems": 1,
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Portion"
+                },
+                "type": "array",
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Portions"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "portions"
-        ],
-        "title": "EditBody"
+        "title": "EditBody",
+        "description": "A person's edit. ``portions`` changes the text (a ``manual_curation`` version beside the\noriginal); ``name`` and ``description`` change the Source's details in place. At least one."
       },
       "EditInputsRetryProposal": {
         "properties": {
@@ -293501,6 +293716,67 @@
         ],
         "title": "VaultPasswordHistoryResponse",
         "description": "Value-free password-history timeline metadata."
+      },
+      "VaultPasswordHistoryRestoreRequest": {
+        "properties": {
+          "field_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Field Id"
+          },
+          "revision": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Revision"
+          },
+          "expected_history_revision": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Expected History Revision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "field_id",
+          "revision",
+          "expected_history_revision"
+        ],
+        "title": "VaultPasswordHistoryRestoreRequest",
+        "description": "Restore only if the current history revision remains unchanged."
+      },
+      "VaultPasswordHistoryRestoreResponse": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "field_id": {
+            "type": "string",
+            "title": "Field Id"
+          },
+          "restored_from_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Restored From Revision"
+          },
+          "history_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "History Revision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_id",
+          "field_id",
+          "restored_from_revision",
+          "history_revision"
+        ],
+        "title": "VaultPasswordHistoryRestoreResponse"
       },
       "VaultPasswordHistoryRevealRequest": {
         "properties": {

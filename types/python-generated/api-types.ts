@@ -4786,6 +4786,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cutover/organizations/{organization_id}/copy-again": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy Organization Again
+         * @description Copy every older data table of the organization again; streams progress and the report.
+         */
+        post: operations["copy_organization_again_cutover_organizations__organization_id__copy_again_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cutover/tables/{table_id}/copy-again": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy Table Again
+         * @description Copy one older data table again; streams progress and the report.
+         */
+        post: operations["copy_table_again_cutover_tables__table_id__copy_again_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/organization-secrets/{organization_id}": {
         parameters: {
             query?: never;
@@ -5601,6 +5641,23 @@ export interface paths {
          *     chain, and post-decrypt revocation checks before returning plaintext.
          */
         post: operations["reveal_password_history_vault_items__item_id__password_history_reveal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/items/{item_id}/password-history/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Password History */
+        post: operations["restore_password_history_vault_items__item_id__password_history_restore_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -37634,6 +37691,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sources/{processed_document_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore
+         * @description Undo a person's edit: the original capture is what people read (and AI searches) again.
+         */
+        post: operations["restore_sources__processed_document_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sources/internal/land": {
         parameters: {
             query?: never;
@@ -69550,10 +69627,18 @@ export interface components {
             /** Items */
             items: components["schemas"]["EdgeRow"][];
         };
-        /** EditBody */
+        /**
+         * EditBody
+         * @description A person's edit. ``portions`` changes the text (a ``manual_curation`` version beside the
+         *     original); ``name`` and ``description`` change the Source's details in place. At least one.
+         */
         EditBody: {
             /** Portions */
-            portions: components["schemas"]["Portion"][];
+            portions?: components["schemas"]["Portion"][] | null;
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
         };
         /**
          * EditInputsRetryProposal
@@ -129202,6 +129287,32 @@ export interface components {
             incomplete: boolean;
         };
         /**
+         * VaultPasswordHistoryRestoreRequest
+         * @description Restore only if the current history revision remains unchanged.
+         */
+        VaultPasswordHistoryRestoreRequest: {
+            /**
+             * Field Id
+             * Format: uuid
+             */
+            field_id: string;
+            /** Revision */
+            revision: number;
+            /** Expected History Revision */
+            expected_history_revision: number;
+        };
+        /** VaultPasswordHistoryRestoreResponse */
+        VaultPasswordHistoryRestoreResponse: {
+            /** Item Id */
+            item_id: string;
+            /** Field Id */
+            field_id: string;
+            /** Restored From Revision */
+            restored_from_revision: number;
+            /** History Revision */
+            history_revision: number;
+        };
+        /**
          * VaultPasswordHistoryRevealRequest
          * @description The exact historical field state the caller wants to reveal.
          */
@@ -144136,6 +144247,68 @@ export interface operations {
             };
         };
     };
+    copy_organization_again_cutover_organizations__organization_id__copy_again_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    copy_table_again_cutover_tables__table_id__copy_again_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                table_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_secrets_organization_secrets__organization_id__get: {
         parameters: {
             query?: never;
@@ -145910,6 +146083,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VaultPasswordHistoryRevealResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_password_history_vault_items__item_id__password_history_restore_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultPasswordHistoryRestoreRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultPasswordHistoryRestoreResponse"];
                 };
             };
             /** @description Validation Error */
@@ -194927,6 +195137,37 @@ export interface operations {
                 "application/json": components["schemas"]["EditBody"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LandedSource"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_sources__processed_document_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                processed_document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

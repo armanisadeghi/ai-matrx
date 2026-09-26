@@ -18,9 +18,9 @@ import { useSetting } from "../hooks/useSetting";
  * from these two preferences and pass `model`/`style` to `generateImage()`.
  */
 export default function ImageGenerationTab() {
-  // null = platform default (catalog-resolved via is_primary). The legacy
-  // seeded value "standard" is folded to null at the load boundaries
-  // (stripLegacyDefaultModelSentinels).
+  // null = no personal choice: nothing is sent and the server's image.generate
+  // mandate model draws. The legacy seeded value "standard" is folded to null
+  // at the load boundaries (stripLegacyDefaultModelSentinels).
   const [model, setModel] = useSetting<string | null>(
     "userPreferences.imageGeneration.defaultModel",
   );
@@ -42,6 +42,8 @@ export default function ImageGenerationTab() {
           onValueChange={setModel}
           scope="all"
           allowPlatformDefault
+          platformDefaultLabel="AI Matrx default (chosen by the platform)"
+          description="Leave on the AI Matrx default to use whichever image model the platform has set for image generation."
           defaultModality="image"
         />
         <SettingsSelect
@@ -49,7 +51,7 @@ export default function ImageGenerationTab() {
           description="Seeds the style field when you open image generation — you can still change it per image."
           value={style}
           onValueChange={setStyle}
-          placeholder="None"
+          placeholder="None — no style added"
           options={[
             { value: "realistic", label: "Realistic" },
             { value: "artistic", label: "Artistic" },

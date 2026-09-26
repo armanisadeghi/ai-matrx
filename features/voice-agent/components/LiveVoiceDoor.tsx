@@ -23,8 +23,20 @@ export function LiveVoiceDoor({
   const agentType = useAppSelector((s) =>
     agentId ? (s.agentDefinition.agents?.[agentId]?.agentType ?? null) : null,
   );
+  // The voice is known only once the agent has loaded — before that (or if it
+  // failed to load) the door names no voice rather than guess the fallback.
+  const known = Boolean(agentId) && agentType !== null;
   const name = voiceDisplayName("xai", voiceId ?? "");
-  if (agentId && agentType && agentType !== "builtin") {
+  if (!known) {
+    return (
+      <SettingDoor
+        target={VOICE_SETTING_DOORS.liveConversation}
+        label="Voice settings"
+        variant="ghost"
+      />
+    );
+  }
+  if (agentType !== "builtin") {
     return (
       <span
         className="text-xs text-muted-foreground"

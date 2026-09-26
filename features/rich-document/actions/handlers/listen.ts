@@ -101,7 +101,7 @@ registerAction({
 // the ONE playback queue; while this content's utterance is the current item,
 // the same button pauses and resumes it. State comes from the queue itself.
 
-type SpeechStatus = "playing" | "paused" | "busy" | null;
+type SpeechStatus = "playing" | "paused" | "queued" | "starting" | null;
 
 async function playbackModule() {
   return import("@/features/audio/playback/playbackQueue");
@@ -112,26 +112,34 @@ async function playbackModule() {
 let playbackApi: Awaited<ReturnType<typeof playbackModule>> | null = null;
 /** Queue items whose failure was already announced (one toast per failure). */
 const announcedSpeechErrors = new Set<string>();
+/**
+ * The utterance each button last started, keyed by the button's content — so
+ * a SELECTION read (whose text is not the whole reply) still drives this
+ * button's spinner / Pause / Play and its error toast. Module scope, so a bar
+ * that remounts re-finds audio still playing in the persistent queue.
+ */
+const itemForContent = new Map<string, string>();
 
-function speechStatus(ctx: RichDocumentActionContext): SpeechStatus {
+function speechItem(ctx: RichDocumentActionContext) {
   if (!playbackApi) return null;
   const snap = playbackApi.getPlaybackSnapshot();
   const text = contentForDestination(ctx);
-  // The current item wins; otherwise this content's newest live item (queued
-  // behind another utterance, or enqueued before the queue picked it up).
-  const item =
-    snap.items.find((i) => i.id === snap.currentId && i.text === text) ??
-    [...snap.items]
-      .reverse()
-      .find(
-        (i) =>
-          i.text === text &&
-          (i.status === "queued" || i.status === "loading"),
-      );
+  const ownId = itemForContent.get(text);
+  const own = ownId ? snap.items.find((i) => i.id === ownId) : undefined;
+  if (own) return own;
+  // Audio of this same content started elsewhere (the right-click menu).
+  return (
+    snap.items.find((i) => i.id === snap.currentId && i.text === text) ?? null
+  );
+}
+
+function speechStatus(ctx: RichDocumentActionContext): SpeechStatus {
+  const item = speechItem(ctx);
   if (!item) return null;
   if (item.status === "playing") return "playing";
   if (item.status === "paused") return "paused";
-  if (item.status === "loading" || item.status === "queued") return "busy";
+  if (item.status === "queued") return "queued";
+  if (item.status === "loading") return "starting";
   return null;
 }
 
@@ -157,9 +165,11 @@ registerAction({
       ? "Pause reading"
       : status === "paused"
         ? "Resume reading"
-        : status === "busy"
-          ? "Starting…"
-          : "Read aloud (reads your selection when text is selected)";
+        : status === "queued"
+          ? "Waiting for other audio — click to cancel"
+          : status === "starting"
+            ? "Starting… click to cancel"
+            : "Read aloud (reads your selection when text is selected)";
   },
   icon: Volume2,
   iconColor: "text-primary",
@@ -173,15 +183,15 @@ registerAction({
     const status = speechStatus(ctx);
     if (status === "playing") return { icon: Pause };
     if (status === "paused") return { icon: Play };
-    if (status === "busy") return { icon: Loader2, spin: true };
+    if (status === "queued" || status === "starting") {
+      return { icon: Loader2, spin: true };
+    }
     return null;
   },
   active: (ctx) => {
     const status = speechStatus(ctx);
     return status === "playing" || status === "paused";
   },
-  disabled: (ctx) =>
-    speechStatus(ctx) === "busy" ? { reason: "Starting audio…" } : false,
   subscribe: (onChange, ctx) => {
     let unsubscribe: (() => void) | null = null;
     let cancelled = false;
@@ -195,7 +205,8 @@ registerAction({
         for (const item of snap.items) {
           if (
             item.status === "error" &&
-            item.text === contentForDestination(ctx) &&
+            (item.id === itemForContent.get(contentForDestination(ctx)) ||
+              item.text === contentForDestination(ctx)) &&
             !announcedSpeechErrors.has(item.id)
           ) {
             announcedSpeechErrors.add(item.id);
@@ -216,14 +227,22 @@ registerAction({
     // The click is the gesture iOS needs — unlock output before any await.
     primeAudioOutput();
     const api = await playbackModule();
+    playbackApi = api;
     const status = speechStatus(ctx);
     if (status === "playing") return api.pausePlayback();
     if (status === "paused") return api.resumePlayback();
-    if (status === "busy") return;
+    if (status === "queued" || status === "starting") {
+      const item = speechItem(ctx);
+      if (item) return api.removePlaybackItem(item.id);
+      return;
+    }
     const { speak } = await import("@/features/audio/service/speak");
-    // Queue identity is the FULL content (so the toggle can find it); a
-    // selection plays as its own utterance.
-    speak({ text: selectedText(ctx) ?? contentForDestination(ctx), label: "Read aloud" });
+    // A selection plays as its own utterance; either way this button owns it.
+    const { id } = speak({
+      text: selectedText(ctx) ?? contentForDestination(ctx),
+      label: "Read aloud",
+    });
+    itemForContent.set(contentForDestination(ctx), id);
   },
 });
 

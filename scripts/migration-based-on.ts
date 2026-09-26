@@ -85,6 +85,9 @@ const NAME_AT = new RegExp(`^(${IDENT}(?:\\.${IDENT})*)\\s*\\(`);
 export interface ReplacedFunction {
   /** As written in the file, e.g. `billing.plan_status`; null when computed. */
   readonly name: string | null;
+  /** Found as a DROP this same file recreates (rule `dd220-drop-recreate`, dated in
+   *  scripts/lib/migration-rule-dates.ts), not as a CREATE OR REPLACE. */
+  readonly viaDrop?: boolean;
   /** FUNCTION or PROCEDURE, as written. */
   readonly kind: string;
   /** Parameter-list text, literal-continuations joined; null when computed. */
@@ -289,7 +292,7 @@ function findDropRecreateOccurrences(text: string, spans: Array<[number, number]
     if (d.name === null) continue;
     const recreated = creates.some((c) => c.index > d.index && c.name !== null && fnNamesMatch(c.name, d.name!));
     if (!recreated) continue;
-    out.push({ name: d.name, kind: d.kind, args: d.args, line: d.line, dynamic: d.dynamic, snippet: `DROP … ${d.snippet}` });
+    out.push({ name: d.name, kind: d.kind, args: d.args, line: d.line, dynamic: d.dynamic, snippet: `DROP … ${d.snippet}`, viaDrop: true });
   }
   return out;
 }
@@ -745,6 +748,9 @@ export interface BasedOnFinding {
     /** runtime-built DDL whose FUNCTION NAME could not be read statically */
     | "dynamic-computed";
   readonly signature: string;
+  /** The dated rule that raised it when it is younger than DD-220 itself (lane
+   *  CLONE-LEDGER-VERDICTS): a finding from a DROP this file recreates. */
+  readonly rule?: "dd220-drop-recreate";
 }
 
 export interface BasedOnResult {
@@ -814,8 +820,14 @@ export async function basedOnCheck(q: Query, sql: string): Promise<BasedOnResult
     `line ${fn.line}${fn.dynamic ? " (inside runtime-built DDL — a DO block or EXECUTE/format string)" : ""}`;
 
   for (const fn of replaced) {
+    const before = findings.length;
+    await judgeOne(fn);
+    if (fn.viaDrop)
+      for (let i = before; i < findings.length; i++) findings[i] = { ...findings[i]!, rule: "dd220-drop-recreate" };
+  }
+  async function judgeOne(fn: ReplacedFunction): Promise<void> {
     const r = await resolveReplaced(q, fn);
-    if (r.kind === "new") continue;
+    if (r.kind === "new") return;
 
     // A name assembled at runtime. Nothing can be looked up, so the file must at
     // least carry a declaration the author stands behind — and every line it
@@ -827,7 +839,7 @@ export async function basedOnCheck(q: Query, sql: string): Promise<BasedOnResult
             `      This runner cannot check what that overwrites; it is trusting the ` +
             `${lines.length} verified \`-- based-on:\` line(s) in this file.`,
         );
-        continue;
+        return;
       }
       findings.push({
         kind: "dynamic-computed",
@@ -842,7 +854,7 @@ export async function basedOnCheck(q: Query, sql: string): Promise<BasedOnResult
           `    \`-- based-on:\` line for the name it will produce:\n` +
           `        pnpm db:based-on <schema>.<the name this builds>`,
       });
-      continue;
+      return;
     }
 
     // The name is written out but the arguments are assembled at runtime: we
@@ -863,7 +875,7 @@ export async function basedOnCheck(q: Query, sql: string): Promise<BasedOnResult
             });
           else verified.push(o.signature);
         }
-        continue;
+        return;
       }
       findings.push({
         kind: "dynamic-name-only",
@@ -876,7 +888,7 @@ export async function basedOnCheck(q: Query, sql: string): Promise<BasedOnResult
           `\n    Write the parameter list out in full so the target is unambiguous, or declare them all:\n` +
           `        pnpm db:based-on ${fn.name}`,
       });
-      continue;
+      return;
     }
 
     if (r.kind === "unresolvable") {
@@ -891,7 +903,7 @@ export async function basedOnCheck(q: Query, sql: string): Promise<BasedOnResult
           `    write plain parameter types (\`p_org uuid\`, not a domain alias built in this same file), then\n` +
           `    declare the body: pnpm db:based-on ${fn.name}`,
       });
-      continue;
+      return;
     }
     const { live } = r;
     const decl = declared.get(live.oid);
@@ -909,7 +921,7 @@ export async function basedOnCheck(q: Query, sql: string): Promise<BasedOnResult
           `        pnpm db:based-on ${live.signature.replace(/\(.*$/, "")}\n` +
           `    (live body right now: sha256 ${live.hash})`,
       });
-      continue;
+      return;
     }
     if (decl.hash !== live.hash) {
       findings.push({
@@ -924,7 +936,7 @@ export async function basedOnCheck(q: Query, sql: string): Promise<BasedOnResult
           `    Remedy: re-read the live body, re-base your edit on it, and regenerate the header line:\n` +
           `        pnpm db:based-on ${live.signature.replace(/\(.*$/, "")}`,
       });
-      continue;
+      return;
     }
     verified.push(live.signature);
   }
@@ -934,6 +946,7 @@ export async function basedOnCheck(q: Query, sql: string): Promise<BasedOnResult
     if (dt.table === null) {
       findings.push({
         kind: "unresolvable",
+        rule: "dd220-drop-recreate",
         signature: dt.name,
         message:
           `line ${dt.line} DROPs trigger \`${dt.name}\` and this file recreates it, but the DROP\n` +
@@ -949,6 +962,7 @@ export async function basedOnCheck(q: Query, sql: string): Promise<BasedOnResult
     if (!decl) {
       findings.push({
         kind: "missing",
+        rule: "dd220-drop-recreate",
         signature: live.signature,
         message:
           `line ${dt.line} DROPs trigger \`${live.signature}\`, which this file then recreates, and the\n` +
@@ -965,6 +979,7 @@ export async function basedOnCheck(q: Query, sql: string): Promise<BasedOnResult
     if (decl.hash !== live.hash) {
       findings.push({
         kind: "stale",
+        rule: "dd220-drop-recreate",
         signature: live.signature,
         message:
           `line ${decl.line} declares \`trigger ${live.signature}\` based on sha256 ${decl.hash},\n` +
@@ -987,6 +1002,7 @@ export async function basedOnCheck(q: Query, sql: string): Promise<BasedOnResult
     if (!decl) {
       findings.push({
         kind: "missing",
+        rule: "dd220-drop-recreate",
         signature: live.signature,
         message:
           `line ${dv.line} DROPs view \`${live.signature}\`, which this file then recreates, and the\n` +
@@ -1003,6 +1019,7 @@ export async function basedOnCheck(q: Query, sql: string): Promise<BasedOnResult
     if (decl.hash !== live.hash) {
       findings.push({
         kind: "stale",
+        rule: "dd220-drop-recreate",
         signature: live.signature,
         message:
           `line ${decl.line} declares \`view ${live.signature}\` based on sha256 ${decl.hash},\n` +

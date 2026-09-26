@@ -175,6 +175,9 @@ export default function UnifiedDataTableRoute({
    * it does not substitute.
   */
   const activeView = searchParams.get("view");
+  // THE ONE-GRID MERGE, WALKED BEHIND ITS SWITCH (merge steps 5-8): `?grid=merged` draws the
+  // package grid with the older /data grid's controls on it; without it the grid is as it was.
+  const mergedGrid = searchParams.get("grid") === "merged";
   /**
    * WHICH RAIL, AND WHICH THING IN IT — `?rail=forms&item=<form>`, and the same
    * for notifications, portals and share (records-ui 0.82.0).
@@ -796,6 +799,8 @@ export default function UnifiedDataTableRoute({
             host={{
               Link,
               density: "condensed",
+              // records-ui 0.87+: the merged grid's control layer (ignored by an older build).
+              ...(mergedGrid ? { grid: "merged" as const } : {}),
               // The page's toasts: the where-it-lives chip's "now lives in …" outlives the
               // re-read that re-mounts the header (UI-FIX-19).
               notify: RECORDS_NOTIFY,

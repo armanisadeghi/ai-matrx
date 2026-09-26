@@ -38,6 +38,8 @@
 # Usage:
 #   scripts/night/clone-catchup.sh              apply the delta
 #   scripts/night/clone-catchup.sh --dry-run    print the delta and change nothing
+#   scripts/night/clone-catchup.sh --self-test  no database: the planner, inspection, later-owner and
+#                                               dated-rule self-tests (pnpm check:clone-catchup:self-test)
 # ─────────────────────────────────────────────────────────────────────────────
 set -u
 source /Users/armanisadeghi/code/matrx-frontend/scripts/night/lib-night.sh
@@ -47,7 +49,18 @@ DRY_RUN=0
 for a in "$@"; do
   case "$a" in
     --dry-run) DRY_RUN=1 ;;
-    *) say "REFUSED: unknown argument '$a'. This job takes --dry-run and nothing else."; exit 78 ;;
+    --self-test)
+      # No database: every rule this job and its helpers judge by, RED cases first
+      # (lane CLONE-LEDGER-VERDICTS, 2026-09-26: parity verdicts, the direct-apply regime, rule-4
+      # inverses, owners, level-by-inspection, later owners of a replayed body, dated runner rules).
+      rc=0
+      /usr/bin/env python3 "$FRONTEND/scripts/night/clone-catchup-plan.py" --self-test || rc=1
+      /usr/bin/env python3 "$FRONTEND/scripts/night/clone-catchup-inspect.py" --self-test || rc=1
+      /usr/bin/env python3 "$FRONTEND/scripts/night/clone-catchup-repair.py" --self-test || rc=1
+      ( cd "$FRONTEND" && node node_modules/tsx/dist/cli.mjs scripts/apply-migration.ts --rule-dates-self-test ) || rc=1
+      say "clone-catchup self-test: $([ $rc -eq 0 ] && print GREEN || print RED)"
+      exit $rc ;;
+    *) say "REFUSED: unknown argument '$a'. This job takes --dry-run or --self-test and nothing else."; exit 78 ;;
   esac
 done
 
@@ -91,7 +104,9 @@ night_assert_target_readonly production "${PROD_ARGS[@]}" || exit $?
 night_window_guard 0100 0330 || exit $?
 
 # ── the two ledgers ──────────────────────────────────────────────────────────
-LEDGER_SQL="select source, filename, checksum, applied_at::text from public._schema_migrations"
+# Columns 5-7 (lane CLONE-LEDGER-VERDICTS): duration, whether a RUNNER wrote the row, and its lane —
+# how the planner tells a hand-ledgered direct apply (judged by no runner) and names who to ask.
+LEDGER_SQL="select source, filename, checksum, applied_at::text, duration_ms::text, (coalesce(applied_by_process, '') <> '')::text, replace(replace(coalesce(applied_by_lane, ''), E'\\t', ' '), E'\\n', ' ') from public._schema_migrations"
 night_readonly_psql "${PROD_ARGS[@]}" -F $'\t' --sql "$LEDGER_SQL" > "$WORK/production.tsv" || {
   say "REFUSED: production's ledger could not be read. Nothing applied."; exit 70; }
 "$PSQL" "${CLONE_ARGS[@]}" -qAt -F $'\t' -v ON_ERROR_STOP=1 -c "$LEDGER_SQL" > "$WORK/clone.tsv" || {
@@ -104,12 +119,14 @@ say "ledgers read: production $(wc -l < "$WORK/production.tsv" | tr -d ' ') rows
   say "REFUSED: the delta could not be computed. Nothing applied."; exit 70; }
 
 APPLY_N=$(grep -c '^APPLY' "$WORK/plan.tsv" 2>/dev/null || true); APPLY_N=${APPLY_N:-0}
+PARITY_N=$(grep -c '^PARITY' "$WORK/plan.tsv" 2>/dev/null || true); PARITY_N=${PARITY_N:-0}
 REFUSE_N=$(grep -c '^REFUSE' "$WORK/plan.tsv" 2>/dev/null || true); REFUSE_N=${REFUSE_N:-0}
-say "delta: $APPLY_N file(s) to apply, $REFUSE_N refusal(s)"
+say "delta: $APPLY_N file(s) to apply, $REFUSE_N refusal(s); $PARITY_N production file(s) held by a parity verdict on the clone (compared level, not run here — not in the delta)"
 
-while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner selector reapply reason applied_at; do
+while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner selector reapply reason applied_at inverse owner; do
   [ "$kind" = "REFUSE" ] || continue
   say "REFUSED (named, nothing applied for it): $source/$filename — $reason"
+  say "    who to ask: $owner"
 done < "$WORK/plan.tsv"
 
 if [ "$APPLY_N" -eq 0 ]; then
@@ -118,9 +135,11 @@ if [ "$APPLY_N" -eq 0 ]; then
   exit 0
 fi
 
-while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner selector reapply reason applied_at; do
+while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner selector reapply reason applied_at inverse owner; do
   [ "$kind" = "APPLY" ] || continue
   say "  $source/$filename [$runner${selector:+/$selector}] — $reason"
+  [ -n "$inverse" ] && say "      rule 4: the clone holds an earlier version of this file; inverse first: $inverse"
+  say "      who to ask: $owner"
 done < "$WORK/plan.tsv"
 
 if [ "$DRY_RUN" = "1" ]; then
@@ -142,6 +161,8 @@ apply_one() {  # apply_one <source> <filename> <repo> <relpath> <runner> <select
     cmd=(node node_modules/tsx/dist/cli.mjs scripts/apply-migration.ts "$relpath" --target clone)
     [ "$selector" = "campaign" ] && cmd+=(--source campaign --lane "$LANE")
     [ "$reapply" = "yes" ] && cmd+=(--reapply)
+    # Rule 2 (chair, 2026-09-26): judged by the rules in force when PRODUCTION ran it.
+    [ -n "${JUDGED_AS_OF:-}" ] && cmd+=(--judged-as-of "$JUDGED_AS_OF")
   else
     cmd=(uv run python db/apply_migrations.py --no-generate --target clone)
     if [ "$reapply" = "yes" ]; then cmd+=(--rerun "$filename"); else cmd+=(--only "$filename"); fi
@@ -170,7 +191,9 @@ direct_one() {  # direct_one <source> <filename> <repo> <relpath> direct|record
   note="$(night_readonly_psql "${PROD_ARGS[@]}" --sql "select coalesce(chair_step, '') from public._schema_migrations where source = '$source' and filename = '$filename'" 2>/dev/null | head -1)"
   note="${note//\$cnote\$/}"   # dollar-quoted below; the one sequence that could end it is removed
   local ledger="insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms, chair_step, applied_by_lane)
-                 values ('$source', '$filename', '$ck', now(), 0, 'catchup — ${mode} — ' || \$cnote\$${note}\$cnote\$, '$LANE') on conflict do nothing;"
+                 values ('$source', '$filename', '$ck', now(), 0, 'catchup — ${mode} — ' || \$cnote\$${note}\$cnote\$, '$LANE')
+                 on conflict (source, filename) do update set checksum = excluded.checksum, applied_at = excluded.applied_at,
+                   chair_step = excluded.chair_step, applied_by_lane = excluded.applied_by_lane;"
   if [ "$mode" = "record" ]; then
     say "recording (direct apply, bytes already on the clone): $relpath"
     "$PSQL" "${CLONE_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c "$ledger"
@@ -397,11 +420,176 @@ carry_projection() {  # carry_projection <source> <filename> <repo> <relpath> <s
   return ${pipestatus[1]}
 }
 
+# ═════════════════════════════════════════════════════════════════════════════
+# 🚨 CHAIR RULINGS 2026-09-26 (lane CLONE-LEDGER-VERDICTS) — verdicts the ledger can hold.
+# ═════════════════════════════════════════════════════════════════════════════
+
+# ── rule 1: LEVEL BY INSPECTION, and the honest `parity` row it earns ─────────
+# Every schema object the file writes (clone-catchup-inspect.py names them) is hashed on the
+# clone and on production (read-only) and compared. INSPECT_NOTE carries what was compared.
+# Returns 0 LEVEL · 1 DIFFERS · 2 NOTHING (no object to compare).
+INSPECT_NOTE=""
+level_by_inspection() {  # level_by_inspection <repo> <relpath>
+  local repo="$1" relpath="$2" rc
+  INSPECT_NOTE=""
+  /usr/bin/env python3 "$FRONTEND/scripts/night/clone-catchup-inspect.py" sql "$repo/$relpath" > "$WORK/inspect.sql" 2>/dev/null
+  rc=$?
+  if [ $rc -eq 2 ]; then INSPECT_NOTE="the file writes no schema object this inspection can hash (data-only)"; return 2; fi
+  [ $rc -eq 0 ] || { INSPECT_NOTE="inspection could not read the file"; return 1; }
+  "$PSQL" "${CLONE_ARGS[@]}" -qAt -F $'\t' -v ON_ERROR_STOP=1 -c "begin read only; $(cat "$WORK/inspect.sql") commit;" \
+    > "$WORK/inspect.clone.tsv" 2> "$WORK/inspect.err" || { INSPECT_NOTE="clone read failed: $(head -1 "$WORK/inspect.err")"; return 1; }
+  night_readonly_psql "${PROD_ARGS[@]}" -F $'\t' --sql "$(cat "$WORK/inspect.sql")" \
+    > "$WORK/inspect.prod.tsv" 2> "$WORK/inspect.err" || { INSPECT_NOTE="production read failed: $(head -1 "$WORK/inspect.err")"; return 1; }
+  /usr/bin/env python3 "$FRONTEND/scripts/night/clone-catchup-inspect.py" compare "$WORK/inspect.clone.tsv" "$WORK/inspect.prod.tsv" > "$WORK/inspect.out"
+  rc=$?
+  if [ $rc -eq 0 ]; then INSPECT_NOTE="$(cut -f4- "$WORK/inspect.out")"
+  else INSPECT_NOTE="$(cut -f2- "$WORK/inspect.out" | head -5 | tr '\n' ';')"; fi
+  return $rc
+}
+
+# The row says what it is: source `parity`, duration 0, "NOT RUN on the clone", the verdict, and what
+# was compared. The ledger's own guard forbids a row claiming a file ran that did not; this row claims
+# the opposite, and the planner lets it hold a production row only while production still carries
+# exactly these bytes (the checksum is production's, the one the verdict is about).
+PARITY_WRITTEN=0; PARITY_NAMES=()
+record_parity() {  # record_parity <source> <filename> <production checksum> <verdict> <note>
+  local source="$1" filename="$2" ck="$3" verdict="$4" note="$5" text
+  text="parity for $source/$filename @ ${ck:0:12} — NOT RUN on the clone: $verdict. Level by inspection: $note"
+  text="${text//\$pnote\$/}"
+  "$PSQL" "${CLONE_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c "insert into public._schema_migrations
+      (source, filename, checksum, applied_at, duration_ms, chair_step, rehearsal_on, applied_by_lane)
+      values ('parity', '$filename', '$ck', now(), 0, \$pnote\$${text}\$pnote\$, 'parity verdict — not an apply', '$LANE')
+      on conflict (source, filename) do update set checksum = excluded.checksum, applied_at = excluded.applied_at,
+        chair_step = excluded.chair_step, rehearsal_on = excluded.rehearsal_on, applied_by_lane = excluded.applied_by_lane;" \
+    > "$WORK/parity.out" 2>&1 || { say "  parity row NOT written for $filename: $(grep -m1 ERROR "$WORK/parity.out")"; return 1; }
+  PARITY_WRITTEN=$((PARITY_WRITTEN+1)); PARITY_NAMES+=("$source/$filename — $verdict")
+  say "  PARITY ROW written on the clone: $source/$filename — $verdict; $note" | cut -c1-600
+  return 0
+}
+
+# A file that did not land gets a parity row ONLY when inspection proves it level. A data-only file
+# (nothing to hash) earns one only when its OWN guard refused on the clone's data (a RAISE the file
+# carries — P0001), and the row says exactly that: nothing was compared, and why it cannot run here.
+verdict_after_failure() {  # verdict_after_failure <source> <filename> <checksum> <repo> <relpath> <verdict>
+  local source="$1" filename="$2" ck="$3" repo="$4" relpath="$5" verdict="$6" irc
+  level_by_inspection "$repo" "$relpath"; irc=$?
+  if [ $irc -eq 0 ]; then record_parity "$source" "$filename" "$ck" "$verdict" "$INSPECT_NOTE"; return $?; fi
+  if [ $irc -eq 2 ] && grep -qE 'P0001|raise_exception' "$APPLY_OUT" 2>/dev/null \
+     && grep -qiE '^[^-]*\braise\s+exception\b' "$repo/$relpath"; then
+    local why; why="$(grep -m1 -E 'ERROR' "$APPLY_OUT" | cut -c1-240)"
+    record_parity "$source" "$filename" "$ck" "cannot run on the clone for a data reason — its own guard refused: ${why}" \
+      "data-only file, no schema object to compare (nothing compared)"
+    return $?
+  fi
+  say "  not level by inspection: $INSPECT_NOTE" | cut -c1-600
+  return 1
+}
+
+# ── the coordinator's class: a REPLAY never overwrites a body a later ledgered file replaced ──
+# At 05:42:56Z a replay of copywritable_people_test_the_copy_until_the_switch.sql (runner `direct`,
+# which judged nothing) put platform._cutover_seam_readiness back to its pre-CUTOVER-READINESS body
+# and undid cutoverready_the_switch_waits_until_each_copy_matches_its_older_table.sql. A direct run
+# and a `--reapply` / `--rerun` of an already-ledgered file skip the runner's DD-220 check, so this
+# judges the file's `-- based-on:` lines against the clone's LIVE bodies exactly as a production apply
+# does. A declared body the clone no longer holds is refused BY NAME when a later file (ledgered on the
+# clone, not re-run later in this plan) owns the live one; with no later owner it is drift, and the
+# runner-shaped sentence goes into APPLY_OUT so the existing parity repair (DD-220, never bypassed)
+# takes it. A function the file replaces WITHOUT a declaration is refused the same way when a later
+# file owns it. Returns 0 clear · 3 refused (a later owner) · 4 drift (repair path).
+GATE_OWNERS=""
+replay_gate() {  # replay_gate <repo> <relpath> <filename> <applied_at> <pending-file>
+  local repo="$1" relpath="$2" filename="$3" after="$4" pending="$5" line sig want got fn owners drift=0
+  local -a decl_names
+  GATE_OWNERS=""; : > "$APPLY_OUT"
+  while IFS= read -r line; do
+    sig="$(print -r -- "$line" | sed -E 's/^-- based-on:[[:space:]]+//; s/[[:space:]]+[0-9a-f]{64}[[:space:]]*$//')"
+    want="$(print -r -- "$line" | grep -oE '[0-9a-f]{64}' | tail -1)"
+    case "$sig" in trigger\ *|view\ *) continue ;; esac
+    fn="${sig%%\(*}"; decl_names+=("$fn")
+    got="$(clone_body_hash "$sig")"
+    [ "$got" = "$want" ] && continue
+    owners="$(/usr/bin/env python3 "$FRONTEND/scripts/night/clone-catchup-repair.py" --later-owners \
+               "$WORK/production.tsv" "$WORK/clone.tsv" "$fn" "$after" "$filename" "$pending" | cut -d$'\x1f' -f2-4 | tr '\x1f' ' ' | tr '\n' ';')"
+    if [ -n "$owners" ]; then
+      GATE_OWNERS+="\`$sig\` (clone ${got:0:12}, file declares ${want:0:12}) is owned by later ${owners} "
+    else
+      print -r -- "  line: \`$sig\` based on sha256 $want — the clone's live body is ${got:-absent} (DD-220, judged by the catch-up on a replay)" >> "$APPLY_OUT"
+      drift=1
+    fi
+  done < <(grep -E '^-- based-on:[[:space:]]' "$repo/$relpath")
+  local -a written; written=("${(@f)$(/usr/bin/env python3 "$FRONTEND/scripts/night/clone-catchup-repair.py" --functions-written "$repo/$relpath" 2>/dev/null)}")
+  for fn in "${written[@]}"; do
+    [ -n "$fn" ] || continue
+    (( ${decl_names[(Ie)$fn]} )) && continue
+    owners="$(/usr/bin/env python3 "$FRONTEND/scripts/night/clone-catchup-repair.py" --later-owners \
+               "$WORK/production.tsv" "$WORK/clone.tsv" "$fn" "$after" "$filename" "$pending" | cut -d$'\x1f' -f2-4 | tr '\x1f' ' ' | tr '\n' ';')"
+    [ -n "$owners" ] && GATE_OWNERS+="\`$fn\` (replaced with no -- based-on line) is owned by later ${owners} "
+  done
+  [ -n "$GATE_OWNERS" ] && return 3
+  [ "$drift" = 1 ] && return 4
+  return 0
+}
+
+# ── rule 2: the 1051 slot collision — a slot held on the clone ONLY by a rehearsal row ─────────
+# `_schema_migrations_slot_guard` refuses a second file per number slot. On the clone the slot
+# [1051] of aidream is held by `1051_sources_converge_into_processed_documents.sql`, a peer's
+# rehearsal of a file production ledgered as 1055_… — production never held that row, so when it
+# ran 1051_db_host_recorder.sql the slot was free. The rule production judged it by (a free slot)
+# is honoured by grandfathering exactly these two filenames on the clone, announced; a holder that
+# production DID ledger is a real collision and is left to refuse.
+slot_grandfather() {  # slot_grandfather <source> <filename>
+  local source="$1" filename="$2" holder slot
+  slot="$("$PSQL" "${CLONE_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c "select public.migration_slot('$filename')" 2>/dev/null)"
+  [ -n "$slot" ] || return 0
+  holder="$("$PSQL" "${CLONE_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c "select m.filename from public._schema_migrations m
+      where m.source = '$source' and m.filename <> '$filename' and public.migration_slot(m.filename) = '$slot'
+        and not exists (select 1 from public._schema_migrations x where x.source = '$source' and x.filename = '$filename')
+        and not exists (select 1 from public._schema_migration_slot_grandfather g where g.source = '$source' and g.slot = '$slot' and '$filename' = any (g.filenames))
+      order by m.applied_at limit 1" 2>/dev/null)"
+  [ -n "$holder" ] || return 0
+  if awk -F'\t' -v s="$source" -v f="$holder" '$1 == s && $2 == f { found = 1 } END { exit !found }' "$WORK/production.tsv"; then
+    say "  slot [$slot] is held on the clone by $holder, which production ALSO ledgered — a real collision; left to refuse."
+    return 0
+  fi
+  say "  ran under older rules: slot [$slot] is held on the clone only by $holder, a rehearsal row production never"
+  say "    ledgered; production ran $filename with the slot free. Grandfathering exactly these two filenames on the clone."
+  "$PSQL" "${CLONE_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c "insert into public._schema_migration_slot_grandfather (source, slot, filenames)
+      values ('$source', '$slot', array['$holder', '$filename'])
+      on conflict (source, slot) do update set filenames = (select array_agg(distinct f) from unnest(public._schema_migration_slot_grandfather.filenames || excluded.filenames) f)" >/dev/null
+}
+
+# ── rule 4: the clone holds an EARLIER version of this same file → its inverse first, then the up ──
+inverse_first() {  # inverse_first <source> <filename> <repo> <inverse relpath> <runner>
+  local source="$1" filename="$2" repo="$3" inv="$4" runner="$5" invname ledgered rc=0
+  invname="${inv:t}"
+  ledgered="$(awk -F'\t' -v f="$invname" '$2 == f { print "yes"; exit }' "$WORK/clone.tsv")"
+  local -a cmd
+  if [ "$repo" = "$FRONTEND" ]; then
+    cmd=(node node_modules/tsx/dist/cli.mjs scripts/apply-migration.ts "$inv" --target clone)
+    [ "$ledgered" = yes ] && cmd+=(--reapply)
+  else
+    cmd=(uv run python db/apply_migrations.py --no-generate --target clone --source inverse --lane "$LANE")
+    if [ "$ledgered" = yes ]; then cmd+=(--rerun "$invname"); else cmd+=(--only "$invname"); fi
+  fi
+  say "rule 4: the clone holds an earlier version of $filename; running its inverse first: $inv"
+  ( cd "$repo" && "${cmd[@]}" ) > "$WORK/inverse.out" 2>&1 || rc=$?
+  if [ $rc -ne 0 ]; then
+    say "  the inverse did not land (exit $rc): $(grep -m1 -E 'FAIL|ERROR|error' "$WORK/inverse.out" | cut -c1-240)"
+    say "  nothing landed for it; the up is tried over the clone's current state, as before."
+    return $rc
+  fi
+  say "  inverse landed; now the up."
+  return 0
+}
+
 # ── apply, in production's own ledger order ──────────────────────────────────
 APPLIED=0; FAILED=0; REPAIRED=0; SUPERSEDED=0; FAILED_NAMES=(); SUPERSEDED_NAMES=()
-while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner selector reapply reason applied_at; do
+while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner selector reapply reason applied_at inverse owner; do
   [ "$kind" = "APPLY" ] || continue
   local_rc=0
+  JUDGED_AS_OF="$applied_at"
+  # The files this plan re-runs AFTER this one (a later owner that is itself about to run again).
+  awk -F$'\x1f' -v f="$filename" 'seen && $1 == "APPLY" { print $3 } $3 == f { seen = 1 }' "$WORK/plan.tsv" > "$WORK/pending.txt"
   if [ "$runner" != "frontend" ] && is_projection "$repo/$relpath"; then
     if carry_projection "$source" "$filename" "$repo" "$relpath" "$selector"; then
       APPLIED=$((APPLIED+1))
@@ -414,7 +602,37 @@ while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner sele
     fi
     continue
   fi
-  apply_one "$source" "$filename" "$repo" "$relpath" "$runner" "$selector" "$reapply" || local_rc=$?
+  slot_grandfather "$source" "$filename"
+
+  # The coordinator's class: a direct run or a replay judges the file's based-on itself.
+  gate_rc=0
+  if [ "$runner" = "direct" ] || [ "$reapply" = "yes" ]; then
+    replay_gate "$repo" "$relpath" "$filename" "$applied_at" "$WORK/pending.txt"; gate_rc=$?
+  fi
+  if [ $gate_rc -eq 3 ]; then
+    SUPERSEDED=$((SUPERSEDED+1))
+    SUPERSEDED_NAMES+=("$source/$filename (replay refused: a later file owns a body it would overwrite)")
+    say "REPLAY REFUSED: $source/$filename would overwrite a body a LATER ledgered file replaced — $GATE_OWNERS" | cut -c1-900
+    say "  Nothing executed. A replay never undoes a newer file (judged as a production apply judges based-on)."
+    verdict_after_failure "$source" "$filename" "$checksum" "$repo" "$relpath" \
+      "superseded — its replay was refused because a later file owns what it replaces: ${GATE_OWNERS:0:300}" || true
+    continue
+  fi
+  if [ $gate_rc -eq 4 ]; then
+    say "  the catch-up's own based-on check refused this $([ "$reapply" = yes ] && print replay || print 'direct run'): the clone's bodies are not the ones it declares."
+    local_rc=1
+  fi
+
+  if [ $local_rc -eq 0 ] && [ -n "$inverse" ]; then
+    if [[ "$inverse" == MISSING:* ]]; then
+      say "rule 4: the clone holds an earlier version of $filename and its inverse is NAMED MISSING — ${inverse#MISSING: }"
+      say "  (who to ask: $owner). The up is tried over the clone's current state, as before."
+    else
+      inverse_first "$source" "$filename" "$repo" "$inverse" "$runner" || true
+    fi
+  fi
+
+  [ $local_rc -eq 0 ] && { apply_one "$source" "$filename" "$repo" "$relpath" "$runner" "$selector" "$reapply" || local_rc=$?; }
 
   if [ $local_rc -ne 0 ] && ! grep -q 'based on sha256' "$APPLY_OUT" 2>/dev/null \
      && already_level "$repo" "$relpath"; then
@@ -422,6 +640,8 @@ while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner sele
     SUPERSEDED_NAMES+=("$source/$filename (already level: every body it writes matches production)")
     say "ALREADY LEVEL: $source/$filename did not land, and every function body it writes already"
     say "  hashes identically on the clone and on production. Nothing to carry, nothing to repair."
+    verdict_after_failure "$source" "$filename" "$checksum" "$repo" "$relpath" \
+      "already level — it did not land ($(grep -m1 -E 'ERROR|FAIL' "$APPLY_OUT" | cut -c1-160)) and every body it writes matches production" || true
     continue
   fi
 
@@ -438,6 +658,8 @@ while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner sele
       SUPERSEDED_NAMES+=("$source/$filename")
       say "SUPERSEDED: $source/$filename is not carried — production has moved past the body it"
       say "  declares and the clone already holds production's. Nothing was applied for it."
+      verdict_after_failure "$source" "$filename" "$checksum" "$repo" "$relpath" \
+        "superseded — production itself replaced the bodies it declares; the clone holds production's" || true
       continue
     fi
   fi
@@ -448,10 +670,17 @@ while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner sele
     # ledger row, so the clone is exactly where it was before that file was attempted and the
     # next file is judged on its own merits. Measured on the first two real runs (2026-09-22):
     # stopping at the first refusal carried 1 of 65 files, then 17 of 55.
+    if verdict_after_failure "$source" "$filename" "$checksum" "$repo" "$relpath" \
+         "did not land ($(grep -m1 -E 'ERROR|FAIL' "$APPLY_OUT" | cut -c1-200)), and the clone already holds exactly what production holds for everything it writes"; then
+      SUPERSEDED=$((SUPERSEDED+1))
+      SUPERSEDED_NAMES+=("$source/$filename (did not land; level by inspection, parity row written)")
+      continue
+    fi
     FAILED=$((FAILED+1))
-    FAILED_NAMES+=("$source/$filename (exit $local_rc)")
+    FAILED_NAMES+=("$source/$filename (exit $local_rc) — who to ask: $owner")
     say "REFUSED/FAILED: $source/$filename exited $local_rc — nothing landed for it. Continuing"
     say "  with the rest of the delta; this run will exit nonzero and name every one at the end."
+    say "  who to ask: $owner"
     continue
   fi
 
@@ -529,7 +758,8 @@ say "─── kernel fingerprint: auto re-records and stale refusals of the las
 zsh "$FRONTEND/scripts/night/kernel-fingerprint-auto-rerecords.sh" > "$WORK/kernel-fingerprint.out" 2>&1; KFP_RC=$?
 grep -E 'kernel fingerprint|AUTO RE-RECORD|STALE REFUSAL|LIVE MISMATCH|fixture|RESULT|REFUSED|READ FAILED' "$WORK/kernel-fingerprint.out" | while read -r l; do say "  ${l#\[*\] }"; done
 
-say "parity repairs made: $REPAIRED; superseded on production: $SUPERSEDED"
+say "parity repairs made: $REPAIRED; superseded on production: $SUPERSEDED; parity rows written: $PARITY_WRITTEN"
+for n in "${PARITY_NAMES[@]:-}"; do [ -n "$n" ] && say "  parity row: ${n:0:300}"; done
 for n in "${SUPERSEDED_NAMES[@]:-}"; do [ -n "$n" ] && say "  superseded, not carried: $n"; done
 for n in "${FAILED_NAMES[@]:-}"; do [ -n "$n" ] && say "  did not land: $n"; done
 say "clone-catchup done: $APPLIED applied, $REPAIRED parity repair(s), $SUPERSEDED superseded, $FAILED failed, $REFUSE_N refused."

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { isChunkLoadError } from "@/components/errors/chunk-load-recovery";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Terminal component for the "Fire Arman" option
 const TerminalOutput = () => {
@@ -142,9 +143,24 @@ export default function GlobalError({
                 />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-center mb-2">
-              This feature is still under development
-            </h2>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <h2 className="text-2xl font-bold text-center">
+                This feature is still under development
+              </h2>
+              {/* The crash itself, copyable for AI (RC-B12): this screen catches
+                  every route with no error.tsx of its own. */}
+              <ErrorAlchemyMenu
+                size="icon"
+                input={{
+                  title: "This page crashed",
+                  message: error.message || "An unexpected error stopped this page.",
+                  error,
+                  operation: "Show this page",
+                  details: error.digest ? { digest: error.digest } : undefined,
+                  source: "route-boundary",
+                }}
+              />
+            </div>
             <p className="text-gray-600 dark:text-gray-300 text-center mb-2">
               Sorry, we may have occasional outages during upgrades.
             </p>

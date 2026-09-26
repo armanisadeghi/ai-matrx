@@ -44,6 +44,7 @@
  *   … --only notes                    # one source
  *   … --limit 2000                    # first N rows per source (a quick run)
  *   … --json <file>                   # full report as JSON
+ *   … --ids <id,id,…>                 # re-judge only these rows (ids as a failure prints them)
  *
  * Exit 0 only when every row passes every check.
  */
@@ -78,6 +79,7 @@ const argValue = (flag: string): string | undefined => {
 };
 const only = argValue("--only") as CorpusSourceName | undefined;
 const jsonOut = argValue("--json");
+const onlyIds = argValue("--ids") ? new Set((argValue("--ids") ?? "").split(",").filter(Boolean)) : null;
 const limit = argValue("--limit") ? Number(argValue("--limit")) : Number.POSITIVE_INFINITY;
 const SLOW_MS = 2000;
 const EDIT = " [edited]";
@@ -303,13 +305,17 @@ const BLOCK_PREFIXES = ["- ", "> ", "# ", "1. "] as const;
 
 /**
  * The cell now reads as the old cell with `prefix` typed at its first text position —
- * which may sit inside a leading mark (`**- Name**`) or code span. Removing the one
+ * which may sit inside a leading mark (`**- Name**`) or its own code span. Removing the one
  * typed prefix must give back the old cell exactly.
  */
 function typedPrefix(was: string, now: string, prefix: string): boolean {
   const typed = was === "" ? prefix.trim() : prefix;
   const at = now.indexOf(typed);
-  return at >= 0 && `${now.slice(0, at)}${now.slice(at + typed.length)}` === was;
+  if (at < 0) return false;
+  const rest = `${now.slice(0, at)}${now.slice(at + typed.length)}`;
+  // Typed at the start of a linked code span, the text keeps the code mark but
+  // not the link, so it is its own span: `- `[`x`](u) — empty once removed.
+  return rest === was || (rest.startsWith("``") && rest.slice(2) === was);
 }
 
 function judgeBlockSyntaxFirstCells(editor: Editor, baseline: ReturnType<typeof captureBaseline>, text: string, stats: SourceStats): string | null {
@@ -546,18 +552,17 @@ async function main(): Promise<number> {
       report[source] = stats;
       for await (const row of readCorpusSource(cx, source)) {
         if (stats.rows >= limit) break;
+        if (onlyIds && !onlyIds.has(row.id)) continue;
         stats.rows += 1;
         const t0 = Date.now();
         let reason: string | null;
         try {
           reason = judge(row.text, stats);
         } catch (error) {
-          (globalThis as { __lastErr?: string }).__lastErr = error instanceof Error ? error.stack : "";
           reason = `threw:${error instanceof Error ? error.message.slice(0, 80) : "unknown"}`;
         }
         const ms = Date.now() - t0;
         if (ms > SLOW_MS) stats.slow.push({ id: row.id, ms });
-        if (reason && process.env.TMP_DUMP) require("node:fs").appendFileSync(process.env.TMP_DUMP, JSON.stringify({ id: row.id, reason, text: row.text, stack: (globalThis as { __lastErr?: string }).__lastErr }) + "\n");
         if (reason) stats.failures.push({ id: row.id, reason });
         else stats.passed += 1;
         if (stats.rows % 20000 === 0) console.log(`  ${source}: ${stats.rows} rows…`);

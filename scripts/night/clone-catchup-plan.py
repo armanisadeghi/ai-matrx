@@ -525,6 +525,8 @@ def main() -> int:
             rehearsed = [
                 c for c in clone
                 if c["filename"] == r["filename"] and c["checksum"] == r["checksum"]
+                # A parity verdict is NOT a run: it can never make a direct apply "already ran here".
+                and c["source"] != "parity"
             ]
             if rehearsed:
                 runner = "record"

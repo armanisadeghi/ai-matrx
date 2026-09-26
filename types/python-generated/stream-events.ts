@@ -532,6 +532,32 @@ export interface ConversationLabeledData {
   keywords?: string[];
 }
 
+export interface CutoverCopyAgainProgressData {
+  type?: "cutover_copy_again_progress";
+  organization_id: string;
+  table_id?: string | null;
+  table_name: string;
+  done: number;
+  total: number;
+  refused?: string | null;
+  says: string;
+}
+
+export interface CutoverCopyAgainReportData {
+  type?: "cutover_copy_again_report";
+  organization_id: string;
+  organization_name: string;
+  table_id?: string | null;
+  table_name?: string | null;
+  ok: boolean;
+  tables: number;
+  tables_refused?: string[];
+  rows_written?: number;
+  carried?: Record<string, number>;
+  named?: string[];
+  says: string;
+}
+
 export interface DecisionAnswerBlock {
   __kind?: "decision_answer";
   type: "noul" | "choice" | "score";
@@ -2199,6 +2225,8 @@ export type TypedDataPayload =
   | ContextPersistedData
   | ConversationIdData
   | ConversationLabeledData
+  | CutoverCopyAgainProgressData
+  | CutoverCopyAgainReportData
   | DecisionAnswersData
   | DictionaryPublishCompleteData
   | ExtractionIndexCompleteData

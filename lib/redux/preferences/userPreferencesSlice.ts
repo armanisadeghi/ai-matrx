@@ -1056,7 +1056,7 @@ export const initializeUserPreferencesState = (
       // null = platform default (catalog-resolved) — see prompts.defaultModel.
       defaultModel: null,
       resolution: "1080p",
-      style: "realistic",
+      style: "",
       useAiEnhancements: true,
       colorPalette: "vibrant",
     },

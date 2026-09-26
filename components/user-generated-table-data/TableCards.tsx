@@ -59,6 +59,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 interface UserTable {
   id: string;
   table_name: string;
@@ -190,6 +191,9 @@ export default function TableCards() {
   const [tables, setTables] = useState<UserTable[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // The real failure behind `error` — its code/status/details reach the
+  // Copy-for-AI payload instead of being replaced by a fixed sentence.
+  const [errorCause, setErrorCause] = useState<unknown>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [tableToDelete, setTableToDelete] = useState<UserTable | null>(null);
   const [tableToEdit, setTableToEdit] = useState<UserTable | null>(null);
@@ -342,9 +346,17 @@ export default function TableCards() {
 
       if (error) throw error;
       setTables(unwrapGetUserTables(data ?? null) as UserTable[]);
+      setError(null);
+      setErrorCause(null);
     } catch (err) {
       console.error("Error fetching tables:", err);
-      setError("Failed to load your tables");
+      setErrorCause(err);
+      // The real reason, not a fixed sentence (RC-B12 verify F4).
+      setError(
+        err && typeof err === "object" && "message" in err && typeof err.message === "string" && err.message.trim()
+          ? `Couldn't load your tables: ${err.message}`
+          : "Couldn't load your tables.",
+      );
     } finally {
       setLoading(false);
     }
@@ -634,19 +646,17 @@ export default function TableCards() {
 
   if (error) {
     return (
-      <div className="py-6 text-center text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-        <p className="font-medium">{error}</p>
-        <p className="text-sm mt-1 text-red-400 dark:text-red-300">
-          Please try again or contact support if the issue persists.
-        </p>
-        <Button
-          onClick={fetchUserTables}
-          variant="outline"
-          className="mt-4 border-red-200 text-red-600 hover:text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30"
-        >
-          Try Again
-        </Button>
-      </div>
+      <ErrorNotice
+        className="my-6"
+        message={error}
+        error={errorCause}
+        operation="Load your tables"
+        actions={
+          <Button onClick={fetchUserTables} variant="outline" size="sm">
+            Try again
+          </Button>
+        }
+      />
     );
   }
 

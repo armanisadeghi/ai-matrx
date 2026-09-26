@@ -32,6 +32,12 @@ export type SettingsModelPickerProps = SettingsCommonProps & {
    * the surface generates (default "text").
    */
   allowPlatformDefault?: boolean;
+  /**
+   * The words for the null option when the default is NOT the catalog's
+   * primary model — e.g. image generation, where a server mandate decides and
+   * naming the catalog primary would be a false sentence.
+   */
+  platformDefaultLabel?: string;
   defaultModality?: DefaultableModality;
   placeholder?: string;
   last?: boolean;
@@ -46,6 +52,7 @@ export function SettingsModelPicker({
   onValueChange,
   scope = "active",
   allowPlatformDefault = false,
+  platformDefaultLabel: platformDefaultLabelOverride,
   defaultModality = "text",
   placeholder,
   last,
@@ -71,9 +78,11 @@ export function SettingsModelPicker({
     return true;
   });
 
-  const platformDefaultLabel = platformDefaultName
-    ? `Platform default (${platformDefaultName})`
-    : "Platform default";
+  const platformDefaultLabel =
+    platformDefaultLabelOverride ??
+    (platformDefaultName
+      ? `Platform default (${platformDefaultName})`
+      : "Platform default");
 
   return (
     <SettingsRow {...rowProps} id={id} variant="inline" controlLayout="wide" last={last}>

@@ -1,6 +1,16 @@
 import { settingDoorHref } from "../settingDoorTarget";
 
 describe("settingDoorHref", () => {
+  it("sends the first screen to the settings index, never /user-settings/first-screen", () => {
+    expect(
+      settingDoorHref({
+        scope: "user",
+        tabId: "firstScreen",
+        controlId: "agents.model_prefs.chat_default_model",
+      }),
+    ).toBe("/user-settings?control=agents.model_prefs.chat_default_model");
+  });
+
   it("addresses an exact user control", () => {
     expect(
       settingDoorHref({

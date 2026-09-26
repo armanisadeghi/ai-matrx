@@ -120,15 +120,30 @@ export async function generateSpeech(
  * A catalog model's sample of one voice — the vendor's own sample when it
  * publishes one (ElevenLabs), otherwise one short line the server renders once
  * and caches per (model, voice). Played through `speak({ sample })`.
+ *
+ * The answer is a permanent CDN URL, so it is remembered for the page's life:
+ * replaying a sample in a voice picker is instant instead of a ~6 s round trip
+ * per click (measured 2026-09-25). A failed request is forgotten so the next
+ * click retries.
  */
-export async function previewVoice(
+const previewCache = new Map<string, Promise<VoicePreviewWire>>();
+
+export function previewVoice(
   params: { model: string; voice: string; organizationId?: string },
 ): Promise<VoicePreviewWire> {
-  const organizationId = await ensureOrgId(params.organizationId);
-  const { data } = await apiPost("/audio/voice-preview", {
-    model: params.model,
-    voice: params.voice,
-    organization_id: organizationId,
-  });
-  return data;
+  const key = `${params.model}\u0000${params.voice}`;
+  const cached = previewCache.get(key);
+  if (cached) return cached;
+  const request = (async () => {
+    const organizationId = await ensureOrgId(params.organizationId);
+    const { data } = await apiPost("/audio/voice-preview", {
+      model: params.model,
+      voice: params.voice,
+      organization_id: organizationId,
+    });
+    return data;
+  })();
+  previewCache.set(key, request);
+  request.catch(() => previewCache.delete(key));
+  return request;
 }
