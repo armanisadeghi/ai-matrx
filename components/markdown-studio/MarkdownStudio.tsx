@@ -9,7 +9,7 @@
 //              replay of captured server events, processors and AST
 // The admin tester route (/administration/utilities/markdown-tester) renders
 // this same component; the admin lane is what turns admin mode on (shared
-// sample library writes + Inspect). Loading a sample syncs the textarea and
+// sample library writes + Inspect). Loading a sample syncs the source editor and
 // flags that sample as the "loaded" baseline; later edits mark it dirty.
 //
 // 🚨 A HUGE DOCUMENT NEVER BLOCKS TYPING: the preview and the editor's block
@@ -23,6 +23,7 @@ import React, {
   useCallback,
   useDeferredValue,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -52,6 +53,7 @@ import {
   type StudioSourceKind,
 } from "./lab/content-sources";
 import { syncPaneScroll } from "./lab/sync-scroll";
+import type { EditorViewHandle } from "@/components/rich-editor/visual/VisualEditor";
 import { syncStudioSourceUrl } from "./lab/studio-url";
 import { loadStudioSource } from "./lab/content-sources";
 import { isRecordUnavailableError } from "@/lib/records/recordUnavailable";
@@ -155,7 +157,7 @@ export function MarkdownStudio() {
   // Manual mode renders the last "Update preview".
   const [manualContent, setManualContent] = useState(EMPTY);
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<EditorViewHandle | null>(null);
   const previewScrollRef = useRef<HTMLDivElement>(null);
 
   const { create, update, samples } = useUserMarkdownSamples();
@@ -385,20 +387,44 @@ export function MarkdownStudio() {
     }
   };
 
-  // Scroll sync between textarea and preview — block-paired, both directions,
+  // Scroll sync between the source editor and preview — block-paired, both directions,
   // behind a per-person on/off setting.
   const isSyncingRef = useRef(false);
   const syncScroll = (direction: "text-to-preview" | "preview-to-text") => {
     if (!scrollSync || isSyncingRef.current) return;
-    const ta = textareaRef.current;
+    const editor = editorRef.current;
+    const el = editor?.scroller?.();
     const pv = previewScrollRef.current;
-    if (!ta || !pv) return;
+    if (!editor || !el || !pv || !editor.lineTop) return;
     isSyncingRef.current = true;
-    syncPaneScroll({ text: previewContent, textarea: ta, preview: pv, direction });
+    syncPaneScroll({
+      text: previewContent,
+      source: { el, lineTop: editor.lineTop },
+      preview: pv,
+      direction,
+    });
     requestAnimationFrame(() => {
       isSyncingRef.current = false;
     });
   };
+
+  // Stable handlers for the two panes: a keystroke re-renders this component,
+  // and a new function per render would re-render the whole preview with it
+  // (measured: ~25 ms per key on a 1 MB document).
+  const syncScrollRef = useRef(syncScroll);
+  useLayoutEffect(() => {
+    syncScrollRef.current = syncScroll;
+  });
+  const onEditorScroll = useCallback(() => syncScrollRef.current("text-to-preview"), []);
+  const onPreviewScroll = useCallback(() => syncScrollRef.current("preview-to-text"), []);
+  const showSourcePane = useCallback(() => setMobilePane("source"), []);
+  const showPreviewPane = useCallback(() => setMobilePane("preview"), []);
+  // The studio holds a COPY: the source rides read-only, so the registry offers
+  // nothing that would change the original. One object per loaded record.
+  const previewSource = useMemo<ContentSource>(
+    () => (loadedSource ? { ...loadedSource.contentSource, readOnly: true } : RAW_SOURCE),
+    [loadedSource],
+  );
 
   const handleCopySource = async () => {
     if (!content) {
@@ -494,9 +520,15 @@ export function MarkdownStudio() {
     }
   });
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => onShortcut(e);
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    // CAPTURE phase: the studio's own keys (⌘K samples, ⌘Enter compare) win over
+    // the source editor's bindings for the same keys (link, blank line).
+    const handler = (e: KeyboardEvent) => {
+      const wasPrevented = e.defaultPrevented;
+      onShortcut(e);
+      if (!wasPrevented && e.defaultPrevented) e.stopPropagation();
+    };
+    window.addEventListener("keydown", handler, true);
+    return () => window.removeEventListener("keydown", handler, true);
   }, []);
 
   const contentLabel =
@@ -629,11 +661,7 @@ export function MarkdownStudio() {
   // Surface scope — built at trigger time (▶ Run), never on mount, so the
   // agent always sees the live buffer rather than a render-stale copy.
   const getScope = useCallback(() => {
-    const ta = textareaRef.current;
-    const selected =
-      ta && ta.selectionStart !== ta.selectionEnd
-        ? ta.value.slice(ta.selectionStart, ta.selectionEnd)
-        : undefined;
+    const selected = editorRef.current?.selectedText() || undefined;
     return createMarkdownStudioScope({
       content,
       document_label: contentLabel,
@@ -661,7 +689,7 @@ export function MarkdownStudio() {
 
   // Surface write handlers — the write half of the 360 loop (declared in
   // `markdown-studio.manifest.ts`). Every content write goes through the SAME
-  // `setContent` the textarea's own `handleChange` calls, so the dirty flag
+  // `setContent` the source editor's own `handleChange` calls, so the dirty flag
   // re-derives itself, the header's Save/Update action stays honest, and
   // nothing reaches the sample library until the user saves. No parallel write
   // path, no direct service call.
@@ -869,9 +897,10 @@ export function MarkdownStudio() {
                 statsContent={deferredContent}
                 onChange={handleChange}
                 onClear={handleClear}
-                onScroll={() => syncScroll("text-to-preview")}
-                textareaRef={textareaRef}
-                onShowPreview={() => setMobilePane("preview")}
+                onScroll={onEditorScroll}
+                editorRef={editorRef}
+                onSave={handlePrimaryAction}
+                onShowPreview={showPreviewPane}
                 getScope={getScope}
               />
               </div>
@@ -886,18 +915,14 @@ export function MarkdownStudio() {
                 content={previewContent}
                 // The studio holds a COPY: the source rides read-only, so the
                 // registry offers nothing that would change the original.
-                contentSource={
-                  loadedSource
-                    ? { ...loadedSource.contentSource, readOnly: true }
-                    : RAW_SOURCE
-                }
+                contentSource={previewSource}
                 sourceActions={loadedSource?.sourceActions}
                 mode={previewMode}
                 onModeChange={setPreviewMode}
                 title={contentLabel}
                 onContentChange={handleChange}
-                onShowSource={() => setMobilePane("source")}
-                onPreviewScroll={() => syncScroll("preview-to-text")}
+                onShowSource={showSourcePane}
+                onPreviewScroll={onPreviewScroll}
                 ref={previewScrollRef}
               />
               </div>

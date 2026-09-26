@@ -309,8 +309,13 @@ function VerdictBadge({ row }: { row: CheckSummaryRow }) {
   const run = row.run;
   if (!run) return <Badge variant="outline" className="text-muted-foreground">never ran</Badge>;
   if (row.brokenReasons.length > 0 || run.status === "errored" || run.status === "timed_out") {
+    const why = row.brokenReasons.length
+      ? row.brokenReasons.join("\n")
+      : run.status === "timed_out"
+        ? "The check ran out of time before it finished."
+        : `The check errored${run.exit_code != null ? ` (exit ${run.exit_code})` : ""} without naming a reason.`;
     return (
-      <Badge variant="destructive" className="gap-1">
+      <Badge variant="destructive" className="gap-1" title={why}>
         <AlertTriangle className="h-3 w-3" />
         {run.status === "timed_out" ? "timed out" : "broken"}
       </Badge>
@@ -386,6 +391,25 @@ function CheckBoard({
       filter: "select",
       width: 110,
       cell: (r) => <VerdictBadge row={r} />,
+    },
+    {
+      id: "broken-reason",
+      header: "Why broken",
+      accessorFn: (r) => r.brokenReasons.join(" · "),
+      filter: "text",
+      width: 260,
+      // Never `hidden` from the data: the table reads `hidden` once, at its
+      // first render — while the board is still loading and every row looks
+      // healthy — so a broken check's reason never appeared (RC-B12 round 7).
+      cell: (r) =>
+        r.brokenReasons.length ? (
+          <span className="relative block truncate text-destructive" title={r.brokenReasons.join("\n")}>
+            {r.brokenReasons.join(" · ")}
+            <ErrorAlchemyMenu error={r.brokenReasons.join("\n")} operation={`Run the check ${r.check.label}`} />
+          </span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
     },
     {
       id: "open",
@@ -475,19 +499,6 @@ function CheckBoard({
       mobileHidden: true,
       cell: (r) => <span className="text-muted-foreground">{formatCount(r.acceptedCount)}</span>,
     },
-    {
-      id: "broken-reason",
-      header: "Why broken",
-      accessorFn: (r) => r.brokenReasons.join(" · "),
-      filter: "text",
-      width: 240,
-      hidden: rows.every((r) => r.brokenReasons.length === 0),
-      cell: (r) => (
-        <span className="block truncate text-destructive" title={r.brokenReasons.join("\n")}>
-          {r.brokenReasons.join(" · ")}
-        </span>
-      ),
-    },
   ];
 
   return (
@@ -505,7 +516,8 @@ function CheckBoard({
         defaultSort={{ id: "open", direction: "desc" }}
         onRowOpen={onOpen}
         mobileCards={(r, _index, controls) => (
-          <button type="button" className="block w-full space-y-1 p-2 text-left text-xs" onClick={() => onOpen(r)}>
+          <div className="space-y-1 p-2 text-xs">
+          <button type="button" className="block w-full space-y-1 text-left" onClick={() => onOpen(r)}>
             {controls.renderCell("check")}
             <div className="flex flex-wrap items-center gap-2">
               {controls.renderCell("verdict")}
@@ -518,6 +530,11 @@ function CheckBoard({
               <span>{controls.renderCell("scan-complete")}</span>
             </div>
           </button>
+          {/* The reason a check is broken, on the card that says "broken" —
+              outside the card's button so its Alchemy Menu is not a button
+              inside a button. */}
+          {r.brokenReasons.length ? <div className="min-w-0">{controls.renderCell("broken-reason")}</div> : null}
+          </div>
         )}
         coverage={{ noun: "check", answeredBy: "client", total: loading ? undefined : rows.length }}
         toolbar={{ title: "Checks", search: true }}
@@ -816,6 +833,7 @@ function CheckDetail({
             {row.brokenReasons.length ? (
               <span className="text-destructive sm:col-span-2 lg:col-span-4">
                 The check itself needs repair: {row.brokenReasons.join(" · ")}
+                <ErrorAlchemyMenu error={row.brokenReasons.join("\n")} operation={`Run the check ${row.check.label}`} />
               </span>
             ) : null}
             {row.check.command ? (
@@ -841,6 +859,9 @@ function CheckDetail({
       ) : (
         <div className="min-h-0 flex-1">
           <MatrxDataTable
+            // Columns hide by state filter, and the table reads `hidden` only
+            // when it mounts — a new filter is a new table.
+            key={stateFilter}
             tableId="admin-check-findings-items"
             data={data}
             columns={columns}

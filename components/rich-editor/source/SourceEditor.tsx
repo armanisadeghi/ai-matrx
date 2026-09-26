@@ -58,6 +58,16 @@ export interface SourceEditorProps {
   focusMode: boolean;
   renderIslands: boolean;
   handleRef: Ref<EditorViewHandle>;
+  /**
+   * CONTROLLED text. When the host replaces the whole document (a template or
+   * sample loaded, an agent write, Clear), the editor follows. The editor's own
+   * keystrokes echo back as the same string and are ignored cheaply.
+   */
+  value?: string;
+  /** "document" (default): the centred reading column. "pane": fills a tool pane edge to edge. */
+  layout?: "document" | "pane";
+  /** The editor's scroll container scrolled (a host that syncs another pane). */
+  onScroll?: () => void;
 }
 
 type SourceVerb = (view: EditorView) => boolean;
@@ -94,9 +104,16 @@ export function SourceEditor({
   focusMode,
   renderIslands,
   handleRef,
+  value,
+  layout = "document",
+  onScroll,
 }: SourceEditorProps) {
   const context = useRichEditorContext();
   const host = useRef<HTMLDivElement>(null);
+  const scroller = useRef<HTMLDivElement>(null);
+  // The last text this editor itself reported — a controlled `value` equal to it
+  // is our own keystroke coming back, never a replacement.
+  const lastEmitted = useRef<string>(initialText);
   const view = useRef<EditorView | null>(null);
   const [registry] = useState(() => new IslandPortalRegistry());
   const portals = useSyncExternalStore(registry.subscribe, registry.getSnapshot, registry.getSnapshot);
@@ -236,6 +253,7 @@ export function SourceEditor({
             if (update.transactions.some((tr) => tr.isUserEvent("undo") || tr.isUserEvent("redo"))) {
               for (const raw of islandsReleasedBetweenTexts(update.startState.doc.toString(), text)) approveIsland(raw);
             }
+            lastEmitted.current = text;
             emitChange(text);
           }),
         ],
@@ -251,6 +269,22 @@ export function SourceEditor({
   useEffect(() => {
     view.current?.dispatch({ effects: setIslandRendering.of(renderIslands) });
   }, [renderIslands]);
+
+  // Controlled mode: the host replaced the document.
+  useEffect(() => {
+    const v = view.current;
+    if (value === undefined || !v || value === lastEmitted.current) return;
+    if (v.state.doc.toString() === value) {
+      lastEmitted.current = value;
+      return;
+    }
+    lastEmitted.current = value;
+    v.dispatch({
+      changes: { from: 0, to: v.state.doc.length, insert: value },
+      selection: { anchor: Math.min(v.state.selection.main.head, value.length) },
+      userEvent: "input.replace",
+    });
+  }, [value]);
 
   const highlight = (current: number) => {
     view.current?.dispatch({
@@ -343,11 +377,28 @@ export function SourceEditor({
       applyResult(v, makeLink(v.state.doc.toString(), from, to, href));
     },
     currentLink: () => null,
+    scroller: () => scroller.current,
+    lineTop: (lineIndex: number) => {
+      const v = view.current;
+      const el = scroller.current;
+      if (!v || !el) return 0;
+      const line = v.state.doc.line(Math.min(Math.max(1, lineIndex + 1), v.state.doc.lines));
+      const block = v.lineBlockAt(line.from);
+      return v.documentTop - el.getBoundingClientRect().top + el.scrollTop + block.top;
+    },
   }));
 
   return (
-    <div className={cn("rich-editor-source relative h-full overflow-y-auto", focusMode && "rich-editor-focus")}>
-      <div ref={host} className="mx-auto min-h-full max-w-3xl pb-[40dvh]" data-testid="rich-editor-source" />
+    <div
+      ref={scroller}
+      onScroll={onScroll}
+      className={cn("rich-editor-source relative h-full overflow-y-auto", focusMode && "rich-editor-focus")}
+    >
+      <div
+        ref={host}
+        className={layout === "pane" ? "min-h-full" : "mx-auto min-h-full max-w-3xl pb-[40dvh]"}
+        data-testid="rich-editor-source"
+      />
       {portals.map((portal, index) =>
         createPortal(
           <div className="cm-rich-island-body pointer-events-none">

@@ -59,6 +59,9 @@ export interface EditorViewHandle {
   clearFind: () => void;
   editLink: (href: string | null) => void;
   currentLink: () => string | null;
+  /** Source view only: the scroll container, and a line's top in its scroll coordinates. */
+  scroller?: () => HTMLElement | null;
+  lineTop?: (lineIndex: number) => number;
 }
 
 export interface VisualEditorProps {

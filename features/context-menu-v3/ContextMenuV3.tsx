@@ -333,7 +333,12 @@ export function ContextMenuV3({
         return;
       }
 
-      const text = selection?.toString().trim() || "";
+      // A collapsed selection (a caret — every keystroke in an editor) has no
+      // text. `toString()` is not free: it serializes like innerText and forces
+      // a synchronous layout of the whole page, which on a studio beside a
+      // megabyte preview cost ~25 ms per keystroke (2026-09-26).
+      const text =
+        !selection || selection.isCollapsed ? "" : selection.toString().trim();
       setSelectedText(text);
       if (text && selection && selection.rangeCount > 0) {
         const rect = getSelectionRect();

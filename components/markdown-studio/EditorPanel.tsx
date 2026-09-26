@@ -1,8 +1,8 @@
 // components/markdown-studio/EditorPanel.tsx
-// Polished editor pane for the Markdown Studio. Textarea with a gutter
-// showing live line/char counts, a hover-revealed insert-template hint,
-// and a footer that surfaces the live block atlas so the user can see
-// what the V2 splitter is detecting as they type.
+// The Markdown Studio's source pane. The editor IS the rich editor's Source
+// view (CodeMirror 6 — virtualized, so a megabyte document types as fast as a
+// page), never a second plain textarea: one source editor on the platform.
+// Header counts and the footer block atlas read a DEFERRED copy of the text.
 
 "use client";
 
@@ -10,18 +10,25 @@ import React, { useMemo } from "react";
 import { Eye, Hash, RotateCcw, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 import { BlockStatsCard } from "./BlockStatsCard";
 import { runV2Parser } from "@/components/admin/markdown-tester/utils/run-v2-parser";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import { SourceEditor } from "@/components/rich-editor/source/SourceEditor";
+import type { EditorViewHandle } from "@/components/rich-editor/visual/VisualEditor";
+import type { RichShellActions } from "@/components/rich-editor/visual/shortcut-handlers";
+import "@/components/rich-editor/rich-editor.css";
 
 interface EditorPanelProps {
   content: string;
   onChange: (value: string) => void;
   onScroll?: () => void;
   onClear: () => void;
-  textareaRef: React.Ref<HTMLTextAreaElement>;
+  /** The source editor's handle: selection, write-back, scroll geometry. */
+  editorRef: React.RefObject<EditorViewHandle | null>;
+  /** ⌘S inside the editor saves the studio's sample. */
+  onSave?: () => void;
   /**
    * Phones show one pane at a time: when given, the header carries a
    * "Preview" button — no tab strip row above the panes (UI audit B).
@@ -42,17 +49,37 @@ export function EditorPanel({
   onChange,
   onScroll,
   onClear,
-  textareaRef,
+  editorRef,
+  onSave,
   onShowPreview,
   statsContent,
   getScope,
 }: EditorPanelProps) {
   const counted = statsContent ?? content;
-  const localRef = React.useRef<HTMLTextAreaElement | null>(null);
-  const setTextarea = (el: HTMLTextAreaElement | null) => {
-    localRef.current = el;
-    if (typeof textareaRef === "function") textareaRef(el);
-    else if (textareaRef) (textareaRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = el;
+  // The rich editor's shortcut verbs that belong to its own chrome (find,
+  // outline, focus, views…) have no chrome here; each says where it lives.
+  const notHere = (what: string) => () =>
+    toast.info(`${what} lives in the Editor view — switch with the header toggle.`);
+  const shell: RichShellActions = {
+    save: () => onSave?.(),
+    find: notHere("Find & replace"),
+    replace: notHere("Find & replace"),
+    toggleOutline: notHere("The outline"),
+    toggleFocus: notHere("Focus mode"),
+    exitFocus: () => false,
+    cycleView: notHere("Switching views"),
+    showHelp: notHere("The shortcut list"),
+    showWordCount: () => toast.info(`${counted.trim() ? counted.trim().split(/\s+/).length : 0} words · ${counted.length} characters`),
+    editLink: notHere("Link editing"),
+    pickKind: async () => null,
+    pickImage: notHere("Inserting an image"),
+    uploadImage: async () => {
+      toast.info("Paste images in the Editor view — this pane holds text.");
+      return null;
+    },
+    variables: () => null,
+    declareVariable: () => undefined,
+    approveIsland: () => undefined,
   };
   const stats = useMemo(() => {
     const lines = counted.split("\n").length;
@@ -121,41 +148,34 @@ export function EditorPanel({
         </div>
       </div>
 
-      {/* Editor */}
+      {/* Editor — right-click: content blocks and AI actions that replace,
+          insert before or insert after, through THE shared editable menu. */}
       <div className="relative flex-1 min-h-0 overflow-hidden">
-        {/* Right-click: content blocks and AI actions that replace, insert
-            before or insert after — THE shared editable menu (the one the
-            admin tester used), never a fork. */}
         <EditableContextMenu
           sourceFeature="documents"
           surfaceName="matrx-user/markdown-studio"
           contentSource={{ type: "raw" }}
           getApplicationScope={getScope}
-          getTextarea={() => localRef.current}
-          onContentInserted={() => setTimeout(() => localRef.current?.focus(), 100)}
-          onTextReplace={(text) => onChange(text)}
-          onTextInsertBefore={(text) => onChange(`${text}${localRef.current?.value ?? content}`)}
-          onTextInsertAfter={(text) => onChange(`${localRef.current?.value ?? content}${text}`)}
+          onContentInserted={() => setTimeout(() => editorRef.current?.focus(), 100)}
+          onTextReplace={(text) => editorRef.current?.replaceSelection(text)}
+          onTextInsertBefore={(text) => editorRef.current?.insertText(text, "before")}
+          onTextInsertAfter={(text) => editorRef.current?.insertText(text, "after")}
         >
-        <textarea
-          ref={setTextarea}
-          value={content}
-          onChange={(e) => onChange(e.target.value)}
-          onScroll={onScroll}
-          spellCheck={false}
-          placeholder="Type or paste markdown here.
-
-Try a template from the top bar to see every block type the parser can detect. Right-click for content blocks and AI actions.
-
-⌘K samples · ⌘S save · ⌘Enter run the comparison"
-          className={cn(
-            "h-full w-full resize-none bg-transparent px-4 py-3",
-            "font-mono text-[13px] leading-[1.55] tracking-tight",
-            "text-foreground placeholder:text-muted-foreground/60",
-            "focus:outline-none",
-          )}
-          style={{ fontSize: "16px" }}
-        />
+          {/* A host element: the menu's trigger slots its handlers onto one DOM child. */}
+          <div className="h-full min-h-0 [&_.cm-editor]:min-h-full">
+            <SourceEditor
+              initialText={content}
+              value={content}
+              onChange={onChange}
+              shell={shell}
+              placeholder="Type or paste markdown. Right-click for content blocks and AI actions · ⌘K samples · ⌘S save · ⌘Enter run the comparison"
+              focusMode={false}
+              renderIslands={false}
+              handleRef={editorRef}
+              layout="pane"
+              onScroll={onScroll}
+            />
+          </div>
         </EditableContextMenu>
       </div>
 

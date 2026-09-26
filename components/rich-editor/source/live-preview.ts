@@ -118,11 +118,17 @@ const RENDERED_ISLANDS = new Set([
   "html_comment",
 ]);
 
-function islandDecorations(state: EditorState, registry: IslandPortalRegistry, render: boolean): DecorationSet {
+type SourceBlocks = ReturnType<typeof tokenizeSource>;
+
+function islandDecorations(
+  state: EditorState,
+  registry: IslandPortalRegistry,
+  render: boolean,
+  blocks: SourceBlocks = tokenizeSource(state.doc.toString()),
+): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
-  const text = state.doc.toString();
   const { from: selFrom, to: selTo } = state.selection.main;
-  for (const block of tokenizeSource(text)) {
+  for (const block of blocks) {
     if (block.kind !== "island" || !block.complete) continue;
     const active = selTo >= block.start && selFrom <= block.end;
     const startLine = state.doc.lineAt(block.start);
@@ -148,18 +154,66 @@ function islandDecorations(state: EditorState, registry: IslandPortalRegistry, r
 }
 
 export const setIslandRendering = StateEffect.define<boolean>();
+const refreshIslands = StateEffect.define<null>();
+
+/**
+ * 🚨 A LONG DOCUMENT NEVER RE-TOKENIZES PER KEYSTROKE. Tokenizing the whole
+ * source on every edit cost ~20 ms per key on a 1 MB document (the Markdown
+ * Studio, 2026-09-26). Past LARGE_SOURCE characters an edit MAPS the existing
+ * decorations through the change (O(log n)) and the full re-tokenize runs once
+ * typing pauses; below it nothing changed. A selection move re-decorates from
+ * the cached tokens, never re-tokenizes.
+ */
+const LARGE_SOURCE = 50_000;
+const REFRESH_AFTER_MS = 250;
+
+interface IslandState {
+  render: boolean;
+  blocks: SourceBlocks | null; // null = stale (positions predate an edit)
+  decorations: DecorationSet;
+}
 
 function islandField(registry: IslandPortalRegistry): Extension {
-  return StateField.define<{ render: boolean; decorations: DecorationSet }>({
-    create: (state) => ({ render: true, decorations: islandDecorations(state, registry, true) }),
+  const field = StateField.define<IslandState>({
+    create: (state) => {
+      const blocks = tokenizeSource(state.doc.toString());
+      return { render: true, blocks, decorations: islandDecorations(state, registry, true, blocks) };
+    },
     update: (value, tr) => {
       let render = value.render;
-      for (const effect of tr.effects) if (effect.is(setIslandRendering)) render = effect.value;
-      if (render === value.render && !tr.docChanged && !tr.selection) return value;
-      return { render, decorations: islandDecorations(tr.state, registry, render) };
+      let refresh = false;
+      for (const effect of tr.effects) {
+        if (effect.is(setIslandRendering)) render = effect.value;
+        if (effect.is(refreshIslands)) refresh = true;
+      }
+      if (render === value.render && !refresh && !tr.docChanged && !tr.selection) return value;
+      if (tr.docChanged && !refresh && tr.state.doc.length >= LARGE_SOURCE) {
+        return { render, blocks: null, decorations: value.decorations.map(tr.changes) };
+      }
+      const blocks =
+        tr.docChanged || refresh || !value.blocks ? tokenizeSource(tr.state.doc.toString()) : value.blocks;
+      return { render, blocks, decorations: islandDecorations(tr.state, registry, render, blocks) };
     },
-    provide: (field) => EditorView.decorations.from(field, (value) => value.decorations),
+    provide: (f) => EditorView.decorations.from(f, (value) => value.decorations),
   });
+  const refresher = ViewPlugin.fromClass(
+    class {
+      timer: ReturnType<typeof setTimeout> | null = null;
+      constructor(readonly view: EditorView) {}
+      update(update: ViewUpdate) {
+        if (!update.docChanged || update.state.field(field).blocks) return;
+        if (this.timer) clearTimeout(this.timer);
+        this.timer = setTimeout(() => {
+          this.timer = null;
+          this.view.dispatch({ effects: refreshIslands.of(null) });
+        }, REFRESH_AFTER_MS);
+      }
+      destroy() {
+        if (this.timer) clearTimeout(this.timer);
+      }
+    },
+  );
+  return [field, refresher];
 }
 
 // ── Markdown live preview ──────────────────────────────────────────────────

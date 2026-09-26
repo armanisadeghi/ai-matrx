@@ -194,7 +194,7 @@ export function getRenderedBlocks(
  */
 export function buildPairedCheckpoints(
   text: string,
-  lineHeight: number,
+  lineTop: (lineIndex: number) => number,
   scrollContainer: HTMLElement,
 ): { textPx: number[]; renderPx: number[] } | null {
   const segments = parseTextSegments(text).filter((s) => s.type !== "blank");
@@ -208,7 +208,7 @@ export function buildPairedCheckpoints(
   const renderPx: number[] = [0];
 
   for (let i = 0; i < count; i++) {
-    const textOffset = segments[i].startLine * lineHeight;
+    const textOffset = lineTop(segments[i].startLine);
     const renderOffset = renderedBlocks[i].top;
 
     if (textOffset > 0) textPx.push(textOffset);
@@ -220,7 +220,7 @@ export function buildPairedCheckpoints(
       segments[i].type === "table" ||
       segments[i].type === "list"
     ) {
-      const textEnd = segments[i].endLine * lineHeight;
+      const textEnd = lineTop(segments[i].endLine);
       const renderEnd = renderedBlocks[i].top + renderedBlocks[i].height;
       textPx.push(textEnd);
       renderPx.push(renderEnd);
@@ -280,23 +280,39 @@ export function mapScroll(
 }
 
 /**
+ * The editor side of the sync: its scroll container, and where a source line
+ * (0-based) sits in that container's scroll coordinates. The Markdown Studio's
+ * source is THE rich editor's Source view (CodeMirror, wrapped lines, measured
+ * per line); a plain textarea is the fixed-line-height case.
+ */
+export interface SyncSource {
+  el: HTMLElement;
+  lineTop: (lineIndex: number) => number;
+}
+
+export function textareaSyncSource(ta: HTMLTextAreaElement): SyncSource {
+  const lineHeight = parseFloat(window.getComputedStyle(ta).lineHeight) || 20;
+  return { el: ta, lineTop: (line) => line * lineHeight };
+}
+
+/**
  * Checkpoints are expensive on a big document (a re-parse of the whole text
  * plus a layout read of every rendered block) and scroll events fire at frame
- * rate — so they are computed ONCE per (text, preview height) and reused until
- * the text changes or the preview re-lays out.
+ * rate — so they are computed ONCE per (text, both panes' heights) and reused
+ * until the text changes or either pane re-lays out.
  */
 const checkpointCache = new WeakMap<
   HTMLElement,
-  { text: string; lineHeight: number; scrollHeight: number; paired: ReturnType<typeof buildPairedCheckpoints> }
+  { text: string; sourceHeight: number; scrollHeight: number; paired: ReturnType<typeof buildPairedCheckpoints> }
 >();
 
-function cachedCheckpoints(text: string, lineHeight: number, preview: HTMLElement) {
+function cachedCheckpoints(text: string, source: SyncSource, preview: HTMLElement) {
   const hit = checkpointCache.get(preview);
-  if (hit && hit.text === text && hit.lineHeight === lineHeight && hit.scrollHeight === preview.scrollHeight) {
+  if (hit && hit.text === text && hit.sourceHeight === source.el.scrollHeight && hit.scrollHeight === preview.scrollHeight) {
     return hit.paired;
   }
-  const paired = buildPairedCheckpoints(text, lineHeight, preview);
-  checkpointCache.set(preview, { text, lineHeight, scrollHeight: preview.scrollHeight, paired });
+  const paired = buildPairedCheckpoints(text, source.lineTop, preview);
+  checkpointCache.set(preview, { text, sourceHeight: source.el.scrollHeight, scrollHeight: preview.scrollHeight, paired });
   return paired;
 }
 
@@ -307,16 +323,15 @@ function cachedCheckpoints(text: string, lineHeight: number, preview: HTMLElemen
  */
 export function syncPaneScroll(args: {
   text: string;
-  textarea: HTMLTextAreaElement;
+  source: SyncSource;
   preview: HTMLElement;
   direction: "text-to-preview" | "preview-to-text";
 }): void {
-  const { text, textarea: ta, preview, direction } = args;
+  const { text, source, preview, direction } = args;
+  const ta = source.el;
   const taMax = ta.scrollHeight - ta.clientHeight;
   const pvMax = preview.scrollHeight - preview.clientHeight;
-  const lineHeight =
-    parseFloat(window.getComputedStyle(ta).lineHeight) || 20;
-  const paired = cachedCheckpoints(text, lineHeight, preview);
+  const paired = cachedCheckpoints(text, source, preview);
   if (direction === "text-to-preview") {
     preview.scrollTop =
       paired && paired.textPx.length >= 2
