@@ -148,9 +148,12 @@ export function RemoteImageGate({
         "flex-wrap items-center gap-x-1.5 gap-y-0.5 rounded-md border border-dashed border-border bg-muted/40 px-2 py-1 align-middle text-xs text-muted-foreground"
       }
     >
-      <ImageOff className="h-3.5 w-3.5 shrink-0" aria-hidden />
-      <span className="min-w-0 max-w-full truncate" title={`Images from other websites in text ${why} wait for you to show them.`}>
-        {alt ? `“${alt}” — ` : ""}image from {host}
+      {/* Icon and words wrap as one unit: a narrow column never strands the icon on a line of its own. */}
+      <span className="inline-flex min-w-0 max-w-full items-center gap-1.5" title={`Images from other websites in text ${why} wait for you to show them.`}>
+        <ImageOff className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        <span className="min-w-0 truncate">
+          {alt ? `“${alt}” — ` : ""}image from {host}
+        </span>
       </span>
       <button
         type="button"
