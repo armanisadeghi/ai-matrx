@@ -154,10 +154,7 @@ export function GenerationJobCard({
       aria-live="polite"
       data-testid="generation-job-card"
       className={cn(
-        // A definite width: the card often sits in a shrink-to-fit column,
-        // where w-full resolves against its own (truncating) content and
-        // collapses to one character.
-        "w-[min(28rem,calc(100vw-2rem))] rounded-lg border border-border bg-card p-3 text-sm",
+        "w-full max-w-md rounded-lg border border-border bg-card p-3 text-sm",
         className,
       )}
     >
