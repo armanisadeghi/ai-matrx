@@ -14,6 +14,7 @@ import type {
   ContentSource,
   RichDocumentActionsProp,
 } from "@/features/rich-document/types";
+import { AGENT_ICON_NAME } from "@/components/icons/domain-icons";
 import { buildChatMessageActions } from "@/features/rich-document/chat/chatMessageActions";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
@@ -388,7 +389,7 @@ export const STUDIO_SOURCES: Record<StudioSourceKind, StudioSourceDef> = {
     kind: "agent-prompt",
     token: "agent",
     label: "Agent prompt",
-    icon: "Webhook",
+    icon: AGENT_ICON_NAME,
     list: listAgents,
     load: loadAgentPrompt,
   },

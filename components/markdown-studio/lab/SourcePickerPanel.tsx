@@ -36,14 +36,17 @@ import {
   type StudioSourceListItem,
 } from "./content-sources";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { AGENT_ICON, AGENT_ICON_NAME } from "@/components/icons/domain-icons";
 
 const ICONS: Record<string, LucideIcon> = {
   FileText,
   StickyNote,
   GraduationCap,
   MessageSquare,
-  AGENT_ICON,
+  // Keyed by the NAME the source declares ("Webhook"), never the constant's
+  // identifier — a shorthand `AGENT_ICON,` key made the agent-prompt source
+  // fall back to the sticky-note icon.
+  [AGENT_ICON_NAME]: AGENT_ICON,
   PanelTop,
   PanelBottom,
   FlaskConical,
