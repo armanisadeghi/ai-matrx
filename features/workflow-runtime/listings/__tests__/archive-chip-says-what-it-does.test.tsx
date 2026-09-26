@@ -88,3 +88,31 @@ describe("workflow picker archive chip", () => {
     expect(chipTexts("archived")).toContain("Archived only");
   });
 });
+
+// ── The row says it is archived (2026-09-26) ─────────────────────────────────
+import { WorkflowRow } from "../core/WorkflowRow";
+
+function renderRow(isArchived: boolean): HTMLElement {
+  act(() => {
+    root.render(
+      <WorkflowRow
+        workflow={{ id: "wf-1", name: "Summarize text to markdown", isArchived, isFavorite: false, stepCount: 5, isOwner: true } as never}
+        isActive={false}
+        isHovered={false}
+        isMobile={false}
+        onClick={() => undefined}
+        onHover={() => undefined}
+        onHoverEnd={() => undefined}
+        onDetailPress={() => undefined}
+      />,
+    );
+  });
+  return container;
+}
+
+describe("workflow picker row", () => {
+  it("an archived workflow's row carries the Archived badge; a live one does not", () => {
+    expect(renderRow(true).querySelector("[data-testid='workflow-row-archived']")?.textContent).toBe("Archived");
+    expect(renderRow(false).querySelector("[data-testid='workflow-row-archived']")).toBeNull();
+  });
+});

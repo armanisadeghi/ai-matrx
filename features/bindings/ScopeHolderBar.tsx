@@ -161,6 +161,8 @@ export interface ScopeHolderBarProps {
   onHolderChange: (next: HolderDraft) => void;
   /** The "+ Agent" door — see `HolderAssignment.onCreateAgent`. */
   onCreateAgent?: (() => void) | null;
+  /** An archived holder was restored: bind it — see `HolderAssignment.onUseRestored`. */
+  onUseRestored?: (() => void) | null;
   /**
    * The holder agent's REAL NAME, resolved by the workspace.
    *
@@ -327,6 +329,7 @@ export function ScopeHolderBar({
   holder,
   onHolderChange,
   onCreateAgent = null,
+  onUseRestored = null,
   holderName = null,
   job,
   ladderLine,
@@ -426,6 +429,7 @@ export function ScopeHolderBar({
          own fact row below on the person host — once per page, never twice. */
       coverageLine={perspective === "system" ? job.coverageLine : null}
       onCreateAgent={onCreateAgent}
+      onUseRestored={onUseRestored}
       refusal={
         // Verbatim, unchanged: it is the rule Arman ruled on, and the guard
         // that pins it (`system-rung-holder-refusal.test.tsx`) reads this

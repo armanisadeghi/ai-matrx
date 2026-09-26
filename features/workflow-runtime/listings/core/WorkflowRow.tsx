@@ -73,8 +73,17 @@ export function WorkflowRow({
             {workflow.stepCount} step{workflow.stepCount === 1 ? "" : "s"}
           </span>
         )}
+        {/* ARCHIVED rows stay offered (the archived-items law) and say so. */}
+        {workflow.isArchived ? (
+          <span
+            data-testid="workflow-row-archived"
+            className="text-[9px] font-medium text-muted-foreground bg-muted px-1 py-px rounded shrink-0 ml-auto"
+          >
+            Archived
+          </span>
+        ) : null}
         {workflow.isOwner === false ? (
-          <span className="text-[9px] text-muted-foreground bg-muted px-1 py-px rounded shrink-0 ml-auto">
+          <span className={cn("text-[9px] text-muted-foreground bg-muted px-1 py-px rounded shrink-0", !workflow.isArchived && "ml-auto")}>
             {workflow.accessLevel === "org" ? "team" : "shared"}
           </span>
         ) : null}

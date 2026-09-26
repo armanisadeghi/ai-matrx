@@ -2039,6 +2039,7 @@ function BindingDraft({
           holder={holder}
           onHolderChange={setHolder}
           onCreateAgent={onCreateAgent}
+          onUseRestored={() => void save()}
           holderName={
             holderName ??
             (agentId ? data.agentsById[agentId]?.name : null) ??

@@ -78,6 +78,7 @@ import { WorkflowListDropdown } from "@/features/workflow-runtime/listings/Workf
 import { listWorkflowVersionChoices, type WorkflowVersionChoice } from "./workflow-versions";
 import type { HolderDraft } from "./ScopeHolderBar";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ArchivedHolderNotice } from "./ArchivedHolderNotice";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /** "Latest" as a select value. `null` is the stored form; this is the option. */
@@ -85,6 +86,12 @@ export const LATEST_VERSION_VALUE = "latest";
 
 export interface HolderAssignmentProps {
   holder: HolderDraft;
+  /**
+   * The chosen holder is ARCHIVED and the person restored it: bind it now
+   * (the host's save). Omitted = restoring only makes it usable; the host's
+   * own Save binds it. See `./archived-holder.ts`.
+   */
+  onUseRestored?: (() => void) | null;
   onHolderChange: (next: HolderDraft) => void;
   /**
    * The holder's real name, when the host already knows it — the picker names
@@ -188,6 +195,7 @@ export function HolderAssignment({
   disabled = false,
   purpose = "assign",
   consumerId,
+  onUseRestored = null,
 }: HolderAssignmentProps) {
   const isWorkflow = holder.kind === "workflow";
   const isTry = purpose === "try";
@@ -380,6 +388,15 @@ export function HolderAssignment({
           </div>
         )}
       </Row>
+
+      {/* An ARCHIVED holder is offered, never dead: one honest action —
+          restore and use it, or ask the owner to restore it. */}
+      <ArchivedHolderNotice
+        kind={isWorkflow ? "workflow" : "agent"}
+        holderId={isWorkflow ? holder.workflowId : holder.agentId}
+        onUseRestored={onUseRestored}
+        disabled={disabled}
+      />
 
       {/* THE COVERAGE FACT — one line, attached to the assignment it is about.
           It is honest in both directions: "Every input this holder needs is
