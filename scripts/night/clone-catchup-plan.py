@@ -400,6 +400,14 @@ def verdict_self_test(run) -> int:
                   [("matrx-frontend", noinv.name, "dd" * 32, "2026-09-24 10:00:00+00")])
         check("RED-7b an earlier checksum and NO committed inverse -> the inverse is named MISSING",
               len(got) == 1 and got[0][11].startswith("MISSING:"), got)
+    if aid is not None:
+        raw = hashlib.sha256(aid.read_bytes()).hexdigest()
+        stripped = hashlib.sha256(aid.read_bytes().decode("utf-8", "surrogateescape").rstrip().encode()).hexdigest()
+        if raw != stripped:
+            got = run([("aidream", aid.name, stripped, "2026-09-25 13:46:41+00", "900", "t", "")],
+                      [("aidream", aid.name, raw, "2026-09-26 07:00:00+00")])
+            check("RED-10 the clone ledgered THESE bytes in the other checksum spelling -> record only, never an inverse or a re-run",
+                  len(got) == 1 and got[0][6] == "record" and got[0][11] == "", got)
     got = run([("matrx-frontend", "zzselftest_not_committed_anywhere.sql", "aa" * 32, "2026-09-25 10:00:00+00", "5", "t", "ORDERFIX")], [])
     check("GREEN-9 a named refusal carries its owner", len(got) == 1 and got[0][0] == "REFUSE" and "ORDERFIX" in got[0][12], got)
     return fails
@@ -579,6 +587,15 @@ def main() -> int:
             )
             continue
 
+        # The clone ran THESE bytes and ledgered them in the other checksum spelling (raw vs aidream's
+        # EOF-stripped): nothing to execute, the row is re-recorded with production's spelling.
+        if here is not None and here["checksum"] != r["checksum"] and here["checksum"] in hashes(committed) and key not in undone:
+            lines.append(SEP.join(["APPLY", r["source"], r["filename"], r["checksum"], str(repo), relpath,
+                                   "record", selector, "no",
+                                   f"the clone ran these exact bytes and ledgered them as {here['checksum'][:12]} (the other "
+                                   f"checksum spelling of production's {r['checksum'][:12]}) — the row is re-recorded, nothing executes",
+                                   r["applied_at"], "", owner_of(repo, relpath, r)]))
+            continue
         if runner in ("aidream", "frontend") and hand_ledgered(r) and not relpath.startswith("migrations/inverse"):
             runner = "direct"
             reason += (
