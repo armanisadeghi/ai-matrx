@@ -58,8 +58,9 @@ export function TextFocusPicker({ mapId, focus, onChange }: TextFocusPickerProps
                 <div className="p-2">
                   <TopicalMapFailed what="the topic search" error={search.error} />
                 </div>
-              ) : null}
-              <CommandEmpty>{search.isPending ? "Searching…" : "No topic matches."}</CommandEmpty>
+              ) : (
+                <CommandEmpty>{search.isPending ? "Searching…" : "No topic matches."}</CommandEmpty>
+              )}
               <CommandGroup>
                 <CommandItem
                   value="__whole_map"

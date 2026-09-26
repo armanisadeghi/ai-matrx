@@ -301,9 +301,11 @@ export function StartMapScreen({
             <p className="text-xs text-muted-foreground">
               {sites.isPending
                 ? "Loading this brand's sites…"
-                : (sites.data?.length ?? 0) === 0
-                  ? "This brand has no site yet; the author reads the brand profile, business facts and locations alone."
-                  : "The author reads the brand profile plus the chosen site's crawl, keywords and content plan."}
+                : sites.isError
+                  ? null
+                  : (sites.data?.length ?? 0) === 0
+                    ? "This brand has no site yet; the author reads the brand profile, business facts and locations alone."
+                    : "The author reads the brand profile plus the chosen site's crawl, keywords and content plan."}
             </p>
           </div>
         ) : null}

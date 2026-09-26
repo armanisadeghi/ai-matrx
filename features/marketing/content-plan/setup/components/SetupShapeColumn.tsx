@@ -63,6 +63,7 @@ export function SetupShapeColumn({
         </div>
       ) : archetypes.length === 0 ? (
         <div className="rounded-md border border-dashed border-border p-3">
+          {/* read-gate-exempt: SetupView (the only caller) returns ErrorState when the shape-library read fails, so this renders only after a successful read */}
           <p className="text-sm font-medium text-foreground">
             No site shapes available
           </p>

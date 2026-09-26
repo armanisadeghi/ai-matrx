@@ -552,6 +552,7 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
             </div>
           )}
 
+          {/* read-gate-exempt: static intro before any search is run; a failed search shows its error block directly above */}
           {!page && !loading && <EmptyState />}
 
           {page && page.results.length === 0 && (

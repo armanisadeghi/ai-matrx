@@ -2293,6 +2293,7 @@ export function SetupView() {
                   onOpenPlan={() => setView("tree")}
                 />
               ) : (
+                // read-gate-exempt: SetupView returns ErrorState above when the plan-nodes or shape-library read fails; this is "no shape selected"
                 <EmptyState
                   title="Nothing to preview"
                   body="The routes this shape creates appear here before anything is written."

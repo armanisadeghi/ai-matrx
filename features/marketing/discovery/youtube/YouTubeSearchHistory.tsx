@@ -88,7 +88,7 @@ function HistoryList({
             );
           })}
 
-          {!loading && entries.length === 0 && (
+          {!loading && !error && entries.length === 0 && (
             <div className="rounded-2xl border border-dashed border-border px-4 py-8 text-center dark:border-white/10">
               <History className="mx-auto h-5 w-5 text-muted-foreground" />
               <p className="mt-2 text-sm font-medium">No searches yet</p>

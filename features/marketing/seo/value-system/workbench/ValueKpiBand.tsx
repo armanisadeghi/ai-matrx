@@ -240,6 +240,7 @@ export function ValueKpiBand({
         delta={kpis.valuedClicksDelta}
         deltaLabel="Valued clicks"
         sub={
+          // read-gate-exempt: a field of loaded kpis; ValueWorkbench renders this band only when the summary read did not fail (InlineQueryError otherwise)
           kpis.valuedShare === null
             ? "no clicks in this window yet"
             : `${kpis.valuedShare.toFixed(0)}% of your clicks${

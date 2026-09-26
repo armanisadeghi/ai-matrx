@@ -14,6 +14,7 @@ import { Loader2, Plus } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   Dialog,
   DialogContent,
@@ -148,6 +149,13 @@ export function AddTrackedPageDialog({
               <Loader2 className="h-3 w-3 animate-spin" />
               Searching pages…
             </div>
+          ) : results.isError ? (
+            <ReadFailure
+              error={results.error}
+              what="the site's registered pages"
+              className="m-0"
+              onRetry={() => void results.refetch()}
+            />
           ) : rows.length > 0 ? (
             <div className="max-h-64 space-y-1 overflow-y-auto">
               {rows.map((row) => {

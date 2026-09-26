@@ -338,6 +338,7 @@ function Numbers({
             moved > 0 ? "text-primary" : "text-muted-foreground",
           )}
         >
+          {/* read-gate-exempt: a count inside measured stats; Numbers renders nothing without stats and PackReview shows InlineQueryError when the preview read fails */}
           · {moved > 0 ? `${formatCount(moved)} move band` : "no band moves"}
         </span>
       ) : null}
