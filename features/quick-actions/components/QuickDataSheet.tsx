@@ -26,7 +26,7 @@ import {
   QUICK_DATA_SURFACE_NAME,
   createQuickDataScope,
 } from "@/features/surfaces/manifests/quick-data.manifest";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface QuickDataSheetProps {
   onClose?: () => void;
@@ -143,16 +143,8 @@ export function QuickDataSheet({
     );
   } else if (error) {
     body = (
-      <div
-        className={cn(
-          "flex flex-col items-center justify-center h-full gap-3",
-          className,
-        )}
-      >
-        <div className="text-sm text-red-500">{error} <ErrorAlchemyMenu error={error} /></div>
-        <Button variant="outline" size="sm" onClick={loadTables}>
-          Try Again
-        </Button>
+      <div className={cn("flex h-full items-center justify-center", className)}>
+        <ReadFailure error={error} what="your tables" onRetry={loadTables} />
       </div>
     );
   } else if (tables.length === 0) {
