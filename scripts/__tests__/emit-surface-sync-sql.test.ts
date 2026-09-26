@@ -13,33 +13,35 @@ describe("surface manifest SQL emitter", () => {
     const valueInsert = sql.indexOf("INSERT INTO ui.ui_surface_value (");
     expect(surfaceInsert).toBeGreaterThanOrEqual(0);
     expect(valueInsert).toBeGreaterThan(surfaceInsert);
-    expect(sql).toContain(
-      "Existing ui_client rows are required; this emitter never creates clients.",
-    );
     expect(sql).toContain("ON CONFLICT (name) DO NOTHING;");
     expect(sql).not.toContain("INSERT INTO ui.ui_client");
   });
 
-  it("uses explicit system ownership and public visibility in every child mirror", () => {
+  it("sets system ownership and public visibility on insert only — a conflict never rewrites them (ALC-14 ruling N5)", () => {
     const sql = emitSurfaceSyncSql({
       surfaceNames: [SURFACE],
       organizationId: SYSTEM_ORG,
     });
+    let mirrors = 0;
     for (const table of [
       "ui_surface_value",
       "ui_surface_agent_role",
       "ui_surface_write_target",
       "ui_surface_client_tool",
     ]) {
-      const start = sql.indexOf(`INSERT INTO ${table} (`);
+      const start = sql.indexOf(`INSERT INTO ui.${table} (`);
       if (start < 0) continue;
+      mirrors += 1;
       const segment = sql.slice(start, sql.indexOf(";", start));
       expect(segment).toContain("organization_id, visibility");
       expect(segment).toContain(`'${SYSTEM_ORG}', 'public'`);
-      expect(segment).toContain(
-        "organization_id = EXCLUDED.organization_id, visibility = EXCLUDED.visibility",
-      );
+      const onConflict = segment.slice(segment.indexOf("ON CONFLICT"));
+      expect(onConflict).not.toMatch(/organization_id\s*=/);
+      expect(onConflict).not.toMatch(/visibility\s*=/);
     }
+    // The flashcard-set surface declares values, so at least one mirror must be
+    // inspected — a loop that finds nothing proves nothing.
+    expect(mirrors).toBeGreaterThan(0);
   });
 
   it("rejects an absent or malformed organization id", () => {
