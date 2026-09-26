@@ -137,6 +137,22 @@ function ProTextareaAgentRunnerSession({
     onApplySourceText(agentRunResult(sourceText, workingContent, answer));
   }, [status, workingContent, onApplySourceText, sourceText, answer]);
 
+  // THE PAYLOAD, bound the way Clean up binds it: the text rides as DATA in
+  // the agent's declared text variable (the one rule, textInputVariable) —
+  // shown in the variable panel as soon as the agent's variables load, and
+  // bound again at Run. Without it a custom agent ran on its stock sample
+  // ("Translate for customers" translated a default sentence, verify-RC-B5 r3).
+  const definitions = useAppSelector(selectInstanceVariableDefinitions(conversationId));
+  const bindSourceText = useCallback(() => {
+    const target = textInputVariable(selectInstanceVariableDefinitions(conversationId)(store.getState()));
+    if (target) {
+      dispatch(setHostVariableValues({ conversationId, values: { [target.name]: sourceText } }));
+    }
+  }, [conversationId, dispatch, sourceText, store]);
+  useEffect(() => {
+    if (definitions.length > 0) bindSourceText();
+  }, [definitions, bindSourceText]);
+
   const handleRun = useCallback(() => {
     if (isExecuting) return;
     dispatch(
@@ -146,19 +162,11 @@ function ProTextareaAgentRunnerSession({
         content: sourceText,
       }),
     );
-    // THE PAYLOAD, bound the way Clean up binds it: the text rides as DATA in
-    // the agent's declared text variable (the one rule, textInputVariable) —
-    // not only as a working document an agent may never read. Without it a
-    // custom agent ran on its default sample ("Translate for customers"
-    // translated a stock sentence, verify-RC-B5 r3).
-    const target = textInputVariable(selectInstanceVariableDefinitions(conversationId)(store.getState()));
-    if (target) {
-      dispatch(setHostVariableValues({ conversationId, values: { [target.name]: sourceText } }));
-    }
+    bindSourceText();
     // Canonical send path (no surfaceKey ⇒ never splits ⇒ this continuous
     // conversation can never be orphaned).
     void dispatch(smartExecute({ conversationId }));
-  }, [conversationId, dispatch, isExecuting, sourceText, store]);
+  }, [conversationId, dispatch, isExecuting, sourceText, bindSourceText]);
 
   useEffect(() => {
     onControlsChange({
