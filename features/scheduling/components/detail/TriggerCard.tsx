@@ -14,9 +14,15 @@ import type { AgendaTask } from "../../types";
 
 interface Props {
   task: AgendaTask;
+  /**
+   * Where the card's Edit door goes. Defaults to the owner's editor; the admin
+   * seat passes the System jobs console for a system job, or `null` for
+   * another person's task (the admin seat never edits as the owner).
+   */
+  editHref?: string | null;
 }
 
-export function TriggerCard({ task }: Props) {
+export function TriggerCard({ task, editHref = `/schedules/${task.id}/edit` }: Props) {
   const trigger = task.triggers[0];
 
   if (!trigger) {
@@ -92,11 +98,13 @@ export function TriggerCard({ task }: Props) {
                 },
               })}
             />
-            <Button asChild variant="outline" size="sm" className="h-11 lg:h-8">
-              <Link href={`/schedules/${task.id}/edit`}>
-                <Edit className="h-3.5 w-3.5 mr-1.5" /> Edit
-              </Link>
-            </Button>
+            {editHref ? (
+              <Button asChild variant="outline" size="sm" className="h-11 lg:h-8">
+                <Link href={editHref}>
+                  <Edit className="h-3.5 w-3.5 mr-1.5" /> Edit
+                </Link>
+              </Button>
+            ) : null}
           </div>
         </div>
 

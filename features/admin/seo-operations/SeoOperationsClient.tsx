@@ -16,6 +16,7 @@
  *                  evidence it was shown.
  */
 
+import { adminScheduleHref } from "@/features/scheduling/constants/routes";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { ArrowUpRight } from "lucide-react";
@@ -138,7 +139,7 @@ export function AutomationsPanel() {
               {runningId === row.id ? "Queuing…" : "Run now"}
             </Button>
             <Button size="sm" variant="ghost" asChild>
-              <AppLink href={`/schedules/${row.id}`}>Open</AppLink>
+              <AppLink href={adminScheduleHref(row.id)}>Open</AppLink>
             </Button>
           </div>
         ),

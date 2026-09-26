@@ -11,14 +11,15 @@
  * right-click menu by calling the hook once, handing the pane's
  * `NonEditableContextMenu` its `resolveContextOnOpen` and `extraSections`.
  *
- * THE DOOR LAW: a scheduled task opens at `/schedules/<id>` (`scheduleHref`),
- * never the workspace `task` route — see `features/scheduling/constants/routes.ts`.
+ * THE DOOR LAW: a scheduled task opens at its ADMIN-seat record page
+ * (`adminScheduleHref`, admin lane) — every consumer of these sections is an
+ * admin surface; the user page `/schedules/<id>` cannot read a system job.
+ * It is never the workspace `task` route — see `features/scheduling/constants/routes.ts`.
  *
- * 🚨 NO NEW WRITE PATH LIVES HERE. "Disable schedule" delegates to the
- * existing `disableTaskAdmin` RPC and "Mark run as failed" to the existing
- * `markRunFailedAdmin` RPC (both already live in
- * `lib/services/scheduling-admin-service.ts`) — this module only puts doors
- * that already exist onto a menu that didn't have them yet.
+ * 🚨 NO NEW WRITE PATH LIVES HERE. "Disable schedule" delegates to
+ * `disableTaskAdmin` and "Mark run as failed" to `markRunFailedAdmin`
+ * (`lib/services/scheduling-admin-service.ts`), which call the audited
+ * `scheduler.admin_disable_task` / `scheduler.admin_mark_run_failed` doors.
  */
 
 import { useState } from "react";
@@ -43,7 +44,7 @@ import {
   disableTaskAdmin,
   markRunFailedAdmin,
 } from "@/lib/services/scheduling-admin-service";
-import { scheduleHref } from "@/features/scheduling/constants/routes";
+import { adminScheduleHref } from "@/features/scheduling/constants/routes";
 
 function copyToClipboard(text: string, done: string) {
   void navigator.clipboard.writeText(text).then(
@@ -141,7 +142,7 @@ export function useScheduledTaskMenuSection<T extends ScheduledTaskMenuRow>(opts
     }
   };
 
-  const href = clicked ? scheduleHref(clicked.id) : "#";
+  const href = clicked ? adminScheduleHref(clicked.id) : "#";
   const items: ContextMenuExtraItem[] = [
     ...(opts.onRunNow
       ? ([
@@ -272,7 +273,7 @@ export function useScheduledRunMenuSection<T extends ScheduledRunMenuRow>(opts: 
     }
   };
 
-  const scheduleHrefFor = clicked ? scheduleHref(clicked.task_id) : "#";
+  const scheduleHrefFor = clicked ? adminScheduleHref(clicked.task_id) : "#";
   const items: ContextMenuExtraItem[] = [
     {
       kind: "link",

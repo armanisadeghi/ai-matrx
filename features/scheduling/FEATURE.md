@@ -32,6 +32,10 @@ Execution happens on:
 - **Admin routes:** `app/(admin)/administration/automation/scheduling/`
   - `page.tsx` — overview tiles + live health stats
   - `tasks/page.tsx` — all-user tasks (filterable)
+  - `tasks/[id]/page.tsx` — the ADMIN seat's task record: the canonical
+    `ScheduleDetail` with `seat="admin"`, read through the admin lane. Every
+    admin surface that names a task links here via `adminScheduleHref`
+    (`constants/routes.ts`), never `/schedules/<id>` (no lane there).
   - `runs/page.tsx` — all-user runs (status/surface filters)
   - `orphan-leases/page.tsx` — stuck claims + force-fail action
   - `cron-tester/page.tsx` — FE preview validator
@@ -65,10 +69,12 @@ Execution happens on:
     read is aborted and becomes the list's visible, retryable error state
     instead of leaving the page in an endless skeleton.
   - `lib/services/scheduling-admin-service.ts` — admin cross-user
-    reads/writes using `is_super_admin()` RLS escape hatch. Stays on
-    Supabase: `/scheduler/*` is RLS-scoped to the caller, so admins
-    do NOT see other users' tasks/runs there. Orphan-lease cleanup
-    and `markRunFailed` also have no HTTP equivalent yet.
+    reads through RLS's `platform_admin_read` (admin lane). Its two writes
+    call the audited SECURITY DEFINER doors `scheduler.admin_disable_task` /
+    `scheduler.admin_mark_run_failed` (super admin + admin lane, one
+    `admin.admin_audit_log` row each, P0002 on a missing row) — the staff
+    WRITE arm is closed on all four tables, so a direct admin update of
+    another person's row matches 0 rows.
   - `lib/scheduler-client/next-due.ts` — canonical TS twin of the
     Python `next_due` module. Used by live-typing previews
     (`CronForm`, admin cron-tester) and by non-HTTP clients (Chrome
@@ -103,7 +109,10 @@ sch_run             each execution; partial-unique on task_id WHERE active
 **Surfaces** — `any | server | chrome-extension-chat | desktop | web |
 mobile | sandbox`. CHECK constraint whitelists exactly these 7.
 
-**RLS** — owner-or-`is_super_admin()` on all four tables. Cross-table
+**RLS** — class `confidential` (sch_task; the three components resolve
+through it) with `suppress_platform_admin_lane` on all four: owner / org
+member lanes, `platform_admin_read`, `svc_all`; no staff write arm (admin
+writes go through the `scheduler.admin_*` doors). Cross-table
 `WITH CHECK` clauses on `sch_trigger` and `sch_run` enforce that
 inserted rows reference an owned `sch_task` (prevents cross-user
 injection of triggers/runs).
@@ -220,6 +229,8 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
   errors yet.
 
 ## Change log
+
+- `2026-09-26` — **Admin writes move to audited doors; the staff write arm is closed; admin task links stop dead-ending.** `migrations/sch_admin_doors_close_the_staff_write_arm_2026_09_26.sql` (applied, ledgered): `scheduler.admin_disable_task(uuid, text)` and `scheduler.admin_mark_run_failed(uuid, text)` (SECURITY DEFINER, `is_super_admin()` before any read, P0002 on a missing row, one `admin.admin_audit_log` row each, declared in `platform.client_callable_door`), then `suppress_platform_admin_lane` + `iam.apply_rls` on sch_task / sch_run / sch_trigger / sch_agent_task. `disableTaskAdmin` / `markRunFailedAdmin` call the doors; aidream's `force_disable_task` too. New admin record route `tasks/[id]` renders `ScheduleDetail seat="admin"` (no owner edit/delete/run doors; "Disable" through the admin door; system jobs keep Pause/Enable + System jobs edit); Runs, Orphan leases, Tasks, the run/task menus, attention alarms and SEO Operations link there via `adminScheduleHref`. `TriggerCard` takes `editHref`. Context: common-docs `projects/checks-run-in-the-app/P2-STORAGE-ATTACK.md` § F1 follow-up.
 
 - `2026-09-22` — **The `event` trigger is live: a schedule runs when a data-table row changes.** Arman: "ALWAYS stick to the things the system already does and plug into them." Consumer of the platform event spine (`platform.activity_log`; producer for tables: `migrations/udt_row_change_events.sql`). DB: `migrations/sch_event_trigger_matcher.sql` — `scheduler.sch_match_event()`, an AFTER INSERT trigger on the spine that, for every enabled `event` trigger of the SAME organization whose `config` matches (`entity_type` required; `actions` any-of; `table_id`; `changed_fields` any-of on `row.updated`), inserts ONE queued `sch_run` (the exact row `sch_enqueue_manual_run` writes, `trigger_id` set, the event under `metadata.event`) and stamps `last_fired_at`; a task with an active run is skipped (the partial unique index would refuse it; the matcher never lets a hot table error the spine write); a run's own `sch_run` lifecycle event never re-fires its task; a partial index makes the per-spine-write probe an index hit. Every online scanner then claims the run through the protocol it already has — no new executor. Server: `runner.variables_for_run` merges `run.metadata.event` into the agent's variables as `event` (the run's event wins over a task variable of that name) — `packages/matrx-scheduler/tests/test_event_variables.py`. FE: `EventConfig` in `types.ts` + the `event` arm of `TriggerConfig`; `eventConfigSchema`; `triggerHumanize` ("When a table row changes (status)"); the **Table change** chip in `constants/triggerTypes.ts`; `components/form/triggers/EventForm.tsx` (table picker over `listUserTables`, the five row actions, optional changed columns); `ScheduleForm` `initialTrigger` + `/schedules/new?trigger=event&tableId=…` (the data table's Actions-header menu carries "When a row changes, run an agent…", prompt prefilled). Proven in a rolled-back transaction on the test table: a change to a non-watched column → 0 runs; the watched column → 1 queued run carrying `action row.updated`, `changed_fields ["capital"]`; a second change while queued → still 1; `last_fired_at` set. Not yet: other producers (files, forms, CRM) only need an option in `EventForm`; the runs list does not yet show the event that started a run.
 

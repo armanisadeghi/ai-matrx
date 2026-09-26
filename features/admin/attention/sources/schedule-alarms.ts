@@ -15,14 +15,19 @@
 import type { SystemScheduleAlarm } from "@/features/scheduling/service/queries";
 import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
 import type { AttentionItem } from "../types";
+import { adminScheduleHref } from "@/features/scheduling/constants/routes";
 
 export const SCHEDULE_ALARM_SOURCE_ID = "schedule-alarms";
 export const SCHEDULE_ALARM_SOURCE_LABEL = "Schedules";
 export const SCHEDULE_REVIEW_HREF = "/administration/automation/scheduling/scanner-health";
 
-/** The record route for a scheduled task — the door where re-enabling lives. */
+/**
+ * The record route for a scheduled task — the door where re-enabling lives.
+ * Attention alarms are an ADMIN surface, so the door is the admin seat's task
+ * page (admin lane); the user page `/schedules/<id>` cannot read a system job.
+ */
 export function scheduleHref(taskId: string): string {
-  return `/schedules/${taskId}`;
+  return adminScheduleHref(taskId);
 }
 
 export interface ScheduleAlarmDeps {

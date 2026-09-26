@@ -11,3 +11,15 @@
 
 /** Canonical route to one scheduled task's detail page. */
 export const scheduleHref = (id: string) => `/schedules/${id}`;
+
+/**
+ * The ADMIN seat's route to one scheduled task — the same `ScheduleDetail`
+ * component rendered under /administration, so its reads ride the admin lane
+ * (`platform_admin_read`). Every admin surface that names a task (runs, orphan
+ * leases, tasks, system jobs, attention alarms, SEO operations) links HERE,
+ * never to `/schedules/<id>`: that user page carries no lane, so a system job
+ * or another person's task answers "We couldn't find this scheduled task"
+ * there (P2-STORAGE-ATTACK F1 follow-up, localhost check, 2026-09-26).
+ */
+export const ADMIN_SCHEDULE_TASKS_HREF = "/administration/automation/scheduling/tasks";
+export const adminScheduleHref = (id: string) => `${ADMIN_SCHEDULE_TASKS_HREF}/${id}`;

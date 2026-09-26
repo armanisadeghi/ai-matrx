@@ -32,6 +32,11 @@ import { createSchedulesScope } from "@/features/surfaces/manifests/schedules.ma
 import { useTaskDetail } from "../../hooks/useTaskDetail";
 import { useScheduledTasks } from "../../hooks/useScheduledTasks";
 import { useTaskRuns } from "../../hooks/useTaskRuns";
+import { disableTaskAdmin } from "@/lib/services/scheduling-admin-service";
+import {
+  ADMIN_SCHEDULE_TASKS_HREF,
+  adminScheduleHref,
+} from "../../constants/routes";
 import {
   buildOpenScheduleValues,
   buildScheduleRosterValues,
@@ -61,6 +66,15 @@ const SYSTEM_JOBS_HREF = "/administration/automation/scheduling/system-jobs";
 
 interface Props {
   taskId: string;
+  /**
+   * Which seat the page is rendered in. `owner` (default) is the user page
+   * `/schedules/<id>`. `admin` is `/administration/automation/scheduling/
+   * tasks/<id>`: the same record read through the admin lane, so a system job
+   * or another person's task opens. The admin seat never acts as the owner —
+   * it gets no owner edit/delete/run doors and no surface write handlers; its
+   * one write on another person's task is the audited admin disable door.
+   */
+  seat?: "owner" | "admin";
 }
 
 /**
@@ -70,7 +84,7 @@ interface Props {
  * here is the same hook `RunHistoryCard` uses (it no-ops when the runs are
  * already loaded), so no extra fetch is introduced.
  */
-export function ScheduleDetail({ taskId }: Props) {
+export function ScheduleDetail({ taskId, seat = "owner" }: Props) {
   const dispatch = useAppDispatch();
   const { task } = useTaskDetail(taskId);
   const { tasks, status, error } = useScheduledTasks();
@@ -131,7 +145,7 @@ export function ScheduleDetail({ taskId }: Props) {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/schedules"
-      getWriteHandlers={getSurfaceWriteHandlers}
+      getWriteHandlers={seat === "owner" ? getSurfaceWriteHandlers : () => ({})}
       getScope={getSchedulesScope}
     >
       <NonEditableContextMenu
@@ -144,14 +158,14 @@ export function ScheduleDetail({ taskId }: Props) {
         {/* Radix `asChild` must receive a DOM element that can accept its
             context-menu handlers/ref. A function component drops those props. */}
         <div className="contents">
-          <ScheduleDetailBody taskId={taskId} />
+          <ScheduleDetailBody taskId={taskId} seat={seat} />
         </div>
       </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
 }
 
-function ScheduleDetailBody({ taskId }: Props) {
+function ScheduleDetailBody({ taskId, seat = "owner" }: Props) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { task, status, error, retry } = useTaskDetail(taskId);
@@ -204,8 +218,8 @@ function ScheduleDetailBody({ taskId }: Props) {
         onRetry={() => {
           void dispatch(fetchScheduledTask(taskId)).catch(() => {});
         }}
-        fallbackHref="/schedules"
-        fallbackLabel="All schedules"
+        fallbackHref={seat === "admin" ? ADMIN_SCHEDULE_TASKS_HREF : "/schedules"}
+        fallbackLabel={seat === "admin" ? "All scheduled tasks" : "All schedules"}
       />
     );
   }
@@ -317,6 +331,29 @@ function ScheduleDetailBody({ taskId }: Props) {
     }
   };
 
+  // ADMIN SEAT, another person's task: the owner PATCH cannot reach it (the
+  // staff write arm is closed), so pausing goes through the audited admin door.
+  const handleAdminDisable = async () => {
+    const ok = await confirm({
+      title: `Disable "${task.title}"?`,
+      description:
+        "This pauses the schedule immediately — it stops firing until its owner re-enables it. The change is recorded in the admin audit log.",
+      confirmLabel: "Disable",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    setFlipping(true);
+    try {
+      await disableTaskAdmin(task.id, "Disabled by admin (task page)");
+      await dispatch(fetchScheduledTask(task.id));
+      toast.success("Schedule disabled");
+    } catch (err) {
+      toastWriteFailure(err, { action: "disable this schedule", remedy: "Try again." });
+    } finally {
+      setFlipping(false);
+    }
+  };
+
   const handleDelete = async () => {
     const ok = await confirm({
       title: "Delete schedule",
@@ -333,6 +370,64 @@ function ScheduleDetailBody({ taskId }: Props) {
       toastWriteFailure(err, { action: "delete this schedule", remedy: "Try again." });
     }
   };
+
+  const adminSeatActions =
+    isSystemTask && isAdmin
+      ? [
+          {
+            label: flipping
+              ? task.enabled
+                ? "Pausing…"
+                : "Enabling…"
+              : task.enabled
+                ? "Pause"
+                : "Enable",
+            icon: Power,
+            onPress: () => void handleSetEnabled(!task.enabled),
+            disabled: flipping,
+          },
+        ]
+      : task.enabled
+        ? [
+            {
+              label: flipping ? "Disabling…" : "Disable",
+              icon: Power,
+              onPress: () => void handleAdminDisable(),
+              disabled: flipping,
+              destructive: true,
+            },
+          ]
+        : [];
+
+  if (seat === "admin") {
+    return (
+      <>
+        <EntityModeHeader
+          backHref={ADMIN_SCHEDULE_TASKS_HREF}
+          entityLabel={task.title}
+          entityOptions={[]}
+          modes={[
+            { name: "View", href: adminScheduleHref(task.id), icon: Eye },
+            ...(isSystemTask
+              ? [{ name: "Edit", href: SYSTEM_JOBS_HREF, icon: Pencil }]
+              : []),
+          ]}
+          actions={adminSeatActions}
+        />
+        <ScheduleRecordBody
+          task={task}
+          tasks={tasks}
+          runs={runs}
+          runsStatus={runsStatus}
+          runsError={runsError}
+          canFlip={isSystemTask ? isAdmin : false}
+          flipping={flipping}
+          onSetEnabled={handleSetEnabled}
+          editHref={isSystemTask ? SYSTEM_JOBS_HREF : null}
+        />
+      </>
+    );
+  }
 
   return (
     <>
@@ -399,71 +494,113 @@ function ScheduleDetailBody({ taskId }: Props) {
               ]),
         ]}
       />
-      <div className="space-y-4" data-surface-value="open_schedule">
-        <SuspensionCard
-          task={task}
-          onRestore={canFlip ? () => void handleSetEnabled(true) : undefined}
-          restoring={flipping}
-        />
-        {/* Record-level copy. The plain click is the what-I-see payload (spec +
-            trigger + run history with errors verbatim); the menu grades it into
-            the two reasons this page gets copied. */}
-        <div className="flex items-start justify-between gap-3">
-          {task.description ? (
-            <p
-              className="text-sm text-muted-foreground"
-              data-surface-value="schedule_description"
-            >
-              {task.description}
-            </p>
-          ) : (
-            <span />
-          )}
-          <div className="flex shrink-0 items-center gap-1">
-            <CopyButtons
-              size="sm"
-              unified
-              label={`Schedule ${task.title}`}
-              human={() => scheduleSummary(task)}
-              json={() => ({ schedule: task, runs })}
-              agent={() =>
-                buildScheduleRecordPayload({
-                  task,
-                  runs,
-                  runsStatus,
-                  runsError,
-                  kpis: scheduleKpis(tasks),
-                })
-              }
-              agentVariant={{
-                id: "this-schedule",
-                label: "This schedule",
-                hint: "Spec, trigger and run history as rendered",
-                position: "first",
-              }}
-              aiVariants={scheduleRecordVariants(() => ({
+      <ScheduleRecordBody
+        task={task}
+        tasks={tasks}
+        runs={runs}
+        runsStatus={runsStatus}
+        runsError={runsError}
+        canFlip={canFlip}
+        flipping={flipping}
+        onSetEnabled={handleSetEnabled}
+      />
+    </>
+  );
+}
+
+type ScheduleTask = NonNullable<ReturnType<typeof useTaskDetail>["task"]>;
+type TaskRunsState = ReturnType<typeof useTaskRuns>;
+
+interface ScheduleRecordBodyProps {
+  task: ScheduleTask;
+  tasks: ReturnType<typeof useScheduledTasks>["tasks"];
+  runs: TaskRunsState["runs"];
+  runsStatus: TaskRunsState["status"];
+  runsError: TaskRunsState["error"];
+  canFlip: boolean;
+  flipping: boolean;
+  onSetEnabled: (enabled: boolean) => Promise<void>;
+  /** The trigger card's Edit door; `undefined` = the owner's editor. */
+  editHref?: string | null;
+}
+
+/** The record body both seats render — one renderer, never a copy. */
+function ScheduleRecordBody({
+  task,
+  tasks,
+  runs,
+  runsStatus,
+  runsError,
+  canFlip,
+  flipping,
+  onSetEnabled,
+  editHref,
+}: ScheduleRecordBodyProps) {
+  return (
+    <div className="space-y-4" data-surface-value="open_schedule">
+      <SuspensionCard
+        task={task}
+        onRestore={canFlip ? () => void onSetEnabled(true) : undefined}
+        restoring={flipping}
+      />
+      {/* Record-level copy. The plain click is the what-I-see payload (spec +
+          trigger + run history with errors verbatim); the menu grades it into
+          the two reasons this page gets copied. */}
+      <div className="flex items-start justify-between gap-3">
+        {task.description ? (
+          <p
+            className="text-sm text-muted-foreground"
+            data-surface-value="schedule_description"
+          >
+            {task.description}
+          </p>
+        ) : (
+          <span />
+        )}
+        <div className="flex shrink-0 items-center gap-1">
+          <CopyButtons
+            size="sm"
+            unified
+            label={`Schedule ${task.title}`}
+            human={() => scheduleSummary(task)}
+            json={() => ({ schedule: task, runs })}
+            agent={() =>
+              buildScheduleRecordPayload({
                 task,
                 runs,
                 runsStatus,
                 runsError,
                 kpis: scheduleKpis(tasks),
-              }))}
-              export={{
-                items: [
-                  jsonExportItem(() => ({ schedule: task, runs })),
-                  csvExportItem(() => runCsvRows(runs), "CSV (all runs)"),
-                ],
-                sheetRows: () => runCsvRows(runs),
-              }}
-            />
-          </div>
+              })
+            }
+            agentVariant={{
+              id: "this-schedule",
+              label: "This schedule",
+              hint: "Spec, trigger and run history as rendered",
+              position: "first",
+            }}
+            aiVariants={scheduleRecordVariants(() => ({
+              task,
+              runs,
+              runsStatus,
+              runsError,
+              kpis: scheduleKpis(tasks),
+            }))}
+            export={{
+              items: [
+                jsonExportItem(() => ({ schedule: task, runs })),
+                csvExportItem(() => runCsvRows(runs), "CSV (all runs)"),
+              ],
+              sheetRows: () => runCsvRows(runs),
+            }}
+          />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-          <SpecCard task={task} />
-          <TriggerCard task={task} />
-        </div>
-        <RunHistoryCard taskId={task.id} task={task} />
       </div>
-    </>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+        <SpecCard task={task} />
+        <TriggerCard task={task} editHref={editHref} />
+      </div>
+      <RunHistoryCard taskId={task.id} task={task} />
+    </div>
   );
 }

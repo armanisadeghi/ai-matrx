@@ -31,7 +31,7 @@ import {
   fetchAllRunsAdmin,
   type AdminRunRow,
 } from "@/lib/services/scheduling-admin-service";
-import { scheduleHref } from "@/features/scheduling/constants/routes";
+import { adminScheduleHref } from "@/features/scheduling/constants/routes";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { RunStatus, Surface } from "@/features/scheduling/types";
 import { SURFACE_VALUES } from "@/features/scheduling/constants/surfaces";
@@ -119,7 +119,7 @@ export default function AdminRunsPage() {
             token="scheduled_task"
             id={r.task_id}
             name={r.task_title}
-            href={scheduleHref(r.task_id)}
+            href={adminScheduleHref(r.task_id)}
           />
         ),
       },
@@ -288,7 +288,7 @@ export default function AdminRunsPage() {
                 token="scheduled_task"
                 id={r.task_id}
                 name={r.task_title}
-                href={scheduleHref(r.task_id)}
+                href={adminScheduleHref(r.task_id)}
                 alwaysShowActions
               />
             ),

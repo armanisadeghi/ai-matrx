@@ -24,7 +24,7 @@ import {
   markRunFailedAdmin,
   type AdminRunRow,
 } from "@/lib/services/scheduling-admin-service";
-import { scheduleHref } from "@/features/scheduling/constants/routes";
+import { adminScheduleHref } from "@/features/scheduling/constants/routes";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
 import { useScheduledRunMenuSection } from "@/features/scheduling/components/shared/scheduling-menu-sections";
@@ -99,7 +99,7 @@ export default function OrphanLeasesPage() {
               <EntityRef
                 token="scheduled_task"
                 id={run.task_id}
-                href={scheduleHref(run.task_id)}
+                href={adminScheduleHref(run.task_id)}
                 alwaysShowActions
               />
             </span>
@@ -146,7 +146,7 @@ export default function OrphanLeasesPage() {
             token="scheduled_task"
             id={r.task_id}
             name={r.task_title}
-            href={scheduleHref(r.task_id)}
+            href={adminScheduleHref(r.task_id)}
           />
         ),
       },
@@ -254,7 +254,7 @@ export default function OrphanLeasesPage() {
                 token="scheduled_task"
                 id={r.task_id}
                 name={r.task_title}
-                href={scheduleHref(r.task_id)}
+                href={adminScheduleHref(r.task_id)}
                 alwaysShowActions
               />
             ),

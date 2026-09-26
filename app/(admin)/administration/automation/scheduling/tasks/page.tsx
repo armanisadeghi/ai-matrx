@@ -39,7 +39,7 @@ import {
   humanizeRelative,
   humanizeTrigger,
 } from "@/features/scheduling/utils/triggerHumanize";
-import { scheduleHref } from "@/features/scheduling/constants/routes";
+import { adminScheduleHref } from "@/features/scheduling/constants/routes";
 import { DuplicateScheduleBanner } from "@/features/scheduling/components/list/DuplicateScheduleBanner";
 import { useDuplicateSchedules } from "@/features/scheduling/hooks/useDuplicateSchedules";
 import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
@@ -122,7 +122,7 @@ export default function AdminTasksPage() {
               token="scheduled_task"
               id={r.id}
               name={r.title}
-              href={scheduleHref(r.id)}
+              href={adminScheduleHref(r.id)}
               className="font-medium"
             />
             {r.description && (
@@ -206,7 +206,7 @@ export default function AdminTasksPage() {
         accessorKey: "id",
         header: "ID",
         cellKind: "uuid",
-        fk: { label: "Scheduled task", href: (id) => scheduleHref(id) },
+        fk: { label: "Scheduled task", href: (id) => adminScheduleHref(id) },
         width: 110,
       },
     ];
@@ -319,7 +319,7 @@ export default function AdminTasksPage() {
                 token="scheduled_task"
                 id={r.id}
                 name={r.title}
-                href={scheduleHref(r.id)}
+                href={adminScheduleHref(r.id)}
                 alwaysShowActions
               />
             ),
