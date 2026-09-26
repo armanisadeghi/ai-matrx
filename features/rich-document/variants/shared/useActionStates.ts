@@ -8,10 +8,10 @@
 // renderer, whatever the number of actions.
 //
 // 🚨 React Compiler is on. Everything a stateful action paints MUST be read
-// through `stateOf`, whose closure captures the store `version` — so the
-// compiler invalidates it when the store moves. Reading `action.label(ctx)`
-// directly in render keyed only on (action, ctx) is cached forever: that is
-// how the read-aloud button kept its speaker icon while audio played
+// through the reader this returns, and this hook is `"use no memo"` so that
+// reader is a new function each render. Reading `action.label(ctx)` directly
+// in render — cached by the compiler on (action, ctx) alone — never updates:
+// that is how the read-aloud button kept its speaker icon while audio played
 // (seen live 2026-09-25).
 
 import * as React from "react";
@@ -33,9 +33,12 @@ export function useActionStates(
   actions: RichDocumentAction[],
   ctx: RichDocumentActionContext,
 ): (action: RichDocumentAction) => ActionLiveState {
+  // Opted out of the compiler: the returned reader must be a NEW function on
+  // every render so callers recompute what they paint when the store moves.
+  "use no memo";
   const stateful = actions.filter((a) => a.active || a.subscribe);
   const subscribe = (onChange: () => void) => {
-    const unsubscribers = stateful.map((a) => a.subscribe?.(() => { console.debug("[as-debug] change", JSON.stringify(snapshot())); onChange(); }, ctx)); // TEMP
+    const unsubscribers = stateful.map((a) => a.subscribe?.(onChange, ctx));
     return () => unsubscribers.forEach((u) => u?.());
   };
   // Everything a stateful action paints: on/off, its label ("Pause
@@ -51,13 +54,9 @@ export function useActionStates(
         return `${a.active?.(ctx) ? 1 : 0}|${label}|${disabled ? 1 : 0}|${live?.icon.displayName ?? ""}${live?.spin ? "~" : ""}`;
       })
       .join("\n");
-  const version = React.useSyncExternalStore(subscribe, snapshot, snapshot);
-  if (stateful.some((a) => a.id === "tts-play")) console.debug("[as-debug] render", JSON.stringify(version)); // TEMP
+  React.useSyncExternalStore(subscribe, snapshot, snapshot);
 
   return (action) => {
-    // `version` is read so this closure — and every value derived from it —
-    // is recomputed when the store moves (see the header).
-    void version;
     const disabledResult = action.disabled?.(ctx);
     const live = action.stateIcon?.(ctx) ?? null;
     return {
