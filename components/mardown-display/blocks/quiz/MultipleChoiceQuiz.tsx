@@ -684,7 +684,7 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
                   />
                   {showCanvasButton && (
                     <IconButton
-                      icon={ExternalLink}
+                      icon={ArrowUpRight}
                       tooltip="Open in Canvas"
                       onClick={() => {
                         setIsFullScreen(false);
