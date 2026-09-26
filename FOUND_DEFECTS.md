@@ -15,6 +15,22 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D352 — RC-A1 trash migration is stale against the access kernel and cannot be safely retried (2026-09-26)
+
+`migrations/rcstore_n_trash_is_the_owners_alone.sql` remains **unapplied and untouched**. Its
+chair-step replaces `iam.has_access_for_base`, `iam.accessible_entity_ids`, and
+`iam.entity_read_kernel_expected()` from stale bases
+`cd55cecb`/`499bcbc9`/`0534a771`; production is now
+`a5fa8a26`/`0ebad389`/`69a02c8a` (only `iam.entity_read_expr` still matches).
+A direct apply would erase RC-A2h's record-comment access behavior and the applied AEI-REACH
+set-form/re-fingerprint (the flash-card access path improved roughly 4.85 s to 0.52 s), besides
+breaking that function/fingerprint atomic pair. **Do not amend or apply this forward/inverse.**
+The required senior decision is approval of a new migration that three-way merges the RC-A1
+`platform.trash_hides(...)` predicate into the current three live kernel bodies while retaining
+RC-A2h and AEI-REACH, with a paired inverse restoring exactly the current three bodies, clone
+Rule 27 proof, then a named chair step. This is a behavior/security/performance merge, not a
+checksum rebase; no safe automated semantic choice exists for its insertion points.
+
 ### D350 — `audit.summary.certified` is a stale cache: a certified table can fail its live gate (2026-09-25)
 
 Found by the docs-steward's `platform.ddl_guard_log` read. `audit.summary.certified` is computed from
