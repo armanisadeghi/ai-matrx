@@ -235,6 +235,11 @@ function main(): number {
 
   if (argv.includes("--update")) {
     const ids = [...new Set(findings.map((f) => f.id))].sort();
+    // `reasons` (written by `pnpm findings accept`) survives for every id still baselined.
+    const previous = existsSync(BASELINE_PATH)
+      ? ((JSON.parse(readFileSync(BASELINE_PATH, "utf8")) as { reasons?: Record<string, unknown> }).reasons ?? {})
+      : {};
+    const reasons = Object.fromEntries(Object.entries(previous).filter(([id]) => ids.includes(id)));
     writeFileSync(
       BASELINE_PATH,
       `${JSON.stringify(
@@ -243,6 +248,7 @@ function main(): number {
           updated: new Date().toISOString().slice(0, 10),
           count: ids.length,
           ids,
+          ...(Object.keys(reasons).length ? { reasons } : {}),
         },
         null,
         2,

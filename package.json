@@ -382,6 +382,8 @@
     "test:release-route-manifest": "node --test scripts/release-publishes-the-route-manifest.test.mjs",
     "test:release-ship-path": "bash scripts/test-release-ship-path.sh",
     "test:release-checks": "node --test scripts/checks/run.test.mjs",
+    "findings": "node scripts/findings/findings.mjs",
+    "test:findings": "node --test scripts/findings/findings.test.mjs",
     "check:release-checks": "node scripts/checks/run.mjs",
     "checks:classify": "node scripts/checks/row-classes.mjs --write",
     "check:release-row-classes": "node scripts/checks/row-classes.mjs --check",
