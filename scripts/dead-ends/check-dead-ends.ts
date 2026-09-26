@@ -38,7 +38,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, sep } from "node:path";
-import { emitItem } from "../checks/items.mjs";
+import { emitItem, endItems } from "../checks/items.mjs";
 import { DEAD_END_ALLOWLIST } from "./allowlist";
 import { describeFinding } from "./describe";
 import { loadEntityTokens } from "./entity-tokens";
@@ -411,10 +411,12 @@ function main(): void {
   // one — a confident wrong record name is the V-21 defect — so the run SAYS SO
   // instead of leaving the miss invisible.
   const ambiguousNouns = new Map<string, Set<string>>();
+  let unscanned = 0;
   for (const file of files) {
     try {
       raw.push(...scanFile(file, { repoRoot: ROOT, tokens, ambiguousNouns }));
     } catch (err) {
+      unscanned += 1;
       // A parse failure is a checker bug, not a silent zero. Scream and keep
       // going so one bad file can't hide the whole report.
       console.error(
@@ -437,12 +439,17 @@ function main(): void {
       emitItem({
         key: entry ? deadEndAllowKey(entry) : deadEndAllowKey(f),
         status: entry ? "known" : "new",
+        // Every allowlist entry must carry a `reason` (the type requires it): a reasoned accept.
+        ...(entry ? { basis: entry.reason?.trim() ? "accepted" : "debt" } : {}),
         title: `${f.entity} — ${RULE_TITLES[f.rule]}`,
         file: f.file,
         line: f.line,
         rule: f.rule,
       });
     }
+    // End of scan only for the whole repo, every rule, every file parsed: a --path / --rule run
+    // or a file that failed to parse sees a slice, and its absent keys are not fixed.
+    if (!args.pathPrefix && !args.rule && unscanned === 0) endItems();
   }
 
   findings.sort(

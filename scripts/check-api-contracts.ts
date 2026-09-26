@@ -25,13 +25,14 @@
  * `import type { … } from "@/lib/python-client"` (type-only) is always allowed —
  * it pulls no runtime call path. See lib/api/FEATURE.md.
  */
-import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { emitItem } from "./checks/items.mjs";
+import { emitItem, endItems } from "./checks/items.mjs";
 
 const ROOT = join(import.meta.dirname, "..");
 const BASELINE = join(ROOT, "scripts", "api-contracts-baseline.json");
+const REASONS = join(ROOT, "scripts", "api-contracts-baseline.reasons.json");
 const SCAN_DIRS = ["features", "app", "lib", "components", "hooks"];
 
 // Files/dirs allowed to import the raw client: the sanctioned client layer.
@@ -165,10 +166,20 @@ function run(): number {
   const added = current.filter((f) => !baseline.has(f));
   const converted = [...baseline].filter((f) => !current.includes(f)).sort();
 
-  // C5 item line — key = the file path, exactly the baseline's entry.
+  // C5 item line — key = the file path, exactly the baseline's entry. basis: an entry with a
+  // reason in the sibling reasons file (`pnpm findings accept`) is an accept; the rest is debt.
+  const reasons: Record<string, { reason?: string }> = existsSync(REASONS) ? JSON.parse(readFileSync(REASONS, "utf8")) : {};
   for (const f of current) {
-    emitItem({ key: f, status: baseline.has(f) ? "known" : "new", title: `${f} imports the raw python client`, file: f });
+    const known = baseline.has(f);
+    emitItem({
+      key: f,
+      status: known ? "known" : "new",
+      ...(known ? { basis: reasons[f]?.reason?.trim() ? "accepted" : "debt" } : {}),
+      title: `${f} imports the raw python client`,
+      file: f,
+    });
   }
+  endItems(); // currentOffenders() walked the whole tree
 
   if (added.length === 0 && converted.length === 0) {
     console.log(

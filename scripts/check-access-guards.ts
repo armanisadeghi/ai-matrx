@@ -36,7 +36,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 import { repoFiles } from "./lib/repo-files";
-import { emitItem } from "./checks/items.mjs";
+import { emitItem, endItems } from "./checks/items.mjs";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");
@@ -93,7 +93,9 @@ function isAllowed(section: keyof Allowlist, entries: AllowEntry[], file: string
   for (const e of entries) {
     if (e.file !== file) continue;
     if (e.line != null && Math.abs(e.line - line) > 2) continue; // file-level allow when no line
-    emitItem({ key: itemKey(section, e.file, e.line), status: "known", file, line, rule: section });
+    // basis: every entry must carry a justification — one that does is a reasoned accept.
+    const basis = e.justification?.trim() ? "accepted" : "debt";
+    emitItem({ key: itemKey(section, e.file, e.line), status: "known", basis, file, line, rule: section });
     allowed = true;
   }
   return allowed;
@@ -540,6 +542,7 @@ function main() {
       rule: section,
     });
   }
+  endItems(); // every detector scanned the whole tree
 
   console.log("");
   console.log(`${BOLD}  ACCESS GUARD CHECK${RESET}`);

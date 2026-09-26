@@ -66,7 +66,7 @@ import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { emitItem } from "./checks/items.mjs";
+import { emitItem, endItems } from "./checks/items.mjs";
 
 const REPO_ROOT = resolve(__dirname, "..");
 const SCANNED_DIRS = ["features", "lib", "app", "components", "hooks"] as const;
@@ -262,15 +262,22 @@ function main(): number {
   const fresh = findings.filter((f) => !baseline.has(f.id));
 
   // C5 item line — key = the call-site id, exactly the baseline's entry (file::toast text).
+  // basis: an id with a `reasons` entry (`pnpm findings accept`) is an accept; the rest is debt.
+  const reasons = existsSync(BASELINE_PATH)
+    ? ((JSON.parse(readFileSync(BASELINE_PATH, "utf8")) as { reasons?: Record<string, { reason?: string }> }).reasons ?? {})
+    : {};
   for (const f of findings) {
+    const known = baseline.has(f.id);
     emitItem({
       key: f.id,
-      status: baseline.has(f.id) ? "known" : "new",
+      status: known ? "known" : "new",
+      ...(known ? { basis: reasons[f.id]?.reason?.trim() ? "accepted" : "debt" } : {}),
       title: `${f.file}:${f.line} toast.${f.method} names a record outside recordToast`,
       file: f.file,
       line: f.line,
     });
   }
+  endItems(); // collect() walked the whole tree
 
   console.log(
     `[check:record-toasts] ${findings.length} record-naming toast(s) outside the helper; ${baseline.size} baselined; ${fresh.length} NOT baselined.`,

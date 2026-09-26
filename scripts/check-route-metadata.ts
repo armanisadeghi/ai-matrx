@@ -8,7 +8,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { faviconRouteData } from "../constants/favicon-route-data";
-import { emitItem } from "./checks/items.mjs";
+import { emitItem, endItems } from "./checks/items.mjs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const strict = process.argv.includes("--strict");
@@ -190,13 +190,6 @@ for (const family of families) {
   }
 }
 
-if (findings.length === 0) {
-  console.log(
-    "check-route-metadata: OK — every active module root has canonical metadata and favicon identity.",
-  );
-  exitAfterDrain(0);
-}
-
 // Items (ITEM-PROTOCOL.md): no allowlist or baseline — every item is new, keyed `<rule>|<route>`.
 for (const finding of findings) {
   emitItem({
@@ -206,6 +199,14 @@ for (const finding of findings) {
     file: finding.file,
     rule: finding.rule,
   });
+}
+endItems(); // every module root was scanned
+
+if (findings.length === 0) {
+  console.log(
+    "check-route-metadata: OK — every active module root has canonical metadata and favicon identity.",
+  );
+  exitAfterDrain(0);
 }
 
 console.error("ROUTE METADATA GAPS");

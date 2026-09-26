@@ -27,7 +27,7 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { emitItem } from "./checks/items.mjs";
+import { emitItem, endItems } from "./checks/items.mjs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
@@ -293,6 +293,8 @@ function main(): void {
       emitItem({
         key: cat.key,
         status: delta > 0 ? "new" : "known",
+        // A frozen count is grandfathered debt, never an argued accept.
+        ...(delta > 0 ? {} : { basis: "debt" }),
         title: `${cat.label}: ${cur} now vs ${base} frozen (${delta > 0 ? "+" : ""}${delta})`,
         rule: "type-escape-hatch",
       });
@@ -301,6 +303,9 @@ function main(): void {
       `  ${cat.label.padEnd(22)}  ${String(cur).padStart(7)}  ${String(base).padStart(8)}  ${deltaStr}`,
     );
   }
+
+  // End of scan: the count mode reads every file (the scoped listing mode above never gets here).
+  if (baseline) endItems();
 
   if (!baseline) {
     console.log(

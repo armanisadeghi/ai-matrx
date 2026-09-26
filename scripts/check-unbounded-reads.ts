@@ -104,7 +104,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { emitItem } from "./checks/items.mjs";
+import { emitItem, endItems } from "./checks/items.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SCAN_DIRS = ["scripts", "lib", "features", "app", "utils"];
@@ -1305,6 +1305,9 @@ function main(): number {
       rule: f.shape,
     });
   }
+  // End of scan only when every read was judged: an UNMEASURED read may be a finding this run
+  // could not see, so its absence must never read as fixed.
+  if (unmeasured.length === 0) endItems();
   if (findings.length === 0) {
     console.log(
       `${C.cyan}[INFO]${C.reset} Unbounded reads: none feeding an existence/diff decision.`,

@@ -38,7 +38,7 @@ import { join, resolve } from "node:path";
 import process from "node:process";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 import { repoFiles } from "./lib/repo-files";
-import { emitItem } from "./checks/items.mjs";
+import { emitItem, endItems } from "./checks/items.mjs";
 
 const ROOT = resolve(__dirname, "..");
 const SKIP = new Set([
@@ -90,6 +90,7 @@ if (process.argv.includes("--json")) {
 for (const f of findings) {
   emitItem({ key: f.file, title: `${f.file}:${f.line} raw history write${f.dispatches ? "" : " (silent)"}`, file: f.file, line: f.line });
 }
+endItems(); // the whole tree was scanned
 
 if (findings.length === 0) {
   console.log("✅ check:url-state — every URL write goes through lib/url-state.");

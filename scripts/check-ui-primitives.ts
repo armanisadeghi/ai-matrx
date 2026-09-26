@@ -38,7 +38,7 @@
 
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { emitItem } from "./checks/items.mjs";
+import { emitItem, endItems } from "./checks/items.mjs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 import { repoFiles } from "./lib/repo-files";
 
@@ -343,6 +343,15 @@ function main(): number {
   const findings: Finding[] = [];
   for (const f of files) findings.push(...scanFile(f));
 
+  // Items (ITEM-PROTOCOL.md): no allowlist or baseline here (exemptions are code sets that stop
+  // a finding before it exists), so every item is new, keyed `<kind>|<file>` — no line number.
+  for (const f of findings) {
+    emitItem({ key: `${f.kind}|${f.file}`, status: "new", title: f.detail, file: f.file, line: f.line, rule: f.kind });
+  }
+
+  // End of scan only for the whole repo: a --staged / --branch run sees a slice of it.
+  if (args.mode === "repo") endItems();
+
   if (findings.length === 0) return 0;
 
   findings.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
@@ -351,12 +360,6 @@ function main(): number {
     `\n${COLOR.yellow}[WARN]${COLOR.reset} UI primitives: ${COLOR.bold}${findings.length}${COLOR.reset} hand-rolled control(s) that should use components/ui.\n` +
       `${COLOR.dim}Reinvented controls skip design tokens → break in light/dark, lose focus rings + a11y.${COLOR.reset}\n\n`,
   );
-
-  // Items (ITEM-PROTOCOL.md): no allowlist or baseline here (exemptions are code sets that stop
-  // a finding before it exists), so every item is new, keyed `<kind>|<file>` — no line number.
-  for (const f of findings) {
-    emitItem({ key: `${f.kind}|${f.file}`, status: "new", title: f.detail, file: f.file, line: f.line, rule: f.kind });
-  }
 
   for (const f of findings) {
     process.stdout.write(

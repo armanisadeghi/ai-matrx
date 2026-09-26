@@ -25,7 +25,7 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, relative } from "node:path";
 import { execSync } from "node:child_process";
-import { emitItem } from "../checks/items.mjs";
+import { emitItem, endItems } from "../checks/items.mjs";
 
 const ROOT = process.cwd();
 const REPORT = join(ROOT, "scripts/access-errors/report.json");
@@ -610,6 +610,7 @@ function main() {
   for (const n of narrowed) {
     emitItem({ key: `narrowed|${n.file}|${n.fn}`, title: `${n.file}:${n.line} ${n.fn}() narrows a gated record read`, file: n.file, line: n.line, rule: "narrowed" });
   }
+  endItems(); // all three scans walk the whole tree
 
   const byFeature = new Map<string, Finding[]>();
   for (const f of findings) {

@@ -44,7 +44,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import ts from "typescript";
-import { emitItem } from "./checks/items.mjs";
+import { emitItem, endItems } from "./checks/items.mjs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
@@ -589,13 +589,6 @@ function main(): void {
     );
   });
 
-  if (violations.length === 0 && routeLayoutViolations.length === 0) {
-    console.log(
-      `scroll-chain: OK — ${files.length} files, ${routePageFiles.length} route pages, and ${layoutFiles.length} route layouts; no broken bounded-height chains or unsafe route clippers.`,
-    );
-    return;
-  }
-
   // Items (ITEM-PROTOCOL.md): no allowlist or baseline — every item is new. Keyed by file (no
   // line): `broken-chain|<file>`; a route clipper by the layout it clips and the file holding the
   // clip, `route-clipper|<layout>|<source>`.
@@ -619,6 +612,15 @@ function main(): void {
       rule: "route-clipper",
     });
   }
+  endItems(); // every file, route page and layout was scanned
+
+  if (violations.length === 0 && routeLayoutViolations.length === 0) {
+    console.log(
+      `scroll-chain: OK — ${files.length} files, ${routePageFiles.length} route pages, and ${layoutFiles.length} route layouts; no broken bounded-height chains or unsafe route clippers.`,
+    );
+    return;
+  }
+
 
   if (violations.length > 0) {
     console.log(

@@ -68,7 +68,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import process from "node:process";
-import { emitItem } from "./checks/items.mjs";
+import { emitItem, endItems } from "./checks/items.mjs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 import {
   AIDREAM_SCAN_DIRS,
@@ -296,18 +296,23 @@ function main(): void {
   // Items (ITEM-PROTOCOL.md): key = the allowlist's own `<file>::<NAME>` (siteKey). Baselined =
   // known debt; not baselined = new. A CLASSIFIED constant is declared not-an-opinion — not debt,
   // not a finding — so it is not an item (nor is a KNOB MIRROR).
+  // basis: an entry a human argued for (a `reason`) is an accept; a bare seeded entry is debt.
+  const reasoned = new Set(allow.filter((e) => e.reason?.trim()).map(siteKey));
   for (const s of live) {
     const k = siteKey(s);
     if (classKeys.has(k)) continue;
     emitItem({
       key: k,
       status: allowKeys.has(k) ? "known" : "new",
+      ...(allowKeys.has(k) ? { basis: reasoned.has(k) ? "accepted" : "debt" } : {}),
       title: `${s.name} = ${s.value} — knob-shaped constant outside the registry`,
       file: s.file,
       line: s.line,
       rule: "hardcoded-setting",
     });
   }
+  // End of scan only when both repos were read: without the aidream checkout its entries are unseen.
+  if (ai) endItems();
 
   console.log(`\n${C.bold}${C.white}HARDCODED SETTINGS${C.reset} ${C.dim}(${GUARD})${C.reset}`);
   console.log(

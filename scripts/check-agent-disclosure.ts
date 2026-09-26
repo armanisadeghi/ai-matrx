@@ -38,7 +38,7 @@
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
-import { emitItem } from "./checks/items.mjs";
+import { emitItem, endItems } from "./checks/items.mjs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
@@ -222,6 +222,7 @@ function main(): void {
   for (const rx of crossSurfaceExpansion) {
     emitItem({ key: `cross-surface|${rx.source}`, status: "new", title: "surface mandates section expands disclosure beyond this surface", file: relative(ROOT, SURFACE_MANDATES_SECTION), rule: "cross-surface" });
   }
+  endItems(); // every scan dir was walked
 
   console.log(
     `Agent disclosure: ${disclosed} disclosed, ${findings.length} undisclosed, ${exempt} skipped (no fixed surface worker + execution machinery).`,

@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { emitItem } from "./checks/items.mjs";
+import { emitItem, endItems } from "./checks/items.mjs";
 import {
   SOURCE_APPS,
   SOURCE_FEATURES,
@@ -238,18 +238,22 @@ const duplicateApps = duplicates(SOURCE_APPS);
 const duplicateFeatures = duplicates(SOURCE_FEATURES);
 
 // C5 item line — key = the registry entry that is missing or doubled (`<field>=<value>`,
-// `duplicate:<REGISTRY>=<value>`): registering the value once fixes every file that stamps it.
+// `duplicate:<REGISTRY>=<value>`): registering the value once fixes every file that stamps it,
+// so every item's work unit is the one registry, never the file that stamps it.
+const UNIT = "source-attribution-registry";
 for (const finding of invalid) {
   emitItem({
     key: `${finding.field}=${finding.value}`,
+    unit: UNIT,
     title: `${finding.file}:${finding.line} unregistered ${finding.field}=${JSON.stringify(finding.value)}`,
     file: finding.file,
     line: finding.line,
     rule: "unregistered",
   });
 }
-for (const value of duplicateApps) emitItem({ key: `duplicate:SOURCE_APPS=${value}`, rule: "duplicate" });
-for (const value of duplicateFeatures) emitItem({ key: `duplicate:SOURCE_FEATURES=${value}`, rule: "duplicate" });
+for (const value of duplicateApps) emitItem({ key: `duplicate:SOURCE_APPS=${value}`, unit: UNIT, rule: "duplicate" });
+for (const value of duplicateFeatures) emitItem({ key: `duplicate:SOURCE_FEATURES=${value}`, unit: UNIT, rule: "duplicate" });
+endItems(); // every root was walked
 
 if (invalid.length || duplicateApps.length || duplicateFeatures.length) {
   console.error("[FAIL] Source-attribution validation failed.");

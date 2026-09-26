@@ -7,7 +7,11 @@
 //   3. KEYS EQUAL THE ALLOWLIST: every `known` key is a key of the check's own allowlist/baseline,
 //      and every allowlist/baseline key is emitted as `known` unless the check itself reports that
 //      entry as stale (it suppressed nothing this run);
-//   4. a `new` key is never an allowlist key (then it would be known).
+//   4. a `new` key is never an allowlist key (then it would be known);
+//   5. BASIS (P2 storage step 0): every `known` item says why — `accepted` exactly for the
+//      allowlist entries that carry a reason (`reasonedKeys`), `debt` for the rest;
+//   6. END OF SCAN: a full run prints exactly one MATRX-ITEMS-END matching its item lines
+//      (`endWhen(out)` names the one honest exception: a run that could not see everything).
 // Protocol: common-docs/projects/checks-run-in-the-app/ITEM-PROTOCOL.md. Run: `node --test scripts/checks/converted-checks.test.mjs`.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -48,7 +52,11 @@ function tsExport(rel, name) {
  *                match is listed as a diagnostic (a stale entry to prune), not a failure.
  *   countRatchet — the baseline holds per-key COUNTS: a grown key is `new` AND a baseline key.
  *   mayBeClean   — the check is clean on today's tree, so zero items is the honest answer.
+ *   reasonedKeys — the allowlist/baseline keys whose entry carries a reason (basis `accepted`);
+ *                  omitted = the check's data holds no reasons, so every known item is `debt`.
+ *   endWhen      — (output) → whether this run may print the end-of-scan marker (default: always).
  */
+const withReason = (e) => Boolean((e.justification ?? e.reason ?? "").trim());
 export const CONVERTED = [
   {
     id: "visibility-vocabulary",
@@ -60,6 +68,12 @@ export const CONVERTED = [
       );
     },
     keyShape: /^(retiredSpelling|collapsedUnion|onlyYouClaim)\|[^|]+\|(\*|\d+)$/,
+    reasonedKeys() {
+      const a = json("scripts/visibility-vocab/allowlist.json");
+      return ["retiredSpelling", "collapsedUnion", "onlyYouClaim"].flatMap((d) =>
+        (a[d] ?? []).filter(withReason).map((e) => `${d}|${e.file}|${e.line ?? "*"}`),
+      );
+    },
     staleKeys(out) {
       return [...out.matchAll(/\[STALE\] (\S+?)(?::(\d+))? \((\w+)\)/g)].map((m) => `${m[3]}|${m[1]}|${m[2] ?? "*"}`);
     },
@@ -74,6 +88,12 @@ export const CONVERTED = [
       );
     },
     keyShape: /^(lowestTierDefault|activeOrgAccess|handRolledLadder|bareRlsList)\|[^|]+\|(\*|\d+)$/,
+    reasonedKeys() {
+      const a = json("scripts/access-guards/allowlist.json");
+      return ["lowestTierDefault", "activeOrgAccess", "handRolledLadder", "bareRlsList"].flatMap((d) =>
+        (a[d] ?? []).filter(withReason).map((e) => `${d}|${e.file}|${e.line ?? "*"}`),
+      );
+    },
   },
   {
     // No allowlist or baseline (exemptions are code rules): every item is new, keyed by file.
@@ -88,6 +108,8 @@ export const CONVERTED = [
     cmd: "pnpm check:unbounded-reads",
     allowKeys: () => [],
     keyShape: /^[^|]+\.tsx?\|[^|]+→[^|]+$/,
+    // An UNMEASURED read may be a finding this run could not see: no end-of-scan then.
+    endWhen: (out) => !/\[UNMEASURED\]/.test(out),
   },
   {
     // Baseline: scripts/api-contracts-baseline.json, a list of file paths. Stale = "converted".
@@ -96,6 +118,15 @@ export const CONVERTED = [
     allowKeys: () => json("scripts/api-contracts-baseline.json"),
     keyShape: /^[^|:\s]+\.tsx?$/,
     staleKeys: (out) => [...out.matchAll(/^\s*✓ (\S+)$/gm)].map((m) => m[1]),
+    reasonedKeys() {
+      let reasons = {};
+      try {
+        reasons = json("scripts/api-contracts-baseline.reasons.json");
+      } catch {
+        /* no accepts yet */
+      }
+      return Object.entries(reasons).filter(([, v]) => typeof v === "object" && withReason(v)).map(([k]) => k);
+    },
   },
   {
     // The registry is a vocabulary, not an allowlist of defects: every item is new, keyed by the
@@ -111,6 +142,7 @@ export const CONVERTED = [
     cmd: "pnpm check:record-toasts:strict",
     allowKeys: () => json("scripts/record-toasts.baseline.json").ids,
     keyShape: /^[^:]+\.tsx?::.+$/s,
+    reasonedKeys: () => Object.entries(json("scripts/record-toasts.baseline.json").reasons ?? {}).filter(([, v]) => withReason(v)).map(([k]) => k),
   },
   {
     // Accepted by an inline `// access-errors: ok — <reason>` marker, never a key list: all new.
@@ -126,6 +158,7 @@ export const CONVERTED = [
     id: "no-dead-ends-door-law",
     cmd: "pnpm exec tsx scripts/dead-ends/check-dead-ends.ts",
     allowKeys: () => tsExport("scripts/dead-ends/allowlist.ts", "DEAD_END_ALLOWLIST").map((e) => `${e.file}|${e.rule ?? "*"}`),
+    reasonedKeys: () => tsExport("scripts/dead-ends/allowlist.ts", "DEAD_END_ALLOWLIST").filter(withReason).map((e) => `${e.file}|${e.rule ?? "*"}`),
     keyShape: /^[^|]+\|(\*|bare-id-text|unlinked-entity-name|unlinked-count|toast-names-record|no-doors-in-file)$/,
   },
   {
@@ -148,6 +181,7 @@ export const CONVERTED = [
     id: "settings-new-knob-shaped-constants-ratchet",
     cmd: "pnpm check:settings-hardcoded",
     allowKeys: () => json("scripts/settings-hardcoded-allowlist.json").entries.map((e) => `${e.file}::${e.name}`),
+    reasonedKeys: () => json("scripts/settings-hardcoded-allowlist.json").entries.filter(withReason).map((e) => `${e.file}::${e.name}`),
     keyShape: /^[^:]+::[A-Z][A-Z0-9_]+$/,
   },
   {
@@ -236,5 +270,28 @@ for (const check of CONVERTED) {
       const newButAllowed = fresh.filter((k) => allow.has(k));
       assert.deepEqual(newButAllowed, [], "new keys that ARE allowlist keys");
     }
+
+    // 5. basis — accepted exactly where the entry carries a reason; every other known item is debt.
+    const reasoned = new Set(check.reasonedKeys ? check.reasonedKeys() : []);
+    const wrongBasis = items
+      .filter((i) => i.status === "known")
+      .filter((i) => i.basis !== (reasoned.has(i.key) ? "accepted" : "debt"))
+      .map((i) => `${i.key} → ${i.basis ?? "(none)"}`);
+    assert.deepEqual(wrongBasis, [], "known items whose basis does not match their allowlist entry");
+
+    // 6. end of scan — a full run declares it, and only a run that saw everything.
+    const { complete } = parseItems(itemRun.out);
+    const mayEnd = check.endWhen ? check.endWhen(itemRun.out) : true;
+    assert.equal(complete, mayEnd, mayEnd ? "a full scan did not print a matching MATRX-ITEMS-END" : "a partial scan printed MATRX-ITEMS-END");
   });
 }
+
+// F6: a narrowed run sees a slice of the tree, so it must never declare the end of a scan — else
+// every key outside the slice would read as fixed.
+test("a narrowed run names its items but never prints the end-of-scan marker", () => {
+  const sliced = run("pnpm exec tsx scripts/dead-ends/check-dead-ends.ts --path=features/notes", true);
+  const { errors, complete } = parseItems(sliced.out);
+  assert.deepEqual(errors, []);
+  assert.equal(complete, false, "a --path run printed MATRX-ITEMS-END");
+  assert.doesNotMatch(sliced.out, /MATRX-ITEMS-END/);
+});

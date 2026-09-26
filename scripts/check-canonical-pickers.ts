@@ -14,7 +14,7 @@
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { emitItem } from "./checks/items.mjs";
+import { emitItem, endItems } from "./checks/items.mjs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = path.resolve(__dirname, "..");
@@ -398,13 +398,6 @@ function main(): void {
     }
   }
 
-  if (findings.length === 0) {
-    console.log(
-      "✅ Canonical pickers hold: no alternate platform agent/model selectors found.",
-    );
-    return;
-  }
-
   // Items (ITEM-PROTOCOL.md): accepted only by an inline `canonical-*-picker-exempt:` comment at
   // the control, never a key list — so every item is new, keyed `<rule>|<file>` (no line).
   for (const finding of findings) {
@@ -416,6 +409,15 @@ function main(): void {
       line: finding.line,
       rule: finding.rule,
     });
+  }
+
+  endItems(); // every source file was scanned
+
+  if (findings.length === 0) {
+    console.log(
+      "✅ Canonical pickers hold: no alternate platform agent/model selectors found.",
+    );
+    return;
   }
 
   console.error("\n🚨 ALTERNATE AGENT / MODEL PICKERS FOUND\n");

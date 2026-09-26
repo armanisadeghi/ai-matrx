@@ -38,7 +38,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 import { repoFiles } from "./lib/repo-files";
-import { emitItem } from "./checks/items.mjs";
+import { emitItem, endItems } from "./checks/items.mjs";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");
@@ -104,7 +104,9 @@ function isAllowed(
     if (e.line != null && Math.abs(e.line - line) > 2) continue;
     usedEntries.add(entryKey(detector, e));
     // C5 item line: the key IS this allowlist entry's key (known debt).
-    emitItem({ key: entryKey(detector, e), status: "known", file, line, rule: detector });
+    // basis: an entry that carries its justification is a reasoned accept; one without is debt.
+    const basis = e.justification?.trim() ? "accepted" : "debt";
+    emitItem({ key: entryKey(detector, e), status: "known", basis, file, line, rule: detector });
     allowed = true;
   }
   return allowed;
@@ -427,6 +429,7 @@ function main(): number {
       rule: f.detector,
     });
   }
+  endItems(); // every detector scanned the whole tree
 
   if (findings.length === 0) {
     console.log(`${GREEN}✓ No findings. The vocabulary holds.${RESET}`);

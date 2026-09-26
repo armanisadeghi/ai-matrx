@@ -103,15 +103,16 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
  * Key = `<row name>|<list>|<file>` — the register row and list (`census`, `shapeCensus`,
  * `inputCensus`) whose entry `{file}` covers the item. Censused = `known` debt; an un-censused
  * finding is `new` under the key its census entry would carry. `allow`/`shapeAllow` files are
- * provably a different capability — not debt, not items.
+ * provably a different capability — not debt, not items. Every census entry is basis `debt`: a
+ * census is the collapse backlog ("has not been collapsed yet"), never a reasoned accept.
  */
-const emitItem = await import("./checks/items.mjs").then(
-  (m) => m.emitItem,
+const { emitItem, endItems } = await import("./checks/items.mjs").then(
+  (m) => ({ emitItem: m.emitItem, endItems: m.endItems ?? (() => {}) }),
   () => {
     if (process.env.MATRX_ITEMS === "1") {
       console.error("check:package-twins: MATRX_ITEMS=1 but scripts/checks/items.mjs is absent — no item lines this run.");
     }
-    return () => {};
+    return { emitItem: () => {}, endItems: () => {} };
   },
 );
 const STRICT = process.argv.includes("--strict");
@@ -1171,6 +1172,7 @@ for (const file of trackedFiles()) {
     emitItem({
       key: `${f.row.name}|census|${file}`,
       status: f.censused ? "known" : "new",
+      ...(f.censused ? { basis: "debt" } : {}),
       title: `${f.name} re-grown outside ${f.row.package}${f.alias ? ` (alias ${f.alias})` : ""}`,
       file,
       line: f.line,
@@ -1190,6 +1192,7 @@ for (const file of trackedFiles()) {
         emitItem({
           key: `${lane.row.name}|${lane.rule.censusKey ?? "shapeCensus"}|${file}`,
           status: verdict.kind === "census" ? "known" : "new",
+          ...(verdict.kind === "census" ? { basis: "debt" } : {}),
           title: `${lane.rule.what} — ${lane.row.package}'s ${lane.row.name}`,
           file,
           line: h.line,
@@ -1205,6 +1208,7 @@ for (const file of trackedFiles()) {
     for (const h of verdict.hits) lane.findings.push({ file, ...h });
   }
 }
+endItems(); // every tracked file was scanned
 
 /**
  * THE NAME CENSUS, read out loud and RATCHETED — same contract as
