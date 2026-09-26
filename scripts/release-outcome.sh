@@ -397,7 +397,9 @@ _release_outcome_self_test() {
     local tmp="$_RO_TMP"
     local here; here="$(_release_outcome_dir)"
     local SHA="0123456789abcdef0123456789abcdef01234567"
-    local BASELINE="${RELEASE_OUTCOME_BASELINE_REF:-e30f034c9f}"
+    # A FULL sha: a shallow checkout (every CI job — actions/checkout is depth 1)
+    # holds no old commit, and only a full object id can be fetched by id.
+    local BASELINE="${RELEASE_OUTCOME_BASELINE_REF:-e30f034c9f0ee9318295aefe02401c9a690ef5cc}"
 
     # Stubs for the two IO seams only — the banner logic under test is the real one.
     mk_fetch() {   # <state> <uid>
@@ -427,6 +429,13 @@ _release_outcome_self_test() {
     # ── 1. RED: the REAL old banner, executed, over an ERRORed deployment ───
     local old_src="" red_ok=false
     old_src="$(git -C "$here/.." show "${BASELINE}:scripts/release.sh" 2>/dev/null || true)"
+    if [[ -z "$old_src" ]]; then
+        # Not in this clone (shallow CI checkout): fetch exactly that one commit,
+        # said out loud, then read it. Fails honestly below if the fetch cannot.
+        echo "  [info] ${BASELINE} is not in this clone — fetching that one commit from origin" >&2
+        git -C "$here/.." fetch --quiet --no-tags --depth=1 origin "$BASELINE" >&2 || true
+        old_src="$(git -C "$here/.." show "${BASELINE}:scripts/release.sh" 2>/dev/null || true)"
+    fi
     if [[ -z "$old_src" ]]; then
         failt "could not read scripts/release.sh at ${BASELINE} — the RED baseline is unavailable, so this guard proves nothing (set RELEASE_OUTCOME_BASELINE_REF)"
     else
