@@ -2540,6 +2540,17 @@
   width: 1.5rem;
   height: 1lh;
 }
+/* ── An inline Alchemy Menu never wraps its line (RC-B12 layout rule).
+   In running text the menu takes 1lh + a 4px gap; when the sentence's last
+   line had less room than that, the menu wrapped and the field error grew a
+   line (catalog editor, "Must be plain semver…" at 472–480px). A negative
+   right margin of the same size makes its NET width in the line zero: it can
+   only hang into the space past the text, never push the line. Not in flex /
+   grid parents, where a negative margin would let the next item cover it,
+   and not in truncating cells, which hold it at the right end already. */
+:not(.flex, .inline-flex, .grid, .inline-grid) > [data-error-alchemy-menu]:not([data-placement="truncated"]) {
+  margin-right: calc(-1lh - 0.25rem);
+}
 [data-slot="alert"] > [data-error-alchemy-menu] {
   position: absolute;
   top: 0.5rem;
