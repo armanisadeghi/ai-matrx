@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { CmsPageService } from "@/features/cms/services/cmsService";
 import { useSiteContext } from "./SiteLayoutClient";
 import PageListView from "@/features/cms/components/PageListView";
-import { RecordOrganizationSwitchOffer } from "@/features/organizations/components/RecordOrganizationSwitchOffer";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
@@ -184,14 +183,6 @@ export default function SiteDashboardPage() {
         resolveContextOnOpen={resolvePageRowContext}
       >
         <div className="h-full flex flex-col overflow-hidden">
-          {/* New pages and the site's AI work land in the SITE'S organization.
-              When that is not the selected one (or none is), the one offer
-              names it and switches on one click. */}
-          <RecordOrganizationSwitchOffer
-            organizationId={site.organization_id}
-            what="site"
-            className="mx-3 mt-2 shrink-0"
-          />
           <div className="flex-1 overflow-auto">
             <PageListView
               site={site}

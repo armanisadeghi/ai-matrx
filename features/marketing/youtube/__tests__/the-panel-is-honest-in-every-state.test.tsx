@@ -111,12 +111,6 @@ jest.mock("@/lib/redux/hooks", () => ({
       : "dddddddd-1111-2222-3333-444444444444",
 }));
 
-// The switch offer has its own suite; here it would read memberships.
-jest.mock("@/features/organizations/components/RecordOrganizationSwitchOffer", () => ({
-  RecordOrganizationSwitchOffer: ({ organizationId }: { organizationId: string | null }) =>
-    organizationId ? <span data-switch-offer={organizationId} /> : null,
-}));
-
 jest.mock("@/components/official/entity-ref/EntityRef", () => ({
   EntityRef: ({ name }: { name: string }) => <span data-door="entity-ref">{name}</span>,
 }));
@@ -130,10 +124,11 @@ jest.mock("@/components/dialogs/clipboard-fallback/ClipboardFallbackDialog", () 
  * WHAT it says before anything is written (V-27 NEW-6).
  */
 const confirmCalls: Array<Record<string, unknown>> = [];
+const confirmAnswer = { value: false };
 jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({
   confirm: jest.fn(async (options: Record<string, unknown>) => {
     confirmCalls.push(options);
-    return false;
+    return confirmAnswer.value;
   }),
 }));
 
@@ -244,6 +239,7 @@ async function mount() {
 
 beforeEach(() => {
   confirmCalls.length = 0;
+  confirmAnswer.value = false;
   world.binding = { state: "unbound", brandVersion: 1 };
   world.connections = [];
   world.resources = [];
@@ -505,10 +501,37 @@ describe("bound, with two windows collected alike", () => {
       expect(readVideoOrgs.length).toBeGreaterThan(0);
       expect(new Set(readVideoOrgs)).toEqual(new Set([BRAND_ORG_ID]));
       expect(new Set(readAnalyticsOrgs)).toEqual(new Set([BRAND_ORG_ID]));
-      // …and names where the client lives, with the switch.
-      expect(
-        m.container.querySelector("[data-switch-offer]")?.getAttribute("data-switch-offer"),
-      ).toBe(BRAND_ORG_ID);
+      // No organization notice: nothing on this panel can land in the wrong one.
+      expect(m.text).not.toContain("not the organization you are working in");
+    } finally {
+      m.unmount();
+    }
+  });
+
+  // THE REFRESH WRITES THE BRAND'S MIRROR, so it carries the BRAND'S
+  // organization — never the selected one (Arman, 2026-09-26: the org notice
+  // belongs only where a person could file something in the wrong org; here
+  // the write simply goes home). RED before: the refresh sent the selection.
+  it("refreshes in the brand's own organization, not the selected one", async () => {
+    const { refreshYouTubeChannel } = jest.requireMock("../service") as {
+      refreshYouTubeChannel: jest.Mock;
+    };
+    refreshYouTubeChannel.mockClear();
+    confirmAnswer.value = true;
+    const m = await mount();
+    try {
+      const button = Array.from(m.container.querySelectorAll("button")).find(
+        (b) => b.textContent?.includes("Refresh from YouTube"),
+      );
+      expect(button).toBeDefined();
+      await act(async () => {
+        button!.click();
+      });
+      await settle();
+      expect(refreshYouTubeChannel).toHaveBeenCalledTimes(1);
+      expect(refreshYouTubeChannel.mock.calls[0][0]).toMatchObject({
+        organizationId: BRAND_ORG_ID,
+      });
     } finally {
       m.unmount();
     }

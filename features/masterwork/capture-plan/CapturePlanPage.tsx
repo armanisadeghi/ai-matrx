@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { useAppStore } from "@/lib/redux/hooks";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import { toast } from "@/lib/toast";
 import {
   fetchDistillationApproaches,
@@ -194,6 +195,14 @@ export function CapturePlanPage({
 }) {
   const store = useAppStore();
   const settings = useCapturePlanSettings(rulebook.id, rulebook.organization_id);
+  // Reminders are filed in the RULEBOOK's organization (a child of it), never
+  // the selected one — which is why the lane needs no organization notice.
+  const { organizations } = useUserOrganizations();
+  const reminderOrganizationId = organizations.some(
+    (org) => org.id === rulebook.organization_id,
+  )
+    ? rulebook.organization_id
+    : null;
   const [approaches, setApproaches] = useState<DistillationApproach[] | null>(null);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -283,6 +292,7 @@ export function CapturePlanPage({
       const outcome = await reconcileReminders(store, {
         rulebookId: rulebook.id,
         rulebookName: rulebook.name,
+        organizationId: reminderOrganizationId,
         planId: s.plan.id,
         sessions: s.plan.sessions,
         channel: s.plan.settings.reminderChannel,
@@ -291,7 +301,7 @@ export function CapturePlanPage({
       });
       setReminder(outcome);
     },
-    [rulebook.id, rulebook.name, store],
+    [rulebook.id, rulebook.name, reminderOrganizationId, store],
   );
 
   // ── setup ─────────────────────────────────────────────────────────────────

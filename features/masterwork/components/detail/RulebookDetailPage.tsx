@@ -53,7 +53,6 @@ import {
 import { resolveLibraryOrgId } from "@/lib/organizations/systemOrg";
 import { LibraryPublishPanel } from "@/features/rag/components/library/LibraryPublishPanel";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { RecordOrganizationSwitchOffer } from "@/features/organizations/components/RecordOrganizationSwitchOffer";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -2329,12 +2328,8 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
         >
           {/* THE PERSON, NOT THE ORG (2026-09-23): this Rulebook opens whatever
               organization is selected and never moves the selection itself.
-              When it lives elsewhere the page says so and offers the switch —
-              actions on it still happen in an organization. */}
-          <RecordOrganizationSwitchOffer
-            organizationId={rulebook.organization_id}
-            what="Rulebook"
-          />
+              No organization notice (Arman, 2026-09-26): every child written
+              under it takes the RULEBOOK's organization. */}
           {/* Rulebook summary */}
           <div className="rounded-lg border border-border bg-card p-4">
             {/* MOBILE: the Rulebook's NAME is the sentence the expert typed,

@@ -141,13 +141,15 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
     the box SAYS which run it is showing. Wall W15, 2026-09-10.
 19. **Every Rulebook door opens whatever organization is selected, and never moves the selection**
     (Arman, 2026-09-23: "The permission is to the person, not the org"). `RulebookLaneRoute` and
-    `RulebookDetailPage` render the Rulebook as soon as it is read and show
-    `RecordOrganizationSwitchOffer` (`features/organizations/components/`) — "This Rulebook is in
-    <org> — Switch" — when it lives in an organization other than the selected one, or none is
-    selected. The retired `useAdoptRecordOrganization` silently wrote the Rulebook's organization
-    into the person's working organization (wall W3, 2026-09-10); opening a record must never do
-    that. Reads carry no organization when none is selected (`callApi` / `python-client`); actions
-    still happen in an organization, and the offer is their one-click remedy. Guarded by
+    `RulebookDetailPage` render the Rulebook as soon as it is read, and show NO organization
+    notice (Arman, 2026-09-26: the org notice belongs only where a person could file something in
+    the wrong org). Every child written under a Rulebook takes the RULEBOOK's organization —
+    aidream's `record_organization_id` for runs, cases, sources and ledgers, and the capture-plan
+    reminders send it via `scopeOverrides` (`capture-plan/service.ts`, when the person is a
+    member). A new Rulebook-scoped write that reads the selected organization is the defect, not a
+    reason to bring a notice back. The retired `useAdoptRecordOrganization` silently wrote the
+    Rulebook's organization into the person's working organization (wall W3, 2026-09-10); opening
+    a record must never do that. Guarded by
     `components/__tests__/RulebookLaneRoute.organization.test.tsx`.
 
 20. 🚨 **A PER-PIECE RULE IS EVIDENCE, NOT A QUESTION — `standing: "evidence"`.** On 2026-09-12
@@ -477,6 +479,8 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   two ways.
 
 ## Change Log
+
+- 2026-09-26 — Claude (Opus): **The Rulebook doors lost the organization switch offer** (Arman's ruling: an org notice only where a mistake is possible). `RulebookLaneRoute` / `RulebookDetailPage` no longer render it; the capture-plan reminders — the one Rulebook child the server still filed under the request's organization — now carry the Rulebook's organization via `scopeOverrides`. Rule 19 rewritten.
 
 - 2026-09-22 — Claude (Opus): **Two Rulebooks with one name are told apart, and
   the sentence that says so survives the navigation** (jobs-bar cold-walk-21,

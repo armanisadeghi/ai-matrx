@@ -1,6 +1,6 @@
 /**
  * THE PERSON, NOT THE ORG (Arman, 2026-09-23) — A LANE NEVER MOVES THE
- * PERSON'S WORKING ORGANIZATION, AND OFFERS THE SWITCH INSTEAD.
+ * PERSON'S WORKING ORGANIZATION, AND NEVER WARNS ABOUT IT.
  *
  * What was live: `useAdoptRecordOrganization` (wall W3, 2026-09-10) wrote the
  * Rulebook's organization into the GLOBAL selection whenever none was selected,
@@ -8,11 +8,14 @@
  * page in the app worked in. And the lane held its body behind "Getting your
  * workspace ready…" until it did.
  *
- * The law: the lane opens whatever is selected (or nothing), never writes the
- * selection, and when the Rulebook lives elsewhere it says so with a one-click
- * "Switch to <org>" (`RecordOrganizationSwitchOffer`). Only transport is
- * stubbed: the Rulebook read, the memberships read, and the presentational
- * shell.
+ * The law: the lane opens whatever is selected (or nothing) and never writes
+ * the selection. It also shows NO organization notice (Arman, 2026-09-26: "The
+ * Org notice should only be shown where a user might be unintentionally doing
+ * something under the wrong org"): every child a lane writes takes the
+ * Rulebook's own organization (aidream `record_organization_id`, and
+ * `scopeOverrides` on the capture-plan reminders), so none can be misfiled.
+ * Only transport is stubbed: the Rulebook read, the memberships read, and the
+ * presentational shell.
  *
  * Run it against the pre-fix `RulebookLaneRoute` and the first test fails at
  * `appContext.organization_id` — it becomes the Rulebook's, which is the defect.
@@ -133,7 +136,7 @@ async function renderLane() {
   });
 }
 
-it("never writes the Rulebook's organization into the selection when none is selected — it offers the switch", async () => {
+it("never writes the Rulebook's organization into the selection when none is selected — and shows no organization notice", async () => {
   getRulebook.mockResolvedValue(rulebookRow(ORG_ID));
   memberships = [{ id: ORG_ID, name: "Newsroom Desk" }];
 
@@ -145,18 +148,13 @@ it("never writes the Rulebook's organization into the selection when none is sel
   expect(toastInfo).not.toHaveBeenCalled();
   // The lane opens at once — no "Getting your workspace ready…" hold.
   expect(container.textContent).toContain("lane body");
-  expect(container.textContent).toContain("This Rulebook is in Newsroom Desk");
-
-  // The switch is the person's own click, and it is exactly one.
-  const button = [...container.querySelectorAll("button")].find((b) =>
-    b.textContent?.includes("Switch to Newsroom Desk"),
-  );
-  expect(button).toBeDefined();
-  act(() => button!.click());
-  expect(store.getState().appContext.organization_id).toBe(ORG_ID);
+  // No switch offer (Arman, 2026-09-26): every child the lane writes takes the
+  // RULEBOOK's organization, so there is no way to misfile it.
+  expect(container.textContent).not.toContain("Newsroom Desk");
+  expect(container.textContent).not.toContain("Switch to");
 });
 
-it("never overwrites a workspace the Expert actively chose, and names where the Rulebook lives", async () => {
+it("never overwrites a workspace the Expert actively chose, and never warns about it", async () => {
   const chosen = "66666666-6666-4666-8666-666666666666";
   act(() => {
     store.dispatch({
@@ -175,10 +173,11 @@ it("never overwrites a workspace the Expert actively chose, and names where the 
   expect(store.getState().appContext.organization_id).toBe(chosen);
   expect(toastInfo).not.toHaveBeenCalled();
   expect(container.textContent).toContain("lane body");
-  expect(container.textContent).toContain("not the organization you are working in");
+  expect(container.textContent).not.toContain("not the organization you are working in");
+  expect(container.textContent).not.toContain("Switch to");
 });
 
-it("CONTROL: no offer when the Rulebook is already in the selected organization", async () => {
+it("CONTROL: nothing either when the Rulebook is already in the selected organization", async () => {
   act(() => {
     store.dispatch({
       type: "appContext/setOrganization",

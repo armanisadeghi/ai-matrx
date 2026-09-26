@@ -136,6 +136,14 @@ export async function reconcileReminders(
   args: {
   rulebookId: string;
   rulebookName: string;
+  /**
+   * The RULEBOOK's organization when the person is a member of it — the
+   * reminder is filed there, never under whichever organization happens to be
+   * selected (the server files it under the request's organization). Null for
+   * a Rulebook shared in from outside: there is no membership to act in, and
+   * the reminder falls to the person's own working organization.
+   */
+  organizationId: string | null;
   planId: string;
   sessions: readonly PlanSession[];
   channel: string;
@@ -168,7 +176,14 @@ export async function reconcileReminders(
   try {
     // 🚨 `callApi` resolves to `{ data, error }`, never the body itself.
     const response = await store.dispatch(
-      callApi({ path: REMINDER_PATH, method: "POST", body: body as never }),
+      callApi({
+        path: REMINDER_PATH,
+        method: "POST",
+        body: body as never,
+        ...(args.organizationId
+          ? { scopeOverrides: { organization_id: args.organizationId } }
+          : {}),
+      }),
     );
     const failed = (response as { error?: { message?: string } }).error;
     if (failed) {

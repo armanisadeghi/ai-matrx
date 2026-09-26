@@ -13,9 +13,10 @@
 // organization". Access is decided by the PERSON, never by the selection
 // (common-docs/policies/organization-is-the-container.md rule 5): the door
 // finds the document by its id alone and answers which organization it lives
-// in. The page opens it, names that organization, and offers the switch to a
-// member. The store switch is read for the DOCUMENT'S organization, not the
-// selected one.
+// in. The page opens it and names that organization in its "Made … in" line.
+// It offers no organization switch (Arman, 2026-09-26): the document is frozen
+// and read-only here, so nothing on this page can land in the wrong one. The
+// store switch is read for the DOCUMENT'S organization, not the selected one.
 //
 // IT OPENS IN `RichDocument`, the platform's ONE rich document, so print and
 // save-as-PDF come with it and this page never grows a second renderer that
@@ -42,7 +43,6 @@ import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { RecordOrganizationSwitchOffer } from "@/features/organizations/components/RecordOrganizationSwitchOffer";
 import { createClient } from "@/utils/supabase/client";
 import { recordsDataSource } from "@ai-matrx/records-ui";
 
@@ -136,14 +136,6 @@ export default function RenderedDocumentRoute({
                     <UnifiedDataSwitchNotice gate={campaign} what="Documents" />
                 ) : (
                     <div className="mx-auto max-w-3xl space-y-3">
-                        {/* THE ONE SWITCH OFFER — never a silent change of the
-                            person's working organization. */}
-                        <RecordOrganizationSwitchOffer
-                            organizationId={document.organization_id}
-                            organizationName={document.organization_name}
-                            isMember={document.viewer_is_member}
-                            what="document"
-                        />
                         <p className="text-xs text-muted-foreground">
                             Made {new Date(document.rendered_at).toLocaleString()} in{" "}
                             {organizationName} from version {document.document_version} of its

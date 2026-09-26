@@ -51,7 +51,6 @@ import {
   useSurfaceWriteHandlers,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/masterwork-rulebook.manifest";
-import { RecordOrganizationSwitchOffer } from "@/features/organizations/components/RecordOrganizationSwitchOffer";
 import { isBlankSlateInterview, subscribeBlankSlate } from "@/features/masterwork/record/blankSlateLane";
 import {
   buildRulebookSurfaceScope,
@@ -433,13 +432,9 @@ function RulebookLaneRouteInstance({
       <div className={shellClass}>
         {/* THE PERSON, NOT THE ORG (2026-09-23): the lane opens whatever
             organization is selected, and never moves the selection itself.
-            When the Rulebook lives elsewhere it says so and offers the switch —
-            doing things (the plan, the build) still happens in an organization. */}
-        <RecordOrganizationSwitchOffer
-          organizationId={rulebook.organization_id}
-          what="Rulebook"
-          className="mx-auto mb-3 w-full max-w-3xl shrink-0"
-        />
+            No organization notice either (Arman, 2026-09-26): every child a
+            lane writes takes the RULEBOOK's organization, so nothing here can
+            be misfiled under the selected one. */}
         {body === "fill" ? (
           <div className="mx-auto flex h-full w-full min-h-0 max-w-3xl flex-1 flex-col overflow-hidden">
             {children({ rulebook, canEdit, setRulebook, reload })}

@@ -90,11 +90,6 @@ jest.mock("next/navigation", () => ({
     useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
     useSearchParams: () => new URLSearchParams(),
 }));
-// The switch offer has its own suite; here it would need the auth slice.
-jest.mock("@/features/organizations/components/RecordOrganizationSwitchOffer", () => ({
-    __esModule: true,
-    RecordOrganizationSwitchOffer: () => null,
-}));
 jest.mock("../hooks/useActionRegistry", () => ({
     __esModule: true,
     useActionRegistry: () => ({ actions: [], error: null, remedy: null, reload: jest.fn() }),

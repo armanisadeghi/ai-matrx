@@ -22,7 +22,6 @@ import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import { toast } from "@/lib/toast";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { RecordOrganizationSwitchOffer } from "@/features/organizations/components/RecordOrganizationSwitchOffer";
 
 import { fetchWorkflowDefinition } from "../../surface/service";
 import type { WorkflowDefinitionLike } from "../../trigger-points";
@@ -36,9 +35,6 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface LoadedWorkflow {
   id: string;
   name: string;
-  /** The workflow's OWN organization — a new schedule or address should live
-   *  beside it, so the switch offer names this, never the selected org. */
-  organizationId: string;
   definition: WorkflowDefinitionLike;
 }
 
@@ -87,7 +83,6 @@ export function WorkflowTriggersPage({
         setWorkflow({
           id: loaded.id,
           name: loaded.name,
-          organizationId: loaded.organizationId,
           definition: loaded.definition,
         });
       })
@@ -173,15 +168,10 @@ export function WorkflowTriggersPage({
           </p>
         </div>
 
-        {/* Setting one up, or "Try it now", lands a trigger and its runs in an
-            organization. The workflow always opens; when it lives somewhere
-            other than the selected organization (or none is selected), the
-            one offer names ITS organization and switches on one click. */}
-        <RecordOrganizationSwitchOffer
-          organizationId={workflow.organizationId}
-          what="workflow"
-        />
-
+        {/* No organization notice (Arman, 2026-09-26): a new schedule or
+            address, and every run it fires, is stamped server-side with the
+            WORKFLOW's organization (`organization_of_parent` in aidream's
+            workflow_triggers router) — the selection cannot misfile it. */}
         {freshSecret ? (
           <div className="rounded-xl border border-amber-500/50 bg-amber-500/5 p-3">
             <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">

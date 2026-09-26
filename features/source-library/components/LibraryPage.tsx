@@ -26,7 +26,6 @@ import { CircleAlert, RefreshCw } from "lucide-react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { RecordOrganizationSwitchOffer } from "@/features/organizations/components/RecordOrganizationSwitchOffer";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { Button } from "@/components/ui/button";
@@ -420,13 +419,6 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                 config={config}
                 notice={
                     <div className="space-y-3 pb-3">
-                        {/* THE PERSON, NOT THE ORG (2026-09-23): the Library opens
-                            whatever organization is selected; syncing and running
-                            Actions happen in one, so name it and offer the switch. */}
-                        <RecordOrganizationSwitchOffer
-                            organizationId={library?.organization_id}
-                            what="Library"
-                        />
                         {loadError && (
                             <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
                                 <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />

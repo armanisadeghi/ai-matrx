@@ -46,10 +46,6 @@ import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { RecordOrganizationSwitchOffer } from "@/features/organizations/components/RecordOrganizationSwitchOffer";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   InlineQueryError,
@@ -370,14 +366,7 @@ export interface BrandChannelPanelProps {
 }
 
 export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPanelProps) {
-  const organizationId = useAppSelector(selectActiveOrganizationId);
   const userId = useAppSelector(selectUserId);
-  // 🚨 "NO ORGANIZATION SELECTED" IS AN ANSWER, NOT AN ERROR TOAST. Every read
-  // and the refresh carry an explicit organization (`requireOrganizationContext`),
-  // so without one this panel can do nothing — and a person is owed the reason
-  // and the way out, not a red box saying a call failed
-  // (`pnpm check:organization-context`, the org-refusal-honesty lane).
-  const { organizationState } = useOrganizationRequired();
   const [lane, setLane] = useState<ChannelAnalyticsLane>("channel");
   const [refreshing, setRefreshing] = useState(false);
 
@@ -410,8 +399,9 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
   // "The permission is to the person, not the org"). The mirrored videos and
   // analytics live in the brand's own organization; reading them in whichever
   // organization happens to be selected showed an empty channel (or nothing
-  // at all with none selected). The refresh — an action — still happens in the
-  // selected organization, and the offer below says when that is elsewhere.
+  // at all with none selected). The REFRESH carries it too (2026-09-26): the
+  // mirrored rows it writes belong to the brand, so the selected organization
+  // plays no part in this panel and there is no organization mistake to warn about.
   const brandOrganizationId = bound?.organizationId ?? null;
 
   const videos = useQuery({
@@ -478,7 +468,7 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
     ) ?? null;
 
   async function runRefresh(): Promise<void> {
-    if (!bound || !organizationId) return;
+    if (!bound || !brandOrganizationId) return;
     const ok = await confirm({
       title: "Refresh this channel from YouTube",
       description:
@@ -493,7 +483,7 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
     setRefreshing(true);
     try {
       const result = await refreshYouTubeChannel({
-        organizationId,
+        organizationId: brandOrganizationId,
         connectionId: bound.connectionId,
         channelId: bound.channelId,
         startDate: isoDay(
@@ -512,11 +502,6 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
     }
   }
 
-  // Only the REFRESH (an action) needs a selected organization; reading the
-  // channel never does.
-  const organizationMissing =
-    organizationState === "required" || organizationState === "unavailable";
-
   const body = (
     <div className="flex min-w-0 flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -524,7 +509,7 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
           <MonitorPlay className="h-4 w-4 text-muted-foreground" aria-hidden />
           YouTube channel
         </h2>
-        {bound && organizationId ? (
+        {bound && brandOrganizationId ? (
           <Button
             size="sm"
             variant="outline"
@@ -541,20 +526,6 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
         ) : null}
       </div>
 
-      {/* Reading the channel never needs a selected organization; the refresh
-          does. When the brand lives elsewhere, or none is selected, say so and
-          offer the one-click switch. */}
-      <RecordOrganizationSwitchOffer
-        organizationId={brandOrganizationId}
-        what="client"
-      />
-      {organizationMissing && organizationState === "unavailable" ? (
-        <OrganizationContextNotice
-          compact
-          state={organizationState}
-          what="Refreshing this client's YouTube channel"
-        />
-      ) : null}
       {binding.isLoading ? (
         <LoadingSurface label="Looking for this client's YouTube channel…" />
       ) : binding.isError ? (
