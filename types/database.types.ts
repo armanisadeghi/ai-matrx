@@ -25243,7 +25243,7 @@ export type Database = {
           name: string
           organization_id: string
           output_schema: Json
-          owner_id: string
+          owner_id?: string
           processed_document_id?: string | null
           rag_boost?: number | null
           scope_pages?: number[] | null
@@ -25758,7 +25758,7 @@ export type Database = {
           organization_id: string
           origin_client?: string | null
           original_file_id?: string | null
-          owner_id: string
+          owner_id?: string
           params_hash?: string | null
           parent_processed_id?: string | null
           rag_boost?: number
@@ -86759,7 +86759,7 @@ export type Database = {
           organization_id: string
           overlap_next_chars?: number | null
           overlap_previous_chars?: number | null
-          owner_id: string
+          owner_id?: string
           page_numbers?: number[] | null
           page_spans?: Json | null
           parent_chunk_id?: string | null
