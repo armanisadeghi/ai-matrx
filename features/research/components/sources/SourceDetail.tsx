@@ -80,6 +80,7 @@ import { SourceTypeIcon } from "../shared/SourceTypeIcon";
 import { OriginBadge } from "../shared/OriginBadge";
 import { getSourceNavOrder } from "../../utils/sourceNavOrder";
 import { ContentViewer } from "./ContentViewer";
+import { runResearchAction } from "../../utils/researchAction";
 import { PasteContentModal } from "./PasteContentModal";
 import { AnalyzeCurationDialog } from "./AnalyzeCurationDialog";
 import { AnalysisCard } from "../analysis/AnalysisCard";
@@ -116,6 +117,7 @@ import {
   sourceTypeFromDb,
   stringArrayFromJson,
 } from "../../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function formatPageAge(pageAge: string | null): string {
   if (!pageAge) return "—";
@@ -855,7 +857,12 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
 
   const handleScrape = useCallback(async () => {
     if (!typedSource || scrapeStream.isStreaming) return;
-    const response = await api.scrapeSource(topicId, sourceId);
+    // Asks for a workspace first (the platform picker); a refusal is said out
+    // loud instead of an unhandled rejection behind a button that did nothing.
+    const response = await runResearchAction("Couldn't re-read this page", () =>
+      api.scrapeSource(topicId, sourceId),
+    );
+    if (!response) return;
     scrapeStream.startStream(response, {
       onData: (payload: ResearchDataEvent) => {
         // rescrape_complete = single-source rescrape endpoint result
@@ -1739,6 +1746,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
               >
                 Try again
               </button>
+              <ErrorAlchemyMenu error={contentError} />
             </div>
           ) : null}
           {currentContent && !contentSourceId ? (

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { useResearchApi } from "../../hooks/useResearchApi";
+import { runResearchAction } from "../../utils/researchAction";
 
 interface PasteContentModalProps {
   open: boolean;
@@ -45,10 +46,19 @@ export function PasteContentModal({
     if (!content.trim()) return;
     setSaving(true);
     try {
-      await api.pasteContent(topicId, sourceId, {
-        content,
-        content_type: contentType,
-      });
+      // Asks for a workspace first (the platform picker); every refusal is
+      // said out loud — never a dead button and a console log.
+      const saved = await runResearchAction(
+        "Couldn't save pasted content",
+        async () => {
+          await api.pasteContent(topicId, sourceId, {
+            content,
+            content_type: contentType,
+          });
+          return true;
+        },
+      );
+      if (!saved) return;
       setContent("");
       onSaved();
     } finally {
