@@ -15,7 +15,7 @@
 -- widened mode / apply_policy checks ('stream', 'queued').
 --
 -- REHEARSAL PLAN (the chair runs it; nothing here applies itself — the draft line holds it):
---   1. pnpm db:rehearse migrations/alc14_1_ui_surface_declare_columns.sql --target clone
+--   1. pnpm db:rehearse migrations/alchemy_declare_columns_and_item_key.sql --target clone
 --      (up → inverse → up; read the per-statement pg_locks sample: expect ACCESS EXCLUSIVE on
 --       ui_surface_value / ui_surface_write_target / ui_surface_client_tool / ui_surface only,
 --       each held for milliseconds).
@@ -23,10 +23,10 @@
 --      new key and confirm 0 row changes (only updated_at), then the old emitter
 --      (scripts/emit-surface-sync-sql.ts output) against the twin: also 0 changes.
 --   3. Remove the draft line, apply in the 1–4 AM PT window:
---      pnpm db:apply migrations/alc14_1_ui_surface_declare_columns.sql
+--      pnpm db:apply migrations/alchemy_declare_columns_and_item_key.sql
 --   4. pnpm db-types; flip SYNC_SCHEMA.itemType/valueContract/contentHash in
 --      features/surfaces/services/surface-sync-schema.ts.
--- Inverse: migrations/inverse/alc14_1_ui_surface_declare_columns_down.sql
+-- Inverse: migrations/inverse/alchemy_declare_columns_and_item_key_down.sql
 
 -- ── ui_surface_value: sensitivity, kind, live slot, role, item scope ───────────
 alter table ui.ui_surface_value

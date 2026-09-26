@@ -34,7 +34,7 @@ import { resolveSurfaceUrlPattern } from "@/features/surfaces/utils/surface-url-
 
 /**
  * Which `ui` schema generation is live. Flip each flag in the SAME commit that
- * follows the chair's apply of `migrations/alc14_1_ui_surface_declare_columns.sql`
+ * follows the chair's apply of `migrations/alchemy_declare_columns_and_item_key.sql`
  * (itemType also needs re-key step 2). Until then the sync never writes a
  * column — or upserts on a key — the database does not have.
  */

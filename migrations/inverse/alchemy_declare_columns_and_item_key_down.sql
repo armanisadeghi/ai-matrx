@@ -1,4 +1,4 @@
--- chair-step: the inverse of migrations/alc14_1_ui_surface_declare_columns.sql (Matrx Alchemy ALC-14 re-key step 1)
+-- chair-step: the inverse of migrations/alchemy_declare_columns_and_item_key.sql (Matrx Alchemy ALC-14 re-key step 1)
 --   — drops the item-type table, the new key and its twin indexes, the added columns and checks, and
 --   restores the original mode / apply_policy checks. Refuses (by the restored CHECKs) if any row was
 --   written with mode 'stream' or apply_policy 'queued' in between — delete those first, on purpose.

@@ -1,4 +1,4 @@
--- chair-step: the inverse of migrations/alc14_2_ui_surface_rekey_swap_primary_key.sql (ALC-14 re-key step 2)
+-- chair-step: the inverse of migrations/alchemy_item_key_swap_primary_key.sql (ALC-14 re-key step 2)
 --   — puts the primary keys back on (surface_name, name) using the step-1 twin indexes, and
 --   re-creates the (surface_name, item_type, name) unique indexes step 2 consumed. Refuses if any
 --   row carries a non-empty item_type that shares a screen value's name (the twin forbids it anyway).

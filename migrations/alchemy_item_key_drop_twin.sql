@@ -9,6 +9,6 @@
 --   rg -n "surface_name, ?name\)|\"surface_name,name\"" --glob '!migrations/**' --glob '!**/node_modules/**'
 -- Only after this file may the first item type be declared: the twin would reject an item value
 -- that shares a screen value's name.
--- Inverse: migrations/inverse/alc14_3_ui_surface_rekey_drop_twin_down.sql
+-- Inverse: migrations/inverse/alchemy_item_key_drop_twin_down.sql
 drop index if exists ui.ui_surface_value_screen_key_twin;
 drop index if exists ui.ui_surface_write_target_screen_key_twin;
