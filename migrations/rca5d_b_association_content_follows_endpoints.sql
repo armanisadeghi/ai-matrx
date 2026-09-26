@@ -1,6 +1,6 @@
 -- RC-A5d(b) — AN EDGE WHOSE LABEL OR METADATA CARRIES AN ENDPOINT'S CONTENT FOLLOWS BOTH ENDS,
 -- EXACTLY AS A CONTENT PAYLOAD DOES (RC-A5).
--- chair-step: widens the RC-A5 restrictive SELECT policy on platform.associations from content payloads to content labels and metadata, renamed assoc_content_follows_endpoints; takes the supautils 23-relation policy lock; applied only when named, right after rca5d_a.
+-- chair-step: widens the RC-A5 restrictive SELECT policy on platform.associations (assoc_payload_follows_endpoints; the name is kept so every record of it stays true) from content payloads to content labels and metadata; takes the supautils 23-relation policy lock; applied only when named, right after rca5d_a.
 -- Design: common-docs/projects/rich-content-unification/ASSOCIATION-VISIBILITY.md §10. Register row RC-A5d.
 --
 -- A row is STRUCTURE-ONLY — and keeps today's organization rule — when all three hold:
@@ -18,9 +18,7 @@
 
 set local lock_timeout = '2s';
 
-alter policy assoc_payload_follows_endpoints on platform.associations rename to assoc_content_follows_endpoints;
-
-alter policy assoc_content_follows_endpoints on platform.associations
+alter policy assoc_payload_follows_endpoints on platform.associations
   using (
     (select public.is_platform_admin())
     or (

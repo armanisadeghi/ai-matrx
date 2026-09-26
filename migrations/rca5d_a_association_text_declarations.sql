@@ -53,7 +53,7 @@ as $$
 $$;
 
 comment on function platform.edge_structural_metadata_keys() is
-  'RC-A5d. The platform.associations.metadata keys that are structure (identifiers, flags, enums, counts, positions, timestamps). A row whose metadata carries any other key is treated as carrying endpoint content and is readable only by someone who can read both ends (policy assoc_content_follows_endpoints). Add a key only with its reason; never add one that can hold a title, name, quote or body text.';
+  'RC-A5d. The platform.associations.metadata keys that are structure (identifiers, flags, enums, counts, positions, timestamps). A row whose metadata carries any other key is treated as carrying endpoint content and is readable only by someone who can read both ends (policy assoc_payload_follows_endpoints, widened by rca5d_b). Add a key only with its reason; never add one that can hold a title, name, quote or body text.';
 
 create or replace function platform.edge_structural_labels()
 returns jsonb
@@ -69,7 +69,7 @@ as $$
 $$;
 
 comment on function platform.edge_structural_labels() is
-  'RC-A5d. Map of association pair -> that pair''s own label (platform.association_types.label). An edge label equal to it is structure; any other label is treated as endpoint content by policy assoc_content_follows_endpoints. Returns registry vocabulary only, no row of any tenant.';
+  'RC-A5d. Map of association pair -> that pair''s own label (platform.association_types.label). An edge label equal to it is structure; any other label is treated as endpoint content by policy assoc_payload_follows_endpoints (rca5d_b). Returns registry vocabulary only, no row of any tenant.';
 
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, declared_by, reason, signed_in_callers, anonymous_callers)

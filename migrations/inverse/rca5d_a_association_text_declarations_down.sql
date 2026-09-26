@@ -4,8 +4,8 @@ set local lock_timeout = '2s';
 
 do $$
 begin
-  if exists (select 1 from pg_policy where polrelid = 'platform.associations'::regclass
-                and polname = 'assoc_content_follows_endpoints') then
+  if exists (select 1 from pg_policies where schemaname = 'platform' and tablename = 'associations'
+                and qual like '%edge_structural_labels%') then
     raise exception 'rca5d_a inverse: the RC-A5d(b) gate still reads these declarations; run migrations/inverse/rca5d_b_association_content_follows_endpoints_down.sql first';
   end if;
 end $$;

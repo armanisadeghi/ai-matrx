@@ -3,8 +3,6 @@
 
 set local lock_timeout = '2s';
 
-alter policy assoc_content_follows_endpoints on platform.associations rename to assoc_payload_follows_endpoints;
-
 alter policy assoc_payload_follows_endpoints on platform.associations
   using (
     (select public.is_platform_admin())
