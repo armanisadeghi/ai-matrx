@@ -34,11 +34,9 @@ import {
   selectRunCostTotal,
   selectRunError,
   selectRunStatus,
-  selectRunState,
   selectRunStickyFacts,
 } from "../../redux/workflow-runs.selectors";
-import { HeldStepCard } from "@/features/record-change-approvals/HeldStepCard";
-import { heldWriteOfStep } from "@/features/record-change-approvals/recordChangeApproval";
+import { RunHeldSteps } from "./RunHeldSteps";
 import { explainRunFailure } from "../../run-failure-explanation";
 import {
   workflowFailureAgentInput,
@@ -79,14 +77,6 @@ export function RunFailureCard({
   const phases = useAppSelector(selectNodeAggregatePhases(runId));
   const costUsd = useAppSelector(selectRunCostTotal(runId));
   const [showTechnical, setShowTechnical] = useState(false);
-  // The steps whose change is HELD for a person, each with the store's own wait —
-  // the run page draws the same approval card the chat and the table's page draw,
-  // right under the sentence that says it is waiting (lane HELD-WRITE-TAILS).
-  const runState = useAppSelector(selectRunState(runId));
-  const heldSteps = Object.values(runState?.nodes ?? {}).flatMap((invocation) => {
-    const wait = heldWriteOfStep(invocation);
-    return wait ? [{ key: invocation.invocationKey, wait }] : [];
-  });
 
   if (status === null || !STOPPED_STATUSES.has(status)) return null;
 
@@ -244,18 +234,9 @@ export function RunFailureCard({
             ) : null}
           </div>
 
-          {held && heldSteps.length > 0 ? (
-            <div className="mt-3 space-y-3">
-              {heldSteps.map(({ key, wait }) => (
-                <HeldStepCard
-                  key={key}
-                  wait={wait}
-                  identity={`${runId}:${key}`}
-                  stopped
-                />
-              ))}
-            </div>
-          ) : null}
+          {/* The held steps' approval cards, right under the sentence that
+              says the run is waiting on them (lane HELD-WRITE-TAILS). */}
+          {held ? <RunHeldSteps runId={runId} className="mt-3 space-y-3" /> : null}
 
           {showTechnical && explanation.technical ? (
             <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted/70 p-2.5 text-[11px] leading-relaxed text-muted-foreground">

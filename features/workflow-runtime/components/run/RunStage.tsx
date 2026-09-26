@@ -91,6 +91,7 @@ import { MASTERWORK_RUN_SUBJECT_TYPE } from "@/features/masterwork/review/signat
 
 import { RunDeliverables } from "./RunDeliverables";
 import { RunFailureCard } from "./RunFailureCard";
+import { RunHeldSteps } from "./RunHeldSteps";
 import { RunHero } from "./RunHero";
 import { RunJourney } from "./RunJourney";
 import {
@@ -296,6 +297,10 @@ export function RunStage({
         whatItRan={workflowName}
         onRetry={onRetry}
       />
+      {/* A step that FINISHED with its change held for a person (a new table
+          under "Always ask"): the run reads Done, so the decision is drawn
+          here, never buried in the result's JSON. */}
+      <RunHeldSteps runId={runId} finishedOnly />
       {/* THE QUESTION (SPEC §4.1). A `panel` question sits here, in the run's
           own column of cards; a `showcase` question is STAGED below instead —
           `placement` is what keeps it from being drawn in both places. */}
