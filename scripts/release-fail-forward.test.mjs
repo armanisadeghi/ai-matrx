@@ -129,7 +129,10 @@ test("everything else runs after the build started, detached, into the log", () 
   const runs = after.match(/node "\$SCRIPT_DIR\/checks\/run\.mjs"[^\n]*/g) ?? [];
   assert.ok(runs.length > 0 && runs.every((line) => line.includes("--skip-live-db")), `a runner call without --skip-live-db: ${runs.join(" | ")}`);
   assert.match(after, /release_outcome_report "\$TARGET" "\$RELEASE_COMMIT_MSG" "\$RELEASE_SHA"/);
-  assert.match(after, /MATRX_REPO_ROOT="\$REPO_ROOT" uv run --frozen python "\$DISPATCHER" --findings "\$CHECKS_JSON"/);
+  // No fixer agent is started from a release (2026-09-26): the old dispatcher ran agents with
+  // approvals bypassed. Findings reach agents through the in-app path (checks-run-in-the-app).
+  const liveLines = code.split("\n").filter((line) => !line.trimStart().startsWith("#"));
+  assert.ok(!liveLines.some((line) => /dispatch_fixer|\$DISPATCHER/.test(line)), "release.sh starts the fixer dispatcher");
   assert.match(after, /\nexit 0\n$/);
 });
 

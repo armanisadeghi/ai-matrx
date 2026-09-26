@@ -122,11 +122,12 @@ log, holding its own lock (`--with-checks` runs it in the foreground instead;
   title (≤100), count, fingerprint, remedy, detail` — the exact shape aidream's
   `scripts/checks/run.py` writes. Ship-path findings (`findings-ship-*.jsonl`)
   and the rollout finding are appended to the same file.
-- **Fixers** — aidream's `scripts/checks/dispatch_fixer.py`, called with
-  `MATRX_REPO_ROOT=<this checkout>`: one agent per category with a NEW
-  fingerprint, a finding already open starts nothing. Its ledger, settings and
-  logs live here (`.matrx/fixer-ledger.json`, `.matrx/fixer-dispatch.json`,
-  `tmp/fixer-logs/`, all gitignored). One dispatcher serves both repos.
+- **Fixers** — none from a release (2026-09-26). The release used to call
+  aidream's `scripts/checks/dispatch_fixer.py`, which launched CLI agents with
+  approvals bypassed (the 2026-09-21 incident-2 cause). Findings now reach
+  agents through the in-app path in
+  `common-docs/projects/checks-run-in-the-app/PLAN.md`;
+  `test:release-fail-forward` fails if a release calls the dispatcher again.
 
 ## Commands
 

@@ -700,22 +700,9 @@ fi
 [[ -s "$ROLLOUT_JSON" ]] && cat "$ROLLOUT_JSON" >> "$CHECKS_JSON"
 rm -f "$ROLLOUT_JSON"
 
-# ── One fixer agent per category with a NEW finding (aidream's dispatcher) ───
-# One dispatcher serves both repos: MATRX_REPO_ROOT points it at this checkout,
-# so its ledger, settings and agent logs live here (.matrx/fixer-*.json,
-# tmp/fixer-logs/) and its agents read THIS repo's CLAUDE.md.
-DISPATCHER="$AIDREAM_DIR/scripts/checks/dispatch_fixer.py"
-# A crashed runner measured nothing: dispatching on its partial file would let the
-# dispatcher resolve findings it never re-checked.
-if $RUNNER_OK && [[ -s "$CHECKS_JSON" && "$(grep -c '"fingerprint"' "$CHECKS_JSON")" -gt 0 ]]; then
-    if [[ -f "$DISPATCHER" ]]; then
-        if command -v uv >/dev/null 2>&1; then
-            ( cd "$AIDREAM_DIR" && MATRX_REPO_ROOT="$REPO_ROOT" uv run --frozen python "$DISPATCHER" --findings "$CHECKS_JSON" )
-        else
-            MATRX_REPO_ROOT="$REPO_ROOT" python3 "$DISPATCHER" --findings "$CHECKS_JSON"
-        fi || warn "The fixer dispatcher crashed — findings are in $CHECKS_JSON; nothing was dispatched."
-    else
-        warn "No fixer dispatcher at $DISPATCHER — findings are in $CHECKS_JSON; nothing was dispatched."
-    fi
-fi
+# ── No fixer agent is started from a release (2026-09-26) ────────────────────
+# The old dispatcher (aidream scripts/checks/dispatch_fixer.py) launched CLI
+# agents with approvals bypassed — the 2026-09-21 incident-2 cause — and only
+# aidream's scripts/checks/PAUSED held it back here. Findings reach agents
+# through the in-app path in common-docs/projects/checks-run-in-the-app/PLAN.md.
 exit 0
