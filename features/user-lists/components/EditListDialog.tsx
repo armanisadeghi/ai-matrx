@@ -16,6 +16,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { updateListAction } from "../actions/list-actions";
+import { guardedSave } from "@/lib/save/guardedSave";
 import { useToastManager } from "@/hooks/useToastManager";
 import type { UserListWithItems } from "../types";
 
@@ -59,13 +60,20 @@ function EditListForm({
     if (!name.trim()) return;
     startTransition(async () => {
       try {
-        await updateListAction({
-          list_id: list.list_id,
-          list_name: name.trim(),
-          description: description.trim() || undefined,
-          is_public: isPublic,
-          public_read: publicRead,
-        });
+        await guardedSave(
+          () =>
+            updateListAction({
+              list_id: list.list_id,
+              list_name: name.trim(),
+              description: description.trim() || undefined,
+              is_public: isPublic,
+              public_read: publicRead,
+            }),
+          {
+            what: "the list",
+            onRetry: () => handleSubmit(e),
+          },
+        );
         toast.success("List updated");
         onSuccess();
       } catch (err) {

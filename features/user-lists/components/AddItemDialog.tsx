@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Loader2 } from "lucide-react";
 import { addItemAction } from "../actions/list-actions";
+import { guardedSave } from "@/lib/save/guardedSave";
 import { useToastManager } from "@/hooks/useToastManager";
 
 interface AddItemDialogProps {
@@ -56,13 +57,18 @@ function AddItemForm({
     if (!label.trim()) return;
     startTransition(async () => {
       try {
-        await addItemAction({
-          listId,
-          label: label.trim(),
-          description: description.trim() || undefined,
-          helpText: helpText.trim() || undefined,
-          groupName: groupName.trim() || undefined,
-        });
+        await guardedSave(
+          () =>
+            addItemAction({
+              listId,
+              label: label.trim(),
+              description: description.trim() || undefined,
+              helpText: helpText.trim() || undefined,
+              groupName: groupName.trim() || undefined,
+            }),
+
+          { what: "the new item" },
+        );
         toast.success(`Item "${label}" added`);
         onSuccess();
       } catch (err) {

@@ -18,6 +18,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { createListAction } from "../actions/list-actions";
+import { guardedSave } from "@/lib/save/guardedSave";
 import { useToastManager } from "@/hooks/useToastManager";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
@@ -51,13 +52,18 @@ function CreateListForm({
     const organization_id = organizationId;
     startTransition(async () => {
       try {
-        const result = await createListAction({
-          list_name: name.trim(),
-          description: description.trim() || undefined,
-          is_public: isPublic,
-          public_read: true,
-          organization_id,
-        });
+        const result = await guardedSave(
+          () =>
+            createListAction({
+              list_name: name.trim(),
+              description: description.trim() || undefined,
+              is_public: isPublic,
+              public_read: true,
+              organization_id,
+            }),
+
+          { what: "the new list" },
+        );
         toast.success(`"${name}" created`);
         onSuccess(result.list_id);
       } catch (err) {
@@ -68,7 +74,10 @@ function CreateListForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-0.5">
-      <OrganizationContextNotice state={organizationState} what="Creating a list" />
+      <OrganizationContextNotice
+        state={organizationState}
+        what="Creating a list"
+      />
       <div className="space-y-1.5">
         <Label htmlFor="list-name" className="text-sm font-medium">
           List name <span className="text-destructive">*</span>

@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Loader2 } from "lucide-react";
 import { updateItemAction } from "../actions/list-actions";
+import { guardedSave } from "@/lib/save/guardedSave";
 import { useToastManager } from "@/hooks/useToastManager";
 import type { GroupedItem } from "../types";
 
@@ -73,14 +74,21 @@ function EditItemForm({
     if (!label.trim()) return;
     startTransition(async () => {
       try {
-        await updateItemAction({
-          itemId: item.id,
-          listId,
-          label: label.trim(),
-          description: description.trim() || null,
-          helpText: helpText.trim() || null,
-          groupName: groupName.trim() || null,
-        });
+        await guardedSave(
+          () =>
+            updateItemAction({
+              itemId: item.id,
+              listId,
+              label: label.trim(),
+              description: description.trim() || null,
+              helpText: helpText.trim() || null,
+              groupName: groupName.trim() || null,
+            }),
+          {
+            what: "the item",
+            onRetry: () => handleSubmit(e),
+          },
+        );
         toast.success("Item updated");
         onSuccess();
       } catch (err) {
