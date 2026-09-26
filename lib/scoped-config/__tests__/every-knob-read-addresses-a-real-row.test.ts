@@ -36,6 +36,10 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { knobAddress, type KnobRef } from "../effectiveKnobs";
 import { RUN_OUTPUT_KINDS, RUN_WAIT_KNOB_FEATURE, runWaitKnobKey } from "@/lib/api/run-wait";
+import {
+  REMOTE_IMAGE_DEFAULTS,
+  REMOTE_IMAGE_KNOB_FEATURE,
+} from "@/components/rich-content/prose/remote-image-policy";
 
 const ROOT = join(__dirname, "..", "..", "..");
 const AIDREAM = process.env.AIDREAM_DIR ?? join(ROOT, "..", "aidream");
@@ -286,6 +290,9 @@ const COMPUTED_REFS: Record<string, string> = {
   "lib/api/run-wait.ts":
     "one read per output kind at `agents.run_wait` / runWaitKnobKey(kind); every kind in " +
     "RUN_OUTPUT_KINDS is proven seeded by the 'run-wait' case below",
+  "components/rich-content/prose/remote-image-policy.tsx":
+    "one read per authorship at `rich_content.remote_images` / `autoload_${authorship}`; every " +
+    "authorship in REMOTE_IMAGE_DEFAULTS is proven seeded by the 'remote images' case below",
 };
 
 describe("the knob address", () => {
@@ -345,6 +352,16 @@ describe("the census of client knob reads", () => {
     const unseeded = RUN_OUTPUT_KINDS.map((kind) => runWaitKnobKey(kind)).filter(
       (key) => !pairs.has(`${RUN_WAIT_KNOB_FEATURE} ${key}`),
     );
+    expect(unseeded).toEqual([]);
+  });
+
+  it("remote images: every authorship's autoload knob addresses a seeded row", () => {
+    // The computed `autoload_${authorship}` read is only excused because this
+    // proves it: a new authorship without its seed
+    // (migrations/rich_content_remote_image_knobs.sql) fails here by name.
+    const unseeded = (Object.keys(REMOTE_IMAGE_DEFAULTS) as string[])
+      .map((authorship) => `autoload_${authorship}`)
+      .filter((key) => !pairs.has(`${REMOTE_IMAGE_KNOB_FEATURE} ${key}`));
     expect(unseeded).toEqual([]);
   });
 
