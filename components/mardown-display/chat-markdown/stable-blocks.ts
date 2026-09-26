@@ -57,7 +57,11 @@ export function reuseUnchangedBlocks<T extends BlockLike>(
   prev: readonly T[],
   next: readonly T[],
 ): T[] {
-  if (prev.length === 0) return next as T[];
+  // 🚨 A FIXPOINT, ALWAYS: "nothing changed" returns `prev` itself — including
+  // empty-to-empty. Returning a fresh `[]` here made StandardBlocks' derived-state
+  // update fire on every render while a streamed table's healed tail was empty,
+  // and React died with "Too many re-renders" (2026-09-26).
+  if (prev.length === 0) return (next.length === 0 ? prev : next) as T[];
   const pool = new Map<string, T[]>();
   for (const b of prev) {
     const key = `${b.type}\u0001${b.content}`;
