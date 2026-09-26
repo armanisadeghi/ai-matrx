@@ -51,6 +51,10 @@ jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({
     children,
 }));
 
+// The page registers an agent-copy capture (Redux-backed); not under test here.
+jest.mock("@/components/agent-copy/page-capture/usePageCapture", () => ({ usePageCapture: () => undefined }));
+jest.mock("@/components/agent-copy/page-capture/PageCaptureButton", () => ({ PageCaptureButton: () => null }));
+
 jest.mock("@/features/scheduling/lib/admin-scheduling-scope", () => ({
   definedOnly: (value: unknown) => value,
   useAdminSchedulingScopeSlice: jest.fn(),

@@ -72,7 +72,9 @@ describe("a schedule toggle holds until the write lands", () => {
     expect(message).not.toMatch(/PATCH|\/scheduler\/tasks/);
     const words = describeWriteFailure(caught, { action: "pause this schedule", remedy: "Try again or open the schedule's activity." });
     expect(words.title).toBe("Could not pause this schedule.");
-    expect(words.description).toMatch(/refused \(500\)|server said/i);
+    expect(words.description).toMatch(/server refused|server said/i);
+    // 6d04fb6ac7: a person never reads a status code.
+    expect(words.description).not.toMatch(/\b500\b/);
     expect(`${words.title} ${words.description}`).not.toMatch(/PATCH|\/scheduler/);
   });
 });
