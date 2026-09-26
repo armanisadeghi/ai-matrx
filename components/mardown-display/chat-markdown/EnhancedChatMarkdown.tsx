@@ -14,7 +14,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { cn } from "@/styles/themes/utils";
 import { splitContentIntoBlocksV2 } from "../markdown-classification/processors/utils/content-splitter-v2";
-import { settledOneShotBlocks } from "./settle-stream-blocks";
+import { renderSettledFromRecord, settledOneShotBlocks } from "./settle-stream-blocks";
 import { expandTextBlocksInList } from "../markdown-classification/processors/utils/expand-text-blocks";
 import { RenderBlock } from "./block-registry/BlockRenderer";
 import { renderBlockToContentBlock } from "./render-block-to-content-block";
@@ -522,7 +522,24 @@ export const EnhancedChatMarkdownInternal: React.FC<
     reduxRenderBlocks && reduxRenderBlocks.length > 0
   );
 
-  const resolvedContent = requestText || content;
+  /**
+   * THE FINAL SCREEN IS THE RELOAD (RC-B3, owner: "the final screen of a
+   * streamed answer equals a reload"). Once the stream has ended and the
+   * committed record is in the store, this message renders exactly what a
+   * reload renders: the record's own parts, each text part split one-shot —
+   * never the live render blocks. Live blocks are the server's INCREMENTAL
+   * reading of a text still arriving; a late orphan reasoning closer (the one
+   * documented exception to "settled never changes") and the artifact
+   * rewrite at persist time both make that reading differ from the stored
+   * text, so a settled turn that kept rendering it differed from its own
+   * reload (verify-RC-B3 F1/F2). Decision: `renderSettledFromRecord`.
+   */
+  const settledFromRecord = renderSettledFromRecord({
+    isStreamActive: !!isStreamActive,
+    messageId,
+    recordSegmentCount: messageInterleavedContent.length,
+  });
+  const resolvedContent = settledFromRecord ? content : requestText || content;
   const currentContent = editedContent ?? resolvedContent;
 
   const hasRequestOrTaskId = requestId || taskId;
@@ -539,7 +556,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
   // run at all) falls through to the plain-content branch and renders
   // nothing, even though the slot is sitting right there.
   const hasUnifiedSpecial =
-    streamSlotStart !== undefined ||
+    !settledFromRecord &&
+    (streamSlotStart !== undefined ||
     streamSlotEnd !== undefined ||
     unifiedSlots.some(
       (s) =>
@@ -549,7 +567,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
         s.kind === "thinking" ||
         (s.kind === "render_block" &&
           blockCarriesDataNotText(renderBlocksMap[s.blockId])),
-    );
+    ));
 
   const hasDbInterleavedSpecial = messageInterleavedContent.some(
     (s) => s.type === "db_tool" || s.type === "thinking",
@@ -744,7 +762,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
     // THE FINAL PASS (RC-B3 ruling, 2026-09-26): once the stream completes,
     // the screen equals the one-shot reading — a late orphan reasoning closer
     // is the one case where the live accumulator's blocks differ from it.
-    if (hasReduxRenderBlocks && reduxRenderBlocks) {
+    if (!settledFromRecord && hasReduxRenderBlocks && reduxRenderBlocks) {
       const settled = settledOneShotBlocks({
         isStreamActive: !!isStreamActive,
         blockIds: reduxRenderBlocks.map((rb) => rb.blockId),
@@ -758,7 +776,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
     // Fast path: Redux already has client-generated render blocks from the
     // StreamBlockAccumulator. Convert to RenderBlock shape and skip the
     // expensive splitContentIntoBlocksV2 entirely.
-    if (hasReduxRenderBlocks && reduxRenderBlocks) {
+    if (!settledFromRecord && hasReduxRenderBlocks && reduxRenderBlocks) {
       const clientBlocks: RenderBlock[] = reduxRenderBlocks
         .filter(
           (rb) =>
@@ -845,6 +863,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
     hasReduxRenderBlocks,
     reduxRenderBlocks,
     hiddenDecisionJsonTextBlockIds,
+    settledFromRecord,
   ]);
 
   // Handle block processing errors outside of useMemo to avoid setState during render

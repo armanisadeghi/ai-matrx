@@ -12,7 +12,7 @@
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system/utils/stream-block-accumulator";
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
-import { settledOneShotBlocks } from "../settle-stream-blocks";
+import { renderSettledFromRecord, settledOneShotBlocks } from "../settle-stream-blocks";
 
 const CLOSER_ONLY_REASONING = [
   "The backup job ran at 02:00 and the disk was 97% full, so the snapshot",
@@ -76,5 +76,28 @@ describe("the final pass after a stream completes", () => {
     expect(
       settledOneShotBlocks({ isStreamActive: false, blockIds: ["srv_1", "client_2"], content: CLOSER_ONLY_REASONING }),
     ).toBeNull();
+  });
+});
+
+describe("THE FINAL SCREEN IS THE RELOAD: a settled turn renders from its committed record (verify-RC-B3 F1/F2)", () => {
+  // /chat streams SERVER-built blocks (ids `0`, `1`, …), so the client-block
+  // final pass above never ran there and the finished answer kept the live
+  // reading while a reload split the stored text. A settled turn with its
+  // record in the store now renders the record — whatever built the live blocks.
+  test("stream ended + committed record in the store → render the record", () => {
+    expect(renderSettledFromRecord({ isStreamActive: false, messageId: "94a43534", recordSegmentCount: 1 })).toBe(true);
+  });
+  test("still streaming → live blocks", () => {
+    expect(renderSettledFromRecord({ isStreamActive: true, messageId: "94a43534", recordSegmentCount: 1 })).toBe(false);
+  });
+  test("no committed record yet (no id, or its parts not in the store) → live blocks", () => {
+    expect(renderSettledFromRecord({ isStreamActive: false, messageId: undefined, recordSegmentCount: 1 })).toBe(false);
+    expect(renderSettledFromRecord({ isStreamActive: false, messageId: "94a43534", recordSegmentCount: 0 })).toBe(false);
+  });
+  test("the record's text part, split one-shot, is the reload reading of the verifier's message", () => {
+    const stored = "I should compare this week's tonnage against last week first.\n</thinking>\n\nThis week the Harbor route collected 3.8 tons.";
+    const blocks = splitContentIntoBlocksV2(stored);
+    expect(blocks.map((b) => b.type)).toEqual(["thinking", "text"]);
+    expect(blocks[1]?.content.trim()).toBe("This week the Harbor route collected 3.8 tons.");
   });
 });

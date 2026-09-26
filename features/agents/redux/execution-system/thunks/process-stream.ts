@@ -3553,12 +3553,21 @@ export async function processStream({
             content: target.content,
           })
             .then((res) => {
-              // Intentionally do NOT mirror the rewrite into the in-memory
-              // messages slice. In-session the message renders from
-              // activeRequests (anchored by _streamRequestId), so swapping
-              // byId.content to the rewritten text would only risk remounting
-              // the live artifact and wiping its in-session state. The DB is
-              // rewritten; the next fresh load renders the `<artifact id>` by id.
+              // Mirror the rewrite into the store: a settled turn renders from
+              // its committed record (THE FINAL SCREEN IS THE RELOAD —
+              // EnhancedChatMarkdown `renderSettledFromRecord`), and a reload
+              // renders the `<artifact id>` form, so the in-session record must
+              // hold it too or the finished answer shows a table the reload
+              // shows as an artifact (verify-RC-B3 F2).
+              if (res.rewrittenContent) {
+                dispatch(
+                  updateMessageRecord({
+                    conversationId,
+                    messageId: target.messageId,
+                    patch: { content: res.rewrittenContent },
+                  }),
+                );
+              }
               if (res.errors.length > 0) {
                 console.error(
                   `[stream:${requestId.slice(0, 8)}] artifact materialization issues for ${target.messageId}:`,

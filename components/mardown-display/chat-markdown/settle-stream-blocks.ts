@@ -51,3 +51,28 @@ export function settledOneShotBlocks({
     ? oneShot
     : null;
 }
+
+export interface SettledFromRecordInput {
+  /** The stream is still arriving. */
+  isStreamActive: boolean;
+  /** The committed message this turn renders, when there is one. */
+  messageId: string | null | undefined;
+  /** How many display segments the committed record holds (0 = not in the store yet). */
+  recordSegmentCount: number;
+}
+
+/**
+ * THE FINAL SCREEN IS THE RELOAD. A turn whose stream has ended and whose
+ * committed record is in the store renders from that record — the same parts,
+ * split the same one-shot way, that a reload renders — never from the live
+ * render blocks (server- or client-built), which are an incremental reading
+ * of a text still arriving (verify-RC-B3 F1/F2). A turn with no committed
+ * record yet keeps its live blocks (and the orphan-rescue pass above).
+ */
+export function renderSettledFromRecord({
+  isStreamActive,
+  messageId,
+  recordSegmentCount,
+}: SettledFromRecordInput): boolean {
+  return !isStreamActive && !!messageId && recordSegmentCount > 0;
+}
