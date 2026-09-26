@@ -21,9 +21,22 @@ it("always wraps, on every width", () => {
   expect(tableActionRowClass(false)).toMatch(/\bmin-w-0\b/);
 });
 
+// ui-change-inventory row 9 (2026-09-26): nine labelled outline buttons wrapped
+// to two lines at chat width and five on a phone. The row is an icon toolbar:
+// labels hidden (still the accessible name + tooltip), except Save / Cancel.
+it("is a compact icon toolbar that keeps only marked labels", () => {
+  for (const mobile of [false, true]) {
+    const cls = tableActionRowClass(mobile);
+    expect(cls).toContain("[&_button:not([data-keep-label])]:text-[0px]");
+    expect(cls).toContain("[&_button:not([data-keep-label])]:h-7");
+  }
+});
+
 it.each(HOSTS)("%s uses the one row class and names its icon-only buttons", (file) => {
   const src = readFileSync(path.join(ROOT, file), "utf8");
   expect(src).toContain("tableActionRowClass(");
+  expect(src).toContain("ref={actionRowRef}");
+  expect(src.match(/data-keep-label=""/g)?.length).toBe(2);
   expect(src).not.toMatch(/isMobile \? "flex-wrap justify-start" : "justify-end"/);
   if (src.includes("<Columns3")) expect(src).toMatch(/aria-label="Choose visible columns"/);
 });

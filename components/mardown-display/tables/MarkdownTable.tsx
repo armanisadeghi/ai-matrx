@@ -48,7 +48,7 @@ import { useDoubleClickEdit } from "./editing/useDoubleClickEdit";
 import { useSpecimenMode } from "../specimen/SpecimenContext";
 import { MarkdownTableScrollArea } from "./MarkdownTableScrollArea";
 import { ChartThisButton, TableChartPanel } from "../blocks/chart/TableChart";
-import { tableActionRowClass } from "./table-action-row";
+import { tableActionRowClass, useTableActionTitles } from "./table-action-row";
 import {
   appendRow,
   appendColumn,
@@ -281,6 +281,8 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
   const [showSaveModal, setShowSaveModal] = useState(false);
   // "Chart this" — draws this table through the one chart primitive.
   const [showChart, setShowChart] = useState(false);
+  // Icon-only table action row: each button's name becomes its tooltip.
+  const actionRowRef = useTableActionTitles<HTMLDivElement>();
   const previousDataRef = useRef<string>("");
 
   // Update internal state when tableData changes
@@ -854,6 +856,9 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
       )}
       {!isStreamActive && !specimenMode && (
         <div
+          ref={actionRowRef}
+          role="toolbar"
+          aria-label="Table actions"
           className={tableActionRowClass(isMobile)}
         >
           {internalTableData.normalizedData && (
@@ -904,6 +909,7 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={handleSave}
+                data-keep-label=""
                 className="flex items-center gap-2 border-1 border-dashed border-green-500 rounded-xl"
               >
                 <Save className="h-4 w-4" />
@@ -913,6 +919,7 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={handleCancel}
+                data-keep-label=""
                 className="flex items-center gap-2 border-1 border-dashed border-red-500 rounded-xl"
               >
                 <X className="h-4 w-4" />

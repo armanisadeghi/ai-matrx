@@ -47,7 +47,7 @@ import SaveTableModal from "../../tables/SaveTableModal";
 import { SendToWorkbookButton } from "../../tables/SendToWorkbookButton";
 import { SendToGoogleSheetButton } from "../../tables/SendToGoogleSheetButton";
 import { ChartThisButton, TableChartPanel } from "../chart/TableChart";
-import { tableActionRowClass } from "../../tables/table-action-row";
+import { tableActionRowClass, useTableActionTitles } from "../../tables/table-action-row";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { TableEditToolbar } from "../../tables/editing/TableEditToolbar";
@@ -338,6 +338,8 @@ const StreamingTableRendererCore: React.FC<
   const [showNormalized, setShowNormalized] = useState(false);
   // "Chart this" — draws this table through the one chart primitive.
   const [showChart, setShowChart] = useState(false);
+  // Icon-only table action row: each button's name becomes its tooltip.
+  const actionRowRef = useTableActionTitles<HTMLDivElement>();
   const [savedTableInfo, setSavedTableInfo] = useState<SavedTableInfo | null>(
     null,
   );
@@ -1044,7 +1046,10 @@ const StreamingTableRendererCore: React.FC<
           {/* Action Buttons - Only show when not streaming and table is complete */}
           {tableIsComplete && !specimenMode && (
             <div
-              className={tableActionRowClass(isMobile)}
+              ref={actionRowRef}
+          role="toolbar"
+          aria-label="Table actions"
+          className={tableActionRowClass(isMobile)}
             >
               {/* Column visibility — only when there's a column to hide and
                   not while editing (edit mode forces all columns visible). */}
@@ -1154,6 +1159,7 @@ const StreamingTableRendererCore: React.FC<
                     variant="outline"
                     size="sm"
                     onClick={handleSave}
+                    data-keep-label=""
                     className="flex items-center gap-2 border-1 border-dashed border-green-500 rounded-xl"
                   >
                     <Save className="h-4 w-4" />
@@ -1163,6 +1169,7 @@ const StreamingTableRendererCore: React.FC<
                     variant="outline"
                     size="sm"
                     onClick={handleCancel}
+                    data-keep-label=""
                     className="flex items-center gap-2 border-1 border-dashed border-red-500 rounded-xl"
                   >
                     <X className="h-4 w-4" />
