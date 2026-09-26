@@ -67,9 +67,9 @@ function OriginalCard({ row, ctx }: { row: FeatureIntelligenceRow; ctx: JobConte
 }
 
 /* 2 ─ Compact: one line per job, expand for the rest. */
-function CompactCard({ row, ctx }: { row: FeatureIntelligenceRow; ctx: JobContext }) {
+function CompactCard({ row, ctx, first }: { row: FeatureIntelligenceRow; ctx: JobContext; first?: boolean }) {
   const job = useJob(row, ctx);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(Boolean(first));
   const Chevron = open ? ChevronDown : ChevronRight;
   return (
     <li className={cn(CARD, "overflow-hidden")}>
@@ -356,9 +356,9 @@ function TileCard({ row, ctx }: { row: FeatureIntelligenceRow; ctx: JobContext }
   );
 }
 
-function list(Card: (props: { row: FeatureIntelligenceRow; ctx: JobContext }) => React.ReactNode, className = "space-y-3") {
+function list(Card: (props: { row: FeatureIntelligenceRow; ctx: JobContext; first?: boolean }) => React.ReactNode, className = "space-y-3") {
   return function Option({ rows, ctxFor }: OptionProps) {
-    return <ul className={className}>{rows.map((row) => <Card key={row.id} row={row} ctx={ctxFor(row)} />)}</ul>;
+    return <ul className={className}>{rows.map((row, index) => <Card key={row.id} row={row} ctx={ctxFor(row)} first={index === 0} />)}</ul>;
   };
 }
 
