@@ -153,6 +153,8 @@ interface ToolRendererProps {
 3. **`DynamicToolRenderer`** — fetches on mount and compiles on demand
 4. **`GenericRenderer`** — fallback table of args/result/status
 
+**Every resolved renderer passes through `surface-write/withSurfaceWriteDiff`.** A tool call that changed a surface carries a surface-write receipt (aidream `matrx_ai/tools/surface_write.py`, emitted as one persisted `tool_step` with `data.step === "surface_write"`); when it is present the card body is the ONE shared `SurfaceWriteDiff` (`@ai-matrx/diff` `TextDiff`, or `DiffViewer` for code on desktop) whatever the tool's own renderer is — static, DB-authored or generic. Before the receipt lands (still streaming) the tool's own renderer keeps its live preview. Knobs: `agents.tool_cards.diff_default_view` (unified | split | changes; a phone is always unified) and `agents.tool_cards.diff_start_open`. Guard: `surface-write/__tests__/every-surface-write-renders-the-shared-diff.test.tsx` (tool list read from the aidream census).
+
 ---
 
 ## 🚨 A tool result NEVER shows the user where we store bytes
@@ -308,6 +310,8 @@ The consolidation (Phases 1–10) eliminated six legacy homes for tool UI:
 Historical planning and analysis docs from the pre-consolidation era have been archived at `docs/archive/tool-call-legacy/`.
 
 ## Change log
+
+- `2026-09-26` — claude: **Every surface write shows the shared diff (Arman: "any tool that overwrites [must] show a shared diff view").** New `surface-write/` (`readSurfaceWrite`, `SurfaceWriteDiff`, `withSurfaceWriteDiff`); `getInlineRenderer`/`getOverlayRenderer` wrap every renderer in the seam, DB renderers now get one stable component per tool (was minted per call), a receipt forces `stay-open` per the `diff_start_open` knob and exempts the generic fold. Replaces the 2026-07-14 "≥90% changed or empty-before → final text only" outcome for every call that carries a receipt; `PatchDiffInline` remains only as the live preview and for rows written before receipts existed.
 
 - 2026-09-17 — The optional-field policy ladder reads the EXPLICIT active organization instead of the legacy `selectEffectiveOrganizationId` (`organization_id ?? personal_organization_id`). With none selected the ladder answers from the person and the declared default, which is a correct answer, rather than borrowing another account's setting.
 

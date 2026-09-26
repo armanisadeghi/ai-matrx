@@ -49,6 +49,9 @@ import type {
   ToolRendererProps,
 } from "../types";
 import { GenericRenderer } from "./GenericRenderer";
+import { withSurfaceWriteDiff } from "../surface-write/withSurfaceWriteDiff";
+import { DIFF_START_OPEN_KNOB, readSurfaceWrite } from "../surface-write/readSurfaceWrite";
+import { getSessionKnob } from "@/lib/scoped-config/sessionKnob";
 
 import { SearchInline } from "../renderers/search/SearchInline";
 import { SearchOverlay } from "../renderers/search/SearchOverlay";
@@ -1771,7 +1774,41 @@ export function mightHaveDynamicRenderer(toolName: string | null): boolean {
   return true;
 }
 
+/**
+ * One stable DB-renderer component per tool name. Minting a fresh component on
+ * every call remounted the body (and re-ran its fetch) on every shell render.
+ */
+const dbInlineByTool = new Map<string, React.ComponentType<ToolRendererProps>>();
+const dbOverlayByTool = new Map<string, React.ComponentType<ToolRendererProps>>();
+
+function dbRendererFor(
+  cache: Map<string, React.ComponentType<ToolRendererProps>>,
+  toolName: string,
+  label: string,
+): React.ComponentType<ToolRendererProps> {
+  const hit = cache.get(toolName);
+  if (hit) return hit;
+  const Db: React.FC<ToolRendererProps> = (props) => (
+    <DbToolRenderer toolName={toolName} {...props} />
+  );
+  Db.displayName = `${label}(${toolName})`;
+  cache.set(toolName, Db);
+  return Db;
+}
+
+/**
+ * Every renderer the shell mounts passes through `withSurfaceWriteDiff`: a
+ * tool call carrying a surface-write receipt shows the ONE shared diff,
+ * whichever renderer the tool would otherwise use. See
+ * `surface-write/withSurfaceWriteDiff.tsx`.
+ */
 export function getInlineRenderer(
+  toolName: string | null,
+): React.ComponentType<ToolRendererProps> {
+  return withSurfaceWriteDiff(resolveInlineRenderer(toolName));
+}
+
+function resolveInlineRenderer(
   toolName: string | null,
 ): React.ComponentType<ToolRendererProps> {
   if (!toolName) return GenericRenderer;
@@ -1783,15 +1820,9 @@ export function getInlineRenderer(
 
   // (2) Unless we already know there's no DB renderer, route through the
   // lazy DB renderer. It self-resolves: positive cache -> compiled component,
-  // negative/error -> GenericRenderer (its own boundary fallback). We pass the
-  // toolName so the impl can fetch+compile the row on first mount.
+  // negative/error -> GenericRenderer (its own boundary fallback).
   if (!isKnownNoToolRenderer(toolName)) {
-    const dbToolName = toolName;
-    const DbInline: React.FC<ToolRendererProps> = (props) => (
-      <DbToolRenderer toolName={dbToolName} {...props} />
-    );
-    DbInline.displayName = `DbToolRenderer(${dbToolName})`;
-    return DbInline;
+    return dbRendererFor(dbInlineByTool, toolName, "DbToolRenderer");
   }
 
   // (3) Confirmed no DB renderer — generic is the boundary.
@@ -1826,6 +1857,12 @@ export function hasOverlayTabs(toolName: string | null): boolean {
 export function getOverlayRenderer(
   toolName: string | null,
 ): React.ComponentType<ToolRendererProps> {
+  return withSurfaceWriteDiff(resolveOverlayRenderer(toolName));
+}
+
+function resolveOverlayRenderer(
+  toolName: string | null,
+): React.ComponentType<ToolRendererProps> {
   if (!toolName) return GenericRenderer;
 
   if (toolRendererRegistry[toolName]) {
@@ -1839,12 +1876,7 @@ export function getOverlayRenderer(
   // overlay. Route the overlay through the same lazy DB renderer unless we
   // already know the tool has none.
   if (!isKnownNoToolRenderer(toolName)) {
-    const dbToolName = toolName;
-    const DbOverlay: React.FC<ToolRendererProps> = (props) => (
-      <DbToolRenderer toolName={dbToolName} {...props} />
-    );
-    DbOverlay.displayName = `DbToolRendererOverlay(${dbToolName})`;
-    return DbOverlay;
+    return dbRendererFor(dbOverlayByTool, toolName, "DbToolRendererOverlay");
   }
 
   return GenericRenderer;
@@ -1912,6 +1944,11 @@ export function getToolDisplayMode(
   entry?: ToolLifecycleEntry | null,
 ): "auto" | "stay-open" | "never-open" {
   if (!toolName) return "auto";
+  // A finished write that changed a surface: the diff is the thing to see.
+  // Whether it stays open is a knob (agents.tool_cards.diff_start_open).
+  if (entry && readSurfaceWrite(entry)) {
+    return getSessionKnob(DIFF_START_OPEN_KNOB) === false ? "auto" : "stay-open";
+  }
   // Per-entry first: a polymorphic tool decides from what it actually did.
   if (entry) {
     const perEntry = toolRendererRegistry[toolName]?.getDisplayMode?.(entry);

@@ -39,6 +39,7 @@ import {
   getToolChrome,
   hasCustomRenderer,
 } from "../registry/registry";
+import { readSurfaceWrite } from "../surface-write/readSurfaceWrite";
 import { ToolGlyph } from "../renderers/_shared-entity/ToolGlyph";
 import { selectToolDisplayPreference } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { prefetchToolRenderer } from "../db-renderer/toolRendererCache";
@@ -187,9 +188,12 @@ const ToolCallVisualizationInner: React.FC<{
   // lookup is unresolved, preserve the existing behavior; if a custom DB
   // renderer lands, nothing changes for it, and if no renderer exists the
   // still-empty body folds before GenericRenderer ever mounts visibly.
+  // A surface-write receipt is never "raw internals": its body is the shared
+  // diff, so the disclosure-only fold does not apply to it.
   const usesGenericFallback =
     dbRendererState.resolution === "generic" &&
-    !hasCustomRenderer(headerTool?.toolName ?? null);
+    !hasCustomRenderer(headerTool?.toolName ?? null) &&
+    !readSurfaceWrite(headerTool);
   const effectiveMode = resolveToolShellDisplayMode(
     userPref,
     toolMode,
