@@ -3,7 +3,7 @@
 -- lock: custom,platform
 -- Inverse of migrations/campaign/bigvalueswrite_a_text_of_any_size_simply_saves.sql.
 -- Restores custom._value_envelope() to the body that file replaced (a text value over the ceiling
--- is refused again), removes the door custom.whole_value_complete and its declaration, the four
+-- is refused again), removes the doors custom.whole_value_complete and custom.whole_values_waiting and their declarations, the four
 -- helpers and custom.whole_value_parked. A parked whole text still waiting is lost with the table,
 -- so run this only where nothing is waiting (select count(*) from custom.whole_value_parked).
 
@@ -151,7 +151,8 @@ $function$
 
 ;
 
-delete from platform.client_callable_door where schema_name = 'custom' and function_name = 'whole_value_complete';
+delete from platform.client_callable_door where schema_name = 'custom' and function_name in ('whole_value_complete', 'whole_values_waiting');
+drop function if exists custom.whole_values_waiting(uuid, uuid[]);
 drop function if exists custom.whole_value_complete(uuid, uuid, text, uuid);
 drop function if exists custom.whole_value_park(uuid, uuid, uuid, uuid, platform.visibility, jsonb, jsonb);
 drop function if exists custom.whole_value_source(text, jsonb);

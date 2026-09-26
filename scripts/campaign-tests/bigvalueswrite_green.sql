@@ -100,7 +100,7 @@ begin
   if v_id is null then
     v_fails := v_fails || format('W1 RED: the 250 KB write was refused: %s', left(v_msg, 200));
   else
-    v_doc := custom.read_record(o_ws, v_id, false);
+    perform set_config('role', 'none', true); select r.data into v_doc from custom.record r where r.id = v_id; perform set_config('role', 'authenticated', true);
     v_ptr := v_doc -> '_values' -> k ->> 'src';
     v_src := v_doc -> '_sources' -> v_ptr;
     perform set_config('role', 'none', true);
@@ -162,7 +162,7 @@ begin
     exception when others then
       v_msg := sqlerrm;
     end;
-    v_doc := custom.read_record(o_ws, v_id, false);
+    perform set_config('role', 'none', true); select r.data into v_doc from custom.record r where r.id = v_id; perform set_config('role', 'authenticated', true);
     if v_msg is null or position('SHA-256 differs' in v_msg) = 0 then
       v_fails := v_fails || format('W3: a file with the wrong text was not refused in words (%s)', coalesce(v_msg, 'accepted'));
     elsif (v_doc -> '_sources' -> v_ptr ->> 'pending')::boolean is not true then
@@ -174,7 +174,7 @@ begin
     -- W4 — the right file completes it
     v_ver := (v_doc -> '_values' -> k ->> 'ver')::int;
     v_src := custom.whole_value_complete(o_ws, v_id, k, v_file);
-    v_doc := custom.read_record(o_ws, v_id, false);
+    perform set_config('role', 'none', true); select r.data into v_doc from custom.record r where r.id = v_id; perform set_config('role', 'authenticated', true);
     v_src := v_doc -> '_sources' -> (v_doc -> '_values' -> k ->> 'src');
     perform set_config('role', 'none', true);
     if coalesce(v_src ->> 'file_id', '') <> v_file::text or v_src ? 'pending' or v_src ->> 'file_record' is null then
@@ -189,6 +189,9 @@ begin
       v_fails := v_fails || format('W4: attaching the file moved the value''s version %s -> %s', v_ver, v_doc -> '_values' -> k ->> 'ver');
     elsif (v_doc -> '_values' -> 'title' ->> 'actor') <> 'user' then
       v_fails := v_fails || format('W4: attaching the file re-authored the other values (title actor %s)', v_doc -> '_values' -> 'title' ->> 'actor');
+    elsif coalesce(custom.read_record(o_ws, v_id, false) -> '_sources'
+                   -> (custom.read_record(o_ws, v_id, false) -> '_values' -> k ->> 'src') ->> 'file_id', '') <> v_file::text then
+      v_fails := v_fails || 'W4: the grid''s read door does not carry the completed pointer'::text;
     else
       raise notice 'W4 GREEN: file % attached (File record %), edge written, nothing waiting, version % kept',
         v_file, v_src ->> 'file_record', v_ver;
@@ -197,7 +200,7 @@ begin
 
     -- W5 — the same whole text again
     perform custom.record_update(o_ws, v_id, jsonb_build_object(k, v_policy), null);
-    v_doc := custom.read_record(o_ws, v_id, false);
+    perform set_config('role', 'none', true); select r.data into v_doc from custom.record r where r.id = v_id; perform set_config('role', 'authenticated', true);
     perform set_config('role', 'none', true);
     if (v_doc -> '_values' -> k ->> 'ver')::int is distinct from v_ver
        or coalesce(v_doc -> '_sources' -> (v_doc -> '_values' -> k ->> 'src') ->> 'file_id', '') <> v_file::text
@@ -212,7 +215,7 @@ begin
     -- W6 — one sentence changed at the very end
     v_edited := v_policy || E'Section 471. This policy is reviewed every year by the Compliance Lead.\n';
     perform custom.record_update(o_ws, v_id, jsonb_build_object(k, v_edited), null);
-    v_doc := custom.read_record(o_ws, v_id, false);
+    perform set_config('role', 'none', true); select r.data into v_doc from custom.record r where r.id = v_id; perform set_config('role', 'authenticated', true);
     v_src := v_doc -> '_sources' -> (v_doc -> '_values' -> k ->> 'src');
     perform set_config('role', 'none', true);
     select * into v_p from custom.whole_value_parked where record_id = v_id and field_key = k;
@@ -232,7 +235,7 @@ begin
   -- W7 — 50 KB stays in the cell
   v_mid := left(v_policy, 50000);
   v_id2 := custom.record_write(o_ws, t_heat, jsonb_build_object('title', 'Records retention policy (summary)', k, v_mid));
-  v_doc := custom.read_record(o_ws, v_id2, false);
+  perform set_config('role', 'none', true); select r.data into v_doc from custom.record r where r.id = v_id2; perform set_config('role', 'authenticated', true);
   perform set_config('role', 'none', true);
   if (v_doc ->> k) is distinct from v_mid
      or coalesce(v_doc -> '_sources' -> (v_doc -> '_values' -> k ->> 'src') ->> 'kind', '') = 'whole_value_in_file'

@@ -1,9 +1,9 @@
 -- target: branch,production
 -- additive: yes
 --   It ADDS one table, custom.whole_value_parked (no client grant), four internal helpers
---   (whole_value_ceiling, whole_value_head, whole_value_source, whole_value_park) and ONE signed-in
---   door, custom.whole_value_complete (declared in platform.client_callable_door, EXECUTE to
---   authenticated). It REPLACES custom._value_envelope() with its existing signature, security and
+--   (whole_value_ceiling, whole_value_head, whole_value_source, whole_value_park) and TWO signed-in
+--   doors, custom.whole_value_complete and custom.whole_values_waiting (declared in
+--   platform.client_callable_door, EXECUTE to authenticated). It REPLACES custom._value_envelope() with its existing signature, security and
 --   search_path, keeping every existing line. No record is written; a value under the ceiling is
 --   written exactly as before.
 -- guard: custom/system_enabled
@@ -263,6 +263,49 @@ select 'custom', 'whole_value_complete',
 where not exists (select 1 from platform.client_callable_door d
                    where d.schema_name = 'custom' and d.function_name = 'whole_value_complete');
 grant execute on function custom.whole_value_complete(uuid, uuid, text, uuid) to authenticated;
+
+-- ── 3b. What is waiting on the records this session just wrote (no text: the writer holds it) ─
+create or replace function custom.whole_values_waiting(p_organization_id uuid, p_record_ids uuid[])
+ returns table (record_id uuid, field_key text, pointer text, value_version integer, sha256 text,
+                bytes bigint, chars bigint, owner_id uuid, record_visibility text, table_id uuid,
+                table_name text)
+ language plpgsql
+ stable
+ security definer
+ set search_path to 'pg_catalog'
+as $function$
+declare
+  v_id uuid;
+begin
+  perform custom.assert_store_door(p_organization_id, 'custom.whole_values_waiting');
+  perform custom.assert_client_may_reach(p_organization_id, 'custom.whole_values_waiting');
+  foreach v_id in array coalesce(p_record_ids, '{}'::uuid[]) loop
+    perform custom.assert_client_may_change(p_organization_id, v_id, 'custom.whole_values_waiting');
+  end loop;
+  return query
+    select p.record_id, p.field_key, p.pointer, p.value_version, p.sha256, p.bytes, p.chars,
+           p.owner_id, p.record_visibility::text, p.table_id,
+           nullif(btrim(t.data ->> 'name'), '')
+      from custom.whole_value_parked p
+      left join custom.record t on t.organization_id = p.organization_id and t.id = p.table_id
+     where p.organization_id = p_organization_id
+       and p.record_id = any (coalesce(p_record_ids, '{}'::uuid[]))
+     order by p.record_id, p.field_key;
+end;
+$function$;
+
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
+   signed_in_callers, anonymous_callers)
+select 'custom', 'whole_values_waiting',
+       pg_get_function_identity_arguments('custom.whole_values_waiting(uuid, uuid[])'::regprocedure),
+       array['uuid'::regtype, 'uuid[]'::regtype]::oid[],
+       'p_organization_id is checked by custom.assert_store_door and custom.assert_client_may_reach on entry. Every id in p_record_ids takes the EDITOR decision through custom.assert_client_may_change against THIS organization before anything is read - the writer who just saved those records. It answers what of those records waits for its file: the key, pointer, version, SHA-256, size, owner, visibility and the table''s name. It never returns the text itself (the writer already holds it) and writes nothing.',
+       'migrations/campaign/bigvalueswrite_a_text_of_any_size_simply_saves.sql (lane BIG-VALUES-WRITE)',
+       true, false
+where not exists (select 1 from platform.client_callable_door d
+                   where d.schema_name = 'custom' and d.function_name = 'whole_values_waiting');
+grant execute on function custom.whole_values_waiting(uuid, uuid[]) to authenticated;
 
 -- ── 4. The ONE trigger, carrying instead of refusing ───────────────────────────────────────
 create or replace function custom._value_envelope()
