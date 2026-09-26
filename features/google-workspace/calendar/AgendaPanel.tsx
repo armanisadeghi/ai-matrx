@@ -259,6 +259,7 @@ function AgendaBody({
 
           {!hasEvents && !agenda.noAccount && agenda.problems.length === 0 ? (
             <p className="text-xs text-muted-foreground">
+              {/* read-gate-exempt: agenda.problems carries every failed read (calendar, connector, refresh) and is rendered above with the Alchemy Menu; this copy shows only when problems is empty */}
               {!agenda.connectionId
                 ? "No Google account here can show a calendar yet."
                 : filter

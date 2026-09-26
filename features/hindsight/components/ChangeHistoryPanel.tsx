@@ -179,7 +179,7 @@ export function ChangeHistoryPanel({
         </p>
       )}
 
-      {!history.isLoading && rows.length === 0 && (
+      {!history.isLoading && !history.isError && rows.length === 0 && (
         <p className="py-6 text-center text-sm text-muted-foreground">
           {withFindingsOnly
             ? "No change here was caused by a Hindsight finding yet."

@@ -48,6 +48,7 @@ import { formatLocalDate } from "../../shared/format";
 import { HrRpcError } from "../../api/rpc";
 import { generatePayPeriods, type GeneratePeriodsResult } from "../api/periodReads";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export interface GeneratePeriodsPanelProps {
   /** The employer whose pay groups these are. HR is strictly single-employer. */
@@ -144,6 +145,18 @@ export function GeneratePeriodsPanel({
           </label>
           {structure.isLoading ? (
             <p className="mt-1 text-[12px] text-muted-foreground">Loading pay groups…</p>
+          ) : structure.error && payGroups.length === 0 ? (
+            <ReadFailure
+              error={structure.error.message}
+              what="this employer's pay groups"
+              onRetry={structure.refresh}
+              className="mt-1"
+            />
+          ) : structure.denied && payGroups.length === 0 ? (
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+              Your HR role cannot read this employer&apos;s pay groups, so there is nothing to
+              generate from here.
+            </p>
           ) : payGroups.length === 0 ? (
             <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
               This employer has no active pay group yet. A payroll calendar is generated from a pay

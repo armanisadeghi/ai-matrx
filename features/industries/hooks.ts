@@ -87,6 +87,8 @@ export function useOrgIndustries(orgId: string | null) {
   const [orgIndustries, setOrgIndustries] = useState<OrgIndustry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** The assignment READ's own failure (never an assign/unassign's). */
+  const [readError, setReadError] = useState<string | null>(null);
   const [bumper, setBumper] = useState(0);
   const refresh = useCallback(() => setBumper((b) => b + 1), []);
 
@@ -100,11 +102,16 @@ export function useOrgIndustries(orgId: string | null) {
     setError(null);
     fetchOrgIndustries(orgId)
       .then((r) => {
-        if (!cancelled) setOrgIndustries(r);
+        if (cancelled) return;
+        setOrgIndustries(r);
+        setReadError(null);
       })
       .catch((e) => {
-        if (!cancelled)
-          setError(e instanceof Error ? e.message : "Could not load assignments");
+        if (!cancelled) {
+          const message = e instanceof Error ? e.message : "Could not load assignments";
+          setError(message);
+          setReadError(message);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -144,5 +151,5 @@ export function useOrgIndustries(orgId: string | null) {
     [orgId, refresh],
   );
 
-  return { orgIndustries, loading, error, refresh, assign, unassign };
+  return { orgIndustries, loading, error, readError, refresh, assign, unassign };
 }

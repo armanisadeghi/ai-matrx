@@ -399,13 +399,28 @@ export function HrNoAccess({
  * Switching is a full context change: the SAME route with a new `?org=`.
  */
 export function HrEmployerPicker({ className }: { className?: string } = {}) {
-  const { employers, isLoading } = useHrContext();
+  const { employers, isLoading, error, refresh } = useHrContext();
   // The picker is itself the pre-employer-context state.
   const pathname = usePathname() ?? hrHref(null);
   const askedEmployerRef =
     useSearchParams()?.get(HR_ORG_PARAM)?.trim() || null;
 
   if (isLoading) return <HrLoading variant="cards" rows={3} className={className} />;
+
+  // The employer list never arrived: that is not "no employer uses HR".
+  if (error && employers.length === 0) {
+    if (error.kind === "denied") {
+      return <HrNoAccess employerRef={askedEmployerRef} className={className} />;
+    }
+    return (
+      <HrError
+        operation="Your HR employers"
+        error={error}
+        onRetry={refresh}
+        className={className}
+      />
+    );
+  }
 
   const choosable = employers.filter(
     (employer) => employer.module_enabled || isOrgSteward(employer.org_role),

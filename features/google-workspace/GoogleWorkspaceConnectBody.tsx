@@ -69,6 +69,7 @@ import type {
 } from "@/features/files/storage-sources/types";
 import { attachChildToFolder, upsertFiles } from "@/features/files/redux/slice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export interface GoogleWorkspaceConnectBodyProps {
   onClose: () => void;
@@ -600,6 +601,13 @@ function GoogleWorkspaceConnectBodyContent({
             <Loader2 className="h-4 w-4 animate-spin" />
             Checking your Google account…
           </div>
+        ) : inventory.isError && !inventory.data ? (
+          <ReadFailure
+            error={inventory.error}
+            what="your Google connection"
+            onRetry={() => void inventory.refetch()}
+            className="m-0"
+          />
         ) : !connection ? (
           <div className="flex flex-col gap-2">
             <p className="text-sm text-foreground">

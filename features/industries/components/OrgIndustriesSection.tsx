@@ -51,7 +51,8 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
   const { canManageSettings } = useUserRole(orgId);
   const canEdit = isSuperAdmin || canManageSettings;
   const { industries } = useIndustries();
-  const { orgIndustries, loading, assign, unassign } = useOrgIndustries(orgId);
+  const { orgIndustries, loading, readError, refresh, assign, unassign } =
+    useOrgIndustries(orgId);
   const [adding, setAdding] = useState("");
 
   // What each industry / subscription actually unlocks — the discoverable
@@ -97,6 +98,13 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
         </div>
+      ) : readError && assigned.length === 0 ? (
+        <ReadFailure
+          error={readError}
+          what="this organization's industries"
+          onRetry={refresh}
+          className="m-0"
+        />
       ) : assigned.length === 0 ? (
         <div className="text-sm text-muted-foreground">
           No industries assigned.

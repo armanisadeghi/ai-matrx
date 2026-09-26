@@ -78,6 +78,7 @@ import {
   rememberGoogleConnection,
 } from "@/features/google-workspace/connection";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { getGoogleDrivePickerToken } from "@/features/google-workspace/drivePickerToken";
 import {
   OPEN_GOOGLE_RECORD_CONSEQUENCE,
@@ -561,6 +562,16 @@ export function GoogleWorkspaceReviewWorkspace({
                   <tr>
                     <td colSpan={6} className="px-4 py-6 text-center">
                       <Loader2 className="mx-auto h-4 w-4 animate-spin text-muted-foreground" />
+                    </td>
+                  </tr>
+                ) : inventory.isError && personalConnections.length === 0 ? (
+                  <tr>
+                    <td colSpan={6}>
+                      <ReadFailure
+                        error={inventory.error}
+                        what="your Google accounts"
+                        onRetry={() => void inventory.refetch()}
+                      />
                     </td>
                   </tr>
                 ) : personalConnections.length === 0 ? (
