@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b2_23_content_document — un-enrolls content.document from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'content' and table_name = 'document' and is_active);
+select iam.apply_rls('content', 'document', (select token from platform.entity_types where schema_name = 'content' and table_name = 'document' and is_active), (select rls_variant from platform.entity_types where schema_name = 'content' and table_name = 'document' and is_active));

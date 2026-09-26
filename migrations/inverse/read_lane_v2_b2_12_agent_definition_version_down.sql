@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b2_12_agent_definition_version — un-enrolls agent.definition_version from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'agent' and table_name = 'definition_version' and is_active);
+select iam.apply_rls('agent', 'definition_version', (select token from platform.entity_types where schema_name = 'agent' and table_name = 'definition_version' and is_active), (select rls_variant from platform.entity_types where schema_name = 'agent' and table_name = 'definition_version' and is_active));

@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b2_26_agent_cmp_comparison_sets — un-enrolls agent.cmp_comparison_sets from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'agent' and table_name = 'cmp_comparison_sets' and is_active);
+select iam.apply_rls('agent', 'cmp_comparison_sets', (select token from platform.entity_types where schema_name = 'agent' and table_name = 'cmp_comparison_sets' and is_active), (select rls_variant from platform.entity_types where schema_name = 'agent' and table_name = 'cmp_comparison_sets' and is_active));

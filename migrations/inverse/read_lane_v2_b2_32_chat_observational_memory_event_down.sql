@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b2_32_chat_observational_memory_event — un-enrolls chat.observational_memory_event from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'chat' and table_name = 'observational_memory_event' and is_active);
+select iam.apply_rls('chat', 'observational_memory_event', (select token from platform.entity_types where schema_name = 'chat' and table_name = 'observational_memory_event' and is_active), (select rls_variant from platform.entity_types where schema_name = 'chat' and table_name = 'observational_memory_event' and is_active));

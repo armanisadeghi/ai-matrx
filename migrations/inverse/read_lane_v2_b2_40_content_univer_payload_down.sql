@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b2_40_content_univer_payload — un-enrolls content.univer_payload from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'content' and table_name = 'univer_payload' and is_active);
+select iam.apply_rls('content', 'univer_payload', (select token from platform.entity_types where schema_name = 'content' and table_name = 'univer_payload' and is_active), (select rls_variant from platform.entity_types where schema_name = 'content' and table_name = 'univer_payload' and is_active));

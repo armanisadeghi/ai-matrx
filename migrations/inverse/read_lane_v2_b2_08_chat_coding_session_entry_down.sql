@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b2_08_chat_coding_session_entry — un-enrolls chat.coding_session_entry from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'chat' and table_name = 'coding_session_entry' and is_active);
+select iam.apply_rls('chat', 'coding_session_entry', (select token from platform.entity_types where schema_name = 'chat' and table_name = 'coding_session_entry' and is_active), (select rls_variant from platform.entity_types where schema_name = 'chat' and table_name = 'coding_session_entry' and is_active));

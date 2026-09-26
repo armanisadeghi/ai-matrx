@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b2_25_chat_conversation_value — un-enrolls chat.conversation_value from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'chat' and table_name = 'conversation_value' and is_active);
+select iam.apply_rls('chat', 'conversation_value', (select token from platform.entity_types where schema_name = 'chat' and table_name = 'conversation_value' and is_active), (select rls_variant from platform.entity_types where schema_name = 'chat' and table_name = 'conversation_value' and is_active));
