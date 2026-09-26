@@ -1,3 +1,4 @@
+-- chair-step: inverse of assoc_org_check_asked_once — restores the per-row assoc_select check; rehearsal only.
 -- assoc_org_check_asked_once_down — restores assoc_select's per-row organization check and removes
 -- the set-form helper and its door declaration.
 alter policy assoc_select on platform.associations

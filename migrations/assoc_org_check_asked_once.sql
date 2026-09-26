@@ -1,6 +1,5 @@
 -- assoc_org_check_asked_once
 -- chair-step: re-expresses assoc_select on platform.associations with the same answer (set form of iam.has_org_access); ALTER POLICY takes the policy lock ~0.1 s; applied only when named.
--- draft: slow-reads lane (RC-A5 timings) — not yet applied; remove this line when rehearsed and measured.
 --
 -- THE DEFECT, measured on production 2026-09-26 as test@test.com (a plain member), rolled back:
 -- after aei_reach_containers_asked_once the flash-card list (`select id from education.fc_card
@@ -40,12 +39,13 @@ comment on function iam.org_access_ids() is
 -- A client-callable definer door must be declared before a client grant survives (DD-169).
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, declared_by, reason, signed_in_callers, anonymous_callers)
-values
-  ('iam', 'org_access_ids', '', '{}'::oid[], 'assoc_org_check_asked_once.sql',
-   'Caller-identity reader, the same shape as iam.my_orgs_all(): takes no argument and returns only the caller''s own organizations (membership, or global-readable system orgs for a super admin) — the set form of iam.has_org_access, read by platform.associations assoc_select. Reveals nothing iam.has_org_access does not.',
-   true, false);
+select 'iam', 'org_access_ids', '', '{}'::oid[], 'assoc_org_check_asked_once.sql',
+       'Caller-identity reader, the same shape as iam.my_orgs_all(): takes no argument and returns only the caller''s own organizations (membership, or global-readable system orgs for a super admin) — the set form of iam.has_org_access, read by platform.associations assoc_select. Reveals nothing iam.has_org_access does not.',
+       true, false
+where not exists (select 1 from platform.client_callable_door d
+                   where d.schema_name = 'iam' and d.function_name = 'org_access_ids' and d.identity_args = '');
 
-revoke all on function iam.org_access_ids() from public, anon;
+revoke all on function iam.org_access_ids() from anon;
 grant execute on function iam.org_access_ids() to authenticated, service_role;
 
 alter policy assoc_select on platform.associations
