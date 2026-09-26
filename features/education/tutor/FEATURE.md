@@ -188,6 +188,14 @@ source_feature, `AskTutorButton`, the generalized `lanes/`. **Consumed contracts
   re-check lands (per `features/entitlements/FEATURE.md`).
 
 ## Change log
+- **2026-09-26** — **`AskTutorButton` no longer opens a focus-trapping `Sheet`.** The "Ask my
+  tutor" side panel (dropped onto flashcard study, quiz results, etc.) hosted the full tutor
+  conversation composer inside a design-system `Sheet` — the exact blocking-drawer pattern fixed
+  on the class content picker (commit 8a827005ad) and banned by doctrine (no blocking side
+  drawers). Swapped to `MatrxDynamicPanelHost` (`position="right"`, `defaultSize={34}`,
+  `minSize={24}`, `initialFocus`), the same non-blocking docked host every other picker/panel in
+  the app uses. Live-verified: full tutor Q&A round trips (grounded citations + honest refusal)
+  work correctly from `/education/tutor/new`.
 - **2026-08-18** — **Real same-turn grounding (IC-3), reload-safe.** The tutor now inventories only the
   authenticated learner's root processed documents and calls canonical `ragSearch` with exact
   `include_sources` pairs before every send. Retrieved chunks carry stable
