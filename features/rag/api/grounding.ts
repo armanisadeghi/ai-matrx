@@ -93,8 +93,8 @@ export async function listLearnerOwnedGroundingSources(
   const [documentsResult, jobsResult] = await Promise.all([
     docprocDb(supabase)
       .from("processed_documents")
-      .select("name, owner_id, source_kind, source_id")
-      .eq("owner_id", userId)
+      .select("name, created_by, source_kind, source_id")
+      .eq("created_by", userId)
       .is("parent_processed_id", null)
       .is("archived_at", null)
       .is("deleted_at", null)
@@ -147,7 +147,7 @@ export async function listLearnerOwnedGroundingSources(
 
   const unique = new Map<string, GroundingSource>();
   for (const row of documentsResult.data) {
-    if (row.owner_id !== userId) continue;
+    if (row.created_by !== userId) continue;
     const source = {
       sourceKind: row.source_kind,
       sourceId: row.source_id,

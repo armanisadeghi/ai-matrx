@@ -23,6 +23,7 @@
  * Nested providers (e.g. split-pane notes) stack — the topmost wins.
  */
 
+import { announceUndeclaredLoadedValues } from "@/features/surfaces/runtime/loaded-value-check";
 import {
   createContext,
   useCallback,
@@ -199,7 +200,9 @@ export function withScopeContributions(
         );
       }
     }
-    return { ...own, ...contributed };
+    const loaded = { ...own, ...contributed };
+    announceUndeclaredLoadedValues(surfaceName, loaded);
+    return loaded;
   };
   return () => {
     const own = getScope();

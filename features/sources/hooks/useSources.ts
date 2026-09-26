@@ -7,7 +7,7 @@
  * never a server list endpoint — with its scope DECLARED (THE VIEW LAW,
  * `lib/list-scope/types.ts`): RLS is the ceiling, the scope is the view.
  *
- *   mine → Sources I own (`owner_id = me`), any visibility.
+ *   mine → Sources I created (`created_by = me`), any visibility.
  *   orgs → the selected organization's shared Sources (`visibility <> personal`).
  *
  * The complete list is read with `readAllRows` (PostgREST caps a bare select
@@ -159,7 +159,7 @@ export function useSources(
               .or("parent_processed_id.is.null,derivation_kind.eq.recapture");
             q =
               scope.kind === "mine"
-                ? q.eq("owner_id", userId)
+                ? q.eq("created_by", userId)
                 : q
                     .eq("organization_id", scope.organizationId)
                     .neq("visibility", "personal");

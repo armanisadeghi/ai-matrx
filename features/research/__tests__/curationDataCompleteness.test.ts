@@ -23,6 +23,7 @@ const sourceRows: Database["research"]["Tables"]["rs_source"]["Row"][] =
     authority_reasoning: null,
     authority_score: null,
     authority_tier: null,
+    created_at: "2026-09-26T00:00:00.000Z",
     created_by: null,
     custom_fields: {},
     deleted_at: null,

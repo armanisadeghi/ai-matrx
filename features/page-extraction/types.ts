@@ -65,7 +65,7 @@ export interface PageExtractionJob {
    * position. Empty array = natural order (the default).
    */
   column_order: string[];
-  owner_id: string;
+  created_by: string;
   organization_id: string;
   latest_run_id: string | null;
   created_at: string;

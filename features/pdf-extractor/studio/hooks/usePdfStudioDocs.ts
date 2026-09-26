@@ -116,7 +116,7 @@ export function usePdfStudioDocs(opts?: {
           .from("processed_documents")
           .update({ archived_at: new Date().toISOString() })
           .eq("id", id)
-          .eq("owner_id", userId)
+          .eq("created_by", userId)
           .select("id"),
         { action: "archive", noun: "document" },
       );
@@ -144,7 +144,7 @@ export function usePdfStudioDocs(opts?: {
           .select(
             "id, name, created_at, updated_at, total_pages, mime_type, source_kind, source_id, parent_processed_id, derivation_kind, archived_at",
           )
-          .eq("owner_id", userId)
+          .eq("created_by", userId)
           // THE ARCHIVED-ITEMS LAW (../common-docs/policies/archived-items.md):
           // archived docs are HIDDEN BY DEFAULT but must stay one click away,
           // so the read carries them and `visible` / `visibleArchived` do the

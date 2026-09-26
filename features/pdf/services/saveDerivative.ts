@@ -99,7 +99,7 @@ export async function saveDerivative({
       source_kind: "cld_file",
       source_id: fileId,
       source_hash: "",
-      owner_id: userId,
+      created_by: userId,
       parent_processed_id: parent.id,
       derivation_kind: derivationKind,
       derivation_metadata: {

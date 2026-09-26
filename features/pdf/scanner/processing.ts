@@ -137,7 +137,7 @@ export async function fetchRecentScans(limit = 12): Promise<RecentScans> {
     // archiving, and the law does not reveal it (db-rules §6d). Archived scans
     // DO come back, marked, for the disclosure to reveal.
     .is("deleted_at", null)
-    .eq("owner_id", uid)
+    .eq("created_by", uid)
     .eq("metadata->>via", "/pdf/from-images")
     .order("created_at", { ascending: false })
     .limit(limit);

@@ -29,7 +29,7 @@ export const SOURCE_LIST_COLUMNS = [
   "canonical_clean_id",
   "total_pages",
   "organization_id",
-  "owner_id",
+  "created_by",
   "visibility",
   "created_at",
   "updated_at",
@@ -51,7 +51,7 @@ export interface SourceListRow {
   canonical_clean_id: string | null;
   total_pages: number | null;
   organization_id: string;
-  owner_id: string;
+  created_by: string;
   visibility: string;
   created_at: string;
   updated_at: string;

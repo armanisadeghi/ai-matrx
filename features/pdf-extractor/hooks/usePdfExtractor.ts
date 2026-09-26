@@ -39,7 +39,7 @@ import {
  * truth and carries lineage + structured JSON. Field naming on the frontend
  * stays in `camelCase` and aliases the canonical columns:
  *
- *   processed_documents.owner_id      → ownerId
+ *   processed_documents.created_by    → ownerId
  *   processed_documents.derivation_*  → derivationKind / derivationMetadata
  *   processed_documents.parent_*      → parentProcessedId
  *   processed_documents.source_*      → sourceKind / sourceId
@@ -140,7 +140,7 @@ function docFromApi(raw: Record<string, unknown>): PdfDocument {
     updatedAt: (raw.updated_at as string) ?? new Date().toISOString(),
     charCount: text.length,
     wordCount: text.trim() ? text.trim().split(/\s+/).length : 0,
-    ownerId: (raw.owner_id as string | null) ?? null,
+    ownerId: (raw.created_by as string | null) ?? null,
     organizationId: (raw.organization_id as string | null) ?? null,
     totalPages: (raw.total_pages as number | null) ?? null,
     mimeType: (raw.mime_type as string | null) ?? null,
@@ -209,7 +209,7 @@ async function queryProcessedDocument(
     .select(PROCESSED_DOCUMENTS_COLUMNS)
     .is("deleted_at", null)
     .eq("id", docId)
-    // No `owner_id` predicate: RLS is the authority. Filtering to the owner
+    // No `created_by` predicate: RLS is the authority. Filtering to the owner
     // turned every document shared through an organization into zero rows,
     // which the access gate can only read as "denied".
     .maybeSingle();
@@ -376,7 +376,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         .select(
           "id, name, created_at, updated_at, total_pages, mime_type, source_kind, source_id, parent_processed_id, derivation_kind, archived_at",
         )
-        .eq("owner_id", userId)
+        .eq("created_by", userId)
         // THE ARCHIVED-ITEMS LAW (../common-docs/policies/archived-items.md):
         // archived docs are HIDDEN BY DEFAULT and one click away, so the read
         // carries them and `history` / `archivedHistory` do the split. The

@@ -20,7 +20,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Check, Loader2 } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { labelConversations } from "@/features/agents/decision-review/service";
 import { ReviewAnswersLink } from "@/features/agents/decision-review/components/ReviewAnswersLink";
 import {
@@ -107,7 +107,6 @@ function ColumnAnswerCell({
 }
 
 export function DecisionComparisonTable() {
-  const dispatch = useAppDispatch();
   const columns = useAppSelector(selectActiveBattleColumns);
   const setId = useAppSelector(selectMountedBattleSetId);
 
@@ -197,7 +196,6 @@ export function DecisionComparisonTable() {
           if (conversationIds.length > 0) {
             try {
               const labeled = await labelConversations(
-                dispatch,
                 conversationIds,
                 questionName,
                 draft,
@@ -228,7 +226,7 @@ export function DecisionComparisonTable() {
         setSavingName(null);
       }
     },
-    [setId, drafts, verdicts, answersByColumn, columns, dispatch],
+    [setId, drafts, verdicts, answersByColumn, columns],
   );
 
   if (answering.length === 0) {

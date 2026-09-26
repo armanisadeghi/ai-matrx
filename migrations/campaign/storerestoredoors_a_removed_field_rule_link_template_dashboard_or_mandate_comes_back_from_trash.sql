@@ -12,7 +12,10 @@
 -- the key out of its Table's `fields` list; it never rewrites a record, and custom._undeclared_key_guard
 -- judges only a key a write CHANGES, so every record keeps its value under the retired key (checked on
 -- production: retired columns whose records still hold the key). custom.field_restore puts the
--- declaration back and the column shows the same values again.
+-- declaration back and the column shows the same values again. BUT their value ENVELOPES (`_values.<key>`,
+-- where each value came from) stayed too, and custom._record_field_validation judged every envelope on
+-- every update — so after a column was removed, every later edit of those records was refused (62 live
+-- records on production, 2026-09-26). Section 0 judges on an update only the envelopes the write changed.
 --
 -- lane: STORE-RESTORE-DOORS
 -- additive: yes
@@ -21,7 +24,129 @@
 -- based-on: public._trash_kind_counts(uuid, uuid, uuid) 469afca97b00ffe263f4a417b58c614c20d632cbe0d2a415f617323a0e177b05
 -- based-on: public.entity_undelete(text, uuid) 68e847e771eb48c40e3477ce66eb06710124b5cfda36e6b1aab256c775575f43
 -- based-on: public.org_trash_restore(uuid, text, uuid) f996440c5230fa43c04d16490bf3eadb0a4f08cd8806bd128e821f09e8036597
+-- based-on: custom._record_field_validation() 5af87e71ca4ec7d931eec1f64d29c55f64ad8bb91a7dea5b198c427018620ad1
 -- INVERSE: migrations/inverse/storerestoredoors_a_removed_field_rule_link_template_dashboard_or_mandate_comes_back_from_trash_down.sql
+
+-- ── 0. A RECORD WHOSE COLUMN WAS REMOVED CAN STILL BE EDITED ────────────────────────────────────
+create or replace function custom._record_field_validation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_type_field text;
+  v_rtype      text;
+  v_fields     custom.record[];
+  v_gone       custom.record[];
+  g            custom.record;
+  v_retired    jsonb;
+  v_env        jsonb;
+begin
+  -- THE DOOR. One call to the ONE predicate (`custom.assert_store_door`), which
+  -- judges `custom.caller_role()` - the identity the caller actually held - and not
+  -- `current_user`, which a SECURITY DEFINER door has already rewritten to itself.
+  -- The switch never removes a check: everything below runs exactly as before.
+  perform custom.assert_store_door(new.organization_id, 'custom.record');
+  -- THE SWITCH, by name: custom.assert_store_door resolves custom/system_enabled through
+  -- custom.store_is_open, and while it is off this store takes writes only from the role
+  -- that owns custom.record.
+
+  -- The kernel is defined in code, the Tables and the Fields and the merge fields have their
+  -- own shape guards, and a relation row carries an edge rather than a document.
+  if new.data_class in ('kernel', 'relation')
+     or new.table_id is null
+     or new.table_id = custom.table_kernel_id()
+     or new.table_id = custom.field_kernel_id() then
+    return new;
+  end if;
+
+
+  -- A RETIREMENT IS NOT A CHANGE OF SHAPE (the shared rule DOOR-FIX and TABLE-DELETE built,
+  -- now asked as ONE question). The only change in this update is `deleted_at` going from
+  -- nothing to a time: the document is byte-for-byte what it was, so there is no new shape
+  -- to judge. This is what lets a dependent field retire in the SAME operation as the
+  -- relation it reads through - the sweep, the cascade and the door all arrive here.
+  if tg_op = 'UPDATE'
+     and custom.is_a_retirement(old.deleted_at, new.deleted_at,
+                                old.data, new.data,
+                                old.table_id, new.table_id,
+                                old.organization_id, new.organization_id,
+                                old.data_class, new.data_class) then
+    return new;
+  end if;
+
+  v_type_field := custom.table_type_field(new.organization_id, new.table_id);
+  if v_type_field is not null then
+    v_rtype := new.data ->> v_type_field;
+  end if;
+
+  select array_agg(f) into v_fields
+    from custom.applicable_fields(new.organization_id, new.table_id, v_rtype) f;
+  if v_fields is null then
+    return new;               -- a Table that declared no definitions validates nothing.
+  end if;
+
+  -- T8's retype: a Value that stops applying is neither coerced nor deleted. It is moved,
+  -- WITH ITS REASON, and the field is then hidden by custom.applicable_fields. This is a
+  -- STAND-IN for History and says so: W3-HIST (HIS-*) owns the real store, and when it
+  -- lands this block writes there instead. Until then the value is in the document, not gone.
+  if tg_op = 'UPDATE' and v_type_field is not null
+     and (old.data ->> v_type_field) is distinct from v_rtype then
+    select array_agg(f) into v_gone
+      from custom.applicable_fields(new.organization_id, new.table_id,
+                                    old.data ->> v_type_field) f
+     where not exists (select 1
+                         from custom.applicable_fields(new.organization_id, new.table_id, v_rtype) a
+                        where a.id = f.id);
+    v_retired := coalesce(new.data -> '_retired', '[]'::jsonb);
+    if v_gone is not null then
+      foreach g in array v_gone loop
+        if old.data ? (g.data ->> 'key') and jsonb_typeof(old.data -> (g.data ->> 'key')) <> 'null' then
+          v_retired := v_retired || jsonb_build_object(
+            'key',   g.data ->> 'key',
+            'label', g.data ->> 'label',
+            'value', old.data -> (g.data ->> 'key'),
+            -- W1-VAL (1 of 2): a retired Value takes its ENVELOPE with it. Where a value came
+            -- from, who wrote it and its other candidates are facts about that value, so they
+            -- belong beside it in _retired and not orphaned in _values pointing at nothing.
+            'envelope', old.data -> '_values' -> (g.data ->> 'key'),
+            'reason', format('this record became a %s, and %s does not apply to a %s',
+                             custom.said(v_rtype, 'different kind of thing'),
+                             coalesce(nullif(g.data ->> 'label', ''), g.data ->> 'key'),
+                             custom.said(v_rtype, 'record of that kind')),
+            'at', to_jsonb(now()));
+          new.data := new.data - (g.data ->> 'key');
+          if jsonb_typeof(new.data -> '_values') = 'object' then
+            new.data := jsonb_set(new.data, '{_values}',
+                                  (new.data -> '_values') - (g.data ->> 'key'));
+          end if;
+        end if;
+      end loop;
+      if jsonb_array_length(v_retired) > 0 then
+        new.data := jsonb_set(new.data, '{_retired}', v_retired);
+      end if;
+    end if;
+  end if;
+
+  perform custom.validate_values(new.organization_id, v_fields, new.data, v_rtype);
+  -- W1-VAL (2 of 2): the half of the envelope law that needs the definitions.
+  -- lane STORE-RESTORE-DOORS: ON AN UPDATE, ONLY THE ENVELOPES THIS WRITE CHANGED ARE JUDGED — the
+  -- rule custom._undeclared_key_guard already keeps for values. A column removed with
+  -- custom.field_retire leaves its values AND their envelopes in every record, so the column comes
+  -- back whole from Trash; judging the untouched envelope refused every later edit of those records
+  -- ("This record carries where … came from", 62 live records on production 2026-09-26) and every
+  -- restore of one. An envelope a write adds or changes is judged exactly as before.
+  v_env := new.data;
+  if tg_op = 'UPDATE' and jsonb_typeof(new.data -> '_values') = 'object' then
+    v_env := jsonb_set(new.data, '{_values}',
+      coalesce((select jsonb_object_agg(e.key, e.value)
+                  from jsonb_each(new.data -> '_values') e
+                 where (old.data -> '_values' -> e.key) is distinct from e.value), '{}'::jsonb));
+  end if;
+  perform custom.validate_value_envelope(new.organization_id, v_fields, v_env);
+  return new;
+end;
+$function$;
 
 -- ── 1. THE FIVE STORE RESTORE DOORS ──────────────────────────────────────────────────────────
 -- Each is the undo half of the door that removes the thing, and climbs the SAME rung that door
@@ -1327,10 +1452,28 @@ $function$;
 
 -- ── 5. THE DOOR ROWS, DECLARED BEFORE THE GRANTS (DD-223) ─────────────────────────────────────
 insert into platform.client_callable_door
-  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers, argument_rules)
 select d.schema_name, d.function_name, iam.door_identity_args(d.fn), d.argtypes, d.reason,
        'migrations/campaign/storerestoredoors_a_removed_field_rule_link_template_dashboard_or_mandate_comes_back_from_trash.sql (lane STORE-RESTORE-DOORS)',
-       d.non_client_lane, d.non_client_lane is null, false
+       d.non_client_lane, d.non_client_lane is null, false,
+       case when d.schema_name = 'custom' then jsonb_build_object(
+         'version', 1,
+         'declared_by', 'storerestoredoors_a_removed_field_rule_link_template_dashboard_or_mandate_comes_back_from_trash.sql',
+         'declared_at', '2026-09-26 lane STORE-RESTORE-DOORS, read from the body',
+         'arguments', jsonb_build_object(
+           'p_organization_id', jsonb_build_object(
+             'type', 'uuid', 'position', 1, 'entity', 'organization',
+             'check', 'this body decides it with custom.assert_client_may_reach(arg1) — the organization wall — a non-member is refused before anything is read, then custom.assert_client_may_change on the row''s own rung.',
+             'foreign', jsonb_build_object('sqlstate', '42501', 'same_as_invented', true),
+             'verified', '2026-09-26 lane STORE-RESTORE-DOORS — read from this body'),
+           (array['p_field_id','p_rule_id','p_relation_id','p_template_id','p_dashboard_id'])[
+              array_position(array['field_restore','rule_restore','relation_restore','doc_template_restore','dashboard_restore'], d.function_name)],
+           jsonb_build_object(
+             'type', 'uuid', 'position', 2,
+             'check', 'DERIVED BY ORGANIZATION. The row is read with organization_id = p_organization_id and id = <this>, so an id of another organization is absent here exactly as an invented one is (02000); the row''s own rung (custom.assert_client_may_change) is then decided before it moves.',
+             'foreign', jsonb_build_object('not_a_leak', true, 'same_as_invented', true),
+             'verified', '2026-09-26 lane STORE-RESTORE-DOORS — read from this body')))
+       end
   from (values
     ('custom', 'field_restore', 'custom.field_restore(uuid, uuid)'::regprocedure,
      array['uuid'::regtype::oid, 'uuid'::regtype::oid],

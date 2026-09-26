@@ -34,8 +34,8 @@
  * inside the shell, and falls back to a real route navigation otherwise.
  */
 
-import { createContext, useCallback, useContext, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode, MouseEvent as ReactMouseEvent } from "react";
 import { SETTINGS_BASE, tabIdToHref } from "../route-shell/routing";
 
@@ -46,6 +46,17 @@ export interface SettingsPresentationContextValue {
   presentation: SettingsPresentation;
   /** Dismiss the shell. Only defined in `window` / `drawer`. */
   closeShell?: () => void;
+  /**
+   * Dismiss the shell once a navigation to `href` has landed (immediately
+   * when `href` is this same page). Only defined in `window` / `drawer`.
+   *
+   * Why not close first: closing the window rewrites the address (the
+   * `panels` param) with `history.replaceState`, and Next's App Router treats
+   * that write as the newest navigation — a `router.push` still fetching its
+   * RSC payload is silently dropped. On 2026-09-26 Settings → Flashcards →
+   * "Open intelligence" closed the window and stayed on the old page.
+   */
+  closeShellAfterNavigation?: (href: string) => void;
   /** Switch the active settings tab in-place. Only defined in `window` / `drawer`. */
   setActiveTabId?: (tabId: string) => void;
   /** Exact control a setting door asked this presentation to reveal. */
@@ -59,7 +70,7 @@ const DEFAULT_VALUE: SettingsPresentationContextValue = {
 const SettingsPresentationContext =
   createContext<SettingsPresentationContextValue>(DEFAULT_VALUE);
 
-type ProviderProps = SettingsPresentationContextValue & {
+type ProviderProps = Omit<SettingsPresentationContextValue, "closeShellAfterNavigation"> & {
   children: ReactNode;
 };
 
@@ -74,9 +85,35 @@ export function SettingsPresentationProvider({
   focusControlId,
   children,
 }: ProviderProps) {
+  const pathname = usePathname();
+  const closeWhenLeaving = useRef<string | null>(null);
+  useEffect(() => {
+    if (closeWhenLeaving.current !== null && pathname !== closeWhenLeaving.current) {
+      closeWhenLeaving.current = null;
+      closeShell?.();
+    }
+  }, [pathname, closeShell]);
+  const closeShellAfterNavigation = useCallback(
+    (href: string) => {
+      if (!closeShell) return;
+      const target = new URL(href, window.location.href).pathname;
+      if (target === window.location.pathname) {
+        closeShell();
+        return;
+      }
+      closeWhenLeaving.current = window.location.pathname;
+    },
+    [closeShell],
+  );
   const value = useMemo<SettingsPresentationContextValue>(
-    () => ({ presentation, closeShell, setActiveTabId, focusControlId }),
-    [presentation, closeShell, setActiveTabId, focusControlId],
+    () => ({
+      presentation,
+      closeShell,
+      closeShellAfterNavigation: closeShell ? closeShellAfterNavigation : undefined,
+      setActiveTabId,
+      focusControlId,
+    }),
+    [presentation, closeShell, closeShellAfterNavigation, setActiveTabId, focusControlId],
   );
   return (
     <SettingsPresentationContext.Provider value={value}>
@@ -123,7 +160,7 @@ export interface SettingsNavigateOptions {
  * presentation-aware way:
  *
  *   - **route** → `router.push(href)` (or `window.open` for new-tab intent)
- *   - **window/drawer** → `closeShell()` first, then `router.push(href)`
+ *   - **window/drawer** → `router.push(href)`, then `closeShell()` once the page has changed
  *     (new-tab intent always opens in a new tab, leaves the shell open)
  *
  * Pass the original click event as the optional second arg to honor
@@ -136,7 +173,7 @@ export interface SettingsNavigateOptions {
  */
 export function useSettingsNavigate() {
   const router = useRouter();
-  const { presentation, closeShell } = useSettingsPresentation();
+  const { presentation, closeShell, closeShellAfterNavigation } = useSettingsPresentation();
 
   return useCallback(
     (
@@ -175,16 +212,18 @@ export function useSettingsNavigate() {
       }
 
       // Plain left click: route to a real destination. Window/drawer
-      // dismiss the shell first so the page change isn't jarring.
+      // dismiss the shell once the page has changed — never before the push
+      // (see `closeShellAfterNavigation`: closing first drops the push).
       if (event && "preventDefault" in event) event.preventDefault();
 
-      if (mode === "window" || mode === "drawer") {
-        closeShell?.();
-      }
-
       router.push(href);
+
+      if (mode === "window" || mode === "drawer") {
+        if (closeShellAfterNavigation) closeShellAfterNavigation(href);
+        else closeShell?.();
+      }
     },
-    [presentation, closeShell, router],
+    [presentation, closeShell, closeShellAfterNavigation, router],
   );
 }
 

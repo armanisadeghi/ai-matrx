@@ -24,7 +24,6 @@ import {
   Skeleton,
 } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
-import { useAppDispatch } from "@/lib/redux/hooks";
 import { DecisionAnswers } from "@/features/agents/decision-answers/DecisionAnswers";
 import { METHOD_LABELS, type DecisionMethod } from "@/features/agents/decision-answers/read";
 import {
@@ -131,7 +130,6 @@ function QueueRow({
 }
 
 export function ReviewQueue({ agentId }: { agentId: string }) {
-  const dispatch = useAppDispatch();
   const [filters, setFilters] = useState<QueueFilters>(DEFAULT_FILTERS);
   const [items, setItems] = useState<ReviewItem[] | null>(null);
   const [facets, setFacets] = useState<QueueFacets | null>(null);
@@ -206,7 +204,7 @@ export function ReviewQueue({ agentId }: { agentId: string }) {
     setSaving(key);
     setError(null);
     try {
-      const saved = await labelItem(dispatch, item, key);
+      const saved = await labelItem(item, key);
       setItems((current) => {
         if (!current) return current;
         const updated = current.map((i) =>

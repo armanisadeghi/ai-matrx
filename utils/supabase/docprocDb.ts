@@ -33,4 +33,4 @@ export function docprocDb<C extends SupabaseClient<Database>>(client: C) {
  * (Same scheme as `FILES_TABLE_COLUMNS` in `features/files/filesDb.ts`.)
  */
 export const PROCESSED_DOCUMENTS_COLUMNS =
-  "id, name, owner_id, organization_id, source_kind, source_id, source_hash, file_content_hash, params_hash, mime_type, total_pages, content, clean_content, clean_content_completed_at, clean_content_cost_usd, cleaner_name, cleaner_version, extractor_name, extractor_version, structured_json, metadata, canonical_clean_id, parent_processed_id, derivation_kind, derivation_metadata, rag_boost, replace_reason, archived_at, archived_reason, created_at, updated_at, deleted_at";
+  "id, name, created_by, organization_id, source_kind, source_id, source_hash, file_content_hash, params_hash, mime_type, total_pages, content, clean_content, clean_content_completed_at, clean_content_cost_usd, cleaner_name, cleaner_version, extractor_name, extractor_version, structured_json, metadata, canonical_clean_id, parent_processed_id, derivation_kind, derivation_metadata, rag_boost, replace_reason, archived_at, archived_reason, created_at, updated_at, deleted_at";

@@ -3,16 +3,26 @@
  * Supabase client (the admin sync route's transport). It builds no rows: every
  * row comes from `planManifestSync`. The SQL emitter renders the same plan.
  *
- * GOVERNANCE IS INSERT-ONLY (CONTRACT §2.7, ruling N5). PostgREST's upsert sets
- * every column it is sent on conflict, so for rows that already exist this
- * executor sends each insert-only column's CURRENT value (read first) — the
- * conflict then leaves organization_id / visibility exactly as they were. New
- * rows get the plan's values.
+ * GOVERNANCE IS INSERT-ONLY (CONTRACT §2.7, ruling N5), exactly as the package
+ * SQL does it. PostgREST's upsert rewrites every column it is sent on conflict,
+ * and a NOT NULL `organization_id` cannot be left out of an upsert, so the two
+ * cases travel separately:
+ *   - rows the table does not hold yet → INSERT … ON CONFLICT DO NOTHING
+ *     (`ignoreDuplicates`) with the plan's governance values;
+ *   - rows it holds whose code-owned columns changed → UPDATE of exactly
+ *     `conflictUpdateColumns(plan)` (never a governance column), filtered by
+ *     every key column.
+ * Unchanged rows are not written. Provenance (`synced_by`/`synced_from`) is
+ * written with a change but never counts as one.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { readAllRows } from "@ai-matrx/data/db";
 import type { Json } from "@ai-matrx/alchemy/declare";
-import type { SurfaceSyncPlan, SyncTablePlan } from "@ai-matrx/alchemy/checks";
+import {
+  conflictUpdateColumns,
+  type SurfaceSyncPlan,
+  type SyncTablePlan,
+} from "@ai-matrx/alchemy/checks";
 import type { Database } from "@/types/database.types";
 
 type Sb = SupabaseClient<Database>;
@@ -34,9 +44,12 @@ interface UntypedTable {
   ): PromiseLike<{ error: unknown }> & {
     select(columns: string): PromiseLike<{ data: Row[] | null; error: unknown }>;
   };
-  update(values: Row): {
-    eq(column: string, value: string): { select(columns: string): PromiseLike<{ data: Row[] | null; error: unknown }> };
-  };
+  update(values: Row): Filtered;
+}
+
+interface Filtered {
+  eq(column: string, value: Json): Filtered;
+  select(columns: string): PromiseLike<{ data: Row[] | null; error: unknown }>;
 }
 
 function table(sb: Sb, qualified: string): UntypedTable {
@@ -62,8 +75,26 @@ export interface ExecuteSyncPlanResult {
   tables: ExecutedTable[];
 }
 
+/** Written with a content change, never a reason to write. */
+const PROVENANCE = new Set(["synced_by", "synced_from"]);
+const UPDATE_CONCURRENCY = 8;
+
+function canonical(value: unknown): string {
+  if (value === undefined || value === null) return "null";
+  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+  if (typeof value === "object") {
+    return `{${Object.keys(value as object)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${canonical((value as Record<string, unknown>)[key])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
 async function executeTable(sb: Sb, plan: SyncTablePlan): Promise<ExecutedTable> {
-  const readColumns = [...new Set([...plan.conflict, ...plan.insertOnly])].join(", ");
+  const updateColumns = conflictUpdateColumns(plan);
+  const compared = updateColumns.filter((column) => !PROVENANCE.has(column));
+  const readColumns = [...new Set([...plan.conflict, ...compared])].join(", ");
   const existing = await readAllRows(
     ({ from, to }) =>
       // VIEW LAW: completeness audit of the system catalog — every row is the job.
@@ -74,18 +105,39 @@ async function executeTable(sb: Sb, plan: SyncTablePlan): Promise<ExecutedTable>
     { label: plan.table },
   );
   const current = new Map(existing.map((row) => [keyOf(row as Row, plan.conflict), row as Row]));
-  const rows = plan.rows.map((row) => {
+  const fresh: Row[] = [];
+  const changed: Row[] = [];
+  for (const row of plan.rows) {
     const present = current.get(keyOf(row, plan.conflict));
-    if (!present) return row;
-    const kept: Row = { ...row };
-    for (const column of plan.insertOnly) kept[column] = present[column] ?? null;
-    return kept;
-  });
-  const result = await table(sb, plan.table)
-    .upsert(rows, { onConflict: plan.conflict.join(",") })
-    .select(plan.conflict.join(", "));
-  if (result.error) throw result.error;
-  return { table: plan.table, written: result.data ?? [] };
+    if (!present) fresh.push(row);
+    else if (compared.some((column) => canonical(present[column]) !== canonical(row[column]))) changed.push(row);
+  }
+
+  const written: Row[] = [];
+  if (fresh.length > 0) {
+    const inserted = await table(sb, plan.table)
+      .upsert(fresh, { onConflict: plan.conflict.join(","), ignoreDuplicates: true })
+      .select(plan.conflict.join(", "));
+    if (inserted.error) throw inserted.error;
+    written.push(...(inserted.data ?? []));
+  }
+  for (let start = 0; start < changed.length; start += UPDATE_CONCURRENCY) {
+    const batch = changed.slice(start, start + UPDATE_CONCURRENCY);
+    const results = await Promise.all(
+      batch.map((row) => {
+        const values: Row = {};
+        for (const column of updateColumns) if (column in row) values[column] = row[column]!;
+        let query = table(sb, plan.table).update(values);
+        for (const column of plan.conflict) query = query.eq(column, row[column] ?? "");
+        return query.select(plan.conflict.join(", "));
+      }),
+    );
+    for (const result of results) {
+      if (result.error) throw result.error;
+      written.push(...(result.data ?? []));
+    }
+  }
+  return { table: plan.table, written };
 }
 
 export async function executeSyncPlan(

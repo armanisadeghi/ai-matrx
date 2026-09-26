@@ -5,8 +5,8 @@
  *
  * Historically this rendered the full VSCodePreferencesModal inline. The new
  * preferences system lives in a WindowPanel overlay rather than a route, so
- * this page now just dispatches `openOverlay({ overlayId: "userPreferencesWindow" })`
- * on mount and redirects to the dashboard. Deep links like `?tab=prompts`
+ * this page now redirects to the dashboard and, once there, dispatches
+ * `openOverlay({ overlayId: "userPreferencesWindow" })`. Deep links like `?tab=prompts`
  * still work — the tab id is mapped to the new registry id.
  */
 
@@ -47,17 +47,27 @@ function SettingsPreferencesInner() {
   const controlId = params.get("control") ?? undefined;
   const tabId = rawTab ? (LEGACY_TAB_ALIASES[rawTab] ?? rawTab) : undefined;
 
+  // Navigate FIRST, open the window once we have left. Opening it first
+  // writes its `panels` param onto this address with history.replaceState,
+  // which the App Router takes as the newest navigation — the in-flight
+  // replace to /dashboard was dropped and the tab sat on "Opening settings…"
+  // forever (reproduced 2026-09-26). The cleanup runs on the real unmount
+  // (address already /dashboard) and also on React's dev double-invoke
+  // (address still here — skipped; the re-run effect replaces again).
   useEffect(() => {
-    dispatch(
-      openOverlay({
-        overlayId: "userPreferencesWindow",
-        data: {
-          ...(tabId ? { initialTabId: tabId } : {}),
-          ...(controlId ? { initialControlId: controlId } : {}),
-        },
-      }),
-    );
     router.replace("/dashboard");
+    return () => {
+      if (window.location.pathname === "/settings/preferences") return;
+      dispatch(
+        openOverlay({
+          overlayId: "userPreferencesWindow",
+          data: {
+            ...(tabId ? { initialTabId: tabId } : {}),
+            ...(controlId ? { initialControlId: controlId } : {}),
+          },
+        }),
+      );
+    };
   }, [controlId, dispatch, router, tabId]);
 
   return (

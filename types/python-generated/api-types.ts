@@ -1038,47 +1038,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/decision-review/items/{item_id}/label": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Post Item Label
-         * @description Record the true answer for one decision answer.
-         */
-        post: operations["post_item_label_decision_review_items__item_id__label_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/decision-review/conversations/label": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Post Conversation Labels
-         * @description Record one true answer against the latest answer to a question in each
-         *     conversation — the battle verdict column's write.
-         */
-        post: operations["post_conversation_labels_decision_review_conversations_label_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/decision-review/agents/{agent_id}/calibration": {
         parameters: {
             query?: never;
@@ -21084,6 +21043,40 @@ export interface paths {
          * @description Refresh one window (1–31 days) of owned events and link attendees who are People here.
          */
         post: operations["calendar_refresh_google_sync_calendar_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-sync/calendar/discover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Calendar Discover */
+        post: operations["calendar_discover_google_sync_calendar_discover_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-sync/calendar/selected-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Calendar Selected Events */
+        post: operations["calendar_selected_events_google_sync_calendar_selected_events_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -44727,6 +44720,17 @@ export interface components {
             use_user_agent_overrides?: boolean;
         };
         /**
+         * AgentVariableControlInput
+         * @description Bind a variable to a model control (controls as first-class variables).
+         */
+        AgentVariableControlInput: {
+            /**
+             * Key
+             * @description The model control this variable sets for the run (e.g. 'temperature', 'aspect_ratio', 'voice'). Pick one the chosen model exposes AND your organization lets callers bind — agent_catalog list_models reports both (`controls[].variable_bindable`).
+             */
+            key: string;
+        };
+        /**
          * AgentVariableDefinition
          * @description Full variable definition — the shape the FE VariableInputComponent renders.
          */
@@ -44794,6 +44798,14 @@ export interface components {
              * @default
              */
             description?: string;
+            /**
+             * Default Value
+             * @description The variable's default. For a control-bound variable this IS the agent's own value for that control (the setting is not written separately).
+             * @default
+             */
+            default_value?: string;
+            /** @description Bind this variable to a model control: {"key": "aspect_ratio"}. */
+            control?: components["schemas"]["AgentVariableControlInput"] | null;
         };
         /**
          * AgentVersion
@@ -47357,10 +47369,9 @@ export interface components {
             } | null;
             /**
              * Max Iterations
-             * @description Maximum agent reasoning/tool-loop iterations.
-             * @default 100
+             * @description Maximum agent reasoning/tool-loop iterations for this step. Leave empty to use your organization's setting “Workflows › Agent step iteration limit” (100 unless changed).
              */
-            max_iterations?: number;
+            max_iterations?: number | null;
             /**
              * Max Retries Per Iteration
              * @description Maximum provider retries allowed within one agent iteration.
@@ -54238,6 +54249,16 @@ export interface components {
              * @default 14
              */
             days?: number;
+        };
+        /** CalendarDiscoveryRequest */
+        CalendarDiscoveryRequest: {
+            /**
+             * Organization Id
+             * @description The organization this Record belongs to. Required: nothing on the server chooses one for you.
+             */
+            organization_id: string;
+            /** Connection Id */
+            connection_id: string;
         };
         /** CalendarRefreshRequest */
         CalendarRefreshRequest: {
@@ -62642,24 +62663,6 @@ export interface components {
              */
             run_enrich?: boolean;
         };
-        /** ConversationLabelBody */
-        ConversationLabelBody: {
-            /** Conversation Ids */
-            conversation_ids: string[];
-            /** Question */
-            question: string;
-            /** Answer */
-            answer: string;
-        };
-        /** ConversationLabels */
-        ConversationLabels: {
-            /** Labeled */
-            labeled?: components["schemas"]["LabeledItem"][];
-            /** Skipped */
-            skipped?: {
-                [key: string]: string;
-            };
-        };
         /**
          * ConversationRecord
          * @description Conversation row as returned by ``CxConversation.to_dict()``.
@@ -63341,6 +63344,11 @@ export interface components {
              * @description Executable tools to assign, by canonical tool NAME (from agent_catalog list_tools; DB UUIDs also accepted). Validated against the live registry — unknown or inactive tools are rejected loudly. Written to the authoritative agent.definition.tools column the executor reads.
              */
             tools?: string[];
+            /**
+             * Term List Ids
+             * @description Term lists (glossary / pronunciation / house terms) to ATTACH to the agent, by term-list id. REPLACES the attached set (omitted = unchanged; [] = detach all). Each list must be one you can view; an unknown id is refused by name.
+             */
+            term_list_ids?: string[];
             /**
              * Owner User Id
              * @description WHO this agent belongs to. Set it whenever the agent is being built FOR a user (a Masterwork's Maker/Editor/Chief, anything a customer's build produces): the agent is born agent_type='user', created_by=<this user>, in their effective org, with an internal card — exactly what a normal user-created agent gets. Leave it None ONLY for a platform builtin the PLATFORM ships to everyone (the agent factory, seed scripts); a builtin is ownerless, sits in the Matrx System org, and shows in every user's browse list.
@@ -84981,14 +84989,6 @@ export interface components {
              */
             duration?: number | null;
         };
-        /** LabelBody */
-        LabelBody: {
-            /**
-             * Answer
-             * @description The true answer, in the question's vocabulary.
-             */
-            answer: string;
-        };
         /** LabelCatalogEntry */
         LabelCatalogEntry: {
             /** Id */
@@ -85077,19 +85077,6 @@ export interface components {
              * @default false
              */
             debug?: boolean;
-        };
-        /** LabeledItem */
-        LabeledItem: {
-            /** Id */
-            id: string;
-            /** Question */
-            question: string;
-            /** Verdict */
-            verdict: string;
-            /** Authority Verdict */
-            authority_verdict: string;
-            /** Agreed */
-            agreed: boolean;
         };
         /**
          * LandedSource
@@ -91758,6 +91745,53 @@ export interface components {
             include_preamble?: boolean;
         };
         /**
+         * ModelAuthoringFacts
+         * @description What the runtime will accept for this model — so an authoring agent never
+         *     proposes a message part, flag or binding the run then refuses.
+         */
+        ModelAuthoringFacts: {
+            /**
+             * Decision
+             * @description decision_questions: 'native' = a decision model computes the probabilities; 'verbalized' = a text model states them; 'none' = not a text/decision route.
+             * @enum {string}
+             */
+            decision: "native" | "none" | "verbalized";
+            /**
+             * Prefill
+             * @description True = a trailing assistant message flagged prefill is sent natively. False = the organization's flag_compatibility_mode decides (refuse | convert | drop).
+             */
+            prefill: boolean;
+            /**
+             * Flag Compatibility Mode
+             * @description This organization's mode for unsupported flags.
+             */
+            flag_compatibility_mode: string;
+            /**
+             * Speaker Cap
+             * @description Audio models only: the most distinct speakers one speech_script may use (null on an audio model = uncapped; omitted for non-audio models).
+             */
+            speaker_cap?: number | null;
+            /**
+             * Image Reference Roles
+             * @description Image reference roles this model takes and how many of each ('total' = overall cap). Empty = none.
+             */
+            image_reference_roles?: {
+                [key: string]: number;
+            };
+            /**
+             * Video Reference Roles
+             * @description Video/audio reference roles (extend, restyle, lip_sync, named, …) and counts. Empty = none.
+             */
+            video_reference_roles?: {
+                [key: string]: number;
+            };
+            /**
+             * Controls
+             * @description Controls with a catalog rule on this model that it supports.
+             */
+            controls?: components["schemas"]["ModelControlInfo"][];
+        };
+        /**
          * ModelCapabilitySummary
          * @description What a model can actually do — for a capability-driven model picker. Two
          *     layers: MODEL-level (the per-model jsonb seam) + PROVIDER-level (what the
@@ -91773,7 +91807,7 @@ export interface components {
              * @default text
              * @enum {string}
              */
-            output_type?: "audio" | "extraction" | "image" | "realtime" | "text" | "video";
+            output_type?: "audio" | "decision" | "extraction" | "image" | "realtime" | "text" | "video";
             /**
              * Interaction
              * @default turn
@@ -91824,6 +91858,19 @@ export interface components {
              * @default false
              */
             accepts_youtube?: boolean;
+        };
+        /**
+         * ModelControlInfo
+         * @description One control this model exposes, and whether a variable may set it here.
+         */
+        ModelControlInfo: {
+            /** Key */
+            key: string;
+            /**
+             * Variable Bindable
+             * @description True when the caller's organization lets a run set this control through a bound variable (agents.controls/variable_bindable_keys). False = binding is allowed but the agent's own value is always used.
+             */
+            variable_bindable: boolean;
         };
         /**
          * ModelCostBreakdown
@@ -91888,8 +91935,9 @@ export interface components {
              * @default text
              * @enum {string}
              */
-            output_type?: "audio" | "extraction" | "image" | "realtime" | "text" | "video";
+            output_type?: "audio" | "decision" | "extraction" | "image" | "realtime" | "text" | "video";
             capabilities?: components["schemas"]["ModelCapabilitySummary"] | null;
+            authoring?: components["schemas"]["ModelAuthoringFacts"] | null;
         };
         /**
          * ModelReport
@@ -113162,6 +113210,89 @@ export interface components {
             /** Selected Values */
             selected_values?: string[] | null;
         };
+        /** SelectedCalendar */
+        SelectedCalendar: {
+            /** Id */
+            id: string;
+            /** Summary */
+            summary: string;
+            /** Primary */
+            primary: boolean;
+            /** Access Role */
+            access_role: string;
+            /** Time Zone */
+            time_zone: string | null;
+        };
+        /** SelectedCalendarRequest */
+        SelectedCalendarRequest: {
+            /**
+             * Organization Id
+             * @description The organization this Record belongs to. Required: nothing on the server chooses one for you.
+             */
+            organization_id: string;
+            /** Connection Id */
+            connection_id: string;
+            /** Calendar Id */
+            calendar_id: string;
+            /**
+             * Days
+             * @default 7
+             */
+            days?: number;
+        };
+        /** SelectedEvent */
+        SelectedEvent: {
+            /** Id */
+            id: string | null;
+            /** Title */
+            title: string;
+            /** Starts At */
+            starts_at: string | null;
+            /** Ends At */
+            ends_at: string | null;
+            /** Time Zone */
+            time_zone: string | null;
+            /** Status */
+            status: string | null;
+            /** Organizer Email */
+            organizer_email: string | null;
+            /** Attendees */
+            attendees: {
+                [key: string]: unknown;
+            }[];
+            /** Meeting Url */
+            meeting_url: string | null;
+            /** Updated At */
+            updated_at: string | null;
+            /** Recurring Event Id */
+            recurring_event_id: string | null;
+            /** Original Start Time */
+            original_start_time: {
+                [key: string]: string;
+            } | null;
+            /** Detail Visible */
+            detail_visible: boolean;
+        };
+        /** SelectedEventWindow */
+        SelectedEventWindow: {
+            /** Connection Id */
+            connection_id: string;
+            calendar: components["schemas"]["SelectedCalendar"];
+            /**
+             * Window Start
+             * Format: date-time
+             */
+            window_start: string;
+            /**
+             * Window End
+             * Format: date-time
+             */
+            window_end: string;
+            /** Events */
+            events: components["schemas"]["SelectedEvent"][];
+            /** Truncated */
+            truncated: boolean;
+        };
         /** SelectedFileResponse */
         SelectedFileResponse: {
             /** Id */
@@ -126724,6 +126855,11 @@ export interface components {
              * @description Who may see the agent's CARD (the browse list / surface agent menu). 🚨 A builtin MUST be 'public': it has created_by NULL in the ownerless system org, where iam.has_org_access can never be true, so 'public' is the only clause agent.card can ever admit it on. The factory writes it on creation; this is how an existing agent is corrected.
              */
             card_visibility?: ("internal" | "link" | "personal" | "public") | null;
+            /**
+             * Term List Ids
+             * @description Term lists (glossary / pronunciation / house terms) to ATTACH to the agent, by term-list id. REPLACES the attached set (omitted = unchanged; [] = detach all). Each list must be one you can view; an unknown id is refused by name.
+             */
+            term_list_ids?: string[] | null;
         };
         /**
          * UpdateCrmFoldSettingsRequest
@@ -138097,74 +138233,6 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    post_item_label_decision_review_items__item_id__label_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                item_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LabelBody"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LabeledItem"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    post_conversation_labels_decision_review_conversations_label_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConversationLabelBody"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConversationLabels"];
                 };
             };
             /** @description Validation Error */
@@ -168062,6 +168130,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CalendarRefreshResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    calendar_discover_google_sync_calendar_discover_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CalendarDiscoveryRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SelectedCalendar"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    calendar_selected_events_google_sync_calendar_selected_events_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SelectedCalendarRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SelectedEventWindow"];
                 };
             };
             /** @description Validation Error */

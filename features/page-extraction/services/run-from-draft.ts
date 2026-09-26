@@ -233,7 +233,7 @@ export async function saveTemplateFromDraft(
     // (inherit) — users set non-null when they want this specific run
     // to outrank or underrank the agent's usual output.
     rag_boost: draft.ragBoost ?? null,
-    owner_id: opts.ownerId,
+    created_by: opts.ownerId,
     organization_id: await ensureOrgId(opts.organizationId),
     archived_at: null,
   };

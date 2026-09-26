@@ -343,7 +343,7 @@ function RepairPane({
         max_concurrent: 1,
         rag_boost: 100,
         column_order: [],
-        owner_id: userId,
+        created_by: userId,
         organization_id: orgId,
       };
       const job = await createJob(insert);

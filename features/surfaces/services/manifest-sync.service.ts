@@ -1508,37 +1508,8 @@ export async function applyManifestSync(
         : [],
     );
 
-  // 3d. Backfill url_pattern for any other ui_surface row still empty when a
-  //     route-map entry or client/local heuristic exists.
-  const allSurfaceRows = await readAllRows(
-    ({ from, to }) =>
-      // VIEW LAW: completeness audit of the system catalog — every row is the job.
-      sb
-        .schema("ui")
-        .from("ui_surface")
-        .select("name, url_pattern", { count: "exact" })
-        .order("name", { ascending: true })
-        .range(from, to),
-    { label: "ui.ui_surface" },
-  );
-  const manifestSurfaceSet = new Set(targetManifests.map((m) => m.surfaceName));
-  for (const row of allSurfaceRows) {
-    if (manifestSurfaceSet.has(row.name)) continue;
-    if (row.url_pattern?.trim()) continue;
-    const urlPattern = getDefaultUrlPatternForSurface(row.name);
-    if (!urlPattern) continue;
-    const upd = await sb
-      .schema("ui")
-      .from("ui_surface")
-      .update({ url_pattern: urlPattern })
-      .eq("name", row.name)
-      .is("url_pattern", null)
-      .select("name");
-    if (upd.error) throw upd.error;
-    if ((upd.data ?? []).length > 0) {
-      urlPatternsUpdated.push({ surfaceName: row.name, urlPattern });
-    }
-  }
+  // (No write outside the plan: a surface row no manifest declares is an
+  //  orphan — archived or given a manifest, never edited by this sync. ALC-14.)
 
   // 4. Delete stale rows (db_only) for surfaces we manage in manifests.
   const deleted: ApplyManifestSyncResult["deleted"] = [];

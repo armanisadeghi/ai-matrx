@@ -1,6 +1,11 @@
--- chair-step: lane STORE-RESTORE-DOORS inverse. Puts back the pre-STORE-RESTORE-DOORS bodies of public._trash_kind_rows, public._trash_kind_counts, public.entity_undelete and public.org_trash_restore (captured live 2026-09-26), drops the six restore doors (custom.field_restore, rule_restore, relation_restore, doc_template_restore, dashboard_restore, mandate.definition_restore), the three Trash store helpers and their door rows, and takes the mandate Trash kind off the registry (its label back to "Mandate Definition (new)"). No archived or live row is touched.
+-- chair-step: lane STORE-RESTORE-DOORS inverse. Puts back the pre-STORE-RESTORE-DOORS bodies of public._trash_kind_rows, public._trash_kind_counts, public.entity_undelete, public.org_trash_restore and custom._record_field_validation (captured live 2026-09-26), drops the six restore doors (custom.field_restore, rule_restore, relation_restore, doc_template_restore, dashboard_restore, mandate.definition_restore), the three Trash store helpers and their door rows, and takes the mandate Trash kind off the registry (its label back to "Mandate Definition (new)"). No archived or live row is touched.
 -- INVERSE of migrations/campaign/storerestoredoors_a_removed_field_rule_link_template_dashboard_or_mandate_comes_back_from_trash.sql
 -- lane: STORE-RESTORE-DOORS
+-- based-on: public._trash_kind_rows(uuid, uuid, uuid, text[], integer, integer) 0835054e6d20a37358915f86893c954bc4c9a4aa978f639216f9f43180db67af
+-- based-on: public._trash_kind_counts(uuid, uuid, uuid) d6b74549441ec1b4d263f8bf13cf5cbf37432dc2de08f22e08f13454c1e20fe8
+-- based-on: public.entity_undelete(text, uuid) 9d6bd7c1d4fd1c9541f46bd478b90bf8d10448b8fad369572f86b92d92775e01
+-- based-on: public.org_trash_restore(uuid, text, uuid) 45d3476c24664717e32a59bee0db3f764d4d31aa64404ac43681f4ec7dbece8a
+-- based-on: custom._record_field_validation() 246e8866f190e66126dec6bc642172f7db97f373b9617c91dff1b6645a5ca6a9
 
 create or replace function public._trash_kind_rows(p_uid uuid, p_org uuid, p_member uuid, p_kinds text[], p_limit integer, p_offset integer)
  RETURNS TABLE(artifact_kind text, entity_token text, label text, id uuid, title text, deleted_at timestamp with time zone, organization_id uuid, is_mine boolean, owner_id uuid)
@@ -748,6 +753,112 @@ begin
 end;
 $function$
 ;
+
+create or replace function custom._record_field_validation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_type_field text;
+  v_rtype      text;
+  v_fields     custom.record[];
+  v_gone       custom.record[];
+  g            custom.record;
+  v_retired    jsonb;
+begin
+  -- THE DOOR. One call to the ONE predicate (`custom.assert_store_door`), which
+  -- judges `custom.caller_role()` - the identity the caller actually held - and not
+  -- `current_user`, which a SECURITY DEFINER door has already rewritten to itself.
+  -- The switch never removes a check: everything below runs exactly as before.
+  perform custom.assert_store_door(new.organization_id, 'custom.record');
+  -- THE SWITCH, by name: custom.assert_store_door resolves custom/system_enabled through
+  -- custom.store_is_open, and while it is off this store takes writes only from the role
+  -- that owns custom.record.
+
+  -- The kernel is defined in code, the Tables and the Fields and the merge fields have their
+  -- own shape guards, and a relation row carries an edge rather than a document.
+  if new.data_class in ('kernel', 'relation')
+     or new.table_id is null
+     or new.table_id = custom.table_kernel_id()
+     or new.table_id = custom.field_kernel_id() then
+    return new;
+  end if;
+
+
+  -- A RETIREMENT IS NOT A CHANGE OF SHAPE (the shared rule DOOR-FIX and TABLE-DELETE built,
+  -- now asked as ONE question). The only change in this update is `deleted_at` going from
+  -- nothing to a time: the document is byte-for-byte what it was, so there is no new shape
+  -- to judge. This is what lets a dependent field retire in the SAME operation as the
+  -- relation it reads through - the sweep, the cascade and the door all arrive here.
+  if tg_op = 'UPDATE'
+     and custom.is_a_retirement(old.deleted_at, new.deleted_at,
+                                old.data, new.data,
+                                old.table_id, new.table_id,
+                                old.organization_id, new.organization_id,
+                                old.data_class, new.data_class) then
+    return new;
+  end if;
+
+  v_type_field := custom.table_type_field(new.organization_id, new.table_id);
+  if v_type_field is not null then
+    v_rtype := new.data ->> v_type_field;
+  end if;
+
+  select array_agg(f) into v_fields
+    from custom.applicable_fields(new.organization_id, new.table_id, v_rtype) f;
+  if v_fields is null then
+    return new;               -- a Table that declared no definitions validates nothing.
+  end if;
+
+  -- T8's retype: a Value that stops applying is neither coerced nor deleted. It is moved,
+  -- WITH ITS REASON, and the field is then hidden by custom.applicable_fields. This is a
+  -- STAND-IN for History and says so: W3-HIST (HIS-*) owns the real store, and when it
+  -- lands this block writes there instead. Until then the value is in the document, not gone.
+  if tg_op = 'UPDATE' and v_type_field is not null
+     and (old.data ->> v_type_field) is distinct from v_rtype then
+    select array_agg(f) into v_gone
+      from custom.applicable_fields(new.organization_id, new.table_id,
+                                    old.data ->> v_type_field) f
+     where not exists (select 1
+                         from custom.applicable_fields(new.organization_id, new.table_id, v_rtype) a
+                        where a.id = f.id);
+    v_retired := coalesce(new.data -> '_retired', '[]'::jsonb);
+    if v_gone is not null then
+      foreach g in array v_gone loop
+        if old.data ? (g.data ->> 'key') and jsonb_typeof(old.data -> (g.data ->> 'key')) <> 'null' then
+          v_retired := v_retired || jsonb_build_object(
+            'key',   g.data ->> 'key',
+            'label', g.data ->> 'label',
+            'value', old.data -> (g.data ->> 'key'),
+            -- W1-VAL (1 of 2): a retired Value takes its ENVELOPE with it. Where a value came
+            -- from, who wrote it and its other candidates are facts about that value, so they
+            -- belong beside it in _retired and not orphaned in _values pointing at nothing.
+            'envelope', old.data -> '_values' -> (g.data ->> 'key'),
+            'reason', format('this record became a %s, and %s does not apply to a %s',
+                             custom.said(v_rtype, 'different kind of thing'),
+                             coalesce(nullif(g.data ->> 'label', ''), g.data ->> 'key'),
+                             custom.said(v_rtype, 'record of that kind')),
+            'at', to_jsonb(now()));
+          new.data := new.data - (g.data ->> 'key');
+          if jsonb_typeof(new.data -> '_values') = 'object' then
+            new.data := jsonb_set(new.data, '{_values}',
+                                  (new.data -> '_values') - (g.data ->> 'key'));
+          end if;
+        end if;
+      end loop;
+      if jsonb_array_length(v_retired) > 0 then
+        new.data := jsonb_set(new.data, '{_retired}', v_retired);
+      end if;
+    end if;
+  end if;
+
+  perform custom.validate_values(new.organization_id, v_fields, new.data, v_rtype);
+  -- W1-VAL (2 of 2): the half of the envelope law that needs the definitions.
+  perform custom.validate_value_envelope(new.organization_id, v_fields, new.data);
+  return new;
+end;
+$function$;
 
 delete from platform.client_callable_door
  where (schema_name, function_name) in (('custom', 'field_restore'), ('custom', 'rule_restore'), ('custom', 'relation_restore'),

@@ -24,27 +24,24 @@ import {
 } from "@/features/surfaces/declare/surface-declare";
 import { emitSurfaceSyncSql } from "./emit-surface-sync-sql";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import {
+  CHILD_TABLES,
+  canonical,
+  childMetadataFailures,
+  mirrorKey,
+  planKey,
+  planRows,
+  rowsByKey,
+  type Row,
+} from "./lib/surface-sync-check";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-type Row = Record<string, unknown>;
 
 function usage(): never {
   throw new Error(
     "Usage: tsx scripts/sync-surface-manifests-direct.ts [--check] [--registration-only] [--self-test] [--surface <name>]…",
   );
-}
-
-function canonical(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
-  if (value && typeof value === "object") {
-    const record = value as Record<string, unknown>;
-    return `{${Object.keys(record)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${canonical(record[key])}`)
-      .join(",")}}`;
-  }
-  return JSON.stringify(value ?? null);
 }
 
 function parseArgs() {
@@ -83,12 +80,6 @@ function parseArgs() {
   return { check, registrationOnly, selfTest, names: [...new Set(names)] };
 }
 
-function rowsByKey(rows: readonly Row[]): Map<string, Row> {
-  return new Map(
-    rows.map((row) => [`${row.surface_name ?? row.name}::${row.name}`, row]),
-  );
-}
-
 /** The ONE sync plan (ALC-14) for these manifests; --check compares the DB to it. */
 function syncPlan(
   manifests: ReturnType<typeof getAllManifests>,
@@ -98,40 +89,6 @@ function syncPlan(
     organizationId,
     syncedFrom: "check",
   });
-}
-
-const CHILD_TABLES = [
-  ["ui_surface_value", "value"],
-  ["ui_surface_agent_role", "agent role"],
-  ["ui_surface_write_target", "write target"],
-  ["ui_surface_client_tool", "client tool"],
-] as const;
-
-const NOT_COMPARED = new Set(["organization_id", "visibility", "synced_by", "synced_from"]);
-
-function planRows(plan: SurfaceSyncPlan, table: string): readonly Row[] {
-  return plan.tables.find((t) => t.table === `ui.${table}`)?.rows ?? [];
-}
-
-function childMetadataFailures(
-  plan: SurfaceSyncPlan,
-  rows: readonly Row[][],
-): string[] {
-  const failures: string[] = [];
-  CHILD_TABLES.forEach(([table], index) => {
-    const actual = rowsByKey(rows[index] ?? []);
-    for (const expected of planRows(plan, table)) {
-      const key = `${expected.surface_name}::${expected.name}`;
-      const row = actual.get(key);
-      if (!row) continue;
-      for (const [column, value] of Object.entries(expected)) {
-        if (NOT_COMPARED.has(column)) continue;
-        if (canonical(row[column]) !== canonical(value))
-          failures.push(`${key}: ${column} differs`);
-      }
-    }
-  });
-  return failures;
 }
 
 function expectedMetadata(
@@ -245,9 +202,10 @@ async function main() {
       }
     }
     CHILD_TABLES.forEach(([table, label], index) => {
-      const rows = rowsByKey(childRows[index]?.rows ?? []);
+      const tableKey = planKey(plan, table);
+      const rows = rowsByKey(childRows[index]?.rows ?? [], tableKey);
       for (const expected of planRows(plan, table)) {
-        const key = `${expected.surface_name}::${expected.name}`;
+        const key = mirrorKey(expected, tableKey);
         const row = rows.get(key);
         if (!row) {
           failures.push(`${label} ${key}: missing`);
@@ -391,7 +349,7 @@ async function runSelfTest() {
       throw new Error("SELF-TEST failed: emitter created ui_client rows");
     const selfPlan = syncPlan([manifest], organizationId);
     const keysOf = (table: string) =>
-      planRows(selfPlan, table).map((row) => `${row.surface_name}::${row.name}`);
+      planRows(selfPlan, table).map((row) => mirrorKey(row, planKey(selfPlan, table)));
     const surface = await client.query<Row>(
       "select name, is_active from ui.ui_surface where name = $1",
       [fixture],
@@ -405,10 +363,10 @@ async function runSelfTest() {
     );
     for (const [table, expected] of checks) {
       const rows = await client.query<Row>(
-        `select surface_name, name, organization_id, visibility from ui.${table} where surface_name = $1`,
+        `select * from ui.${table} where surface_name = $1`,
         [fixture],
       );
-      const actual = rowsByKey(rows.rows);
+      const actual = rowsByKey(rows.rows, planKey(selfPlan, table));
       for (const key of expected.map((key) => key.replace(source, fixture))) {
         const row = actual.get(key);
         if (

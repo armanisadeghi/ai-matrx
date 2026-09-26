@@ -2029,101 +2029,6 @@
         }
       }
     },
-    "/decision-review/items/{item_id}/label": {
-      "post": {
-        "tags": [
-          "Decision Review"
-        ],
-        "summary": "Post Item Label",
-        "description": "Record the true answer for one decision answer.",
-        "operationId": "post_item_label_decision_review_items__item_id__label_post",
-        "parameters": [
-          {
-            "name": "item_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Item Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LabelBody"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LabeledItem"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/decision-review/conversations/label": {
-      "post": {
-        "tags": [
-          "Decision Review"
-        ],
-        "summary": "Post Conversation Labels",
-        "description": "Record one true answer against the latest answer to a question in each\nconversation — the battle verdict column's write.",
-        "operationId": "post_conversation_labels_decision_review_conversations_label_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ConversationLabelBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConversationLabels"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/decision-review/agents/{agent_id}/calibration": {
       "get": {
         "tags": [
@@ -41564,6 +41469,92 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CalendarRefreshResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-sync/calendar/discover": {
+      "post": {
+        "tags": [
+          "Google Sync"
+        ],
+        "summary": "Calendar Discover",
+        "operationId": "calendar_discover_google_sync_calendar_discover_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalendarDiscoveryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SelectedCalendar"
+                  },
+                  "type": "array",
+                  "title": "Response Calendar Discover Google Sync Calendar Discover Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-sync/calendar/selected-events": {
+      "post": {
+        "tags": [
+          "Google Sync"
+        ],
+        "summary": "Calendar Selected Events",
+        "operationId": "calendar_selected_events_google_sync_calendar_selected_events_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelectedCalendarRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelectedEventWindow"
                 }
               }
             }
@@ -102509,6 +102500,23 @@
         "title": "AgentUserInputBody",
         "description": "Minimal request body for endpoints that previously took no body.\n\nUse as `request: AgentUserInputBody = Body(default_factory=AgentUserInputBody)`\nin routes that historically POST'd with an empty payload — old clients\nstill work (FastAPI parses an absent body as the factory default), and\nnew clients can opt into `{\"user_input\": \"...\"}` and/or\n`{\"use_user_agent_overrides\": true}`."
       },
+      "AgentVariableControlInput": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Key",
+            "description": "The model control this variable sets for the run (e.g. 'temperature', 'aspect_ratio', 'voice'). Pick one the chosen model exposes AND your organization lets callers bind — agent_catalog list_models reports both (`controls[].variable_bindable`)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key"
+        ],
+        "title": "AgentVariableControlInput",
+        "description": "Bind a variable to a model control (controls as first-class variables)."
+      },
       "AgentVariableDefinition": {
         "properties": {
           "name": {
@@ -102624,6 +102632,23 @@
             "title": "Description",
             "description": "What this variable contains.",
             "default": ""
+          },
+          "default_value": {
+            "type": "string",
+            "title": "Default Value",
+            "description": "The variable's default. For a control-bound variable this IS the agent's own value for that control (the setting is not written separately).",
+            "default": ""
+          },
+          "control": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentVariableControlInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Bind this variable to a model control: {\"key\": \"aspect_ratio\"}."
           }
         },
         "type": "object",
@@ -108093,12 +108118,18 @@
             "ui:widget": "json"
           },
           "max_iterations": {
-            "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 500.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Max Iterations",
-            "description": "Maximum agent reasoning/tool-loop iterations.",
-            "default": 100
+            "description": "Maximum agent reasoning/tool-loop iterations for this step. Leave empty to use your organization's setting “Workflows › Agent step iteration limit” (100 unless changed)."
           },
           "max_retries_per_iteration": {
             "type": "integer",
@@ -122837,6 +122868,27 @@
           "connection_id"
         ],
         "title": "CalendarAgendaRequest"
+      },
+      "CalendarDiscoveryRequest": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Organization Id",
+            "description": "The organization this Record belongs to. Required: nothing on the server chooses one for you."
+          },
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "organization_id",
+          "connection_id"
+        ],
+        "title": "CalendarDiscoveryRequest"
       },
       "CalendarRefreshRequest": {
         "properties": {
@@ -144065,60 +144117,6 @@
         "type": "object",
         "title": "ConversationIngestRequest"
       },
-      "ConversationLabelBody": {
-        "properties": {
-          "conversation_ids": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "maxItems": 20,
-            "minItems": 1,
-            "title": "Conversation Ids"
-          },
-          "question": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 1,
-            "title": "Question"
-          },
-          "answer": {
-            "type": "string",
-            "maxLength": 500,
-            "minLength": 1,
-            "title": "Answer"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "conversation_ids",
-          "question",
-          "answer"
-        ],
-        "title": "ConversationLabelBody"
-      },
-      "ConversationLabels": {
-        "properties": {
-          "labeled": {
-            "items": {
-              "$ref": "#/components/schemas/LabeledItem"
-            },
-            "type": "array",
-            "title": "Labeled"
-          },
-          "skipped": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "type": "object",
-            "title": "Skipped"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "title": "ConversationLabels"
-      },
       "ConversationRecord": {
         "properties": {
           "id": {
@@ -145513,6 +145511,14 @@
             "type": "array",
             "title": "Tools",
             "description": "Executable tools to assign, by canonical tool NAME (from agent_catalog list_tools; DB UUIDs also accepted). Validated against the live registry — unknown or inactive tools are rejected loudly. Written to the authoritative agent.definition.tools column the executor reads."
+          },
+          "term_list_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Term List Ids",
+            "description": "Term lists (glossary / pronunciation / house terms) to ATTACH to the agent, by term-list id. REPLACES the attached set (omitted = unchanged; [] = detach all). Each list must be one you can view; an unknown id is refused by name."
           },
           "owner_user_id": {
             "anyOf": [
@@ -194299,23 +194305,6 @@
         "type": "object",
         "title": "LLMParams"
       },
-      "LabelBody": {
-        "properties": {
-          "answer": {
-            "type": "string",
-            "maxLength": 500,
-            "minLength": 1,
-            "title": "Answer",
-            "description": "The true answer, in the question's vocabulary."
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "answer"
-        ],
-        "title": "LabelBody"
-      },
       "LabelCatalogEntry": {
         "properties": {
           "id": {
@@ -194560,40 +194549,6 @@
         },
         "type": "object",
         "title": "LabelRequest"
-      },
-      "LabeledItem": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "question": {
-            "type": "string",
-            "title": "Question"
-          },
-          "verdict": {
-            "type": "string",
-            "title": "Verdict"
-          },
-          "authority_verdict": {
-            "type": "string",
-            "title": "Authority Verdict"
-          },
-          "agreed": {
-            "type": "boolean",
-            "title": "Agreed"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "id",
-          "question",
-          "verdict",
-          "authority_verdict",
-          "agreed"
-        ],
-        "title": "LabeledItem"
       },
       "LandedSource": {
         "properties": {
@@ -209367,6 +209322,74 @@
         "type": "object",
         "title": "MockStreamRequest"
       },
+      "ModelAuthoringFacts": {
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "native",
+              "none",
+              "verbalized"
+            ],
+            "title": "Decision",
+            "description": "decision_questions: 'native' = a decision model computes the probabilities; 'verbalized' = a text model states them; 'none' = not a text/decision route."
+          },
+          "prefill": {
+            "type": "boolean",
+            "title": "Prefill",
+            "description": "True = a trailing assistant message flagged prefill is sent natively. False = the organization's flag_compatibility_mode decides (refuse | convert | drop)."
+          },
+          "flag_compatibility_mode": {
+            "type": "string",
+            "title": "Flag Compatibility Mode",
+            "description": "This organization's mode for unsupported flags."
+          },
+          "speaker_cap": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speaker Cap",
+            "description": "Audio models only: the most distinct speakers one speech_script may use (null on an audio model = uncapped; omitted for non-audio models)."
+          },
+          "image_reference_roles": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Image Reference Roles",
+            "description": "Image reference roles this model takes and how many of each ('total' = overall cap). Empty = none."
+          },
+          "video_reference_roles": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Video Reference Roles",
+            "description": "Video/audio reference roles (extend, restyle, lip_sync, named, …) and counts. Empty = none."
+          },
+          "controls": {
+            "items": {
+              "$ref": "#/components/schemas/ModelControlInfo"
+            },
+            "type": "array",
+            "title": "Controls",
+            "description": "Controls with a catalog rule on this model that it supports."
+          }
+        },
+        "type": "object",
+        "required": [
+          "decision",
+          "prefill",
+          "flag_compatibility_mode"
+        ],
+        "title": "ModelAuthoringFacts",
+        "description": "What the runtime will accept for this model — so an authoring agent never\nproposes a message part, flag or binding the run then refuses."
+      },
       "ModelCapabilitySummary": {
         "properties": {
           "input_modalities": {
@@ -209387,6 +209410,7 @@
             "type": "string",
             "enum": [
               "audio",
+              "decision",
               "extraction",
               "image",
               "realtime",
@@ -209466,6 +209490,26 @@
         "type": "object",
         "title": "ModelCapabilitySummary",
         "description": "What a model can actually do — for a capability-driven model picker. Two\nlayers: MODEL-level (the per-model jsonb seam) + PROVIDER-level (what the\nprovider API accepts as input). See /Users/armanisadeghi/code/common-docs/systems/agents/ai-models/STATE.md."
+      },
+      "ModelControlInfo": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "variable_bindable": {
+            "type": "boolean",
+            "title": "Variable Bindable",
+            "description": "True when the caller's organization lets a run set this control through a bound variable (agents.controls/variable_bindable_keys). False = binding is allowed but the agent's own value is always used."
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "variable_bindable"
+        ],
+        "title": "ModelControlInfo",
+        "description": "One control this model exposes, and whether a variable may set it here."
       },
       "ModelCostBreakdown": {
         "properties": {
@@ -209585,6 +209629,7 @@
             "type": "string",
             "enum": [
               "audio",
+              "decision",
               "extraction",
               "image",
               "realtime",
@@ -209598,6 +209643,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ModelCapabilitySummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "authoring": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelAuthoringFacts"
               },
               {
                 "type": "null"
@@ -257015,6 +257070,273 @@
         ],
         "title": "SelectOptionResult"
       },
+      "SelectedCalendar": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "primary": {
+            "type": "boolean",
+            "title": "Primary"
+          },
+          "access_role": {
+            "type": "string",
+            "title": "Access Role"
+          },
+          "time_zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Zone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "summary",
+          "primary",
+          "access_role",
+          "time_zone"
+        ],
+        "title": "SelectedCalendar"
+      },
+      "SelectedCalendarRequest": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Organization Id",
+            "description": "The organization this Record belongs to. Required: nothing on the server chooses one for you."
+          },
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "calendar_id": {
+            "type": "string",
+            "maxLength": 320,
+            "minLength": 1,
+            "title": "Calendar Id"
+          },
+          "days": {
+            "type": "integer",
+            "maximum": 31.0,
+            "minimum": 1.0,
+            "title": "Days",
+            "default": 7
+          }
+        },
+        "type": "object",
+        "required": [
+          "organization_id",
+          "connection_id",
+          "calendar_id"
+        ],
+        "title": "SelectedCalendarRequest"
+      },
+      "SelectedEvent": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "starts_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts At"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "time_zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Zone"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "organizer_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organizer Email"
+          },
+          "attendees": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Attendees"
+          },
+          "meeting_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meeting Url"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "recurring_event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recurring Event Id"
+          },
+          "original_start_time": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Start Time"
+          },
+          "detail_visible": {
+            "type": "boolean",
+            "title": "Detail Visible"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "starts_at",
+          "ends_at",
+          "time_zone",
+          "status",
+          "organizer_email",
+          "attendees",
+          "meeting_url",
+          "updated_at",
+          "recurring_event_id",
+          "original_start_time",
+          "detail_visible"
+        ],
+        "title": "SelectedEvent"
+      },
+      "SelectedEventWindow": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "title": "Connection Id"
+          },
+          "calendar": {
+            "$ref": "#/components/schemas/SelectedCalendar"
+          },
+          "window_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Window Start"
+          },
+          "window_end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Window End"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/SelectedEvent"
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "calendar",
+          "window_start",
+          "window_end",
+          "events",
+          "truncated"
+        ],
+        "title": "SelectedEventWindow"
+      },
       "SelectedFileResponse": {
         "properties": {
           "id": {
@@ -287409,6 +287731,21 @@
             ],
             "title": "Card Visibility",
             "description": "Who may see the agent's CARD (the browse list / surface agent menu). 🚨 A builtin MUST be 'public': it has created_by NULL in the ownerless system org, where iam.has_org_access can never be true, so 'public' is the only clause agent.card can ever admit it on. The factory writes it on creation; this is how an existing agent is corrected."
+          },
+          "term_list_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Term List Ids",
+            "description": "Term lists (glossary / pronunciation / house terms) to ATTACH to the agent, by term-list id. REPLACES the attached set (omitted = unchanged; [] = detach all). Each list must be one you can view; an unknown id is refused by name."
           }
         },
         "additionalProperties": false,

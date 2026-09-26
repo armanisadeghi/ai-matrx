@@ -1,13 +1,15 @@
 /**
  * Decision review — data access.
  *
- * Reads go straight to Supabase (RLS `std_select` on platform.judge_verdict
- * and the caller's own chat rows). Labels and calibration go to the server,
- * because a label is written through the Judge ledger's ONE agreement writer
- * (normalized into the question's vocabulary there, so the queue and the
- * battle verdict column land identically) and calibration is computed by
- * `matrx_ai.evaluators.calibration` (Cohen's kappa, reliability curve, Brier).
- * aidream `services/decision_review/FEATURE.md`.
+ * Reads AND labels go straight to Supabase as the signed-in person: reads
+ * under RLS (`std_select` on platform.judge_verdict and the caller's own chat
+ * rows), labels through `platform.label_decision_item` /
+ * `platform.label_decision_conversations` — gated to members of the item's
+ * organization, normalized by the ONE vocabulary
+ * (`platform.normalize_decision_label`), so the queue and the battle verdict
+ * column land identically. Only calibration goes to the server, because it is
+ * computed by `matrx_ai.evaluators.calibration` (Cohen's kappa, reliability
+ * curve, Brier). aidream `aidream/services/decision_review/FEATURE.md`.
  */
 
 import { createClient } from "@/utils/supabase/client";
@@ -28,8 +30,42 @@ import {
 export type DecisionCalibrationReport =
   components["schemas"]["DecisionCalibrationReport"];
 export type GroupCalibration = components["schemas"]["GroupCalibration"];
-export type LabeledItem = components["schemas"]["LabeledItem"];
-export type ConversationLabels = components["schemas"]["ConversationLabels"];
+
+/** One saved label, as `platform.label_decision_item` returns it. */
+export interface LabeledItem {
+  id: string;
+  question: string;
+  verdict: string;
+  authority_verdict: string;
+  agreed: boolean;
+}
+
+/** The battle verdict column's write: what was labeled, and why each other column was not. */
+export interface ConversationLabels {
+  labeled: LabeledItem[];
+  /** conversation id -> why nothing was labeled there */
+  skipped: Record<string, string>;
+}
+
+function readLabeledItem(value: unknown): LabeledItem {
+  if (
+    !isJsonObject(value) ||
+    typeof value.id !== "string" ||
+    typeof value.question !== "string" ||
+    typeof value.verdict !== "string" ||
+    typeof value.authority_verdict !== "string" ||
+    typeof value.agreed !== "boolean"
+  ) {
+    throw new Error("The label was saved, but the database answered in an unexpected shape.");
+  }
+  return {
+    id: value.id,
+    question: value.question,
+    verdict: value.verdict,
+    authority_verdict: value.authority_verdict,
+    agreed: value.agreed,
+  };
+}
 
 const ITEM_COLUMNS =
   "id, organization_id, question, judge_version, model, verdict, confidence, authority_verdict, agreed, subject_ref_id, created_at, metadata";
@@ -175,48 +211,48 @@ export async function loadJudgedState(item: ReviewItem): Promise<JudgedState> {
   return { parts, visible: true };
 }
 
+/** Record the person's true answer on one item, as them (RLS + the RPC's org-member gate). */
 export async function labelItem(
-  dispatch: AppDispatch,
-  item: Pick<ReviewItem, "id" | "organizationId">,
+  item: Pick<ReviewItem, "id">,
   answer: string,
 ): Promise<LabeledItem> {
-  const result = await dispatch(
-    callApi({
-      path: "/decision-review/items/{item_id}/label",
-      method: "POST",
-      pathParams: { item_id: item.id },
-      body: { answer },
-      // The label is a write on this record, which carries its own
-      // organization — never the viewer's active-org choice.
-      ...(item.organizationId ? { scopeOverrides: { organization_id: item.organizationId } } : {}),
-    }),
-  );
-  if (result.error) throw new Error(result.error.message);
-  return result.data as LabeledItem;
+  const { data, error } = await createClient()
+    .schema("platform")
+    .rpc("label_decision_item", { p_item_id: item.id, p_answer: answer });
+  if (error) throw new Error(error.message);
+  return readLabeledItem(data);
 }
 
 /** The battle verdict column: one true answer across every column's latest answer. */
 export async function labelConversations(
-  dispatch: AppDispatch,
   conversationIds: string[],
   question: string,
   answer: string,
 ): Promise<ConversationLabels> {
-  const result = await dispatch(
-    callApi({
-      path: "/decision-review/conversations/label",
-      method: "POST",
-      body: { conversation_ids: conversationIds, question, answer },
-    }),
-  );
-  if (result.error) throw new Error(result.error.message);
-  return result.data as ConversationLabels;
+  const { data, error } = await createClient()
+    .schema("platform")
+    .rpc("label_decision_conversations", {
+      p_conversation_ids: conversationIds,
+      p_question: question,
+      p_answer: answer,
+    });
+  if (error) throw new Error(error.message);
+  const labeled = isJsonObject(data) && Array.isArray(data.labeled) ? data.labeled : [];
+  const skippedRaw = isJsonObject(data) && isJsonObject(data.skipped) ? data.skipped : {};
+  const skipped: Record<string, string> = {};
+  for (const [conversationId, reason] of Object.entries(skippedRaw)) {
+    skipped[conversationId] = typeof reason === "string" ? reason : "not labeled";
+  }
+  return { labeled: labeled.map(readLabeledItem), skipped };
 }
 
 export async function loadCalibration(
   dispatch: AppDispatch,
   agentId: string,
   filters: { model?: string | null; method?: string | null },
+  /** The agent's own organization — calibration is a read about this record,
+   *  never about whichever organization the viewer happens to have active. */
+  organizationId?: string | null,
 ): Promise<DecisionCalibrationReport> {
   const queryParams: Record<string, string> = {};
   if (filters.model) queryParams.model = filters.model;
@@ -227,6 +263,9 @@ export async function loadCalibration(
       method: "GET",
       pathParams: { agent_id: agentId },
       queryParams,
+      ...(organizationId
+        ? { scopeOverrides: { organization_id: organizationId } }
+        : {}),
     }),
   );
   if (result.error) throw new Error(result.error.message);

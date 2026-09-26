@@ -72174,6 +72174,19 @@ export type Database = {
         Args: { p_message_id: string }
         Returns: number
       }
+      capture_message_decision_items: {
+        Args: { p_link: Json; p_message_id: string }
+        Returns: number
+      }
+      capture_workflow_decision_items: {
+        Args: {
+          p_conversation_id: string
+          p_judge_key?: string
+          p_node_id: string
+          p_run_id: string
+        }
+        Returns: Json
+      }
       carrying_cycle_is_declared: {
         Args: {
           p_a_id: string
@@ -72829,6 +72842,18 @@ export type Database = {
         Returns: Json
       }
       knob_write_door_label: { Args: never; Returns: string }
+      label_decision_conversations: {
+        Args: {
+          p_answer: string
+          p_conversation_ids: string[]
+          p_question: string
+        }
+        Returns: Json
+      }
+      label_decision_item: {
+        Args: { p_answer: string; p_item_id: string }
+        Returns: Json
+      }
       lifecycle_archive_candidates: {
         Args: {
           p_entity_token: string
@@ -73155,6 +73180,10 @@ export type Database = {
           reason: string
         }[]
       }
+      normalize_decision_label: {
+        Args: { p_answer: string; p_metadata: Json }
+        Returns: string
+      }
       normalize_identity_args: { Args: { p_args: string }; Returns: string }
       notice_link_trigger_is_attached: { Args: never; Returns: boolean }
       org_context_bleed_report: {
@@ -73434,6 +73463,21 @@ export type Database = {
       reanchor_outsider_token: { Args: { p_token_id: string }; Returns: Json }
       rebuild_reachability: { Args: never; Returns: number }
       rebuild_static_row_probes: { Args: never; Returns: number }
+      record_decision_items: {
+        Args: {
+          p_consumer: string
+          p_context?: Json
+          p_judge_key: string
+          p_judge_version: number
+          p_organization_id: string
+          p_part: Json
+          p_question_defs: Json
+          p_subject_ref_id: string
+          p_subject_ref_type: string
+          p_user_id: string
+        }
+        Returns: number
+      }
       reference_gate: {
         Args: { p_token: string }
         Returns: {

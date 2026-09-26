@@ -8,7 +8,7 @@
  * ── Architecture (2026-05-20): DIRECT Supabase read ────────────────────────
  *
  * `processed_documents` is a plain `public` table protected by RLS
- * (`owner_id = auth.uid()` + an org-member SELECT policy). The browser is
+ * (`created_by = auth.uid()` + an org-member SELECT policy). The browser is
  * already authorized to read it, so we query supabase-js directly instead of
  * round-tripping through the Python backend.
  *

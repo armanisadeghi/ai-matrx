@@ -20,7 +20,8 @@ import {
   Skeleton,
 } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { METHOD_LABELS, type DecisionMethod } from "@/features/agents/decision-answers/read";
 import {
   loadCalibration,
@@ -89,12 +90,17 @@ export function CalibrationView({ agentId }: { agentId: string }) {
   const [facets, setFacets] = useState<QueueFacets | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // The agent's own organization scopes its calibration (the page used to die
+  // on "Choose the organization you're working in" with no way to choose).
+  const agentOrganizationId = useAppSelector(
+    (state) => selectAgentById(state, agentId)?.organizationId ?? null,
+  );
 
   useEffect(() => {
     let cancelled = false;
     setReport(null);
     setError(null);
-    Promise.all([loadCalibration(dispatch, agentId, { model, method }), loadFacets(agentId)])
+    Promise.all([loadCalibration(dispatch, agentId, { model, method }, agentOrganizationId), loadFacets(agentId)])
       .then(([r, f]) => {
         if (cancelled) return;
         setReport(r);
@@ -113,7 +119,7 @@ export function CalibrationView({ agentId }: { agentId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [dispatch, agentId, model, method]);
+  }, [dispatch, agentId, model, method, agentOrganizationId]);
 
   const selected = report?.groups?.find((g) => groupKey(g) === selectedKey) ?? null;
   const measure = selected ? selected[signal] : null;

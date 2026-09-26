@@ -30,7 +30,7 @@ function row(over: Partial<SourceListRow>): SourceListRow {
     canonical_clean_id: null,
     total_pages: null,
     organization_id: "o",
-    owner_id: "u",
+    created_by: "u",
     visibility: "personal",
     created_at: "2026-09-26T00:00:00Z",
     updated_at: "2026-09-26T00:00:00Z",

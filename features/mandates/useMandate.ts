@@ -60,6 +60,13 @@ export interface MandateState {
 interface UseMandateOptions {
   /** An unresolved optional override is an expected fallback, not a console error. */
   optional?: boolean;
+  /**
+   * The organization of the RECORD the job runs for, when the caller knows it
+   * (an organization's own page). Resolution asks the ladder for THAT
+   * organization and never waits for, or asks for, the active workspace —
+   * `ResolveMandateOptions.organizationId`.
+   */
+  organizationId?: string | null;
 }
 
 /**
@@ -126,9 +133,13 @@ export function useMandate(
     if (resolvableKey === null) return;
 
     let cancelled = false;
+    const org = options.organizationId ?? null;
     const resolution = options.optional
-      ? resolveMandate(resolvableKey, { optional: true })
-      : resolveMandate(resolvableKey);
+      ? resolveMandate(resolvableKey, {
+          optional: true,
+          ...(org ? { organizationId: org } : {}),
+        })
+      : resolveMandate(resolvableKey, org ? { organizationId: org } : {});
     resolution
       .then((mandate) => {
         if (!cancelled) {
@@ -190,6 +201,7 @@ export function useMandate(
     mandateKey,
     epoch,
     options.optional,
+    options.organizationId,
     hasMandateKey,
     state.organizationRetries,
   ]);
