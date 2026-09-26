@@ -515,8 +515,11 @@ export function AgentConversationDisplay({
       {/* Find floats over the top-right of the transcript ONLY while open
           (Cmd/Ctrl+F in the transcript, or Find in the conversation menu),
           like a browser's find bar: a zero-height anchor, so opening it never
-          pushes a message down and closing it leaves nothing behind. */}
-      {!compact && findOpen && (
+          pushes a message down and closing it leaves nothing behind. Every
+          host draws it — compact ones too (a window panel, drawer or bubble
+          opens Find from the answer menu's Conversation section, and Cmd/Ctrl+F
+          there set findOpen with nothing to show). */}
+      {findOpen && (
         <div className="sticky top-0 z-30 h-0" data-find-ignore="">
           <div className="absolute right-2 top-1 w-[min(28rem,calc(100%-1rem))]">
             <ConversationFindBar
