@@ -22,7 +22,7 @@ import type {
   ProtectionConfidence,
 } from "./types";
 import { fenceParts, findCodeRanges } from "@ai-matrx/content-ir/source";
-import { continuesTable, isGfmDelimiterRow, isPipeLedRow, startsPipelessTable } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { continuesTable, isGfmDelimiterRow, isPipeLedRow, startsPipelessTable, tableContainerIndent } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 interface LineInfo {
   start: number;
@@ -154,7 +154,8 @@ function detectTables(
     const startLine = i - 1;
     let endLine = i;
     let j = i + 1;
-    while (j < lines.length && continuesTable(lines[j].text)) {
+    const container = tableContainerIndent(lines.map((line) => line.text), startLine);
+    while (j < lines.length && continuesTable(lines[j].text, container)) {
       endLine = j;
       j++;
     }

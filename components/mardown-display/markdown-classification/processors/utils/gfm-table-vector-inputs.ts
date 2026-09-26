@@ -37,6 +37,12 @@ export const DOCUMENT_INPUTS: ReadonlyArray<{ name: string; text: string }> = [
   { name: "a quote line ends a pipe-less table", text: `${INTRO}\n\nZone | Temp\n--- | ---\nA | 4C\n> 8C | alarm\n\n${OUTRO}` },
   // verify-RC-B4 round 8: a backtick run whose info string holds a backtick is a code span, not a fence (CommonMark 4.5).
   { name: "a four-backtick code span row continues the table", text: `${INTRO}\n\nStep | Task\n--- | ---\n1 | Drain the queue\n${"````"} code ${"````"} | b\n\n${OUTRO}` },
+  // verify-RC-B4 round 9: an HTML block start (CommonMark 4.6, conditions 2, 6, 7) and indented code end a table.
+  { name: "an HTML comment ends the table", text: `${INTRO}\n\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n<!-- shift note -->\n\n${OUTRO}` },
+  { name: "a block tag ends the table", text: `${INTRO}\n\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n</details>\n\n${OUTRO}` },
+  { name: "a closing tag alone on its line ends the table", text: `${INTRO}\n\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n</artifact>\n\n${OUTRO}` },
+  { name: "a tag with text after it is a row", text: `${INTRO}\n\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n<span>B4</span> clear\n\n${OUTRO}` },
+  { name: "an indented line ends the table", text: `${INTRO}\n\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n    B4 clear\n\n${OUTRO}` },
 ];
 
 export const ROW_INPUTS: readonly string[] = [
@@ -69,4 +75,73 @@ export const TABLE_INPUTS: readonly string[] = [
   PIPED,
   "Bay | Status\n--- | ---\n | \nB4 | clear",
   "| Bay | Status |\n| | |\n| B3 | re-scan |",
+  // verify-RC-B4 round 9: a trailing lone `|` is an empty row GFM shows, not dropped.
+  "| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n |",
+];
+
+/**
+ * Where a table ENDS (verify-RC-B4 round 9): every CommonMark 4.6 HTML block start
+ * condition, indented code (4+ columns past the table's container, list items
+ * included), and the near-misses GFM keeps as rows. `findTableEnd` over each; the
+ * frontend test judges every one against an independent GFM parser (remark-gfm).
+ */
+const HANDOVER = ["| Bay | Status |", "| --- | --- |", "| B3 | re-scan |"];
+const after = (line: string) => ({ lines: [...HANDOVER, line, "Omar signs off."], start: 0 });
+export const TABLE_END_INPUTS: ReadonlyArray<{ lines: string[]; start: number }> = [
+  after("<script>"), // 1
+  after("<PRE"), // 1, end of line
+  after("<textarea>notes"), // 1, text after
+  after("<!-- shift note -->"), // 2
+  after("<?php echo 1 ?>"), // 3
+  after("<!DOCTYPE html>"), // 4
+  after("<!-x | b"), // not 4: no letter after <!
+  after("<![CDATA[ raw ]]>"), // 5
+  after("<![CDATA | b"), // not 5
+  after("<div>"), // 6
+  after("</details>"), // 6
+  after("<div>moved to B4"), // 6, text after
+  after("   <section>"), // 6, 3 spaces
+  after("</artifact>"), // 7
+  after("<artifact id=\"1\">"), // 7
+  after("<br />"), // 7
+  after("<a :b>"), // 7
+  after("<span>B4</span> clear"), // not 7: text after the tag
+  after("<a b=>"), // not 7: no attribute value
+  after("<x:y>"), // not 7: a colon in the name
+  after("    | B4 | clear |"), // indented code
+  after("\t| B4 | clear |"), // a tab
+  after(" \t B4"), // a space then a tab
+  after("   | B4 | clear |"), // 3 spaces: a row
+  after("|"), // a lone pipe: an empty row
+  { lines: ["- item", "", "    | a | b |", "    |---|---|", "    | 1 | 2 |", "    | 3 | 4 |"], start: 2 },
+  { lines: ["- item", "", "    | a | b |", "    |---|---|", "    | 1 | 2 |", "      | 3 | 4 |"], start: 2 },
+  { lines: ["- item", "  | a | b |", "  |---|---|", "  | 1 | 2 |", "    | 3 | 4 |"], start: 1 },
+  { lines: ["1. item", "   - sub", "", "     | a | b |", "     |---|---|", "     | 1 | 2 |", "         | 3 | 4 |"], start: 3 },
+  { lines: ["  | a | b |", "  |---|---|", "  | 1 | 2 |", "    | 3 | 4 |"], start: 0 },
+];
+
+/**
+ * Where a table can OPEN (verify-RC-B4 round 9): a header line that lazily continues
+ * a list item's or a quote's paragraph is paragraph text, never a table. The table
+ * candidate is the last three lines; the frontend test judges each against remark-gfm.
+ */
+const ROWS = ["| Bay | Status |", "|---|---|", "| B3 | re-scan |"];
+const under = (...above: string[]) => [...above, ...ROWS];
+const nested = (by: string, ...above: string[]) => [...above, ...ROWS.map((row) => by + row)];
+export const TABLE_START_INPUTS: ReadonlyArray<string[]> = [
+  under("- Dock B is closed tonight"),
+  under("- Dock B is closed tonight", ""),
+  under("- Dock B is closed tonight", "  and reopens at six"),
+  nested("  ", "- Dock B is closed tonight"),
+  under("1. Drain the print queue"),
+  nested("  ", "1. Drain the print queue"),
+  nested("   ", "1. Drain the print queue"),
+  under("> Omar signs off"),
+  under("> Omar signs off", ""),
+  under("- Dock B is closed tonight", "# Bays"),
+  under("- Dock B is closed tonight", "---"),
+  under("- Docks", "  - B is closed"),
+  under("Tonight's bays:"),
+  under("- Dock B", "", "  closed until six"),
+  under("-"),
 ];

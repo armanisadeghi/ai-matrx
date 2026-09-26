@@ -1,5 +1,5 @@
 import { fenceLineKinds } from "@ai-matrx/content-ir/source";
-import { continuesTable, tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { findTableEnd, tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 // components/markdown-studio/lab/sync-scroll.ts
 //
 // Block-paired scroll sync between a raw markdown textarea and its rendered
@@ -112,8 +112,7 @@ export function parseTextSegments(text: string): TextSegment[] {
     // THE GFM table rule (gfm-table-lines): a header over its delimiter row.
     if (tableStartsAt(lines, i)) {
       const start = i;
-      i++;
-      while (i < lines.length && continuesTable(lines[i])) i++;
+      i = findTableEnd(lines, i);
       segments.push({ startLine: start, endLine: i, type: "table" });
       continue;
     }

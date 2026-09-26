@@ -16,10 +16,13 @@ export {
   findTableStart,
   isGfmDelimiterRow,
   isPipeLedRow,
+  lineIndent,
   opensTable,
   rowCells,
   splitRowSegments,
+  startsHtmlBlock,
   startsPipelessTable,
+  tableContainerIndent,
   tableStartsAt,
   unescapeCellPipes,
 } from "@ai-matrx/content-ir/source";
@@ -43,11 +46,13 @@ export function isGrowingDelimiterRow(line: string): boolean {
  * pipe-less line is never claimed — it may be prose.
  */
 export function trailingTableStart(lines: readonly string[], end = lines.length): number {
-  const isTableLine = (line: string) => startsLikeTableRow(line) || continuesTable(line);
+  // No header in hand to measure a container from: indentation is not judged here
+  // (a list item's table rows stay rows); HTML and other block starts still end it.
+  const isTableLine = (line: string) => startsLikeTableRow(line) || continuesTable(line.trimStart());
   let start = end;
   while (start > 0 && isTableLine(lines[start - 1] ?? "")) start -= 1;
   // A pipe-less table's delimiter row still arriving (`---`, no pipe yet).
-  if (start === end && end > 1 && isGrowingDelimiterRow(lines[end - 1] ?? "") && continuesTable(lines[end - 2] ?? "")) {
+  if (start === end && end > 1 && isGrowingDelimiterRow(lines[end - 1] ?? "") && continuesTable((lines[end - 2] ?? "").trimStart())) {
     start = end - 1;
     while (start > 0 && isTableLine(lines[start - 1] ?? "")) start -= 1;
   }

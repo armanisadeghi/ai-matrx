@@ -69,7 +69,9 @@
     },
     {
       "line": "|",
-      "cells": []
+      "cells": [
+        ""
+      ]
     },
     {
       "line": "| | |",
@@ -176,7 +178,9 @@
         "Status"
       ],
       "rows": [
-        [],
+        [
+          ""
+        ],
         [
           "B4",
           "clear"
@@ -186,6 +190,22 @@
     {
       "table": "| Bay | Status |\n| | |\n| B3 | re-scan |",
       "notATable": true
+    },
+    {
+      "table": "| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n |",
+      "headers": [
+        "Bay",
+        "Status"
+      ],
+      "rows": [
+        [
+          "B3",
+          "re-scan"
+        ],
+        [
+          ""
+        ]
+      ]
     }
   ],
   "documents": [
@@ -434,6 +454,591 @@
           "Omar signs off once bay B3 is re-scanned."
         ]
       ]
+    },
+    {
+      "name": "an HTML comment ends the table",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n<!-- shift note -->\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "table",
+          "| Bay | Status |\n| --- | --- |\n| B3 | re-scan |"
+        ],
+        [
+          "text",
+          "<!-- shift note -->\n\nOmar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "a block tag ends the table",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n</details>\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "table",
+          "| Bay | Status |\n| --- | --- |\n| B3 | re-scan |"
+        ],
+        [
+          "text",
+          "</details>\n\nOmar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "a closing tag alone on its line ends the table",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n</artifact>\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "table",
+          "| Bay | Status |\n| --- | --- |\n| B3 | re-scan |"
+        ],
+        [
+          "text",
+          "</artifact>\n\nOmar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "a tag with text after it is a row",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n<span>B4</span> clear\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "table",
+          "| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n<span>B4</span> clear"
+        ],
+        [
+          "text",
+          "Omar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "an indented line ends the table",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\n    B4 clear\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "table",
+          "| Bay | Status |\n| --- | --- |\n| B3 | re-scan |"
+        ],
+        [
+          "text",
+          "B4 clear\n\nOmar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    }
+  ],
+  "tableEnds": [
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "<script>",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 3
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "<PRE",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 3
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "<textarea>notes",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 3
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "<!-- shift note -->",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 3
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "<?php echo 1 ?>",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 3
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "<!DOCTYPE html>",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 3
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "<!-x | b",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 5
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "<![CDATA[ raw ]]>",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 3
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "<![CDATA | b",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 5
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "<div>",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 3
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "</details>",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 3
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "<div>moved to B4",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 3
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "   <section>",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 3
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "</artifact>",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 3
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "<artifact id=\"1\">",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 3
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "<br />",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 3
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "<a :b>",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 3
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "<span>B4</span> clear",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 5
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "<a b=>",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 5
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "<x:y>",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 5
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "    | B4 | clear |",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 3
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "\t| B4 | clear |",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 3
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        " \t B4",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 3
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "   | B4 | clear |",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 5
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "|",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 5
+    },
+    {
+      "lines": [
+        "- item",
+        "",
+        "    | a | b |",
+        "    |---|---|",
+        "    | 1 | 2 |",
+        "    | 3 | 4 |"
+      ],
+      "start": 2,
+      "end": 6
+    },
+    {
+      "lines": [
+        "- item",
+        "",
+        "    | a | b |",
+        "    |---|---|",
+        "    | 1 | 2 |",
+        "      | 3 | 4 |"
+      ],
+      "start": 2,
+      "end": 5
+    },
+    {
+      "lines": [
+        "- item",
+        "  | a | b |",
+        "  |---|---|",
+        "  | 1 | 2 |",
+        "    | 3 | 4 |"
+      ],
+      "start": 1,
+      "end": 5
+    },
+    {
+      "lines": [
+        "1. item",
+        "   - sub",
+        "",
+        "     | a | b |",
+        "     |---|---|",
+        "     | 1 | 2 |",
+        "         | 3 | 4 |"
+      ],
+      "start": 3,
+      "end": 6
+    },
+    {
+      "lines": [
+        "  | a | b |",
+        "  |---|---|",
+        "  | 1 | 2 |",
+        "    | 3 | 4 |"
+      ],
+      "start": 0,
+      "end": 3
+    }
+  ],
+  "tableStarts": [
+    {
+      "lines": [
+        "- Dock B is closed tonight",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 1,
+      "opens": false
+    },
+    {
+      "lines": [
+        "- Dock B is closed tonight",
+        "",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 2,
+      "opens": true
+    },
+    {
+      "lines": [
+        "- Dock B is closed tonight",
+        "  and reopens at six",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 2,
+      "opens": false
+    },
+    {
+      "lines": [
+        "- Dock B is closed tonight",
+        "  | Bay | Status |",
+        "  |---|---|",
+        "  | B3 | re-scan |"
+      ],
+      "index": 1,
+      "opens": true
+    },
+    {
+      "lines": [
+        "1. Drain the print queue",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 1,
+      "opens": false
+    },
+    {
+      "lines": [
+        "1. Drain the print queue",
+        "  | Bay | Status |",
+        "  |---|---|",
+        "  | B3 | re-scan |"
+      ],
+      "index": 1,
+      "opens": false
+    },
+    {
+      "lines": [
+        "1. Drain the print queue",
+        "   | Bay | Status |",
+        "   |---|---|",
+        "   | B3 | re-scan |"
+      ],
+      "index": 1,
+      "opens": true
+    },
+    {
+      "lines": [
+        "> Omar signs off",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 1,
+      "opens": false
+    },
+    {
+      "lines": [
+        "> Omar signs off",
+        "",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 2,
+      "opens": true
+    },
+    {
+      "lines": [
+        "- Dock B is closed tonight",
+        "# Bays",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 2,
+      "opens": true
+    },
+    {
+      "lines": [
+        "- Dock B is closed tonight",
+        "---",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 2,
+      "opens": true
+    },
+    {
+      "lines": [
+        "- Docks",
+        "  - B is closed",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 2,
+      "opens": false
+    },
+    {
+      "lines": [
+        "Tonight's bays:",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 1,
+      "opens": true
+    },
+    {
+      "lines": [
+        "- Dock B",
+        "",
+        "  closed until six",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 3,
+      "opens": false
+    },
+    {
+      "lines": [
+        "-",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 1,
+      "opens": true
     }
   ]
 }

@@ -6,6 +6,7 @@ import {
     findTableStart,
     isGfmDelimiterRow,
     rowCells,
+    tableContainerIndent,
 } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 type NormalizedTableData = Array<{ [key: string]: string }>;
@@ -74,10 +75,12 @@ const analyzeTableCompletion = (content: string, isStreamActive: boolean = false
     // THE GFM row rule (gfm-table-lines): an escaped `\|` stays in its cell.
     const processRow = rowCells;
 
+    // Indentation counts from the table's container (the list item it sits in).
+    const container = tableContainerIndent(lines, tableStartIndex);
     for (let i = 0; i < dataLines.length; i++) {
         const line = dataLines[i].trim();
         
-        if (continuesTable(line)) {
+        if (continuesTable(dataLines[i], container)) {
             totalRows++;
             const row = processRow(line);
             

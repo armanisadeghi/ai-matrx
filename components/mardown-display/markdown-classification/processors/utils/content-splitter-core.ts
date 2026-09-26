@@ -35,7 +35,7 @@ import {
   DirectiveContainerTracker,
 } from "@/components/markdown-core/directive-container";
 import { TITLED_IMAGE_LINE } from "@/components/markdown-core/image-figure";
-import { continuesTable, isGfmDelimiterRow, opensTable } from "./gfm-table-lines";
+import { continuesTable, isGfmDelimiterRow, opensTable, tableContainerIndent } from "./gfm-table-lines";
 import type {
   TypedRenderBlock,
   ServerOnlyBlockType,
@@ -1485,8 +1485,10 @@ function extractTable(startIndex: number, lines: string[]): ExtractionResult {
   const tableLines: string[] = [lines[startIndex]];
   let i = startIndex + 1;
 
-  // Collect all consecutive table rows (the delimiter row, then GFM continuation rows)
-  while (i < lines.length && (continuesTable(normalizeLine(lines[i])) || (i === startIndex + 1 && isTableSeparator(lines[i])))) {
+  // Collect all consecutive table rows (the delimiter row, then GFM continuation
+  // rows); indentation counts from the table's container (the list item it sits in).
+  const container = tableContainerIndent(lines, startIndex);
+  while (i < lines.length && (continuesTable(normalizeLine(lines[i]), container) || (i === startIndex + 1 && isTableSeparator(lines[i])))) {
     tableLines.push(lines[i]);
     i++;
   }

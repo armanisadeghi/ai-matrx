@@ -273,7 +273,8 @@ function isStructuralEscape(text: string, i: number): boolean {
     const le = leEnd === -1 ? text.length : leEnd;
     const line = text.slice(ls, le);
     // Table cell content, by THE GFM table rule (gfm-table-lines): edge pipes optional.
-    if (x === "|" && (startsLikeTableRow(line) || continuesTable(line))) return true;
+    // No header in hand: indentation is not judged (a list item's table rows stay rows).
+    if (x === "|" && (startsLikeTableRow(line) || continuesTable(line.trimStart()))) return true;
     const prefix = text.slice(ls, i);
     const after = text[i + 2];
     const spaceAfter = after === undefined || after === " " || after === "\t" || after === "\n";

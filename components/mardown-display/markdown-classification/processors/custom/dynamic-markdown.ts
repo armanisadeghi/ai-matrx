@@ -1,4 +1,4 @@
-import { continuesTable, isGfmDelimiterRow, rowCells, tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { continuesTable, isGfmDelimiterRow, rowCells, tableContainerIndent, tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 interface TableData {
     headers: string[];
     rows: string[][];
@@ -53,6 +53,7 @@ export function parseMarkdownContent(markdown: string): ParsedContent {
 
     // Table parsing
     let isParsingTable = false;
+    let tableContainer = 0;
     let tableHeaders: string[] = [];
     let tableRows: string[][] = [];
 
@@ -147,6 +148,7 @@ export function parseMarkdownContent(markdown: string): ParsedContent {
         // If we see a table row and we're NOT parsing a table, that starts a new table
         if (!isParsingTable && tableStartsAt(lines, lineIndex)) {
             isParsingTable = true;
+            tableContainer = tableContainerIndent(lines, lineIndex);
             // The first table row is the headers
             tableHeaders = rowCells(trimmed);
             continue;
@@ -157,7 +159,7 @@ export function parseMarkdownContent(markdown: string): ParsedContent {
             // If this line is still a table row (and not a separator line)
             // The delimiter row right under the header is part of the table, not a row.
             if (tableRows.length === 0 && isTableSeparator(trimmed)) continue;
-            if (continuesTable(trimmed)) {
+            if (continuesTable(line, tableContainer)) {
                 tableRows.push(rowCells(trimmed));
                 continue;
             } else {

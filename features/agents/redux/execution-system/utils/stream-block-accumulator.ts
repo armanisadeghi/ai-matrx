@@ -32,7 +32,7 @@ import {
   DirectiveContainerTracker,
 } from "@/components/markdown-core/directive-container";
 import { TITLED_IMAGE_LINE } from "@/components/markdown-core/image-figure";
-import { continuesTable, startsPipelessTable } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { continuesTable, lineIndent, startsPipelessTable } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 import {
   classifyLine,
   isPlainText,
@@ -177,7 +177,8 @@ type BlockSubState =
        */
       balance: XmlBalanceState;
     }
-  | { kind: "table" }
+  // `container`: the header's indent — indentation 4+ past it is indented code, which ends the table.
+  | { kind: "table"; container: number }
   /** Inside a `:::name` directive container — every line stays in the text block. */
   | { kind: "directive"; tracker: DirectiveContainerTracker }
   /** Front matter (`---` / `+++` on the first line) until its closing fence — plain text, never parsed. */
@@ -953,7 +954,7 @@ export class StreamBlockAccumulator {
         this.currentBlockLineCount -= 1;
         this.closeCurrentBlock(dispatch);
         this.openBlock("table", dispatch);
-        this.subState = { kind: "table" };
+        this.subState = { kind: "table", container: lineIndent(header) };
         this.appendToCurrentBlock(header);
         this.appendToCurrentBlock(rawLine);
         return;
@@ -1058,7 +1059,7 @@ export class StreamBlockAccumulator {
     ) {
       this.closeCurrentBlock(dispatch);
       this.openBlock("table", dispatch);
-      this.subState = { kind: "table" };
+      this.subState = { kind: "table", container: lineIndent(rawLine) };
       this.appendToCurrentBlock(rawLine);
       return;
     }
@@ -1435,7 +1436,11 @@ export class StreamBlockAccumulator {
         // non-table-row. Eating the blank line here was adding a trailing
         // newline to the table and stealing the leading newline from the
         // following text block (V2/Redux table drift).
-        if (hasCandidate(flags, Candidate.TABLE) || continuesTable(rawLine)) {
+        // THE rule (gfm-table-lines): a blank line, another block's start (an HTML
+        // block included) or indented code past the header's indent ends it.
+        const { container } = this.subState;
+        const indented = lineIndent(rawLine) - container >= 4;
+        if ((hasCandidate(flags, Candidate.TABLE) && !indented) || continuesTable(rawLine, container)) {
           this.appendToCurrentBlock(rawLine);
         } else {
           this.closeCurrentBlock(dispatch);
