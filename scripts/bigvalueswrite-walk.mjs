@@ -7,6 +7,7 @@
 //   3. after a reload the cell shows the policy's first words (its head), and — once the follower has
 //      filed the whole text — "Open the whole text";
 //   4. zero console errors.
+//   EDIT=1 (with READ_ONLY=1): 5-7 open the whole text in the cell's editor, change the effective date, save, reload.
 //   READ_ONLY=1 skips 1-2 (a later look at the same row once its file exists).
 //
 //   TABLE=<id> ORIGIN=http://big-values-write.localhost:3001 OUT=<dir> node scripts/bigvalueswrite-walk.mjs
@@ -92,6 +93,35 @@ try {
     console.log(`${href ? "PASS" : "FAIL"} 3c-link — ${href}`);
   }
   await page.screenshot({ path: `${OUT}/${process.env.READ_ONLY ? "4-after-the-file-was-written" : "3-after-reload"}.png` });
+  if (process.env.EDIT) {
+    // 5-7. The whole text opens in the cell's editor, is edited, saves, and survives a reload.
+    const EDITED = POLICY.replace("Effective January 1, 2027.", "Effective March 1, 2027.");
+    const edit = row().locator(`td[data-matrx-cell-col="policy_text"] [aria-label="Edit Policy text"]`).first();
+    await edit.click();
+    const box = await until("whole editor", async () => {
+      const t = page.locator("tbody textarea").first();
+      return (await t.isVisible().catch(() => false)) && (await t.inputValue()).length > 1000 ? t : null;
+    }, 60000);
+    if (!box.v) throw new Error("the cell's editor did not open on the whole text");
+    const held = await box.v.inputValue();
+    check("5-editor-holds-the-whole-text", held === POLICY, `${held.length} of ${POLICY.length} characters; identical ${held === POLICY}`);
+    await page.screenshot({ path: `${OUT}/5-whole-text-open-in-the-editor.png` });
+    await box.v.fill(EDITED);
+    writes.length = 0;
+    await box.v.press("ControlOrMeta+Enter");
+    await until("write", () => writes.length > 0, 60000);
+    await page.waitForTimeout(3000);
+    check("6-edit-saves", writes.length === 1 && writes[0].status === 200, `${writes.map((x) => `${x.door} ${x.status}`).join(", ")}`);
+    await page.screenshot({ path: `${OUT}/6-edit-saved.png` });
+    await open();
+    const after = (await row().innerText()).replace(/\s+/g, " ");
+    check("7-reload-shows-the-edit", after.includes("Effective March 1, 2027") && !after.includes("Effective January 1, 2027"), after.slice(0, 200));
+    const relinked = await until("link", () => row().getByText(/Open the whole text/).first().isVisible(), 180000);
+    await page.screenshot({ path: `${OUT}/7-after-reload-edited.png` });
+    const a = row().locator("a").filter({ hasText: /Open the whole text/ }).first();
+    results.push({ name: "7b-link-after-edit", ok: !!relinked.v, detail: relinked.v ? await a.getAttribute("href") : "not drawn in 180 s" });
+    console.log(`${relinked.v ? "PASS" : "FAIL"} 7b-link-after-edit — ${results.at(-1).detail}`);
+  }
 } catch (err) {
   check("walk", false, String(err).slice(0, 400));
   await page.screenshot({ path: `${OUT}/error.png` }).catch(() => {});
