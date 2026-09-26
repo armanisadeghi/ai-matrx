@@ -213,7 +213,10 @@ export type VaultRevealResponse = ApiSchemas["VaultRevealResponse"];
  * explicit, no-store history reveal endpoint. */
 export type VaultPasswordHistoryEntry = ApiSchemas["VaultPasswordHistoryEntry"];
 export type VaultPasswordHistoryResponse =
-  ApiSchemas["VaultPasswordHistoryResponse"];
+  ApiSchemas["VaultPasswordHistoryResponse"] & {
+    /** The server-locked history head used for restore compare-and-swap. */
+    history_revision: number;
+  };
 export type VaultPasswordHistoryRevealResponse =
   ApiSchemas["VaultPasswordHistoryRevealResponse"];
 /** A restore result is deliberately value-free. The restored password stays

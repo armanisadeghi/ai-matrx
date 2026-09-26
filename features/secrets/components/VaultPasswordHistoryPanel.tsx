@@ -256,11 +256,9 @@ export function VaultPasswordHistoryPanel({
     }
   };
 
-  const currentHistoryRevision =
-    history?.entries.reduce(
-      (head, entry) => Math.max(head, entry.revision),
-      0,
-    ) ?? 0;
+  // The list may omit invalid entries and page independently of the chain
+  // head. Only the server's locked revision can safely guard a restore.
+  const currentHistoryRevision = history?.history_revision ?? 0;
   const pendingRestore =
     pendingRestoreRevision !== null &&
     currentHistoryRevision > pendingRestoreRevision
@@ -362,8 +360,8 @@ export function VaultPasswordHistoryPanel({
                     </div>
                   ) : (
                     <span className="max-w-xs text-[11px] text-muted-foreground">
-                      Old value unavailable. Restore becomes available only
-                      after password history capture is enabled.
+                      This recorded password is unavailable and cannot be
+                      restored.
                     </span>
                   )}
                 </div>

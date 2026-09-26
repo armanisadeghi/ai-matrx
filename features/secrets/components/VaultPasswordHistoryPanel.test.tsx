@@ -100,6 +100,7 @@ describe("VaultPasswordHistoryPanel", () => {
     fetchVaultPasswordHistory.mockResolvedValue({
       entries: [],
       count: 0,
+      history_revision: 0,
       capture_cutoff_at: null,
       value_availability: "unavailable",
       next_before_revision: null,
@@ -151,6 +152,7 @@ describe("VaultPasswordHistoryPanel", () => {
       resolve({
         entries: [],
         count: 0,
+        history_revision: 0,
         capture_cutoff_at: null,
         value_availability: "unavailable",
         next_before_revision: null,
@@ -193,6 +195,7 @@ describe("VaultPasswordHistoryPanel", () => {
       resolve({
         entries: [],
         count: 0,
+        history_revision: 0,
         capture_cutoff_at: null,
         value_availability: "unavailable",
         next_before_revision: null,
@@ -216,6 +219,7 @@ describe("VaultPasswordHistoryPanel", () => {
         },
       ],
       count: 1,
+      history_revision: 2,
       capture_cutoff_at: "2026-09-25T00:00:00Z",
       value_availability: "unavailable",
       next_before_revision: null,
@@ -248,6 +252,7 @@ describe("VaultPasswordHistoryPanel", () => {
         },
       ],
       count: 1,
+      history_revision: 2,
       capture_cutoff_at: "2026-09-25T00:00:00Z",
       value_availability: "unavailable",
       next_before_revision: 2,
@@ -266,6 +271,7 @@ describe("VaultPasswordHistoryPanel", () => {
           },
         ],
         count: 1,
+        history_revision: 2,
         capture_cutoff_at: "2026-09-25T00:00:00Z",
         value_availability: "unavailable",
         next_before_revision: 2,
@@ -275,6 +281,7 @@ describe("VaultPasswordHistoryPanel", () => {
       .mockResolvedValueOnce({
         entries: [],
         count: 0,
+        history_revision: 2,
         capture_cutoff_at: "2026-09-25T00:00:00Z",
         value_availability: "unavailable",
         next_before_revision: null,
@@ -319,6 +326,7 @@ describe("VaultPasswordHistoryPanel", () => {
         },
       ],
       count: 2,
+      history_revision: 2,
       capture_cutoff_at: "2026-09-25T00:00:00Z",
       value_availability: "available",
       next_before_revision: null,
