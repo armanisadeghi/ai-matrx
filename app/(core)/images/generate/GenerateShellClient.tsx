@@ -22,6 +22,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  resolveDefaultModelId,
+  selectPlatformDefaultImageModelId,
+} from "@/features/ai-models/redux/platformDefaultModel";
 import {
   generateImage,
   type GeneratedImageFile,
@@ -44,8 +49,22 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 export default function GenerateShellClient() {
+  // Settings → Image generation seeds the style field (still freely editable
+  // per image) and its Model choice is resolved fresh at generate time so a
+  // change in Settings takes effect on the very next generate, not just on
+  // the next page load.
+  const preferredStyle = useAppSelector(
+    (s) => s.userPreferences.imageGeneration.style,
+  );
+  const preferredModelId = useAppSelector(
+    (s) => s.userPreferences.imageGeneration.defaultModel,
+  );
+  const platformDefaultModelId = useAppSelector(
+    selectPlatformDefaultImageModelId,
+  );
+
   const [prompt, setPrompt] = useState("");
-  const [style, setStyle] = useState("");
+  const [style, setStyle] = useState(() => preferredStyle ?? "");
   const [size, setSize] = useState<ImageGenerateSize>("square");
   const [count, setCount] = useState(1);
   const [busy, setBusy] = useState(false);
@@ -58,11 +77,16 @@ export default function GenerateShellClient() {
     }
     setBusy(true);
     try {
+      const modelId = resolveDefaultModelId(
+        preferredModelId,
+        platformDefaultModelId,
+      );
       const res = await generateImage({
         prompt: prompt.trim(),
         size,
         style: style.trim() || undefined,
         count,
+        model: modelId ?? undefined,
       });
       setResults(res.files);
       toast.success(

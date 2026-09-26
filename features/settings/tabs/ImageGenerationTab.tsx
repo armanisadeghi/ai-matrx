@@ -1,13 +1,22 @@
 "use client";
 
 import { Image as ImageIcon } from "lucide-react";
-import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import { SettingsModelPicker } from "@/components/official/settings/primitives/SettingsModelPicker";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
+import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { useSetting } from "../hooks/useSetting";
 
+/**
+ * Settings truth sweep (2026-09-25, lane ai-media-editor): resolution, color
+ * palette, and "AI enhancements" were removed here — the /images/generate
+ * pipeline (`features/image-studio/api/python.ts` → `generateImage`) has no
+ * parameter for any of the three, and nothing else read them either. Model
+ * and Style are real: both `app/(core)/images/generate/GenerateShellClient.tsx`
+ * and `components/official/ImageAssetUploader.tsx`'s Generate tab now seed
+ * from these two preferences and pass `model`/`style` to `generateImage()`.
+ */
 export default function ImageGenerationTab() {
   // null = platform default (catalog-resolved via is_primary). The legacy
   // seeded value "standard" is folded to null at the load boundaries
@@ -15,24 +24,15 @@ export default function ImageGenerationTab() {
   const [model, setModel] = useSetting<string | null>(
     "userPreferences.imageGeneration.defaultModel",
   );
-  const [resolution, setResolution] = useSetting<string>(
-    "userPreferences.imageGeneration.resolution",
-  );
   const [style, setStyle] = useSetting<string>(
     "userPreferences.imageGeneration.style",
-  );
-  const [palette, setPalette] = useSetting<string>(
-    "userPreferences.imageGeneration.colorPalette",
-  );
-  const [aiEnhance, setAiEnhance] = useSetting<boolean>(
-    "userPreferences.imageGeneration.useAiEnhancements",
   );
 
   return (
     <>
       <SettingsSubHeader
         title="Image generation"
-        description="Default model and style presets for AI image generation."
+        description="Default model and style for the /images/generate page and the image-generate picker."
         icon={ImageIcon}
       />
       <SettingsSection title="Output">
@@ -45,21 +45,11 @@ export default function ImageGenerationTab() {
           defaultModality="image"
         />
         <SettingsSelect
-          label="Resolution"
-          value={resolution}
-          onValueChange={setResolution}
-          options={[
-            { value: "4k", label: "4K" },
-            { value: "1080p", label: "1080p" },
-            { value: "720p", label: "720p" },
-            { value: "512", label: "512 × 512" },
-            { value: "1024", label: "1024 × 1024" },
-          ]}
-        />
-        <SettingsSelect
           label="Style"
+          description="Seeds the style field when you open image generation — you can still change it per image."
           value={style}
           onValueChange={setStyle}
+          placeholder="None"
           options={[
             { value: "realistic", label: "Realistic" },
             { value: "artistic", label: "Artistic" },
@@ -71,29 +61,14 @@ export default function ImageGenerationTab() {
             { value: "watercolor", label: "Watercolor" },
             { value: "sketch", label: "Sketch" },
           ]}
-        />
-        <SettingsSelect
-          label="Color palette"
-          value={palette}
-          onValueChange={setPalette}
-          options={[
-            { value: "vibrant", label: "Vibrant" },
-            { value: "muted", label: "Muted" },
-            { value: "pastel", label: "Pastel" },
-            { value: "monochrome", label: "Monochrome" },
-            { value: "warm", label: "Warm" },
-            { value: "cool", label: "Cool" },
-            { value: "natural", label: "Natural" },
-          ]}
-        />
-        <SettingsSwitch
-          label="AI enhancements"
-          description="Apply post-generation upscaling and detail passes."
-          checked={aiEnhance}
-          onCheckedChange={setAiEnhance}
           last
         />
       </SettingsSection>
+      <SettingsCallout tone="info">
+        Resolution, color palette, and automatic enhancement passes aren't
+        supported by image generation yet, so there's nothing to default here
+        for them.
+      </SettingsCallout>
     </>
   );
 }

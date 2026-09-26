@@ -72,6 +72,10 @@ import {
   type GeneratedImageFile,
 } from "@/features/image-studio/api/python";
 import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "@/features/image-studio/constants/backend-capabilities";
+import {
+  resolveDefaultModelId,
+  selectPlatformDefaultImageModelId,
+} from "@/features/ai-models/redux/platformDefaultModel";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -612,7 +616,12 @@ function GenerateTabContent({
   onResult,
   onError,
 }: GenerateTabContentProps) {
+  // Settings → Image generation seeds style (still freely editable here) and
+  // its Model choice is resolved fresh at generate time from the AI catalog.
   const genPrefs = useAppSelector((s) => s.userPreferences.imageGeneration);
+  const platformDefaultModelId = useAppSelector(
+    selectPlatformDefaultImageModelId,
+  );
   const [prompt, setPrompt] = useState("");
   const [size, setSize] = useState<GenSize>("square");
   const [style, setStyle] = useState(genPrefs?.style ?? "");
@@ -634,11 +643,16 @@ function GenerateTabContent({
     setErrorMsg(null);
     setResults([]);
     try {
+      const modelId = resolveDefaultModelId(
+        genPrefs?.defaultModel ?? null,
+        platformDefaultModelId,
+      );
       const res = await generateImage({
         prompt: trimmed,
         size,
         style: style.trim() || undefined,
         count: 2,
+        model: modelId ?? undefined,
       });
       setResults(res.files);
       setGenState("picking");
@@ -652,7 +666,7 @@ function GenerateTabContent({
       setGenState("error");
       if (!isNotImpl) onError?.(msg);
     }
-  }, [prompt, size, style, onError]);
+  }, [prompt, size, style, onError, genPrefs?.defaultModel, platformDefaultModelId]);
 
   const handlePick = useCallback(
     async (result: GeneratedImageFile) => {

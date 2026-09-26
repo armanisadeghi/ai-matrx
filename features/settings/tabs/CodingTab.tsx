@@ -1,123 +1,56 @@
 "use client";
 
 import { Code } from "lucide-react";
-import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
-import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
+import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
-import { useSetting } from "../hooks/useSetting";
+import { SettingDoor } from "@/features/settings/doors/SettingDoor";
 
+/**
+ * Settings truth sweep (2026-09-25, lane ai-media-editor): this tab used to
+ * offer nine controls — preferred language, editor theme, execution
+ * location, AI activity level, git integration, code completion, code
+ * analysis, code formatting, voice assistance — none of which any code
+ * anywhere read. Saving them said "saved" and changed nothing. Deleted; the
+ * stored preference keys are left alone (no user data removed).
+ *
+ * The editor's real theme already follows the app-wide color mode
+ * (`features/code/editor/useMonacoTheme.ts` → `useThemeMode()`), so that one
+ * gets a door to its real home instead of a second, ignored copy. The rest
+ * (per-file language, git, completion, analysis, formatting, voice dictation)
+ * are not built — see Code workspace for the settings that ARE live.
+ */
 export default function CodingTab() {
-  const [language, setLanguage] = useSetting<string>(
-    "userPreferences.coding.preferredLanguage",
-  );
-  const [theme, setTheme] = useSetting<string>(
-    "userPreferences.coding.preferredTheme",
-  );
-  const [instance, setInstance] = useSetting<string>(
-    "userPreferences.coding.instancePreference",
-  );
-  const [aiActivity, setAiActivity] = useSetting<string>(
-    "userPreferences.coding.aiActivityLevel",
-  );
-  const [git, setGit] = useSetting<boolean>(
-    "userPreferences.coding.gitIntegration",
-  );
-  const [completion, setCompletion] = useSetting<boolean>(
-    "userPreferences.coding.codeCompletion",
-  );
-  const [analysis, setAnalysis] = useSetting<boolean>(
-    "userPreferences.coding.codeAnalysis",
-  );
-  const [formatting, setFormatting] = useSetting<boolean>(
-    "userPreferences.coding.codeFormatting",
-  );
-  const [voice, setVoice] = useSetting<boolean>(
-    "userPreferences.coding.voiceAssistance",
-  );
-
   return (
     <>
       <SettingsSubHeader
         title="Coding"
-        description="Defaults for the code editor and coding assistants."
+        description="The code editor doesn't have its own preferences yet — see what's already live below."
         icon={Code}
       />
-      <SettingsSection title="Environment">
-        <SettingsSelect
-          label="Preferred language"
-          value={language}
-          onValueChange={setLanguage}
-          options={[
-            { value: "javascript", label: "JavaScript" },
-            { value: "typescript", label: "TypeScript" },
-            { value: "python", label: "Python" },
-            { value: "java", label: "Java" },
-          ]}
-        />
-        <SettingsSelect
-          label="Editor theme"
-          value={theme}
-          onValueChange={setTheme}
-          options={[
-            { value: "light", label: "Light" },
-            { value: "dark", label: "Dark" },
-          ]}
-        />
-        <SettingsSelect
-          label="Execution"
-          description="Where code runs by default."
-          value={instance}
-          onValueChange={setInstance}
-          options={[
-            { value: "local", label: "Local" },
-            { value: "cloud", label: "Cloud" },
-          ]}
-        />
-        <SettingsSelect
-          label="AI activity"
-          value={aiActivity}
-          onValueChange={setAiActivity}
-          options={[
-            { value: "low", label: "Low" },
-            { value: "medium", label: "Medium" },
-            { value: "high", label: "High" },
-          ]}
-          last
-        />
+      <SettingsSection title="Editor appearance">
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <div className="text-sm text-muted-foreground">
+            The code editor's theme follows your app-wide color mode — there
+            is no separate editor theme.
+          </div>
+          <SettingDoor
+            target={{
+              scope: "user",
+              tabId: "appearance.theme",
+              controlId: "settings-control-theme-color-mode",
+            }}
+            label="Open color mode"
+          />
+        </div>
       </SettingsSection>
-      <SettingsSection title="Features">
-        <SettingsSwitch
-          label="Git integration"
-          checked={git}
-          onCheckedChange={setGit}
-        />
-        <SettingsSwitch
-          label="Code completion"
-          description="Inline AI autocompletion suggestions."
-          checked={completion}
-          onCheckedChange={setCompletion}
-        />
-        <SettingsSwitch
-          label="Code analysis"
-          description="Real-time static analysis and linting."
-          checked={analysis}
-          onCheckedChange={setAnalysis}
-        />
-        <SettingsSwitch
-          label="Code formatting"
-          description="Format on save."
-          checked={formatting}
-          onCheckedChange={setFormatting}
-        />
-        <SettingsSwitch
-          label="Voice assistance"
-          description="Dictate and command the editor with voice."
-          checked={voice}
-          onCheckedChange={setVoice}
-          last
-        />
-      </SettingsSection>
+      <SettingsCallout tone="info">
+        Preferred language, execution location, AI activity level, git
+        integration, code completion, analysis, formatting, and voice
+        dictation are not available yet as global defaults. Which agents
+        appear in the /code chat and how history is grouped are configured
+        under Code workspace.
+      </SettingsCallout>
     </>
   );
 }

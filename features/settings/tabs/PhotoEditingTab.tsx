@@ -1,94 +1,35 @@
 "use client";
 
 import { Camera } from "lucide-react";
-import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
-import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
-import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
+import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
-import { useSetting } from "../hooks/useSetting";
 
+/**
+ * Settings truth sweep (2026-09-25, lane ai-media-editor): this tab used to
+ * offer five controls — default filter, export resolution, aspect ratio,
+ * auto-enhance, watermark — that the photo editor (`/images/edit`,
+ * `features/image-studio/modes/edit`) never read. Confirmed against the
+ * editor's own filter/aspect-ratio/watermark UI, which is chosen per-edit
+ * inside the tool, not defaulted from a global preference. Controls removed
+ * (the underlying preference keys are left alone; no user data deleted).
+ *
+ * If a real "default filter/export size" concept gets built for the photo
+ * editor, it belongs back here wired to that code path — not re-added as
+ * another set of ignored selects.
+ */
 export default function PhotoEditingTab() {
-  const [filter, setFilter] = useSetting<string>(
-    "userPreferences.photoEditing.defaultFilter",
-  );
-  const [resolution, setResolution] = useSetting<string>(
-    "userPreferences.photoEditing.resolution",
-  );
-  const [aspectRatio, setAspectRatio] = useSetting<string>(
-    "userPreferences.photoEditing.defaultAspectRatio",
-  );
-  const [autoEnhance, setAutoEnhance] = useSetting<boolean>(
-    "userPreferences.photoEditing.autoEnhance",
-  );
-  const [watermark, setWatermark] = useSetting<boolean>(
-    "userPreferences.photoEditing.watermarkEnabled",
-  );
-
   return (
     <>
       <SettingsSubHeader
         title="Photo editing"
-        description="Defaults for the photo editor."
+        description="No global defaults yet — choose filters, resolution, aspect ratio, and watermark directly in the photo editor each time."
         icon={Camera}
       />
-      <SettingsSection title="Filters & export">
-        <SettingsSelect
-          label="Default filter"
-          value={filter}
-          onValueChange={setFilter}
-          options={[
-            { value: "none", label: "None" },
-            { value: "vivid", label: "Vivid" },
-            { value: "warm", label: "Warm" },
-            { value: "cool", label: "Cool" },
-            { value: "black-white", label: "Black & white" },
-            { value: "sepia", label: "Sepia" },
-            { value: "vintage", label: "Vintage" },
-            { value: "dramatic", label: "Dramatic" },
-          ]}
-        />
-        <SettingsSelect
-          label="Export resolution"
-          value={resolution}
-          onValueChange={setResolution}
-          options={[
-            { value: "original", label: "Original" },
-            { value: "4k", label: "4K" },
-            { value: "1080p", label: "1080p" },
-            { value: "720p", label: "720p" },
-            { value: "480p", label: "480p" },
-          ]}
-        />
-        <SettingsSelect
-          label="Aspect ratio"
-          value={aspectRatio}
-          onValueChange={setAspectRatio}
-          options={[
-            { value: "original", label: "Original" },
-            { value: "16:9", label: "16 : 9" },
-            { value: "4:3", label: "4 : 3" },
-            { value: "1:1", label: "1 : 1" },
-            { value: "9:16", label: "9 : 16" },
-            { value: "3:2", label: "3 : 2" },
-            { value: "21:9", label: "21 : 9" },
-          ]}
-        />
-      </SettingsSection>
-      <SettingsSection title="Processing">
-        <SettingsSwitch
-          label="Auto-enhance"
-          description="Apply automatic exposure and colour correction on import."
-          checked={autoEnhance}
-          onCheckedChange={setAutoEnhance}
-        />
-        <SettingsSwitch
-          label="Watermark"
-          description="Add a subtle watermark to exported images."
-          checked={watermark}
-          onCheckedChange={setWatermark}
-          last
-        />
-      </SettingsSection>
+      <SettingsCallout tone="info">
+        The photo editor doesn't have default-preference controls yet. Open
+        the editor from any image to set filters, export size, aspect ratio,
+        and watermark for that edit.
+      </SettingsCallout>
     </>
   );
 }
