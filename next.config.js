@@ -937,13 +937,10 @@ const nextConfig = {
 
     // Suppress THREE.WebGLProgram shader error in development mode
     if (dev) {
-      const FilterWarningsPlugin = require("webpack-filter-warnings-plugin");
-      config.plugins.push(
-        new FilterWarningsPlugin({
-          exclude:
-            /THREE\.WebGLProgram: Shader Error 0 - VALIDATE_STATUS false/,
-        }),
-      );
+      config.ignoreWarnings = [
+        ...(config.ignoreWarnings ?? []),
+        /THREE\.WebGLProgram: Shader Error 0 - VALIDATE_STATUS false/,
+      ];
     }
 
     // Handle pptxgenjs for client-side only
