@@ -16,10 +16,10 @@
 -- Census 2026-09-25 (content): 37 functions; every client-reachable door is one of the above.
 --
 -- based-on: iam.has_access_for_base(uuid, text, uuid, permission_level, boolean, text[]) a5fa8a2601bd07c9b4675d4c090c3f6b623cd19fbf922138adc1fa892fa636f0
--- based-on: iam.accessible_entity_ids(text, permission_level, integer, boolean) 0ebad3890b080e8ca44d64fef98226e375831560498290157c73eae0e6eb637c
+-- based-on: iam.accessible_entity_ids(text, permission_level, integer, boolean) 71c33edd5a1d4e66d5fdac5ab4292075f8c49ac8238f99653b57fcaa6af08971
 -- based-on: iam.entity_read_expr(text, text, text, text) e50fb0ca6e84563f53f633ed97a4fb4e4ff7fedb7dcbb3774c457f47314b0f34
--- based-on: iam.entity_read_kernel_expected() 69a02c8a9a58d58a56f4508c6d78a3f5e6bc2fd0ed211dbe1d753fe33ccdc8b6
--- based-on: iam.entity_read_kernel_members_expected() e55d8223e4ba75c075a68484f0b383c65a26c3daf10a5b14ac4a50ab40c9b252
+-- based-on: iam.entity_read_kernel_expected() ba3f72a09984399e898efa8e6892b7c0e686525affbfdb07200761354f5f90d1
+-- based-on: iam.entity_read_kernel_members_expected() a1aee99a4eadb07b0d05494b95b9d09313c187424a96df0a64e259ba13260eea
 set local lock_timeout = '2s';
 
 create function platform.trash_is_owner_only(p_token text)
@@ -460,6 +460,12 @@ declare
   -- empty every archive view on the platform.
   v_soft_deleted_hidden boolean;
   rec record;
+  -- AEI-MEMO (2026-09-26): cache each nested parent question within a depth-0
+  -- cascade only. The frame is restored before returning, so it cannot leak to
+  -- a later policy or caller.
+  v_memo_prev text;
+  v_memo_key text;
+  v_memo jsonb;
 begin
   if v_uid is null or p_depth > 12 then return '{}'::uuid[]; end if;
 
@@ -685,6 +691,10 @@ begin
   -- invocations (12 levels, doubled at every level by the include_public /
   -- non-public pair), each one re-deriving the SAME base set over the whole
   -- table. Ordered so self edges run LAST, over the fully accumulated v_ids.
+  if p_depth = 0 and p_include_public and v_has_vis then
+    v_memo_prev := current_setting('iam.aei_cascade_memo', true);
+    perform set_config('iam.aei_cascade_memo', '{}', true);
+  end if;
   for rec in
     select er.parent_type, er.fk_column
     from platform.entity_relationships er
@@ -706,8 +716,20 @@ begin
         -- nested call, and that call takes this same branch with
         -- p_include_public = false, so it does not fan out either.
         if p_include_public and v_has_vis then
-          v_ids := v_ids || iam.accessible_entity_ids(
-            p_type, p_required, p_depth + 1, false);
+          v_memo_key := concat_ws('|', v_uid, p_type, p_required, p_depth + 1, false);
+          v_memo := nullif(current_setting('iam.aei_cascade_memo', true), '')::jsonb;
+          if v_memo ? v_memo_key then
+            v_more := (v_memo ->> v_memo_key)::uuid[];
+          else
+            v_more := iam.accessible_entity_ids(
+              p_type, p_required, p_depth + 1, false);
+            if nullif(current_setting('iam.aei_cascade_memo', true), '') is not null then
+              perform set_config('iam.aei_cascade_memo',
+                (current_setting('iam.aei_cascade_memo', true)::jsonb
+                   || jsonb_build_object(v_memo_key, v_more::text))::text, true);
+            end if;
+          end if;
+          v_ids := v_ids || v_more;
           v_sql := format(
             'with recursive clo(id) as ('
             || ' select u from iam.unnest_uuids($1) u'
@@ -728,13 +750,33 @@ begin
         execute v_sql into v_more using v_ids;
         v_ids := coalesce(v_more, '{}'::uuid[]);
       else
-        v_parent_ids := iam.accessible_entity_ids(
-          rec.parent_type, p_required, p_depth + 1, p_include_public
-        );
+        v_memo_key := concat_ws('|', v_uid, rec.parent_type, p_required, p_depth + 1, p_include_public);
+        v_memo := nullif(current_setting('iam.aei_cascade_memo', true), '')::jsonb;
+        if v_memo ? v_memo_key then
+          v_parent_ids := (v_memo ->> v_memo_key)::uuid[];
+        else
+          v_parent_ids := iam.accessible_entity_ids(
+            rec.parent_type, p_required, p_depth + 1, p_include_public);
+          if nullif(current_setting('iam.aei_cascade_memo', true), '') is not null then
+            perform set_config('iam.aei_cascade_memo',
+              (current_setting('iam.aei_cascade_memo', true)::jsonb
+                 || jsonb_build_object(v_memo_key, v_parent_ids::text))::text, true);
+          end if;
+        end if;
         if p_include_public and v_has_vis then
-          v_nonpublic_parent_ids := iam.accessible_entity_ids(
-            rec.parent_type, p_required, p_depth + 1, false
-          );
+          v_memo_key := concat_ws('|', v_uid, rec.parent_type, p_required, p_depth + 1, false);
+          v_memo := nullif(current_setting('iam.aei_cascade_memo', true), '')::jsonb;
+          if v_memo ? v_memo_key then
+            v_nonpublic_parent_ids := (v_memo ->> v_memo_key)::uuid[];
+          else
+            v_nonpublic_parent_ids := iam.accessible_entity_ids(
+              rec.parent_type, p_required, p_depth + 1, false);
+            if nullif(current_setting('iam.aei_cascade_memo', true), '') is not null then
+              perform set_config('iam.aei_cascade_memo',
+                (current_setting('iam.aei_cascade_memo', true)::jsonb
+                   || jsonb_build_object(v_memo_key, v_nonpublic_parent_ids::text))::text, true);
+            end if;
+          end if;
           v_sql := format(
             'with have as materialized (select iam.unnest_uuids($3) as id) '
             || 'select coalesce(array_agg(t.id), ''{}'') from %s t '
@@ -760,6 +802,10 @@ begin
       end if;
     end if;
   end loop;
+
+  if p_depth = 0 and p_include_public and v_has_vis then
+    perform set_config('iam.aei_cascade_memo', coalesce(v_memo_prev, ''), true);
+  end if;
 
   -- DD-175e: one filter over every lane at once, so no arm can reintroduce a row the
   -- parent's own std_select hides.
