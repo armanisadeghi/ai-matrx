@@ -25,6 +25,7 @@ import {
   type ValidationRules,
 } from "@/features/data-tables/validation";
 import { resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
+import { parseFormula } from "@ai-matrx/design-system/formulas";
 import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import {
   isServiceFailure,
@@ -818,6 +819,71 @@ export default function TableConfigModal({
             });
           }}
           getWriteHandlers={() => ({
+            // Both write through the SAME handlers the person's own edits use;
+            // nothing is saved until Save Changes (register ARE-011).
+            table_details: (value) => {
+              const next = (value && typeof value === "object" ? value : null) as Record<string, unknown> | null;
+              if (!next) throw new Error('table_details expects { "table_name"?, "description"?, "validation_mode"? }.');
+              const problems: string[] = [];
+              if ("table_name" in next && (typeof next.table_name !== "string" || !next.table_name.trim())) problems.push("table_name must be a non-empty name");
+              if ("description" in next && typeof next.description !== "string") problems.push("description must be text");
+              if ("validation_mode" in next && next.validation_mode !== "permissive" && next.validation_mode !== "strict") problems.push('validation_mode must be "permissive" or "strict"');
+              if (problems.length) throw new Error(`Nothing was staged: ${problems.join("; ")}.`);
+              if (typeof next.table_name === "string") handleTableInfoChange("table_name", next.table_name.trim());
+              if (typeof next.description === "string") handleTableInfoChange("description", next.description);
+              if (typeof next.validation_mode === "string") handleTableInfoChange("validation_mode", next.validation_mode);
+            },
+            column_changes: (value) => {
+              const changes = (value as { changes?: unknown } | null)?.changes;
+              if (!Array.isArray(changes) || changes.length === 0) {
+                throw new Error('column_changes expects { "changes": [{ "column": "<name>", … }] }.');
+              }
+              const byName = (name: string) => {
+                const lower = name.trim().toLowerCase();
+                return fields.find((f) => f.field_name.toLowerCase() === lower) ?? fields.find((f) => f.display_name.toLowerCase() === lower);
+              };
+              const types = new Set(DATA_TYPES.map((t) => t.value));
+              const problems: string[] = [];
+              const staged: Array<() => void> = [];
+              for (const raw of changes) {
+                const change = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+                const field = typeof change.column === "string" ? byName(change.column) : undefined;
+                if (!field) {
+                  problems.push(`no column "${String(change.column)}" (columns: ${fields.map((f) => f.field_name).join(", ")})`);
+                  continue;
+                }
+                if ("display_name" in change) {
+                  if (typeof change.display_name !== "string" || !change.display_name.trim()) problems.push(`"${field.display_name}": display_name must be a non-empty label`);
+                  else { const label = change.display_name.trim(); staged.push(() => handleFieldChange(field.id, "display_name", label)); }
+                }
+                if ("data_type" in change) {
+                  if (typeof change.data_type !== "string" || !types.has(change.data_type)) problems.push(`"${field.display_name}": data_type must be one of ${[...types].join(", ")}`);
+                  else { const type = change.data_type; staged.push(() => handleFieldChange(field.id, "data_type", type)); }
+                }
+                if ("is_required" in change) {
+                  if (typeof change.is_required !== "boolean") problems.push(`"${field.display_name}": is_required must be true or false`);
+                  else { const required = change.is_required; staged.push(() => handleFieldChange(field.id, "is_required", required)); }
+                }
+                if ("formula" in change) {
+                  const expression = typeof change.formula === "string" ? change.formula.trim() : "";
+                  const parsed = parseFormula(expression);
+                  if (!parsed.ok) problems.push(`"${field.display_name}": the formula does not parse — ${parsed.error}`);
+                  else {
+                    const unknown = parsed.references.filter((ref) => !byName(ref));
+                    if (unknown.length) problems.push(`"${field.display_name}": no column is called ${unknown.map((r) => `{${r}}`).join(", ")}`);
+                    else staged.push(() => {
+                      setFormatChanges((prev) => ({
+                        ...prev,
+                        [field.id]: { id: "formula", options: { formula: { expression, resultFormat: "text" } } },
+                      }));
+                      setHasChanges(true);
+                    });
+                  }
+                }
+              }
+              if (problems.length) throw new Error(`Nothing was staged: ${problems.join("; ")}.`);
+              for (const apply of staged) apply();
+            },
             settings_tab: (value) => {
               if (value !== "fields" && value !== "table" && value !== "actions") {
                 throw new Error('settings_tab expects "fields", "table" or "actions".');

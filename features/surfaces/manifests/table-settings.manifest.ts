@@ -166,6 +166,30 @@ const writeTargets: SurfaceWriteTarget[] = [
     sortOrder: 110,
   },
   {
+    name: "table_details",
+    label: "Table details",
+    description:
+      'Stage new table details in the Table Settings tab: { "table_name"?: "<name>", "description"?: "<text>", "validation_mode"?: "permissive" | "strict" }. Only the keys you send change. Nothing is saved until the person presses Save Changes.',
+    valueType: "object",
+    mode: "draft",
+    applyPolicy: "ask",
+    updatesValue: "table_details_draft",
+    group: "settings_window",
+    sortOrder: 112,
+  },
+  {
+    name: "column_changes",
+    label: "Column changes",
+    description:
+      'Stage changes to one or more columns in the Fields & Order tab: { "changes": [{ "column": "<machine name or display name>", "display_name"?: "<label>", "data_type"?: "string" | "number" | "integer" | "boolean" | "date" | "datetime" | "json" | "array", "is_required"?: true | false, "formula"?: "<formula, makes it a calculated column>" }] }. Every change is checked first (the column exists, the type is real, a formula parses and names real columns); one bad change stages nothing. Changing a data type converts existing values when the person saves. Nothing is saved until the person presses Save Changes.',
+    valueType: "object",
+    mode: "draft",
+    applyPolicy: "ask",
+    updatesValue: "pending_column_changes",
+    group: "settings_window",
+    sortOrder: 114,
+  },
+  {
     name: "settings_tab",
     label: "Open tab",
     description:
@@ -188,7 +212,7 @@ export const tableSettingsManifest: SurfaceManifest = {
   label: "Table Settings",
   readiness: "partial",
   readinessNote:
-    "Emitter and row-action write targets wired 2026-09-26 (the surface-chain worked example). The Fields & Order and Table Settings tabs are readable but not agent-writable yet: their column type, format and validation edits need write targets of their own.",
+    "Emitter and write targets wired 2026-09-26 (the surface-chain worked example): row actions, table details, column label/type/required/formula. Not agent-writable yet: column display formats other than formula, validation rules and column order.",
   intro: `<surface_intro>
 You are in the Table settings window of one of the person's data tables. The table itself (its columns, the rows on screen, the selected cell) is in the surface chain as the page under this window — read it there. This window adds what only it can see: which tab is open, edits not saved yet, the table's row actions, and the row action being edited, with every reason it cannot be saved yet.
 
