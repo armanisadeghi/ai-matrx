@@ -20,6 +20,7 @@
  * line, never a row of its own. See components/errors/FEATURE.md.
  */
 import { execSync } from "node:child_process";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -43,12 +44,34 @@ async function importQuiet(rel) {
 const census = await importQuiet("components/errors/__tests__/error-display-census.ts");
 const carriers = await importQuiet("components/errors/__tests__/error-census-carriers.ts");
 
-let resolver = null;
-function treeResolver() {
-  if (resolver) return resolver;
-  let rels = [];
+// The component index (which components draw the menu themselves) is cached
+// on disk, one entry per file keyed by its mtime + size: a warm lint re-reads
+// only the files that changed since the last run (RC-B12: 35 s → under 2 s).
+const CACHE_FILE = path.join(ROOT, "node_modules/.cache/matrx-error-census/facts.json");
+const fns = { componentFacts: census.componentFacts, carriersFromFacts: census.carriersFromFacts };
+
+function readCache() {
   try {
-    rels = execSync("git ls-files -co --exclude-standard -- app components features lib", {
+    return JSON.parse(fs.readFileSync(CACHE_FILE, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(cache) {
+  try {
+    fs.mkdirSync(path.dirname(CACHE_FILE), { recursive: true });
+    const tmp = `${CACHE_FILE}.${process.pid}.tmp`;
+    fs.writeFileSync(tmp, JSON.stringify(cache));
+    fs.renameSync(tmp, CACHE_FILE);
+  } catch {
+    // A cache that cannot be written only costs time on the next run.
+  }
+}
+
+function trackedTsx() {
+  try {
+    return execSync("git ls-files -co --exclude-standard -- app components features lib", {
       cwd: ROOT,
       encoding: "utf8",
       maxBuffer: 1e9,
@@ -56,11 +79,22 @@ function treeResolver() {
       .split("\n")
       .filter((rel) => rel.endsWith(".tsx"));
   } catch {
-    rels = [];
+    return [];
   }
-  const fs = globalThis.process.getBuiltinModule?.("node:fs");
-  const existing = fs ? rels.filter((rel) => fs.existsSync(path.join(ROOT, rel))) : rels;
-  resolver = carriers.buildCarryingResolver(ROOT, existing, census.componentsThatCarry);
+}
+
+let resolver = null;
+export let lastIndexStats = null;
+function treeResolver() {
+  if (resolver) return resolver;
+  const started = Date.now();
+  const { facts, cache, reparsed } = carriers.collectFacts(ROOT, trackedTsx(), fns, readCache());
+  if (reparsed > 0) writeCache(cache);
+  resolver = carriers.resolverFromFacts(facts, fns);
+  lastIndexStats = { files: facts.size, reparsed, ms: Date.now() - started };
+  if (process.env.MATRX_ERROR_CENSUS_TIMING === "1") {
+    console.error(`[error-render-carries-alchemy] index: ${facts.size} files, ${reparsed} re-read, ${lastIndexStats.ms} ms`);
+  }
   return resolver;
 }
 

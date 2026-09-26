@@ -24,7 +24,8 @@ import { buildCarryingResolver } from "./error-census-carriers";
 import {
   findDoubleMenus,
   findOrphanMenus,
-  componentsThatCarry,
+  carriersFromFacts,
+  componentFacts,
   isCensusScannable,
   setCarryingComponentsResolver,
   uncarriedErrorDisplays,
@@ -60,7 +61,7 @@ export function censusTheTree(): Record<string, number> {
   const files: string[] = [];
   for (const dir of SCANNED_DIRS) walk(path.join(REPO_ROOT, dir), files);
   const rels = files.map((file) => path.relative(REPO_ROOT, file).split(path.sep).join("/"));
-  setCarryingComponentsResolver(buildCarryingResolver(REPO_ROOT, rels.filter((rel) => /\.tsx$/.test(rel)), componentsThatCarry));
+  setCarryingComponentsResolver(buildCarryingResolver(REPO_ROOT, rels.filter((rel) => /\.tsx$/.test(rel)), { componentFacts, carriersFromFacts }));
   const found: Record<string, number> = {};
   for (const file of files) {
     const rel = path.relative(REPO_ROOT, file).split(path.sep).join("/");

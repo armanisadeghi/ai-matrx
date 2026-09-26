@@ -259,9 +259,15 @@ export function setCarryingComponentsResolver(
 }
 
 /** Names of the components DEFINED in this source whose render holds a visible carrier (or a known carrying component). */
-export function componentsThatCarry(source: string, fileName = "file.tsx", known: ReadonlySet<string> = new Set()): Set<string> {
+/** Per component defined in a file: does its render hold a visible carrier itself, and which tags does it render. */
+export type ComponentFact = { direct: boolean; tags: string[] };
+
+/**
+ * The facts the carrier index needs from ONE file, from one parse — cacheable
+ * per file (the lint rule keys them by mtime), so the index never re-parses.
+ */
+export function componentFacts(source: string, fileName = "file.tsx"): Record<string, ComponentFact> {
   const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-  const out = new Set<string>();
   const bodies: Array<[string, ts.Node]> = [];
   sf.forEachChild(function top(n) {
     if (ts.isFunctionDeclaration(n) && n.name && /^[A-Z]/.test(n.name.text) && n.body) bodies.push([n.name.text, n.body]);
@@ -272,30 +278,43 @@ export function componentsThatCarry(source: string, fileName = "file.tsx", known
     }
     if (ts.isExportAssignment(n)) n.forEachChild(top);
   });
+  const facts: Record<string, ComponentFact> = {};
+  for (const [name, body] of bodies) {
+    let direct = false;
+    const tags = new Set<string>();
+    body.forEachChild(function visit(m) {
+      if (ts.isJsxElement(m) || ts.isJsxSelfClosingElement(m)) {
+        const tag = tagName(m);
+        if (CARRIER_NAMES.has(tag) && !isHiddenMenu(m)) direct = true;
+        else if (/^[A-Z]/.test(tag)) tags.add(tag);
+      }
+      m.forEachChild(visit);
+    });
+    facts[name] = { direct, tags: [...tags] };
+  }
+  return facts;
+}
+
+/** Which of a file's components carry, given its facts and the carriers it imports. */
+export function carriersFromFacts(facts: Record<string, ComponentFact>, known: ReadonlySet<string>): Set<string> {
+  const out = new Set<string>();
   let changed = true;
   while (changed) {
     changed = false;
-    for (const [name, body] of bodies) {
+    for (const [name, fact] of Object.entries(facts)) {
       if (out.has(name)) continue;
-      let found = false;
-      body.forEachChild(function visit(m) {
-        if (found) return;
-        if ((ts.isJsxElement(m) || ts.isJsxSelfClosingElement(m))) {
-          const tag = tagName(m);
-          if ((CARRIER_NAMES.has(tag) && !isHiddenMenu(m)) || known.has(tag) || out.has(tag)) {
-            found = true;
-            return;
-          }
-        }
-        m.forEachChild(visit);
-      });
-      if (found) {
+      if (fact.direct || fact.tags.some((tag) => known.has(tag) || out.has(tag))) {
         out.add(name);
         changed = true;
       }
     }
   }
   return out;
+}
+
+/** Names of the components DEFINED in this source whose render holds a visible carrier (or a known carrying component). */
+export function componentsThatCarry(source: string, fileName = "file.tsx", known: ReadonlySet<string> = new Set()): Set<string> {
+  return carriersFromFacts(componentFacts(source, fileName), known);
 }
 
 function errorFedByProp(node: JsxLike): boolean {
