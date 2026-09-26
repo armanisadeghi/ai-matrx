@@ -107,7 +107,17 @@ export interface NodeInvocationState {
    * Contract: common-docs/systems/content-ir-system/RUNTIME_WRAPPER_WIRE.md
    */
   wrapper: NodeOutcomeWrapper | null;
-  error: { type: string | null; message: string | null } | null;
+  /**
+   * `details` is the `node_error`'s own structured context, kept whole — a step
+   * that stopped because its change is HELD for a person carries the store's
+   * wait there (`details.held_write`), which is what the run view draws the
+   * approval card from (lane HELD-WRITE-TAILS, 2026-09-26).
+   */
+  error: {
+    type: string | null;
+    message: string | null;
+    details?: Record<string, unknown> | null;
+  } | null;
   progress: {
     message: string | null;
     fraction: number | null;
@@ -829,10 +839,15 @@ function applyEvent(
       run.sticky.failedNodes[event.node_id] = true;
       invocation.phase = "failed";
       invocation.attempt = event.attempt;
+      const errorDetails: unknown = event.error?.["details"] ?? null;
       invocation.error = {
         type: typeof event.error_type === "string" ? event.error_type : null,
         message:
           typeof event.error_message === "string" ? event.error_message : null,
+        details:
+          errorDetails && typeof errorDetails === "object" && !Array.isArray(errorDetails)
+            ? (errorDetails as Record<string, unknown>)
+            : null,
       };
       invocation.progress = null;
       if (append) {

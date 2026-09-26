@@ -301,6 +301,35 @@ export function readRecordChangeWait(result: unknown): RecordChangeWait | null {
   return null;
 }
 
+/**
+ * Where a held write travels inside a workflow step's own answer — matches
+ * `matrx_records.held.HELD_WRITE_KEY` on the server. Never renamed alone.
+ */
+export const HELD_WRITE_KEY = "held_write";
+
+/**
+ * The wait a WORKFLOW STEP is holding, or null (lane HELD-WRITE-TAILS,
+ * 2026-09-26). The same store wait the chat's tools answer, carried by the step
+ * under `held_write`: in its OUTPUT when the step's contract can say "held"
+ * (`records.table_ensure`), or in its failure's DETAILS when its contract
+ * promises a row that does not exist yet (`data.table.upsert` stops with the
+ * code `held_for_approval`). Read through the ONE reader above, so a half-shaped
+ * or already-applied wait draws no card here either.
+ */
+export function heldWriteOfStep(step: {
+  output?: unknown;
+  error?: { details?: unknown } | null;
+}): RecordChangeWait | null {
+  const fromOutput = asRecord(step.output)?.[HELD_WRITE_KEY];
+  if (fromOutput !== undefined && fromOutput !== null) {
+    return readRecordChangeWait(fromOutput);
+  }
+  const fromError = asRecord(step.error?.details)?.[HELD_WRITE_KEY];
+  return fromError === undefined || fromError === null
+    ? null
+    : readRecordChangeWait(fromError);
+}
+
 /** `day_rate` → `Day rate`, for a key the declaration gave no label for. */
 function humanKey(key: string): string {
   const words = key.replace(/[_-]+/g, " ").trim();

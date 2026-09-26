@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   CircleDashed,
+  Clock,
   Loader2,
   SkipForward,
 } from "lucide-react";
@@ -36,6 +37,8 @@ import {
 } from "@ai-matrx/content-ir/wire";
 
 import { SettledOutputBody } from "./SettledOutputBody";
+import { HeldStepCard } from "@/features/record-change-approvals/HeldStepCard";
+import { heldWriteOfStep } from "@/features/record-change-approvals/recordChangeApproval";
 import { workflowDocumentText } from "../workflow-document-text";
 import { WorkflowDocumentActions } from "./WorkflowDocumentActions";
 
@@ -400,6 +403,22 @@ export function InvocationBody({
   // the truth was "the model turn failed". The error card carries the
   // headline, the cause, and the copy-for-AI door; the raw tail stays one
   // JSON-toggle away on the failed slot, not smeared across the tile.
+  // A STEP WHOSE CHANGE IS HELD FOR A PERSON is neither a failure nor a plain
+  // output: it draws the same approval card the chat and the table's page draw
+  // (lane HELD-WRITE-TAILS, 2026-09-26). Asked before the error branch because
+  // `data.table.upsert` carries its wait on the failure envelope (its kind
+  // promises a row id that does not exist yet), and before the output branches
+  // because `records.table_ensure` carries it in its output.
+  const heldWait = working ? null : heldWriteOfStep(invocation);
+  if (heldWait) {
+    return (
+      <HeldStepCard
+        wait={heldWait}
+        identity={`${runId}:${invocation.invocationKey}`}
+        stopped={Boolean(invocation.error)}
+      />
+    );
+  }
   if (invocation.error && !working) {
     return <StepErrorBody runId={runId} invocation={invocation} />;
   }
@@ -560,13 +579,38 @@ export function RunErrorCard({
     (nodeId) => nodeLabels?.[nodeId] ?? nodeId,
   );
 
+  // A run that stopped because a step's change is HELD for a person is not a
+  // broken run (lane HELD-WRITE-TAILS, 2026-09-26): it says so, in the held
+  // colour, and the step's own card below carries Approve / Refuse. The step
+  // stops with the code `held_for_approval`, which the engine records as the
+  // run's `cause` (`matrx_graph.failure.Cause.HELD_FOR_APPROVAL`).
+  const held =
+    error?.["cause"] === "held_for_approval" ||
+    error?.["error_type"] === "held_for_approval";
+  const at = failedNames.length > 0 ? ` at “${failedNames.join("”, “")}”` : "";
+  if (held) {
+    return (
+      <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3">
+        <div className="flex items-center gap-2">
+          <Clock className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
+            This run is waiting{at}: its change is held for your approval
+          </span>
+        </div>
+        <p className="mt-1.5 whitespace-pre-wrap break-words text-xs text-foreground/90">
+          {message}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3">
       <div className="flex items-center gap-2">
         <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
         <span className="text-sm font-medium text-destructive">
           This run stopped
-          {failedNames.length > 0 ? ` at “${failedNames.join("”, “")}”` : ""}
+          {at}
         </span>
       </div>
       <p className="mt-1.5 whitespace-pre-wrap break-words text-xs text-foreground/90">

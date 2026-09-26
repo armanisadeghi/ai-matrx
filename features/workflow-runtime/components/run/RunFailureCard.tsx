@@ -121,20 +121,30 @@ export function RunFailureCard({
     costUsd,
   });
 
+  // A step whose change is HELD for a person stopped the run, but nothing is
+  // broken: the held colour, never the destructive one (lane HELD-WRITE-TAILS).
+  const held = explanation.cause === "held_for_approval";
+
   return (
     <section
       className={cn(
         "rounded-2xl border p-4",
         cancelled
           ? "border-border bg-muted/40"
-          : "border-destructive/40 bg-destructive/5",
+          : held
+            ? "border-amber-500/40 bg-amber-500/5"
+            : "border-destructive/40 bg-destructive/5",
       )}
     >
       <div className="flex items-start gap-2.5">
         <AlertTriangle
           className={cn(
             "mt-0.5 h-4.5 w-4.5 shrink-0",
-            cancelled ? "text-muted-foreground" : "text-destructive",
+            cancelled
+              ? "text-muted-foreground"
+              : held
+                ? "text-amber-600 dark:text-amber-400"
+                : "text-destructive",
           )}
         />
         <div className="min-w-0 flex-1">
@@ -188,7 +198,9 @@ export function RunFailureCard({
                 <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             ) : null}
-            {onRetry ? (
+            {/* No "Run it again" over a held change: a rerun files the same
+                change a second time. The step's card decides it. */}
+            {onRetry && !held ? (
               <button
                 type="button"
                 onClick={onRetry}

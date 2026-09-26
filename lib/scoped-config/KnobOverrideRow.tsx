@@ -34,7 +34,7 @@ import {
   KnobFieldControl,
   hasFieldControl,
 } from "@/features/settings/universal/KnobFieldControl";
-import { knobChoices } from "./choices";
+import { knobChoices, knobIsClosedChoice } from "./choices";
 import Link from "next/link";
 import {
   formatKnobValue,
@@ -292,10 +292,8 @@ export function KnobOverrideRow(props: {
   const overrideText = valueText(editableValue);
   // The ONE choice vocabulary for this row — the control and every sentence
   // about a value read from the same list (`./choices`).
-  const rowChoices =
-    knob.value_type === "enum" || knob.value_type === "boolean"
-      ? knobChoices(knob)
-      : null;
+  // A string knob with registered values is a choice too (`knobIsClosedChoice`).
+  const rowChoices = knobIsClosedChoice(knob) ? knobChoices(knob) : null;
   const displayValue = (value: unknown) =>
     formatRowValue(value, knob.unit, ladder?.control, rowChoices, knob.ui?.preview);
   const draftIdentity = `${knob.full_key}:${organizationId}:${scopeId}:${overrideText}`;
@@ -674,7 +672,13 @@ export function KnobOverrideRow(props: {
                   </SelectTrigger>
                   <SelectContent>
                     {enumOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
+                      // The registry's one sentence for the choice rides under its
+                      // name, so a person reads what each value DOES before picking.
+                      <SelectItem
+                        key={option.value}
+                        value={option.value}
+                        description={option.help}
+                      >
                         {option.label}
                       </SelectItem>
                     ))}

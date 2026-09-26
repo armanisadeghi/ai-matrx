@@ -140,6 +140,17 @@ const CAUSE_COPY: Record<string, CauseCopy> = {
     nextStep:
       "This one is on us: running it again will most likely stop at the same place. Send us the technical detail below and we'll fix the cause.",
   },
+  // NOT A FAULT (lane HELD-WRITE-TAILS, 2026-09-26): the step's change is in
+  // the organization's approval queue. The step's own card carries Approve /
+  // Refuse; nothing here may say "try again", which would queue it twice.
+  held_for_approval: {
+    headline: (what, where) =>
+      where
+        ? `“${where}” is waiting for your approval — nothing was written yet.`
+        : `${what} is waiting for your approval — nothing was written yet.`,
+    nextStep:
+      "Approve or refuse the change on the step's card below, or on the table's page. The steps after it did not run.",
+  },
   missing_input: {
     // Headline is generated per-field by `fieldHeadline` before this is
     // consulted; this fires only when the server had no field name.

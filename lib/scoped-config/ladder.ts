@@ -24,7 +24,7 @@ import type {
 // The choices are counted the same way they are rendered — one place decides
 // what a knob's choices ARE, so a control can never be picked for a set of
 // choices different from the set the person is shown (`./choices`).
-import { knobChoices } from "./choices";
+import { knobChoices, knobIsClosedChoice } from "./choices";
 
 /** The control a field renders as, once hints and value type are combined. */
 export type KnobControl =
@@ -146,6 +146,13 @@ function deriveControl(knob: ScopedKnob, ui: KnobUiHints): KnobControl {
     case "enum":
       // Two or three choices read better as one row of buttons than a menu.
       return knobChoices(knob).length <= 3 ? "segmented" : "select";
+    case "string":
+      // A string knob with a registered list of values is a choice, not a text box
+      // (`knobIsClosedChoice`). Same rule as an enum; a free string stays text.
+      if (knobIsClosedChoice(knob)) {
+        return knobChoices(knob).length <= 3 ? "segmented" : "select";
+      }
+      return "text";
     case "number":
     case "integer":
       return knob.min_value !== null && knob.max_value !== null

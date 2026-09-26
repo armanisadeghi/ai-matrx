@@ -59,6 +59,25 @@ function mechanicalWords(raw: string): string {
 }
 
 /**
+ * True when a knob's values are a CLOSED set a person picks from, not text they type.
+ *
+ * `enum` and `boolean` always are. So is a `string` knob whose registry row lists
+ * `allowed_values`: the value type says how it is stored, the list says what may be
+ * stored, and a free-text box over a five-way choice is the defect lane
+ * HELD-WRITE-TAILS closed on 2026-09-26 (`custom.agent_schema_changes`, "Agent changes
+ * to this organization's data", rendered as a text box on Settings, Configuration).
+ * Six live string knobs carry a list; every one of them is a choice.
+ */
+export function knobIsClosedChoice(knob: ScopedKnob): boolean {
+  if (knob.value_type === "enum" || knob.value_type === "boolean") return true;
+  return (
+    knob.value_type === "string" &&
+    Array.isArray(knob.allowed_values) &&
+    knob.allowed_values.length > 0
+  );
+}
+
+/**
  * THE choices for one knob, in the registry's own order.
  *
  * Booleans are On / Off — there is nothing in the registry to read, and the
