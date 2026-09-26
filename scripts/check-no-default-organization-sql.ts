@@ -129,9 +129,11 @@ import {
   readFileSync,
   statSync,
   writeFileSync,
-  unlinkSync,
-  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  rmSync,
 } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, relative, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -325,9 +327,10 @@ function loadAllowlist(): Record<string, { rules: number[]; reason: string }> {
 
 export function scan(
   allowlist = loadAllowlist(),
+  root = ROOT,
 ): Violation[] {
   const violations: Violation[] = [];
-  for (const [rel, source] of collectFiles()) {
+  for (const [rel, source] of collectFiles(root)) {
     // A file whose header declares `-- personal-organization-creation: <schema.fn>`
     // and really does replace that function is writing a CREATION site: the
     // organization it makes IS the answer, so rule 7 does not apply to it. Rules
@@ -351,11 +354,14 @@ export function scan(
   );
 }
 
-/** Every scanned migration, read once, keyed by its repo-relative path. */
-export function collectFiles(): Map<string, string> {
+/**
+ * Every scanned migration, read once, keyed by its repo-relative path. `root` is the checkout by
+ * default; the self-test passes a private temp dir holding its own `migrations/`.
+ */
+export function collectFiles(root = ROOT): Map<string, string> {
   const files = new Map<string, string>();
-  for (const full of walk(join(ROOT, SCAN_DIR))) {
-    const rel = relative(ROOT, full).split("\\").join("/");
+  for (const full of walk(join(root, SCAN_DIR))) {
+    const rel = relative(root, full).split("\\").join("/");
     try {
       files.set(rel, readFileSync(full, "utf8"));
     } catch {
@@ -845,8 +851,12 @@ const SUPERSESSION_EXPECT: Record<string, boolean> = {
 };
 
 function selfTest(): number {
-  const dir = join(ROOT, SCAN_DIR);
-  const written: string[] = [];
+  // The plants live in a PRIVATE temp checkout, never in migrations/: a file there is seen by
+  // every other check scripts/checks/run.mjs runs in parallel (and by the release's migration
+  // sweep), and a concurrent `git add` of this shared checkout could commit it.
+  const box = mkdtempSync(join(tmpdir(), "no-default-org-sql-selftest-"));
+  const dir = join(box, SCAN_DIR);
+  mkdirSync(dir, { recursive: true });
   let ok = true;
   const say = (pass: boolean, msg: string) => {
     if (!pass) ok = false;
@@ -859,12 +869,10 @@ function selfTest(): number {
       ...SUPERSESSION_PLANTS,
       ...CREATION_NEAR_MISS_BODIES,
     })) {
-      const p = join(dir, name);
-      writeFileSync(p, body, "utf8");
-      written.push(p);
+      writeFileSync(join(dir, name), body, "utf8");
     }
     // Scan with an EMPTY allowlist so frozen history cannot mask the plants.
-    const found = scan({});
+    const found = scan({}, box);
     for (const name of Object.keys(PLANTS)) {
       const rule = Number(name.match(/r(\d+)/)![1]);
       const hit = found.some((v) => v.file.endsWith(name) && v.rule === rule);
@@ -889,7 +897,7 @@ function selfTest(): number {
     // is only whether a later file's claim answers it. The catalogue half is
     // stubbed here (these functions do not exist anywhere), so what is measured
     // is exactly clauses 1 and 2.
-    const files = collectFiles();
+    const files = collectFiles(box);
     const byFile = new Map<string, Violation[]>();
     for (const v of found) byFile.set(v.file, [...(byFile.get(v.file) ?? []), v]);
     const claims = readSupersessions(files, byFile);
@@ -976,13 +984,7 @@ function selfTest(): number {
     say(redCode === 1, `census: a dirty catalogue exits ${redCode} (expected 1)`);
     say(greenCode === 0, `census: a clean catalogue exits ${greenCode} (expected 0)`);
   } finally {
-    for (const p of written) {
-      try {
-        if (existsSync(p)) unlinkSync(p);
-      } catch {
-        /* best effort */
-      }
-    }
+    rmSync(box, { recursive: true, force: true });
   }
   console.log(
     ok

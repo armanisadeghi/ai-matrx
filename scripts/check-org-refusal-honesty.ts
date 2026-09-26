@@ -63,7 +63,7 @@
  *       pnpm check:org-refusal-honesty --self-test   (proves it can FAIL)
  * Exit 1 on any unallowlisted violation; exit 2 on unexpected errors.
  */
-import { readFileSync, readdirSync, statSync, existsSync, writeFileSync, unlinkSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
@@ -296,8 +296,13 @@ interface Violation {
   why: string;
 }
 
+/**
+ * `extra` adds files to the scan IN MEMORY, as if they sat at `rel` in the tree. The self-test
+ * plants through it: a fixture written into lib/ would be seen — and reported, or read mid-delete —
+ * by every other check `scripts/checks/run.mjs` runs beside this one.
+ */
 function scan(
-  options: { useCensus?: boolean; census?: Set<string> } = {},
+  options: { useCensus?: boolean; census?: Set<string>; extra?: Array<{ rel: string; raw: string }> } = {},
 ): Violation[] {
   const allowlist = loadAllowlist();
   const census =
@@ -314,6 +319,9 @@ function scan(
         presents: presentsRefusal(raw),
       });
     }
+  }
+  for (const { rel, raw } of options.extra ?? []) {
+    files.push({ rel, raw, resolves: resolvesOrganization(raw), presents: presentsRefusal(raw) });
   }
   const byRel = new Map(files.map((f) => [f.rel, f]));
   const importers = buildImporterIndex(files);
@@ -439,26 +447,18 @@ function selfTest(): number {
     console.log(`[self-test] ${ok ? "ok  " : "FAIL"} ${label} = ${actual} (expected ${expected})`);
   }
 
-  // The end-to-end leg: the real scan, with the planted shapes written into
-  // the tree, must name them and must clear them once repaired.
-  const planted = join(ROOT, "lib", "organizations", "__self_test_planted__.ts");
-  let plantedFlagged = false;
-  let repairedFlagged = true;
-  try {
-    writeFileSync(planted, silent, "utf8");
-    plantedFlagged = scan({ useCensus: false }).some((v) => v.file.includes("__self_test_planted__"));
-    writeFileSync(
-      planted,
-      silent.replace(
-        'import { ensureOrgId }',
-        'import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";\nimport { ensureOrgId }',
-      ),
-      "utf8",
-    );
-    repairedFlagged = scan({ useCensus: false }).some((v) => v.file.includes("__self_test_planted__"));
-  } finally {
-    try { unlinkSync(planted); } catch { /* already gone */ }
-  }
+  // The end-to-end leg: the real scan, with the planted shapes added to the tree IN MEMORY
+  // (never written into lib/ — a parallel check would see them), must name them and must
+  // clear them once repaired.
+  const relPlanted = "lib/organizations/__self_test_planted__.ts";
+  const repaired = silent.replace(
+    'import { ensureOrgId }',
+    'import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";\nimport { ensureOrgId }',
+  );
+  const plantedFlagged = scan({ useCensus: false, extra: [{ rel: relPlanted, raw: silent }] })
+    .some((v) => v.file.includes("__self_test_planted__"));
+  const repairedFlagged = scan({ useCensus: false, extra: [{ rel: relPlanted, raw: repaired }] })
+    .some((v) => v.file.includes("__self_test_planted__"));
   console.log(`[self-test] ${plantedFlagged ? "ok  " : "FAIL"} E. planted silent module flagged by the real scan = ${plantedFlagged} (expected true)`);
   console.log(`[self-test] ${!repairedFlagged ? "ok  " : "FAIL"} F. repaired module cleared by the real scan  = ${repairedFlagged} (expected false)`);
   if (!plantedFlagged) failed += 1;
@@ -466,22 +466,16 @@ function selfTest(): number {
 
   // The RATCHET, both directions. A new violation is not forgiven by the
   // census, and a census entry that no longer violates is itself a failure.
-  let newOneFlagged = false;
-  let staleFlagged = false;
-  try {
-    writeFileSync(planted, silent, "utf8");
-    newOneFlagged = scan().some((v) => v.file.includes("__self_test_planted__"));
-    const relPlanted = relative(ROOT, planted);
-    staleFlagged = scan({
-      census: new Set([relPlanted, "lib/organizations/organizationRequiredError.ts"]),
-    }).some(
-      (v) =>
-        v.file === "lib/organizations/organizationRequiredError.ts" &&
-        v.why.includes("no longer violates"),
-    );
-  } finally {
-    try { unlinkSync(planted); } catch { /* already gone */ }
-  }
+  const newOneFlagged = scan({ extra: [{ rel: relPlanted, raw: silent }] })
+    .some((v) => v.file.includes("__self_test_planted__"));
+  const staleFlagged = scan({
+    census: new Set([relPlanted, "lib/organizations/organizationRequiredError.ts"]),
+    extra: [{ rel: relPlanted, raw: silent }],
+  }).some(
+    (v) =>
+      v.file === "lib/organizations/organizationRequiredError.ts" &&
+      v.why.includes("no longer violates"),
+  );
   console.log(`[self-test] ${newOneFlagged ? "ok  " : "FAIL"} G. a NEW violation is not forgiven by the census = ${newOneFlagged} (expected true)`);
   console.log(`[self-test] ${staleFlagged ? "ok  " : "FAIL"} H. a STALE census entry is itself a failure     = ${staleFlagged} (expected true)`);
   if (!newOneFlagged) failed += 1;

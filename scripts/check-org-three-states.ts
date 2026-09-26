@@ -155,8 +155,6 @@ import {
   readdirSync,
   statSync,
   existsSync,
-  writeFileSync,
-  unlinkSync,
 } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
@@ -435,6 +433,33 @@ export interface Violation {
   why: string;
 }
 
+/**
+ * The self-test's plant, held IN MEMORY and scanned as if it sat at PLANTED_REL. It used to be
+ * written into features/organizations/ — where every other check `scripts/checks/run.mjs` runs in
+ * parallel saw it (a fake finding, or ENOENT when it vanished mid-scan) and a concurrent sweep of
+ * this shared checkout could commit it.
+ */
+const PLANTED_REL = "features/organizations/__self_test_planted__.tsx";
+let planted: string | null = null;
+const plant = (source: string) => {
+  planted = source;
+};
+const unplant = () => {
+  planted = null;
+};
+
+function* scanSources(): Generator<{ rel: string; read: () => string }> {
+  for (const dir of SCAN_DIRS) {
+    for (const full of walk(join(ROOT, dir))) {
+      yield { rel: relative(ROOT, full), read: () => readFileSync(full, "utf8") };
+    }
+  }
+  if (planted !== null) {
+    const raw = planted;
+    yield { rel: PLANTED_REL, read: () => raw };
+  }
+}
+
 export function scan(
   options: { allowlist?: Allowlist; census?: Set<string>; useCensus?: boolean } = {},
 ): Violation[] {
@@ -443,13 +468,13 @@ export function scan(
   const census = options.census ?? (useCensus ? loadCensus() : new Set<string>());
   const violations: Violation[] = [];
   const stillViolating = new Set<string>();
-  for (const dir of SCAN_DIRS) {
-    for (const full of walk(join(ROOT, dir))) {
-      const rel = relative(ROOT, full);
+  for (const source of scanSources()) {
+    {
+      const rel = source.rel;
       if (rel in allowlist) continue;
       let raw: string;
       try {
-        raw = readFileSync(full, "utf8");
+        raw = source.read();
       } catch {
         continue;
       }
@@ -542,8 +567,6 @@ export function scan(
   return violations.sort((a, b) => a.file.localeCompare(b.file));
 }
 
-const PLANTED = join(ROOT, "features", "organizations", "__self_test_planted__.tsx");
-
 function selfTest(): number {
   let failed = 0;
   const check = (label: string, actual: boolean, expected: boolean) => {
@@ -580,17 +603,17 @@ export function Planted() { return null; }
   let plantedFlagged = false;
   let repairedFlagged = true;
   try {
-    writeFileSync(PLANTED, twoStates, "utf8");
+    plant(twoStates);
     plantedFlagged = scan({ useCensus: false }).some((v) =>
       v.file.includes("__self_test_planted__"),
     );
-    writeFileSync(PLANTED, threeStates, "utf8");
+    plant(threeStates);
     repairedFlagged = scan({ useCensus: false }).some((v) =>
       v.file.includes("__self_test_planted__"),
     );
   } finally {
     try {
-      unlinkSync(PLANTED);
+      unplant();
     } catch {
       /* already gone */
     }
@@ -601,14 +624,14 @@ export function Planted() { return null; }
   // The allowlist forgives, and only with a reason.
   let allowlisted = true;
   try {
-    writeFileSync(PLANTED, twoStates, "utf8");
+    plant(twoStates);
     allowlisted = scan({
       useCensus: false,
-      allowlist: { [relative(ROOT, PLANTED)]: "planted by the self-test, with a reason" },
+      allowlist: { [PLANTED_REL]: "planted by the self-test, with a reason" },
     }).some((v) => v.file.includes("__self_test_planted__"));
   } finally {
     try {
-      unlinkSync(PLANTED);
+      unplant();
     } catch {
       /* already gone */
     }
@@ -619,7 +642,7 @@ export function Planted() { return null; }
   let newOneFlagged = false;
   let staleFlagged = false;
   try {
-    writeFileSync(PLANTED, twoStates, "utf8");
+    plant(twoStates);
     newOneFlagged = scan().some((v) => v.file.includes("__self_test_planted__"));
     staleFlagged = scan({
       census: new Set(["features/organizations/useOrganizationRequired.ts"]),
@@ -630,7 +653,7 @@ export function Planted() { return null; }
     );
   } finally {
     try {
-      unlinkSync(PLANTED);
+      unplant();
     } catch {
       /* already gone */
     }
@@ -669,21 +692,21 @@ export function Planted() {
   let exhaustiveFlagged = true;
   let collapsedForgiven = true;
   try {
-    writeFileSync(PLANTED, collapsed, "utf8");
+    plant(collapsed);
     collapsedFlagged = scan({ useCensus: false }).some(
       (v) => v.file.includes("__self_test_planted__") && v.why.includes("unavailable"),
     );
     // The census must NOT forgive rule 2 — it is a new rule with no debt.
     collapsedForgiven = !scan({
-      census: new Set([relative(ROOT, PLANTED)]),
+      census: new Set([PLANTED_REL]),
     }).some((v) => v.file.includes("__self_test_planted__"));
-    writeFileSync(PLANTED, exhaustive, "utf8");
+    plant(exhaustive);
     exhaustiveFlagged = scan({ useCensus: false }).some((v) =>
       v.file.includes("__self_test_planted__"),
     );
   } finally {
     try {
-      unlinkSync(PLANTED);
+      unplant();
     } catch {
       /* already gone */
     }
@@ -713,21 +736,21 @@ export function Planted() {
   let withRemedyFlagged = true;
   let noRemedyForgiven = true;
   try {
-    writeFileSync(PLANTED, noRemedy, "utf8");
+    plant(noRemedy);
     noRemedyFlagged = scan({ useCensus: false }).some(
       (v) => v.file.includes("__self_test_planted__") && v.why.includes("no press"),
     );
     // The census is the two-state population; it must not forgive rule 3.
     noRemedyForgiven = !scan({
-      census: new Set([relative(ROOT, PLANTED)]),
+      census: new Set([PLANTED_REL]),
     }).some((v) => v.file.includes("__self_test_planted__"));
-    writeFileSync(PLANTED, withRemedy, "utf8");
+    plant(withRemedy);
     withRemedyFlagged = scan({ useCensus: false }).some((v) =>
       v.file.includes("__self_test_planted__"),
     );
   } finally {
     try {
-      unlinkSync(PLANTED);
+      unplant();
     } catch {
       /* already gone */
     }
@@ -768,20 +791,20 @@ export function Planted() {
   let discriminantFlagged = true;
   let legacyForgiven = true;
   try {
-    writeFileSync(PLANTED, legacyPair, "utf8");
+    plant(legacyPair);
     legacyFlagged = scan({ useCensus: false }).some(
       (v) => v.file.includes("__self_test_planted__") && v.why.includes("LEGACY BOOLEANS"),
     );
     legacyForgiven = !scan({
-      census: new Set([relative(ROOT, PLANTED)]),
+      census: new Set([PLANTED_REL]),
     }).some((v) => v.file.includes("__self_test_planted__"));
-    writeFileSync(PLANTED, withDiscriminant, "utf8");
+    plant(withDiscriminant);
     discriminantFlagged = scan({ useCensus: false }).some((v) =>
       v.file.includes("__self_test_planted__"),
     );
   } finally {
     try {
-      unlinkSync(PLANTED);
+      unplant();
     } catch {
       /* already gone */
     }
@@ -835,22 +858,22 @@ export function Planted() {
   let pairRepairedFlagged = true;
   let pairForgiven = true;
   try {
-    writeFileSync(PLANTED, resolvedPair, "utf8");
+    plant(resolvedPair);
     pairFlagged = scan({ useCensus: false }).some(
       (v) =>
         v.file.includes("__self_test_planted__") &&
         v.why.includes("orgBootstrapResolved paired"),
     );
     pairForgiven = !scan({
-      census: new Set([relative(ROOT, PLANTED)]),
+      census: new Set([PLANTED_REL]),
     }).some((v) => v.file.includes("__self_test_planted__"));
-    writeFileSync(PLANTED, repairedPair, "utf8");
+    plant(repairedPair);
     pairRepairedFlagged = scan({ useCensus: false }).some((v) =>
       v.file.includes("__self_test_planted__"),
     );
   } finally {
     try {
-      unlinkSync(PLANTED);
+      unplant();
     } catch {
       /* already gone */
     }
@@ -924,7 +947,7 @@ export function Planted() {
     ["unrelatedNegationFlagged", unrelatedNegationUntouched, false, "unrelatedNegationFlagged"],
   ] as const) {
     try {
-      writeFileSync(PLANTED, source, "utf8");
+      plant(source);
       const flagged = scan({ useCensus: false }).some(
         (v) =>
           v.file.includes("__self_test_planted__") &&
@@ -937,7 +960,7 @@ export function Planted() {
       if (label === "unrelatedNegationFlagged") unrelatedNegationFlagged = flagged;
     } finally {
       try {
-        unlinkSync(PLANTED);
+        unplant();
       } catch {
         /* already gone */
       }
@@ -996,7 +1019,7 @@ export function Planted() {
     ["longExpressionFlagged", longExpressionPair],
   ] as const) {
     try {
-      writeFileSync(PLANTED, source, "utf8");
+      plant(source);
       const flagged = scan({ useCensus: false }).some(
         (v) =>
           v.file.includes("__self_test_planted__") &&
@@ -1008,7 +1031,7 @@ export function Planted() {
       if (label === "longExpressionFlagged") longExpressionFlagged = flagged;
     } finally {
       try {
-        unlinkSync(PLANTED);
+        unplant();
       } catch {
         /* already gone */
       }

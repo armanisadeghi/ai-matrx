@@ -16,13 +16,15 @@
  *   pnpm check:agent-list-reads              # fail on any hit
  *   pnpm check:agent-list-reads --self-test  # prove the guard can FAIL
  *
- * `--self-test` writes a temporary file containing a banned read, asserts the
- * scan reports it, deletes it, and asserts the scan is clean again. A guard
- * that cannot be demonstrated failing is not a guard.
+ * `--self-test` plants a file containing a banned read in a PRIVATE temp dir
+ * (never in lib/ — every check scripts/checks/run.mjs runs in parallel would
+ * see it), asserts the scan reports it, repairs it, and asserts the scan is
+ * clean again. A guard that cannot be demonstrated failing is not a guard.
  */
 
 import { execSync } from "node:child_process";
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
@@ -73,12 +75,12 @@ function sourceFiles(): string[] {
     .filter((file) => !ALLOWED_FILES.has(file));
 }
 
-function scan(): Finding[] {
+function scan(files: string[] = sourceFiles(), root: string = ROOT): Finding[] {
   const findings: Finding[] = [];
-  for (const file of sourceFiles()) {
+  for (const file of files) {
     let text: string;
     try {
-      text = readFileSync(path.join(ROOT, file), "utf8");
+      text = readFileSync(path.join(root, file), "utf8");
     } catch {
       continue; // deleted between listing and read
     }
@@ -116,16 +118,16 @@ function selfTest(): void {
     report(before);
     exitAfterDrain(1);
   }
-  const probe = path.join(ROOT, "lib", "__agent_list_read_probe__.ts");
-  writeFileSync(
-    probe,
-    'export const probe = () => supabase.rpc("agx_get_list_full");\n',
-  );
+  const box = mkdtempSync(path.join(tmpdir(), "agent-list-reads-selftest-"));
+  const rel = "lib/__agent_list_read_probe__.ts";
   try {
-    const during = scan();
-    const caught = during.some((f) =>
-      f.file.endsWith("__agent_list_read_probe__.ts"),
+    mkdirSync(path.join(box, "lib"), { recursive: true });
+    writeFileSync(
+      path.join(box, rel),
+      'export const probe = () => supabase.rpc("agx_get_list_full");\n',
     );
+    const during = scan([rel], box);
+    const caught = during.some((f) => f.file === rel);
     if (!caught) {
       console.error(
         "🚨 self-test FAILED: the guard did not catch a reintroduced " +
@@ -137,14 +139,18 @@ function selfTest(): void {
       "self-test: RED with a reintroduced read (" +
         `${during.length} finding(s)) …`,
     );
+    writeFileSync(
+      path.join(box, rel),
+      'export const probe = () => getAgentCatalog().ensureLoaded(); // agx_get_list_full lives in the package\n',
+    );
+    const after = scan([rel], box);
+    if (after.length > 0) {
+      console.error("🚨 self-test FAILED: still red after repairing the probe.");
+      report(after);
+      exitAfterDrain(1);
+    }
   } finally {
-    rmSync(probe, { force: true });
-  }
-  const after = scan();
-  if (after.length > 0) {
-    console.error("🚨 self-test FAILED: still red after removing the probe.");
-    report(after);
-    exitAfterDrain(1);
+    rmSync(box, { recursive: true, force: true });
   }
   console.log("self-test: GREEN once the read is gone. ✅ The guard works.");
 }

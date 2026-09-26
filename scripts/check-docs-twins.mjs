@@ -16,6 +16,7 @@
  */
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -52,11 +53,11 @@ function fencedBlocks(text) {
   return blocks;
 }
 
-function scan(files, names) {
+function scan(files, names, root = ROOT) {
   const defRe = new RegExp(`^\\s*(?:export\\s+)?(?:async\\s+)?(?:function|const|let|var)\\s+(${names.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})\\b`);
   const hits = [];
   for (const f of files) {
-    const text = fs.readFileSync(path.join(ROOT, f), "utf8");
+    const text = fs.readFileSync(path.join(root, f), "utf8");
     for (const b of fencedBlocks(text)) {
       for (const { n, s } of b.body) {
         const d = defRe.exec(s);
@@ -71,13 +72,19 @@ function scan(files, names) {
 const names = collapsedNames();
 if (process.argv.includes("--self-test")) {
   const planted = `# t\n\n\`\`\`ts\nconst ch = supabase.channel("x").on("postgres_changes", {}, () => {});\nexport function ${names[0] ?? "formatDuration"}() {}\n\`\`\`\n`;
-  const tmp = path.join(ROOT, "scripts", ".docs-twins-selftest.md");
-  fs.writeFileSync(tmp, planted);
+  const clean = `# t\n\n\`\`\`ts\nimport { ${names[0] ?? "formatDuration"} } from "@ai-matrx/kit";\n\`\`\`\n`;
+  // Planted in a private temp dir, never in the checkout: a file in scripts/ is seen by every
+  // other check scripts/checks/run.mjs runs beside this one.
+  const box = fs.mkdtempSync(path.join(os.tmpdir(), "docs-twins-selftest-"));
   try {
-    const hits = scan([path.relative(ROOT, tmp)], names);
+    fs.writeFileSync(path.join(box, "planted.md"), planted);
+    fs.writeFileSync(path.join(box, "clean.md"), clean);
+    const hits = scan(["planted.md"], names, box);
     if (hits.length < 2) { console.error("check-docs-twins self-test FAILED — planted recipe was not caught"); process.exit(1); }
-    console.log(`check-docs-twins self-test PASSED (it can fail) — ${hits.length} planted hit(s) caught.`);
-  } finally { fs.rmSync(tmp, { force: true }); }
+    const cleanHits = scan(["clean.md"], names, box);
+    if (cleanHits.length) { console.error(`check-docs-twins self-test FAILED — a recipe that IMPORTS the export was flagged (${cleanHits.length})`); process.exit(1); }
+    console.log(`check-docs-twins self-test PASSED (it can fail) — ${hits.length} planted hit(s) caught, the clean recipe passes.`);
+  } finally { fs.rmSync(box, { recursive: true, force: true }); }
   process.exit(0);
 }
 

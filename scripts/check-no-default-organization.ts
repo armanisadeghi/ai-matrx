@@ -77,8 +77,6 @@ import {
   readdirSync,
   statSync,
   existsSync,
-  writeFileSync,
-  unlinkSync,
 } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
@@ -513,24 +511,36 @@ export function scanSource(rel: string, source: string): Violation[] {
   return found;
 }
 
-export function scan(options: { allowlist?: Allowlist } = {}): Violation[] {
+/**
+ * `extra` scans files IN MEMORY as if they sat at `rel`; `tree: false` skips the checkout walk.
+ * The self-test plants through them — a fixture written into features/ or app/ was seen (and
+ * reported, or read mid-delete) by every other check `scripts/checks/run.mjs` runs beside this one.
+ */
+export function scan(
+  options: { allowlist?: Allowlist; extra?: Array<{ rel: string; source: string }>; tree?: boolean } = {},
+): Violation[] {
   const allowlist = options.allowlist ?? loadAllowlist();
   const violations: Violation[] = [];
-  for (const dir of SCAN_DIRS) {
-    for (const full of walk(join(ROOT, dir))) {
-      const rel = relative(ROOT, full).split("\\").join("/");
-      let source: string;
-      try {
-        source = readFileSync(full, "utf8");
-      } catch {
-        continue;
-      }
-      for (const violation of scanSource(rel, source)) {
-        if (isAllowed(allowlist, rel, violation.rule)) continue;
-        violations.push(violation);
+  const consider = (rel: string, source: string) => {
+    for (const violation of scanSource(rel, source)) {
+      if (isAllowed(allowlist, rel, violation.rule)) continue;
+      violations.push(violation);
+    }
+  };
+  if (options.tree !== false) {
+    for (const dir of SCAN_DIRS) {
+      for (const full of walk(join(ROOT, dir))) {
+        let source: string;
+        try {
+          source = readFileSync(full, "utf8");
+        } catch {
+          continue;
+        }
+        consider(relative(ROOT, full).split("\\").join("/"), source);
       }
     }
   }
+  for (const { rel, source } of options.extra ?? []) consider(rel, source);
   return violations.sort(
     (a, b) => a.file.localeCompare(b.file) || a.line - b.line || a.rule - b.rule,
   );
@@ -541,11 +551,11 @@ export function scan(options: { allowlist?: Allowlist } = {}): Violation[] {
 // ---------------------------------------------------------------------------
 
 const PLANTS: Record<number, string> = {
-  1: join(ROOT, "features", "notes", "__self_test_planted_r1__.ts"),
-  2: join(ROOT, "features", "notes", "__self_test_planted_r2__.ts"),
-  3: join(ROOT, "features", "notes", "__self_test_planted_r3__.ts"),
-  4: join(ROOT, "app", "api", "__self_test_planted_r4__.ts"),
-  5: join(ROOT, "features", "notes", "__self_test_planted_r5__.ts"),
+  1: "features/notes/__self_test_planted_r1__.ts",
+  2: "features/notes/__self_test_planted_r2__.ts",
+  3: "features/notes/__self_test_planted_r3__.ts",
+  4: "app/api/__self_test_planted_r4__.ts",
+  5: "features/notes/__self_test_planted_r5__.ts",
 };
 
 const VIOLATING: Record<number, string> = {
@@ -644,19 +654,10 @@ function selfTest(): number {
     if (!ok) failed += 1;
   };
 
+  // Planted IN MEMORY at PLANTS[rule] — never written into the checkout.
   const plantAndScan = (rule: number, source: string): Violation[] => {
-    const path = PLANTS[rule];
-    try {
-      writeFileSync(path, source, "utf8");
-      const rel = relative(ROOT, path).split("\\").join("/");
-      return scan({ allowlist: {} }).filter((v) => v.file === rel);
-    } finally {
-      try {
-        unlinkSync(path);
-      } catch {
-        /* already gone */
-      }
-    }
+    const rel = PLANTS[rule];
+    return scan({ allowlist: {}, tree: false, extra: [{ rel, source }] }).filter((v) => v.file === rel);
   };
 
   for (const rule of [1, 2, 3, 4, 5]) {
@@ -687,24 +688,18 @@ export const x = 1;
   );
 
   // The allowlist forgives, and only the rules it names.
-  const r3path = relative(ROOT, PLANTS[3]).split("\\").join("/");
-  let forgiven = true;
-  let scopedMiss = true;
-  try {
-    writeFileSync(PLANTS[3], VIOLATING[3], "utf8");
-    forgiven = scan({
-      allowlist: { [r3path]: { rules: [3], reason: "planted by the self-test, with a reason" } },
-    }).some((v) => v.file === r3path && v.rule === 3);
-    scopedMiss = scan({
-      allowlist: { [r3path]: { rules: [1], reason: "planted by the self-test, with a reason" } },
-    }).some((v) => v.file === r3path && v.rule === 3);
-  } finally {
-    try {
-      unlinkSync(PLANTS[3]);
-    } catch {
-      /* already gone */
-    }
-  }
+  const r3path = PLANTS[3];
+  const r3plant = [{ rel: r3path, source: VIOLATING[3] }];
+  const forgiven = scan({
+    allowlist: { [r3path]: { rules: [3], reason: "planted by the self-test, with a reason" } },
+    tree: false,
+    extra: r3plant,
+  }).some((v) => v.file === r3path && v.rule === 3);
+  const scopedMiss = scan({
+    allowlist: { [r3path]: { rules: [1], reason: "planted by the self-test, with a reason" } },
+    tree: false,
+    extra: r3plant,
+  }).some((v) => v.file === r3path && v.rule === 3);
   check("allowlist: a named rule is forgiven         ", forgiven, false);
   check("allowlist: an UNnamed rule still fails      ", scopedMiss, true);
 
