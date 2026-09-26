@@ -71,7 +71,6 @@ export async function readSourceFacts(
         .schema("docproc")
         .rpc("source_list_facts", { p_ids: batch });
       if (error) {
-        console.error("[TMPDBG source_list_facts]", JSON.stringify(error));
         failed = true;
         throw new Error(
           "The stage and attachments of these Sources could not be read.",
