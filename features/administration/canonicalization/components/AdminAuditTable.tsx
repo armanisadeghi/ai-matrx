@@ -421,9 +421,6 @@ export function AdminAuditTable<T>({
           />
         </div>
         {toolbarExtra}
-        <span className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
-          Showing {processed.length} of {rows.length}
-        </span>
         {hasActiveFilters ? (
           <Button
             variant="ghost"
@@ -557,6 +554,13 @@ export function AdminAuditTable<T>({
             </div>
           )}
         </div>
+      </div>
+      <div
+        data-testid="admin-audit-table-footer"
+        role="status"
+        className="shrink-0 border-t border-border px-3 py-1.5 text-xs tabular-nums text-muted-foreground"
+      >
+        {loading ? "Loading…" : `${processed.length} shown / ${rows.length} loaded`}
       </div>
     </div>
   );

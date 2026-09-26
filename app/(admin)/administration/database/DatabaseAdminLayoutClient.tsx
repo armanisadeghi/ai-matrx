@@ -30,10 +30,14 @@ export function DatabaseAdminLayoutClient({
   const hasNestedSectionNavigation = currentPath.startsWith(
     `${DATABASE_MODULE_HOME}/relationships`,
   );
-  // A full-height virtual grid needs the route's complete viewport. The
-  // natural-height page-end runway would otherwise subtract 160px from it.
-  const isFullHeightTableImpact =
-    currentPath === `${DATABASE_MODULE_HOME}/canonicalization/table-impact`;
+  // These database tools own a full-height inner scroller. The outer body's
+  // natural-page runway would shrink their viewport and hide table footers.
+  const isFullHeightDatabaseTool =
+    currentPath === `${DATABASE_MODULE_HOME}/canonicalization` ||
+    currentPath.startsWith(`${DATABASE_MODULE_HOME}/canonicalization/`) ||
+    ["sql-functions", "sql-queries", "workbench"].some(
+      (page) => currentPath === `${DATABASE_MODULE_HOME}/${page}`,
+    );
 
   const handleNavigate = (href: string) => {
     if (currentPath === href.split("?")[0] || isPending) return;
@@ -156,7 +160,7 @@ export function DatabaseAdminLayoutClient({
         </div>
       )}
 
-      <div className={cn("min-h-0 flex-1 overflow-y-auto overflow-x-hidden", !isFullHeightTableImpact && "scroll-page-end-space")}>
+      <div className={cn("min-h-0 flex-1 overflow-y-auto overflow-x-hidden", !isFullHeightDatabaseTool && "scroll-page-end-space")}>
         {children}
       </div>
     </div>
