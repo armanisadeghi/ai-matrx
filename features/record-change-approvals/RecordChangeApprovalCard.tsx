@@ -214,6 +214,8 @@ export function RecordChangeApprovalCard({
     tableId && !hideOpen ? (
       <Link
         href={`/data/${tableId}`}
+        target="_blank"
+        rel="noopener noreferrer"
         className="inline-flex min-h-11 items-center gap-1 rounded-md px-2.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground sm:min-h-8"
       >
         <ExternalLink className="size-3.5" />
