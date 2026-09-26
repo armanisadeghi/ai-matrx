@@ -24,11 +24,11 @@ import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   Copy,
-  ExternalLink,
   Eye,
   Layers,
   Pencil,
   Trash2,
+  ArrowUpRight,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -1013,12 +1013,11 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
                 <MoreHorizontalTapButton ariaLabel="More actions" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem
-                  onClick={jumpToSource}
-                  disabled={!job?.processed_document_id}
-                >
-                  <ExternalLink className="mr-2 h-4 w-4" /> Open source PDF
-                </DropdownMenuItem>
+                {job?.processed_document_id ? (
+                  <DropdownMenuItem onClick={jumpToSource}>
+                    <ArrowUpRight className="mr-2 h-4 w-4" /> Open source PDF
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuItem onClick={() => void onDuplicate()}>
                   <Copy className="mr-2 h-4 w-4" /> Duplicate template
                 </DropdownMenuItem>

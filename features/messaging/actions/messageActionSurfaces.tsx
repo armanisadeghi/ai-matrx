@@ -127,7 +127,7 @@ function OpenLinkChip({ payload, isOwn }: SurfaceProps<OpenLinkActionPayload>) {
   const p = payload;
   if (!p?.href || !p?.label || !p.href.startsWith("/")) return null;
   return (
-    <Link href={p.href} className={chipClass(isOwn)}>
+    <Link href={p.href} className={chipClass(isOwn)} target="_blank" rel="noopener noreferrer">
       <ExternalLink className="h-3 w-3" aria-hidden />
       {p.label}
     </Link>
@@ -181,7 +181,7 @@ function TaskReminderChips({ payload, isOwn }: SurfaceProps<TaskReminderActionPa
 
   return (
     <>
-      <Link href={`/tasks/${p.task_id}`} className={chipClass(isOwn)}>
+      <Link href={`/tasks/${p.task_id}`} className={chipClass(isOwn)} target="_blank" rel="noopener noreferrer">
         <ExternalLink className="h-3 w-3" aria-hidden />
         Open task
       </Link>

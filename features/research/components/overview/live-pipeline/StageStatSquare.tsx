@@ -125,7 +125,9 @@ export function StageStatSquare({
           onClick={(e) => e.stopPropagation()}
           className="absolute right-1.5 top-1.5 inline-flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground/70 hover:bg-muted/60 hover:text-foreground"
           aria-label={`Open ${STAGE_LABEL[stage.kind]} results`}
-        >
+           target="_blank"
+           rel="noopener noreferrer"
+         >
           <ExternalLink className="h-2.5 w-2.5" />
         </Link>
       </div>

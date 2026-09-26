@@ -134,7 +134,7 @@ export function ItemWorkspace({
               </Link>
             </Button>
             <Button asChild variant="outline" size="sm" className="h-8">
-              <Link href={`/tools/product-capture/item/${item.id}`}>
+              <Link href={`/tools/product-capture/item/${item.id}`} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="mr-1 h-3.5 w-3.5" />
                 Images &amp; files
               </Link>

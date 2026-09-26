@@ -25,7 +25,7 @@ import {
   CircleCheck,
   Circle,
   CornerDownRight,
-  ExternalLink,
+  ArrowUpRight,
 } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
@@ -512,7 +512,7 @@ function TaskTableRow({
             className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-foreground transition-all focus-visible:opacity-100"
             title="Open task"
           >
-            <ExternalLink className="h-3.5 w-3.5" />
+            <ArrowUpRight className="h-3.5 w-3.5" />
           </button>
         </div>
       </TableCell>

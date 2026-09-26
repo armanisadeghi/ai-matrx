@@ -19,7 +19,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
-  ExternalLink,
+  ArrowUpRight,
   GraduationCap,
   Loader2,
   RefreshCw,
@@ -113,7 +113,7 @@ function CandidateRow({
               showIcon={false}
               labelClassName="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
             >
-              <ExternalLink className="h-3 w-3" />
+              <ArrowUpRight className="h-3 w-3" />
               Already a contact
               {statusLabel(candidate.existing_expert_status)
                 ? ` · ${statusLabel(candidate.existing_expert_status)}`

@@ -471,7 +471,9 @@ export function NoteVersionHistoryPanel({
                 href={`/notes/${noteId}/diff`}
                 className="ml-auto inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 title="Open full diff view"
-              >
+                 target="_blank"
+                 rel="noopener noreferrer"
+               >
                 <ExternalLink className="h-3 w-3" />
                 Full view
               </Link>

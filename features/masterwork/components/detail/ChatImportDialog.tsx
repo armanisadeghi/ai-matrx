@@ -961,7 +961,9 @@ export function ChatImportDialog({
               href={`/masterwork/${rulebook.id}/import`}
               className="ml-auto mr-6 inline-flex items-center gap-1 text-xs font-normal text-muted-foreground hover:text-foreground"
               title="Open this as its own page"
-            >
+               target="_blank"
+               rel="noopener noreferrer"
+             >
               <ExternalLink className="h-3 w-3" />
               Full page
             </Link>

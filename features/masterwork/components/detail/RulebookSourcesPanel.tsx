@@ -1104,7 +1104,9 @@ export function RulebookSourcesPanel({
             data-tap-target
             className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
             title="Open Sources as its own page"
-          >
+             target="_blank"
+             rel="noopener noreferrer"
+           >
             <ExternalLink className="h-3 w-3" />
             Full page
           </Link>

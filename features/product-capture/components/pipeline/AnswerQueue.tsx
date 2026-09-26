@@ -280,7 +280,7 @@ export function AnswerQueue() {
             </p>
           </div>
           <Button asChild variant="ghost" size="sm" className="h-9 shrink-0">
-            <Link href={`/tools/product-capture/manage?item=${item.id}`}>
+            <Link href={`/tools/product-capture/manage?item=${item.id}`} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="mr-1 h-3.5 w-3.5" />
               Full listing
             </Link>

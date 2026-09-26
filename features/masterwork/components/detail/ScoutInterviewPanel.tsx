@@ -974,7 +974,9 @@ export function ScoutInterviewPanel({
           }`}
           className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-normal text-muted-foreground hover:bg-accent hover:text-foreground"
           title="Open the interview as its own page"
-        >
+           target="_blank"
+           rel="noopener noreferrer"
+         >
           <ExternalLink className="h-3 w-3" />
           Full page
         </Link>

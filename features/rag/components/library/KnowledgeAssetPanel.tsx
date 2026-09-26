@@ -40,8 +40,8 @@ import {
   X as XIcon,
   Loader2,
   AlertTriangle,
-  ExternalLink,
   type LucideIcon,
+  ArrowUpRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -810,7 +810,7 @@ function RepresentationCard({
             onClick={() => setResultsOpen(true)}
             className="mt-2 h-7 w-full text-[10px]"
           >
-            <ExternalLink className="h-3 w-3 mr-1" />
+            <ArrowUpRight className="h-3 w-3 mr-1" />
             View {chunkCount.toLocaleString()} {meta.unit}
           </Button>
           <DerivativeResultsDialog

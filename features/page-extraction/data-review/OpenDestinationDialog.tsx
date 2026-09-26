@@ -110,6 +110,7 @@ export function OpenDestinationDialog({
         <ArrowRight className="mr-2 h-4 w-4" /> Open here
       </Button>
       <Button variant="outline" className="justify-start" onClick={openNewTab}>
+        {/* new-tab-icon: handler calls window.open(..., "_blank", ...) defined elsewhere in this file */}
         <ExternalLink className="mr-2 h-4 w-4" /> Open in new tab
       </Button>
       {windowOverlay && (

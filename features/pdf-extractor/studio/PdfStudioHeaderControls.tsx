@@ -21,7 +21,6 @@ import React, { useCallback, useState } from "react";
 import {
   ClipboardList,
   Download,
-  ExternalLink,
   Loader2,
   PartyPopper,
   RefreshCw,
@@ -29,6 +28,7 @@ import {
   Share2,
   WandSparkles,
   Zap,
+  ArrowUpRight,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
@@ -263,7 +263,7 @@ export function PdfStudioHeaderControls({
                     Share
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={onOpenSource}>
-                    <ExternalLink className="mr-2 h-4 w-4" />
+                    <ArrowUpRight className="mr-2 h-4 w-4" />
                     Open source
                   </DropdownMenuItem>
                 </>

@@ -351,7 +351,9 @@ function DomainReportsCard({
                 <Link
                   href={domainOutputHref(def, topicId)}
                   className="flex min-w-0 flex-1 items-center gap-2"
-                >
+                   target="_blank"
+                   rel="noopener noreferrer"
+                 >
                   <div className="min-w-0 flex-1">
                     <div className="text-xs font-medium text-foreground">
                       {def.label}

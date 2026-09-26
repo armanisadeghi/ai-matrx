@@ -66,7 +66,9 @@ function MobileHistoryDrawer({
             href={`/notes/${noteId}/diff`}
             className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             title="Open full diff view"
-          >
+             target="_blank"
+             rel="noopener noreferrer"
+           >
             <ExternalLink className="h-3 w-3" />
             Full view
           </Link>
@@ -149,7 +151,9 @@ export function NoteVersionHistory({
           href={`/notes/${noteId}/diff`}
           className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           title="Open full diff view"
-        >
+           target="_blank"
+           rel="noopener noreferrer"
+         >
           <ExternalLink className="h-3.5 w-3.5" />
         </Link>
       }

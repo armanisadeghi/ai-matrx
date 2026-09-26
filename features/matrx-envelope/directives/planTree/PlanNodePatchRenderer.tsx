@@ -49,7 +49,9 @@ function PatchCard({ item }: { item: PlanNodePatchItem }) {
               : marketingRoutes.contentPlan()
           }
           className="ml-auto inline-flex shrink-0 items-center gap-1 text-primary hover:underline"
-        >
+           target="_blank"
+           rel="noopener noreferrer"
+         >
           {data.route ?? "open"} <ExternalLink className="h-3 w-3" />
         </Link>
       ) : status === "exhausted" ? (
