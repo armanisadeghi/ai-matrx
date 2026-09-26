@@ -373,16 +373,16 @@ export function OrganizationsAdminClient() {
       width: 220,
     },
     {
-      id: "type",
-      header: "Type",
+      // Organizations are all equal (access ladder): there is no organization "type". The one
+      // real distinction is the platform's own system organization, so the column names that
+      // fact and nothing else — every other row stays empty rather than wearing an invented label.
+      id: "system",
+      header: "System",
       accessorFn: (organization) =>
-        organization.is_system ? "System" : "Shared",
+        organization.is_system ? "System" : "Not system",
       filter: "select",
-      cell: (organization) => (
-        <Badge variant="outline">
-          {organization.is_system ? "System" : "Shared"}
-        </Badge>
-      ),
+      cell: (organization) =>
+        organization.is_system ? <Badge variant="outline">System</Badge> : null,
       width: 90,
     },
     {
