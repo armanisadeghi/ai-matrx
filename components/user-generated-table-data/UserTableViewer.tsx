@@ -1638,8 +1638,13 @@ const UserTableViewer = ({
     // Get the declared data type for type-aware sorting
     const fieldDataType = getFieldDataType(field);
 
-    // For small datasets without search, use client-side sorting for correct type handling
-    if (totalCount <= CLIENT_SORT_THRESHOLD && !searchTerm) {
+    // For small datasets without search, use client-side sorting for correct type handling.
+    // A RECORD-STORE table is sorted by the store itself (`custom.read_records_page`, one page,
+    // the same rules) — reading every row to sort in the browser was the Sheet's slow sort. Only a
+    // column the store works out on every read (a formula) keeps the browser sort there.
+    const storeSorts =
+      isRecordStoreTable(tableId) && !(sortTarget && isComputedColumn(sortTarget));
+    if (totalCount <= CLIENT_SORT_THRESHOLD && !searchTerm && !storeSorts) {
       // Check if we already have all data cached, just resort it
       if (allSortedData && allSortedData.length === totalCount) {
         const resortedData = smartSort(
