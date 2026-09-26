@@ -22,8 +22,8 @@ import { chromium } from "playwright";
 import { readFileSync } from "node:fs";
 
 export const BUDGETS = {
-  KEY_100KB_MS_PER_KEY: 150,
-  KEY_1MB_MS_PER_KEY: 2000,
+  KEY_100KB_MS_PER_KEY: 50,
+  KEY_1MB_MS_PER_KEY: 50,
   // Dominated by mermaid drawing the ~50 diagrams in the first 600 blocks
   // (its own getBBox text measuring) — lazy diagram drawing is the next cut.
   RENDER_5MB_MAX_TASK_MS: 10000,
@@ -60,7 +60,7 @@ async function open() {
     signedIn = true;
   }
   await page.goto(origin + "/markdown-studio", { waitUntil: "domcontentloaded", timeout: 180000 });
-  await page.waitForSelector("textarea", { timeout: 180000 });
+  await page.waitForSelector(".cm-content", { timeout: 180000 });
   await page.waitForTimeout(3000);
   await page.evaluate(() => {
     window.__lt = [];
@@ -101,10 +101,10 @@ async function settle(maxMs = 300000) {
 }
 async function paste(name) {
   const text = readFileSync(`${dir}/${name}.md`, "utf8");
+  // The studio's source IS the rich editor's Source view (CodeMirror 6).
   await page.evaluate((t) => {
-    const ta = document.querySelector("textarea");
-    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set.call(ta, t);
-    ta.dispatchEvent(new Event("input", { bubbles: true }));
+    const v = document.querySelector(".cm-content").cmTile.view;
+    v.dispatch({ changes: { from: 0, to: v.state.doc.length, insert: t } });
   }, text);
   return settle();
 }
@@ -115,9 +115,9 @@ async function typeAtEnd(keys) {
     new PerformanceObserver((l) => {
       for (const e of l.getEntries()) window.__ev.push({ id: e.interactionId, d: e.duration });
     }).observe({ type: "event", durationThreshold: 16 });
-    const ta = document.querySelector("textarea");
-    ta.focus();
-    ta.setSelectionRange(ta.value.length, ta.value.length);
+    const v = document.querySelector(".cm-content").cmTile.view;
+    v.focus();
+    v.dispatch({ selection: { anchor: v.state.doc.length }, scrollIntoView: true });
   });
   const t0 = Date.now();
   for (let k = 0; k < keys; k++) {
