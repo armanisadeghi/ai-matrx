@@ -19,12 +19,20 @@ import {
 } from "@/features/sources/currentVersion";
 import {
   sourceFactsFromRow,
+  type SourceFacts,
   type SourceFactsRow,
 } from "@/features/sources/sourceRows";
 
 export interface UseCurrentVersion {
   loading: boolean;
   versions: SourceVersions | null;
+  /**
+   * The same facts row the Sources page reads (current version's chunk count,
+   * indexing, attachments) — null when it could not be read. The Source screen
+   * says "Not yet searchable" from `currentChunkCount`, never from the
+   * capture's own chunks.
+   */
+  facts: SourceFacts | null;
   /** A sentence when the edit check failed (the original is shown). */
   error: string | null;
 }
@@ -35,15 +43,20 @@ export function useCurrentVersion(documentId: string): UseCurrentVersion {
   >({
     loading: true,
     versions: null,
+    facts: null,
     error: null,
     forId: null,
   });
 
   useEffect(() => {
     let cancelled = false;
-    const settle = (versions: SourceVersions, error: string | null = null) => {
+    const settle = (
+      versions: SourceVersions,
+      error: string | null = null,
+      facts: SourceFacts | null = null,
+    ) => {
       if (!cancelled)
-        setState({ loading: false, versions, error, forId: documentId });
+        setState({ loading: false, versions, facts, error, forId: documentId });
     };
     const fallback = {
       originalId: documentId,
@@ -63,7 +76,7 @@ export function useCurrentVersion(documentId: string): UseCurrentVersion {
         if (!row) return settle(fallback);
         const facts = sourceFactsFromRow(row);
         if (!facts) throw new Error("current version not reported");
-        settle(versionsFromFacts(facts));
+        settle(versionsFromFacts(facts), null, facts);
       } catch {
         settle(
           fallback,
@@ -78,10 +91,11 @@ export function useCurrentVersion(documentId: string): UseCurrentVersion {
 
   // Until the lookup for THIS id settles, nothing is known.
   if (state.forId !== documentId)
-    return { loading: true, versions: null, error: null };
+    return { loading: true, versions: null, facts: null, error: null };
   return {
     loading: state.loading,
     versions: state.versions,
+    facts: state.facts,
     error: state.error,
   };
 }
