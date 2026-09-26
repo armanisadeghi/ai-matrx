@@ -1912,7 +1912,6 @@
 .entity-ref-controls[data-reveal-on-hover="true"] {
   opacity: 0;
   pointer-events: none !important;
-  transition: opacity 150ms;
 }
 
 .entity-ref:hover .entity-ref-controls[data-reveal-on-hover="true"],

@@ -5,6 +5,7 @@ import { expect, test } from "@playwright/test";
 declare global {
   interface Window {
     newTabClicks?: number;
+    pointerDown?: { opacity: string; target: string };
     quickClicks?: number;
     rowClicks?: number;
   }
@@ -23,7 +24,7 @@ function fixture() {
       <span class="entity-ref inline-flex items-center gap-1">
         <a href="#record">Acme Health</a>
         <span class="entity-ref-controls inline-flex" data-entity-ref-controls data-reveal-on-hover="true">
-          <button id="quick" onclick="event.stopPropagation(); window.quickClicks = (window.quickClicks || 0) + 1">Quick look</button>
+          <button id="quick" onpointerdown="window.pointerDown = { target: event.target.id, opacity: getComputedStyle(event.currentTarget.parentElement).opacity }" onclick="event.stopPropagation(); window.quickClicks = (window.quickClicks || 0) + 1">Quick look</button>
           <a id="new-tab" href="#new" onclick="event.stopPropagation(); window.newTabClicks = (window.newTabClicks || 0) + 1">New tab</a>
         </span>
       </span>
@@ -58,6 +59,21 @@ test("fine pointer exposes every door before it can receive a hit", async ({ pag
   expect(await page.evaluate(() => window.quickClicks)).toBe(1);
   expect(await page.evaluate(() => window.rowClicks ?? 0)).toBe(0);
   await expect(page.locator("#new-tab")).toHaveCSS("pointer-events", "auto");
+});
+
+test("a direct pointer press never reaches an invisible Quick look door", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "desktop-only hover contract");
+
+  const quick = page.locator("#quick");
+  const rect = await quick.evaluate((button) => button.getBoundingClientRect().toJSON());
+  await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
+
+  expect(await page.evaluate(() => window.pointerDown)).toEqual({
+    target: "quick",
+    opacity: "1",
+  });
+  expect(await page.evaluate(() => window.quickClicks)).toBe(1);
+  expect(await page.evaluate(() => window.rowClicks ?? 0)).toBe(0);
 });
 
 test("keyboard focus reveals the controls before activation", async ({ page }, testInfo) => {
