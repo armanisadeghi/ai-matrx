@@ -1,7 +1,7 @@
 -- chair-step: inverse of sch_base_contract_b_fks_and_agent_task_org.sql — drops the scheduler base-contract FKs and the sch_agent_task organization_id/created_at columns, and restores the two function bodies that insert sch_agent_task without an organization. Only run together with reverting the writers that now pass organization_id to sch_agent_task (matrx-scheduler upsert_agent_task, aidream Gmail recovery carrier + seed scripts), or those inserts fail on the missing column.
 -- inverse of sch_base_contract_b_fks_and_agent_task_org.sql
 -- LOCKS (measured on the clone, 2026-09-26): dropping the FKs takes ACCESS EXCLUSIVE on auth.users and
--- iam.organizations until COMMIT (~1.0 s for the whole file) — every sign-in and org read waits that long.
+-- iam.organizations until COMMIT (~1.0 s for the whole file, rule 27 on the clone) — every sign-in and org read waits that long.
 
 LOCK TABLE scheduler.sch_task, scheduler.sch_trigger, scheduler.sch_run, scheduler.sch_agent_task
   IN ACCESS EXCLUSIVE MODE;

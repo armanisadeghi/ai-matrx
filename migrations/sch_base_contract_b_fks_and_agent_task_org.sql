@@ -35,9 +35,10 @@
 -- LOCKS. The family is locked ACCESS EXCLUSIVE up front, in the order the previous scheduler
 -- class change used (a piecemeal lock deadlocked against the scheduler worker on sch_trigger).
 -- Validating the two sch_run FKs scans ~294k rows while auth.users is held SHARE ROW EXCLUSIVE.
--- Measured on the clone (rule 27 green, up -> inverse -> up): the whole file commits in ~1.2 s,
--- no ACCESS EXCLUSIVE outside the four scheduler tables; auth.users / iam.organizations are held
--- SHARE ROW EXCLUSIVE for that ~1.2 s (a window file by aidream's db/migration_window.py rule).
+-- Measured on the clone (rule 27 green, inverse -> up -> inverse -> up): the whole file commits in
+-- ~1.7 s (the two sch_run index builds ~0.3 s each), no ACCESS EXCLUSIVE outside the four scheduler
+-- tables; auth.users / iam.organizations are held SHARE ROW EXCLUSIVE for that ~1.7 s (a window file
+-- by aidream's db/migration_window.py rule).
 --
 -- NOT HERE (and why certify is still false on sch_task / sch_run / sch_trigger after this):
 -- the legacy_owner_col WARN (user_id is still the scheduler's owner column across aidream,
