@@ -76,7 +76,7 @@ async function heapMB(gc = false) {
   const { metrics } = await cdp.send("Performance.getMetrics");
   return +(metrics.find((m) => m.name === "JSHeapUsedSize").value / 1048576).toFixed(1);
 }
-/** Quiet = no new long task for 1.5 s AND the rendered block count stopped moving. */
+/** Quiet = no new long task AND no newly mounted block for 5 s (huge documents mount in slices). */
 async function settle(maxMs = 300000) {
   const t0 = Date.now();
   let last = "";
@@ -90,7 +90,7 @@ async function settle(maxMs = 300000) {
       last = sig;
       since = Date.now();
     }
-    if (Date.now() - since > 1500) return true;
+    if (Date.now() - since > 5000) return true;
     await new Promise((r) => setTimeout(r, 250));
   }
   return false;

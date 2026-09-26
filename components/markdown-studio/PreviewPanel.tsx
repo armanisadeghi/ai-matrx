@@ -60,7 +60,7 @@ import { LevelCompareView } from "./lab/LevelCompareView";
 import { PrintPreviewView } from "./lab/PrintPreviewView";
 import { DocumentPropertiesPanel } from "@/components/markdown-core/syntax/elements/DocumentPropertiesPanel";
 import { MarkdownSourceEditProvider } from "@/components/markdown-core/syntax/elements/MarkdownSourceEdit";
-import { useProgressiveCount } from "@/components/mardown-display/chat-markdown/progressive-mount";
+import { useProgressiveMount } from "@/components/mardown-display/chat-markdown/progressive-mount";
 
 /** Task checkboxes toggle in the preview only when the buffer can be saved to. */
 function MaybeSourceEdit({
@@ -158,7 +158,7 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
     const hasContent = content.trim().length > 0;
     const blocks = mode === "blocks" && hasContent ? runV2Parser(content) : [];
     // A 5 MB document is ~8,000 blocks: the listing mounts in slices too.
-    const shownBlocks = useProgressiveCount(blocks.length);
+    const { shown: shownBlocks, sentinel: blocksSentinel } = useProgressiveMount(blocks.length);
     const renderedText = streamText ?? content;
 
     const runReplay = () => {
@@ -354,6 +354,7 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
                 );
               })
             )}
+            {blocksSentinel}
           </div>
         )}
 

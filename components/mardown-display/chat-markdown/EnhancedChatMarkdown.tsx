@@ -18,7 +18,7 @@ import { renderSettledFromRecord, settledOneShotBlocks } from "./settle-stream-b
 import { expandTextBlocksInList } from "../markdown-classification/processors/utils/expand-text-blocks";
 import { RenderBlock } from "./block-registry/BlockRenderer";
 import { reuseUnchangedBlocks } from "./stable-blocks";
-import { useProgressiveCount } from "./progressive-mount";
+import { useProgressiveMount } from "./progressive-mount";
 import { renderBlockToContentBlock } from "./render-block-to-content-block";
 import { DocumentNumberingProvider } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
 import { MarkdownSourceEditProvider } from "@/components/markdown-core/syntax/elements/MarkdownSourceEdit";
@@ -932,7 +932,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
   }, [stableBlocks]);
 
   // A huge document mounts in slices, never in one frozen frame.
-  const mountedBlockCount = useProgressiveCount(stableBlocks.length);
+  const { shown: mountedBlockCount, sentinel: progressiveSentinel } =
+    useProgressiveMount(stableBlocks.length);
 
   // Find the index of the last reasoning block for animation purposes
   const lastReasoningBlockIndex = useMemo(() => {
@@ -1498,6 +1499,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
                       index === lastReasoningBlockIndex,
                     ),
                   )}
+            {!hasUnifiedSpecial && !hasDbInterleavedSpecial && progressiveSentinel}
           </div>
 
           {!hideCopyButton && (

@@ -27,7 +27,8 @@
  *   - a one-character edit hands new props to at most 1 block;
  *   - the numbering value survives an edit that moves no number;
  *   - a 1 MB document mounts at most PROGRESSIVE_FIRST_SLICE blocks in its
- *     first commit and every block after the slices drain.
+ *     first commit, PROGRESSIVE_AUTO_LIMIT once the slices drain, and the
+ *     rest only as the reader scrolls (with a sentence saying so).
  */
 
 import React, { act } from "react";
@@ -65,7 +66,7 @@ import {
   DocumentNumberingProvider,
   useDocumentNumbering,
 } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
-import { PROGRESSIVE_FIRST_SLICE } from "@/components/mardown-display/chat-markdown/progressive-mount";
+import { PROGRESSIVE_AUTO_LIMIT, PROGRESSIVE_FIRST_SLICE } from "@/components/mardown-display/chat-markdown/progressive-mount";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -154,7 +155,7 @@ describe("the document numbering value is stable across edits that move no numbe
 });
 
 describe("a huge document mounts in slices", () => {
-  it("a 1 MB document mounts at most one slice in its first commit, then all of it", async () => {
+  it("a 1 MB document mounts at most one slice in its first commit, fills to the auto limit, then follows the scroll", async () => {
     const doc = megaDoc(1_000_000);
     const host = document.createElement("div");
     const root = createRoot(host);
@@ -171,8 +172,10 @@ describe("a huge document mounts in slices", () => {
         await new Promise((r) => setTimeout(r, 0));
       });
     }
+    // Past the auto limit the rest follows the reader's scroll — and says so.
     const all = new Set(current.map((p) => p.index)).size;
-    expect(all).toBeGreaterThan(1000);
+    expect(all).toBe(PROGRESSIVE_AUTO_LIMIT);
+    expect(host.textContent).toMatch(/Showing 600 of [\d,]+ blocks/);
     await act(async () => root.unmount());
   }, 120_000);
 });
