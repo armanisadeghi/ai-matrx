@@ -25,7 +25,7 @@ interface UntypedTable {
     options?: { count?: "exact" },
   ): {
     order(column: string, options: { ascending: boolean }): {
-      range(from: number, to: number): PromiseLike<{ data: Row[] | null; error: unknown; count?: number | null }>;
+      range(from: number, to: number): PromiseLike<{ data: Row[] | null; error: { message: string } | null; count?: number | null }>;
     };
   };
   upsert(

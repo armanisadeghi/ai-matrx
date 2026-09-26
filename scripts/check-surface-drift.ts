@@ -172,7 +172,6 @@ async function main() {
       `Surface manifests OK: ${ALL.length} surface${ALL.length === 1 ? "" : "s"}, ${totalValues} value${totalValues === 1 ? "" : "s"}, ${totalWriteTargets} write target${totalWriteTargets === 1 ? "" : "s"}, ${totalClientTools} client tool${totalClientTools === 1 ? "" : "s"} declared.`,
     );
     exitAfterDrain(0);
-    return;
   }
 
   console.error(
