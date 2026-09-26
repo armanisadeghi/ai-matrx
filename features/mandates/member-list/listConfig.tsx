@@ -188,7 +188,6 @@ export function memberMandateListConfig(
               resourceId={shareRow.id}
               resourceName={shareRow.name}
               resourceNoun="mandate"
-              organizationId={shareRow.organizationId ?? undefined}
               personalHome={Boolean(personalOrgId) && shareRow.organizationId === personalOrgId}
             />
           ) : null}

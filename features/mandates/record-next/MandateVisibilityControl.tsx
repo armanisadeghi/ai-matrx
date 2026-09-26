@@ -70,7 +70,6 @@ export function MandateVisibilityControl({
           resourceId={mandate.id}
           resourceName={mandateDisplayName(mandate.mandate_key, mandate.label)}
           resourceNoun="mandate"
-          organizationId={mandate.organization_id ?? undefined}
           personalHome={Boolean(personalOrgId) && mandate.organization_id === personalOrgId}
         />
       ) : null}
