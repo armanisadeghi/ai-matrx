@@ -189,7 +189,14 @@ function arrangeMenuUnpruned(
     nodes: compact([r.listen, r.copyAs, r.json, r.selectAll, r.insertReference]),
   });
 
-  // AI + libraries — every placement row, same names as Classic.
+  // THE ONE REGISTRY TREE — the same tree, same order, as the ⋯ menu; the
+  // agent-shortcut libraries are inside its AI submenu (RC-B6).
+  if (r.registry && r.registry.length) {
+    sections.push({ id: "registry", group: "document", nodes: [...r.registry] });
+  }
+
+  // AI + libraries — every placement row, same names as Classic (only when
+  // there is no registry to fold them into).
   if (r.placements.length) {
     sections.push({ id: "ai", group: "ai", nodes: [...r.placements] });
   }
@@ -206,7 +213,13 @@ function arrangeMenuUnpruned(
     icon: HistoryIcon,
     iconClassName: "text-violet-500",
     width: "w-60",
-    children: [r.undo, r.redo, r.viewHistory, { kind: "separator", id: "history:sep" }, r.compare],
+    children: compact([
+      r.undo,
+      r.redo,
+      r.viewHistory,
+      r.compare ? { kind: "separator", id: "history:sep" } : null,
+      r.compare,
+    ]),
   };
   sections.push({
     id: "document",

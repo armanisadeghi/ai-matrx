@@ -38,6 +38,14 @@ export interface MenuSection {
  * listed in any section are treated as `extra` (consumer-supplied) and
  * rendered in a trailing group.
  */
+/**
+ * The AI section's label. Hosts that carry the agent-shortcut libraries (AI
+ * Actions, Agents, Content Blocks, My Items, Org Items — the context-menu v3
+ * placements) and ProTextarea's bound agents fold them INTO this submenu, so
+ * there is one AI family in every menu, never a parallel one.
+ */
+export const AI_SUBMENU_LABEL = "Improve with AI";
+
 export const MENU_STRUCTURE: MenuSection[] = [
   {
     // The doors a reader must see without scrolling or guessing (defect D6:
@@ -45,6 +53,12 @@ export const MENU_STRUCTURE: MenuSection[] = [
     // missing). Every family of near-identical variants is ONE submenu row.
     submenu: null,
     actionIds: [
+      // A bar's primary buttons, for the menu-only hosts that have no bar
+      // (icon-only, menu variant). A menu under a bar never lists them.
+      "thumbs-up",
+      "thumbs-down",
+      "tts-play",
+      "continue-in-chat",
       "add-to-rulebook",
       "save-to-task",
       "copy",
@@ -58,7 +72,7 @@ export const MENU_STRUCTURE: MenuSection[] = [
   {
     // Review-and-apply AI powers (a text field promotes these to the top —
     // RegistryActionList; a document keeps them one row deep).
-    submenu: "Improve with AI",
+    submenu: AI_SUBMENU_LABEL,
     icon: BrainCircuit,
     actionIds: ["text-cleanup", "text-help", "text-custom-agent"],
   },
@@ -137,6 +151,7 @@ export const MENU_STRUCTURE: MenuSection[] = [
     icon: Edit,
     actionIds: [
       "regenerate-response",
+      "regenerate-latest",
       "edit",
       "edit-and-resubmit",
       "open-fullscreen-editor",
@@ -198,7 +213,21 @@ export interface MenuTree {
  * slot-filtered) actions into the two-level tree the menus render. Empty
  * sections are dropped, so submenus never render with zero items.
  */
-export function buildMenuTree(actions: RichDocumentAction[]): MenuTree {
+/**
+ * Actions that are the SAME act under two ids (a bar's shortcut and the menu
+ * row). When both are present in one menu, only the canonical row renders —
+ * "Regenerate answer" appeared twice in the right-click (RC-B6 round 2).
+ */
+const MENU_ALIASES: Record<string, string> = {
+  "regenerate-latest": "regenerate-response",
+};
+
+export function buildMenuTree(input: RichDocumentAction[]): MenuTree {
+  const present = new Set(input.map((a) => a.id));
+  const actions = input.filter((a) => {
+    const canonical = MENU_ALIASES[a.id];
+    return !(canonical && present.has(canonical));
+  });
   const byId = new Map<string, RichDocumentAction>();
   for (const action of actions) byId.set(action.id, action);
 
@@ -224,4 +253,42 @@ export function buildMenuTree(actions: RichDocumentAction[]): MenuTree {
   const extras = actions.filter((a) => !PLACED_IDS.has(a.id));
 
   return { topLevel, submenus, extras };
+}
+
+/**
+ * THE ONE selector of which registry actions a MENU shows (every host: ⋯,
+ * right-click, ProTextarea "…", the mobile sheet). A bar's primary buttons
+ * stay on the bar; a menu carries the overflow set. One selector is what
+ * keeps every host's tree identical (guard: __tests__/oneMenuTree.test.ts).
+ */
+export function registryMenuActions(actions: RichDocumentAction[]): RichDocumentAction[] {
+  return actions.filter((a) => (a.renderSlot ?? "overflow") !== "primary");
+}
+
+/**
+ * The AI submenu, guaranteed present when a host has its own AI rows to fold
+ * in (a ProTextarea's bound agents, the v3 agent-shortcut libraries), at the
+ * position MENU_STRUCTURE gives it — so no host ever grows a second AI family.
+ */
+export function withAiSlot(
+  submenus: MenuSubmenuNode[],
+  hasSlot: boolean,
+): MenuSubmenuNode[] {
+  if (!hasSlot || submenus.some((s) => s.label === AI_SUBMENU_LABEL)) return submenus;
+  const ai: MenuSubmenuNode = {
+    label: AI_SUBMENU_LABEL,
+    icon: MENU_STRUCTURE.find((s) => s.submenu === AI_SUBMENU_LABEL)?.icon,
+    actions: [],
+  };
+  // MENU_STRUCTURE lists the AI section first among the submenus.
+  return [ai, ...submenus];
+}
+
+/** The tree as an ordered id list — what the one-tree guard compares. */
+export function flattenMenuTreeIds(tree: MenuTree): string[] {
+  return [
+    ...tree.topLevel.map((a) => a.id),
+    ...tree.submenus.flatMap((s) => [`submenu:${s.label}`, ...s.actions.map((a) => a.id)]),
+    ...tree.extras.map((a) => a.id),
+  ];
 }

@@ -50,7 +50,15 @@ describe("MobileMenuContent carries every core verb the model mints", () => {
     expect(modelSource).toContain(`id: "${id}"`);
   });
 
-  it.each(CORE_VERB_IDS)("mobile drawer carries %s", (id) => {
-    expect(mobileSource).toContain(`id: "${id}"`);
+  // RC-B6: the drawer no longer assembles a parallel tree — it renders the
+  // model itself (buildMenuModel → node-shape conversion), so it carries every
+  // verb the model mints BY CONSTRUCTION. The guard now pins that construction:
+  // the drawer builds from the model and mints no core-verb row of its own
+  // (a hand-minted row is how the two renderers drifted apart).
+  it("mobile drawer renders the one model", () => {
+    expect(mobileSource).toMatch(/buildMenuModel\(m, props\)/);
+  });
+  it.each(CORE_VERB_IDS)("mobile drawer mints no private %s row", (id) => {
+    expect(mobileSource).not.toContain(`id: "${id}"`);
   });
 });

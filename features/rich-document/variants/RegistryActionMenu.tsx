@@ -16,7 +16,7 @@ import * as React from "react";
 import AdvancedMenu, { type MenuItem } from "@/components/official/AdvancedMenu";
 import { useActionSurfaceProvider } from "../runtime/useActionSurfaceProvider";
 import { resumePendingAuthAction } from "../actions/resumePendingAuthAction";
-import { buildMenuTree } from "./shared/menuStructure";
+import { buildMenuTree, registryMenuActions } from "./shared/menuStructure";
 import { resolveActionDisplay, runAction } from "./shared/runAction";
 import type {
   ContentSource,
@@ -36,9 +36,8 @@ export interface RegistryActionMenuProps {
 }
 
 /** Overflow-slot actions only — the host renders the primary row inline. */
-export function menuActions(actions: RichDocumentAction[]): RichDocumentAction[] {
-  return actions.filter((a) => (a.renderSlot ?? "overflow") !== "primary");
-}
+/** The one menu selector (shared/menuStructure.ts). */
+export const menuActions = registryMenuActions;
 
 /** The registry tree → AdvancedMenu rows (submenus become drill-in rows). */
 export function toAdvancedMenuItems(

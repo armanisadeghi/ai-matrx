@@ -12,7 +12,11 @@ import * as React from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActionSurfaceProvider } from "../runtime/useActionSurfaceProvider";
-import { buildMenuTree } from "./shared/menuStructure";
+import {
+  AI_SUBMENU_LABEL,
+  buildMenuTree,
+  withAiSlot,
+} from "./shared/menuStructure";
 import { resolveActionDisplay, runAction } from "./shared/runAction";
 import { menuActions } from "./RegistryActionMenu";
 import type {
@@ -28,6 +32,11 @@ export interface RegistryActionListProps {
   actions?: RichDocumentActionsProp;
   /** Called after a row runs (the host closes its popover). */
   onClose: () => void;
+  /**
+   * The host's own AI rows (ProTextarea's bound agents) — rendered INSIDE the
+   * "Improve with AI" group, never as a parallel AI family.
+   */
+  aiSlot?: React.ReactNode;
   className?: string;
 }
 
@@ -37,7 +46,7 @@ const ROW =
 export function RegistryActionList(
   props: RegistryActionListProps,
 ): React.ReactElement | null {
-  const { content, source, actions, onClose, className } = props;
+  const { content, source, actions, onClose, className, aiSlot } = props;
   const { ctx, getCtx, resolvedActions } = useActionSurfaceProvider({
     content,
     source,
@@ -52,11 +61,12 @@ export function RegistryActionList(
 
   // A text field's own AI powers lead the list (they are its reason for the
   // menu); everything else follows the shared tree.
-  const listed = menuActions(resolvedActions);
-  const promoted = listed.filter((a) => a.category === "ai");
-  const tree = buildMenuTree(listed.filter((a) => a.category !== "ai"));
+  // The SAME tree, in the SAME order, as every other menu (⋯, right-click,
+  // the mobile sheet) — guard: __tests__/oneMenuTree.test.ts.
+  const tree = buildMenuTree(menuActions(resolvedActions));
+  const submenus = withAiSlot(tree.submenus, Boolean(aiSlot));
   if (
-    promoted.length === 0 &&
+    !aiSlot &&
     tree.topLevel.length === 0 &&
     tree.submenus.length === 0 &&
     tree.extras.length === 0
@@ -89,10 +99,9 @@ export function RegistryActionList(
 
   return (
     <div className={cn("flex flex-col", className)}>
-      {promoted.map((a) => row(a))}
       {tree.topLevel.map((a) => row(a))}
-      {tree.submenus.map((submenu) => {
-        const Icon = submenu.icon ?? submenu.actions[0].icon;
+      {submenus.map((submenu) => {
+        const Icon = submenu.icon ?? submenu.actions[0]?.icon ?? ChevronRight;
         const isOpen = openGroup === submenu.label;
         return (
           <React.Fragment key={submenu.label}>
@@ -112,6 +121,9 @@ export function RegistryActionList(
               />
             </button>
             {isOpen ? submenu.actions.map((a) => row(a, true)) : null}
+            {isOpen && submenu.label === AI_SUBMENU_LABEL && aiSlot ? (
+              <div className="pl-5">{aiSlot}</div>
+            ) : null}
           </React.Fragment>
         );
       })}

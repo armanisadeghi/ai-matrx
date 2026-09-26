@@ -78,6 +78,7 @@ import { insertTextAtCursor } from "@/utils/editor-text-insertion";
 import { insertTextAtTextareaCursor } from "@/utils/text-insertion";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { resolveActions } from "@/features/rich-document/actions/registry";
+import { registryMenuActions } from "@/features/rich-document/variants/shared/menuStructure";
 import { getSourceAdapter } from "@/features/rich-document/actions/sources";
 import { shortHash } from "@/features/rich-document/actions/sources/raw";
 // Side-effect import: the copy/save/export/convert handlers self-register into
@@ -241,6 +242,8 @@ export interface ContextMenuActions {
   boundAgentSections: SurfaceBoundAgentSection[];
   boundAgentsLoading: boolean;
   richDocCtx: RichDocumentActionContext;
+  /** The registry actions this menu shows — rendered as the ONE tree. */
+  registryActions: RichDocumentAction[];
   copyVariantActions: RichDocumentAction[];
   exportActions: RichDocumentAction[];
   convertActions: RichDocumentAction[];
@@ -502,13 +505,13 @@ export function useContextMenuActions(
   };
   const richActions =
     actionText.source !== "none"
-      ? resolveActions(
-          richDocCtx,
-          props.excludedRichActions?.length
-            ? { exclude: props.excludedRichActions }
-            : undefined,
-        )
+      ? resolveActions(richDocCtx, {
+          exclude: props.excludedRichActions,
+          extra: props.extraRichActions,
+        })
       : [];
+  // The ONE registry tree's actions (the same selector every menu host uses).
+  const registryActions = registryMenuActions(richActions);
   const copyVariantActions = richActions.filter((a) => a.category === "copy");
   const exportActions = richActions.filter(
     (a) => a.category === "export" || a.id === "save-as-file",
@@ -1190,6 +1193,7 @@ export function useContextMenuActions(
     boundAgentSections,
     boundAgentsLoading,
     richDocCtx,
+    registryActions,
     copyVariantActions,
     exportActions,
     convertActions,

@@ -154,6 +154,7 @@ function makeEngine(over?: Partial<ContextMenuActions>): ContextMenuActions {
     ],
     boundAgentsLoading: false,
     richDocCtx: {},
+    registryActions: [],
     copyVariantActions: [richAction("copy-md", "Copy as Markdown")],
     exportActions: [richAction("export-md", "Download as Markdown")],
     convertActions: [richAction("convert-task", "Convert to Task")],

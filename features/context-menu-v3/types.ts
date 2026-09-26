@@ -322,6 +322,11 @@ export interface ContextMenuV3CoreProps {
    */
   excludedRichActions?: string[];
   /**
+   * Host-specific registry actions (e.g. a surface's own "Edit note") — rendered
+   * inside the ONE registry tree, in its extras group, never a parallel section.
+   */
+  extraRichActions?: import("@/features/rich-document/types").RichDocumentAction[];
+  /**
    * Host-supplied rich-document context extras (per-instance callbacks +
    * source-specific extensions) merged into the menu's action context, so
    * registry handlers that depend on them (delete-message, feedback, print)
@@ -458,6 +463,11 @@ export interface MenuContentProps {
   /** EFFECTIVE entity for this open: the resolved per-row one, else the prop. */
   entity?: ContextMenuEntityRef;
   excludedRichActions?: string[];
+  /**
+   * Host-specific registry actions (e.g. a surface's own "Edit note") — rendered
+   * inside the ONE registry tree, in its extras group, never a parallel section.
+   */
+  extraRichActions?: import("@/features/rich-document/types").RichDocumentAction[];
   richDocCtxExtras?: Pick<
     import("@/features/rich-document/types").RichDocumentActionContext,
     "callbacks" | "extensions" | "metadata" | "isCreator" | "surfaceKey"

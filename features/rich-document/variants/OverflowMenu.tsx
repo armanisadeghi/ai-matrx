@@ -20,9 +20,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { buildMenuTree } from "./shared/menuStructure";
+import { buildMenuTree, registryMenuActions } from "./shared/menuStructure";
 import { DropdownMenuTree } from "./shared/DropdownMenuTree";
 import { MobileActionDrawer } from "./MobileActionDrawer";
+import {
+  sameContentSource,
+  useRegistryMenuSource,
+} from "@/features/context-menu-v3/menu-presence";
+import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
 import type {
   RichDocumentAction,
   RichDocumentActionContext,
@@ -41,17 +46,12 @@ export interface OverflowMenuProps {
   triggerSize?: "default" | "sm" | "icon";
 }
 
-/** Filter to actions that belong in the overflow menu per their slot. */
+/** The menu's actions: the one selector, plus the bar's primaries for a menu-only host. */
 function overflowActions(
   actions: RichDocumentAction[],
   includePrimarySlot: boolean,
 ): RichDocumentAction[] {
-  return actions.filter((a) => {
-    const slot = a.renderSlot ?? "overflow";
-    if (slot === "overflow" || slot === "both") return true;
-    if (slot === "primary" && includePrimarySlot) return true;
-    return false;
-  });
+  return includePrimarySlot ? actions : registryMenuActions(actions);
 }
 
 export function OverflowMenu(props: OverflowMenuProps): React.ReactElement {
@@ -65,10 +65,32 @@ export function OverflowMenu(props: OverflowMenuProps): React.ReactElement {
   } = props;
 
   const isMobile = useIsMobile();
+  const menuSource = useRegistryMenuSource();
+  const buttonRef = React.useRef<HTMLButtonElement>(null);
   const menuActions = overflowActions(actions, includePrimarySlot);
 
   // No actions to show? Hide the trigger entirely.
   if (menuActions.length === 0) return <></>;
+
+  // THE ONE MENU: when this content already has its right-click menu, ⋯ opens
+  // THAT menu at the button (desktop dropdown or the phone's sheet) — the same
+  // registry tree, the same agent libraries, the same order — never a second
+  // menu drawn beside it (RC-B6).
+  if (!includePrimarySlot && sameContentSource(menuSource, getCtx().source)) {
+    return (
+      <Button
+        ref={buttonRef}
+        variant="ghost"
+        size={triggerSize}
+        className={cn("h-8 w-8 p-0", className)}
+        aria-label={triggerAriaLabel}
+        aria-haspopup="menu"
+        onClick={() => openContextMenuForElement(buttonRef.current)}
+      >
+        <MoreHorizontal className="h-4 w-4" />
+      </Button>
+    );
+  }
 
   // Mobile → bottom-sheet drawer.
   if (isMobile) {

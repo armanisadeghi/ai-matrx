@@ -56,6 +56,11 @@ import {
 import type { IconComponentType } from "@ai-matrx/icons";
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
 import type { RichDocumentAction } from "@/features/rich-document/types";
+import {
+  AI_SUBMENU_LABEL,
+  buildMenuTree,
+  withAiSlot,
+} from "@/features/rich-document/variants/shared/menuStructure";
 import type { AgentMenuCategoryGroup } from "../hooks/useUnifiedAgentContextMenu";
 import { jsonSectionLabel } from "../utils/json-menu-actions";
 import {
@@ -212,7 +217,7 @@ export interface MenuRoles {
   copy: MenuItemNode;
   speak: MenuItemNode;
   /** ONE slot: "Listen" submenu — Summarize without playing / Summarize & listen. */
-  listen: MenuSubmenuNode;
+  listen: MenuSubmenuNode | null;
   copyAs: MenuSubmenuNode | null;
   json: MenuSubmenuNode | null;
   cut: MenuItemNode;
@@ -225,12 +230,18 @@ export interface MenuRoles {
   undo: MenuItemNode;
   redo: MenuItemNode;
   viewHistory: MenuItemNode;
-  compare: MenuSubmenuNode;
+  compare: MenuSubmenuNode | null;
   exportMenu: MenuSubmenuNode | null;
   convert: MenuSubmenuNode | null;
   attach: MenuItemNode | null;
   share: MenuItemNode | null;
   placements: MenuSubmenuNode[];
+  /**
+   * THE ONE REGISTRY TREE (RC-B6): the same tree, in the same order, as the
+   * ⋯ menu, ProTextarea's "…" and the mobile sheet — with the agent-shortcut
+   * libraries folded into its AI submenu. `null` when there is no content.
+   */
+  registry: MenuNode[] | null;
   quickActions: MenuSubmenuNode | null;
   save: MenuItemNode | null;
   del: MenuItemNode | null;
@@ -361,6 +372,39 @@ function richActionNode(
     disabled,
     onSelect: () => void action.run(ctx),
   };
+}
+
+/**
+ * The registry tree as model nodes — `buildMenuTree` (the ONE structure every
+ * host renders), with `aiExtras` (the agent-shortcut libraries) folded into
+ * its AI submenu. Ids are the registry ids behind a `rich:` prefix, which is
+ * what the one-tree guard compares against the ⋯ menu.
+ */
+export function registryTreeNodes(
+  actions: RichDocumentAction[],
+  ctx: ContextMenuActions["richDocCtx"],
+  aiExtras: MenuNode[],
+): MenuNode[] {
+  const tree = buildMenuTree(actions);
+  const nodes: MenuNode[] = tree.topLevel.map((a) => richActionNode(a, ctx));
+  for (const sub of withAiSlot(tree.submenus, aiExtras.length > 0)) {
+    const children: MenuNode[] = sub.actions.map((a) => richActionNode(a, ctx));
+    const isAi = sub.label === AI_SUBMENU_LABEL;
+    if (isAi && aiExtras.length > 0) {
+      if (children.length > 0) children.push({ kind: "separator", id: "rich-ai:sep" });
+      children.push(...aiExtras);
+    }
+    nodes.push({
+      kind: "submenu",
+      id: `rich-sub:${sub.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      label: sub.label,
+      icon: sub.icon,
+      width: isAi ? "w-64" : undefined,
+      children,
+    });
+  }
+  nodes.push(...tree.extras.map((a) => richActionNode(a, ctx)));
+  return nodes;
 }
 
 function categoryGroupNode(
@@ -545,6 +589,9 @@ export function buildMenuModel(
   // either content or a selection, so this pair is universal; a submenu keeps
   // it to a single row. Disabled (never hidden) when no text or no agent.
   const listenDisabled = actionText.source === "none" || !m.spokenSummaryAvailable;
+  // With content, the registry owns every content verb (copy formats, listen,
+  // compare, save, share & export) — the engine draws its own only without.
+  const hasRegistry = m.registryActions.length > 0;
   const spokenSummary: MenuItemNode = {
     kind: "item",
     id: "spoken-summary",
@@ -563,7 +610,7 @@ export function buildMenuModel(
     disabled: listenDisabled,
     onSelect: m.handleSpokenSummaryLive,
   };
-  const listen: MenuSubmenuNode = {
+  const listen: MenuSubmenuNode | null = hasRegistry ? null : {
     kind: "submenu",
     id: "listen",
     label: "Listen",
@@ -573,7 +620,7 @@ export function buildMenuModel(
     children: [spokenSummary, spokenSummaryLive],
   };
   const copyAs: MenuSubmenuNode | null =
-    m.copyVariantActions.length > 0
+    !hasRegistry && m.copyVariantActions.length > 0
       ? {
           kind: "submenu",
           id: "copy-as",
@@ -684,7 +731,7 @@ export function buildMenuModel(
     disabled: !onViewHistory || !hasHistory,
     onSelect: () => onViewHistory?.(),
   };
-  const compare: MenuSubmenuNode = {
+  const compare: MenuSubmenuNode | null = hasRegistry ? null : {
     kind: "submenu",
     id: "compare",
     label: "Compare",
@@ -721,7 +768,7 @@ export function buildMenuModel(
 
   // ── Document ────────────────────────────────────────────────────────────
   const exportMenu: MenuSubmenuNode | null =
-    m.exportActions.length > 0
+    !hasRegistry && m.exportActions.length > 0
       ? {
           kind: "submenu",
           id: "export",
@@ -732,7 +779,7 @@ export function buildMenuModel(
         }
       : null;
   const convert: MenuSubmenuNode | null =
-    m.convertActions.length > 0
+    !hasRegistry && m.convertActions.length > 0
       ? {
           kind: "submenu",
           id: "convert",
@@ -764,13 +811,20 @@ export function buildMenuModel(
     : null;
 
   // ── Placements (data-driven) ────────────────────────────────────────────
-  const placements = [
+  const libraryNodes = [
     placementNode(PLACEMENT_TYPES.AI_ACTION, m),
     boundAgentsNode(m),
     placementNode(PLACEMENT_TYPES.CONTENT_BLOCK, m),
     placementNode(PLACEMENT_TYPES.USER_TOOL, m),
     placementNode(PLACEMENT_TYPES.ORGANIZATION_TOOL, m),
   ].filter((n): n is MenuSubmenuNode => n !== null);
+  // ONE AI family: with a registry, the libraries live INSIDE its AI submenu
+  // (every shortcut, agent, block and item kept — only the parallel top-level
+  // family is gone). Without content they stay where they always were.
+  const registry: MenuNode[] | null = hasRegistry
+    ? registryTreeNodes(m.registryActions, m.richDocCtx, libraryNodes)
+    : null;
+  const placements = hasRegistry ? [] : libraryNodes;
 
   // ── Quick actions ───────────────────────────────────────────────────────
   const quickMode = m.resolvedPlacementMode["quick-action"];
@@ -897,6 +951,7 @@ export function buildMenuModel(
       insertReference,
     ]),
   });
+  if (registry) sections.push({ id: "registry", group: "document", nodes: registry });
   sections.push(...extras["after-clipboard"]);
   sections.push({ id: "tools", group: "tools", nodes: [chat] });
   sections.push({
@@ -914,7 +969,7 @@ export function buildMenuModel(
     ]),
   });
   sections.push(...extras["after-compare"]);
-  sections.push({ id: "placements", group: "ai", nodes: placements });
+  if (placements.length > 0) sections.push({ id: "placements", group: "ai", nodes: placements });
   sections.push(...extras["after-placements"]);
   if (quick) {
     sections.push({
@@ -958,6 +1013,7 @@ export function buildMenuModel(
       attach,
       share,
       placements,
+      registry,
       quickActions: quick,
       save,
       del,

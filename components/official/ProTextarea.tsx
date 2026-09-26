@@ -1346,6 +1346,15 @@ export const ProTextarea = React.forwardRef<
                                 onRequestTextAgentAction: openAgentActionView,
                               },
                             }}
+                            aiSlot={
+                              showBoundAgentsMenu ? (
+                                <ProTextareaBoundAgentsMenuItems
+                                  loading={boundAgentsLoading}
+                                  sections={boundAgentSections}
+                                  onSelect={openBoundAgentView}
+                                />
+                              ) : undefined
+                            }
                           />
                         </Suspense>
                         {showTextStats && (
@@ -1362,16 +1371,6 @@ export const ProTextarea = React.forwardRef<
                               onOpenStatsPanel={() => setMenuMode("stats")}
                             />
                           </>
-                        )}
-                        {showBoundAgentsMenu && (
-                          <div className="my-1 h-px bg-border" role="separator" />
-                        )}
-                        {showBoundAgentsMenu && (
-                          <ProTextareaBoundAgentsMenuItems
-                            loading={boundAgentsLoading}
-                            sections={boundAgentSections}
-                            onSelect={openBoundAgentView}
-                          />
                         )}
                       </div>
                     ) : menuMode === "stats" ? (

@@ -30,6 +30,7 @@
 // wins, and never has to know the primitive exists.
 
 import { createContext, useContext } from "react";
+import type { ContentSource } from "@/features/rich-document/types";
 
 /**
  * True anywhere inside a mounted v3 menu (either wrapper). Provided by the
@@ -54,4 +55,36 @@ export const MenuPresenceProvider = MenuPresenceContext.Provider;
  */
 export function useIsInsideContextMenu(): boolean {
   return useContext(MenuPresenceContext);
+}
+
+/**
+ * THE ONE MENU (RC-B6). The content source of the innermost v3 menu that was
+ * given one (`contentSource`) — null when none. A ⋯ button whose own content
+ * is that same source opens THIS menu (openContextMenuForElement) instead of
+ * drawing a second one, so the ⋯ menu and the right-click are the same menu
+ * by construction: same registry tree, same agent libraries, same order.
+ */
+const RegistryMenuSourceContext = createContext<ContentSource | null>(null);
+
+export const RegistryMenuSourceProvider = RegistryMenuSourceContext.Provider;
+
+export function useRegistryMenuSource(): ContentSource | null {
+  return useContext(RegistryMenuSourceContext);
+}
+
+/** Two sources name the same content (type + every identifying id). */
+export function sameContentSource(
+  a: ContentSource | null | undefined,
+  b: ContentSource | null | undefined,
+): boolean {
+  if (!a || !b || a.type !== b.type) return false;
+  const strip = (s: ContentSource) =>
+    JSON.stringify(
+      Object.fromEntries(
+        Object.entries(s as Record<string, unknown>)
+          .filter(([k]) => k !== "readOnly")
+          .sort(([x], [y]) => x.localeCompare(y)),
+      ),
+    );
+  return strip(a) === strip(b);
 }

@@ -13,64 +13,24 @@
 // This file only builds and renders the iPhone-style multi-tier DRILL-DOWN
 // (tap a category → slide to its list with a back button) at a constant 70%
 // height with one internal scroll area.
+// It renders the SAME model the desktop menu renders (buildMenuModel) —
+// only node shapes are converted here, never a parallel tree (RC-B6).
 
 import React, { useState } from "react";
 import {
-  StickyNote,
-  CheckSquare,
-  MessageSquare,
-  Database,
-  FolderOpen,
-  Rocket,
-  FileText,
-  Zap,
-  Scissors,
-  Copy,
-  Clipboard,
-  Type,
-  Undo2,
-  Redo2,
-  History,
-  GitCompareArrows,
-  Clipboard as ClipboardIcon,
-  Pin,
-  Shield,
-  Eye,
-  EyeOff,
-  Save,
-  Trash2,
-  Mic,
-  Download,
-  Search,
-  AtSign,
-  Volume2,
-  Headphones,
-  AudioLines,
-  Share2,
-  Link2,
-  Bug,
   ChevronRight,
   ChevronLeft,
   X,
-  Replace,
-  Braces,
 } from "lucide-react";
-import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
-import type { RichDocumentAction } from "@/features/rich-document/types";
-import type { AgentMenuCategoryGroup } from "../hooks/useUnifiedAgentContextMenu";
 import {
   useContextMenuActions,
-  getPlacementIcon,
-  getPlacementLabel,
-  resolveIcon,
-  resolveRichActionView,
 } from "../hooks/useContextMenuActions";
-import { jsonSectionLabel } from "../utils/json-menu-actions";
+import {
+  buildMenuModel,
+  type MenuNode,
+} from "../model/menu-model";
 import type {
   MenuContentProps,
-  PlacementKey,
-  ExtraSectionAnchor,
-  ContextMenuExtraItem,
 } from "../types";
 
 export interface MobileMenuContentProps
@@ -134,23 +94,8 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
   const m = useContextMenuActions(props);
   const {
     actionText,
-    resolvedPlacementMode,
-    grouped,
     loading,
-    boundAgentSections,
-    boundAgentsLoading,
-    richDocCtx,
-    copyVariantActions,
-    exportActions,
-    convertActions,
-    hasCompareBase,
-    isAdmin,
-    isDebugMode,
-    isAdminIndicatorOpen,
-    canNativeUndo,
-    quickActions,
   } = m;
-  const entity = props.entity;
 
   // Wrap a terminal action so it closes the sheet after firing.
   const close = (fn: () => void) => () => {
@@ -158,589 +103,89 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
     onClose();
   };
 
-  // ── Build the drill-down model ──────────────────────────────────────────────
-  const richActionNode = (a: RichDocumentAction): MobileNode => {
-    const { label, disabled } = resolveRichActionView(a, richDocCtx);
-    return {
-      kind: "action",
-      id: a.id,
-      label,
-      icon: a.icon as Icon,
-      iconClass: a.iconColor ?? "",
-      disabled,
-      onSelect: close(() => void a.run(richDocCtx)),
-    };
-  };
-
-  const categoryGroupToNodes = (
-    group: AgentMenuCategoryGroup,
-  ): MobileNode[] => {
-    const nodes: MobileNode[] = [];
-    for (const entry of group.items) {
-      const ItemIcon = resolveIcon(entry.iconName) as Icon;
-      const isDisabled = entry.entryType === "agent_shortcut" && !entry.agentId;
-      nodes.push({
-        kind: "action",
-        id: entry.id,
-        label: entry.label,
-        icon: ItemIcon,
-        // Parity with desktop `categoryGroupNode`: keyboard shortcuts show as
-        // the trailing hint (hardware keyboards exist on tablets). Phase 6.7
-        // removed the red legacy-match row — availability is derived, so an
-        // item either qualifies here or is absent.
-        disabled: isDisabled,
-        hint:
-          entry.entryType === "agent_shortcut" && entry.keyboardShortcut
-            ? entry.keyboardShortcut
-            : undefined,
-        sublabel: isDisabled ? "Not configured" : undefined,
-        onSelect: close(() => m.handleEntrySelect(entry)),
-      });
-    }
-    for (const child of group.children) {
-      const ChildIcon = resolveIcon(child.category.iconName) as Icon;
-      nodes.push({
-        kind: "submenu",
-        id: child.category.id,
-        label: child.category.label,
-        icon: ChildIcon,
-        iconClass: "",
-        children: categoryGroupToNodes(child),
-        emptyLabel: `No items in ${child.category.label}`,
-      });
-    }
-    return nodes;
-  };
-
-  const placementSubmenu = (placementType: string): MobileNode | null => {
-    if (resolvedPlacementMode[placementType as PlacementKey] === "hide")
-      return null;
-    const groups = grouped[placementType] || [];
-    // Parity with desktop `placementNode`: an empty category still renders
-    // (drilling in shows its empty state) — never dropped. The placement is
-    // only disabled when it has no categories at all.
-    const hasCategories = groups.length > 0;
-    const label = getPlacementLabel(placementType);
-    const children: MobileNode[] = [];
-    for (const g of groups) {
-      const CatIcon = resolveIcon(g.category.iconName) as Icon;
-      children.push({
-        kind: "submenu",
-        id: g.category.id,
-        label: g.category.label,
-        icon: CatIcon,
-        children: categoryGroupToNodes(g),
-        emptyLabel: `No items in ${g.category.label}`,
-      });
-    }
-    return {
-      kind: "submenu",
-      id: placementType,
-      label,
-      icon: getPlacementIcon(placementType) as Icon,
-      disabled:
-        resolvedPlacementMode[placementType as PlacementKey] === "disable" ||
-        !hasCategories,
-      loading: loading && !hasCategories,
-      children,
-      emptyLabel: `No ${label}`,
-    };
-  };
-
-  const agentsSubmenu = (): MobileNode | null => {
-    if (resolvedPlacementMode["bound-agent"] === "hide") return null;
-    const children: MobileNode[] = [];
-    for (const section of boundAgentSections) {
-      if (section.agents.length === 0) continue;
-      children.push({
-        kind: "section",
-        id: `sec-${section.label}`,
-        label: section.label,
-      });
-      for (const agent of section.agents) {
-        children.push({
-          kind: "action",
-          id: `${section.label}:${agent.agentId}`,
-          label: agent.name,
-          icon: Rocket,
-          iconClass: "text-indigo-500",
-          onSelect: close(() => void m.handleBoundAgentExecute(agent)),
-        });
-      }
-    }
-    return {
-      kind: "submenu",
-      id: "agents",
-      label: "Agents",
-      icon: Rocket,
-      iconClass: "text-indigo-500",
-      disabled:
-        resolvedPlacementMode["bound-agent"] === "disable" ||
-        (children.length === 0 && !boundAgentsLoading),
-      loading: boundAgentsLoading,
-      children,
-      emptyLabel: "No agents available",
-    };
-  };
-
-  const extraNodes = (anchor: ExtraSectionAnchor): MobileNode[] => {
-    const sections = (extraSections ?? []).filter(
-      (s) => (s.anchor ?? "after-compare") === anchor,
-    );
-    const out: MobileNode[] = [];
-    for (const section of sections) {
-      if (section.label)
-        out.push({
-          kind: "section",
-          id: `xl-${section.id}`,
-          label: section.label,
-        });
-      for (const item of section.items) out.push(...extraItemToNodes(item));
-    }
-    return out;
-  };
-  const extraItemToNodes = (item: ContextMenuExtraItem): MobileNode[] => {
-    if (item.kind === "separator") return [{ kind: "separator", id: item.id }];
-    if (item.kind === "checkbox") {
-      // The sheet closes after a toggle (no stay-open checkbox UX on mobile);
-      // the check state is conveyed via the sublabel.
-      return [
-        {
-          kind: "action",
-          id: item.id,
-          label: item.label,
-          icon: (item.icon as Icon) ?? FileText,
-          disabled: item.disabled,
-          hint: item.hint,
-          sublabel: item.description ?? (item.checked ? "On" : "Off"),
-          onSelect: close(() => item.onCheckedChange(!item.checked)),
-        },
-      ];
-    }
-    if (item.kind === "link") {
-      return [
-        {
-          kind: "action",
-          id: item.id,
-          label: item.label,
-          icon: (item.icon as Icon) ?? FileText,
-          disabled: item.disabled,
-          hint: item.hint,
-          sublabel: item.description,
-          onSelect: close(() => {
-            if (item.target === "_blank") window.open(item.href, "_blank");
-            else window.location.assign(item.href);
-          }),
-        },
-      ];
-    }
-    if (item.kind === "submenu") {
-      return [
-        {
+  // ── The drill-down model IS the desktop model ──────────────────────────────
+  // One engine (`useContextMenuActions`) → one model (`buildMenuModel`) → both
+  // renderers. The sheet used to assemble its own parallel tree, which is how
+  // the phone drifted from the desktop menu and from the ⋯ menu (RC-B6: one
+  // registry tree behind every menu). Now it only converts node shapes.
+  const model = buildMenuModel(m, props);
+  const NoIcon: Icon = () => null;
+  const toMobile = (node: MenuNode): MobileNode | null => {
+    const icon = (node as { icon?: Icon }).icon ?? NoIcon;
+    const iconClass = (node as { iconClassName?: string }).iconClassName;
+    switch (node.kind) {
+      case "separator":
+        return { kind: "separator", id: node.id };
+      case "label":
+        return { kind: "section", id: node.id, label: node.label };
+      case "submenu":
+        return {
           kind: "submenu",
-          id: item.id,
-          label: item.label,
-          icon: (item.icon as Icon) ?? FileText,
-          disabled: item.disabled,
-          children: item.children.flatMap(extraItemToNodes),
-        },
-      ];
+          id: node.id,
+          label: node.label,
+          icon,
+          iconClass,
+          disabled: node.disabled,
+          loading: node.loading,
+          emptyLabel: node.emptyLabel,
+          children: node.children
+            .map(toMobile)
+            .filter((n): n is MobileNode => n !== null),
+        };
+      case "checkbox":
+        return {
+          kind: "action",
+          id: node.id,
+          label: node.label,
+          icon,
+          disabled: node.disabled,
+          hint: node.hint,
+          sublabel: node.description,
+          onSelect: close(() => node.onCheckedChange(!node.checked)),
+        };
+      case "link":
+        return {
+          kind: "action",
+          id: node.id,
+          label: node.label,
+          icon,
+          disabled: node.disabled,
+          hint: node.hint,
+          sublabel: node.description,
+          onSelect: close(() => {
+            if (node.target === "_blank") window.open(node.href, "_blank", "noopener,noreferrer");
+            else window.location.assign(node.href);
+          }),
+        };
+      case "item":
+      default:
+        return {
+          kind: "action",
+          id: node.id,
+          label: node.label,
+          icon,
+          iconClass,
+          disabled: node.disabled,
+          destructive: node.destructive,
+          hint: node.hint,
+          sublabel: node.description,
+          onSelect: close(node.onSelect),
+        };
     }
-    return [
-      {
-        kind: "action",
-        id: item.id,
-        label: item.label,
-        icon: (item.icon as Icon) ?? FileText,
-        disabled: item.disabled,
-        destructive: item.destructive,
-        hint: item.hint,
-        sublabel: item.description,
-        onSelect: close(() => item.onSelect?.()),
-      },
-    ];
   };
-
   const rootNodes: MobileNode[] = [];
-  const push = (n: MobileNode | null) => {
-    if (n) rootNodes.push(n);
-  };
-
-  // Clipboard
-  push({
-    kind: "action",
-    id: "copy",
-    label: "Copy",
-    icon: Copy,
-    iconClass: "text-emerald-500",
-    disabled: actionText.source === "none",
-    onSelect: close(() => void m.handleCopy()),
+  model.sections.forEach((section, index) => {
+    if (index > 0 && !section.joinPrevious) {
+      rootNodes.push({ kind: "separator", id: `sep:${section.id}` });
+    }
+    if (section.label) {
+      rootNodes.push({ kind: "section", id: `label:${section.id}`, label: section.label });
+    }
+    for (const node of section.nodes) {
+      const mobile = toMobile(node);
+      if (mobile) rootNodes.push(mobile);
+    }
   });
-  push({
-    kind: "action",
-    id: "speak",
-    label: "Speak",
-    icon: Volume2,
-    iconClass: "text-sky-500",
-    disabled: actionText.source === "none",
-    onSelect: close(m.handleSpeak),
-  });
-  {
-    // Same one-slot Listen pair as the model — disabled, never hidden.
-    const listenDisabled =
-      actionText.source === "none" || !m.spokenSummaryAvailable;
-    push({
-      kind: "submenu",
-      id: "listen",
-      label: "Listen",
-      icon: Headphones,
-      iconClass: "text-violet-500",
-      disabled: listenDisabled,
-      children: [
-        {
-          kind: "action",
-          id: "spoken-summary",
-          label: "Summarize without playing",
-          icon: Headphones,
-          iconClass: "text-violet-500",
-          disabled: listenDisabled,
-          onSelect: close(m.handleSpokenSummary),
-        },
-        {
-          kind: "action",
-          id: "spoken-summary-live",
-          label: "Summarize & listen",
-          icon: AudioLines,
-          iconClass: "text-violet-500",
-          disabled: listenDisabled,
-          onSelect: close(m.handleSpokenSummaryLive),
-        },
-      ],
-    });
-  }
-  if (copyVariantActions.length > 0)
-    push({
-      kind: "submenu",
-      id: "copy-as",
-      label: "Copy as",
-      icon: Copy,
-      iconClass: "text-emerald-500",
-      children: copyVariantActions.map(richActionNode),
-    });
-  // JSON — same section, same engine, same formatting as desktop.
-  if (m.jsonSection)
-    push({
-      kind: "submenu",
-      id: "json",
-      label: jsonSectionLabel(m.jsonSection),
-      icon: Braces,
-      iconClass: "text-amber-500",
-      children: m.jsonSection.actions.map((action) => ({
-        kind: "action" as const,
-        id: action.id,
-        label: action.label,
-        icon: Braces,
-        iconClass: "text-amber-500",
-        disabled: action.disabled,
-        hint: action.hint,
-        onSelect: close(() => void action.run()),
-      })),
-    });
-  if (isEditable) {
-    push({
-      kind: "action",
-      id: "cut",
-      label: "Cut",
-      icon: Scissors,
-      iconClass: "text-emerald-500",
-      disabled: !props.selectedText,
-      onSelect: close(() => void m.handleCut()),
-    });
-    push({
-      kind: "action",
-      id: "paste",
-      label: "Paste",
-      icon: Clipboard,
-      iconClass: "text-emerald-500",
-      onSelect: close(() => void m.handlePaste()),
-    });
-  }
-  push({
-    kind: "action",
-    id: "select-all",
-    label: "Select All",
-    icon: Type,
-    iconClass: "text-muted-foreground",
-    onSelect: close(m.handleSelectAll),
-  });
-  push({
-    kind: "action",
-    id: "find",
-    label: "Find & Replace",
-    icon: Search,
-    iconClass: "text-muted-foreground",
-    onSelect: close(m.handleFind),
-  });
-  push({
-    kind: "action",
-    id: "insert-reference",
-    label: isEditable ? "Insert reference…" : "Copy reference…",
-    icon: AtSign,
-    iconClass: "text-primary",
-    onSelect: close(m.handleInsertReference),
-  });
-  for (const n of extraNodes("after-clipboard")) push(n);
-  push({ kind: "separator", id: "sep-1" });
-
-  // Core platform panels
-  push({
-    kind: "action",
-    id: "chat",
-    label: "Chat",
-    icon: MessageSquare,
-    iconClass: "text-primary",
-    onSelect: close(() => quickActions.openChatWindow()),
-  });
-  push({ kind: "separator", id: "sep-1b" });
-
-  // History
-  push({
-    kind: "action",
-    id: "undo",
-    label: "Undo",
-    icon: Undo2,
-    iconClass: "text-sky-500",
-    disabled: onUndo ? !canUndo : !canNativeUndo,
-    onSelect: close(m.handleUndo),
-  });
-  push({
-    kind: "action",
-    id: "redo",
-    label: "Redo",
-    icon: Redo2,
-    iconClass: "text-sky-500",
-    disabled: onRedo ? !canRedo : !canNativeUndo,
-    onSelect: close(m.handleRedo),
-  });
-  push({
-    kind: "action",
-    id: "view-history",
-    label: "View History",
-    icon: History,
-    iconClass: "text-violet-500",
-    disabled: !onViewHistory || !hasHistory,
-    onSelect: close(() => onViewHistory?.()),
-  });
-  push({
-    kind: "submenu",
-    id: "compare",
-    label: "Compare",
-    icon: GitCompareArrows,
-    iconClass: "text-amber-500",
-    children: [
-      {
-        kind: "action",
-        id: "cmp-clip",
-        label: "Compare with clipboard",
-        icon: ClipboardIcon,
-        onSelect: close(() => void m.handleCompareClipboard()),
-      },
-      {
-        kind: "action",
-        id: "cmp-set",
-        label: "Set as compare base",
-        icon: Pin,
-        sublabel:
-          actionText.source === "selection" ? "Use selection" : "Use content",
-        onSelect: close(m.handleSetCompareBase),
-      },
-      {
-        kind: "action",
-        id: "cmp-with",
-        label: "Compare with base",
-        icon: GitCompareArrows,
-        disabled: !hasCompareBase,
-        sublabel: !hasCompareBase ? "No base set yet" : undefined,
-        onSelect: close(() => void m.handleCompareWithBase()),
-      },
-    ],
-  });
-  if (exportActions.length > 0)
-    push({
-      kind: "submenu",
-      id: "export",
-      label: "Export",
-      icon: Download,
-      iconClass: "text-amber-500",
-      children: exportActions.map(richActionNode),
-    });
-  if (convertActions.length > 0)
-    push({
-      kind: "submenu",
-      id: "convert",
-      label: "Convert",
-      icon: Replace,
-      iconClass: "text-violet-500",
-      children: convertActions.map(richActionNode),
-    });
-  if (entity)
-    push({
-      kind: "action",
-      id: "attach",
-      label: "Attach To",
-      icon: Link2,
-      iconClass: "text-sky-500",
-      onSelect: close(m.handleAttach),
-    });
-  if (entity?.resourceType)
-    push({
-      kind: "action",
-      id: "share",
-      label: "Share",
-      icon: Share2,
-      iconClass: "text-emerald-500",
-      onSelect: close(m.handleShare),
-    });
-  push({ kind: "separator", id: "sep-2" });
-  for (const n of extraNodes("after-compare")) push(n);
-
-  // Agent placements
-  push(placementSubmenu(PLACEMENT_TYPES.AI_ACTION));
-  push(agentsSubmenu());
-  push(placementSubmenu(PLACEMENT_TYPES.CONTENT_BLOCK));
-  push(placementSubmenu(PLACEMENT_TYPES.USER_TOOL));
-  push(placementSubmenu(PLACEMENT_TYPES.ORGANIZATION_TOOL));
-  for (const n of extraNodes("after-placements")) push(n);
-
-  // Quick Actions
-  if (resolvedPlacementMode["quick-action"] !== "hide")
-    push({
-      kind: "submenu",
-      id: "quick",
-      label: "Quick Actions",
-      icon: Zap,
-      iconClass: "text-pink-500",
-      disabled: resolvedPlacementMode["quick-action"] === "disable",
-      children: [
-        {
-          kind: "action",
-          id: "q-notes",
-          label: "Notes",
-          icon: StickyNote,
-          onSelect: close(() => quickActions.openQuickNotes()),
-        },
-        {
-          kind: "action",
-          id: "q-tasks",
-          label: "Tasks",
-          icon: CheckSquare,
-          onSelect: close(() => quickActions.openQuickTasks()),
-        },
-        {
-          kind: "action",
-          id: "q-chat",
-          label: "Chat",
-          icon: MessageSquare,
-          onSelect: close(() => quickActions.openQuickChat()),
-        },
-        {
-          kind: "action",
-          id: "q-data",
-          label: "Data",
-          icon: Database,
-          onSelect: close(() => quickActions.openQuickData()),
-        },
-        {
-          kind: "action",
-          id: "q-files",
-          label: "Files",
-          icon: FolderOpen,
-          onSelect: close(() => quickActions.openQuickFiles()),
-        },
-        {
-          kind: "action",
-          id: "q-voice",
-          label: "Voice Input",
-          icon: Mic,
-          onSelect: close(() => quickActions.openVoicePad()),
-        },
-      ],
-    });
-
-  // Editable Save / Delete
-  if (isEditable && (onSave || onDelete)) {
-    push({ kind: "separator", id: "sep-3" });
-    if (onSave)
-      push({
-        kind: "action",
-        id: "save",
-        label: "Save",
-        icon: Save,
-        iconClass: "text-emerald-500",
-        onSelect: close(() => onSave()),
-      });
-    if (onDelete)
-      push({
-        kind: "action",
-        id: "delete",
-        label: "Delete",
-        icon: Trash2,
-        destructive: true,
-        onSelect: close(() => void m.handleDelete()),
-      });
-  }
-
-  // Admin
-  if (isAdmin) {
-    push({ kind: "separator", id: "sep-4" });
-    const adminChildren: MobileNode[] = [
-      {
-        kind: "action",
-        id: "ctx-values",
-        label: "Context Values",
-        icon: Bug,
-        iconClass: "text-amber-600 dark:text-amber-400",
-        onSelect: close(m.handleInspectValues),
-      },
-      {
-        kind: "action",
-        id: "debug-toggle",
-        label: `${isDebugMode ? "Disable" : "Enable"} Debug Mode`,
-        icon: isDebugMode ? EyeOff : Eye,
-        onSelect: m.handleToggleDebugMode,
-      },
-    ];
-    if (isDebugMode)
-      adminChildren.push({
-        kind: "action",
-        id: "redux-state",
-        label: "Redux State",
-        icon: Database,
-        iconClass: "text-amber-600 dark:text-amber-400",
-        onSelect: close(m.handleInspectState),
-      });
-    adminChildren.push({
-      kind: "action",
-      id: "admin-indicator",
-      label: `${isAdminIndicatorOpen ? "Hide" : "Show"} Admin Indicator`,
-      icon: isAdminIndicatorOpen ? Eye : EyeOff,
-      onSelect: m.handleToggleAdminIndicator,
-    });
-    push({
-      kind: "submenu",
-      id: "admin",
-      label: "Admin Tools",
-      icon: Shield,
-      iconClass: "text-rose-500",
-      children: adminChildren,
-    });
-  }
-
-  // The page's surface submenu (engine-built, identical to desktop) — last.
-  push({ kind: "separator", id: "surface-info-sep" });
-  for (const item of m.surfaceSection.items) {
-    for (const n of extraItemToNodes(item)) push(n);
-  }
 
   // ── Drill-down navigation ───────────────────────────────────────────────────
   // The path is a list of submenu ids. The current page is re-derived from the

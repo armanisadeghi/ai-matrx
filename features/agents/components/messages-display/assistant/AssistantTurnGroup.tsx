@@ -37,7 +37,10 @@
 import { useCallback, useEffect } from "react";
 import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
 import { AgentAssistantMessage } from "./AgentAssistantMessage";
-import { AssistantMessageFooter } from "./AssistantMessageFooter";
+import {
+  AssistantMessageContextMenu,
+  AssistantMessageFooter,
+} from "./AssistantMessageFooter";
 import { membersForRender } from "./collapse-by-request-id";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -213,19 +216,33 @@ export function AssistantTurnGroup({
         ))}
 
       {showBar && anchorMessageId && (
-        <AssistantMessageFooter
+        // The group's bar sits BESIDE its members, so it carries the turn's
+        // one menu itself — its ⋯ opens the same menu the answer's
+        // right-click does (RC-B6), never a second drawn menu.
+        <AssistantMessageContextMenu
           messageId={anchorMessageId}
           conversationId={conversationId}
           onFullPrint={handleFullPrint}
           isCapturing={isCapturing}
           surfaceKey={surfaceKey}
-          // Aggregation hook — only meaningful for multi-iteration turns,
-          // single-iteration turns fall through to the existing
-          // single-message Copy / Speak path.
-          groupMessageIds={
-            groupMessageIds.length > 1 ? groupMessageIds : undefined
-          }
-        />
+          groupMessageIds={groupMessageIds.length > 1 ? groupMessageIds : undefined}
+        >
+          <div>
+            <AssistantMessageFooter
+              messageId={anchorMessageId}
+              conversationId={conversationId}
+              onFullPrint={handleFullPrint}
+              isCapturing={isCapturing}
+              surfaceKey={surfaceKey}
+              // Aggregation hook — only meaningful for multi-iteration turns,
+              // single-iteration turns fall through to the existing
+              // single-message Copy / Speak path.
+              groupMessageIds={
+                groupMessageIds.length > 1 ? groupMessageIds : undefined
+              }
+            />
+          </div>
+        </AssistantMessageContextMenu>
       )}
     </div>
   );
