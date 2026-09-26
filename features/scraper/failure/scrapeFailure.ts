@@ -33,6 +33,7 @@ export type ScrapeFailureKind =
   | "empty" // we reached the page and it carried no readable text
   | "wrong_page" // we fetched a document, but it was not the thing asked for
   | "bad_address" // the URL does not resolve / is not a page we can reach
+  | "needs_organization" // no organization selected — the page was never requested
   | "unknown"; // anything else — still plain words, never a stack
 
 export interface ScrapeFailure {
@@ -54,7 +55,8 @@ export interface ScrapeFailure {
  * exactly what must never reach a person, so it is stripped here rather than
  * at each call site.
  */
-const DEVELOPER_SUFFIX = / — failed at useScraperApi\.[^\s]+ → [^\s]+ \(see errorDiagnostics\)\s*$/;
+const DEVELOPER_SUFFIX =
+  / — failed at useScraperApi\.[^\s]+ → [^\s]+ \(see errorDiagnostics\)\s*$/;
 
 /** The leading "https://…: " label the row validator prepends. */
 function stripUrlLabel(message: string): string {
@@ -73,8 +75,10 @@ function readHttpStatus(
   if (row) {
     for (const key of ["status_code", "http_status", "status"]) {
       const value = row[key];
-      if (typeof value === "number" && value >= 100 && value < 600) return value;
-      if (typeof value === "string" && /^\d{3}$/.test(value)) return Number(value);
+      if (typeof value === "number" && value >= 100 && value < 600)
+        return value;
+      if (typeof value === "string" && /^\d{3}$/.test(value))
+        return Number(value);
     }
   }
   const transport = received.http?.status;
@@ -82,21 +86,38 @@ function readHttpStatus(
   return null;
 }
 
-function classifyKind(message: string, httpStatus: number | null): ScrapeFailureKind {
+function classifyKind(
+  message: string,
+  httpStatus: number | null,
+): ScrapeFailureKind {
   const m = message.toLowerCase();
   if (/timed? ?out|timeout|etimedout|deadline/.test(m)) return "timeout";
-  if (/captcha|cloudflare|bot (?:wall|detection|check)|paywall|login wall|robots\.txt|forbidden|access denied/.test(m))
+  if (
+    /captcha|cloudflare|bot (?:wall|detection|check)|paywall|login wall|robots\.txt|forbidden|access denied/.test(
+      m,
+    )
+  )
     return "blocked";
-  if (httpStatus === 401 || httpStatus === 403 || httpStatus === 429) return "blocked";
-  if (/enotfound|eai_again|dns|invalid url|could not resolve|name not resolved|econnrefused/.test(m))
+  if (httpStatus === 401 || httpStatus === 403 || httpStatus === 429)
+    return "blocked";
+  if (
+    /enotfound|eai_again|dns|invalid url|could not resolve|name not resolved|econnrefused/.test(
+      m,
+    )
+  )
     return "bad_address";
   // `wrong_entity` and `empty_content` are backend `failure_reason` values
   // (2026-09-17). They are checked before the generic buckets so the person
   // gets the specific sentence rather than "we could not read that page".
   if (/wrong_entity|wrong entity|wrong page/.test(m)) return "wrong_page";
-  if (/empty_content|no results|empty|no readable text|no content|0 characters/.test(m))
+  if (
+    /empty_content|no results|empty|no readable text|no content|0 characters/.test(
+      m,
+    )
+  )
     return "empty";
-  if (/bad_status|bad status|http error|status \d{3}|\b[45]\d{2}\b/.test(m)) return "site_refused";
+  if (/bad_status|bad status|http error|status \d{3}|\b[45]\d{2}\b/.test(m))
+    return "site_refused";
   if (httpStatus !== null && httpStatus >= 400) return "site_refused";
   return "unknown";
 }
@@ -147,6 +168,12 @@ function plainWords(
         title: "We could not reach that address at all.",
         remedy: "Check the link for a typo, or paste the text in instead.",
       };
+    case "needs_organization":
+      return {
+        title: "Choose the organization you're working in, then try again.",
+        remedy:
+          "Pick one with the organization picker at the top of the page — the page was not read yet.",
+      };
     default:
       return {
         title: "We could not read that page.",
@@ -173,7 +200,9 @@ export function classifyScrapeFailure(input: {
   const developerMessage = raw.trim() || "Scraping failed";
   const base = stripUrlLabel(developerMessage.replace(DEVELOPER_SUFFIX, ""));
   const httpStatus = readHttpStatus(input.diagnostics);
-  const kind = classifyKind(base || developerMessage, httpStatus);
+  const kind = input.diagnostics?.needsOrganization
+    ? "needs_organization"
+    : classifyKind(base || developerMessage, httpStatus);
   const { title, remedy } = plainWords(kind, httpStatus);
   return {
     kind,

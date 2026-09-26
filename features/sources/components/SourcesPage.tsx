@@ -31,7 +31,6 @@ import {
   Loader2,
   Paperclip,
   Plus,
-  RefreshCw,
   Save,
   Sparkles,
   Trash2,
@@ -83,7 +82,6 @@ import {
 } from "@/lib/redux/slices/appContextSlice";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
-import { BackendApiError } from "@/lib/api/errors";
 import { supabase } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
 import { writeOne } from "@/utils/supabase/writeOne";
@@ -97,16 +95,24 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { buildRagLibraryContextData } from "@/features/rag/agent-context/buildRagLibraryContextData";
 import type { LibraryDocSummary } from "@/features/rag/types/library";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
+import { ScrapeFailureNotice } from "@/features/scraper/parts/ScrapeFailureNotice";
 import {
   keepSource,
+  sourceRefusalSentence,
   landSource,
   sourceHref,
   type LandingNotice,
 } from "@/features/sources/api/sourcesApi";
 import { buildPastedTextLanding } from "@/features/sources/api/pastedText";
 import { processSourceNow } from "@/features/sources/api/processNow";
-import { SaveSourcePanel, type SaveSourceItem } from "@/features/sources/SaveSourcePanel";
-import { useSources, type SourcesScope } from "@/features/sources/hooks/useSources";
+import {
+  SaveSourcePanel,
+  type SaveSourceItem,
+} from "@/features/sources/SaveSourcePanel";
+import {
+  useSources,
+  type SourcesScope,
+} from "@/features/sources/hooks/useSources";
 import {
   DEFAULT_SAVED_FILTER,
   SOURCE_KIND_LABEL,
@@ -139,9 +145,7 @@ interface SaveTarget {
 }
 
 function errorSentence(error: unknown): string {
-  if (error instanceof BackendApiError) return error.userMessage;
-  if (error instanceof Error && error.message) return error.message;
-  return "The server did not say why.";
+  return sourceRefusalSentence(error);
 }
 
 function toSaveItem(row: SourceListRow): SaveSourceItem {
@@ -163,7 +167,10 @@ function hostOf(identity: string | null): string | null {
 }
 
 /** The old library surface's row shape, so the page keeps emitting its declared scope. */
-function toLibrarySummary(row: SourceListRow, facts: SourceFacts | undefined): LibraryDocSummary {
+function toLibrarySummary(
+  row: SourceListRow,
+  facts: SourceFacts | undefined,
+): LibraryDocSummary {
   const chunks = facts?.chunkCount ?? 0;
   return {
     id: row.id,
@@ -176,7 +183,9 @@ function toLibrarySummary(row: SourceListRow, facts: SourceFacts | undefined): L
     chunks,
     embeddingsOai: 0,
     embeddingsVoyage: 0,
-    dataStoreCount: facts?.attachments.filter((a) => a.target_type === "data_store").length ?? 0,
+    dataStoreCount:
+      facts?.attachments.filter((a) => a.target_type === "data_store").length ??
+      0,
     hasStructuredJson: false,
     derivationKind: row.derivation_kind,
     parentProcessedId: row.parent_processed_id,
@@ -188,28 +197,56 @@ function toLibrarySummary(row: SourceListRow, facts: SourceFacts | undefined): L
 
 function AttachedList({ attachments }: { attachments: SourceAttachment[] }) {
   const { titleFor } = useEntityTitles(
-    attachments.map((a) => ({ token: a.target_type, id: a.target_id, label: null })),
+    attachments.map((a) => ({
+      token: a.target_type,
+      id: a.target_id,
+      label: null,
+    })),
   );
   return (
     <ul className="space-y-1">
       {attachments.map((a) => (
-        <li key={`${a.target_type}:${a.target_id}`} className="flex items-center gap-2 text-xs">
-          <span className="w-24 shrink-0 text-muted-foreground">{attachmentTypeWords(a.target_type)}</span>
-          <EntityRef token={a.target_type} id={a.target_id} name={titleFor({ token: a.target_type, id: a.target_id })} />
+        <li
+          key={`${a.target_type}:${a.target_id}`}
+          className="flex items-center gap-2 text-xs"
+        >
+          <span className="w-24 shrink-0 text-muted-foreground">
+            {attachmentTypeWords(a.target_type)}
+          </span>
+          <EntityRef
+            token={a.target_type}
+            id={a.target_id}
+            name={titleFor({ token: a.target_type, id: a.target_id })}
+          />
         </li>
       ))}
     </ul>
   );
 }
 
-function AttachedCell({ facts, loading }: { facts: SourceFacts | undefined; loading: boolean }) {
-  if (!facts) return <span className="text-muted-foreground">{loading ? "Checking…" : "Unknown"}</span>;
+function AttachedCell({
+  facts,
+  loading,
+}: {
+  facts: SourceFacts | undefined;
+  loading: boolean;
+}) {
+  if (!facts)
+    return (
+      <span className="text-muted-foreground">
+        {loading ? "Checking…" : "Unknown"}
+      </span>
+    );
   const n = facts.attachments.length;
-  if (n === 0) return <span className="text-muted-foreground">Not attached</span>;
+  if (n === 0)
+    return <span className="text-muted-foreground">Not attached</span>;
   return (
     <HoverCard openDelay={150}>
       <HoverCardTrigger asChild>
-        <button type="button" className="inline-flex items-center gap-1 text-primary hover:underline">
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 text-primary hover:underline"
+        >
           <Paperclip className="h-3 w-3" />
           {n} {n === 1 ? "place" : "places"}
         </button>
@@ -227,7 +264,8 @@ export function SourcesPage() {
   const activeOrgId = useAppSelector(selectOrganizationId);
   const activeOrgName = useAppSelector(selectOrganizationName);
   const [scopeChoice, setScopeChoice] = useState<ScopeChoice>("mine");
-  const [savedFilter, setSavedFilter] = useState<SavedFilter>(DEFAULT_SAVED_FILTER);
+  const [savedFilter, setSavedFilter] =
+    useState<SavedFilter>(DEFAULT_SAVED_FILTER);
   const [search, setSearch] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -236,6 +274,8 @@ export function SourcesPage() {
   const [textInput, setTextInput] = useState("");
   const [textName, setTextName] = useState("");
   const [adding, setAdding] = useState(false);
+  /** The last refusal from an Add dialog, shown IN the dialog (a toast can be missed). */
+  const [addError, setAddError] = useState<string | null>(null);
   const [saveTarget, setSaveTarget] = useState<SaveTarget | null>(null);
   const [deleteRows, setDeleteRows] = useState<SourceListRow[] | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -245,7 +285,11 @@ export function SourcesPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [focusJobId, setFocusJobId] = useState<string | null>(null);
   const runner = useProcessingRunner();
-  const { scrapeUrl } = useScraperApi();
+  const {
+    scrapeUrl,
+    failure: scrapeFailure,
+    reset: resetScrape,
+  } = useScraperApi();
 
   const scope: SourcesScope | null =
     scopeChoice === "mine"
@@ -253,26 +297,37 @@ export function SourcesPage() {
       : activeOrgId
         ? { kind: "orgs", organizationId: activeOrgId }
         : null;
-  const { rows, facts, orgNames, loading, error, factsError, factsLoading } = useSources(scope, userId, refreshKey);
+  const { rows, facts, orgNames, loading, error, factsError, factsLoading } =
+    useSources(scope, userId, refreshKey);
   const visibleRows = applySavedFilter(rows, savedFilter);
   const savedCount = rows.filter(isSourceSaved).length;
   const refresh = () => setRefreshKey((n) => n + 1);
   const byId = new Map(rows.map((r) => [r.id, r]));
-  const selectedRows = selectedIds.map((id) => byId.get(id)).filter((r): r is SourceListRow => !!r);
+  const selectedRows = selectedIds
+    .map((id) => byId.get(id))
+    .filter((r): r is SourceListRow => !!r);
 
   // ── Add ──────────────────────────────────────────────────────────────────
 
-  const openSaveFor = (items: SaveSourceItem[], notices: LandingNotice[] = [], defaultSave = true) =>
-    setSaveTarget({ items, notices, defaultSave });
+  const openSaveFor = (
+    items: SaveSourceItem[],
+    notices: LandingNotice[] = [],
+    defaultSave = true,
+  ) => setSaveTarget({ items, notices, defaultSave });
 
   const handleUpload = async (file: File) => {
     setUploading(true);
     const tid = toast.loading(`Uploading ${file.name}…`);
     try {
-      const normalized = await fileHandler.upload({ kind: "file", file }, { visibility: "personal" });
+      const normalized = await fileHandler.upload(
+        { kind: "file", file },
+        { visibility: "personal" },
+      );
       toast.dismiss(tid);
       if (!normalized.fileId) {
-        toast.error("The upload finished but the server did not return the file, so it could not be processed.");
+        toast.error(
+          "The upload finished but the server did not return the file, so it could not be processed.",
+        );
         return;
       }
       toast.success("Uploaded — processing it now.");
@@ -296,26 +351,41 @@ export function SourcesPage() {
     const url = urlInput.trim();
     if (!url) return;
     setAdding(true);
+    setAddError(null);
     try {
-      const result = await scrapeUrl(/^https?:\/\//i.test(url) ? url : `https://${url}`);
-      if (!result) {
-        toast.error("That page could not be read. Check the address and try again.");
-        return;
-      }
+      // Name the organization first: the scraper refuses without one, and the
+      // person should be asked to choose — not told the page was unreadable.
+      await ensureOrgId(activeOrgId);
+      const result = await scrapeUrl(
+        /^https?:\/\//i.test(url) ? url : `https://${url}`,
+      );
+      // A failed read leaves the hook's `failure` set; the dialog renders it
+      // (what happened and what to do) — nothing more to say here.
+      if (!result) return;
       if (!result.processedDocumentId) {
-        toast.error(result.sourceNotices[0]?.message ?? "The page was read but did not become a Source, and the server did not say why.");
+        setAddError(
+          result.sourceNotices[0]?.message ??
+            "The page was read but did not become a Source, and the server did not say why. Try again.",
+        );
         return;
       }
       setAddMode(null);
       setUrlInput("");
+      resetScrape();
       setSavedFilter("all");
       refresh();
       openSaveFor(
-        [{ processedDocumentId: result.processedDocumentId, name: result.overview?.page_title || result.url }],
+        [
+          {
+            processedDocumentId: result.processedDocumentId,
+            name: result.overview?.page_title || result.url,
+          },
+        ],
         result.sourceNotices,
       );
     } catch (err) {
-      toast.error(errorSentence(err));
+      if (isOrganizationSelectionCancelled(err)) return;
+      setAddError(errorSentence(err));
     } finally {
       setAdding(false);
     }
@@ -324,9 +394,15 @@ export function SourcesPage() {
   const handleAddText = async () => {
     if (!textInput.trim() || !userId) return;
     setAdding(true);
+    setAddError(null);
     try {
       const organizationId = await ensureOrgId(activeOrgId);
-      const body = await buildPastedTextLanding({ text: textInput, name: textName, organizationId, userId });
+      const body = await buildPastedTextLanding({
+        text: textInput,
+        name: textName,
+        organizationId,
+        userId,
+      });
       const landed = await landSource(body);
       setAddMode(null);
       setTextInput("");
@@ -334,12 +410,18 @@ export function SourcesPage() {
       setSavedFilter("all");
       refresh();
       openSaveFor(
-        [{ processedDocumentId: landed.processed_document_id, name: body.name, organizationId }],
+        [
+          {
+            processedDocumentId: landed.processed_document_id,
+            name: body.name,
+            organizationId,
+          },
+        ],
         landed.notices ?? [],
       );
     } catch (err) {
       if (isOrganizationSelectionCancelled(err)) return;
-      toast.error(errorSentence(err));
+      setAddError(errorSentence(err));
     } finally {
       setAdding(false);
     }
@@ -347,7 +429,11 @@ export function SourcesPage() {
 
   // ── Bulk ─────────────────────────────────────────────────────────────────
 
-  const runBulk = async (label: string, targets: SourceListRow[], op: (row: SourceListRow) => Promise<string | null>) => {
+  const runBulk = async (
+    label: string,
+    targets: SourceListRow[],
+    op: (row: SourceListRow) => Promise<string | null>,
+  ) => {
     if (!targets.length) return;
     setBulkBusy(true);
     const refusals: string[] = [];
@@ -366,15 +452,21 @@ export function SourcesPage() {
     const done = targets.length - refusals.length;
     if (!refusals.length) {
       const extra = [...new Set(notes)][0];
-      toast.success(`${label} ${done === 1 ? "1 Source" : `${done} Sources`}.${extra ? ` ${extra}` : ""}`);
+      toast.success(
+        `${label} ${done === 1 ? "1 Source" : `${done} Sources`}.${extra ? ` ${extra}` : ""}`,
+      );
     } else {
-      toast.error(`${label} ${done} of ${targets.length}. ${refusals[0]}${refusals.length > 1 ? ` (and ${refusals.length - 1} more)` : ""}`);
+      toast.error(
+        `${label} ${done} of ${targets.length}. ${refusals[0]}${refusals.length > 1 ? ` (and ${refusals.length - 1} more)` : ""}`,
+      );
     }
   };
 
   const bulkSave = (targets: SourceListRow[]) =>
     runBulk("Saved", targets, async (row) => {
-      const landed = await keepSource(row.id, { organizationId: row.organization_id });
+      const landed = await keepSource(row.id, {
+        organizationId: row.organization_id,
+      });
       return landed.notices?.[0]?.message ?? null;
     });
 
@@ -382,9 +474,13 @@ export function SourcesPage() {
     runBulk("Processing", targets, async (row) => {
       // Saving is the signal that starts processing; when the organization's
       // policy still defers it, the person's "Process now" overrides.
-      const landed = await keepSource(row.id, { organizationId: row.organization_id });
+      const landed = await keepSource(row.id, {
+        organizationId: row.organization_id,
+      });
       if (landed.intelligence === "queued") return "Processing has started.";
-      const processed = await processSourceNow(row.id, { isFileExtract: isFileCanonicalExtract(row) });
+      const processed = await processSourceNow(row.id, {
+        isFileExtract: isFileCanonicalExtract(row),
+      });
       if (!processed.ok) throw new Error(processed.message);
       return processed.message;
     });
@@ -396,8 +492,14 @@ export function SourcesPage() {
     await runBulk("Moved to the trash:", targets, async (row) => {
       if (isFileCanonicalExtract(row)) {
         // A file's own extract goes with its file (and comes back with it).
-        const { error: rpcError } = await ragDb(supabase).rpc("fn_delete_library_document_and_source", { p_id: row.id });
-        if (rpcError) throw new Error(`"${row.name}" and its file could not be moved to the trash. You may not be allowed to delete them.`);
+        const { error: rpcError } = await ragDb(supabase).rpc(
+          "fn_delete_library_document_and_source",
+          { p_id: row.id },
+        );
+        if (rpcError)
+          throw new Error(
+            `"${row.name}" and its file could not be moved to the trash. You may not be allowed to delete them.`,
+          );
         return null;
       }
       await writeOne(
@@ -427,10 +529,17 @@ export function SourcesPage() {
         const host = hostOf(r.canonical_identity);
         return (
           <div className="min-w-0">
-            <Link href={sourceHref(r.id)} className="block truncate font-medium text-foreground hover:underline">
+            <Link
+              href={sourceHref(r.id)}
+              className="block truncate font-medium text-foreground hover:underline"
+            >
               {r.name}
             </Link>
-            {host ? <span className="block truncate text-[11px] text-muted-foreground">{host}</span> : null}
+            {host ? (
+              <span className="block truncate text-[11px] text-muted-foreground">
+                {host}
+              </span>
+            ) : null}
           </div>
         );
       },
@@ -457,7 +566,10 @@ export function SourcesPage() {
       header: "When",
       accessorFn: (r) => r.created_at,
       cell: (r) => (
-        <span title={new Date(r.created_at).toLocaleString()} className="text-muted-foreground">
+        <span
+          title={new Date(r.created_at).toLocaleString()}
+          className="text-muted-foreground"
+        >
           {formatRelativeTime(r.created_at)}
         </span>
       ),
@@ -470,11 +582,17 @@ export function SourcesPage() {
       accessorFn: (r) => (isSourceSaved(r) ? "Saved" : "Not saved"),
       cell: (r) =>
         isSourceSaved(r) ? (
-          <Badge variant="outline" className="border-success/40 text-success" title={r.kept_at ? undefined : "Uploaded files count as saved."}>
+          <Badge
+            variant="outline"
+            className="border-success/40 text-success"
+            title={r.kept_at ? undefined : "Uploaded files count as saved."}
+          >
             Saved
           </Badge>
         ) : (
-          <Badge variant="outline" className="text-muted-foreground">Not saved</Badge>
+          <Badge variant="outline" className="text-muted-foreground">
+            Not saved
+          </Badge>
         ),
       filter: "select",
       width: 100,
@@ -484,7 +602,11 @@ export function SourcesPage() {
       header: "Stage",
       accessorFn: (r) => {
         const f = facts.get(r.id);
-        return f ? SOURCE_STAGE_LABEL[sourceStage(r, f)] : factsLoading ? "Checking…" : "Unknown";
+        return f
+          ? SOURCE_STAGE_LABEL[sourceStage(r, f)]
+          : factsLoading
+            ? "Checking…"
+            : "Unknown";
       },
       filter: "select",
       width: 110,
@@ -493,15 +615,21 @@ export function SourcesPage() {
       id: "attached",
       header: "Attached to",
       accessorFn: (r) => facts.get(r.id)?.attachments.length ?? 0,
-      cell: (r) => <AttachedCell facts={facts.get(r.id)} loading={factsLoading} />,
+      cell: (r) => (
+        <AttachedCell facts={facts.get(r.id)} loading={factsLoading} />
+      ),
       filter: false,
       width: 120,
     },
     {
       id: "organization",
       header: "Organization",
-      accessorFn: (r) =>
-        r.visibility === "personal" ? "Personal" : (orgNames.get(r.organization_id) ?? (factsLoading ? "Checking…" : "An organization you belong to")),
+      accessorFn: (r) => {
+        const org =
+          orgNames.get(r.organization_id) ??
+          (factsLoading ? "…" : "an organization you belong to");
+        return r.visibility === "personal" ? `Personal · ${org}` : org;
+      },
       filter: "select",
       width: 150,
     },
@@ -521,35 +649,51 @@ export function SourcesPage() {
       listError: error,
       selectedDocumentId: null,
       jobs: runner.jobs,
-      selectionText: typeof window !== "undefined" ? (window.getSelection()?.toString() ?? "") : "",
+      selectionText:
+        typeof window !== "undefined"
+          ? (window.getSelection()?.toString() ?? "")
+          : "",
     });
 
   const buildWriteHandlers = () => ({
     library_filters: (value: unknown) => {
-      const raw = typeof value === "string" ? (JSON.parse(value) as unknown) : value;
+      const raw =
+        typeof value === "string" ? (JSON.parse(value) as unknown) : value;
       if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-        throw new Error("library_filters expects an object such as {\"search_query\": \"invoice\"}.");
+        throw new Error(
+          'library_filters expects an object such as {"search_query": "invoice"}.',
+        );
       }
       const input = raw as Record<string, unknown>;
-      const bad = Object.keys(input).filter((k) => k !== "search_query" && k !== "status_filter");
-      if (bad.length) throw new Error(`library_filters received unknown key(s): ${bad.join(", ")}. Nothing was changed.`);
+      const bad = Object.keys(input).filter(
+        (k) => k !== "search_query" && k !== "status_filter",
+      );
+      if (bad.length)
+        throw new Error(
+          `library_filters received unknown key(s): ${bad.join(", ")}. Nothing was changed.`,
+        );
       if ("status_filter" in input && input.status_filter !== "all") {
         throw new Error(
-          "The Sources page no longer filters by pipeline status; only \"all\" (show every capture) is accepted. Nothing was changed.",
+          'The Sources page no longer filters by pipeline status; only "all" (show every capture) is accepted. Nothing was changed.',
         );
       }
       if ("search_query" in input) {
-        if (typeof input.search_query !== "string") throw new Error("library_filters.search_query expects a string.");
+        if (typeof input.search_query !== "string")
+          throw new Error("library_filters.search_query expects a string.");
         setSearch(input.search_query);
       }
       if (input.status_filter === "all") setSavedFilter("all");
     },
     selected_document_id: (value: unknown) => {
       if (typeof value !== "string" || !value.trim()) {
-        throw new Error("selected_document_id expects a Source id listed on this page.");
+        throw new Error(
+          "selected_document_id expects a Source id listed on this page.",
+        );
       }
       if (!byId.has(value.trim())) {
-        throw new Error(`"${value}" is not a Source listed on this page, so nothing was opened.`);
+        throw new Error(
+          `"${value}" is not a Source listed on this page, so nothing was opened.`,
+        );
       }
       router.push(sourceHref(value.trim()));
     },
@@ -579,14 +723,25 @@ export function SourcesPage() {
                 e.target.value = "";
               }}
             />
-            <TapTargetButton icon={<Trash2 className="h-4 w-4" />} ariaLabel="Trash" onClick={() => setTrashOpen(true)} />
-            <TapTargetButton icon={<RefreshCw className="h-4 w-4" />} ariaLabel="Refresh" onClick={refresh} />
+            <TapTargetButton
+              icon={<Trash2 className="h-4 w-4" />}
+              ariaLabel="Trash"
+              onClick={() => setTrashOpen(true)}
+            />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <TapTargetButtonSolid icon={<Plus className="h-4 w-4" />} ariaLabel="Add a Source" label={uploading ? "Uploading…" : "Add"} />
+                <TapTargetButtonSolid
+                  icon={<Plus className="h-4 w-4" />}
+                  ariaLabel="Add a Source"
+                  label={uploading ? "Uploading…" : "Add"}
+                />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => document.getElementById("sources-upload-input")?.click()}>
+                <DropdownMenuItem
+                  onSelect={() =>
+                    document.getElementById("sources-upload-input")?.click()
+                  }
+                >
                   <Upload className="mr-2 h-4 w-4" /> Upload a file
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setAddMode("url")}>
@@ -595,7 +750,9 @@ export function SourcesPage() {
                 <DropdownMenuItem onSelect={() => setAddMode("text")}>
                   <ClipboardType className="mr-2 h-4 w-4" /> Paste text
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => router.push("/transcripts/studio")}>
+                <DropdownMenuItem
+                  onSelect={() => router.push("/transcripts/studio")}
+                >
                   <FileAudio className="mr-2 h-4 w-4" /> Import a transcript
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -606,14 +763,22 @@ export function SourcesPage() {
 
       <div className="flex h-full min-h-0 flex-col gap-2 overflow-auto px-3 pb-4 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
         {error ? (
-          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive" role="alert">
+          <div
+            className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
+            role="alert"
+          >
             {error}
           </div>
         ) : null}
-        {factsError ? <p className="text-xs text-amber-600 dark:text-amber-400">{factsError}</p> : null}
+        {factsError ? (
+          <p className="text-xs text-amber-600 dark:text-amber-400">
+            {factsError}
+          </p>
+        ) : null}
         {scopeChoice === "org" && !activeOrgId ? (
           <p className="rounded-md border border-border p-3 text-sm text-muted-foreground">
-            Choose an organization in the organization picker to see its shared Sources.
+            Choose an organization in the organization picker to see its shared
+            Sources.
           </p>
         ) : null}
 
@@ -633,7 +798,10 @@ export function SourcesPage() {
             searchPlaceholder: "Search Sources",
             searchValue: search,
             onSearchChange: setSearch,
-            titleCount: { value: visibleRows.length, label: savedFilter === "saved" ? "saved" : "captures" },
+            titleCount: {
+              value: visibleRows.length,
+              label: savedFilter === "saved" ? "saved" : "captures",
+            },
             facets: [
               {
                 type: "button-group",
@@ -671,7 +839,13 @@ export function SourcesPage() {
             noun: "Source",
             actions: (sel) => (
               <div className="flex flex-wrap items-center gap-1">
-                <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={bulkBusy} onClick={() => void bulkSave(sel)}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 gap-1 text-xs"
+                  disabled={bulkBusy}
+                  onClick={() => void bulkSave(sel)}
+                >
                   <Save className="h-3 w-3" /> Save
                 </Button>
                 <Button
@@ -683,7 +857,13 @@ export function SourcesPage() {
                 >
                   <Paperclip className="h-3 w-3" /> Attach
                 </Button>
-                <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={bulkBusy} onClick={() => void bulkProcess(sel)}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 gap-1 text-xs"
+                  disabled={bulkBusy}
+                  onClick={() => void bulkProcess(sel)}
+                >
                   <Sparkles className="h-3 w-3" /> Process now
                 </Button>
                 <Button
@@ -695,7 +875,9 @@ export function SourcesPage() {
                 >
                   <Trash2 className="h-3 w-3" /> Delete
                 </Button>
-                {bulkBusy ? <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" /> : null}
+                {bulkBusy ? (
+                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                ) : null}
               </div>
             ),
           }}
@@ -707,17 +889,27 @@ export function SourcesPage() {
             return (
               <Link href={sourceHref(r.id)} className="block space-y-1 py-1">
                 <div className="flex items-center gap-2">
-                  {sourceKindGroup(r.source_kind) === "web_page" ? <Globe className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
+                  {sourceKindGroup(r.source_kind) === "web_page" ? (
+                    <Globe className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  ) : null}
                   <span className="truncate font-medium">{r.name}</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
-                  <span>{SOURCE_KIND_LABEL[sourceKindGroup(r.source_kind)]}</span>
+                  <span>
+                    {SOURCE_KIND_LABEL[sourceKindGroup(r.source_kind)]}
+                  </span>
                   <span>·</span>
                   <span>{captureWords(r)}</span>
                   <span>·</span>
                   <span>{formatRelativeTime(r.created_at)}</span>
                   <span>·</span>
-                  <span className={cn(isSourceSaved(r) ? "text-success" : undefined)}>{isSourceSaved(r) ? "Saved" : "Not saved"}</span>
+                  <span
+                    className={cn(
+                      isSourceSaved(r) ? "text-success" : undefined,
+                    )}
+                  >
+                    {isSourceSaved(r) ? "Saved" : "Not saved"}
+                  </span>
                   {f ? (
                     <>
                       <span>·</span>
@@ -726,7 +918,8 @@ export function SourcesPage() {
                         <>
                           <span>·</span>
                           <span>
-                            {f.attachments.length} {f.attachments.length === 1 ? "place" : "places"}
+                            {f.attachments.length}{" "}
+                            {f.attachments.length === 1 ? "place" : "places"}
                           </span>
                         </>
                       ) : null}
@@ -752,7 +945,10 @@ export function SourcesPage() {
       </div>
 
       {/* Paste a web address */}
-      <Dialog open={addMode === "url"} onOpenChange={(o) => !o && setAddMode(null)}>
+      <Dialog
+        open={addMode === "url"}
+        onOpenChange={(o) => !o && setAddMode(null)}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Paste a web address</DialogTitle>
@@ -764,14 +960,41 @@ export function SourcesPage() {
               void handleAddUrl();
             }}
           >
-            <Input autoFocus placeholder="https://example.com/article" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} />
-            <p className="text-xs text-muted-foreground">We read the page and add it to your Sources; you choose where to save it next.</p>
+            <Input
+              autoFocus
+              placeholder="https://example.com/article"
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              We read the page and add it to your Sources; you choose where to
+              save it next.
+            </p>
+            {scrapeFailure && !adding ? (
+              <ScrapeFailureNotice failure={scrapeFailure} />
+            ) : null}
+            {addError && !adding ? (
+              <p role="alert" className="text-sm text-destructive">
+                {addError}
+              </p>
+            ) : null}
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="ghost" size="sm" onClick={() => setAddMode(null)}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setAddMode(null)}
+              >
                 Cancel
               </Button>
-              <Button type="submit" size="sm" disabled={adding || !urlInput.trim()}>
-                {adding ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
+              <Button
+                type="submit"
+                size="sm"
+                disabled={adding || !urlInput.trim()}
+              >
+                {adding ? (
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                ) : null}
                 Read the page
               </Button>
             </div>
@@ -780,20 +1003,48 @@ export function SourcesPage() {
       </Dialog>
 
       {/* Paste text */}
-      <Dialog open={addMode === "text"} onOpenChange={(o) => !o && setAddMode(null)}>
+      <Dialog
+        open={addMode === "text"}
+        onOpenChange={(o) => !o && setAddMode(null)}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Paste text</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <Input placeholder="Name (optional — the first line is used)" value={textName} onChange={(e) => setTextName(e.target.value)} />
-            <Textarea autoFocus rows={10} placeholder="Paste the text here" value={textInput} onChange={(e) => setTextInput(e.target.value)} />
+            <Input
+              placeholder="Name (optional — the first line is used)"
+              value={textName}
+              onChange={(e) => setTextName(e.target.value)}
+            />
+            <Textarea
+              autoFocus
+              rows={10}
+              placeholder="Paste the text here"
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+            />
+            {addError && !adding ? (
+              <p role="alert" className="text-sm text-destructive">
+                {addError}
+              </p>
+            ) : null}
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setAddMode(null)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setAddMode(null)}
+              >
                 Cancel
               </Button>
-              <Button size="sm" disabled={adding || !textInput.trim()} onClick={() => void handleAddText()}>
-                {adding ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
+              <Button
+                size="sm"
+                disabled={adding || !textInput.trim()}
+                onClick={() => void handleAddText()}
+              >
+                {adding ? (
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                ) : null}
                 Add to Sources
               </Button>
             </div>
@@ -802,16 +1053,25 @@ export function SourcesPage() {
       </Dialog>
 
       {/* Save / Attach */}
-      <Dialog open={!!saveTarget} onOpenChange={(o) => !o && setSaveTarget(null)}>
+      <Dialog
+        open={!!saveTarget}
+        onOpenChange={(o) => !o && setSaveTarget(null)}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{saveTarget?.defaultSave === false ? "Attach" : "Save"}</DialogTitle>
+            <DialogTitle>
+              {saveTarget?.defaultSave === false ? "Attach" : "Save"}{" "}
+              {saveTarget && saveTarget.items.length === 1
+                ? (saveTarget.items[0].name ?? "this Source")
+                : `${saveTarget?.items.length ?? 0} Sources`}
+            </DialogTitle>
           </DialogHeader>
           {saveTarget ? (
             <SaveSourcePanel
               sources={saveTarget.items}
               landingNotices={saveTarget.notices}
               defaultSave={saveTarget.defaultSave}
+              embedded
               onCancel={() => setSaveTarget(null)}
               onSaved={() => {
                 setSaveTarget(null);
@@ -824,32 +1084,54 @@ export function SourcesPage() {
       </Dialog>
 
       {/* Delete */}
-      <AlertDialog open={!!deleteRows} onOpenChange={(o) => !o && !deleting && setDeleteRows(null)}>
+      <AlertDialog
+        open={!!deleteRows}
+        onOpenChange={(o) => !o && !deleting && setDeleteRows(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Move {deleteRows?.length === 1 ? `"${deleteRows[0].name}"` : `${deleteRows?.length ?? 0} Sources`} to the trash?
+              Move{" "}
+              {deleteRows?.length === 1
+                ? `"${deleteRows[0].name}"`
+                : `${deleteRows?.length ?? 0} Sources`}{" "}
+              to the trash?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Moves the selected Sources and their searchable pieces to the trash. Restorable from the trash.
+              Moves the selected Sources and their searchable pieces to the
+              trash. Restorable from the trash.
               {deleteRows?.some(isFileCanonicalExtract)
                 ? " An uploaded file's Source goes to the trash together with its file."
                 : ""}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <Button variant="ghost" onClick={() => setDeleteRows(null)} disabled={deleting}>
+            <Button
+              variant="ghost"
+              onClick={() => setDeleteRows(null)}
+              disabled={deleting}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={() => void confirmDelete()} disabled={deleting}>
-              {deleting ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
+            <Button
+              variant="destructive"
+              onClick={() => void confirmDelete()}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+              ) : null}
               Move to trash
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <LibraryTrashSheet open={trashOpen} onOpenChange={setTrashOpen} onMutated={refresh} />
+      <LibraryTrashSheet
+        open={trashOpen}
+        onOpenChange={setTrashOpen}
+        onMutated={refresh}
+      />
       <ProcessingProgressSheet
         open={sheetOpen}
         onOpenChange={(o) => {

@@ -62,7 +62,9 @@ async function sha256Hex(text: string): Promise<string> {
  * The landing body. Refuses the empty in words (the door would too, but a
  * person should not wait for a round trip to learn they pasted nothing).
  */
-export async function buildPastedTextLanding(input: PastedTextInput): Promise<SourceLandingBody> {
+export async function buildPastedTextLanding(
+  input: PastedTextInput,
+): Promise<SourceLandingBody> {
   const text = input.text.replace(/\r\n/g, "\n").trim();
   if (!text) {
     throw new Error("There is no text to save. Paste something first.");
@@ -78,7 +80,7 @@ export async function buildPastedTextLanding(input: PastedTextInput): Promise<So
     mime_type: "text/plain",
     portions: [
       {
-        ordinal: 0,
+        ordinal: 1,
         kind: "section",
         text,
         locator: { heading_path: [name], text_fragment: text.slice(0, 80) },

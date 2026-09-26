@@ -18,6 +18,7 @@
  */
 
 import { postJson } from "@/lib/python-client";
+import { BackendApiError } from "@/lib/api/errors";
 import type { components } from "@/types/python-generated/api-types";
 
 export type LandedSource = components["schemas"]["LandedSource"];
@@ -33,7 +34,9 @@ export const SOURCE_LAND_PATH = "/sources/land";
  * The body names its organization (`organization_id`) and so does the
  * request header — the same id, captured once by the caller.
  */
-export async function landSource(body: SourceLandingBody): Promise<LandedSource> {
+export async function landSource(
+  body: SourceLandingBody,
+): Promise<LandedSource> {
   const { data } = await postJson<LandedSource, SourceLandingBody>(
     SOURCE_LAND_PATH,
     body,
@@ -75,4 +78,30 @@ export async function keepSource(
  */
 export function sourceHref(processedDocumentId: string): string {
   return `/knowledge/viewer/${encodeURIComponent(processedDocumentId)}`;
+}
+
+/**
+ * The sentence to show a person when a Source route refuses.
+ *
+ * The door writes every refusal as a sentence for a person (`LandingError`:
+ * "A 'inline' cannot be landed as a Source: …"), but the server's error
+ * envelope files a 422 under `validation_error` and replaces `user_message`
+ * with the generic "Invalid request. Please check your input and try again."
+ * The door's own words arrive as `message` (`BackendApiError.detail`); on a
+ * 4xx from these routes they are the honest answer, so they win.
+ */
+export function sourceRefusalSentence(error: unknown): string {
+  if (error instanceof BackendApiError) {
+    const own = error.detail?.trim();
+    if (
+      own &&
+      error.status !== null &&
+      error.status >= 400 &&
+      error.status < 500
+    )
+      return own;
+    return error.userMessage;
+  }
+  if (error instanceof Error && error.message) return error.message;
+  return "The server did not say why.";
 }

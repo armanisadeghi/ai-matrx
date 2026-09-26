@@ -29,8 +29,7 @@ import {
 } from "@/features/sources/sourceRows";
 
 export type SourcesScope =
-  | { kind: "mine" }
-  | { kind: "orgs"; organizationId: string };
+  { kind: "mine" } | { kind: "orgs"; organizationId: string };
 
 export interface UseSourcesResult {
   rows: SourceListRow[];
@@ -46,7 +45,13 @@ export interface UseSourcesResult {
   factsLoading: boolean;
 }
 
-const FACTS_BATCH = 200;
+/**
+ * Small batches read in parallel: each id costs a few RLS-checked counts, so
+ * one 200-id call took ~5s while 25-id batches in parallel finish in ~2s and
+ * fill the newest rows first (measured 2026-09-26, admin, 200 Sources).
+ */
+const FACTS_BATCH = 25;
+const FACTS_PARALLEL = 8;
 
 interface FactsRow {
   processed_document_id: string;
@@ -60,29 +65,61 @@ function asAttachments(value: unknown): SourceAttachment[] {
   return value.flatMap((v): SourceAttachment[] => {
     if (!v || typeof v !== "object") return [];
     const r = v as Record<string, unknown>;
-    if (typeof r.target_type !== "string" || typeof r.target_id !== "string") return [];
-    return [{ target_type: r.target_type, target_id: r.target_id, label: typeof r.label === "string" ? r.label : null }];
+    if (typeof r.target_type !== "string" || typeof r.target_id !== "string")
+      return [];
+    return [
+      {
+        target_type: r.target_type,
+        target_id: r.target_id,
+        label: typeof r.label === "string" ? r.label : null,
+      },
+    ];
   });
 }
 
-export async function readSourceFacts(ids: string[]): Promise<Map<string, SourceFacts>> {
+export async function readSourceFacts(
+  ids: string[],
+  onBatch?: (partial: Map<string, SourceFacts>) => void,
+): Promise<Map<string, SourceFacts>> {
   const out = new Map<string, SourceFacts>();
-  for (let i = 0; i < ids.length; i += FACTS_BATCH) {
-    const batch = ids.slice(i, i + FACTS_BATCH);
-    const { data, error } = await supabase.schema("docproc").rpc("source_list_facts", { p_ids: batch });
-    if (error) throw new Error("The stage and attachments of these Sources could not be read.");
-    for (const r of (data ?? []) as FactsRow[]) {
-      out.set(r.processed_document_id, {
-        chunkCount: r.chunk_count ?? 0,
-        entityCount: r.entity_count ?? 0,
-        attachments: asAttachments(r.attachments),
-      });
+  const batches: string[][] = [];
+  for (let i = 0; i < ids.length; i += FACTS_BATCH)
+    batches.push(ids.slice(i, i + FACTS_BATCH));
+  let next = 0;
+  let failed = false;
+  const worker = async () => {
+    while (next < batches.length && !failed) {
+      const batch = batches[next++];
+      const { data, error } = await supabase
+        .schema("docproc")
+        .rpc("source_list_facts", { p_ids: batch });
+      if (error) {
+        failed = true;
+        throw new Error(
+          "The stage and attachments of these Sources could not be read.",
+        );
+      }
+      for (const r of (data ?? []) as FactsRow[]) {
+        out.set(r.processed_document_id, {
+          chunkCount: r.chunk_count ?? 0,
+          entityCount: r.entity_count ?? 0,
+          attachments: asAttachments(r.attachments),
+        });
+      }
+      onBatch?.(new Map(out));
     }
-  }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(FACTS_PARALLEL, batches.length) }, worker),
+  );
   return out;
 }
 
-export function useSources(scope: SourcesScope | null, userId: string | null, refreshKey: number): UseSourcesResult {
+export function useSources(
+  scope: SourcesScope | null,
+  userId: string | null,
+  refreshKey: number,
+): UseSourcesResult {
   const [state, setState] = useState<UseSourcesResult>({
     rows: [],
     facts: new Map(),
@@ -92,12 +129,22 @@ export function useSources(scope: SourcesScope | null, userId: string | null, re
     factsError: null,
     factsLoading: true,
   });
-  const scopeKey = scope ? (scope.kind === "mine" ? "mine" : `orgs:${scope.organizationId}`) : "none";
+  const scopeKey = scope
+    ? scope.kind === "mine"
+      ? "mine"
+      : `orgs:${scope.organizationId}`
+    : "none";
 
   useEffect(() => {
     if (!scope || !userId) return undefined;
     let cancelled = false;
-    setState((s) => ({ ...s, loading: true, error: null, factsLoading: true }));
+    setState((s) => ({
+      ...s,
+      loading: true,
+      error: null,
+      factsLoading: true,
+      facts: new Map(),
+    }));
     void (async () => {
       let rows: SourceListRow[];
       try {
@@ -113,7 +160,9 @@ export function useSources(scope: SourcesScope | null, userId: string | null, re
             q =
               scope.kind === "mine"
                 ? q.eq("owner_id", userId)
-                : q.eq("organization_id", scope.organizationId).neq("visibility", "personal");
+                : q
+                    .eq("organization_id", scope.organizationId)
+                    .neq("visibility", "personal");
             return q
               .order("created_at", { ascending: false })
               .order("id", { ascending: true })
@@ -141,19 +190,33 @@ export function useSources(scope: SourcesScope | null, userId: string | null, re
 
       const orgIds = [...new Set(rows.map((r) => r.organization_id))];
       const [factsResult, orgResult] = await Promise.allSettled([
-        readSourceFacts(rows.map((r) => r.id)),
+        readSourceFacts(
+          rows.map((r) => r.id),
+          (partial) => {
+            if (!cancelled) setState((s) => ({ ...s, facts: partial }));
+          },
+        ),
         orgIds.length
-          ? supabase.schema("iam").from("organizations").select("id,name").in("id", orgIds)
+          ? supabase
+              .schema("iam")
+              .from("organizations")
+              .select("id,name")
+              .in("id", orgIds)
           : Promise.resolve({ data: [], error: null }),
       ]);
       if (cancelled) return;
       const orgNames = new Map<string, string>();
       if (orgResult.status === "fulfilled" && !orgResult.value.error) {
-        for (const o of (orgResult.value.data ?? []) as { id: string; name: string }[]) orgNames.set(o.id, o.name);
+        for (const o of (orgResult.value.data ?? []) as {
+          id: string;
+          name: string;
+        }[])
+          orgNames.set(o.id, o.name);
       }
       setState((s) => ({
         ...s,
-        facts: factsResult.status === "fulfilled" ? factsResult.value : new Map(),
+        facts:
+          factsResult.status === "fulfilled" ? factsResult.value : new Map(),
         factsError:
           factsResult.status === "rejected"
             ? "Stage and attachments could not be read, so they show as unknown."

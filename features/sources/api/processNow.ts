@@ -31,12 +31,22 @@ export async function processSourceNow(
   processedDocumentId: string,
   options: { isFileExtract: boolean; signal?: AbortSignal },
 ): Promise<ProcessNowResult> {
-  const stages: StageName[] = options.isFileExtract ? ["run_all"] : ["clean", "chunk", "embed"];
+  const stages: StageName[] = options.isFileExtract
+    ? ["run_all"]
+    : ["clean", "chunk", "embed"];
   for (const stage of stages) {
-    for await (const ev of runStageStream(processedDocumentId, stage, { signal: options.signal })) {
+    for await (const ev of runStageStream(processedDocumentId, stage, {
+      signal: options.signal,
+    })) {
       if (ev.event === "stage.error") {
-        const reason = typeof ev.data?.message === "string" && ev.data.message ? ev.data.message : "the server did not say why";
-        return { ok: false, message: `Processing stopped while ${STAGE_WORDS[stage]}: ${reason}.` };
+        const reason =
+          typeof ev.data?.message === "string" && ev.data.message
+            ? ev.data.message
+            : "the server did not say why";
+        return {
+          ok: false,
+          message: `Processing stopped while ${STAGE_WORDS[stage]}: ${reason}.`,
+        };
       }
     }
   }

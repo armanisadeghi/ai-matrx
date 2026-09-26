@@ -47,11 +47,11 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
-import { BackendApiError } from "@/lib/api/errors";
 import { supabase } from "@/utils/supabase/client";
 import { cn } from "@/utils/cn";
 import {
   keepSource,
+  sourceRefusalSentence,
   type LandedSource,
   type LandingNotice,
 } from "@/features/sources/api/sourcesApi";
@@ -83,6 +83,8 @@ export interface SaveSourcePanelProps {
   onCancel?: () => void;
   /** Start with Save off (e.g. "Attach" from a bulk bar files without re-saving). */
   defaultSave?: boolean;
+  /** Inside a dialog that already titles it: hide the panel's own heading and close button. */
+  embedded?: boolean;
   className?: string;
 }
 
@@ -93,9 +95,7 @@ interface LibraryOption {
 }
 
 function errorSentence(error: unknown): string {
-  if (error instanceof BackendApiError) return error.userMessage;
-  if (error instanceof Error && error.message) return error.message;
-  return "The server did not say why.";
+  return sourceRefusalSentence(error);
 }
 
 /** The person's media-catalog Libraries: the ones they made (VIEW LAW: mine). */
@@ -116,12 +116,18 @@ function useMyLibraries(userId: string | null) {
         .limit(200);
       if (cancelled) return;
       if (readError) {
-        setError("Your Libraries could not be loaded, so none can be chosen right now.");
+        setError(
+          "Your Libraries could not be loaded, so none can be chosen right now.",
+        );
         return;
       }
       const rows = (data ?? []) as LibraryOption[];
       // Web-capture Libraries first: they are where captured pages belong.
-      rows.sort((a, b) => Number(b.adapter === "web_capture") - Number(a.adapter === "web_capture"));
+      rows.sort(
+        (a, b) =>
+          Number(b.adapter === "web_capture") -
+          Number(a.adapter === "web_capture"),
+      );
       setLibraries(rows);
     })();
     return () => {
@@ -139,6 +145,7 @@ export function SaveSourcePanel({
   onSaved,
   onCancel,
   defaultSave = true,
+  embedded = false,
   className,
 }: SaveSourcePanelProps) {
   const userId = useAppSelector(selectUserId);
@@ -147,14 +154,22 @@ export function SaveSourcePanel({
   const [processNow, setProcessNow] = useState(false);
   const [staged, setStaged] = useState<StagedTarget[]>([]);
   const [libraryId, setLibraryId] = useState<string | null>(() =>
-    readRememberedLibrary(typeof window === "undefined" ? null : window.localStorage, userId),
+    readRememberedLibrary(
+      typeof window === "undefined" ? null : window.localStorage,
+      userId,
+    ),
   );
   // The person can arrive after the first render (auth hydrates late): read
   // their remembered Library once their id is known.
   const [libraryUser, setLibraryUser] = useState(userId);
   if (userId !== libraryUser) {
     setLibraryUser(userId);
-    setLibraryId(readRememberedLibrary(typeof window === "undefined" ? null : window.localStorage, userId));
+    setLibraryId(
+      readRememberedLibrary(
+        typeof window === "undefined" ? null : window.localStorage,
+        userId,
+      ),
+    );
   }
   const [busy, setBusy] = useState(false);
   const [resultNotices, setResultNotices] = useState<string[]>([]);
@@ -167,7 +182,11 @@ export function SaveSourcePanel({
   const chooseLibrary = (value: string) => {
     const next = value === NO_LIBRARY ? null : value;
     setLibraryId(next);
-    writeRememberedLibrary(typeof window === "undefined" ? null : window.localStorage, userId, next);
+    writeRememberedLibrary(
+      typeof window === "undefined" ? null : window.localStorage,
+      userId,
+      next,
+    );
   };
 
   const handleSave = async () => {
@@ -178,7 +197,9 @@ export function SaveSourcePanel({
     const refusals: string[] = [];
     const notes: string[] = [];
     try {
-      const fallbackOrg = sources.every((s) => s.organizationId) ? null : await ensureOrgId(null);
+      const fallbackOrg = sources.every((s) => s.organizationId)
+        ? null
+        : await ensureOrgId(null);
       for (const source of sources) {
         try {
           const landed = await keepSource(source.processedDocumentId, {
@@ -188,9 +209,12 @@ export function SaveSourcePanel({
           results.push(landed);
           for (const n of landed.notices ?? []) notes.push(n.message);
           if (processNow && landed.intelligence !== "queued") {
-            const processed = await processSourceNow(source.processedDocumentId, {
-              isFileExtract: !!source.isFileExtract,
-            });
+            const processed = await processSourceNow(
+              source.processedDocumentId,
+              {
+                isFileExtract: !!source.isFileExtract,
+              },
+            );
             notes.push(processed.message);
           } else {
             notes.push(intelligenceSentence(landed.intelligence, landed.kept));
@@ -207,38 +231,50 @@ export function SaveSourcePanel({
     }
     setBusy(false);
     const uniqueNotes = [...new Set(notes)];
-    setResultNotices(uniqueNotes);
-    const filed = attachTo.length ? ` and filed in ${attachTo.length} ${attachTo.length === 1 ? "place" : "places"}` : "";
+    setResultNotices([...refusals, ...uniqueNotes]);
+    const filed = attachTo.length
+      ? ` and filed in ${attachTo.length} ${attachTo.length === 1 ? "place" : "places"}`
+      : "";
     if (refusals.length === 0) {
-      toast.success(`${save ? "Saved" : "Filed"} ${results.length === 1 ? "1 Source" : `${results.length} Sources`}${save ? filed : ""}.`);
+      toast.success(
+        `${save ? "Saved" : "Filed"} ${results.length === 1 ? "1 Source" : `${results.length} Sources`}${save ? filed : ""}.${uniqueNotes[0] ? ` ${uniqueNotes[0]}` : ""}`,
+      );
     } else {
       toast.error(
         `${results.length} of ${sources.length} done. ${refusals[0]}${refusals.length > 1 ? ` (and ${refusals.length - 1} more)` : ""}`,
       );
     }
-    if (results.length) onSaved?.(results);
+    // A partial save keeps the panel open with every refusal listed in it.
+    if (results.length && refusals.length === 0) onSaved?.(results);
   };
 
   return (
-    <div className={cn("flex flex-col gap-3 text-sm", className)} data-testid="save-source-panel">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="font-medium text-foreground">Save {noun}</p>
-          {sources.length === 1 && sources[0].name ? (
-            <p className="truncate text-xs text-muted-foreground">{sources[0].name}</p>
+    <div
+      className={cn("flex flex-col gap-3 text-sm", className)}
+      data-testid="save-source-panel"
+    >
+      {embedded ? null : (
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="font-medium text-foreground">Save {noun}</p>
+            {sources.length === 1 && sources[0].name ? (
+              <p className="truncate text-xs text-muted-foreground">
+                {sources[0].name}
+              </p>
+            ) : null}
+          </div>
+          {onCancel ? (
+            <button
+              type="button"
+              onClick={onCancel}
+              aria-label="Close"
+              className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
           ) : null}
         </div>
-        {onCancel ? (
-          <button
-            type="button"
-            onClick={onCancel}
-            aria-label="Close"
-            className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        ) : null}
-      </div>
+      )}
 
       {landingNotices.length > 0 ? (
         <ul className="space-y-1 rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-xs text-amber-700 dark:text-amber-300">
@@ -252,15 +288,21 @@ export function SaveSourcePanel({
         <Label htmlFor="save-source-save" className="text-sm">
           Save
           <span className="block text-xs font-normal text-muted-foreground">
-            Keep it in your Sources. Saving starts its processing under your organization&apos;s policy.
+            Keep it in your Sources. Saving starts its processing under your
+            organization&apos;s policy.
           </span>
         </Label>
-        <Switch id="save-source-save" checked={save} onCheckedChange={setSave} />
+        <Switch
+          id="save-source-save"
+          checked={save}
+          onCheckedChange={setSave}
+        />
       </div>
 
       <div className="space-y-1">
         <Label className="flex items-center gap-1 text-sm">
-          <Library className="h-3.5 w-3.5" /> Add to a Library (media catalog, optional)
+          <Library className="h-3.5 w-3.5" /> Add to a Library (media catalog,
+          optional)
         </Label>
         {librariesError ? (
           <p className="text-xs text-destructive">{librariesError}</p>
@@ -276,8 +318,12 @@ export function SaveSourcePanel({
                   {l.name}
                 </SelectItem>
               ))}
-              {libraryId && !libraries.some((l) => l.id === libraryId) && libraries.length > 0 ? (
-                <SelectItem value={libraryId}>A Library you chose earlier (no longer listed)</SelectItem>
+              {libraryId &&
+              !libraries.some((l) => l.id === libraryId) &&
+              libraries.length > 0 ? (
+                <SelectItem value={libraryId}>
+                  A Library you chose earlier (no longer listed)
+                </SelectItem>
               ) : null}
             </SelectContent>
           </Select>
@@ -297,7 +343,13 @@ export function SaveSourcePanel({
                 <button
                   type="button"
                   aria-label={`Remove ${t.label}`}
-                  onClick={() => setStaged((prev) => prev.filter((p) => !(p.token === t.token && p.id === t.id)))}
+                  onClick={() =>
+                    setStaged((prev) =>
+                      prev.filter(
+                        (p) => !(p.token === t.token && p.id === t.id),
+                      ),
+                    )
+                  }
                   className="text-muted-foreground hover:text-foreground"
                 >
                   <X className="h-3 w-3" />
@@ -319,7 +371,9 @@ export function SaveSourcePanel({
             return { ok: true };
           }}
           onDetach={async (token, resourceId) => {
-            setStaged((prev) => prev.filter((p) => !(p.token === token && p.id === resourceId)));
+            setStaged((prev) =>
+              prev.filter((p) => !(p.token === token && p.id === resourceId)),
+            );
             return { ok: true };
           }}
         />
@@ -329,10 +383,15 @@ export function SaveSourcePanel({
         <Label htmlFor="save-source-process" className="text-sm">
           Process now
           <span className="block text-xs font-normal text-muted-foreground">
-            Run processing right away, even when your organization&apos;s policy would wait.
+            Run processing right away, even when your organization&apos;s policy
+            would wait.
           </span>
         </Label>
-        <Switch id="save-source-process" checked={processNow} onCheckedChange={setProcessNow} />
+        <Switch
+          id="save-source-process"
+          checked={processNow}
+          onCheckedChange={setProcessNow}
+        />
       </div>
 
       <div className="flex items-center justify-end gap-2">
@@ -341,8 +400,16 @@ export function SaveSourcePanel({
             Cancel
           </Button>
         ) : null}
-        <Button size="sm" onClick={() => void handleSave()} disabled={busy || !canSave}>
-          {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1 h-3.5 w-3.5" />}
+        <Button
+          size="sm"
+          onClick={() => void handleSave()}
+          disabled={busy || !canSave}
+        >
+          {busy ? (
+            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Save className="mr-1 h-3.5 w-3.5" />
+          )}
           {save ? "Save" : "File"}
         </Button>
       </div>
@@ -353,7 +420,10 @@ export function SaveSourcePanel({
       ) : null}
 
       {resultNotices.length > 0 ? (
-        <ul className="space-y-1 rounded-md border border-border bg-muted/30 p-2 text-xs text-muted-foreground" data-testid="save-source-notices">
+        <ul
+          className="space-y-1 rounded-md border border-border bg-muted/30 p-2 text-xs text-muted-foreground"
+          data-testid="save-source-notices"
+        >
           {resultNotices.map((n) => (
             <li key={n}>{n}</li>
           ))}

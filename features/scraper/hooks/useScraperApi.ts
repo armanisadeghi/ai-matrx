@@ -20,6 +20,7 @@ import type { components } from "@/types/python-generated/api-types";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { ENDPOINTS } from "@/lib/api/endpoints";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { consumeStream } from "@/lib/api/stream-parser";
 import type {
   PhasePayload,
@@ -188,6 +189,13 @@ export interface ScraperApiErrorDiagnostics {
   stack?: string;
   cause?: unknown;
   at: string;
+  /**
+   * True when the failure was the fail-closed "no organization selected"
+   * refusal (client transport or server `organization_required`) — the page
+   * was never read, so the person must be told to choose an organization,
+   * never "we could not read that page".
+   */
+  needsOrganization?: boolean;
   received: {
     requestedUrl?: string;
     requestedUrls?: string[];
@@ -320,6 +328,7 @@ function makeScraperDiagnostics(
     stack: err instanceof Error ? err.stack : undefined,
     cause: causeRaw !== undefined ? cloneForDiagnostics(causeRaw) : undefined,
     at: new Date().toISOString(),
+    needsOrganization: isOrganizationRequiredError(err),
     received,
   };
 }

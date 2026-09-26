@@ -72,7 +72,8 @@ export interface SourceFacts {
 
 // ── Kind ─────────────────────────────────────────────────────────────────────
 
-export type SourceKindGroup = "file" | "web_page" | "transcript" | "note" | "pasted_text" | "other";
+export type SourceKindGroup =
+  "file" | "web_page" | "transcript" | "note" | "pasted_text" | "other";
 
 export const SOURCE_KIND_LABEL: Record<SourceKindGroup, string> = {
   file: "File",
@@ -137,9 +138,15 @@ const METHOD_WORDS: Record<string, string> = {
  * carries no provenance: a file says "Upload" (that is how every such file
  * arrived); anything else says so plainly rather than guessing.
  */
-export function captureWords(row: Pick<SourceListRow, "origin_client" | "capture_method" | "source_kind">): string {
-  const client = row.origin_client ? (CLIENT_WORDS[row.origin_client] ?? row.origin_client) : null;
-  const method = row.capture_method ? (METHOD_WORDS[row.capture_method] ?? row.capture_method) : null;
+export function captureWords(
+  row: Pick<SourceListRow, "origin_client" | "capture_method" | "source_kind">,
+): string {
+  const client = row.origin_client
+    ? (CLIENT_WORDS[row.origin_client] ?? row.origin_client)
+    : null;
+  const method = row.capture_method
+    ? (METHOD_WORDS[row.capture_method] ?? row.capture_method)
+    : null;
   if (client && method) return `${client} · ${method}`;
   if (client) return client;
   if (sourceKindGroup(row.source_kind) === "file") return "Upload";
@@ -147,9 +154,14 @@ export function captureWords(row: Pick<SourceListRow, "origin_client" | "capture
 }
 
 /** The facet value for "how it was captured" — the client in words. */
-export function captureClientLabel(row: Pick<SourceListRow, "origin_client" | "source_kind">): string {
-  if (row.origin_client) return CLIENT_WORDS[row.origin_client] ?? row.origin_client;
-  return sourceKindGroup(row.source_kind) === "file" ? "Upload" : "Not recorded";
+export function captureClientLabel(
+  row: Pick<SourceListRow, "origin_client" | "source_kind">,
+): string {
+  if (row.origin_client)
+    return CLIENT_WORDS[row.origin_client] ?? row.origin_client;
+  return sourceKindGroup(row.source_kind) === "file"
+    ? "Upload"
+    : "Not recorded";
 }
 
 // ── Stage ────────────────────────────────────────────────────────────────────
@@ -174,7 +186,8 @@ export function sourceStage(
 ): SourceStage {
   if (facts.entityCount > 0) return "entities";
   if (facts.chunkCount > 0) return "searchable";
-  if (row.clean_content_completed_at || row.canonical_clean_id) return "cleaned";
+  if (row.clean_content_completed_at || row.canonical_clean_id)
+    return "cleaned";
   return "raw";
 }
 
@@ -192,7 +205,11 @@ export function isSourceSaved(
 ): boolean {
   if (row.kept_at) return true;
   const group = sourceKindGroup(row.source_kind);
-  if (group === "file" && (row.origin_client == null || row.origin_client === "upload")) return true;
+  if (
+    group === "file" &&
+    (row.origin_client == null || row.origin_client === "upload")
+  )
+    return true;
   if (group === "pasted_text" && row.origin_client == null) return true;
   return false;
 }
@@ -202,10 +219,9 @@ export type SavedFilter = "saved" | "all";
 /** The page opens on Saved; "All captures" is one obvious toggle away. */
 export const DEFAULT_SAVED_FILTER: SavedFilter = "saved";
 
-export function applySavedFilter<T extends Pick<SourceListRow, "kept_at" | "source_kind" | "origin_client">>(
-  rows: readonly T[],
-  filter: SavedFilter,
-): T[] {
+export function applySavedFilter<
+  T extends Pick<SourceListRow, "kept_at" | "source_kind" | "origin_client">,
+>(rows: readonly T[], filter: SavedFilter): T[] {
   return filter === "all" ? [...rows] : rows.filter(isSourceSaved);
 }
 
@@ -217,9 +233,12 @@ export function applySavedFilter<T extends Pick<SourceListRow, "kept_at" | "sour
  * copies, forks, structured extracts) are never listed — the query already
  * excludes them; this is the second half of "one row per Source".
  */
-export function currentVersionsOnly<T extends Pick<SourceListRow, "id" | "parent_processed_id" | "derivation_kind">>(
-  rows: readonly T[],
-): T[] {
+export function currentVersionsOnly<
+  T extends Pick<
+    SourceListRow,
+    "id" | "parent_processed_id" | "derivation_kind"
+  >,
+>(rows: readonly T[]): T[] {
   const superseded = new Set(
     rows
       .filter((r) => r.derivation_kind === "recapture" && r.parent_processed_id)
@@ -233,10 +252,13 @@ export function currentVersionsOnly<T extends Pick<SourceListRow, "id" | "parent
 }
 
 /** A canonical file extract is removed with its file, never on its own. */
-export function isFileCanonicalExtract(row: Pick<SourceListRow, "source_kind" | "derivation_kind">): boolean {
+export function isFileCanonicalExtract(
+  row: Pick<SourceListRow, "source_kind" | "derivation_kind">,
+): boolean {
   return (
     (row.source_kind === "cld_file" || row.source_kind === "legacy") &&
-    (row.derivation_kind === "initial_extract" || row.derivation_kind === "legacy_import")
+    (row.derivation_kind === "initial_extract" ||
+      row.derivation_kind === "legacy_import")
   );
 }
 

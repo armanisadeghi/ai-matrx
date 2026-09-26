@@ -49,7 +49,10 @@ export function rememberedLibraryKey(userId: string): string {
 }
 
 /** Read the remembered Library id; storage can be absent or throw (private mode). */
-export function readRememberedLibrary(storage: Pick<Storage, "getItem"> | null | undefined, userId: string | null): string | null {
+export function readRememberedLibrary(
+  storage: Pick<Storage, "getItem"> | null | undefined,
+  userId: string | null,
+): string | null {
   if (!storage || !userId) return null;
   try {
     const value = storage.getItem(rememberedLibraryKey(userId));
@@ -78,7 +81,10 @@ export function writeRememberedLibrary(
  * one is chosen. The Library edge carries the `catalogued_source` label its
  * registration names.
  */
-export function buildAttachTargets(staged: readonly StagedTarget[], libraryId: string | null): AttachTargetWire[] {
+export function buildAttachTargets(
+  staged: readonly StagedTarget[],
+  libraryId: string | null,
+): AttachTargetWire[] {
   const seen = new Set<string>();
   const out: AttachTargetWire[] = [];
   for (const t of staged) {
@@ -88,7 +94,11 @@ export function buildAttachTargets(staged: readonly StagedTarget[], libraryId: s
     out.push({ entity_type: t.token, entity_id: t.id });
   }
   if (libraryId && !seen.has(`${LIBRARY_TOKEN}:${libraryId}`)) {
-    out.push({ entity_type: LIBRARY_TOKEN, entity_id: libraryId, label: "catalogued_source" });
+    out.push({
+      entity_type: LIBRARY_TOKEN,
+      entity_id: libraryId,
+      label: "catalogued_source",
+    });
   }
   return out;
 }
@@ -97,12 +107,18 @@ export function buildAttachTargets(staged: readonly StagedTarget[], libraryId: s
  * Whether the Save button has anything to do. Save off with no place chosen
  * is nothing — the button says so instead of sending an empty request.
  */
-export function hasSomethingToSave(save: boolean, attachTo: readonly AttachTargetWire[]): boolean {
+export function hasSomethingToSave(
+  save: boolean,
+  attachTo: readonly AttachTargetWire[],
+): boolean {
   return save || attachTo.length > 0;
 }
 
 /** The door's processing answer in words. */
-export function intelligenceSentence(intelligence: "queued" | "deferred" | "never", kept: boolean): string {
+export function intelligenceSentence(
+  intelligence: "queued" | "deferred" | "never",
+  kept: boolean,
+): string {
   switch (intelligence) {
     case "queued":
       return "Processing has started: it will be cleaned, made searchable and read for entities.";
