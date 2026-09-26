@@ -1906,6 +1906,22 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
   // the container inventory — beside whatever the reader is looking at. Preserved: the subject
   // is one site id and everything on screen is a fresh read of it.
   {
+    slug: "site-analytics-window",
+    overlayId: "siteAnalyticsWindow",
+    kind: "window",
+    label: "Google Analytics",
+    defaultData: { siteId: "", siteLabel: "" },
+    mobilePresentation: "drawer",
+    instanceMode: "singleton",
+    preservation: {
+      dataKeys: ["siteId", "siteLabel"],
+      requiredDataKeys: ["siteId"],
+    },
+    // One site's Analytics panel has the same durable subject as its tracking panel.
+    urlSync: { key: "site_analytics" },
+  },
+
+  {
     slug: "site-tracking-window",
     overlayId: "siteTrackingWindow",
     kind: "window",

@@ -617,6 +617,23 @@ export function initUrlHydration() {
     );
   });
 
+  // Site Analytics — `?panels=site_analytics:<siteId>`.
+  registerPanelHydrator("site_analytics", (dispatch, id) => {
+    const siteId = getRestorableResourceId(id, "siteAnalyticsWindow");
+    if (!siteId) {
+      console.warn(
+        `[UrlPanelManager] ?panels=site_analytics:${id} names no site — expected site_analytics:<siteId>.`,
+      );
+      return;
+    }
+    dispatch(
+      openOverlay({
+        overlayId: "siteAnalyticsWindow",
+        data: { siteId, siteLabel: null },
+      }),
+    );
+  });
+
   // Site tracking — `?panels=site_tracking:<siteId>`. The window's whole subject is one site, so
   // a token with no id opens nothing rather than an empty frame (the render site already refuses
   // a missing `siteId`).

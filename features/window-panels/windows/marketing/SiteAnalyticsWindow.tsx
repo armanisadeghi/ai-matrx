@@ -44,6 +44,7 @@ export default function SiteAnalyticsWindow({
     <WindowPanel
       id="site-analytics-window"
       overlayId="siteAnalyticsWindow"
+      urlSyncId={siteId}
       title={
         siteLabel ? `Google Analytics — ${siteLabel}` : "Google Analytics"
       }

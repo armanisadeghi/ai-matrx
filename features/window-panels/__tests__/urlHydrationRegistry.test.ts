@@ -46,6 +46,23 @@ describe("URL hydration registry", () => {
     expect(missing).toEqual([]);
   });
 
+  it("opens the exact site's Analytics window from its durable address", () => {
+    expect(hydrate("site_analytics", "site-42")).toHaveBeenCalledWith(
+      openOverlay({
+        overlayId: "siteAnalyticsWindow",
+        data: { siteId: "site-42", siteLabel: null },
+      }),
+    );
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+    try {
+      const dispatch = hydrate("site_analytics", "default");
+      expect(dispatch).not.toHaveBeenCalled();
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining("names no site"));
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   /**
    * V-29 NEW-1. An alias only works if BOTH halves are real: the alias key must
    * open something, and its canonical target must be a key some window actually
