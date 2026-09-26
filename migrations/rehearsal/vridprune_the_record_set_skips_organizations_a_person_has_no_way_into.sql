@@ -1,16 +1,28 @@
--- vridprune_a_person_is_asked_only_about_organizations_they_have_a_way_into
+-- vridprune_the_record_set_skips_organizations_a_person_has_no_way_into
+-- target: clone
+-- additive: yes
+-- guard: custom/accessible_entity_ids_guard
 -- based-on: custom.visible_record_ids(uuid, permission_level) a99682186e83ae0581e5708b4d9cfe5f9c2af9f7c17b8a10a4289aeab8c6d5b1
 --
+-- 🚨 WHERE THIS FILE LIVES, AND WHY. migrations/rehearsal/ is scanned by no release path, so no
+-- sweep can apply it; `-- target: clone` lets it be rehearsed on the dev clone only. TO SHIP IT
+-- (the owner's step): `git mv` it to migrations/, change `-- target: clone` to
+-- `-- target: production` (the additive + guard lines it then demands are already here), then
+-- `pnpm db:apply migrations/<this file>`. It carries a NEW basename on purpose: its first copy,
+-- migrations/vridprune_a_person_is_asked_only_about_organizations_they_have_a_way_into.sql, has a
+-- production ledger row (2026-09-26 00:15:15Z, duration_ms 0, checksum 373f5506…) although its
+-- body was never applied — production's custom.visible_record_ids still hashes a99682186e83….
+--
 -- WHAT. custom.visible_record_ids(person, level) — the set `iam.accessible_entity_ids('record', …)`
--- answers while `custom/accessible_entity_ids_guard` is on (it has been on since 2026-09-20 02:18Z
--- on production and on the clone) — asked the read door's full per-pair machinery
--- (custom.visible_predicate_sql → custom.visible_set, ~5 ladder walks) for EVERY (organization,
--- Table) pair on the database: 1,524 pairs on production, ~21 ms each. Measured 2026-09-25/26:
---   production, as the person, through iam.accessible_entity_ids('record'): admin@admin.com 24.9 s,
---   test@test.com 35.2 s, a one-organization member 38.3 s;
---   clone, custom.shared_only_disagreements (the store-doors census, 23 runs since the 14:38Z
---   reboot, mean 212 s, max 338 s): 218 of its 249 s were six calls of this function.
--- 88% of a one-organization member's pairs are organizations she has no way into at all.
+-- answers while `custom/accessible_entity_ids_guard` is on (true since 2026-09-20 02:18:20Z) —
+-- asks the read door's full per-pair machinery (custom.visible_predicate_sql → custom.visible_set,
+-- several ladder walks) for EVERY (organization, Table) pair on the database: 1,524 pairs on
+-- production, ~21-26 ms each, whoever the person is. Measured on production 2026-09-26 as the
+-- person: a one-organization member 41.6 s, a member of the largest organization 44.1 s,
+-- admin@admin.com 25.7 s. No signed-in door reaches it (authenticated has no SELECT on
+-- custom.record and custom.query_access_ids is not executable by it); its callers are the store
+-- censuses — custom.shared_only_disagreements ran 25 times on production after the 14:38Z reboot
+-- on 2026-09-25, 5,530 s in total, mean 221 s, max 365 s.
 --
 -- THE FIX. The same loop, over only the organizations in which some row could possibly be
 -- visible to the person: her memberships, the system organizations, and any organization holding
@@ -19,11 +31,17 @@
 -- was empty is written in the body, arm by arm. Nothing else changes: same signature, security,
 -- search_path, grants and per-pair predicate; no table, index, policy or knob is touched.
 --
--- PROOF (dev clone jxhgzalwckuarngvsdyq, 2026-09-26): identical id sets, old body vs new, for 19
---   (person, level) cases — every member the store-doors census judges, the grantees, recent
---   sign-ins, a person in no organization, and editor/admin levels. Guard, red then green:
---   scripts/campaign-tests/vridprune_red.sql / vridprune_green.sql.
--- INVERSE: migrations/inverse/vridprune_a_person_is_asked_only_about_organizations_they_have_a_way_into_down.sql
+-- PROOF (dev clone jxhgzalwckuarngvsdyq, 2026-09-26; its visible_record_ids, visible_set,
+--   visible_predicate_sql, has_visibility, has_access_for_base x3, has_org_access_for and the rest
+--   of the ladder hash identically to production's): identical id sets, old body vs this body, for
+--   21 (person, level) cases — 0 lost, 0 gained — covering admin@admin.com, test@test.com, a
+--   one-organization member, a member of the largest organization, two super admins, record
+--   grantees, people in no organization, recent sign-ins, the members of the most organizations,
+--   and editor/admin levels. Timing, sequential, same clone: one-organization member 33.5 s -> 3.0 s,
+--   largest-organization member 32.8 s -> 2.9 s, test@test.com 29.9 s -> 13.6 s,
+--   admin@admin.com 19.3 s -> 18.3 s (a member of 141 organizations: the prune removes little).
+--   Guard, red then green: scripts/campaign-tests/vridprune_red.sql / vridprune_green.sql.
+-- INVERSE: migrations/inverse/vridprune_the_record_set_skips_organizations_a_person_has_no_way_into_down.sql
 
 set local lock_timeout = '2s';
 
@@ -88,7 +106,7 @@ begin
   -- A NEW LANE MUST WIDEN THIS LIST. A ladder arm that admits a person to a row by something other
   -- than membership, a system organization, ownership, `public`, a grant row or a carrying edge
   -- would make this prune refuse that person silently. The guard that says so out loud is
-  -- scripts/campaign-tests/vrid_prune_red.sql / _green.sql (the pruned set against the full walk).
+  -- scripts/campaign-tests/vridprune_red.sql / vridprune_green.sql (the pruned set against the full walk).
   select coalesce(array_agg(o.org), '{}'::uuid[]) into v_orgs
     from (
       select om.organization_id as org
