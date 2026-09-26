@@ -1,3 +1,4 @@
+-- retired: graveyard.iam_canonical_sweep DROPPED 2026-09-26 by the database estate-reduction program (backups in /Users/armanisadeghi/db-estate-backups/2026-09-26/); this file creates, moves, or asserts a table that no longer exists and must never run again
 -- retire_iam_canonical_sweep_dead_worklist.sql
 -- ---------------------------------------------------------------------------
 -- Retire iam.canonical_sweep + its three functions: a parallel canonicalization

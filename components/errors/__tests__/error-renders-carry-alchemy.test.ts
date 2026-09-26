@@ -333,6 +333,19 @@ describe("a message value is never followed by its own full stop (RC-B12 round 9
   });
 });
 
+describe("round-10 probes (RC-B12 verify): the verifier's missed phrases", () => {
+  it.each([
+    "We weren&apos;t able to reach the server.",
+    "We wasn't able to open it.",
+    "Your note didn&apos;t save.",
+    "Failed to sync your calendar.",
+    "Something broke while loading this view.",
+    "The service is busy — try again later.",
+  ])("counts: %s", (sentence) => {
+    expect(count(`<p>${sentence}</p>`)).toBe(1);
+  });
+});
+
 describe("one error box carries one menu", () => {
   const doubles = (jsx: string) =>
     findDoubleMenus(`export function C({ error, ok }: any) { return (<>${jsx}</>); }`).length;

@@ -47,6 +47,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
 import { FileBreadcrumbs } from "@/features/files/components/core/FileBreadcrumbs/FileBreadcrumbs";
 import type { CloudFile } from "@/features/files/types";
+import { FilesTreeErrorState } from "@/features/files/components/surfaces/FilesTreeState";
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -171,7 +172,7 @@ function PickerBody({
       ? selectSortedChildrenOfFolder(s, currentFolderId)
       : EMPTY_TREE_CHILDREN,
   );
-  useFolderContents(currentFolderId);
+  const folderRead = useFolderContents(currentFolderId);
   const children = currentFolderId ? folderSorted : rootSorted;
 
   const currentFolder = currentFolderId ? foldersById[currentFolderId] : null;
@@ -241,10 +242,21 @@ function PickerBody({
       </div>
 
       <ul className="flex-1 overflow-auto overscroll-contain divide-y max-h-[52dvh]">
+        {/* Empty only after a read that succeeded — RC-B12 round 10. */}
         {children.folderIds.length === 0 && children.fileIds.length === 0 ? (
-          <li className="flex items-center justify-center p-6 text-sm text-muted-foreground">
-            This folder is empty.
-          </li>
+          folderRead.status === "error" ? (
+            <li>
+              <FilesTreeErrorState error={folderRead.error} onRetry={folderRead.retry} />
+            </li>
+          ) : folderRead.status === "loading" ? (
+            <li className="flex items-center justify-center p-6 text-sm text-muted-foreground" aria-busy="true">
+              Loading your files…
+            </li>
+          ) : (
+            <li className="flex items-center justify-center p-6 text-sm text-muted-foreground">
+              This folder is empty.
+            </li>
+          )
         ) : null}
         {children.folderIds.map((id) => {
           const folder = foldersById[id];

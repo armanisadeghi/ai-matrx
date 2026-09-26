@@ -40,6 +40,7 @@ import {
   selectSortedChildrenOfFolder,
   selectSortedRootChildren,
   selectTreeStatus,
+  selectTreeError,
 } from "@/features/files/redux/selectors";
 import { loadUserFileTree } from "@/features/files/redux/thunks";
 import { useFolderContents } from "@/features/files/hooks/useFolderContents";
@@ -58,6 +59,7 @@ import { useBrowseAction } from "@/features/image-manager/browse/BrowseImageProv
 import { toast } from "@/lib/toast";
 import { CloudFilesBrowserTable } from "./CloudFilesBrowserTable";
 import { isCloudFileSelectable } from "./cloudFilesBrowserUtils";
+import { FilesTreeErrorState } from "@/features/files/components/surfaces/FilesTreeState";
 
 export type AllowedFileKind =
   | "image"
@@ -86,6 +88,7 @@ export function CloudFilesTab({
   const store = useAppStore();
   const userId = useAppSelector(selectActiveUserId);
   const treeStatus = useAppSelector(selectTreeStatus);
+  const treeError = useAppSelector(selectTreeError);
 
   const foldersById = useAppSelector(selectAllFoldersMap);
   const filesById = useAppSelector(selectAllFilesMap);
@@ -111,7 +114,10 @@ export function CloudFilesTab({
   // route that doesn't mount the realtime provider).
   useEffect(() => {
     if (!userId) return;
-    if (treeStatus === "idle" || treeStatus === "error") {
+    // Only a tree that was never read is fetched here. Re-dispatching on
+    // "error" retried in a loop (error → load → error → load) against a
+    // failing server; a failed read now waits for the person's Try again.
+    if (treeStatus === "idle") {
       void dispatch(loadUserFileTree({ userId }));
     }
   }, [userId, treeStatus, dispatch]);
@@ -250,7 +256,15 @@ export function CloudFilesTab({
 
       {/* Body */}
       <div className="flex-1 overflow-auto overscroll-contain">
-        {isLoading ? (
+        {treeStatus === "error" ? (
+          // A failed read is never "This folder is empty" — RC-B12 round 10.
+          <FilesTreeErrorState
+            error={treeError}
+            onRetry={() => {
+              if (userId) void dispatch(loadUserFileTree({ userId }));
+            }}
+          />
+        ) : isLoading ? (
           <div className="flex items-center justify-center py-16 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin mr-2" />
             <span className="text-sm">Loading your cloud...</span>

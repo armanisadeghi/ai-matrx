@@ -11,20 +11,21 @@
  *   orgs → every Source in the selected organization (a Source is organization
  *          data — Arman 2026-09-26; there is no per-Source privacy filter).
  *
- * The complete list is read with `readAllRows` (PostgREST caps a bare select
- * at 1000 and the facets/counts treat this list as complete). Per-row stage
- * and attached-to come from ONE invoker RPC, `docproc.source_list_facts`,
- * batched, also under the caller's RLS. Organization names for the
- * organization column are read directly too.
+ * PAGED: 100 rows at a time, newest first, with the Saved filter and the
+ * search applied by the server (reading the whole list — 6,258 rows for admin
+ * — took 7 requests and 10 s). Per-row stage and attached-to come from ONE
+ * invoker RPC, `docproc.source_list_facts`, read for each page as it lists,
+ * also under the caller's RLS. Organization names are read directly too.
  */
 
-import { useCallback, useEffect, useState } from "react";
-import { readAllRows } from "@ai-matrx/data/db";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
 import {
+  SOURCES_PAGE_SIZE,
   SOURCE_LIST_COLUMNS,
+  appendSourcePage,
   applySourcesScope,
-  currentVersionsOnly,
+  sourcesListFilter,
   listedSource,
   sourceFactsFromRow,
   type SourceFacts,
@@ -53,6 +54,16 @@ export interface UseSourcesResult {
   retryFacts: (ids: string[]) => void;
   /** True while the per-row facts are being read (cells say "Checking…"). */
   factsLoading: boolean;
+  /** How many Sources match the current narrowing (the server's count). */
+  total: number | null;
+  /** The toggle's two numbers: Saved, and All captures (server counts). */
+  savedTotal: number | null;
+  allTotal: number | null;
+  /** More pages exist beyond what is listed. */
+  hasMore: boolean;
+  loadingMore: boolean;
+  /** List the next page (SOURCES_PAGE_SIZE more). */
+  loadMore: () => void;
 }
 
 /**
@@ -127,12 +138,20 @@ export async function readSourceFacts(
   return { facts, failedIds };
 }
 
+export interface SourcesListOptions {
+  /** Saved only (the page's default) or every capture. */
+  saved: boolean;
+  /** Name-or-address search, applied by the server. */
+  search: string;
+}
+
 export function useSources(
   scope: SourcesScope | null,
   userId: string | null,
   refreshKey: number,
+  options: SourcesListOptions = { saved: false, search: "" },
 ): UseSourcesResult {
-  type OwnState = Omit<UseSourcesResult, "retryFacts">;
+  type OwnState = Omit<UseSourcesResult, "retryFacts" | "loadMore">;
   const [state, setState] = useState<OwnState>({
     rows: [],
     facts: new Map(),
@@ -143,115 +162,189 @@ export function useSources(
     factsLoading: true,
     factsFailed: new Set(),
     factsRetrying: new Set(),
+    total: null,
+    savedTotal: null,
+    allTotal: null,
+    hasMore: false,
+    loadingMore: false,
   });
   const scopeKey = scope
     ? scope.kind === "mine"
       ? "mine"
       : `orgs:${scope.organizationId}`
     : "none";
+  const listKey = `${scopeKey}|${userId}|${refreshKey}|${options.saved}|${options.search.trim()}`;
+  const generation = useRef(0);
+  const fetched = useRef(0);
+
+  /** One page (SOURCES_PAGE_SIZE rows, newest first) under the current narrowing. */
+  const readPage = useCallback(
+    async (offset: number) => {
+      if (!scope || !userId) return null;
+      let q = supabase
+        .schema("docproc")
+        .from("processed_documents")
+        .select(SOURCE_LIST_COLUMNS, { count: "exact" })
+        .is("deleted_at", null)
+        .or(sourcesListFilter({ saved: options.saved, search: options.search }));
+      q = applySourcesScope(q, scope, userId);
+      const { data, error, count } = await q
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(offset, offset + SOURCES_PAGE_SIZE - 1);
+      if (error) throw new Error(error.message);
+      return { rows: (data ?? []) as unknown as SourceListRow[], count: count ?? null };
+    },
+    [scope, userId, options.saved, options.search],
+  );
+
+  /** Stage facts and organization names for newly listed rows only. */
+  const readExtras = useCallback(
+    async (gen: number, newRows: SourceListRow[]) => {
+      const orgIds = [...new Set(newRows.map((r) => r.organization_id))];
+      const [factsResult, orgResult] = await Promise.allSettled([
+        readSourceFacts(
+          newRows.map((r) => r.id),
+          (partial) => {
+            if (gen !== generation.current) return;
+            setState((st) => {
+              const facts = new Map(st.facts);
+              partial.facts.forEach((f, id) => facts.set(id, f));
+              const failed = new Set(st.factsFailed);
+              partial.failedIds.forEach((id) => failed.add(id));
+              return { ...st, facts, factsFailed: failed };
+            });
+          },
+        ),
+        orgIds.length
+          ? supabase.schema("iam").from("organizations").select("id,name").in("id", orgIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+      if (gen !== generation.current) return;
+      setState((st) => {
+        const orgNames = new Map(st.orgNames);
+        if (orgResult.status === "fulfilled" && !orgResult.value.error) {
+          for (const o of (orgResult.value.data ?? []) as { id: string; name: string }[])
+            orgNames.set(o.id, o.name);
+        }
+        const facts = new Map(st.facts);
+        const failed = new Set(st.factsFailed);
+        if (factsResult.status === "fulfilled") {
+          factsResult.value.facts.forEach((f, id) => facts.set(id, f));
+          factsResult.value.failedIds.forEach((id) => failed.add(id));
+        } else {
+          newRows.forEach((r) => failed.add(r.id));
+        }
+        return {
+          ...st,
+          facts,
+          factsFailed: failed,
+          factsError: factsErrorFor(failed.size),
+          orgNames,
+          factsLoading: false,
+        };
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!scope || !userId) return undefined;
-    let cancelled = false;
-    setState((s) => ({
-      ...s,
+    const gen = ++generation.current;
+    fetched.current = 0;
+    setState((st) => ({
+      ...st,
+      rows: [],
       loading: true,
       error: null,
       factsLoading: true,
       facts: new Map(),
       factsFailed: new Set(),
       factsRetrying: new Set(),
+      factsError: null,
+      total: null,
+      hasMore: false,
     }));
     void (async () => {
-      let rows: SourceListRow[];
+      let page: Awaited<ReturnType<typeof readPage>>;
       try {
-        rows = await readAllRows<SourceListRow>(
-          ({ from, to }) => {
-            let q = supabase
-              .schema("docproc")
-              .from("processed_documents")
-              .select(SOURCE_LIST_COLUMNS, { count: "exact" })
-              .is("deleted_at", null)
-              // One row per Source: originals and recaptures, never derived copies.
-              .or("parent_processed_id.is.null,derivation_kind.eq.recapture");
-            q = applySourcesScope(q, scope, userId);
-            return q
-              .order("created_at", { ascending: false })
-              .order("id", { ascending: true })
-              .range(from, to) as unknown as PromiseLike<{
-              data: SourceListRow[] | null;
-              error: { message: string } | null;
-              count?: number | null;
-            }>;
-          },
-          { label: "docproc.processed_documents (Sources)" },
-        );
+        page = await readPage(0);
       } catch {
-        if (!cancelled)
-          setState((s) => ({
-            ...s,
+        if (gen === generation.current)
+          setState((st) => ({
+            ...st,
             loading: false,
-            error: "Your Sources could not be loaded. Refresh to try again.",
             factsLoading: false,
+            error: "Your Sources could not be loaded. Refresh to try again.",
           }));
         return;
       }
-      rows = currentVersionsOnly(rows).map(listedSource);
-      if (cancelled) return;
-      setState((s) => ({ ...s, rows, loading: false, error: null }));
-
-      const orgIds = [...new Set(rows.map((r) => r.organization_id))];
-      const [factsResult, orgResult] = await Promise.allSettled([
-        readSourceFacts(
-          rows.map((r) => r.id),
-          (partial) => {
-            if (!cancelled)
-              setState((s) => ({
-                ...s,
-                facts: partial.facts,
-                factsFailed: partial.failedIds,
-              }));
-          },
-        ),
-        orgIds.length
-          ? supabase
-              .schema("iam")
-              .from("organizations")
-              .select("id,name")
-              .in("id", orgIds)
-          : Promise.resolve({ data: [], error: null }),
-      ]);
-      if (cancelled) return;
-      const orgNames = new Map<string, string>();
-      if (orgResult.status === "fulfilled" && !orgResult.value.error) {
-        for (const o of (orgResult.value.data ?? []) as {
-          id: string;
-          name: string;
-        }[])
-          orgNames.set(o.id, o.name);
-      }
-      const read =
-        factsResult.status === "fulfilled"
-          ? factsResult.value
-          : {
-              facts: new Map<string, SourceFacts>(),
-              failedIds: new Set(rows.map((r) => r.id)),
-            };
-      setState((s) => ({
-        ...s,
-        facts: read.facts,
-        factsFailed: read.failedIds,
-        factsError: factsErrorFor(read.failedIds.size),
-        orgNames,
-        factsLoading: false,
+      if (!page || gen !== generation.current) return;
+      fetched.current = page.rows.length;
+      const rows = appendSourcePage([], page.rows).map(listedSource);
+      setState((st) => ({
+        ...st,
+        rows,
+        loading: false,
+        total: page.count,
+        hasMore: page.count !== null && fetched.current < page.count,
+      }));
+      void readExtras(gen, rows);
+      // The two numbers on the Saved / All captures toggle — head counts only.
+      const counts = await Promise.allSettled(
+        [true, false].map(async (saved) => {
+          let q = supabase
+            .schema("docproc")
+            .from("processed_documents")
+            .select("id", { count: "exact", head: true })
+            .is("deleted_at", null)
+            .or(sourcesListFilter({ saved, search: options.search }));
+          q = applySourcesScope(q, scope, userId);
+          const { count, error } = await q;
+          return error ? null : count;
+        }),
+      );
+      if (gen !== generation.current) return;
+      setState((st) => ({
+        ...st,
+        savedTotal: counts[0].status === "fulfilled" ? counts[0].value : null,
+        allTotal: counts[1].status === "fulfilled" ? counts[1].value : null,
       }));
     })();
-    return () => {
-      cancelled = true;
-    };
-    // scopeKey carries the scope's identity; the object itself changes each render.
+    return undefined;
+    // listKey carries every input; the scope object itself changes each render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scopeKey, userId, refreshKey]);
+  }, [listKey]);
+
+  const loadMore = useCallback(() => {
+    const gen = generation.current;
+    setState((st) => (st.loadingMore || !st.hasMore ? st : { ...st, loadingMore: true }));
+    void (async () => {
+      let page: Awaited<ReturnType<typeof readPage>>;
+      try {
+        page = await readPage(fetched.current);
+      } catch {
+        if (gen === generation.current)
+          setState((st) => ({
+            ...st,
+            loadingMore: false,
+            error: "More Sources could not be loaded. Try again.",
+          }));
+        return;
+      }
+      if (!page || gen !== generation.current) return;
+      fetched.current += page.rows.length;
+      const added = page.rows.map(listedSource);
+      setState((st) => ({
+        ...st,
+        rows: appendSourcePage(st.rows, added),
+        loadingMore: false,
+        total: page.count ?? st.total,
+        hasMore: page.count !== null && fetched.current < page.count && page.rows.length > 0,
+      }));
+      void readExtras(gen, added);
+    })();
+  }, [readPage, readExtras]);
 
   const retryFacts = useCallback((ids: string[]) => {
     if (!ids.length) return;
@@ -280,7 +373,7 @@ export function useSources(
     });
   }, []);
 
-  return { ...state, retryFacts };
+  return { ...state, retryFacts, loadMore };
 }
 
 function factsErrorFor(failed: number): string | null {

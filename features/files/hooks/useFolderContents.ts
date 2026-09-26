@@ -20,7 +20,8 @@
 
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useTreeReadStatus } from "@/features/files/hooks/useFilesReadStatus";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   EMPTY_TREE_CHILDREN,
@@ -40,6 +41,13 @@ export interface UseFolderContentsResult {
   files: CloudFileRecord[];
   folders: CloudFolderRecord[];
   loading: boolean;
+  /**
+   * Where this folder's read stands. "error" and "loading" mean the lists are
+   * NOT an answer — a surface must not render its empty state then.
+   */
+  status: "loading" | "error" | "ready";
+  error: string | null;
+  retry: () => void;
 }
 
 /** ms — folders revalidate on re-mount older than this. */
@@ -49,6 +57,8 @@ const STALE_TTL_MS = 60_000;
  * slice; cleared by re-mounts that successfully refresh.
  */
 const lastLoadedAt = new Map<string, number>();
+/** A folder whose last read failed, by id — survives remounts (a panel reopening). */
+const folderLoadErrors = new Map<string, string>();
 
 /** Test seam — `null` clears all timestamps. */
 export function clearFolderLoadTimestamps(folderId?: string | null): void {
@@ -63,6 +73,11 @@ export function useFolderContents(
   folderId: string | null,
 ): UseFolderContentsResult {
   const dispatch = useAppDispatch();
+  const tree = useTreeReadStatus();
+  const [folderError, setFolderError] = useState<string | null>(() =>
+    folderId ? folderLoadErrors.get(folderId) ?? null : null,
+  );
+  const [attempt, setAttempt] = useState(0);
 
   const fullyLoaded = useAppSelector((s) =>
     folderId ? selectIsFolderFullyLoaded(s, folderId) : true,
@@ -84,14 +99,27 @@ export function useFolderContents(
       if (refreshingRef.current) return;
       refreshingRef.current = true;
       Promise.resolve(dispatch(loadFolderContents({ folderId })))
-        .then(() => {
+        .then((result: unknown) => {
+          const rejected =
+            !!result &&
+            typeof result === "object" &&
+            (result as { meta?: { requestStatus?: string } }).meta?.requestStatus === "rejected";
+          if (rejected) {
+            const message =
+              (result as { error?: { message?: string } }).error?.message ?? "The folder could not be read.";
+            folderLoadErrors.set(folderId, message);
+            setFolderError(message);
+            return;
+          }
+          folderLoadErrors.delete(folderId);
+          setFolderError(null);
           lastLoadedAt.set(folderId, Date.now());
         })
         .finally(() => {
           refreshingRef.current = false;
         });
     }
-  }, [dispatch, folderId, fullyLoaded]);
+  }, [dispatch, folderId, fullyLoaded, attempt]);
 
   // Fetch sorted children; when folderId is null, use root.
   const rootSorted = useAppSelector(selectSortedRootChildren);
@@ -110,5 +138,23 @@ export function useFolderContents(
     .map((id) => foldersById[id])
     .filter(Boolean) as CloudFolderRecord[];
 
-  return { files, folders, loading: !fullyLoaded };
+  const retry = useCallback(() => {
+    if (!folderId) return tree.retry();
+    folderLoadErrors.delete(folderId);
+    lastLoadedAt.delete(folderId);
+    setFolderError(null);
+    setAttempt((n) => n + 1);
+  }, [folderId, tree]);
+
+  // Root reads come from the tree; a folder's own read can fail on its own.
+  const status: UseFolderContentsResult["status"] = folderId
+    ? folderError
+      ? "error"
+      : fullyLoaded
+        ? "ready"
+        : "loading"
+    : tree.status;
+  const error = folderId ? folderError : tree.error;
+
+  return { files, folders, loading: !fullyLoaded, status, error, retry };
 }

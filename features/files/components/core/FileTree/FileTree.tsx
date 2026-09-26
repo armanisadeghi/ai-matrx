@@ -21,6 +21,8 @@ import { FILE_TREE_ROW_HEIGHT, FileTreeRow } from "./FileTreeRow";
 import { useTreeExpansion } from "./useTreeExpansion";
 import type { TreeRow } from "./useTreeExpansion";
 import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIcon";
+import { useTreeReadStatus } from "@/features/files/hooks/useFilesReadStatus";
+import { FilesTreeErrorState } from "@/features/files/components/surfaces/FilesTreeState";
 
 export interface FileTreeProps {
   /** Called when a row (file or folder) is activated (Enter / double-click). */
@@ -60,6 +62,7 @@ export function FileTree({
 }: FileTreeProps) {
   const selection = useFileSelection();
   const expansion = useTreeExpansion({ initialExpanded });
+  const read = useTreeReadStatus();
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [draggingId, setDraggingId] = useState<string | null>(null);
 
@@ -205,6 +208,22 @@ export function FileTree({
   }, [rows.length, focusedIndex]);
 
   const virtualItems = virtualizer.getVirtualItems();
+
+  // A failed or unfinished tree read is never "No files yet" — RC-B12 round 10.
+  if (rows.length === 0 && read.status === "error") {
+    return <FilesTreeErrorState error={read.error} onRetry={read.retry} />;
+  }
+  if (rows.length === 0 && read.status === "loading") {
+    return (
+      <div
+        className={cn("h-full w-full flex items-center justify-center text-xs text-muted-foreground p-4", className)}
+        role="status"
+        aria-busy="true"
+      >
+        Loading your files…
+      </div>
+    );
+  }
 
   if (rows.length === 0) {
     return (

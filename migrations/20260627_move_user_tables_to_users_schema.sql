@@ -1,3 +1,4 @@
+-- retired: graveyard.user_flashcard_sets/_reviews DROPPED 2026-09-26 by the database estate-reduction program (backups in /Users/armanisadeghi/db-estate-backups/2026-09-26/); this file creates, moves, or asserts a table that no longer exists and must never run again
 -- Migration: move all public.user_* tables → users schema
 -- Applied: 2026-06-27 via Supabase MCP (apply_migration)
 -- All tables were empty at time of migration.

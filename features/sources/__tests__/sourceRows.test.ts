@@ -31,8 +31,6 @@ function row(over: Partial<SourceListRow>): SourceListRow {
     derivation_kind: "initial_extract",
     parent_processed_id: null,
     kept_at: null,
-    clean_content_completed_at: null,
-    canonical_clean_id: null,
     total_pages: null,
     organization_id: "o",
     created_by: "u",

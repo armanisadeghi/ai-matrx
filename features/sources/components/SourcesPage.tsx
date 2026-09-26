@@ -20,7 +20,7 @@
  * paste text · import a transcript. A row opens the document viewer.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -352,6 +352,12 @@ export function SourcesPage() {
   const [savedFilter, setSavedFilter] =
     useState<SavedFilter>(DEFAULT_SAVED_FILTER);
   const [search, setSearch] = useState("");
+  // The server searches (the list is paged); typing waits a beat before asking.
+  const [serverSearch, setServerSearch] = useState("");
+  useEffect(() => {
+    const id = window.setTimeout(() => setServerSearch(search), 300);
+    return () => window.clearTimeout(id);
+  }, [search]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [addMode, setAddMode] = useState<AddMode>(null);
@@ -393,7 +399,16 @@ export function SourcesPage() {
     factsFailed,
     factsRetrying,
     retryFacts,
-  } = useSources(scope, userId, refreshKey);
+    total,
+    savedTotal,
+    allTotal,
+    hasMore,
+    loadingMore,
+    loadMore,
+  } = useSources(scope, userId, refreshKey, {
+    saved: savedFilter === "saved",
+    search: serverSearch,
+  });
   const readOf = (id: string) => ({
     loading: factsLoading,
     failed: factsFailed.has(id),
@@ -407,7 +422,7 @@ export function SourcesPage() {
       transcriptSegmentCount(r),
       transcriptEnds.get(r.id) ?? null,
     );
-  const savedCount = rows.filter(isSourceSaved).length;
+  const countWords = (n: number | null) => (n === null ? "…" : n.toLocaleString());
   const refresh = () => setRefreshKey((n) => n + 1);
   const byId = new Map(rows.map((r) => [r.id, r]));
   const selectedRows = selectedIds
@@ -966,8 +981,8 @@ export function SourcesPage() {
                 value: savedFilter,
                 defaultValue: DEFAULT_SAVED_FILTER,
                 options: [
-                  { value: "saved", label: `Saved (${savedCount})` },
-                  { value: "all", label: `All captures (${rows.length})` },
+                  { value: "saved", label: `Saved (${countWords(savedTotal)})` },
+                  { value: "all", label: `All captures (${countWords(allTotal)})` },
                 ],
                 onChange: (v) => setSavedFilter(v === "all" ? "all" : "saved"),
               },
@@ -1098,16 +1113,37 @@ export function SourcesPage() {
           mobileCardsBreakpoint="sm"
           copy={false}
           emptyState={{
-            title:
-              savedFilter === "saved"
-                ? rows.length > 0
-                  ? "Nothing saved yet — your captures are under All captures."
-                  : "No Sources yet."
+            title: serverSearch.trim()
+              ? `No Sources match "${serverSearch.trim()}".`
+              : savedFilter === "saved" && (allTotal ?? 0) > 0
+                ? "Nothing saved yet — your captures are under All captures."
                 : "No Sources yet.",
             description:
               "Add one with Add: upload a file, paste a web address or text, or save a page from the browser extension.",
           }}
         />
+        {/* The list is paged by the server: say how much is listed and offer the rest. */}
+        {rows.length > 0 && total !== null ? (
+          <div className="flex items-center justify-center gap-3 py-2 text-xs text-muted-foreground">
+            <span>
+              {rows.length.toLocaleString()} of {total.toLocaleString()} listed
+            </span>
+            {hasMore ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                disabled={loadingMore}
+                onClick={loadMore}
+              >
+                {loadingMore ? (
+                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                ) : null}
+                Load {Math.min(100, total - rows.length).toLocaleString()} more
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {/* Paste a web address */}

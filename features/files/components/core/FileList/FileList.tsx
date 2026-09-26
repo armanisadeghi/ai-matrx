@@ -29,6 +29,7 @@ import { primeEntityScopes } from "@/features/scopes/components/context-assignme
 import { FileListRow } from "./FileListRow";
 import { FileListGridCell } from "./FileListGridCell";
 import type { SortBy } from "@/features/files/types";
+import { FilesTreeErrorState, FilesTreeLoadingState } from "@/features/files/components/surfaces/FilesTreeState";
 
 export interface FileListProps {
   /** The folder whose contents to list. null = root. */
@@ -72,7 +73,8 @@ export function FileList({
   showContext,
 }: FileListProps) {
   const dispatch = useAppDispatch();
-  const { files, folders, loading } = useFolderContents(folderId);
+  const { files, folders, loading, status: readStatus, error: readError, retry } =
+    useFolderContents(folderId);
   const selection = useFileSelection();
   const sort = useAppSelector(selectSort);
   const viewMode = useAppSelector(selectViewMode);
@@ -124,7 +126,17 @@ export function FileList({
     [dispatch],
   );
 
-  // Empty state.
+  // A failed or unfinished read is never "This folder is empty": the same
+  // error and wait the /files page shows, in every host (window panel,
+  // pickers, mobile) — RC-B12 round 10.
+  if (folders.length === 0 && files.length === 0 && readStatus === "error") {
+    return <FilesTreeErrorState error={readError} onRetry={retry} />;
+  }
+  if (folders.length === 0 && files.length === 0 && readStatus === "loading") {
+    return <FilesTreeLoadingState />;
+  }
+
+  // Empty state — reachable only after a read that succeeded.
   if (!loading && folders.length === 0 && files.length === 0) {
     return (
       <div

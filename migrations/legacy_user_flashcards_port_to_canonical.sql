@@ -1,3 +1,4 @@
+-- retired: graveyard.user_flashcard_sets/_reviews DROPPED 2026-09-26 by the database estate-reduction program (backups in /Users/armanisadeghi/db-estate-backups/2026-09-26/); this file creates, moves, or asserts a table that no longer exists and must never run again
 -- legacy_user_flashcards_port_to_canonical.sql
 --
 -- Education Q3 (Arman ruling 2026-08-20): "A forked conversation's chat-generated

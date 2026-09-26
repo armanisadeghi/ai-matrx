@@ -27,8 +27,6 @@ export const SOURCE_LIST_COLUMNS = [
   "derivation_kind",
   "parent_processed_id",
   "kept_at",
-  "clean_content_completed_at",
-  "canonical_clean_id",
   "total_pages",
   "organization_id",
   "created_by",
@@ -49,8 +47,6 @@ export interface SourceListRow {
   derivation_kind: string;
   parent_processed_id: string | null;
   kept_at: string | null;
-  clean_content_completed_at: string | null;
-  canonical_clean_id: string | null;
   total_pages: number | null;
   organization_id: string;
   created_by: string;
@@ -463,4 +459,56 @@ export function isFileCanonicalExtract(
 export function attachmentTypeWords(token: string): string {
   const words = token.replace(/_/g, " ");
   return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+// ── Paging (the list reads 100 at a time, filtered by the server) ────────────
+
+export const SOURCES_PAGE_SIZE = 100;
+
+/**
+ * `isSourceSaved` as a PostgREST `or` filter — the two must mean the same:
+ * saved by a person, an upload (no origin recorded, or `upload`), or pasted
+ * text from before Save existed.
+ */
+export const SAVED_FILTER_OR =
+  "kept_at.not.is.null," +
+  "and(source_kind.in.(cld_file,legacy,code_file),or(origin_client.is.null,origin_client.eq.upload))," +
+  "and(source_kind.eq.inline,origin_client.is.null)";
+
+/** Name-or-address search as a PostgREST `or` filter; `null` for a blank search. */
+export function searchFilterOr(search: string): string | null {
+  // `,` `(` `)` separate PostgREST filter terms; `%` `*` are wildcards.
+  const term = search.replace(/[,()%*\\]/g, " ").replace(/\s+/g, " ").trim();
+  if (!term) return null;
+  return `name.ilike.%${term}%,canonical_identity.ilike.%${term}%`;
+}
+
+/**
+ * Add one page to the rows already listed, keeping one row per Source: a
+ * recapture supersedes its parent, and the newer recapture usually arrives on
+ * an earlier page (newest first), so its parent is dropped when it arrives.
+ */
+export function appendSourcePage<
+  T extends Pick<SourceListRow, "id" | "parent_processed_id" | "derivation_kind">,
+>(existing: readonly T[], page: readonly T[]): T[] {
+  const seen = new Set(existing.map((r) => r.id));
+  return currentVersionsOnly([...existing, ...page.filter((r) => !seen.has(r.id))]);
+}
+
+/** One row per Source: originals and recaptures, never derived copies. */
+export const ONE_ROW_PER_SOURCE_OR = "parent_processed_id.is.null,derivation_kind.eq.recapture";
+
+/**
+ * The list's whole narrowing as ONE PostgREST `or` value (PostgREST takes a
+ * single `or` parameter, so several narrowings nest inside one `and(...)`).
+ */
+export function sourcesListFilter(options: {
+  saved: boolean;
+  search: string;
+}): string {
+  const parts = [`or(${ONE_ROW_PER_SOURCE_OR})`];
+  if (options.saved) parts.push(`or(${SAVED_FILTER_OR})`);
+  const search = searchFilterOr(options.search);
+  if (search) parts.push(`or(${search})`);
+  return `and(${parts.join(",")})`;
 }

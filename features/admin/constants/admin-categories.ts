@@ -710,6 +710,13 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/utilities/markdown-tester",
       },
       {
+        title: "Change Card Stress Test",
+        description:
+          "Stream a 200 KB write through the real tool card and watch the shared before/after diff land — records long tasks, the worst frame gap and any flicker for the surface-write diff.",
+        iconName: "Gauge",
+        link: "/administration/utilities/surface-write-stress",
+      },
+      {
         title: "Kind Registry",
         description:
           "Browse/search every content-ir kind (system + flexible_data), inspect fields, facets, and the uses/used-by reference graph, and export provider-ready JSON Schemas with referenced kinds resolved into $defs.",

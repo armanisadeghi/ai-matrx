@@ -1,3 +1,4 @@
+-- retired: graveyard.provision/mandate_binding/user_flashcard_sets DROPPED 2026-09-26 by the database estate-reduction program (backups in /Users/armanisadeghi/db-estate-backups/2026-09-26/); this file creates, moves, or asserts a table that no longer exists and must never run again
 -- iam_super_admin_arm_personal_wall_dd180c_gate — DD-180, THE END-STATE ASSERTION.
 --
 -- The seven batch files each committed on their own, so "the migrations ran" is not the same

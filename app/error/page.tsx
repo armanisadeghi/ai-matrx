@@ -28,15 +28,18 @@ export default function ErrorPage() {
 
         <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-6" />
 
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">
-          Oops! Something went wrong
-          <ErrorAlchemyMenu />
-        </h1>
+        {/* One error box: the heading and its sentence are read together. */}
+        <div role="alert">
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">
+            Oops! Something went wrong
+            <ErrorAlchemyMenu />
+          </h1>
 
-        <p className="text-gray-600 dark:text-gray-400 mb-8">
-          We apologize for the inconvenience. Please try again later or navigate
-          to one of our pages below.
-        </p>
+          <p className="text-gray-600 dark:text-gray-400 mb-8">
+            We apologize for the inconvenience. Please try again later or navigate
+            to one of our pages below.
+          </p>
+        </div>
 
         <div className="flex flex-col sm:flex-row justify-center gap-4 mb-4">
           <Link href="/">

@@ -1,3 +1,4 @@
+-- retired: graveyard.user_flashcard_sets/_reviews DROPPED 2026-09-26 by the database estate-reduction program (backups in /Users/armanisadeghi/db-estate-backups/2026-09-26/); this file creates, moves, or asserts a table that no longer exists and must never run again
 -- The legacy user flashcard tables were preserved in graveyard after their
 -- data was ported to education.fc_set / education.fc_card. Keep the retirement
 -- ledger pointed at the relations that actually exist so stale-reference

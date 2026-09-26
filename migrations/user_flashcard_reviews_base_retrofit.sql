@@ -1,3 +1,4 @@
+-- retired: graveyard.user_flashcard_reviews DROPPED 2026-09-26 by the database estate-reduction program (backups in /Users/armanisadeghi/db-estate-backups/2026-09-26/); this file creates, moves, or asserts a table that no longer exists and must never run again
 -- user_flashcard_reviews_base_retrofit
 -- Strategy: personal (user_id owner, high-churn append — defer history capture)
 

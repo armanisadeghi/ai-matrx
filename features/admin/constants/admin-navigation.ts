@@ -715,6 +715,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/utilities/content-blocks"),
           destination("/administration/utilities/message-templates"),
           destination("/administration/utilities/markdown-tester"),
+          destination("/administration/utilities/surface-write-stress"),
           destination("/administration/utilities/kind-registry", [
             "/administration/utilities/kind-registry/[kind]",
             // One resolution surface per Shape Doctor finding class, opened

@@ -49,7 +49,9 @@ export function useCloudTree(userId: string | null): UseCloudTreeResult {
 
   useEffect(() => {
     if (!userId) return;
-    if (status === "idle" || status === "error") {
+    // Never on "error": that re-fired on every failure, a retry loop against a
+    // failing server. A failed read waits for `refresh` (the Try again button).
+    if (status === "idle") {
       void dispatch(loadUserFileTree({ userId }));
     }
   }, [dispatch, userId, status]);

@@ -61,6 +61,7 @@ export function FilesTreeErrorState({
         <div>
           <h2 className="text-sm font-semibold text-foreground">
             We couldn&apos;t load your files
+            <ErrorAlchemyMenu error={error ?? "The files service did not return a usable listing."} operation="Load your files" />
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {error || "The files service did not return a usable listing."}
@@ -71,7 +72,6 @@ export function FilesTreeErrorState({
           Try again
         </Button>
       </div>
-      <ErrorAlchemyMenu className="ml-auto" />
     </div>
   );
 }

@@ -45,6 +45,7 @@ import {
 } from "./KioskStateScreens";
 import { useKioskDevice } from "./useKioskDevice";
 import { kioskKeyTimeZone, useKioskPunch } from "./useKioskPunch";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface KioskPunchSurfaceProps {
   deviceId: string;
@@ -205,8 +206,11 @@ function KioskReadySurface({
      */
     case "locked":
       return frame(
-        <div className="flex flex-col items-center gap-6 text-center">
-          <p className="text-4xl font-semibold text-foreground">Too many attempts.</p>
+        <div role="alert" className="flex flex-col items-center gap-6 text-center">
+          <p className="text-4xl font-semibold text-foreground">
+            Too many attempts.
+            <ErrorAlchemyMenu error="Too many attempts — the kiosk is locked for now." operation="Punch in at the kiosk" />
+          </p>
           <p className="max-w-lg text-2xl text-muted-foreground">
             {punch.view.lockedUntil
               ? `Try again after ${formatStampedTime(punch.view.lockedUntil, kioskKeyTimeZone(config.tz))}, or ask your manager.`

@@ -91,6 +91,19 @@ export function StaleDataNotice({
         {detail ? (
           <span className="ml-1 text-muted-foreground">({detail})</span>
         ) : null}
+        {/* A failed read is an error on screen: it carries the Alchemy Menu (RC-B12),
+            INSIDE the sentence — as its own flex item it narrowed the text and
+            grew the notice 118→138px at 375px. */}
+        <ErrorAlchemyMenu
+          input={{
+            title: hasData ? `Couldn't refresh ${what}` : `Couldn't load ${what}`,
+            message: detail
+              ? `${hasData ? "Couldn't refresh" : "Couldn't load"} ${what}: ${detail}`
+              : `${hasData ? "Couldn't refresh" : "Couldn't load"} ${what}.`,
+            operation: `${hasData ? "Refresh" : "Load"} ${what}`,
+            details: { rows_on_screen_are_stale: hasData },
+          }}
+        />
       </span>
       <Button
         size="sm"
@@ -102,17 +115,6 @@ export function StaleDataNotice({
         <RefreshCw className={cn("h-3.5 w-3.5", retrying && "animate-spin")} />
         {retrying ? "Retrying…" : "Try again"}
       </Button>
-      {/* A failed read is an error on screen: it carries the Alchemy Menu (RC-B12). */}
-      <ErrorAlchemyMenu
-        input={{
-          title: hasData ? `Couldn't refresh ${what}` : `Couldn't load ${what}`,
-          message: detail
-            ? `${hasData ? "Couldn't refresh" : "Couldn't load"} ${what}: ${detail}`
-            : `${hasData ? "Couldn't refresh" : "Couldn't load"} ${what}.`,
-          operation: `${hasData ? "Refresh" : "Load"} ${what}`,
-          details: { rows_on_screen_are_stale: hasData },
-        }}
-      />
     </div>
   );
 }

@@ -581,9 +581,15 @@ const DenseView: React.FC<
     allLanesOff,
   } = ctl;
 
+  // "No conversations yet" is an answer only after a read that succeeded: a
+  // failed or unstarted read shows the error above (or the wait), never the
+  // empty state — in the page, the chat-history window and every drawer
+  // (RC-B12 round 10).
   const empty =
     !allLanesOff &&
     status !== "loading" &&
+    status !== "idle" &&
+    !error &&
     count === 0 &&
     !searchTerm.trim() &&
     emptyState;
