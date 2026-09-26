@@ -27,6 +27,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { useClasses } from "../hooks/useClasses";
 import { useClassContent } from "../hooks/useClassContent";
 import { useClassAccess } from "../hooks/useClassAccess";
@@ -77,8 +79,14 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
     cls?.id ?? joinedMatch?.classId ?? (UUID_RE.test(classParam) ? classParam : null);
   const access = useClassAccess(resolvedId);
 
+  // Owned classes load from the active organization's scope tree, which never
+  // loads with no organization chosen — so that wait only counts once one is.
+  // A joined class (cross-org) still resolves through useMyClasses without it.
+  const { organizationState } = useOrganizationRequired();
+  const orgReady = organizationState === "ready";
+
   const stillLoading =
-    (loading && !cls) ||
+    (orgReady && loading && !cls) ||
     (!cls && !resolvedId && myClassesLoading) ||
     (access.loading && !access.state);
 
@@ -107,6 +115,15 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
 
   if (access.state) {
     return <MemberClassView access={access} />;
+  }
+
+  if (!orgReady) {
+    return (
+      <div className="mx-auto w-full max-w-3xl space-y-4 p-4">
+        <BackToClasses />
+        <OrganizationContextNotice state={organizationState} what="This class" />
+      </div>
+    );
   }
 
   // Denied / deleted / never existed / signed-out all land here — a class is a
