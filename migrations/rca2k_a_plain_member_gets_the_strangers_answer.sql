@@ -1,4 +1,3 @@
--- draft: rc-a2-deep chair ruling on the access-denied keep-list; remove when rehearsed + suite green on the clone
 -- based-on: public.access_denied_context(text, uuid) ff3f16427d52e3938882db288eed32b9c09f860d9d700ab9553d8b2514f5c3b3
 --
 -- RC-A2 round 4 (register row RC-A2), the chair's ruling (2026-09-26) on public.access_denied_context,
