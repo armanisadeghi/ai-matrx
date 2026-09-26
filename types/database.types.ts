@@ -25744,6 +25744,15 @@ export type Database = {
         Args: { p_file_id: string }
         Returns: undefined
       }
+      source_list_facts: {
+        Args: { p_ids: string[] }
+        Returns: {
+          attachments: Json
+          chunk_count: number
+          entity_count: number
+          processed_document_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -64874,7 +64883,6 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           anchor?: Json | null
@@ -64897,7 +64905,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           anchor?: Json | null
@@ -64920,7 +64927,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -71840,6 +71846,7 @@ export type Database = {
         Args: { p_objids: unknown[]; p_tag: string }
         Returns: undefined
       }
+      comments_topic_admits: { Args: { p_topic: string }; Returns: boolean }
       confirmation_stamp_coverage: {
         Args: never
         Returns: {
@@ -72793,6 +72800,15 @@ export type Database = {
         Returns: undefined
       }
       provision_batch_token_rel: { Args: { p_token: string }; Returns: string }
+      provision_certify_judged: {
+        Args: {
+          p_defer_base: boolean
+          p_schema: string
+          p_table: string
+          p_token: string
+        }
+        Returns: Json
+      }
       provision_check_vocabulary: {
         Args: { p_conname: string; p_relation: unknown }
         Returns: string[]
@@ -110862,6 +110878,116 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pb_claim_appeals_fd31de: {
+        Row: {
+          claim_id: string
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          filed_on: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          reason: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          claim_id: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          filed_on?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          reason: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          claim_id?: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          filed_on?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          reason?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pb_claim_appeals_fd31de_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "pb_insurance_claims_fd31de"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pb_insurance_claims_fd31de: {
+        Row: {
+          billed_cents: number | null
+          carrier: string
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          status: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          billed_cents?: number | null
+          carrier: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          status?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          billed_cents?: number | null
+          carrier?: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          status?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
       }
       product_capture_file: {
         Row: {
