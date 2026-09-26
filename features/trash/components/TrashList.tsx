@@ -29,6 +29,12 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import { getResourceIcon } from "@/features/sharing/resourceIcons";
+import Link from "next/link";
+import {
+  isMovedOlderTable,
+  switchBackHrefFor,
+  SWITCH_BACK_EXPLAINED,
+} from "@/features/trash/movedOlderTable";
 import {
   getOrgTrashCounts,
   getTrashCounts,
@@ -210,7 +216,7 @@ export function TrashList({
       if (organizationId) {
         const res = await restoreFromOrgTrash(organizationId, item.entity_token, item.id);
         toast({
-          title: res.restored ? `${item.label} restored` : "Already restored",
+          title: res.restored ? `${item.label} restored` : "Not restored",
           description: res.restored
             ? item.owner_id && !item.is_mine
               ? `${item.title?.trim() || item.label} is back, and ${item.owner_label ?? "its owner"} has been told.`
@@ -326,6 +332,10 @@ export function TrashList({
                   {item.title?.trim() || (
                     <span className="text-muted-foreground italic">Untitled</span>
                   )}
+                  {isMovedOlderTable(item) && (
+                    // Said on every width: on a phone the kind column is hidden.
+                    <span className="text-muted-foreground block truncate text-xs sm:hidden">{item.label}</span>
+                  )}
                 </span>
                 {renderRowExtra?.(item)}
                 {org && (
@@ -339,6 +349,17 @@ export function TrashList({
                 <span className="text-muted-foreground w-16 shrink-0 text-right text-xs tabular-nums">
                   {whenDeleted(item.deleted_at)}
                 </span>
+                {isMovedOlderTable(item) ? (
+                  // One restore would bring back ONE older table beside a switch that says the
+                  // organization lives in the new system; the store refuses it. Switch back does all.
+                  <Button size="sm" variant="ghost" asChild title={`${SWITCH_BACK_EXPLAINED}.`}>
+                    <Link href={switchBackHrefFor(item.organization_id)} data-testid="moved-older-table-switch-back">
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      <span className="ml-1.5 hidden sm:inline">{SWITCH_BACK_EXPLAINED}</span>
+                      <span className="ml-1.5 sm:hidden">Switch back</span>
+                    </Link>
+                  </Button>
+                ) : (
                 <Button
                   size="sm"
                   variant="ghost"
@@ -352,6 +373,7 @@ export function TrashList({
                   )}
                   <span className="ml-1.5 hidden sm:inline">Restore</span>
                 </Button>
+                )}
               </li>
             );
           })}
