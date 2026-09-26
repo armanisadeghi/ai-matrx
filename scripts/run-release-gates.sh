@@ -353,6 +353,14 @@ if $STRICT; then
         # can still fail; `--ref=<commit>` re-reads the gates as they stood then.
         "Gate database sessions go through the gate helper|pnpm check:gate-db-sessions"
         "…and that guard can still fail|pnpm check:gate-db-sessions:self-test"
+        # RELEASE ROW CLASSES (2026-09-25). Which release rows can open the live database is
+        # DECLARED in scripts/checks/row-classes.json, generated from what each row's code reaches
+        # (it replaced a regex over row labels that was wrong both ways). The release after-phase
+        # skips every live-db row (run.mjs --skip-live-db). Static, no database. Fails when the
+        # manifest is stale or a row's declared class disagrees with detection; remedy
+        # `pnpm checks:classify`. The self-test proves it goes red on a mismatched manifest.
+        "Release row classes match what each row's code reaches|pnpm check:release-row-classes"
+        "…and that guard can still fail|pnpm check:release-row-classes:self-test"
         "Door rows: a door returns only what its caller may read (DD-192)|pnpm check:door-rows:strict"
         # DD-208 — the WIDE lane (all 892 declared signed-in doors, not just the
         # 477 of b75). It could not block until two things were true, and on
@@ -971,6 +979,14 @@ else
         # can still fail; `--ref=<commit>` re-reads the gates as they stood then.
         "Gate database sessions go through the gate helper|pnpm check:gate-db-sessions"
         "…and that guard can still fail|pnpm check:gate-db-sessions:self-test"
+        # RELEASE ROW CLASSES (2026-09-25). Which release rows can open the live database is
+        # DECLARED in scripts/checks/row-classes.json, generated from what each row's code reaches
+        # (it replaced a regex over row labels that was wrong both ways). The release after-phase
+        # skips every live-db row (run.mjs --skip-live-db). Static, no database. Fails when the
+        # manifest is stale or a row's declared class disagrees with detection; remedy
+        # `pnpm checks:classify`. The self-test proves it goes red on a mismatched manifest.
+        "Release row classes match what each row's code reaches|pnpm check:release-row-classes"
+        "…and that guard can still fail|pnpm check:release-row-classes:self-test"
         "Door rows: a door returns only what its caller may read (DD-192)|pnpm check:door-rows:strict"
         "RLS policies that read their own table (42P17)|pnpm check:rls-self-reference"
         # MANDATE OWNER WRITES (2026-09-25): a plain org member could rewrite or soft-delete an

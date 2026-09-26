@@ -683,12 +683,15 @@ fi
 # script used to run before the push (matrx-packages, organization-context,
 # client-initiation, migration judgment, surface registration, …). A check
 # NEVER blocks: the runner exits 0; a nonzero exit means the RUNNER crashed.
+# --skip-live-db: every row DECLARED live-db (scripts/checks/row-classes.json) stays off the
+# release path — releases fire 50-90 times a day and nothing that reads the live database may add
+# load there (Arman, 2026-09-25). The runner prints one line naming how many and where they live.
 RUNNER_OK=true
 if $RUN_CHECKS; then
-    node "$SCRIPT_DIR/checks/run.mjs" --json "$CHECKS_JSON" \
+    node "$SCRIPT_DIR/checks/run.mjs" --skip-live-db --json "$CHECKS_JSON" \
         || { RUNNER_OK=false; warn "The check runner itself crashed — nothing was measured. The release is not affected."; }
 else
-    node "$SCRIPT_DIR/checks/run.mjs" --json "$CHECKS_JSON" >>"${RELEASE_LOG_FILE:-/dev/null}" 2>&1 \
+    node "$SCRIPT_DIR/checks/run.mjs" --skip-live-db --json "$CHECKS_JSON" >>"${RELEASE_LOG_FILE:-/dev/null}" 2>&1 \
         || { RUNNER_OK=false; warn "The check runner itself crashed — nothing was measured. The release is not affected."; }
 fi
 [[ -n "$WATCH_PID" ]] && wait "$WATCH_PID"

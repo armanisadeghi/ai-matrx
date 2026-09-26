@@ -67,7 +67,7 @@ log, holding its own lock (`--with-checks` runs it in the foreground instead;
   is the only green; anything else is an ERROR finding `ROLLOUT FAILED: vX.Y.Z …`;
   no Vercel credential is a WARNING `UNVERIFIED`; `--no-watch` records
   `UNWATCHED`. It runs concurrently with the checks.
-- **Checks** — `scripts/checks/run.mjs`: ONE parallel runner (6 workers,
+- **Checks** — `scripts/checks/run.mjs --skip-live-db`: ONE parallel runner (6 workers,
   database-touching rows throttled to 3) over every row of
   `scripts/run-release-gates.sh --list` plus the checks the old script ran
   before the push (`EXTRA_ROWS`: matrx-packages, organization-context,
@@ -78,6 +78,34 @@ log, holding its own lock (`--with-checks` runs it in the foreground instead;
   printing green over real findings). Each row's full output goes to
   `tmp/checks/<id>.log`. The runner's exit code is always 0; 2 means the
   runner itself crashed.
+- **No live database on the release path** (Arman, 2026-09-25: releases fire
+  50-90 times a day; nothing that reads the live database may add load there).
+  Every row carries a DECLARED class in `scripts/checks/row-classes.json`:
+  `live-db` (can open the live database — gate-db / `SUPABASE_MATRIX_*`, a
+  secret or service-role key, an admin or supabase-js client, a pg client, a
+  PostgREST URL, `execute_admin_query`, the aidream applier), `clone-db`
+  (reaches only the nightly dev clone), `repo-only`. The manifest is GENERATED
+  by `scripts/checks/row-classes.mjs` (`pnpm checks:classify`), which resolves
+  each row's command through package.json and `pnpm`/`npx`/`tsx`/`node`/`bash`
+  hops, follows real import statements and child-process launches inside
+  `scripts/`, scans (without following) imported app modules and jest test
+  files, and tests signals on comment-stripped code with prose/fixture string
+  literals blanked. The signal table is data: `row-classes.signals.json`. A row
+  the resolver cannot fully follow (unknown binary, missing file, a file outside
+  the repo, a python import of aidream) is `live-db` and the manifest says
+  UNCERTAIN. `--skip-live-db` leaves out every `live-db` row — and every row
+  the manifest does not know (the safe side) — and prints ONE line: how many,
+  and that they live in `common-docs/projects/checks-run-in-the-app/REGISTER.md`
+  § "Moved off the release path (P0)" until the scheduled clone tick (P3); the
+  JSON header gains `skipped_live_db: [...]` (not in `ran`, so the dispatcher
+  resolves nothing for them). The same class drives the DB-slot throttle: only
+  a declared `repo-only` row skips it. The label regex `DB_ROWS` that used to
+  decide this is gone — it called 13 live rows non-DB (`check-access-parity`,
+  `check:organization-context`, the jest suite…) and 18 static rows DB.
+  Guard: `pnpm check:release-row-classes` (stale manifest, a missing or extra
+  row, or a declared class that disagrees with detection = `[FAIL]`, exit 1) +
+  `:self-test` (red on a mismatched manifest, green on the real one) — in CI
+  (`marker-law` job) and as rows of `run-release-gates.sh`.
 - **Findings** — `tmp/release-logs/findings-vX.Y.Z.jsonl`: first line
   `{"ran":[...]}`, then one JSON object per finding — `check, category, level,
   title (≤100), count, fingerprint, remedy, detail` — the exact shape aidream's
@@ -96,6 +124,8 @@ log, holding its own lock (`--with-checks` runs it in the foreground instead;
 | `./ship.sh "msg" -- <paths>` / `./scripts/release.sh` | the release (see above) |
 | `./scripts/release.sh --dry-run` | what would ship, from origin/main's point of view; nothing changes |
 | `node scripts/checks/run.mjs [--json f] [--lane x] [--only id] [--list]` / `pnpm check:release-checks` | the runner, by hand |
+| `node scripts/checks/run.mjs --skip-live-db` | what the release runs: every row but the declared live-db ones |
+| `pnpm checks:classify` / `pnpm check:release-row-classes[:self-test]` | regenerate the row-class manifest / the guard that it is current |
 | `bash scripts/run-release-gates.sh [--strict]` | the old sequential gate runner — still the manifest (`--list`), still usable for one-by-one triage |
 | `pnpm test:release-ship-path` | the sandbox guard: dirty checkout + diverged branch + push landing mid-release → tag on origin |
 | `pnpm test:release-checks` | the runner at its seams (clean = one line; screams, hangs, exit codes → findings; JSON shape) |
@@ -127,6 +157,13 @@ the after phase; the two things that made the build — migrations and the
 push — are the ship path.
 
 ## Change log
+
+- 2026-09-25 — Declared row classes (`row-classes.json` + `row-classes.mjs` +
+  `row-classes.signals.json`), `run.mjs --skip-live-db` (passed by
+  `release.sh`'s after phase), `--list` shows the class, `DB_ROWS` deleted,
+  guard `check:release-row-classes` + self-test (CI + release gates). 149 rows:
+  56 live-db moved off the release path, 3 clone-db, 90 repo-only. Plan:
+  `common-docs/projects/checks-run-in-the-app/` P0 (F12).
 
 - 2026-09-20 — Rewritten to the ship-path doctrine (this file created).
   `scripts/checks/run.mjs`, `scripts/test-release-ship-path.sh` added;

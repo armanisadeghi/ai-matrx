@@ -1,0 +1,64 @@
+{
+  "_about": "Database-access signals for scripts/checks/row-classes.mjs. A match in any file a release row reaches classifies the row. live = can open the live database; clone = reaches only the nightly dev clone. Patterns are JavaScript RegExp sources.",
+  "live": [
+    {
+      "signal": "gate-db helper (openGateDb/withGateDb)",
+      "pattern": "\\b(?:openGateDb|withGateDb)\\b"
+    },
+    {
+      "signal": "SUPABASE_MATRIX_* direct Postgres credentials",
+      "pattern": "SUPABASE_MATRIX_"
+    },
+    {
+      "signal": "direct-db loader (loadDbEnv)",
+      "pattern": "\\bloadDbEnv\\b"
+    },
+    {
+      "signal": "service-role / secret key",
+      "pattern": "SUPABASE_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY|SERVICE_ROLE_KEY|\\bservice_role\\b"
+    },
+    {
+      "signal": "admin Supabase client (createAdminClient)",
+      "pattern": "\\bcreateAdminClient\\b"
+    },
+    {
+      "signal": "pg / postgres client",
+      "pattern": "from\\s+[\"'](?:pg|postgres|pg-pool)[\"']|require\\(\\s*[\"'](?:pg|postgres)[\"']\\s*\\)|import\\(\\s*[\"'](?:pg|postgres)[\"']\\s*\\)"
+    },
+    {
+      "signal": "supabase-js client",
+      "pattern": "from\\s+[\"']@supabase\\/supabase-js[\"']|require\\(\\s*[\"']@supabase\\/supabase-js[\"']\\s*\\)"
+    },
+    {
+      "signal": "python Postgres driver",
+      "pattern": "^\\s*(?:import|from)\\s+(?:psycopg2?|asyncpg)\\b",
+      "flags": "m"
+    },
+    {
+      "signal": "PostgREST endpoint",
+      "pattern": "\\/rest\\/v1\\b"
+    },
+    {
+      "signal": "live database host",
+      "pattern": "db\\.matrxserver\\.com|\\bSUPABASE_URL\\b"
+    },
+    {
+      "signal": "execute_admin_query RPC",
+      "pattern": "\\bexecute_admin_query\\b"
+    },
+    {
+      "signal": "psql against a non-clone target",
+      "pattern": "\\bnight_target_dsn\\b|\\bnight_branch_dsn\\b"
+    },
+    {
+      "signal": "aidream migration applier (opens the live database)",
+      "pattern": "apply_migrations\\.py"
+    }
+  ],
+  "clone": [
+    {
+      "signal": "nightly dev clone connection",
+      "pattern": "\\bnight_clone_dsn\\b|\\bCLONE_DATABASE_URL\\b"
+    }
+  ]
+}

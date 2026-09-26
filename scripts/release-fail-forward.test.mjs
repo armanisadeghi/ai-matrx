@@ -123,7 +123,11 @@ test("everything else runs after the build started, detached, into the log", () 
   assert.match(afterPush, /nohup "\$0" \$\{RELEASE_ORIGINAL_ARGS\[@\]\+"\$\{RELEASE_ORIGINAL_ARGS\[@\]\}"\} <\/dev\/null >>"\$\{RELEASE_LOG_FILE:-\/dev\/null\}" 2>&1 &/);
   assert.match(afterPush, /RELEASE_AFTER_PHASE:-on/);
   const after = code.slice(afterStart);
-  assert.match(after, /node "\$SCRIPT_DIR\/checks\/run\.mjs" --json "\$CHECKS_JSON"/);
+  assert.match(after, /node "\$SCRIPT_DIR\/checks\/run\.mjs" --skip-live-db --json "\$CHECKS_JSON"/);
+  // Nothing that can open the live database runs 50-90 times a day (Arman, 2026-09-25): every
+  // invocation of the runner in the after phase carries --skip-live-db.
+  const runs = after.match(/node "\$SCRIPT_DIR\/checks\/run\.mjs"[^\n]*/g) ?? [];
+  assert.ok(runs.length > 0 && runs.every((line) => line.includes("--skip-live-db")), `a runner call without --skip-live-db: ${runs.join(" | ")}`);
   assert.match(after, /release_outcome_report "\$TARGET" "\$RELEASE_COMMIT_MSG" "\$RELEASE_SHA"/);
   assert.match(after, /MATRX_REPO_ROOT="\$REPO_ROOT" uv run --frozen python "\$DISPATCHER" --findings "\$CHECKS_JSON"/);
   assert.match(after, /\nexit 0\n$/);

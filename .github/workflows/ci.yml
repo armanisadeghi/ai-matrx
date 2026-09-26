@@ -297,6 +297,14 @@ jobs:
         # matrx-local shipped for months — walked straight through it. The
         # self-test plants that exact shape and asserts it is reported.
         run: pnpm check:canonical-pickers:self-test
+      - name: RELEASE ROW CLASSES — which release checks can open the live database is declared, not guessed
+        # scripts/checks/row-classes.json is generated from what each release row's code reaches
+        # (live-db | clone-db | repo-only); the release after-phase skips every live-db row
+        # (Arman, 2026-09-25: nothing that reads the live database runs 50-90 times a day).
+        # Static: resolves commands and imports, opens no database. ~5s.
+        run: pnpm check:release-row-classes
+      - name: the release-row-classes guard can still fail (self-test)
+        run: pnpm check:release-row-classes:self-test
       - name: THE ARCHIVED-ITEMS LAW — every list has an archive control
         # Arman, 2026-09-09: "everything should have an archive filter, and the
         # default should always hide archived, but seeing archived items should

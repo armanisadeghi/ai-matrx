@@ -9,7 +9,7 @@
 // says so. `pnpm test:release-checks`.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -33,7 +33,7 @@ function runWithManifest(rows, extraArgs = []) {
 test("a clean run is one line and an empty findings file behind the ran header", () => {
   const { out, header, findings } = runWithManifest(["Clean gate|true", "Another clean gate|echo all good"]);
   assert.equal(out.trim().split("\n").length, 1);
-  assert.match(out, /^checks: 2 run, 0 findings \(\d+s\)$/m);
+  assert.match(out, /^checks: 2 run, 0 findings \([^)]+\)$/m);
   assert.deepEqual(header, { ran: ["clean-gate", "another-clean-gate"] });
   assert.equal(findings.length, 0);
 });
@@ -131,4 +131,39 @@ test("--list prints every row and runs nothing", () => {
   const out = execFileSync("node", [RUNNER, "--manifest", manifest, "--list"], { encoding: "utf8" });
   assert.match(out, /^touches-a-file\t/m);
   assert.throws(() => readFileSync(marker));
+});
+
+test("a row's database class is DECLARED by the manifest, never guessed from its label", () => {
+  const rows = parseRows(
+    ["Live door rows guard|pnpm check:x", "Innocent-sounding label|pnpm check:y", "Nobody classified me|true"],
+    { "live-door-rows-guard": { class: "repo-only" }, "innocent-sounding-label": { class: "live-db" } },
+  );
+  const by = Object.fromEntries(rows.map((r) => [r.id, r]));
+  assert.equal(by["live-door-rows-guard"].dbClass, "repo-only");
+  assert.equal(by["live-door-rows-guard"].needsDb, false, "a label saying live / door / db decides nothing");
+  assert.equal(by["innocent-sounding-label"].dbClass, "live-db");
+  assert.equal(by["innocent-sounding-label"].needsDb, true);
+  assert.equal(by["nobody-classified-me"].dbClass, "unclassified");
+  assert.equal(by["nobody-classified-me"].needsDb, true, "an unclassified row takes the safe side");
+});
+
+test("--skip-live-db runs no live-db or unclassified row and says so in one line", () => {
+  const dir = mkdtempSync(join(tmpdir(), "release-checks-skip-"));
+  const marker = (name) => join(dir, `${name}-ran`);
+  const classes = join(dir, "classes.json");
+  writeFileSync(
+    classes,
+    JSON.stringify({ rows: { "live-gate": { class: "live-db" }, "repo-gate": { class: "repo-only" }, "clone-gate": { class: "clone-db" } } }),
+  );
+  const { out, header, findings } = runWithManifest(
+    [`Live gate|touch ${marker("live")}`, `Repo gate|touch ${marker("repo")}`, `Clone gate|touch ${marker("clone")}`, `Unknown gate|touch ${marker("unknown")}`],
+    ["--classes", classes, "--skip-live-db"],
+  );
+  assert.equal(existsSync(marker("live")), false, "a live-db row executed");
+  assert.equal(existsSync(marker("unknown")), false, "an unclassified row executed");
+  assert.equal(existsSync(marker("repo")), true);
+  assert.equal(existsSync(marker("clone")), true);
+  assert.match(out, /^checks: skipped 2 live-db rows \(1 unclassified \S+ run pnpm checks:classify\); they live in .*REGISTER\.md/m);
+  assert.deepEqual(header, { ran: ["repo-gate", "clone-gate"], skipped_live_db: ["live-gate", "unknown-gate"] });
+  assert.equal(findings.length, 0);
 });
