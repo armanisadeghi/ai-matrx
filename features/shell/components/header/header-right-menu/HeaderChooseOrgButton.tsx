@@ -30,7 +30,8 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
 import {
   selectOrganizationId,
   selectOrganizationName,
@@ -44,6 +45,7 @@ export default function HeaderChooseOrgButton() {
   const organizationId = useAppSelector(selectOrganizationId);
   const organizationName = useAppSelector(selectOrganizationName);
   const isMobile = useIsMobile();
+  const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
   // An object page (a table, a file) reads its organization FROM THE OBJECT, so nothing on it is
   // waiting for a choice and the red warning would be a lie (GATES-TAIL, VERIFIER-21 #7). The
@@ -52,14 +54,39 @@ export default function HeaderChooseOrgButton() {
 
   if (objectOrganization && !open) {
     if (objectOrganization.shownByPage || !objectOrganization.name) return null;
+    // The object lives where she is working: nothing to say.
+    if (objectOrganization.organizationId === organizationId) return null;
+    const name = objectOrganization.name;
+    if (objectOrganization.member === true) {
+      // LIT: the page's object lives in another of her organizations. One click works there
+      // (new records land in the object's organization). Access never depended on it — the page
+      // opened either way — so this is an offer, never a gate.
+      const says = organizationId
+        ? `This lives in ${name}, not ${organizationName ?? "the organization you are working in"}. Switch to ${name}`
+        : `This lives in ${name}. You are not working in an organization. Switch to ${name}`;
+      return (
+        <button
+          type="button"
+          data-page-object-organization={objectOrganization.organizationId}
+          data-page-object-organization-lit=""
+          aria-label={says}
+          title={says}
+          onClick={() => dispatch(chooseActiveOrganization({ id: objectOrganization.organizationId, name }))}
+          className="inline-flex h-11 max-w-[14rem] items-center gap-1.5 rounded-md bg-primary/10 px-2 text-xs font-medium text-primary transition-colors hover:bg-primary/15 sm:h-8"
+        >
+          <Building2 size={14} strokeWidth={2} aria-hidden="true" />
+          <span className="hidden truncate sm:inline">{name}</span>
+        </button>
+      );
+    }
     return (
       <span
         data-page-object-organization={objectOrganization.organizationId}
-        title={`This page shows something that lives in ${objectOrganization.name}. It opens whatever organization you are working in.`}
+        title={`This page shows something that lives in ${name}. It opens whatever organization you are working in.`}
         className="hidden max-w-[14rem] items-center gap-1.5 truncate px-2 text-xs text-muted-foreground sm:inline-flex"
       >
         <Building2 size={14} strokeWidth={2} aria-hidden="true" />
-        <span className="truncate">Viewing in {objectOrganization.name}</span>
+        <span className="truncate">Viewing in {name}</span>
       </span>
     );
   }

@@ -25,6 +25,7 @@ import { createRoot, type Root } from "react-dom/client";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
 
+const dispatched: unknown[] = [];
 const store = {
   organization_id: null as string | null,
   organization_name: null as string | null,
@@ -35,7 +36,9 @@ const store = {
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (s: unknown) => unknown) =>
     selector({ appContext: store }),
-  useAppDispatch: () => () => {},
+  useAppDispatch: () => (action: unknown) => {
+    dispatched.push(action);
+  },
 }));
 
 jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
@@ -228,5 +231,58 @@ describe("HeaderChooseOrgButton — never a red warning on a page whose object n
     mount();
     act(() => release());
     expect(trigger().textContent).toContain("Choose org");
+  });
+});
+
+// ── TABLE-PAGE-CHROME: the indicator LIGHTS when the page's object lives in another organization ──
+
+describe("HeaderChooseOrgButton — the one place a page's organization is said", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const pageOrg = require("@/features/shell/pageObjectOrganization") as typeof import("@/features/shell/pageObjectOrganization");
+  const RINCON = "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f";
+
+  beforeEach(() => {
+    store.organization_id = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
+    store.organization_name = "AI Matrx";
+    store.orgBootstrapResolved = true;
+    store.orgBootstrapFailure = null;
+    dispatched.length = 0;
+    pageOrg.__resetPageObjectOrganizationForTest();
+  });
+  afterEach(() => {
+    act(() => root.unmount());
+    document.body.innerHTML = "";
+  });
+
+  it("lights with the object's organization and switches to it on one click", () => {
+    act(() => {
+      pageOrg.declarePageObjectOrganization({ organizationId: RINCON, name: "Rincon Plumbing Co", shownByPage: false, member: true });
+    });
+    mount();
+    const lit = host.querySelector("[data-page-object-organization-lit]") as HTMLButtonElement | null;
+    expect(lit).not.toBeNull();
+    expect(lit!.textContent).toContain("Rincon Plumbing Co");
+    expect(lit!.getAttribute("aria-label")).toContain("not AI Matrx");
+    act(() => {
+      lit!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(dispatched.length).toBe(1);
+  });
+
+  it("says nothing when the object lives in the organization she is working in", () => {
+    act(() => {
+      pageOrg.declarePageObjectOrganization({ organizationId: "5dc930e9-bd65-44a1-8369-af773f6e1a5b", name: "AI Matrx", shownByPage: false, member: true });
+    });
+    mount();
+    expect(host.textContent).toBe("");
+  });
+
+  it("names a table shared from outside quietly, with no switch to a place she cannot work in", () => {
+    act(() => {
+      pageOrg.declarePageObjectOrganization({ organizationId: RINCON, name: "Rincon Plumbing Co", shownByPage: false, member: false });
+    });
+    mount();
+    expect(host.querySelector("[data-page-object-organization-lit]")).toBeNull();
+    expect(host.textContent).toContain("Rincon Plumbing Co");
   });
 });

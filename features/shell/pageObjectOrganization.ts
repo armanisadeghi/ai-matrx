@@ -14,7 +14,11 @@
 // (`HeaderChooseOrgButton`) reads the declaration instead of warning:
 //   - the page already names the organization on screen (`shownByPage`) → the header shows
 //     nothing (never the same name twice);
-//   - the header knows the name → a quiet "Viewing in <org>";
+//   - the object lives in the organization the person is working in → nothing;
+//   - it lives in ANOTHER organization she is a member of (`member: true`) → the indicator LIGHTS
+//     with that organization's name and switches to it on one click (lane TABLE-PAGE-CHROME: the
+//     one place a page's organization is said, instead of a notice row on the page);
+//   - another organization she is not a member of, or membership unknown → the name, quietly;
 //   - no name → nothing. Never the red warning while a declaration stands.
 // The declaration is removed on unmount, so a list page after it warns again as before.
 
@@ -26,6 +30,11 @@ export interface PageObjectOrganization {
   name: string | null;
   /** True when the page itself already shows the organization (a chip beside the title). */
   shownByPage: boolean;
+  /**
+   * Whether the person is a member of that organization, when the page knows (a table shared
+   * with her from outside: false). True lets the header offer the switch; unknown says the name.
+   */
+  member?: boolean | null | undefined;
 }
 
 let current: PageObjectOrganization | null = null;
@@ -71,10 +80,11 @@ export function useDeclarePageObjectOrganization(next: PageObjectOrganization | 
   const organizationId = next?.organizationId ?? null;
   const name = next?.name ?? null;
   const shownByPage = next?.shownByPage ?? false;
+  const member = next?.member ?? null;
   useEffect(() => {
     if (!organizationId) return undefined;
-    return declarePageObjectOrganization({ organizationId, name, shownByPage });
-  }, [organizationId, name, shownByPage]);
+    return declarePageObjectOrganization({ organizationId, name, shownByPage, member });
+  }, [organizationId, name, shownByPage, member]);
 }
 
 /** Test seam. */
