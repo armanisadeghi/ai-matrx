@@ -91,8 +91,14 @@ type ViewMode = StudioMode | "inspect";
 export type PreviewUpdateMode = "live" | "manual";
 
 const EMPTY = "";
-/** Past this size the preview follows a typing PAUSE, not every keystroke. */
-const LARGE_BUFFER_CHARS = 150_000;
+/**
+ * Past this size the preview follows a typing PAUSE, not every keystroke. Each
+ * re-render of a long preview re-resolves its action surface over the whole
+ * text (table/code detection per action), and at 100 KB that alone made a key
+ * take ~50 ms to paint (verifier round 1: p75 144–153 ms by its method). 40 KB
+ * is well above an ordinary answer or note.
+ */
+const LARGE_BUFFER_CHARS = 40_000;
 const LARGE_BUFFER_PAUSE_MS = 400;
 const RAW_SOURCE: ContentSource = { type: "raw" };
 
