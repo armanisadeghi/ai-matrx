@@ -311,7 +311,10 @@ const LanguageDisplay: React.FC<LanguageDisplayProps> = ({
       ) : (
         <Icon size={size} className={cn(langInfo.color)} />
       )}
-      <span className="text-sm text-neutral-800 dark:text-neutral-200 font-mono">
+      {/* Never wraps: "Markdown" broke into "Markdow / n" in a phone code
+          header once aliases resolved to full names (ui-change-inventory
+          row 12, 2026-09-26). */}
+      <span className="whitespace-nowrap text-sm text-neutral-800 dark:text-neutral-200 font-mono">
         {langInfo.name}
       </span>
     </div>
