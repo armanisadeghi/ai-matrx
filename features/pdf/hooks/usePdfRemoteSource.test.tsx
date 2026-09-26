@@ -73,7 +73,8 @@ describe("usePdfRemoteSource durable authentication", () => {
     expect(hook.current.loading).toBe(true);
     expect(hook.current.withCredentials).toBe(true);
     expect(mockEnsureFilesSession).toHaveBeenCalledWith();
-    expect(mockBuildHeaders).toHaveBeenCalledWith({}, false);
+    // A read of ONE file: its own organization (none known here) and the GET method (ecb35c3720).
+    expect(mockBuildHeaders).toHaveBeenCalledWith({}, false, "GET");
 
     await hook.act(async () => finishSession());
     await settle(
@@ -113,7 +114,8 @@ describe("usePdfRemoteSource durable authentication", () => {
     await hook.act(() => hook.current.retry());
     expect(mockInvalidate).toHaveBeenCalledWith(FILE_ID);
     expect(mockEnsureFilesSession).toHaveBeenCalledWith({ force: true });
-    expect(mockBuildHeaders).toHaveBeenCalledWith({}, false);
+    // A read of ONE file: its own organization (none known here) and the GET method (ecb35c3720).
+    expect(mockBuildHeaders).toHaveBeenCalledWith({}, false, "GET");
     await hook.unmount();
   });
 });
