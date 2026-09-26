@@ -1,33 +1,8 @@
--- superseded-by: aei_reach_containers_asked_once_rebased.sql (applied to production 2026-09-26 06:36Z) — these bytes NEVER RAN: aidream detect_applied ledgered them at 00:15Z without executing (D351); their body predates RC-A2c/RC-A2e. D351 census 2026-09-26.
--- retired: re-running these bytes would revert RC-A2c (reference_gate) and RC-A2e (declared details) in iam.accessible_entity_ids.
--- aei_reach_containers_asked_once
--- based-on: iam.accessible_entity_ids(text, permission_level, integer, boolean) b015e201871938aa7984104cf54350188d9b7437f1e9b287fa4b185a2f8f421d
---
--- THE DEFECT, measured live 2026-09-25 as test@test.com (a plain member of Admin's Workspace), rolled
--- back: `select id from education.fc_card order by created_at desc, id limit 50` took 4.7–4.9 s.
--- EXPLAIN (ANALYZE, BUFFERS): 4.5 s and 469k buffers inside ONE call of
--- iam.accessible_entity_ids('fc_card', 'viewer', 0, true), the candidate arm of the generated
--- std_select. Its platform.reachability lane handed the kernel EVERY flash card that sits in ANY
--- set — 4,087, whoever's set — and after the trusted arms 3,588 remained, each walked by
--- iam.has_access_for_base (card node, then its set, then the set's containers) and each refused.
--- ~1.25 ms per refused walk x 3,588 = the whole read. The same shape made plan_node (745 rows in 7
--- web sites) 2–4 s, studio_session 0.5–0.8 s, plan_entity 0.5–1.3 s for the same member.
---
--- THE FIX (set-wise, same authority). The kernel admits a row THROUGH containment only when a
--- container on its frontier is itself admitted, and a container is walked with include_public no
--- wider than the row's, while admission only grows with include_public. So the lane now asks the
--- kernel once per DISTINCT container (279 for the flash cards), at this call's include_public, and
--- keeps only rows with an admitted container. Every surviving candidate is still confirmed by
--- iam.has_access_for_base exactly as before, so the change can only drop ids the kernel refuses.
--- Nothing else in the function changes.
---
--- Access delta (clone, rolled back): every token that appears in platform.reachability, viewer and
--- editor, include_public true and false, for test@test.com, admin@admin.com outside the admin lane
--- and admin@admin.com inside it — old body vs this body: 0 wider, 0 narrower. Guard: aidream
--- db/tests/test_access_read_latency.py (set form == kernel row for row over the whole table for
--- fc_card, studio_session, processed_document, note x 3 seats; flash-card list < 300 ms — red at
--- 4,838 ms before this file).
--- Inverse: migrations/inverse/aei_reach_containers_asked_once_down.sql (the body this replaced).
+-- chair-step: restores iam.accessible_entity_ids(text, permission_level, integer, boolean) to the body live before aei_reach_containers_asked_once_rebased.sql, and re-records the kernel fingerprint for that one member.
+-- aei_reach_containers_asked_once_rebased_down
+-- based-on: iam.accessible_entity_ids(text, permission_level, integer, boolean) 0ebad3890b080e8ca44d64fef98226e375831560498290157c73eae0e6eb637c
+-- based-on: iam.entity_read_kernel_expected() 69a02c8a9a58d58a56f4508c6d78a3f5e6bc2fd0ed211dbe1d753fe33ccdc8b6
+-- based-on: iam.entity_read_kernel_members_expected() e55d8223e4ba75c075a68484f0b383c65a26c3daf10a5b14ac4a50ab40c9b252
 
 CREATE OR REPLACE FUNCTION iam.accessible_entity_ids(p_type text, p_required permission_level, p_depth integer, p_include_public boolean)
  RETURNS uuid[]
@@ -93,10 +68,9 @@ begin
   -- to every member. A detail's access is its record's, which only the kernel resolves, so the
   -- set form asks it per row and cannot disagree with it. Cost: one kernel call per detail row;
   -- every client read of a detail goes through a door already filtered to one record.
-  if exists (select 1 from platform.entity_types et
-              where et.token = p_type and et.is_active and et.rls_variant = 'detail') then
-    execute format('select coalesce(array_agg(t.id), ''{}'') from %I.%I t where iam.has_access_for_base($1, $2, t.id, $3, $4)',
-                   v_schema, v_table)
+  if platform.token_is_detail(p_type) then  -- RC-A2e: every declared detail
+    execute format('select coalesce(array_agg(t.id), ''{}'') from %I.%I t '
+                   'where iam.has_access_for_base($1, $2, t.id, $3, $4)', v_schema, v_table)
       into v_ids using v_uid, p_type, p_required, p_include_public;
     return coalesce(v_ids, '{}'::uuid[]);
   end if;
@@ -202,41 +176,7 @@ begin
   -- ScalarArrayOpExpr and falls back to a linear scan of the array PER ROW.
   -- Against v_ids of 32,697 that is what made this function quadratic.
   for rec in
-    with have as materialized (select iam.unnest_uuids(v_ids) as id),
-    -- 🚨 AEI-REACH (2026-09-25) — THE REACHABILITY LANE ASKS ABOUT EACH CONTAINER ONCE, NOT
-    -- ABOUT EVERY ROW INSIDE IT. This lane used to hand the kernel EVERY row of this type that
-    -- sits in ANY container — whoever's container it is — and the kernel walked each one up into
-    -- its container and said no. Measured live as a plain member (test@test.com): 3,588 of 4,087
-    -- flash cards sat in other people's sets, so every read of education.fc_card paid 3,588
-    -- kernel walks — 4.7 s for a 50-card list (RC-A5 timings; aidream
-    -- db/tests/test_access_read_latency.py).
-    -- A row reached through containment is admitted by iam.has_access_for_base only when a
-    -- container on its frontier is itself admitted: the walk pushes exactly these reachability
-    -- containers (and the row's FK parents, which the parent cascade below covers), and a
-    -- container is walked with include_public no wider than the row's, while admission only grows
-    -- with include_public. So the kernel is asked ONCE per distinct container, at this call's
-    -- include_public (the wider question), and a candidate none of whose containers is admitted
-    -- is not a containment candidate. Every surviving candidate is still confirmed by
-    -- iam.has_access_for_base in the loop below, so this can only drop ids the kernel refuses.
-    -- The cost is one kernel walk per distinct container (279 for the flash cards) instead of one
-    -- per contained row, and never more than before: a row's walk already contains its
-    -- container's.
-    reach_cand as materialized (
-      select r.item_id, r.container_type, r.container_id
-      from platform.reachability r
-      where r.item_type = p_type and r.max_level >= p_required
-        and not exists (select 1 from have h where h.id = r.item_id)
-    ),
-    -- Materialized on its own so the kernel call below cannot be pushed beneath the DISTINCT and
-    -- asked once per contained row again.
-    reach_containers as materialized (
-      select distinct rc.container_type, rc.container_id from reach_cand rc
-    ),
-    reach_ok as materialized (
-      select k.container_type, k.container_id
-      from reach_containers k
-      where iam.has_access_for_base(v_uid, k.container_type, k.container_id, p_required, p_include_public)
-    )
+    with have as materialized (select iam.unnest_uuids(v_ids) as id)
     select distinct c.id
     from (
       select p.resource_id as id
@@ -256,10 +196,9 @@ begin
       from iam.memberships m
       where m.container_type = p_type and m.user_id = v_uid and m.deleted_at is null
       union
-      select rc.item_id
-      from reach_cand rc
-      where exists (select 1 from reach_ok k
-                     where k.container_type = rc.container_type and k.container_id = rc.container_id)
+      select r.item_id
+      from platform.reachability r
+      where r.item_type = p_type and r.max_level >= p_required
       union
       select a.source_id
       from platform.associations_live a
@@ -395,9 +334,57 @@ begin
     execute v_sql into v_more using v_ids;
     v_ids := coalesce(v_more, '{}'::uuid[]);
   end if;
+  -- 🚨 RC-A2c (2026-09-25): a row that points at another record (platform.reference_gate) is in
+  -- the set only when the caller can view that record — the kernel's gate, set-wise.
+  if coalesce(array_length(v_ids, 1), 0) > 0 then
+    for rec in select g.type_column, g.id_column from platform.reference_gate(p_type) g loop
+      execute format(
+        'select coalesce(array_agg(t.id), ''{}'') from %s t where t.id = any($1) and '
+        '(t.%I is null or t.%I is null or iam.has_access_for($2, t.%I, t.%I, ''viewer''::public.permission_level))',
+        v_tbl, rec.type_column, rec.id_column, rec.type_column, rec.id_column)
+        into v_more using v_ids, v_uid;
+      v_ids := coalesce(v_more, '{}'::uuid[]);
+    end loop;
+  end if;
   return coalesce((
     select array_agg(distinct x) from unnest(v_ids) x
   ), '{}'::uuid[]);
 end;
-$function$
-;
+$function$;
+
+DO $rerecord$
+DECLARE
+  v_fp text := iam.entity_read_kernel_fingerprint();
+  v_members jsonb := iam.entity_read_kernel_members_live();
+  v_before jsonb := iam.entity_read_kernel_members_expected()->'members';
+  v_added text[];
+  v_removed text[];
+  v_changed text[];
+BEGIN
+  -- Re-record ONLY this file's own change: exactly one kernel member moved, and it is the
+  -- four-argument accessible_entity_ids. Any other drift is somebody else's, and is refused.
+  SELECT coalesce(array_agg(k ORDER BY k), '{}'::text[]) INTO v_added
+    FROM jsonb_object_keys(v_members) AS k WHERE NOT v_before ? k;
+  SELECT coalesce(array_agg(k ORDER BY k), '{}'::text[]) INTO v_removed
+    FROM jsonb_object_keys(v_before) AS k WHERE NOT v_members ? k;
+  SELECT coalesce(array_agg(k ORDER BY k), '{}'::text[]) INTO v_changed
+    FROM jsonb_object_keys(v_members) AS k
+   WHERE v_before ? k AND (v_before->>k) IS DISTINCT FROM (v_members->>k);
+  IF cardinality(v_added) <> 0 OR cardinality(v_removed) <> 0
+     OR cardinality(v_changed) <> 1
+     OR v_changed[1] <> 'iam.accessible_entity_ids(p_type text, p_required permission_level, p_depth integer, p_include_public boolean)' THEN
+    RAISE EXCEPTION 'aei-rebased-down: refusing to re-record unrelated kernel drift (added %, removed %, changed %)',
+      v_added, v_removed, v_changed;
+  END IF;
+  EXECUTE format($ddl$CREATE OR REPLACE FUNCTION iam.entity_read_kernel_expected()
+RETURNS text LANGUAGE sql IMMUTABLE AS $f$ SELECT %L::text $f$$ddl$, v_fp);
+  EXECUTE format($ddl$CREATE OR REPLACE FUNCTION iam.entity_read_kernel_members_expected()
+RETURNS jsonb LANGUAGE sql IMMUTABLE AS $f$ SELECT %L::jsonb $f$$ddl$,
+                 jsonb_build_object('fingerprint', v_fp, 'members', v_members)::text);
+  IF iam.entity_read_kernel_fingerprint() IS DISTINCT FROM iam.entity_read_kernel_expected()
+     OR (iam.entity_read_kernel_members_expected()->'members') IS DISTINCT FROM iam.entity_read_kernel_members_live()
+     OR (iam.entity_read_kernel_members_expected()->>'fingerprint') IS DISTINCT FROM iam.entity_read_kernel_expected() THEN
+    RAISE EXCEPTION 'aei-rebased-down: kernel fingerprint re-record did not match the live kernel';
+  END IF;
+END
+$rerecord$;
