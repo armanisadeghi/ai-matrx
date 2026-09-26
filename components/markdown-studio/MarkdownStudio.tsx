@@ -52,7 +52,7 @@ import {
   type LoadedStudioContent,
   type StudioSourceKind,
 } from "./lab/content-sources";
-import { syncPaneScroll } from "./lab/sync-scroll";
+import { paneLeads, syncPaneScroll } from "./lab/sync-scroll";
 import type { EditorViewHandle } from "@/components/rich-editor/visual/VisualEditor";
 import { syncStudioSourceUrl } from "./lab/studio-url";
 import { loadStudioSource } from "./lab/content-sources";
@@ -196,6 +196,12 @@ export function MarkdownStudio() {
     content.length < LARGE_BUFFER_CHARS ? content : settledContent,
   );
   const previewContent = previewUpdates === "live" ? deferredContent : manualContent;
+  // Scroll sync maps in lines; count them once per preview text, not per scroll event.
+  const previewLineCount = useMemo(() => {
+    let n = 1;
+    for (let i = previewContent.indexOf("\n"); i !== -1; i = previewContent.indexOf("\n", i + 1)) n++;
+    return n;
+  }, [previewContent]);
 
   // Restore autosave on first mount.
   useEffect(() => {
@@ -400,6 +406,7 @@ export function MarkdownStudio() {
   // back (verifier round 1: a source scroll to 20% snapped back to 224 px).
   // Only the echo from the pane we moved is ignored — the person's own pane
   // keeps syncing on every event.
+  const settleRafRef = useRef(0);
   const echoRef = useRef<{ from: "text-to-preview" | "preview-to-text"; until: number } | null>(null);
   const syncScroll = (direction: "text-to-preview" | "preview-to-text") => {
     if (!scrollSync) return;
@@ -408,17 +415,37 @@ export function MarkdownStudio() {
     const editor = editorRef.current;
     const el = editor?.scroller?.();
     const pv = previewScrollRef.current;
-    if (!editor || !el || !pv || !editor.lineTop) return;
+    if (!editor || !el || !pv || !editor.topLine || !editor.scrollToLine) return;
+    // The pane under the pointer (or holding focus) leads; the other pane's
+    // scroll events are our own writes landing, never a new instruction.
+    const [mine, other] = direction === "text-to-preview" ? [el, pv] : [pv, el];
+    if (!paneLeads(mine, other)) return;
     echoRef.current = {
       from: direction === "text-to-preview" ? "preview-to-text" : "text-to-preview",
       until: performance.now() + 150,
     };
-    syncPaneScroll({
+    const args = {
       text: previewContent,
-      source: { el, lineTop: editor.lineTop },
+      source: {
+        el,
+        lineCount: previewLineCount,
+        topLine: editor.topLine,
+        scrollToLine: editor.scrollToLine,
+      },
       preview: pv,
       direction,
-    });
+    };
+    syncPaneScroll(args);
+    // CodeMirror draws and measures the lines a scroll brought into view one
+    // frame later, which can move the top line without another scroll event:
+    // settle once more after that measure (measured: a source jump to 25% left
+    // the preview one section behind until the next event).
+    if (direction === "text-to-preview") {
+      cancelAnimationFrame(settleRafRef.current);
+      settleRafRef.current = requestAnimationFrame(() => {
+        settleRafRef.current = requestAnimationFrame(() => syncPaneScroll(args));
+      });
+    }
   };
 
   // Stable handlers for the two panes: a keystroke re-renders this component,
@@ -788,8 +815,10 @@ export function MarkdownStudio() {
         // header (which keeps the studio's own actions reachable) and beside
         // the nav rail, whose fixed account block would otherwise sit on top
         // of the studio's bottom-left corner (the Block Atlas); Esc exits.
+        // Its size comes from the four insets: h-full / w-full would add the
+        // offsets on top and push the bottom and right edges off screen.
         fullScreen &&
-          "fixed inset-x-0 bottom-0 top-[var(--shell-header-h)] z-30 lg:left-[var(--shell-sidebar-w)]",
+          "fixed inset-x-0 bottom-0 top-[var(--shell-header-h)] z-30 h-auto w-auto lg:left-[var(--shell-sidebar-w)]",
       )}
     >
       <PageHeader>

@@ -143,10 +143,14 @@ export function parseTextSegments(text: string): TextSegment[] {
   return segments;
 }
 
-/** Heading text as a reader sees it: no markup, no `{#id}`, lower-case, one space. */
-function normalizeHeading(text: string): string {
+/**
+ * Heading text as a reader sees it: no markup, no `{#id}`, no rendered anchor
+ * link (`Fleet inventory#`), lower-case, one space.
+ */
+export function normalizeHeading(text: string): string {
   return text
     .replace(/\{#[^}]*\}\s*$/, "")
+    .replace(/\s*#+\s*$/, "")
     .replace(/[*_`~[\]]/g, "")
     .replace(/\(([^)]*)\)/g, "")
     .replace(/\s+/g, " ")
@@ -155,26 +159,27 @@ function normalizeHeading(text: string): string {
 }
 
 /**
- * Builds paired checkpoints between raw text and rendered preview.
+ * Builds paired checkpoints between the raw text (in LINES) and the rendered
+ * preview (in scroll pixels).
  *
  * Strategy (2026-09-26, verifier round 1 row 20): HEADINGS are the anchors. The
  * k-th source heading is paired with the rendered heading of the same text, in
- * order, and scroll positions interpolate between those pairs. The previous
- * pairing matched the i-th source segment with the i-th rendered element —
- * but a table, code block or list renders many matched elements, so the pairs
- * drifted and half-way down the preview mapped to the first screen of the
- * source. Heading text is the same on both sides, so a pair is never wrong;
- * without headings the caller falls back to proportional mapping.
+ * order, and positions interpolate between those pairs. The previous pairing
+ * matched the i-th source segment with the i-th rendered element — but a table,
+ * code block or list renders many matched elements, so the pairs drifted and
+ * half-way down the preview mapped to the first screen of the source. The
+ * source side is measured in lines, not pixels, because CodeMirror only knows
+ * the pixel height of lines it has drawn; everything else is an estimate that
+ * moves the moment it is drawn. Without headings the caller maps proportionally.
  */
 export function buildPairedCheckpoints(
   text: string,
-  lineTop: (lineIndex: number) => number,
   scrollContainer: HTMLElement,
-): { textPx: number[]; renderPx: number[] } | null {
-  const lines = text.split("\n");
+): { lines: number[]; renderPx: number[] } | null {
+  const textLines = text.split("\n");
   const sourceHeadings = parseTextSegments(text)
     .filter((s) => s.type === "heading")
-    .map((s) => ({ line: s.startLine, key: normalizeHeading((lines[s.startLine] ?? "").replace(/^\s*#{1,6}\s+/, "")) }));
+    .map((s) => ({ line: s.startLine, key: normalizeHeading((textLines[s.startLine] ?? "").replace(/^\s*#{1,6}\s+/, "")) }));
   const containerRect = scrollContainer.getBoundingClientRect();
   const scrollY = scrollContainer.scrollTop;
   const renderedHeadings = Array.from(scrollContainer.querySelectorAll("h1, h2, h3, h4, h5, h6"))
@@ -182,23 +187,22 @@ export function buildPairedCheckpoints(
     .map((el) => ({ top: el.getBoundingClientRect().top - containerRect.top + scrollY, key: normalizeHeading(el.textContent ?? "") }));
   if (sourceHeadings.length === 0 || renderedHeadings.length === 0) return null;
 
-  const textPx: number[] = [0];
+  const lines: number[] = [0];
   const renderPx: number[] = [0];
   let r = 0;
   for (const h of sourceHeadings) {
     let j = r;
     while (j < renderedHeadings.length && renderedHeadings[j]!.key !== h.key) j++;
     if (j >= renderedHeadings.length) continue; // not rendered (yet) — skip, keep order
-    const t = lineTop(h.line);
     const px = renderedHeadings[j]!.top;
     // Keep the pairs strictly increasing on both sides.
-    if (t > textPx[textPx.length - 1]! && px > renderPx[renderPx.length - 1]!) {
-      textPx.push(t);
+    if (h.line > lines[lines.length - 1]! && px > renderPx[renderPx.length - 1]!) {
+      lines.push(h.line);
       renderPx.push(px);
     }
     r = j + 1;
   }
-  return textPx.length >= 2 ? { textPx, renderPx } : null;
+  return lines.length >= 2 ? { lines, renderPx } : null;
 }
 
 /**
@@ -242,45 +246,70 @@ export function mapScroll(
 }
 
 /**
- * The editor side of the sync: its scroll container, and where a source line
- * (0-based) sits in that container's scroll coordinates. The Markdown Studio's
- * source is THE rich editor's Source view (CodeMirror, wrapped lines, measured
- * per line); a plain textarea is the fixed-line-height case.
+ * Which pane is the person driving? The one under the pointer, else the one
+ * holding focus. A scroll event from the other pane is the sync's own write
+ * landing (a frame or a re-measure later) and must not be mirrored back — that
+ * ping-pong is what snapped a scrolled pane back (verifier round 1, row 20).
+ * With neither signal (a script, a touch fling) the event leads.
+ */
+export function paneLeads(mine: HTMLElement, other: HTMLElement): boolean {
+  if (mine.matches(":hover")) return true;
+  if (other.matches(":hover")) return false;
+  const active = typeof document === "undefined" ? null : document.activeElement;
+  if (active && mine.contains(active)) return true;
+  if (active && other.contains(active)) return false;
+  return true;
+}
+
+/**
+ * The editor side of the sync, in LINES (0-based, fractional inside a wrapped
+ * line): which line sits at the top of the viewport, and how to put a line
+ * there. The Markdown Studio's source is THE rich editor's Source view
+ * (CodeMirror, which measures lines only once drawn); a plain textarea is the
+ * fixed-line-height case.
  */
 export interface SyncSource {
   el: HTMLElement;
-  lineTop: (lineIndex: number) => number;
+  lineCount: number;
+  topLine: () => number;
+  scrollToLine: (line: number) => void;
 }
 
 export function textareaSyncSource(ta: HTMLTextAreaElement): SyncSource {
   const lineHeight = parseFloat(window.getComputedStyle(ta).lineHeight) || 20;
-  return { el: ta, lineTop: (line) => line * lineHeight };
+  return {
+    el: ta,
+    lineCount: ta.value.split("\n").length,
+    topLine: () => ta.scrollTop / lineHeight,
+    scrollToLine: (line) => {
+      ta.scrollTop = line * lineHeight;
+    },
+  };
 }
 
 /**
  * Checkpoints are expensive on a big document (a re-parse of the whole text
- * plus a layout read of every rendered block) and scroll events fire at frame
- * rate — so they are computed ONCE per (text, both panes' heights) and reused
- * until the text changes or either pane re-lays out.
+ * plus a layout read of every rendered heading) and scroll events fire at frame
+ * rate — so they are computed ONCE per (text, preview height) and reused until
+ * the text changes or the preview re-lays out (a diagram drawing, a block
+ * mounting).
  */
 const checkpointCache = new WeakMap<
   HTMLElement,
-  { text: string; sourceHeight: number; scrollHeight: number; paired: ReturnType<typeof buildPairedCheckpoints> }
+  { text: string; scrollHeight: number; paired: ReturnType<typeof buildPairedCheckpoints> }
 >();
 
-function cachedCheckpoints(text: string, source: SyncSource, preview: HTMLElement) {
+function cachedCheckpoints(text: string, preview: HTMLElement) {
   const hit = checkpointCache.get(preview);
-  if (hit && hit.text === text && hit.sourceHeight === source.el.scrollHeight && hit.scrollHeight === preview.scrollHeight) {
-    return hit.paired;
-  }
-  const paired = buildPairedCheckpoints(text, source.lineTop, preview);
-  checkpointCache.set(preview, { text, sourceHeight: source.el.scrollHeight, scrollHeight: preview.scrollHeight, paired });
+  if (hit && hit.text === text && hit.scrollHeight === preview.scrollHeight) return hit.paired;
+  const paired = buildPairedCheckpoints(text, preview);
+  checkpointCache.set(preview, { text, scrollHeight: preview.scrollHeight, paired });
   return paired;
 }
 
 /**
- * Map a source scroll position onto the target pane, block-paired when the
- * raw text and rendered DOM can be paired, proportional otherwise.
+ * Map the scrolling pane's position onto the other pane, heading-paired when
+ * the raw text and rendered DOM share headings, proportional otherwise.
  * `direction` says which pane is scrolling.
  */
 export function syncPaneScroll(args: {
@@ -290,23 +319,20 @@ export function syncPaneScroll(args: {
   direction: "text-to-preview" | "preview-to-text";
 }): void {
   const { text, source, preview, direction } = args;
-  const ta = source.el;
-  const taMax = ta.scrollHeight - ta.clientHeight;
+  const lastLine = Math.max(1, source.lineCount - 1);
   const pvMax = preview.scrollHeight - preview.clientHeight;
-  const paired = cachedCheckpoints(text, source, preview);
+  const paired = cachedCheckpoints(text, preview);
   if (direction === "text-to-preview") {
-    preview.scrollTop =
-      paired && paired.textPx.length >= 2
-        ? Math.max(0, mapScroll(ta.scrollTop, paired.textPx, paired.renderPx, taMax, pvMax))
-        : taMax > 0
-          ? (ta.scrollTop / taMax) * pvMax
-          : 0;
+    const line = source.topLine();
+    preview.scrollTop = paired
+      ? Math.max(0, mapScroll(line, paired.lines, paired.renderPx, lastLine, pvMax))
+      : (line / lastLine) * pvMax;
   } else {
-    ta.scrollTop =
-      paired && paired.renderPx.length >= 2
-        ? Math.max(0, mapScroll(preview.scrollTop, paired.renderPx, paired.textPx, pvMax, taMax))
-        : pvMax > 0
-          ? (preview.scrollTop / pvMax) * taMax
-          : 0;
+    const line = paired
+      ? Math.max(0, mapScroll(preview.scrollTop, paired.renderPx, paired.lines, pvMax, lastLine))
+      : pvMax > 0
+        ? (preview.scrollTop / pvMax) * lastLine
+        : 0;
+    source.scrollToLine(line);
   }
 }

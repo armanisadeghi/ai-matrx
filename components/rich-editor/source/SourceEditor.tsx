@@ -378,13 +378,26 @@ export function SourceEditor({
     },
     currentLink: () => null,
     scroller: () => scroller.current,
-    lineTop: (lineIndex: number) => {
+    topLine: () => {
       const v = view.current;
       const el = scroller.current;
       if (!v || !el) return 0;
-      const line = v.state.doc.line(Math.min(Math.max(1, lineIndex + 1), v.state.doc.lines));
-      const block = v.lineBlockAt(line.from);
-      return v.documentTop - el.getBoundingClientRect().top + el.scrollTop + block.top;
+      const y = el.getBoundingClientRect().top - v.documentTop;
+      if (y <= 0) return 0;
+      const block = v.lineBlockAtHeight(y);
+      const index = v.state.doc.lineAt(block.from).number - 1;
+      return index + (block.height > 0 ? Math.min(1, Math.max(0, (y - block.top) / block.height)) : 0);
+    },
+    scrollToLine: (lineIndex: number) => {
+      const v = view.current;
+      if (!v) return;
+      const index = Math.min(Math.max(0, Math.floor(lineIndex)), v.state.doc.lines - 1);
+      const line = v.state.doc.line(index + 1);
+      // A wrapped line is many rows tall: aim at the character the fraction
+      // points to, and CodeMirror puts that row at the top (it measures what
+      // it draws, so the position is exact rather than an estimate).
+      const at = line.from + Math.round((lineIndex - index) * line.length);
+      v.dispatch({ effects: EditorView.scrollIntoView(at, { y: "start" }) });
     },
   }));
 
