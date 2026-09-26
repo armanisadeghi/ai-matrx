@@ -1,4 +1,4 @@
--- retired: graveyard.provision/mandate_binding/user_flashcard_* DROPPED 2026-09-26 by the database estate-reduction program (backups in /Users/armanisadeghi/db-estate-backups/2026-09-26/); this file creates, moves, or asserts a table that no longer exists and must never run again
+-- retired: graveyard.mandate (21:04 UTC) + graveyard.provision/mandate_binding/user_flashcard_* DROPPED 2026-09-26 by the database estate-reduction program (backups in /Users/armanisadeghi/db-estate-backups/2026-09-26/); this file creates, moves, or asserts a table that no longer exists and must never run again
 -- DD-136c — THE GRAVEYARD IS NOT A CLIENT SURFACE.
 --
 -- ── WHY, found by the DD-136 guard on its first live run ────────────────────
