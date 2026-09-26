@@ -20,6 +20,7 @@ import {
   Loader2,
   CheckCircle,
   KeyRound,
+  ShieldCheck,
 } from "lucide-react";
 import { useSharing, useIsOwner } from "@/utils/permissions/hooks";
 import {
@@ -39,6 +40,7 @@ import { shareWithOutsidePerson } from "@/features/sharing/outside/outsideShareS
 import { OrgAvailabilityNote } from "./OrgAvailabilityNote";
 import { WhoCanSeeThis } from "./WhoCanSeeThis";
 import { PublicAccessTab } from "./tabs/PublicAccessTab";
+import { SecureLinkPanel } from "@/features/sharing/secure/SecureLinkPanel";
 import { useToast } from "@/components/ui/use-toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -123,7 +125,7 @@ export function ShareModal({
   outsideShare,
 }: ShareModalProps) {
   const [activeTab, setActiveTab] = useState<
-    "users" | "public" | "access"
+    "users" | "public" | "secure" | "access"
   >("users");
   // How many people outside this organization are invited and have not joined.
   // Reported UP by the panel that draws them, so the grant list's empty state
@@ -393,7 +395,7 @@ export function ShareModal({
             className="flex-1 flex flex-col min-h-0"
           >
             {/* phone-ok: labels are hidden below sm, icon-only tabs on phone */}
-            <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
+            <TabsList className="grid w-full grid-cols-4 flex-shrink-0">
               <TabsTrigger value="users" className="gap-2">
                 <Users className="w-4 h-4" />
                 <span className="hidden sm:inline">Users</span>
@@ -411,6 +413,13 @@ export function ShareModal({
                     •
                   </span>
                 )}
+              </TabsTrigger>
+              {/* SECURE LINK — CODE REQUIRED (access ladder, secure delivery): the
+                  third way to share, for anything that must not travel in a plain
+                  link — a single-use link on one channel, a code on the other. */}
+              <TabsTrigger value="secure" className="gap-2">
+                <ShieldCheck className="w-4 h-4" />
+                <span className="hidden sm:inline">Secure link</span>
               </TabsTrigger>
               {/* WHO CAN SEE THIS, AND WHY. The three tabs above list the GRANTS
                   this dialog writes; they are only one of the six ways access is
@@ -535,6 +544,18 @@ export function ShareModal({
                     .map((p) => `${p.id}:${p.permissionLevel}`)
                     .join("|")}
                 />
+              </TabsContent>
+
+              <TabsContent value="secure" className="mt-0">
+                {isOwner ? (
+                  <SecureLinkPanel
+                    resourceType={resourceType}
+                    resourceId={resourceId}
+                    resourceName={resourceName}
+                  />
+                ) : (
+                  manageBlockedNotice
+                )}
               </TabsContent>
 
               <TabsContent value="public" className="mt-0">

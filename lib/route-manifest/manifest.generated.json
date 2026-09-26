@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1279,
+  "routeCount": 1283,
   "routes": [
     {
       "pattern": "/",
@@ -572,6 +572,11 @@
       "pattern": "/administration/database/canonicalization/broken-functions",
       "status": "live",
       "source": "app/(admin)/administration/database/canonicalization/broken-functions/page.tsx"
+    },
+    {
+      "pattern": "/administration/database/canonicalization/by-schema",
+      "status": "live",
+      "source": "app/(admin)/administration/database/canonicalization/by-schema/page.tsx"
     },
     {
       "pattern": "/administration/database/canonicalization/candidates",
@@ -1247,6 +1252,11 @@
       "pattern": "/administration/utilities/server-cache",
       "status": "live",
       "source": "app/(admin)/administration/utilities/server-cache/page.tsx"
+    },
+    {
+      "pattern": "/administration/utilities/surface-write-stress",
+      "status": "live",
+      "source": "app/(admin)/administration/utilities/surface-write-stress/page.tsx"
     },
     {
       "pattern": "/administration/utilities/system-errors",
@@ -2762,6 +2772,11 @@
       "pattern": "/files/folders",
       "status": "live",
       "source": "app/(core)/files/folders/page.tsx"
+    },
+    {
+      "pattern": "/files/google-drive",
+      "status": "live",
+      "source": "app/(core)/files/google-drive/page.tsx"
     },
     {
       "pattern": "/files/photos",
@@ -5819,6 +5834,11 @@
       "pattern": "/search",
       "status": "live",
       "source": "app/(core)/search/page.tsx"
+    },
+    {
+      "pattern": "/secure/[token]",
+      "status": "live",
+      "source": "app/(link)/secure/[token]/page.tsx"
     },
     {
       "pattern": "/seo",

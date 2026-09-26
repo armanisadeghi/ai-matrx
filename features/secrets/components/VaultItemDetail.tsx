@@ -117,6 +117,7 @@ import {
   type VaultPrincipal,
 } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { SecureLinkPanel } from "@/features/sharing/secure/SecureLinkPanel";
 
 interface VaultItemDetailProps {
   item: VaultItem;
@@ -639,7 +640,21 @@ export function VaultItemDetail({
       </div>
 
       {panel === "share" && panelEligibility.share && (
-        <SharePanel item={item} busy={busy} actions={actions} />
+        <>
+          <SharePanel item={item} busy={busy} actions={actions} />
+          {/* SECURE LINK — CODE REQUIRED: send this credential to someone who has
+              no account (the accountant, the contractor) by a single-use link plus
+              a code on the other channel. The ONE panel the share dialog mounts;
+              the vault's reveal rules decide which fields may go. */}
+          <div className="space-y-2 rounded-md bg-muted/40 p-3">
+            <Label className="text-xs">Send to someone by secure link</Label>
+            <SecureLinkPanel
+              resourceType="credential_item"
+              resourceId={item.id}
+              resourceName={item.display_name}
+            />
+          </div>
+        </>
       )}
       {panel === "give" && panelEligibility.give && (
         <GiveOwnershipPanel
