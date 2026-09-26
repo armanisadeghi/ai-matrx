@@ -54,12 +54,19 @@ export interface UseSourcesResult {
 }
 
 /**
- * Small batches read in parallel: each id costs a few RLS-checked counts, so
- * one 200-id call took ~5s while 25-id batches in parallel finish in ~2s and
- * fill the newest rows first (measured 2026-09-26, admin, 200 Sources).
+ * FEW LARGE BATCHES, ONE AT A TIME. `docproc.source_list_facts` costs ~6 s
+ * PER CALL whatever its batch size (its row-level security materializes every
+ * processed_document the caller can see, once per call); the per-id cost is
+ * small. Measured 2026-09-26, admin, 548 Sources after the library grew to
+ * ~10,000: 25-id batches x 8 parallel -> 22 of 22 hit the 8 s statement timeout
+ * (57014) and every row read "Couldn't read status"; 200-id batches one at a
+ * time -> 0 failures at ~6.2 s each, and two at a time failed minutes later
+ * under a busier DB. This only lowers the load: the per-call cost is the DB
+ * lane's to fix, and until then a busy DB can still time a batch out (the rows
+ * then say so and offer Retry).
  */
-const FACTS_BATCH = 25;
-const FACTS_PARALLEL = 8;
+const FACTS_BATCH = 200;
+const FACTS_PARALLEL = 1;
 
 export interface SourceFactsRead {
   facts: Map<string, SourceFacts>;
