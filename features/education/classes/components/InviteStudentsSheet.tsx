@@ -13,13 +13,7 @@
 // destination preserved, and the token matches on the invited email.
 
 import { useRef, useState } from "react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@ai-matrx/design-system";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import {
@@ -102,16 +96,19 @@ export function InviteStudentsSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>Invite students to {className}</SheetTitle>
-          <SheetDescription>
-            Share a join code, send email invitations, or import a class roster.
-          </SheetDescription>
-        </SheetHeader>
-
-        <div className="mt-2 flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pb-4 pr-1">
+    <MatrxDynamicPanelHost
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`Invite students to ${className}`}
+      description="Share a join code, send email invitations, or import a class roster."
+      expandButtonLabel="Invite"
+      initialFocus
+      position="right"
+      defaultSize={34}
+      minSize={24}
+      contentClassName="flex min-h-0 flex-1 flex-col p-0"
+    >
+        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-3 pb-4">
           {/* ── Join code + link ─────────────────────────────────────── */}
           <section className="space-y-2">
             <h3 className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -307,7 +304,6 @@ export function InviteStudentsSheet({
             </section>
           )}
         </div>
-      </SheetContent>
-    </Sheet>
+    </MatrxDynamicPanelHost>
   );
 }

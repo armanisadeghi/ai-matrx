@@ -10,13 +10,7 @@
 // the boundary. Detaching removes the assignment.
 
 import { CalendarClock } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@ai-matrx/design-system";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { UniversalAssociationPicker } from "@ai-matrx/associations/react";
@@ -46,17 +40,19 @@ export function AssignResourceSheet({
   const userId = useAppSelector(selectUserId);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>Assign to {className}</SheetTitle>
-          <SheetDescription>
-            Pick a deck or a quiz / practice test to assign. Every student on the
-            roster sees it, and you see who has completed it.
-          </SheetDescription>
-        </SheetHeader>
-
-        <div className="mt-2 rounded-lg border border-border bg-card p-3">
+    <MatrxDynamicPanelHost
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`Assign to ${className}`}
+      description="Pick a deck or a quiz / practice test to assign. Every student on the roster sees it, and you see who has completed it."
+      expandButtonLabel="Assign"
+      initialFocus
+      position="right"
+      defaultSize={34}
+      minSize={24}
+      contentClassName="flex min-h-0 flex-1 flex-col px-3 pb-3"
+    >
+        <div className="rounded-lg border border-border bg-card p-3">
           <label
             htmlFor="assign-due-date"
             className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-foreground"
@@ -92,7 +88,6 @@ export function AssignResourceSheet({
             onDetach={(token, id) => assignments.unassign(token, id)}
           />
         </div>
-      </SheetContent>
-    </Sheet>
+    </MatrxDynamicPanelHost>
   );
 }

@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { useClasses } from "../hooks/useClasses";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { useMyClasses } from "../hooks/useMyClasses";
 import { ClassFormDialog, type ClassFormValue } from "./ClassFormDialog";
 import { AccessModeBadge } from "./AccessModeBadge";
@@ -96,6 +98,7 @@ export function ClassesHome() {
   const router = useRouter();
   const { classes, loading, createClass } = useClasses();
   const { joined } = useMyClasses();
+  const { organizationState } = useOrganizationRequired();
   const [dialogOpen, setDialogOpen] = useState(false);
 
   async function handleCreate(value: ClassFormValue) {
@@ -116,7 +119,15 @@ export function ClassesHome() {
         </Button>
       </div>
 
-      {loading ? (
+      {organizationState !== "ready" ? (
+        // Owned classes live in an organization's scope tree; with none chosen
+        // the list can never load, so say so with the picker instead of a
+        // skeleton that never resolves.
+        <OrganizationContextNotice
+          state={organizationState}
+          what="Your classes"
+        />
+      ) : loading ? (
         <div className="space-y-2">
           <Skeleton className="h-14 w-full" />
           <Skeleton className="h-14 w-full" />

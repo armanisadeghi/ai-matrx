@@ -6,14 +6,12 @@
 // UniversalAssociationPicker, targeting the class SCOPE as the container. Attach
 // writes the same source=content → target=('scope', classId) edge the hub reads,
 // so attaching here and tagging from an artifact are ONE relationship.
+//
+// Hosted in the NON-BLOCKING docked panel, never a Sheet: the picker's Files
+// tab opens the Add-files WindowPanel, and a focus-trapping Sheet made that
+// window untypeable (every-picker-takes-new-input.md rule 4).
 
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@ai-matrx/design-system";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { UniversalAssociationPicker } from "@ai-matrx/associations/react";
@@ -36,25 +34,25 @@ export function AddClassContentSheet({
   const userId = useAppSelector(selectUserId);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>Add to {className}</SheetTitle>
-          <SheetDescription>
-            Search your decks, quizzes, notes, media, and files, and tag them to
-            this class.
-          </SheetDescription>
-        </SheetHeader>
-        <div className="mt-2 flex min-h-0 flex-1 flex-col">
-          <UniversalAssociationPicker
-            tokens={CLASS_PICKER_TOKENS}
-            attachedKeys={content.attachedKeys}
-            ownerId={userId ?? undefined}
-            onAttach={(token, id, title) => content.attach(token, id, title)}
-            onDetach={(token, id) => content.detach(token, id)}
-          />
-        </div>
-      </SheetContent>
-    </Sheet>
+    <MatrxDynamicPanelHost
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`Add to ${className}`}
+      description="Search your decks, quizzes, notes, media, and files, and tag them to this class."
+      expandButtonLabel="Add content"
+      initialFocus
+      position="right"
+      defaultSize={34}
+      minSize={24}
+      contentClassName="flex min-h-0 flex-1 flex-col px-3 pb-3"
+    >
+      <UniversalAssociationPicker
+        tokens={CLASS_PICKER_TOKENS}
+        attachedKeys={content.attachedKeys}
+        ownerId={userId ?? undefined}
+        onAttach={(token, id, title) => content.attach(token, id, title)}
+        onDetach={(token, id) => content.detach(token, id)}
+      />
+    </MatrxDynamicPanelHost>
   );
 }
