@@ -7,6 +7,7 @@
 // launches the Dictionary Assistant chat preset to this owner.
 
 import { useCallback, useMemo, useState } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   Plus, Search, Trash2, Pencil, MessageSquare, ChevronDown, Download, Upload,
 } from "lucide-react";
@@ -68,7 +69,7 @@ const EMPTY_DRAFT: DictEntryDraft = {
 };
 
 export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, embedded }: Props) {
-  const { entries, status, settings, busy, upsert, remove, saveInlinePolicy } = useDictionary(
+  const { entries, status, error: readError, reload, settings, busy, upsert, remove, saveInlinePolicy } = useDictionary(
     level,
     ownerId,
   );
@@ -359,6 +360,8 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
         <ScrollArea className={cn(embedded ? "max-h-[340px]" : "max-h-[520px]")}>
           {status === "loading" && entries.length === 0 ? (
             <div className="px-3 py-8 text-center text-sm text-muted-foreground">Loading…</div>
+          ) : status === "error" && entries.length === 0 ? (
+            <ReadFailure error={readError ?? true} what="this dictionary's entries" onRetry={() => void reload()} />
           ) : filtered.length === 0 ? (
             <div className="px-3 py-8 text-center text-sm text-muted-foreground">
               {entries.length === 0

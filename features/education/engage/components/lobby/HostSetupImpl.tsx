@@ -11,7 +11,9 @@
 
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
+import { useRead } from "@/components/read-state/useRead";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import {
@@ -48,23 +50,19 @@ export function HostSetupImpl() {
   const router = useRouter();
   const { userId } = useCurrentPlayer();
   const roomSize = useEntitlement("education.game_room_size");
-  const [sets, setSets] = useState<FcSetRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const setsRead = useRead(
+    async () => {
+      const res = await fcService.listSets();
+      if (res.error) throw res.error;
+      return res.data ?? [];
+    },
+    [],
+    { initialData: [] as FcSetRow[] },
+  );
+  const sets = setsRead.data ?? [];
+  const loading = setsRead.isLoading;
   const [source, setSource] = useState<Source>({ kind: "due" });
   const [creating, startCreate] = useTransition();
-
-  useEffect(() => {
-    let active = true;
-    void (async () => {
-      const res = await fcService.listSets();
-      if (!active) return;
-      setSets(res.data ?? []);
-      setLoading(false);
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const maxPlayers = roomSize.limit ?? DEFAULT_ROOM_CONFIG.maxPlayers;
 
@@ -159,6 +157,13 @@ export function HostSetupImpl() {
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> Loading decks…
           </div>
+        ) : setsRead.isError && sets.length === 0 ? (
+          <ReadFailure
+            error={setsRead.error}
+            what="your decks"
+            className="m-0"
+            onRetry={setsRead.retry}
+          />
         ) : sets.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No decks yet.{" "}

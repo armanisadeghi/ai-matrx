@@ -14,7 +14,8 @@
 // converter, so the empty state sends the learner to the kit builder rather
 // than to a create form that does not exist.
 
-import { useEffect, useState } from "react";
+import { useRead } from "@/components/read-state/useRead";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import Link from "next/link";
 import { FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,20 +26,17 @@ import type { StudyMediaRow } from "@/features/education/media/types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function SummaryHome() {
-  const [rows, setRows] = useState<StudyMediaRow[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    studyMediaService.listByKind("summary").then((res) => {
-      if (!active) return;
-      setRows(res.data ?? []);
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const read = useRead(
+    async () => {
+      const res = await studyMediaService.listByKind("summary");
+      if (res.error) throw res.error;
+      return res.data ?? [];
+    },
+    [],
+    { initialData: [] as StudyMediaRow[] },
+  );
+  const rows = read.data ?? [];
+  const loading = read.isLoading;
 
   return (
     <>
@@ -58,6 +56,8 @@ export function SummaryHome() {
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
           </div>
+        ) : read.isError && rows.length === 0 ? (
+          <ReadFailure error={read.error} what="your summaries" onRetry={read.retry} />
         ) : rows.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-10 text-center">
             <FileText className="h-8 w-8 text-muted-foreground" />

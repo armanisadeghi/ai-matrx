@@ -8,6 +8,7 @@
 // inline header, content floats behind the shell glass. React Compiler on.
 
 import { useRef, useState, type ReactNode } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { GraduationCap, Plus, CalendarClock, User } from "lucide-react";
@@ -105,7 +106,7 @@ const JOINED_STATUS_LABEL: Record<string, string> = {
 
 export function ClassesHome() {
   const router = useRouter();
-  const { classes, archived, loading, createClass } = useClasses();
+  const { classes, archived, loading, error: classesError, refresh, createClass } = useClasses();
   const {
     joined,
     loading: joinedLoading,
@@ -200,6 +201,8 @@ export function ClassesHome() {
           <Skeleton className="h-14 w-full" />
           <Skeleton className="h-14 w-full" />
         </div>
+      ) : classesError != null && classes.length === 0 ? (
+        <ReadFailure error={classesError} what="your classes" onRetry={() => void refresh()} />
       ) : classes.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-10 text-center">
           <GraduationCap className="h-8 w-8 text-muted-foreground" />

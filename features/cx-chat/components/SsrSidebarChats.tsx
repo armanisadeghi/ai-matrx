@@ -36,6 +36,7 @@ import {
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 // ── Legacy cx-conversation slice stubs ────────────────────────────────────────
 // cx-chat is deprecated (rebuild in progress on `conversation-list/` slice).
 // During the Redux unification we kept this component rendering but inert:
@@ -292,6 +293,7 @@ function SharedChatsSection({
   );
   const [isLoading, setIsLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
+  const [loadError, setLoadError] = useState<unknown>(null);
 
   useEffect(() => {
     if (!isOpen || hasFetched) return undefined;
@@ -300,12 +302,18 @@ function SharedChatsSection({
     (async () => {
       try {
         const response = await fetch("/api/cx-chat/shared");
-        if (response.ok) {
-          const data = await response.json();
-          if (!cancelled) setSharedChats(data.conversations || []);
+        if (!response.ok) {
+          throw new Error(
+            `Shared chats request failed (${response.status} ${response.statusText})`,
+          );
         }
-      } catch {
-        /* non-critical */
+        const data = await response.json();
+        if (!cancelled) {
+          setSharedChats(data.conversations || []);
+          setLoadError(null);
+        }
+      } catch (err) {
+        if (!cancelled) setLoadError(err ?? true);
       } finally {
         if (!cancelled) {
           setIsLoading(false);
@@ -358,7 +366,14 @@ function SharedChatsSection({
               <div className="w-3.5 h-3.5 border-2 border-muted-foreground/30 border-t-secondary rounded-full animate-spin" />
             </div>
           )}
-          {!isLoading && filtered.length === 0 && hasFetched && (
+          {!isLoading && loadError != null && (
+            <ReadFailure
+              error={loadError}
+              what="chats shared with you"
+              onRetry={() => setHasFetched(false)}
+            />
+          )}
+          {!isLoading && loadError == null && filtered.length === 0 && hasFetched && (
             <div className="flex flex-col items-center justify-center py-4 px-2 text-center">
               <Users className="h-4 w-4 text-muted-foreground/30 mb-1" />
               <p className="text-[10px] text-muted-foreground">
@@ -500,7 +515,11 @@ export function SsrSidebarChats({
         </div>
       )}
 
-      {!isLoading && filtered.length === 0 && !searchQuery && (
+      {listStatus === "error" && items.length === 0 && (
+        <ReadFailure error={true} what="your conversations" />
+      )}
+
+      {listStatus === "success" && filtered.length === 0 && !searchQuery && (
         <div className="flex flex-col items-center justify-center py-6 px-2 text-center">
           <MessageSquare className="h-5 w-5 text-muted-foreground/30 mb-1.5" />
           <p className="text-[10px] text-muted-foreground">
@@ -509,7 +528,7 @@ export function SsrSidebarChats({
         </div>
       )}
 
-      {!isLoading && filtered.length === 0 && searchQuery && (
+      {listStatus === "success" && filtered.length === 0 && searchQuery && (
         <div className="flex flex-col items-center justify-center py-6 px-2 text-center">
           <Search className="h-4 w-4 text-muted-foreground/30 mb-1.5" />
           <p className="text-[10px] text-muted-foreground">No results</p>

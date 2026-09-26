@@ -27,6 +27,10 @@ import {
   selectScopesByType,
   selectScopesLoadedForType,
 } from "@/features/scopes/redux/selectors/admin";
+import {
+  selectTreeError,
+  selectTreeStatus,
+} from "@/features/scopes/redux/selectors/tree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import {
   createScope,
@@ -50,6 +54,12 @@ export interface UseClassesReturn {
   /** The resolved Class scope type id, once known. */
   classTypeId: string | null;
   loading: boolean;
+  /**
+   * The scope-tree read's failure (null when it succeeded or is in flight).
+   * A failed load counts as "loaded", so an empty `classes` with an `error`
+   * is NOT "no classes" — gate the empty view on it (RC-B12).
+   */
+  error: unknown;
   orgId: string | null;
   /**
    * Ensure the Class scope type exists in `forOrgId` (default: the selected
@@ -116,6 +126,9 @@ export function useClasses(): UseClassesReturn {
   const archived = all.filter((c) => c.settings.archived);
 
   const loading = !typesLoaded || (classTypeId != null && !scopesLoaded);
+  const treeStatus = useAppSelector(selectTreeStatus);
+  const treeError = useAppSelector(selectTreeError);
+  const error: unknown = treeStatus === "error" ? (treeError ?? true) : null;
 
   const store = useAppStore();
 
@@ -217,6 +230,7 @@ export function useClasses(): UseClassesReturn {
     archived,
     classTypeId,
     loading,
+    error,
     orgId,
     ensureClassType,
     createClass,

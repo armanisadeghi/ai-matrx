@@ -6,7 +6,8 @@
 // or can see (RLS-filtered, recent-first) with a New button.
 // React Compiler is on: no manual memo.
 
-import { useEffect, useState } from "react";
+import { useRead } from "@/components/read-state/useRead";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Network, Plus } from "lucide-react";
@@ -20,20 +21,17 @@ import type { StudyMediaRow } from "../../types";
 
 export function MindMapHome() {
   const router = useRouter();
-  const [rows, setRows] = useState<StudyMediaRow[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    studyMediaService.listByKind("mind_map").then((res) => {
-      if (!active) return;
-      setRows(res.data ?? []);
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const read = useRead(
+    async () => {
+      const res = await studyMediaService.listByKind("mind_map");
+      if (res.error) throw res.error;
+      return res.data ?? [];
+    },
+    [],
+    { initialData: [] as StudyMediaRow[] },
+  );
+  const rows = read.data ?? [];
+  const loading = read.isLoading;
 
   // Live surface scope for the Agents chrome (matrx-user/education-mind-maps,
   // list view). Synchronous over live render state — no fetch; the Surface
@@ -43,8 +41,8 @@ export function MindMapHome() {
   const getScope = () =>
     createEducationMindMapsScope({
       view: "list",
-      maps_loaded: !loading,
-      ...(loading
+      maps_loaded: read.status === "ready",
+      ...(read.status !== "ready"
         ? {}
         : {
             mind_map_count: rows.length,
@@ -78,6 +76,8 @@ export function MindMapHome() {
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-16 w-full" />
         </div>
+      ) : read.isError && rows.length === 0 ? (
+        <ReadFailure error={read.error} what="your mind maps" onRetry={read.retry} />
       ) : rows.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-10 text-center">
           <Network className="h-8 w-8 text-muted-foreground" />
