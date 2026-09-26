@@ -24,6 +24,25 @@ describe("SMS notification consent contract", () => {
     expect(route).toContain('p_source: "twilio_verify"');
   });
 
+  test("each SMS program records its own consent, never one box for two", () => {
+    // Carriers reject bundled consent (Twilio 30913, 2026-09-26). Personal
+    // Staff is its own program: its own box, disclosure and `ai_agent` row,
+    // written only when that box was checked.
+    const route = source("app/api/sms/verify/route.ts");
+    const section = source("features/sms/components/SmsEnrollmentSettingsSection.tsx");
+
+    expect(route).toContain('body.consents?.personalStaff === true');
+    expect(route).toContain('body.consents?.notifications === true');
+    expect(route).not.toContain("consentAccepted");
+    expect(route).toMatch(/personalStaffConsent\s*\?\s*\[\s*consentRow\("ai_agent"/);
+    expect(route).toContain("disclosure: SMS_PERSONAL_STAFF_CONSENT_DISCLOSURE");
+    expect(route).toMatch(/notificationsConsent\s*\?\s*\["transactional", "notifications"\]/);
+
+    expect(section).toContain("SMS_PERSONAL_STAFF_CONSENT_DISCLOSURE");
+    expect(section).toContain("enrollment.consents[program.key]");
+    expect(section).not.toContain("consentAccepted");
+  });
+
   test("only a successful provider check reaches the verified contact writer", () => {
     const route = source("app/api/sms/verify/route.ts");
     const providerCheck = route.indexOf(
