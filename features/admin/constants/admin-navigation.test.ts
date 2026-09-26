@@ -76,4 +76,22 @@ describe("admin navigation registry", () => {
     );
     expect(links?.filter((link) => /mandate/.test(link)) ?? []).toEqual([]);
   });
+
+  // Lane SCOPE-ADMIN-INDEX: the per-organization scope console
+  // (/administration/scopes-context/organizations/[orgId], lane SCOPE-ADMIN-2) was reachable
+  // only by typing the URL — a dead end. The Scopes & Context landing now links its index.
+  it("lists the scopes-context organizations index and owns its [orgId] console", () => {
+    const scopesContext = adminNavigationRegistry.find((domain) => domain.slug === "scopes-context");
+    const links = scopesContext?.sections.flatMap((section) => section.destinations) ?? [];
+    const organizationsIndex = links.find(
+      (item) => item.link === "/administration/scopes-context/organizations",
+    );
+    expect(organizationsIndex).toBeDefined();
+    expect(organizationsIndex?.ownedRoutes).toContain(
+      "/administration/scopes-context/organizations/[orgId]",
+    );
+    expect(findAdminNavigationLocation("/administration/scopes-context/organizations/some-org-id")?.destination.link).toBe(
+      "/administration/scopes-context/organizations",
+    );
+  });
 });

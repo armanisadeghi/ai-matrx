@@ -410,6 +410,9 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         destinations: [
           destination("/administration/scopes-context/system-context"),
           destination("/administration/scopes-context/context-inspector"),
+          destination("/administration/scopes-context/organizations", [
+            "/administration/scopes-context/organizations/[orgId]",
+          ]),
         ],
       },
     ],

@@ -250,6 +250,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/scopes-context/context-inspector",
         isNew: true,
       },
+      {
+        title: "Organizations",
+        description:
+          "Every organization's member count, scope-type count, and last scope change — search and open any one's scope console, member or not.",
+        iconName: "Building2",
+        link: "/administration/scopes-context/organizations",
+        isNew: true,
+      },
     ],
   },
   {

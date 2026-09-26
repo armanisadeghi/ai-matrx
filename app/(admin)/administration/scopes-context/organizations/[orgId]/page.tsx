@@ -11,6 +11,7 @@
 import { useParams } from "next/navigation";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { ScopeManagerPage } from "@/features/agent-context/components/scope-admin/ScopeManagerPage";
+import { AdminPageCapture } from "@/components/agent-copy/page-capture/AdminPageCapture";
 
 export default function AdminOrganizationScopesPage() {
   const params = useParams();
@@ -19,17 +20,36 @@ export default function AdminOrganizationScopesPage() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="flex items-baseline gap-2 border-b border-border px-4 py-2">
-        <h1 className="text-sm font-semibold text-foreground">
-          {org?.name ?? "Organization"} — scopes
-        </h1>
-        <span className="text-xs text-muted-foreground">
-          {org?.admin_lane
-            ? "Platform admin view: you are not a member of this organization."
-            : org
-              ? "You are a member of this organization."
-              : null}
-        </span>
+      <div className="flex items-baseline justify-between gap-2 border-b border-border px-4 py-2">
+        <div className="flex items-baseline gap-2">
+          <h1 className="text-sm font-semibold text-foreground">
+            {org?.name ?? "Organization"} — scopes
+          </h1>
+          <span className="text-xs text-muted-foreground">
+            {org?.admin_lane
+              ? "Platform admin view: you are not a member of this organization."
+              : org
+                ? "You are a member of this organization."
+                : null}
+          </span>
+        </div>
+        <AdminPageCapture
+          title={`${org?.name ?? "Organization"} — scopes`}
+          route={`/administration/scopes-context/organizations/${orgId}`}
+          identity={{ organization_id: orgId, organization_name: org?.name ?? null }}
+          sections={[
+            {
+              id: "scope-types",
+              title: "Scope types",
+              role: "data",
+              value: (org?.scope_types ?? []).map((t) => ({
+                label: t.label_plural,
+                scope_count: t.scopes.length,
+                updated_at: t.updated_at,
+              })),
+            },
+          ]}
+        />
       </div>
       <div className="min-h-0 flex-1">
         <ScopeManagerPage
