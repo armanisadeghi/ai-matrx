@@ -102,8 +102,22 @@ beforeAll(async () => {
   try {
     await client.query("begin");
     await client.query("set local statement_timeout = '60s'");
-    await client.query(resolverBody());
-    if (!process.env.V24_RESOLVER_FILE) {
+    // THE DATABASE'S OWN BODIES WHEN IT ALREADY CARRIES THIS CAMPAIGN. Later migrations patch these
+    // functions in place (rca2m: access_request_create hands missing-id askers to the blind ask,
+    // which files through _access_request_file; rca8d: the resolver). Re-installing this file's
+    // older text over them measured a body nobody runs, and the old blind ask calling the new
+    // access_request_create recursed until "stack depth limit exceeded" (swallowed as a warning,
+    // so nothing was filed — 2026-09-26, clone hykobnqyuxspbcijrodb). The file's bodies are
+    // installed only on a database that predates the campaign; the RED run installs its own file.
+    const carriesCampaign =
+      (
+        await client.query<{ n: number }>(
+          `select count(*)::int as n from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'public' and p.proname = 'access_request_blind'`,
+        )
+      ).rows[0]!.n > 0;
+    if (process.env.V24_RESOLVER_FILE || !carriesCampaign) await client.query(resolverBody());
+    if (!process.env.V24_RESOLVER_FILE && !carriesCampaign) {
       await client.query(blindAskBody());
       await client.query("savepoint door");
       try {

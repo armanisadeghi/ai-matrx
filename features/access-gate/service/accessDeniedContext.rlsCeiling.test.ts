@@ -130,8 +130,18 @@ beforeAll(async () => {
   try {
     await client.query("begin");
     await client.query("set local statement_timeout = '60s'");
-    // The file under test, as written — rolled back below, never committed.
-    await client.query(resolverBody());
+    // The file under test, as written — rolled back below, never committed — but only on a
+    // database that predates it. A database that already carries it holds the resolver as later
+    // migrations patched it in place (rca8d), and re-installing this older text would measure a
+    // body nobody runs (see aStrangerIsToldWhatAMissingIdIsTold.test.ts).
+    const carriesResolverFile =
+      (
+        await client.query<{ n: number }>(
+          `select count(*)::int as n from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'public' and p.proname = 'access_request_blind'`,
+        )
+      ).rows[0]!.n > 0;
+    if (!carriesResolverFile) await client.query(resolverBody());
 
     // The world, built as the table owner, inside the same rolled-back transaction.
     await client.query(
@@ -192,12 +202,12 @@ beforeAll(async () => {
 }, 120_000);
 
 describe("access_denied_context reports the level the row's real RLS ceiling allows", () => {
-  it.each(SEATS)("on a $lane, reports level '$expected' to a platform admin for $name", (c) => {
+  it.each(SEATS)("[$lane] reports level '$expected' to a platform admin for $name", (c) => {
     expect(observed.get(`${c.lane}: ${c.name}`)?.level).toBe(c.expected);
   });
 
   it.each(SEATS)(
-    "on a $lane, never claims access the admin's own RLS read of the row refuses: $name",
+    "[$lane] never claims access the admin's own RLS read of the row refuses: $name",
     (c) => {
       const o = observed.get(`${c.lane}: ${c.name}`);
       expect(o).toBeDefined();
