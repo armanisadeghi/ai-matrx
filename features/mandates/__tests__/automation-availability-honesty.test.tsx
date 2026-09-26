@@ -108,7 +108,7 @@ describe("Refine with AI — three facts, three sentences (F4)", () => {
     expect(text).toContain(unavailableAutomationMandateLine(GOAL_WRITER, DOOR_SAID));
   });
 
-  it("still says 'no live job has that name' when the door really said 404", () => {
+  it("renders no control at all when the door really said 404 — never the refusal's words", () => {
     const text = render(container, root, {
       mandate: null,
       loading: false,
@@ -116,10 +116,12 @@ describe("Refine with AI — three facts, three sentences (F4)", () => {
       absent: true,
       organizationPending: false,
     });
-    // The true sentence must survive the fix — a guard that made BOTH states
-    // generic would trade one lie for another.
-    expect(text).toContain(missingAutomationMandateLine(GOAL_WRITER));
-    expect(text).toContain("no live job has that name");
+    // The two states stay distinct: a missing job is ABSENT (a control is
+    // working or absent — punch list 2026-09-26), and it never borrows the
+    // refusal's sentence.
+    expect(text).toBe("");
+    expect(container.querySelector("button")).toBeNull();
+    expect(text).not.toContain(missingAutomationMandateLine(GOAL_WRITER));
   });
 
   it("never leaves a blocked control silent", () => {

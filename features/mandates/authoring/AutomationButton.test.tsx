@@ -35,7 +35,6 @@ import { createRoot, type Root } from "react-dom/client";
 import { toast } from "@/lib/toast";
 import {
   AutomationButton,
-  missingAutomationMandateLine,
   notifyMissingAutomationMandate,
 } from "./AutomationButton";
 import { KIND_CONVERTER_MANDATE_KEY } from "./constants";
@@ -148,7 +147,7 @@ describe("AutomationButton — the key resolves to nothing", () => {
       // that is the case under test.
       "mandates.goal_writer" as MandateKey,
     ],
-  ])("%s: the button is DISABLED, with the reason on screen", (_why, key) => {
+  ])("%s: no control at all — never a pressable one, never a dead one", (_why, key) => {
     mockedUseMandate.mockReturnValue({
       mandate: null,
       loading: false,
@@ -156,15 +155,23 @@ describe("AutomationButton — the key resolves to nothing", () => {
       absent: true,
       organizationPending: false,
     });
-    const { button, text } = mount(key);
-
-    // THE REGRESSION: this used to be enabled, and pressing it produced
-    // "this mandate does not exist" in a toast.
-    expect(button.disabled).toBe(true);
-    // And the reason is WORDS ON THE SCREEN, naming the exact key — not a
-    // tooltip, which nobody sees until they hover a control that looks fine.
-    expect(text).toContain(missingAutomationMandateLine(key));
-    expect(text).toContain(key);
+    act(() => {
+      root.render(
+        <AutomationButton
+          mandateKey={key}
+          label="Refine with AI"
+          runningLabel="Refining…"
+          running={false}
+          onRun={jest.fn()}
+        />,
+      );
+    });
+    // THE ORIGINAL REGRESSION: this used to be enabled, and pressing it
+    // produced "this mandate does not exist" in a toast. Then it became a
+    // disabled button naming the dot-notation key. A control is working or
+    // absent (UX punch list 2026-09-26): nothing renders, nothing names a key.
+    expect(container.querySelector("button")).toBeNull();
+    expect(container.textContent).toBe("");
   });
 
   it("says nothing about absence while it is still asking", () => {

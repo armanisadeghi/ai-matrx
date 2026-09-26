@@ -261,16 +261,18 @@ export function AutomationButton({
     );
   }
 
+  // 🚨 NO SUCH JOB → NO CONTROL (UX punch list 2026-09-26). This rendered a
+  // disabled button, a "Not configured" token and a sentence naming the
+  // dot-notation key ("…runs the job "mandates.kind_converter", and no live job
+  // has that name") — a dead control in front of people who can do nothing
+  // about it. A control is working or absent. The three facts stay distinct
+  // (F4): a REFUSED job still says why above; only a job that does not exist
+  // at all renders nothing, and the console says which.
   if (!available) {
-    return (
-      <div className="flex flex-wrap items-center gap-1.5">
-        {button}
-        <StatusToken status="caution" label="Not configured" />
-        <span className="text-[11px] leading-snug text-muted-foreground">
-          {missingAutomationMandateLine(mandateKey)}
-        </span>
-      </div>
+    console.info(
+      `[mandates] "${label}" is hidden: ${missingAutomationMandateLine(mandateKey)}`,
     );
+    return null;
   }
 
   return (
