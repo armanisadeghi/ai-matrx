@@ -72271,6 +72271,7 @@ export type Database = {
         Args: { p_definition_id: string }
         Returns: boolean
       }
+      _is_store_pick_list: { Args: { p_metadata: Json }; Returns: boolean }
       _knob_override_write: {
         Args: {
           p_actor: string
@@ -72308,6 +72309,15 @@ export type Database = {
       _outsider_parent_matches: {
         Args: { p_id: string; p_parent: string; p_resource: string }
         Returns: boolean
+      }
+      _pick_list_born_in_store: {
+        Args: {
+          p_description: string
+          p_items: Json
+          p_list_name: string
+          p_organization_id: string
+        }
+        Returns: Json
       }
       _policy_overlap_run_probe: {
         Args: {
@@ -72362,6 +72372,10 @@ export type Database = {
       _report_undeclared_confirmation_write: {
         Args: { p_org: string; p_relid: unknown; p_user: string }
         Returns: undefined
+      }
+      _store_pick_list_document: {
+        Args: { p_list_id: string; p_shape?: string; p_viewer: string }
+        Returns: Json
       }
       access_request_recipient_report: {
         Args: { p_sample?: number }
@@ -73475,6 +73489,7 @@ export type Database = {
         Args: { p_schema: string; p_table: string; p_trigger: string }
         Returns: boolean
       }
+      list_lives_in: { Args: { p_list_id: string }; Returns: string }
       list_my_presentable_assists: {
         Args: { p_limit?: number }
         Returns: {
@@ -73648,6 +73663,10 @@ export type Database = {
       }
       normalize_identity_args: { Args: { p_args: string }; Returns: string }
       notice_link_trigger_is_attached: { Args: never; Returns: boolean }
+      older_tables_switched: {
+        Args: { p_organization_id: string }
+        Returns: boolean
+      }
       org_context_bleed_report: {
         Args: never
         Returns: {
@@ -88860,6 +88879,7 @@ export type Database = {
         Row: {
           capture_level: number | null
           capture_method: string | null
+          capture_version: number | null
           char_count: number | null
           content: string | null
           content_hash: string | null
@@ -88898,6 +88918,7 @@ export type Database = {
         Insert: {
           capture_level?: number | null
           capture_method?: string | null
+          capture_version?: number | null
           char_count?: number | null
           content?: string | null
           content_hash?: string | null
@@ -88936,6 +88957,7 @@ export type Database = {
         Update: {
           capture_level?: number | null
           capture_method?: string | null
+          capture_version?: number | null
           char_count?: number | null
           content?: string | null
           content_hash?: string | null
@@ -113253,7 +113275,37 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      pick_list_item_live: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          group_name: string | null
+          help_text: string | null
+          icon_name: string | null
+          id: string | null
+          label: string | null
+          list_id: string | null
+          lives_in: string | null
+          organization_id: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
+      pick_list_live: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string | null
+          is_public: boolean | null
+          list_name: string | null
+          lives_in: string | null
+          organization_id: string | null
+          public_read: boolean | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _udt_display_spec: { Args: { p_raw: Json }; Returns: Json }

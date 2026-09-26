@@ -95,7 +95,7 @@ function row(over: Partial<ResearchContent> = {}): ResearchContent {
     published_at: null,
     modified_at: null,
     is_current: true,
-    version: 1,
+    capture_version: 1,
     linked_extraction_id: null,
     linked_transcript_id: null,
     extracted_links: null,
@@ -251,5 +251,24 @@ describe("reading the body", () => {
     expect(versions[0].content).toBe("The Source's current text");
     expect(versions[0].processed_document_id).toBe("pd1");
     expect(versions[0].char_count).toBe("The Source's current text".length);
+  });
+
+  it("numbers and orders captures by capture_version, never the row-edit counter", async () => {
+    results.rs_content = {
+      data: [
+        { ...row({ id: "c1", capture_version: 3 }), version: 9, organization_id: "org1" },
+      ],
+      error: null,
+    };
+    mockGetJson.mockResolvedValue({ data: [{ id: "c1", content: "x" }], meta: {} });
+    const versions = await getSourceContent("t1", "s1");
+    const order = calls.find((c) => c.method === "rs_content.order");
+    expect(order?.args[0]).toBe("capture_version");
+    const columns = calls
+      .filter((c) => c.method === "rs_content.select")
+      .flatMap((c) => String(c.args[0] ?? "").split(",").map((x) => x.trim()));
+    expect(columns).toContain("capture_version");
+    expect(columns).not.toContain("version");
+    expect(versions[0].capture_version).toBe(3);
   });
 });

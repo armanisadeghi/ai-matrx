@@ -990,7 +990,8 @@ export interface ResearchContent {
   published_at: string | null;
   modified_at: string | null;
   is_current: boolean | null;
-  version: number | null;
+  /** Which capture of the page this is (1, 2, 3…) — what screens call "v3". */
+  capture_version: number | null;
   linked_extraction_id: string | null;
   linked_transcript_id: string | null;
   extracted_links: Json | null;

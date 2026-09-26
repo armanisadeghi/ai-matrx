@@ -807,7 +807,9 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
   // Content versions from DB, newest first
   const contentVersions = useMemo(() => {
     const db = (contentData ?? []) as ResearchContent[];
-    return [...db].sort((a, b) => (b.version ?? 0) - (a.version ?? 0));
+    return [...db].sort(
+      (a, b) => (b.capture_version ?? 0) - (a.capture_version ?? 0),
+    );
   }, [contentData]);
 
   const [selectedVersion, setSelectedVersion] = useState(0);
@@ -848,7 +850,10 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
       if (v.id === currentContent.id) continue;
       const prior = db.filter((a) => a.content_id === v.id);
       if (prior.length > 0)
-        return { currentAnalyses: prior, staleAnalysisVersion: v.version };
+        return {
+          currentAnalyses: prior,
+          staleAnalysisVersion: v.capture_version,
+        };
     }
     return { currentAnalyses: [], staleAnalysisVersion: null };
   }, [allAnalyses, currentContent, contentVersions]);
@@ -1467,7 +1472,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                       </Button>
                       <span className="text-xs tabular-nums text-center">
                         v
-                        {contentVersions[selectedVersion]?.version ??
+                        {contentVersions[selectedVersion]?.capture_version ??
                           selectedVersion + 1}{" "}
                         of {contentVersions.length}
                       </span>
@@ -1924,7 +1929,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                   <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
                     {staleAnalysisSentence(
                       staleAnalysisVersion,
-                      currentContent?.version ?? null,
+                      currentContent?.capture_version ?? null,
                     )}
                   </p>
                 </div>

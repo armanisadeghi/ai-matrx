@@ -861,7 +861,7 @@ const CONTENT_VERSION_COLUMNS = [
   "published_at",
   "modified_at",
   "is_current",
-  "version",
+  "capture_version",
   "linked_extraction_id",
   "linked_transcript_id",
   "extracted_links",
@@ -885,7 +885,9 @@ export async function getSourceContent(
       .from("rs_content")
       .select(CONTENT_VERSION_COLUMNS)
       .eq("source_id", sourceId)
-      .order("version", { ascending: false })
+      // Captures are numbered by `capture_version`; `version` is the
+      // platform's row-edit counter and says nothing about which capture.
+      .order("capture_version", { ascending: false, nullsFirst: false })
       .returns<
         Array<
           Omit<ResearchContent, "content" | "original_content"> & {

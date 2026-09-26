@@ -69,9 +69,11 @@ export function ContentViewer({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-semibold">Content</h3>
-          <Badge variant="secondary" className="text-[10px]">
-            v{content.version}
-          </Badge>
+          {content.capture_version != null && (
+            <Badge variant="secondary" className="text-[10px]">
+              v{content.capture_version}
+            </Badge>
+          )}
           <Badge variant="outline" className="text-[10px]">
             {content.char_count?.toLocaleString()} chars
           </Badge>

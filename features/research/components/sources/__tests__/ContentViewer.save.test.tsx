@@ -68,7 +68,7 @@ const base = {
   published_at: null,
   modified_at: null,
   is_current: true,
-  version: 1,
+  capture_version: 1,
   linked_extraction_id: null,
   linked_transcript_id: null,
   extracted_links: null,
