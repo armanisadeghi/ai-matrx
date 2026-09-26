@@ -35,19 +35,44 @@ const PRIMITIVES = new Set([
   "lib/error-boundary/ErrorBoundaryWithCapture.tsx",
 ]);
 
-const BESPOKE_SHAPES: ReadonlyArray<{ kind: string; pattern: RegExp }> = [
-  { kind: 'its own role="alert" box', pattern: /role=(?:"alert"|\{\s*["']alert["']\s*\})/g },
-  { kind: 'a hand-written "Something went wrong"', pattern: /Something went wrong/g },
-  // "Not saved" is NOT counted: it is also an ordinary status value (a
-  // Sources "Saved / Not saved" column), so a text match cannot tell an error
-  // from a label. A real Not-saved error box carries role="alert" and is
-  // counted by the first shape.
-];
+/**
+ * What counts as a bespoke ERROR render (comments never count — a sentence in a
+ * doc comment is not on screen):
+ *   - an element carrying role="alert" whose opening tag is not styled as a
+ *     warning / info / muted notice (those are not errors), UNLESS the file
+ *     puts an `<ErrorAlchemyMenu>` inside its own boxes (each menu offsets one
+ *     box — a bespoke-styled box that carries the menu satisfies the law);
+ *   - "Something went wrong" as rendered JSX text. The same words as a fallback
+ *     STRING (a toast message, a thrown error) are not a render; the toast
+ *     carries the menu on its own.
+ * "Not saved" is not counted: it is also an ordinary status label (Sources'
+ * "Saved / Not saved" column); a real Not-saved error box carries role="alert".
+ */
+const ALERT_ATTR = /role=(?:"alert"|\{\s*["']alert["']\s*\})/g;
+const NOT_AN_ERROR_TAG = /warning|amber|yellow|text-info|border-info|muted-foreground/;
+const RENDERED_SOMETHING_WENT_WRONG = />\s*Something went wrong/g;
+const MENU_IN_BOX = /<ErrorAlchemyMenu\b/g;
 
-export function countBespokeErrorRenders(source: string): number {
-  let n = 0;
-  for (const { pattern } of BESPOKE_SHAPES) n += source.match(pattern)?.length ?? 0;
-  return n;
+export function stripComments(source: string): string {
+  return source
+    .replace(/\{\s*\/\*[\s\S]*?\*\/\s*\}/g, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[^:"'`\\])\/\/[^\n]*/g, "$1");
+}
+
+export function countBespokeErrorRenders(raw: string): number {
+  const source = stripComments(raw);
+  let alerts = 0;
+  for (const match of source.matchAll(ALERT_ATTR)) {
+    const at = match.index ?? 0;
+    const open = source.lastIndexOf("<", at);
+    const close = source.indexOf(">", at);
+    const tag = source.slice(open, close === -1 ? at : close);
+    if (!NOT_AN_ERROR_TAG.test(tag)) alerts += 1;
+  }
+  const menus = source.match(MENU_IN_BOX)?.length ?? 0;
+  const words = source.match(RENDERED_SOMETHING_WENT_WRONG)?.length ?? 0;
+  return Math.max(0, alerts - menus) + words;
 }
 
 function isScannable(rel: string): boolean {
@@ -86,14 +111,21 @@ describe("the bespoke-error detector (self-test)", () => {
   it("counts every bespoke shape", () => {
     expect(countBespokeErrorRenders('<div role="alert">x</div>')).toBe(1);
     expect(countBespokeErrorRenders("<div role={'alert'}>x</div>")).toBe(1);
+    expect(countBespokeErrorRenders('<p className="text-destructive" role="alert">{e}</p>')).toBe(1);
     expect(countBespokeErrorRenders("<h2>Something went wrong</h2>")).toBe(1);
-    expect(countBespokeErrorRenders('<Badge>Not saved</Badge>')).toBe(0);
   });
-  it("does not count a render that uses the primitive", () => {
+  it("does not count a render that uses the primitive or is not an error", () => {
     expect(
       countBespokeErrorRenders('<ErrorNotice title="Not saved" message={e} />'),
     ).toBe(0);
     expect(countBespokeErrorRenders('<Alert variant="destructive">x</Alert>')).toBe(0);
+    expect(countBespokeErrorRenders('<Badge>Not saved</Badge>')).toBe(0);
+    expect(
+      countBespokeErrorRenders('<div role="alert" className="text-destructive">x<ErrorAlchemyMenu input={i} /></div>'),
+    ).toBe(0);
+    expect(countBespokeErrorRenders('<p role="alert" className="text-warning">x</p>')).toBe(0);
+    expect(countBespokeErrorRenders('// it used to render role="alert" here\nconst a = 1;')).toBe(0);
+    expect(countBespokeErrorRenders('toast.error(e.message ?? "Something went wrong.")')).toBe(0);
   });
 });
 
