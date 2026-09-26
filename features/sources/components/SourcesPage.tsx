@@ -81,9 +81,6 @@ import {
   selectOrganizationName,
 } from "@/lib/redux/slices/appContextSlice";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
-import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
-import { organizationRefusalMessage } from "@/lib/organizations/organizationRefusalToast";
 import { supabase } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
 import { writeOne } from "@/utils/supabase/writeOne";
@@ -106,6 +103,7 @@ import {
   type LandingNotice,
 } from "@/features/sources/api/sourcesApi";
 import { buildPastedTextLanding } from "@/features/sources/api/pastedText";
+import { addFailureSentence } from "@/features/sources/addFailure";
 import { processSourceNow } from "@/features/sources/api/processNow";
 import {
   SaveSourcePanel,
@@ -493,19 +491,20 @@ export function SourcesPage() {
         result.sourceNotices,
       );
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
-      setAddError(
-        isOrganizationRequiredError(err)
-          ? organizationRefusalMessage({ act: "added" })
-          : errorSentence(err),
-      );
+      setAddError(addFailureSentence(err));
     } finally {
       setAdding(false);
     }
   };
 
   const handleAddText = async () => {
-    if (!textInput.trim() || !userId) return;
+    if (!textInput.trim()) return;
+    if (!userId) {
+      setAddError(
+        "Your sign-in is still loading, so nothing was added. Try again in a moment.",
+      );
+      return;
+    }
     setAdding(true);
     setAddError(null);
     try {
@@ -533,12 +532,7 @@ export function SourcesPage() {
         landed.notices ?? [],
       );
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
-      setAddError(
-        isOrganizationRequiredError(err)
-          ? organizationRefusalMessage({ act: "added" })
-          : errorSentence(err),
-      );
+      setAddError(addFailureSentence(err));
     } finally {
       setAdding(false);
     }

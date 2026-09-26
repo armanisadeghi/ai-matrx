@@ -12,6 +12,8 @@
  * "Source".
  */
 
+import { withDisplayTitle } from "@/components/markdown-core/plain-title";
+
 /** The columns the Sources list reads — nothing wider (no bodies). */
 export const SOURCE_LIST_COLUMNS = [
   "id",
@@ -55,6 +57,16 @@ export interface SourceListRow {
   visibility: string;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * The read boundary for a listed Source: its name is shown as TEXT. A producer
+ * (a search-result title, a caption track's title) can store markup such as
+ * "Why <b>OpenAI</b> is…"; React escapes it, so it would show the literal tags.
+ * The one plain-title projection strips it; storage is untouched.
+ */
+export function listedSource<T extends Pick<SourceListRow, "name">>(row: T): T {
+  return withDisplayTitle(row, "name");
 }
 
 export interface SourceAttachment {

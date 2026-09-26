@@ -23,6 +23,7 @@ import { supabase } from "@/utils/supabase/client";
 import {
   SOURCE_LIST_COLUMNS,
   currentVersionsOnly,
+  listedSource,
   sourceFactsFromRow,
   type SourceFacts,
   type SourceFactsRow,
@@ -191,7 +192,7 @@ export function useSources(
           }));
         return;
       }
-      rows = currentVersionsOnly(rows);
+      rows = currentVersionsOnly(rows).map(listedSource);
       if (cancelled) return;
       setState((s) => ({ ...s, rows, loading: false, error: null }));
 

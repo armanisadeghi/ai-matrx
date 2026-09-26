@@ -74,3 +74,21 @@ describe("transcript facts", () => {
     expect(transcriptLengthWords(null, 0)).toBeNull();
   });
 });
+
+// ── Titles are text (Sonnet walk 2026-09-27: "Why <b>OpenAI</b> is betting…") ──
+import { listedSource } from "@/features/sources/sourceRows";
+
+describe("a Source's name reads as plain text", () => {
+  it("strips markup a producer left in the stored name", () => {
+    const row = listedSource({
+      id: "x",
+      name: "Why <b>OpenAI</b> is betting on custom chips",
+    } as SourceListRow);
+    expect(row.name).toBe("Why OpenAI is betting on custom chips");
+  });
+
+  it("leaves a clean name untouched (same object)", () => {
+    const clean = { id: "y", name: "Mediterranean Diet - StatPearls" } as SourceListRow;
+    expect(listedSource(clean)).toBe(clean);
+  });
+});

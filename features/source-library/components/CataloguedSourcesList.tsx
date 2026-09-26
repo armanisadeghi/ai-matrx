@@ -25,6 +25,7 @@ import {
     SOURCE_KIND_LABEL,
     SOURCE_LIST_COLUMNS,
     captureWords,
+    listedSource,
     sourceKindGroup,
     type SourceListRow,
 } from "@/features/sources/sourceRows";
@@ -91,7 +92,7 @@ export function CataloguedSourcesList({
                     setLoading(false);
                     return;
                 }
-                found.push(...((data ?? []) as unknown as SourceListRow[]));
+                found.push(...((data ?? []) as unknown as SourceListRow[]).map(listedSource));
             }
             setRows(found);
             setError(null);
