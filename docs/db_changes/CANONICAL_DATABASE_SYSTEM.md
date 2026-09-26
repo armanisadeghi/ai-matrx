@@ -33,12 +33,11 @@ Every entity table has these columns, in this order at the **front** of the tabl
 | `deleted_at`      | timestamptz           | null         | soft-delete marker; NULL = live (present when `has_soft_delete`) |
 | `version`         | integer               | NOT NULL     | `DEFAULT 1`                                                      |
 | `metadata`        | jsonb                 | NOT NULL     | `DEFAULT '{}'`                                                   |
-| `visibility`      | `platform.visibility` | NOT NULL     | enum; the access driver (present on entity/system variants)      |
+| `visibility`      | `platform.visibility` | NOT NULL     | enum; the per-row visibility word — not an access level (law: `common-docs/policies/access-ladder.md`) |
 
 **Trigger trio** (attached by the provisioner; identified by function name):
 
 - `_stamp_actor` — `platform._stamp_actor()` BEFORE INSERT/UPDATE — stamps `created_by`/`updated_by`.
-- `_stamp_org_default` — `public._stamp_org_default()` BEFORE INSERT — defaults `organization_id` (optional).
 - `_touch_row` — `platform._touch_row()` BEFORE INSERT/UPDATE — sets `updated_at`, and on UPDATE bumps `version := OLD.version + 1`.
 - `_version_capture` — `platform._version_capture('<token>')` AFTER INSERT/DELETE/UPDATE — writes a full snapshot to `history.row_versions` (only when `is_versioned`).
 
@@ -51,7 +50,7 @@ Every entity table has these columns, in this order at the **front** of the tabl
 One row per entity. Key columns:
 
 - `token` (PK) · `schema_name` · `table_name` · `table_ref` (regclass) · `label`.
-- `is_versioned` (→ `_version_capture` + history), `has_soft_delete` (→ `deleted_at` required), `is_component` (access defers to a composition parent), `is_listed`, `default_visibility`, `rls_variant`, `is_active`.
+- `is_versioned` (→ `_version_capture` + history), `has_soft_delete` (→ `deleted_at` required), `is_component` (access defers to a composition parent), `is_listed`, `default_visibility`, `rls_variant`, `data_class` (the table's access level — `organization` / `public` / `confidential` / `private`; law: `common-docs/policies/access-ladder.md`), `default_list_scope`, `is_active`.
 - Group/vocab flags: `base_tier`, `is_module`, `default_scopeable`, `default_members_can_add`, `default_needs_approval`, `default_auto_ingest`, `category`, `notes`.
 
 A token whose `table_ref` no longer resolves is a **stale registry** row (see `audit.stale_registry`).
@@ -64,18 +63,26 @@ A token whose `table_ref` no longer resolves is a **stale registry** row (see `a
 platform.create_entity_table(
   p_schema      text,       p_table   text,      p_token   text,
   p_label       text,       p_fields  text[],    -- raw column defs, placed right after id
-  p_variant     text,       -- 'entity' | 'component' | 'ledger' | 'system'
+  p_variant     text,       -- 'entity' | 'component' | 'ledger' | 'system' | 'restricted' | 'personal'
   p_versioned   boolean,    p_soft_delete boolean,
   p_visibility  text,       -- 'none' | a platform.visibility value (e.g. 'personal','public','link')
   p_category    boolean,    -- adds category_id → platform.categories(id)
   p_listed      boolean,    p_org_default boolean,
-  p_gin_jsonb   boolean     -- auto-GIN each jsonb custom field
+  p_gin_jsonb   boolean,    -- auto-GIN each jsonb custom field
+  p_parents     text[]              DEFAULT NULL,
+  p_data_class  platform.data_class DEFAULT NULL, -- the table's access level
+  p_default_list_scope platform.list_scope DEFAULT NULL -- supplied together with p_data_class
 ) RETURNS text
 ```
 
+**Choosing `p_data_class`:** the access-ladder law (`common-docs/policies/access-ladder.md`) — every
+table starts at `organization`; `public` when it is meant to be seen outside the organization without
+being shared; `confidential` or `private` only with Arman's approval. A component inherits its parent
+and carries no level of its own.
+
 **All parameters are required** — agents must state every choice, so nothing is enabled by accident. Only the base contract (always present) is implicit.
 
-It runs, in order: builds `id` + custom fields + base columns → indexes (`organization_id`, `created_by`, `category_id`, GIN on jsonb customs if requested) → registers in `entity_types` → attaches the trigger trio (+`_stamp_org_default`, +`_version_capture` when versioned) → `iam.apply_rls` → **`iam.verify_canonical` and RAISEs on any FAIL**. The whole thing is one transaction: you get a certified-canonical table or nothing.
+It runs, in order: builds `id` + custom fields + base columns → indexes (`organization_id`, `created_by`, `category_id`, GIN on jsonb customs if requested) → registers in `entity_types` → attaches the trigger trio (+`_version_capture` when versioned) → `iam.apply_rls` → **`iam.verify_canonical` and RAISEs on any FAIL**. The whole thing is one transaction: you get a certified-canonical table or nothing.
 
 Example — the entire `flexible_data` table:
 

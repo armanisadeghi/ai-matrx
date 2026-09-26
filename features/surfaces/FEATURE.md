@@ -159,7 +159,7 @@ Two per-surface settings primitives, both resolved `manifest/DB default → glob
   | global | NULL      | NULL       | `matrx-system` (visibility `public` — also the anon `pub_read` lane) |
   | org    | NULL      | NULL       | that org                                                             |
   | scope  | NULL      | the scope  | the scope's org (`_inherit_org_from_scope`)                          |
-  | user   | the user  | NULL       | the user's personal org (`_stamp_org_default`)                       |
+  | user   | the user  | NULL       | the selected org, sent explicitly (`ensureOrgId`)                    |
 
   `tierOf()` in [`services/surface-config.service.ts`](./services/surface-config.service.ts) is the ONE place that knows this — never re-derive a tier inline, and never write `.is("organization_id", null)`. Its column order is load-bearing (`user_id` → `scope_id` → org), because every row now has an org. RLS is the generated `entity` set from `iam.apply_rls`; the pre-2026-08-21 hand-written policies keyed on `organization_id IS NULL` are gone.
 
