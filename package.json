@@ -29,6 +29,7 @@
     "check:parse:self-test": "node scripts/check-parse.mjs --self-test",
     "check:jsx-text-comments": "node scripts/check-jsx-text-comments.mjs",
     "check:jsx-text-comments:self-test": "node scripts/check-jsx-text-comments.mjs --self-test",
+    "check:new-tab-icon": "node scripts/check-new-tab-icon.mjs",
     "check:theme-color-literals": "node scripts/check-theme-color-literals.mjs",
     "check:theme-color-literals:self-test": "node scripts/check-theme-color-literals.mjs --self-test",
     "check:univer-doc-theme": "node scripts/check-univer-doc-theme.mjs",
