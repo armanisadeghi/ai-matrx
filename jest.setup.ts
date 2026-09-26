@@ -163,3 +163,49 @@ if (typeof Element !== "undefined") {
     },
   });
 }
+
+/**
+ * ── window.matchMedia: jsdom has none; every browser does ────────────────────
+ *
+ * jsdom implements no `matchMedia`, so any component that reads a media query
+ * (`useIsMobile` → `ContextMenuV3`, the panels, the tables) died with
+ * "window.matchMedia is not a function" — 2026-09-26 the model context panel's
+ * organization suite, the day ContextMenuV3 adopted `useIsMobile`. 73 suites had
+ * each hand-stubbed it; the next component to read a query broke the rest.
+ *
+ * The answer is the one a browser at jsdom's viewport gives: width queries
+ * (`min-width` / `max-width`, px, joined by `and`) are evaluated against
+ * `window.innerWidth` (1024 in jsdom — a desktop), everything else
+ * (`prefers-color-scheme: dark`, `prefers-reduced-motion`, `hover`) does not
+ * match. Defined configurable + writable and only when absent, so a suite that
+ * sets its own (a phone, a dark scheme) still wins and restores cleanly.
+ */
+if (typeof window !== "undefined" && typeof window.matchMedia !== "function") {
+  const widthQueryMatches = (query: string): boolean => {
+    const parts = query.toLowerCase().split(/\s+and\s+/);
+    let sawWidth = false;
+    for (const part of parts) {
+      const m = /\(\s*(min|max)-width\s*:\s*([\d.]+)px\s*\)/.exec(part);
+      if (!m) return false;
+      sawWidth = true;
+      const px = Number(m[2]);
+      if (m[1] === "min" ? window.innerWidth < px : window.innerWidth > px) return false;
+    }
+    return sawWidth;
+  };
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    writable: true,
+    value: (query: string): MediaQueryList =>
+      ({
+        matches: widthQueryMatches(query),
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      }) as MediaQueryList,
+  });
+}

@@ -1,0 +1,24 @@
+import { chromium } from 'playwright';
+import fs from 'fs';
+import path from 'path';
+const OUT = '/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-27/phase1-walk-2';
+(async () => {
+  const userDataDir = '/Users/armanisadeghi/code/matrx-frontend/.walk-profile';
+  const context = await chromium.launchPersistentContext(userDataDir, { headless: true, viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  page.setDefaultTimeout(40000);
+  page.on('response', r => { const u=r.url(); if (r.request().method() !== 'GET' && (u.includes('source')||u.includes('rpc'))) console.log(r.status(), r.request().method(), u.slice(0,140)); });
+  await page.goto('http://localhost:3001/knowledge/sources/6d199cc1-8735-4104-b71c-475460054f87', { waitUntil: 'domcontentloaded', timeout: 40000 });
+  await page.waitForTimeout(4000);
+  await page.click('button:has-text("Save")');
+  await page.waitForTimeout(1200);
+  await page.click('text=Process now');
+  await page.waitForTimeout(300);
+  const saveBtn = await page.$('button:has-text("Save"):near(button:has-text("Cancel"))');
+  await saveBtn.click();
+  await page.waitForTimeout(6000);
+  await page.screenshot({ path: path.join(OUT, '10s-after-real-save-processnow.png') });
+  await page.waitForTimeout(10000);
+  await page.screenshot({ path: path.join(OUT, '10t-after-15s.png') });
+  await context.close();
+})();
