@@ -130,6 +130,11 @@ export function MobileStack({
       )}
       style={{ paddingTop: "var(--shell-header-h)" }}
     >
+      {/* THE FRAMES SIT BELOW THE SHELL HEADER (V24-TAILS, VERIFIER-24 item 3). Each frame is
+          `absolute inset-0`, and an absolute child ignores its parent's padding — so every frame's
+          own header (the file's name, Back, Actions) was drawn UNDER the shell header and a phone
+          reader could not tell which file was open. This box starts where the padding ends. */}
+      <div className="relative h-full w-full" data-mobile-stack-frames>
       {stack.map((frame, idx) => {
         const isTop = idx === stack.length - 1;
         return (
@@ -145,6 +150,7 @@ export function MobileStack({
           />
         );
       })}
+      </div>
 
       {/* Optional bottom action bar — renders on the top frame only */}
       {topFrame.kind === "folder" ? (
@@ -638,7 +644,11 @@ function MobileHeader({
         </div>
       )}
 
-      <div className="flex-1 truncate text-center text-sm font-medium">
+      <div
+        className="min-w-0 flex-1 truncate text-center text-sm font-medium"
+        title={typeof title === "string" ? title : undefined}
+        data-mobile-header-title
+      >
         {title}
       </div>
 
