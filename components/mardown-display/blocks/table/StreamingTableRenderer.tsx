@@ -1030,19 +1030,6 @@ const StreamingTableRendererCore: React.FC<
             )}
           </MarkdownTableScrollArea>
 
-          {/* Structural editing toolbar — only when in edit mode (and stream complete) */}
-          {tableIsComplete && isEditingEnabled && (
-            <div className="flex justify-start mt-2">
-              <TableEditToolbar
-                onAddRow={handleAppendRow}
-                onAddColumn={handleAppendColumn}
-                onClearAllContents={handleClearAllContents}
-                rowCount={rows.length}
-                colCount={headers.length}
-              />
-            </div>
-          )}
-
           {/* Action Buttons - Only show when not streaming and table is complete */}
           {tableIsComplete && !specimenMode && (
             <div
@@ -1051,6 +1038,19 @@ const StreamingTableRendererCore: React.FC<
           aria-label="Table actions"
           className={tableActionRowClass(isMobile)}
             >
+              {/* Structural editing (add row / add column / clear) sits INSIDE
+                  this bar while editing — never a row of its own above it
+                  (Arman, 2026-09-26: controls go into the bar that owns them). */}
+              {isEditingEnabled && (
+                <TableEditToolbar
+                  onAddRow={handleAppendRow}
+                  onAddColumn={handleAppendColumn}
+                  onClearAllContents={handleClearAllContents}
+                  rowCount={rows.length}
+                  colCount={headers.length}
+                  className="contents"
+                />
+              )}
               {/* Column visibility — only when there's a column to hide and
                   not while editing (edit mode forces all columns visible). */}
               {!isEditingEnabled && headers.length > 1 && (
@@ -1120,27 +1120,32 @@ const StreamingTableRendererCore: React.FC<
                   Window
                 </Button>
               )}
-              {tableData.normalizedData && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowNormalized(!showNormalized)}
-                  className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
-                >
-                  <Eye className="h-4 w-4" />
-                  {showNormalized ? "Table" : "Data"}
-                </Button>
-              )}
-              <ChartThisButton
-                table={{ headers, rows }}
-                active={showChart}
-                onToggle={() => setShowChart((v) => !v)}
-              />
-              {renderTableActionButton()}
-              {tableData.normalizedData && (
+              {/* While editing, the bar holds only the edit tools and Save / Cancel —
+                  the view and export actions return when editing ends (one bar,
+                  one line, on a phone too). */}
+              {!isEditingEnabled && (
                 <>
-                  <SendToWorkbookButton headers={headers} rows={rows} />
-                  <SendToGoogleSheetButton headers={headers} rows={rows} />
+                  {tableData.normalizedData && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowNormalized(!showNormalized)}
+                      className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
+                    >
+                      <Eye className="h-4 w-4" />
+                      {showNormalized ? "Table" : "Data"}
+                    </Button>
+                  )}
+                  <ChartThisButton
+                    table={{ headers, rows }}
+                    active={showChart}
+                    onToggle={() => setShowChart((v) => !v)}
+                  />
+                  {renderTableActionButton()}
+                  {tableData.normalizedData && (
+                    <>
+                      <SendToWorkbookButton headers={headers} rows={rows} />
+                      <SendToGoogleSheetButton headers={headers} rows={rows} />
                 </>
               )}
               <ExportDropdownMenu
@@ -1153,6 +1158,8 @@ const StreamingTableRendererCore: React.FC<
                 downloadMarkdown={downloadMarkdown}
                 isStreamActive={isStreamActive}
               />
+                </>
+              )}
               {isEditingEnabled ? (
                 <>
                   <Button

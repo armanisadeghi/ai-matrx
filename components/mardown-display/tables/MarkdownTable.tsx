@@ -842,18 +842,6 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
           onClose={() => setShowChart(false)}
         />
       )}
-      {/* Structural editing toolbar — only when in edit mode (and not streaming) */}
-      {!isStreamActive && isEditingEnabled && (
-        <div className="flex justify-start mt-2">
-          <TableEditToolbar
-            onAddRow={handleAppendRow}
-            onAddColumn={handleAppendColumn}
-            onClearAllContents={handleClearAllContents}
-            rowCount={internalTableData.rows.length}
-            colCount={internalTableData.headers.length}
-          />
-        </div>
-      )}
       {!isStreamActive && !specimenMode && (
         <div
           ref={actionRowRef}
@@ -861,48 +849,64 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
           aria-label="Table actions"
           className={tableActionRowClass(isMobile)}
         >
-          {internalTableData.normalizedData && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowNormalized(!showNormalized)}
-              className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
-            >
-              <Eye className="h-4 w-4" />
-              {showNormalized ? "Table" : "Data"}
-            </Button>
+          {/* Structural editing sits INSIDE this bar while editing — never a row of its own. */}
+          {isEditingEnabled && (
+            <TableEditToolbar
+              onAddRow={handleAppendRow}
+              onAddColumn={handleAppendColumn}
+              onClearAllContents={handleClearAllContents}
+              rowCount={internalTableData.rows.length}
+              colCount={internalTableData.headers.length}
+              className="contents"
+            />
           )}
-          <ChartThisButton
-            table={{
-              headers: internalTableData.headers,
-              rows: internalTableData.rows,
-            }}
-            active={showChart}
-            onToggle={() => setShowChart((v) => !v)}
-          />
-          {renderTableActionButton()}
-          {internalTableData.normalizedData && (
+          {/* While editing, the bar holds only the edit tools and Save / Cancel. */}
+          {!isEditingEnabled && (
             <>
-              <SendToWorkbookButton
-                headers={internalTableData.headers}
-                rows={internalTableData.rows}
+              {internalTableData.normalizedData && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowNormalized(!showNormalized)}
+                  className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
+                >
+                  <Eye className="h-4 w-4" />
+                  {showNormalized ? "Table" : "Data"}
+                </Button>
+              )}
+              <ChartThisButton
+                table={{
+                  headers: internalTableData.headers,
+                  rows: internalTableData.rows,
+                }}
+                active={showChart}
+                onToggle={() => setShowChart((v) => !v)}
               />
-              <SendToGoogleSheetButton
-                headers={internalTableData.headers}
-                rows={internalTableData.rows}
+              {renderTableActionButton()}
+              {internalTableData.normalizedData && (
+                <>
+                  <SendToWorkbookButton
+                    headers={internalTableData.headers}
+                    rows={internalTableData.rows}
+                  />
+                  <SendToGoogleSheetButton
+                    headers={internalTableData.headers}
+                    rows={internalTableData.rows}
+                  />
+                </>
+              )}
+              <ExportDropdownMenu
+                tableData={internalTableData}
+                content={content}
+                copyTableToClipboard={copyTableToClipboard}
+                copyMarkdownToClipboard={copyMarkdownToClipboard}
+                copyJsonToClipboard={copyJsonToClipboard}
+                downloadCSV={downloadCSV}
+                downloadMarkdown={downloadMarkdown}
+                isStreamActive={isStreamActive}
               />
             </>
           )}
-          <ExportDropdownMenu
-            tableData={internalTableData}
-            content={content}
-            copyTableToClipboard={copyTableToClipboard}
-            copyMarkdownToClipboard={copyMarkdownToClipboard}
-            copyJsonToClipboard={copyJsonToClipboard}
-            downloadCSV={downloadCSV}
-            downloadMarkdown={downloadMarkdown}
-            isStreamActive={isStreamActive}
-          />
           {isEditingEnabled ? (
             <>
               <Button

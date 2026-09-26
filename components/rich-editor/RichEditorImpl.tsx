@@ -650,11 +650,6 @@ export default function RichEditorImpl({
             </div>
           </div>
         )}
-        {mic.isRecording && mic.liveTranscript && (
-          <div className="border-b border-border bg-primary/5 px-4 py-1 text-xs text-muted-foreground" aria-live="polite">
-            Hearing: {mic.liveTranscript}
-          </div>
-        )}
         {findMode && view !== "preview" && (
           <FindReplacePanel
             showReplace={findMode === "replace"}
@@ -690,6 +685,12 @@ export default function RichEditorImpl({
         {/* ── Status bar ──────────────────────────────────────────────── */}
         {!focusMode && (
           <div className="flex min-h-7 flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-border bg-card/60 px-3 py-1 text-[11px] text-muted-foreground pb-safe">
+            {/* Live dictation shows IN the status bar — never a row of its own above the text. */}
+            {mic.isRecording && mic.liveTranscript && (
+              <span className="min-w-0 max-w-full truncate text-primary" aria-live="polite">
+                Hearing: {mic.liveTranscript}
+              </span>
+            )}
             <span>
               {metrics.words.toLocaleString()} words · {metrics.characters.toLocaleString()} characters · {metrics.readingMinutes} min read
             </span>
