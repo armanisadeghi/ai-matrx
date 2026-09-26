@@ -11,7 +11,7 @@
 // the status pill, the error banner, and (playground only) a settings
 // sheet trigger.
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Music2, Radio, Settings2 } from "lucide-react";
 import { TapTargetButton } from "@ai-matrx/tap-target";
@@ -92,6 +92,7 @@ export function VoiceAgentSurface({
 }: VoiceAgentSurfaceProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const instanceId = useVoiceAgentInstance({ preset, agentId });
   // The playground has no agent of its own (the person types the persona), but
@@ -317,21 +318,27 @@ export function VoiceAgentSurface({
                 icon={<Radio className="h-4 w-4" />}
                 label="Gemini Live"
               />
-              <PlaygroundSettingsSheet
-                instanceId={instanceId}
-                disabled={liveStatus !== "idle" && liveStatus !== "error"}
-                trigger={
-                  <TapTargetButton
-                    icon={<Settings2 className="h-4 w-4" />}
-                    label="Settings"
-                    ariaLabel="Voice settings"
-                  />
-                }
+              {/* Primary (last): stays visible, going icon-only when narrow. */}
+              <TapTargetButton
+                icon={<Settings2 className="h-4 w-4" />}
+                label="Settings"
+                ariaLabel="Voice settings"
+                onClick={() => setSettingsOpen(true)}
               />
             </>
           ) : undefined
         }
       />
+      {/* Mounted outside the header's foldable actions: the sheet owns the
+        surface write targets, which must stay registered while it is closed. */}
+      {preset === "playground" && (
+        <PlaygroundSettingsSheet
+          instanceId={instanceId}
+          disabled={liveStatus !== "idle" && liveStatus !== "error"}
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+        />
+      )}
       <div
         className={cn(
           // h-full, never h-dvh: `.shell-main` already fills the viewport

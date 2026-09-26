@@ -32,7 +32,14 @@ import { InstructionsEditor } from "./InstructionsEditor";
 
 interface PlaygroundSettingsSheetProps {
   instanceId: string;
-  trigger: ReactNode;
+  /**
+   * Optional inline trigger. Omit it and drive `open` / `onOpenChange` when the
+   * trigger lives elsewhere (the shell header) — the sheet itself must stay
+   * mounted so its surface write targets stay registered.
+   */
+  trigger?: ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   /** Lock controls while the session is active (changes won't apply mid-call). */
   disabled?: boolean;
 }
@@ -58,8 +65,15 @@ export function PlaygroundSettingsSheet({
   instanceId,
   trigger,
   disabled,
+  open: controlledOpen,
+  onOpenChange,
 }: PlaygroundSettingsSheetProps) {
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    if (controlledOpen === undefined) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
 
   // Write targets for `matrx-user/chat-voice`. The handlers read the live
   // store at call time, so they do not depend on this component re-rendering
@@ -71,7 +85,7 @@ export function PlaygroundSettingsSheet({
 
   return (
     <>
-      {wrapTrigger(trigger, () => setOpen(true))}
+      {trigger != null ? wrapTrigger(trigger, () => setOpen(true)) : null}
       <MatrxDynamicPanelHost
         open={open}
         onOpenChange={setOpen}
