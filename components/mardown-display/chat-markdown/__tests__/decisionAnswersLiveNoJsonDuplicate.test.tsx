@@ -86,9 +86,17 @@ jest.mock(
   () => {
     const DecisionAnswersBlock =
       require("@/components/mardown-display/blocks/decision-answers/DecisionAnswersBlock").default;
+    // A stub draws the text it was handed: the raw JSON reaches `JsonBlock`
+    // as its `content` prop, and a stub that dropped it made the leak
+    // invisible (the suite stayed green with the JSON filter removed).
     const stub = (name: string) => {
-      const Component = (props: { children?: React.ReactNode }) =>
-        React.createElement("div", { "data-stub": name }, props.children);
+      const Component = (props: { children?: React.ReactNode; content?: unknown }) =>
+        React.createElement(
+          "div",
+          { "data-stub": name },
+          typeof props.content === "string" ? props.content : null,
+          props.children,
+        );
       Component.displayName = name;
       return Component;
     };
@@ -156,12 +164,17 @@ function streamAVerbalizedDecision() {
   // The model's raw structured-output reply, streamed as ordinary text —
   // the exact shape `verbalized_response_schema` forces out of a text model
   // (aidream `matrx_ai/decisions/translate.py`).
-  // Deliberately NOT paired with a text_start/text_end timeline entry — the
-  // unified-slot builder's fallback (timeline produced no slots, but blocks
-  // exist) then emits every render block in arrival order, exactly like the
-  // sibling `decisionAnswersRendersLive.test.tsx` fixture-replay test. This
-  // is the same code path a real stream drives; only the plumbing to get
-  // there is simplified.
+  // Paired with its text_start/text_end timeline entries, as process-stream
+  // records a text run. (It used to lean on the slot builder's "no slots"
+  // fallback; since 9457cb1f7d a data event emits its own block at its
+  // timeline spot, the fallback never fires, and an unpaired text block was
+  // silently never drawn — this suite stayed green with its filter removed.)
+  store.dispatch(
+    appendTimeline({
+      requestId: REQ,
+      entry: { kind: "text_start", seq: 0, timestamp: 0, blockStartIndex: 0 },
+    }) as never,
+  );
   store.dispatch(
     upsertRenderBlock({
       requestId: REQ,
@@ -176,6 +189,20 @@ function streamAVerbalizedDecision() {
           urgency: 3.18,
         }),
         data: null,
+      },
+    }) as never,
+  );
+
+  store.dispatch(
+    appendTimeline({
+      requestId: REQ,
+      entry: {
+        kind: "text_end",
+        seq: 1,
+        timestamp: 1,
+        blockStartIndex: 0,
+        blockEndIndex: 1,
+        blockCount: 1,
       },
     }) as never,
   );
@@ -199,8 +226,8 @@ function streamAVerbalizedDecision() {
       requestId: REQ,
       entry: {
         kind: "data",
-        seq: 1,
-        timestamp: 1,
+        seq: 2,
+        timestamp: 2,
         data: payload,
         blockId: decisionBlockId,
       },
@@ -244,7 +271,10 @@ describe("a live verbalized decision never shows its raw JSON twice", () => {
     expect(text).toContain("frontend");
 
     // … exactly once, as the typed card — never a second time as raw JSON.
-    const answersHeadingCount = (text.match(/Answers/g) ?? []).length;
+    // The card's header names its count ("1 answer" / "3 answers") since the
+    // DecisionAnswers redesign (8ef1a21634) replaced the bare "Answers" label.
+    // No trailing \b: textContent runs the header into the model name.
+    const answersHeadingCount = (text.match(/\b\d+ answers?/g) ?? []).length;
     expect(answersHeadingCount).toBe(1);
     expect(text).not.toContain(RAW_JSON_MARKER);
     expect(text).not.toContain("{");
