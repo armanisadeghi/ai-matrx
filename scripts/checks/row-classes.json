@@ -1105,7 +1105,7 @@
     "access-guard-check": {
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/check-access-guards.ts --strict",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "staff-door-private-confidential-components-included": {
@@ -1172,7 +1172,7 @@
     "visibility-vocabulary": {
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/check-visibility-vocab.ts --strict",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "component-ownership-law-no-created-by": {
@@ -1440,13 +1440,13 @@
     "url-state-written-outside-the-canonical-primitive": {
       "class": "repo-only",
       "cmd": "pnpm check:url-state",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "retired-database-project-id-handed-to-agents": {
       "class": "repo-only",
       "cmd": "pnpm check:retired-db-ref",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "hr-time-client-side-hours-arithmetic": {
