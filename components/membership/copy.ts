@@ -74,7 +74,7 @@ export function memberSummary(member: PanelMember): string {
     ["Member", memberName(member)],
     ["Email", member.user?.email],
     ["Role", member.role],
-    ["Joined", new Date(member.joinedAt).toLocaleDateString()],
+    ["Joined", member.joinedAt ? new Date(member.joinedAt).toLocaleDateString() : null],
     ["User id", member.userId],
     ...(member.copyDetails?.summary ?? []),
   ]);

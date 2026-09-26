@@ -90,7 +90,9 @@ export interface PanelMember {
   /** The user's id — used for self-detection, role/remove ops, messaging. */
   userId: string;
   role: MembershipRole;
-  joinedAt: string;
+  /** When they joined. Null for a member who is on the container without a joining
+   *  moment of their own (e.g. on a team through its HR department) — no "Joined" line. */
+  joinedAt: string | null;
   user?: UserLike;
   /**
    * Optional facts rendered by a host-owned row seam. Shared copy/export must
@@ -165,6 +167,13 @@ export interface MembersPanelProps {
    */
   canTransferOwnership?: (member: PanelMember) => boolean;
   onTransferOwnership?: (member: PanelMember) => void | Promise<void>;
+  /**
+   * Whether "Remove" is offered for this member at all. Default: offered. A host returns
+   * false for someone whose place here is decided elsewhere (a team member who is on the
+   * team through its HR department), so the menu never holds an action that cannot work;
+   * the host says where it is decided through `renderMemberExtra`.
+   */
+  canRemoveMember?: (member: PanelMember) => boolean;
 }
 
 const ROLE_ICONS: Record<MembershipRole, LucideIcon> = {
@@ -204,6 +213,7 @@ export function MembersPanel({
   renderMemberExtra,
   canTransferOwnership,
   onTransferOwnership,
+  canRemoveMember,
 }: MembersPanelProps) {
   const container: MembershipCopyContainer = {
     noun: copyContainer?.noun ?? containerNoun,
@@ -352,12 +362,12 @@ export function MembersPanel({
           return (
             <div
               key={member.id}
-              className="group/member flex items-center justify-between p-4 rounded-lg border bg-card hover:shadow-sm transition-shadow"
+              className="group/member flex flex-wrap items-center justify-between gap-x-3 gap-y-2 p-4 rounded-lg border bg-card hover:shadow-sm transition-shadow"
             >
               {/* Member Info */}
               <UserIdentity
                 user={member.user}
-                className="flex-1"
+                className="flex-1 min-w-[12rem]"
                 nameSuffix={
                   isCurrentUser ? (
                     <span className="text-xs text-muted-foreground">(You)</span>
@@ -366,21 +376,24 @@ export function MembersPanel({
                 subtitle={
                   <>
                     {member.user?.displayName && member.user?.email
-                      ? `${member.user.email} · `
+                      ? `${member.user.email}${member.joinedAt ? " · " : ""}`
                       : ""}
-                    Joined {new Date(member.joinedAt).toLocaleDateString()}
+                    {member.joinedAt
+                      ? `Joined ${new Date(member.joinedAt).toLocaleDateString()}`
+                      : null}
                   </>
                 }
               />
 
-              {/* Role Badge and Actions */}
-              <div className="flex items-center gap-2">
+              {/* Role Badge and Actions — wraps under the name on a narrow screen
+                  instead of crushing it to nothing. */}
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 {/* The member ⇄ employee seam (SPEC-UI-IA §6). Renders nothing
                     when the host supplies nothing. */}
                 {renderMemberExtra?.(member)}
                 <Badge
                   className={cn(
-                    "flex items-center gap-1",
+                    "flex items-center gap-1 whitespace-nowrap",
                     ROLE_BADGE_COLORS[member.role],
                   )}
                 >
@@ -502,15 +515,19 @@ export function MembersPanel({
                           Transfer ownership…
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => setMemberToRemove(member)}
-                        className="text-red-600 dark:text-red-400"
-                        disabled={lastOwner}
-                      >
-                        <UserX className="h-4 w-4 mr-2" />
-                        Remove {memberNoun === "member" ? "Member" : memberNoun}
-                      </DropdownMenuItem>
+                      {canRemoveMember?.(member) !== false && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => setMemberToRemove(member)}
+                            className="text-red-600 dark:text-red-400"
+                            disabled={lastOwner}
+                          >
+                            <UserX className="h-4 w-4 mr-2" />
+                            Remove {memberNoun === "member" ? "Member" : memberNoun}
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}

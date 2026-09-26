@@ -18,6 +18,7 @@ import { useAnchoredSections } from "@/hooks/useAnchoredSections";
 import {
   Settings,
   Users,
+  UsersRound,
   Mail,
   AlertTriangle,
   Send,
@@ -54,6 +55,7 @@ import { GeneralSettings } from "./GeneralSettings";
 import { OrgBatchSavings } from "@/features/batch-savings/OrgBatchSavings";
 import { OrgIndustriesSection } from "@/features/industries/components/OrgIndustriesSection";
 import { MemberManagement } from "./MemberManagement";
+import { TeamManagement } from "./TeamManagement";
 import { OrgTrashSection } from "@/features/trash/components/OrgTrashSection";
 import { InvitationManager } from "./InvitationManager";
 import { DangerZone } from "./DangerZone";
@@ -132,6 +134,9 @@ export function OrgManage({
     // only an owner/admin may set it — the card itself hides the editor.
     { id: "ai-budget", label: "AI budget", icon: Gauge, show: true },
     { id: "members", label: "Members", icon: Users, show: canManageMembers },
+    // Teams are Organization-level: every member sees every team and who is on it;
+    // the section itself decides who may change what.
+    { id: "teams", label: "Teams", icon: UsersRound, show: true },
     // Lane TRASH-2: members' archived items in this organization, for owners and admins only.
     { id: "trash", label: "Trash", icon: Trash2, show: showOrgTrash },
     {
@@ -406,6 +411,20 @@ export function OrgManage({
               />
             </SectionCard>
           )}
+
+          {/* Teams — the grouping behind "my team or department" list defaults. */}
+          <SectionCard
+            id="teams"
+            icon={UsersRound}
+            title="Teams"
+            description="Groups of people inside this organization, like departments. A person can be on several; a team can take its members from an HR department."
+          >
+            <TeamManagement
+              organizationId={displayOrganization.id}
+              organizationName={displayOrganization.name}
+              canManageTeams={canManageMembers}
+            />
+          </SectionCard>
 
           {/* Trash — members' archived items in this organization (owners and admins). */}
           {showOrgTrash && (

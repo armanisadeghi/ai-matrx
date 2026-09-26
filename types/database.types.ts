@@ -55966,6 +55966,65 @@ export type Database = {
         }
         Relationships: []
       }
+      team: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          description: string | null
+          hr_department_id: string | null
+          id: string
+          metadata: Json
+          name: string
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string | null
+          hr_department_id?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string | null
+          hr_department_id?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       world_namespace: {
         Row: {
           claimed_at: string
@@ -56149,7 +56208,6 @@ export type Database = {
         Returns: {
           actor_role: string
           resource_creator: string
-          resource_is_personal: boolean
           resource_org_id: string
         }[]
       }
@@ -56261,6 +56319,21 @@ export type Database = {
       }
       _org_availability_arm: { Args: never; Returns: undefined }
       _org_availability_token: { Args: never; Returns: string }
+      _reach_node_lanes: {
+        Args: {
+          p_gr: string[]
+          p_ids: string[]
+          p_orgs: string[]
+          p_types: string[]
+          p_uid: string
+        }
+        Returns: {
+          blocked: boolean
+          hit: boolean
+          node_id: string
+          node_type: string
+        }[]
+      }
       _record_access_audit: {
         Args: {
           p_action: string
@@ -56295,6 +56368,10 @@ export type Database = {
       _rls_plan_is: {
         Args: { p_create: string[]; p_kept: string[]; p_tbl: string }
         Returns: undefined
+      }
+      _team_caller: {
+        Args: { p_team_id: string }
+        Returns: Record<string, unknown>
       }
       access_arms_from_sources: {
         Args: {
@@ -57014,6 +57091,12 @@ export type Database = {
         }
         Returns: string
       }
+      membership_readers_missing_container: {
+        Args: never
+        Returns: {
+          function_ref: string
+        }[]
+      }
       membership_row_visible: {
         Args: { p_membership_id: string }
         Returns: boolean
@@ -57024,6 +57107,11 @@ export type Database = {
       }
       my_orgs: { Args: never; Returns: string[] }
       my_orgs_all: { Args: never; Returns: string[] }
+      my_team_ids: { Args: { p_organization_id: string }; Returns: string[] }
+      my_teammate_user_ids: {
+        Args: { p_organization_id: string }
+        Returns: string[]
+      }
       org_access_ids: { Args: never; Returns: string[] }
       org_access_log: {
         Args: { p_limit?: number; p_organization_id: string }
@@ -57330,6 +57418,26 @@ export type Database = {
       table_has_visibility: {
         Args: { p_schema: string; p_table: string }
         Returns: boolean
+      }
+      team_ids_of: {
+        Args: { p_organization_id: string; p_user_id: string }
+        Returns: string[]
+      }
+      team_member_user_ids: { Args: { p_team_id: string }; Returns: string[] }
+      team_members_resolved: {
+        Args: { p_team_ids: string[] }
+        Returns: {
+          is_from_hr: boolean
+          is_listed: boolean
+          listed_since: string
+          role: string
+          team_id: string
+          user_id: string
+        }[]
+      }
+      teammate_user_ids: {
+        Args: { p_organization_id: string; p_user_id: string }
+        Returns: string[]
       }
       token_is_parented_component: {
         Args: { p_token: string }
@@ -85378,6 +85486,74 @@ export type Database = {
       }
       system_org_id: { Args: { p_key: string }; Returns: string }
       table_share_peek: { Args: { p_token: string }; Returns: Json }
+      team_archive: { Args: { p_team_id: string }; Returns: undefined }
+      team_create: {
+        Args: {
+          p_description?: string
+          p_hr_department_id?: string
+          p_name: string
+          p_organization_id: string
+        }
+        Returns: string
+      }
+      team_hr_department_options: {
+        Args: { p_organization_id: string }
+        Returns: {
+          id: string
+          name: string
+          parent_department_id: string
+        }[]
+      }
+      team_list: {
+        Args: { p_include_archived?: boolean; p_organization_id: string }
+        Returns: {
+          archived_at: string
+          can_manage: boolean
+          created_at: string
+          description: string
+          hr_department_id: string
+          hr_department_name: string
+          id: string
+          member_count: number
+          my_role: string
+          name: string
+          updated_at: string
+        }[]
+      }
+      team_member_add: {
+        Args: { p_role?: string; p_team_id: string; p_user_id: string }
+        Returns: string
+      }
+      team_member_remove: {
+        Args: { p_team_id: string; p_user_id: string }
+        Returns: undefined
+      }
+      team_member_set_role: {
+        Args: { p_role: string; p_team_id: string; p_user_id: string }
+        Returns: undefined
+      }
+      team_members: {
+        Args: { p_team_id: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          email: string
+          is_from_hr: boolean
+          is_listed: boolean
+          listed_since: string
+          role: string
+          user_id: string
+        }[]
+      }
+      team_restore: { Args: { p_team_id: string }; Returns: undefined }
+      team_set_hr_department: {
+        Args: { p_hr_department_id: string; p_team_id: string }
+        Returns: undefined
+      }
+      team_update: {
+        Args: { p_description?: string; p_name?: string; p_team_id: string }
+        Returns: undefined
+      }
       thread_contents: {
         Args: { thread_id: string }
         Returns: {
