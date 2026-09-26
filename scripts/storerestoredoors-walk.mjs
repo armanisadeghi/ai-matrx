@@ -116,7 +116,7 @@ check("browser seat is admin@admin.com (the app says so)", who === "admin@admin.
 
 async function restoreFromTrash({ chip, kind, id, text, shotName, back }) {
   await page.goto(`${ORIGIN}/trash`, { waitUntil: "domcontentloaded", timeout: 180000 });
-  const chipBtn = page.getByRole("button", { name: new RegExp(`^${chip}\\b`) }).first();
+  const chipBtn = page.getByRole("button", { name: new RegExp(`^${chip}\\s+[\\d,]+$`) }).first();
   const hasChip = await chipBtn.waitFor({ timeout: 90000 }).then(() => true, () => false);
   check(`/trash shows a "${chip}" kind`, hasChip);
   if (!hasChip) { await shot(page, `${shotName}-0-no-chip`); return; }
@@ -136,10 +136,7 @@ async function restoreFromTrash({ chip, kind, id, text, shotName, back }) {
 }
 
 await restoreFromTrash({ chip: "Field", kind: "field", id: fNote, text: `Spore test note (in ${NAME})`, shotName: "a-field",
-  back: async () => {
-    const { data } = await custom.rpc("dashboard_field_keys", { p_organization_id: ORG, p_table_id: tableId });
-    return (data ?? []).includes("spore_test_note");
-  } });
+  back: async () => !(await inTrash("field", fNote)) });
 {
   const { data } = await custom.rpc("read_record", { p_organization_id: ORG, p_record_id: r2 });
   const doc = data?.data ?? data?.document ?? data;
