@@ -19,6 +19,8 @@ jest.mock("../hooks/useTabUrlState", () => ({ useTabUrlState: () => ({ tabIds: [
 jest.mock("../service", () => ({ aiModelService: { fetchAll: jest.fn(), fetchProviders: jest.fn(), create: jest.fn() } }));
 jest.mock("sonner", () => ({ toast: { loading: jest.fn(() => "notice"), success: jest.fn(), error: jest.fn() } }));
 jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({ SurfaceRuntimeProvider: ({children}: {children: React.ReactNode}) => children }));
+// The error menu is exercised by components/errors; this suite mocks sonner narrowly.
+jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 jest.mock("@/features/surfaces/manifests/admin-ai-models.manifest", () => ({ ADMIN_AI_MODELS_SURFACE_NAME: "models", createAdminAiModelsScope: jest.fn() }));
 jest.mock("@/components/ui/resizable", () => ({ ResizablePanelGroup: ({children}: {children: React.ReactNode}) => children, ResizablePanel: ({children}: {children: React.ReactNode}) => children, ResizableHandle: () => null }));
 
