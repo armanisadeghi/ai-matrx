@@ -32,6 +32,7 @@ import React, {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import {
   Download,
@@ -172,6 +173,12 @@ function readForcedCloudImagesLoadError(): boolean {
   );
 }
 
+/** The address changes by back/forward; a retry's own replace is covered by `dismissed`. */
+function subscribeToAddress(onChange: () => void): () => void {
+  window.addEventListener("popstate", onChange);
+  return () => window.removeEventListener("popstate", onChange);
+}
+
 /**
  * Style prefs for this gallery (synced across devices via `userPreferences`).
  * The cozy grid is this surface's own default — the platform default is table,
@@ -293,9 +300,20 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
   // `?data=error` is a visible test scenario, not a transport failure. The
   // state is local so one manual retry immediately returns to the live tree
   // request without reloading or invalidating the authenticated session.
-  const [forcedLoadError, setForcedLoadError] = useState(
+  //
+  // Read through useSyncExternalStore with a server snapshot of `false`: the
+  // server has no address bar, so reading `window` in a useState initializer
+  // rendered the loading state on the server and the error box on the client
+  // — a hydration mismatch that regenerated the whole tree (2026-09-26,
+  // /images/my-cloud?data=error). Hydration now matches, then the scenario
+  // shows on the client's first commit.
+  const forcedInAddress = useSyncExternalStore(
+    subscribeToAddress,
     readForcedCloudImagesLoadError,
+    () => false,
   );
+  const [forcedDismissed, setForcedDismissed] = useState(false);
+  const forcedLoadError = forcedInAddress && !forcedDismissed;
 
   // Hydrate the tree the first time the tab opens. The realtime provider
   // also fires this when mounted at the layout level, but inside a modal
@@ -508,7 +526,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
   const isLoading = treeStatus === "loading" || treeStatus === "idle";
   const handleRetryTree = () => {
     if (forcedLoadError) {
-      setForcedLoadError(false);
+      setForcedDismissed(true);
       if (typeof window !== "undefined") {
         replaceAddressWithoutNavigating(
           clearForcedCloudImagesLoadError(

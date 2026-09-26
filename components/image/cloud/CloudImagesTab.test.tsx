@@ -1,6 +1,6 @@
 import React from "react";
 import { act } from "react";
-import { createRoot } from "react-dom/client";
+import { hydrateRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
   CloudImagesTab,
@@ -174,16 +174,27 @@ describe("CloudImagesTab", () => {
     ).toBe("/images/my-cloud?view=list");
 
     window.history.replaceState({}, "", "/images/my-cloud?data=error");
+    // THE SERVER HAS NO ADDRESS BAR. Its HTML is the plain first paint; the
+    // scenario is the client's to show. Server HTML that already carried the
+    // error box (read from `window` in a state initializer) disagreed with the
+    // real server's and React threw the hydration away (2026-09-26).
     const html = renderToStaticMarkup(<CloudImagesTab />);
+    expect(html).not.toContain("Test scenario: simulated image-library load error");
 
-    expect(html).toContain("Test scenario: simulated image-library load error");
-    expect(html).toContain("Try again returns to your live library");
-
+    // Hydrating that exact server HTML raises no mismatch, and the scenario shows.
     const container = document.createElement("div");
-    const root = createRoot(container);
+    container.innerHTML = html;
+    document.body.appendChild(container);
+    const hydrationErrors: unknown[] = [];
+    let root!: ReturnType<typeof hydrateRoot>;
     await act(async () => {
-      root.render(<CloudImagesTab />);
+      root = hydrateRoot(container, <CloudImagesTab />, {
+        onRecoverableError: (error) => hydrationErrors.push(error),
+      });
     });
+    expect(hydrationErrors).toEqual([]);
+    expect(container.textContent).toContain("Test scenario: simulated image-library load error");
+    expect(container.textContent).toContain("Try again returns to your live library");
     const retry = Array.from(container.querySelectorAll("button")).find(
       (button) => button.textContent === "Try again",
     );
@@ -199,6 +210,7 @@ describe("CloudImagesTab", () => {
     await act(async () => {
       root.unmount();
     });
+    container.remove();
   });
 
   it("reserves terminal clearance on the gallery scroll owner only while the fixed bulk toolbar is visible", () => {
