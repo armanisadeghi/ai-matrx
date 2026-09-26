@@ -35,20 +35,23 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { renameIntentFallback } from "@/components/official/item/renameIntentFallback";
-import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import type {
   ItemMenuConfig,
   ItemMenuSection,
 } from "@/components/official/item/types";
 import type { AppDispatch } from "@/lib/redux/store";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import {
+  copyConversationLink,
+  displayConversationTitle,
+  duplicateConversationVerb,
+  shareConversation,
+} from "./conversation-verbs";
 
 import {
   setConversationFavorite,
   setConversationArchived,
   setConversationExcludeFromKg,
-  duplicateConversation,
 } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 import { softDeleteConversation } from "@/features/agents/redux/execution-system/message-crud/soft-delete-conversation.thunk";
 import {
@@ -59,16 +62,7 @@ import {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function resolveAbsoluteHref(href: string): string {
-  if (typeof window === "undefined") return href;
-  if (/^https?:\/\//i.test(href)) return href;
-  return `${window.location.origin}${href.startsWith("/") ? href : `/${href}`}`;
-}
-
-function displayTitle(title: string | null): string {
-  if (!title) return "Untitled conversation";
-  return title.trim().length > 0 ? title : "Untitled conversation";
-}
+const displayTitle = displayConversationTitle;
 
 // ── ItemMenu config builder (Item system) ────────────────────────────────────
 //
@@ -240,17 +234,7 @@ export function buildConversationMenu(
             id: "copy-link",
             label: "Copy link",
             icon: LinkIcon,
-            onSelect: async () => {
-              const absolute = resolveAbsoluteHref(ctx.href);
-              try {
-                await navigator.clipboard.writeText(absolute);
-                toast.success("Link copied");
-              } catch {
-                toast.error(
-                  "Couldn't copy — your browser blocked clipboard access",
-                );
-              }
-            },
+            onSelect: () => copyConversationLink(ctx.href),
           },
         ],
       },
@@ -272,44 +256,18 @@ export function buildConversationMenu(
             icon: Copy,
             description: "Make a full copy of this conversation",
             shortcutKey: "d",
-            onSelect: async () => {
-              const result = await ctx.dispatch(
-                duplicateConversation({
-                  conversationId: ctx.conversationId,
-                  surfaceKey: ctx.surfaceKey,
-                }),
-              );
-              if (duplicateConversation.rejected.match(result)) {
-                toast.error(result.payload?.message ?? "Duplicate failed");
-              } else {
-                // The thunk returns `newConversationId` and the toast dropped
-                // it, leaving the copy findable only by scrolling the sidebar.
-                toast.success("Conversation duplicated", {
-                  action: toastDoor(
-                    "conversation",
-                    result.payload.newConversationId,
-                  ),
-                });
-                ctx.onMutationSuccess?.();
-              }
-            },
+            onSelect: () =>
+              duplicateConversationVerb(ctx.dispatch, ctx.conversationId, {
+                surfaceKey: ctx.surfaceKey,
+                onSuccess: ctx.onMutationSuccess,
+              }),
           },
           {
             id: "share",
             label: "Share…",
             icon: Share2,
-            onSelect: () => {
-              ctx.dispatch(
-                openOverlay({
-                  overlayId: "shareModal",
-                  data: {
-                    resourceType: "conversation",
-                    resourceId: ctx.conversationId,
-                    resourceName: displayTitle(ctx.title),
-                  },
-                }),
-              );
-            },
+            onSelect: () =>
+              shareConversation(ctx.dispatch, ctx.conversationId, ctx.title),
           },
           {
             id: "archive",

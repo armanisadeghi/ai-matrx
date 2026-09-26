@@ -44,9 +44,32 @@ export const PersistentDOMConnector: React.FC = () => {
       // console.log("Initial positioning complete");
     }, 100);
     
-    // Set up observer to watch for DOM changes
-    observerRef.current = new MutationObserver(() => {
-      positionComponents();
+    // Watch for DOM changes — but only react to the ones that involve a
+    // persistent component or its placeholder, once per frame. Scanning the
+    // whole document on EVERY mutation made each DOM insertion anywhere cost a
+    // full-document querySelectorAll (587 ms over 15 s of mermaid drawing on a
+    // 1 MB document, 2026-09-26).
+    const RELEVANT = "[data-component-id],[data-placeholder-for]";
+    let scheduled = 0;
+    const relevant = (records: MutationRecord[]) =>
+      records.some((r) => {
+        if (r.type === "attributes") {
+          const el = r.target as Element;
+          return el.hasAttribute?.("data-component-id") || el.hasAttribute?.("data-placeholder-for");
+        }
+        for (const node of r.addedNodes) {
+          if (node.nodeType !== 1) continue;
+          const el = node as Element;
+          if (el.matches(RELEVANT) || el.querySelector(RELEVANT)) return true;
+        }
+        return false;
+      });
+    observerRef.current = new MutationObserver((records) => {
+      if (scheduled || !relevant(records)) return;
+      scheduled = requestAnimationFrame(() => {
+        scheduled = 0;
+        positionComponents();
+      });
     });
     
     // Observe the entire document body for changes
@@ -74,6 +97,7 @@ export const PersistentDOMConnector: React.FC = () => {
     
     // Cleanup on unmount
     return () => {
+      if (scheduled) cancelAnimationFrame(scheduled);
       observerRef.current?.disconnect();
       window.removeEventListener('visibilitychange', positionComponents);
       document.removeEventListener('DOMContentLoaded', positionComponents);

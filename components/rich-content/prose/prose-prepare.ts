@@ -11,6 +11,7 @@
 import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
 import { splitFrontmatter } from "@/components/markdown-core/syntax/frontmatter";
 import { fenceLineKinds } from "@ai-matrx/content-ir/source";
+import { tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 /** Private-use sentinel for a standalone `===` line. The `p` renderer swaps a
  *  paragraph whose only child is this token for a thick blue rule. */
@@ -257,6 +258,18 @@ export function preprocessCellProse(rawContent: string): string {
  * `===` into the thick rule sentinel and extra blank lines into spacers.
  * Math is NOT touched here — the core's math normalizer owns it.
  */
+/** A blank line before every `---` line that would make the line above a setext heading — never a table's delimiter row. */
+function separateSetextUnderlines(text: string): string {
+  if (!text.includes("\n---")) return text;
+  const lines = text.split("\n");
+  const out: string[] = [];
+  lines.forEach((line, i) => {
+    if (i > 0 && line.startsWith("---") && lines[i - 1] !== "" && !tableStartsAt(lines, i - 1)) out.push("");
+    out.push(line);
+  });
+  return out.join("\n");
+}
+
 export function preprocessProse(rawContent: string): string {
   // A leading byte-order mark is an encoding mark, not content: dropped for
   // display so `\uFEFF---` front matter is hidden like `---` (RC-B3r round 3, C1).
@@ -318,8 +331,11 @@ export function preprocessProse(rawContent: string): string {
   );
 
   // Fix setext-style heading patterns by ensuring there's a blank line before ---
-  // This prevents paragraph text from being interpreted as h2 headings
-  processed = processed.replace(/([^\n])\n---/g, "$1\n\n---");
+  // This prevents paragraph text from being interpreted as h2 headings — but
+  // never under a table header: `Step | Task` over `--- | ---` is a pipe-less
+  // GFM table, and a blank line there destroyed it (verify-RC-B4 round 9;
+  // THE table rule, gfm-table-lines).
+  processed = separateSetextUnderlines(processed);
 
   // Standalone `===` → thick blue rule. See isolateThickHorizontalRules.
   processed = isolateThickHorizontalRules(processed);

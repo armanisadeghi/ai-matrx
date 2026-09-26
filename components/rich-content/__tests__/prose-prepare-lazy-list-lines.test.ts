@@ -20,6 +20,9 @@ it.each([
   ["a lazy line under a list item", "- Drain the print queue\nbefore midnight\n- Swap the labels"],
   ["a lazy line under an ordered item", "1. Drain the print queue\nbefore midnight\n2. Swap the labels"],
   ["a lazy line under a nested item", "- Docks\n  - B3 re-scan\nafter the audit"],
+  // A pipe-less table whose delimiter row starts with `---` stays a table (the
+  // setext-heading guard used to put a blank line under its header).
+  ["a pipe-less table", "Step | Task | Who\n--- | --- | ---\n1 | Drain the print queue | Tom"],
 ])("%s reads as GFM reads it", (_label, md) => {
   const prepared = preprocessProse(md);
   expect(topTypes(prepared)).toEqual(topTypes(md));

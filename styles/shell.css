@@ -1863,13 +1863,13 @@ body:has(.shell-root[data-pathname^="/administration"]) {
   /* Reset grid to single column.
      Must ALSO target the sidebar-expanded selector: the desktop rule
      `.shell-root[data-sidebar-expanded] { grid-template-columns:
-     208px 1fr }` carries an id inside :has(), so it out-specifies a plain
-     `.shell-root` here and a media query adds no specificity. Without this,
+     208px 1fr }` out-specifies a plain `.shell-root` here and a media query
+     adds no specificity. Without this,
      a persisted expanded-sidebar state (cookie/storage) on a mobile-width
      viewport keeps a 208px first column while grid-template-areas is already
      single-column ("header"/"main") — so `main` gets pinned into that 208px
-     track with the rest of the row empty. Listing the same :has() selector
-     here (equal specificity, later in source) collapses both to one column. */
+     track with the rest of the row empty. Listing the same selector here
+     (equal specificity, later in source) collapses both to one column. */
   .shell-root,
   .shell-root[data-sidebar-expanded] {
     grid-template-columns: 1fr;
@@ -1940,22 +1940,18 @@ body:has(.shell-root[data-pathname^="/administration"]) {
 /* The mobile audio studio owns the entire viewport: no shell header, no dock.
    Collapse the header grid row and neutralize the main's header offset + dock
    padding so the route's own full-height layout fits exactly. The dock is
-   portaled into #glass-layer outside .shell-root, so it needs body:has() to
-   cross the portal (same pattern noted in section 11).
+   portaled into #glass-layer, a later sibling of .shell-root, so
+   `.shell-root[…] ~ * .shell-dock` crosses the portal.
 
    The second selector is NOT redundant. Section 13's mobile reset re-declares
-   `grid-template-rows` on `.shell-root[data-sidebar-expanded]` —
-   an id inside :has() makes that (1,1,0), which out-specifies this rule's
-   (0,2,0) no matter how late it appears. So every user whose sidebar cookie
-   said "expanded" got the 2.75rem header row back on mobile, rendering as a
-   blank strip (the header itself is display:none below) and pushing the
-   route's full-height column 2.75rem past the bottom of its own grid track,
-   where `overflow-hidden` silently amputated it. Matching the :has() here
-   makes this (1,2,0) and wins in both states. */
+   `grid-template-rows` on `.shell-root[data-sidebar-expanded]` (0,2,0), which
+   ties this rule's first selector; matching the expanded state here makes this
+   (0,3,0) and wins in both states. (Until 2026-09-26 the expanded state was
+   `:has(#shell-sidebar-toggle:checked)` at (1,1,0): every user whose sidebar
+   cookie said "expanded" got a blank 2.75rem header strip on mobile and the
+   route's bottom amputated.) */
 .shell-root[data-pathname^="/transcripts/scribe"],
-.shell-root[data-pathname^="/transcripts/scribe"]:has(
-    #shell-sidebar-toggle:checked
-  ) {
+.shell-root[data-pathname^="/transcripts/scribe"][data-sidebar-expanded] {
   grid-template-rows: 0 1fr;
 }
 .shell-root[data-pathname^="/transcripts/scribe"] .shell-header {

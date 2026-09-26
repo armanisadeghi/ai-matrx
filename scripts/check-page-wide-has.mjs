@@ -41,10 +41,6 @@ const ALLOWED = new Map([
     '.shell-root:not([data-pathname^="/administration"]):has(.shell-main [data-matrx-table-sticky-header="true"].relative)',
     "subject-only; the marker is emitted by @ai-matrx/design-system's data table. Measured ~2 ms per insertion. Follow-up: the table sets a data attribute.",
   ],
-  [
-    '.shell-root[data-pathname^="/transcripts/scribe"]:has(',
-    "subject-only, one route. Measured <1 ms.",
-  ],
   [":root[data-admin-attention] .shell-main:has(", "admin attention runway, one child combinator. Measured <1 ms."],
   [".shell-main:has(.shell-panel)", "panel sidebar used only by the dev chat demo. Measured ~1 ms."],
   [".shell-root:has(.shell-panel) .shell-mobile-trigger", "panel sidebar used only by the dev chat demo. Measured ~1 ms."],

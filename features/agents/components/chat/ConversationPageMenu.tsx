@@ -15,8 +15,9 @@
  * one definition of what you can do to a conversation, and every verb runs the
  * one thunk that owns it. The only thing this host adds is a real rename door:
  * `intent: "rename"` belongs to `ItemRow`'s inline editor, which a header has
- * no row to host, so the menu gets `onRename` and this component opens the
- * canonical text dialog — still `renameConversation`, never a second write path.
+ * no row to host, so the menu gets `onRename`, which opens the ONE rename
+ * dialog (`openConversationRename`, shared with the answer menu's Conversation
+ * section) — still `renameConversation`, never a second write path.
  *
  * ## The chat entrance to "Send email" (F-20 item 2)
  *
@@ -31,15 +32,13 @@
  * record true.
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useRef } from "react";
 import { Download, MoreHorizontal, Pin, Search, Send, X } from "lucide-react";
 import { useAssociations } from "@ai-matrx/associations/react";
-import { toast } from "@/lib/toast";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
+import { openConversationRename } from "@/features/agents/components/conversation-actions/conversation-verbs";
 import { useOpenGmailComposeWindow } from "@/features/overlays/openers/gmailComposeWindow";
 import type { ItemMenuSection } from "@/components/official/item/types";
 import { conversationEmailEntrances } from "./conversation-email-entrance";
@@ -67,8 +66,6 @@ export function ConversationPageMenu({
   href,
 }: ConversationPageMenuProps) {
   const dispatch = useAppDispatch();
-  const [renameOpen, setRenameOpen] = useState(false);
-  const [renaming, setRenaming] = useState(false);
   const openGmailCompose = useOpenGmailComposeWindow();
   const { edges } = useAssociations({
     type: "conversation",
@@ -152,23 +149,6 @@ export function ConversationPageMenu({
     ],
   };
 
-  const handleRename = useCallback(
-    async (next: string) => {
-      setRenaming(true);
-      const result = await dispatch(
-        renameConversation({ conversationId, title: next }),
-      );
-      setRenaming(false);
-      if (renameConversation.rejected.match(result)) {
-        toast.error(result.payload?.message ?? "Rename failed");
-        return;
-      }
-      setRenameOpen(false);
-      toast.success("Conversation renamed");
-    },
-    [conversationId, dispatch],
-  );
-
   const emailSection: ItemMenuSection | null =
     people.length > 0
       ? {
@@ -193,7 +173,7 @@ export function ConversationPageMenu({
     excludeFromKg: conv?.excludeFromKg ?? false,
     href,
     dispatch,
-    onRename: () => setRenameOpen(true),
+    onRename: () => openConversationRename(conversationId, title),
   });
 
   return (
@@ -236,17 +216,6 @@ export function ConversationPageMenu({
           <MoreHorizontal className="h-4 w-4" />
         </button>
       </ItemMenu>
-
-      <TextInputDialog
-        open={renameOpen}
-        onOpenChange={(open) => !renaming && setRenameOpen(open)}
-        title="Rename conversation"
-        placeholder="Conversation name"
-        defaultValue={title ?? ""}
-        confirmLabel="Rename"
-        busy={renaming}
-        onConfirm={handleRename}
-      />
     </>
   );
 }

@@ -39,6 +39,11 @@ function patch(conversationId: string, next: Partial<ConversationViewState>): vo
   for (const l of listeners) l();
 }
 
+/** For non-React readers (the answer menu's Conversation section re-renders on change). */
+export function subscribeConversationViewState(listener: () => void): () => void {
+  return subscribe(listener);
+}
+
 export function getConversationViewState(conversationId: string): ConversationViewState {
   return states.get(conversationId) ?? CLOSED;
 }

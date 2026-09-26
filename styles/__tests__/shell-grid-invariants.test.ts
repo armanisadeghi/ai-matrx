@@ -5,9 +5,10 @@
  *
  * The class of bug this locks in: the desktop "sidebar expanded" rule
  *
- *     .shell-root:has(#shell-sidebar-toggle:checked) { grid-template-columns: 208px 1fr }
+ *     .shell-root[data-sidebar-expanded] { grid-template-columns: 208px 1fr }
  *
- * carries an id INSIDE :has(), so it out-specifies the mobile media query's
+ * (until 2026-09-26 `.shell-root:has(#shell-sidebar-toggle:checked)`, whose id
+ * inside :has() out-specified everything) can out-specify the mobile media query's
  * plain `.shell-root { grid-template-columns: 1fr }` (media queries add no
  * specificity). Left unguarded, a persisted expanded-sidebar state on a
  * mobile-width viewport keeps a 208px first column while grid-template-areas is
@@ -58,7 +59,10 @@ function checkedSidebarGridColumns(scope: string): string[] {
     while ((m = ruleRe.exec(scope)) !== null) {
         const selector = m[1];
         const body = m[2];
-        if (!selector.includes("#shell-sidebar-toggle:checked")) continue;
+        // The expanded state on .shell-root itself is `[data-sidebar-expanded]`
+        // (mirrored from the checkbox; 2026-09-26 — a :has() on .shell-root
+        // re-checked the whole app on every DOM insertion).
+        if (!selector.includes("#shell-sidebar-toggle:checked") && !selector.includes("[data-sidebar-expanded]")) continue;
         const decl = /grid-template-columns\s*:\s*([^;]+);/.exec(body);
         if (decl) values.push(decl[1].trim());
     }

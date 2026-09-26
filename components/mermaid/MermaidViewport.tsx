@@ -91,6 +91,13 @@ export function MermaidViewport({
   const naturalRef = useRef<NaturalSize | null>(null);
   const userAdjustedRef = useRef(false);
   const lastFrameWidthRef = useRef(0);
+  /**
+   * The frame's inner size as the ResizeObserver last reported it — read after
+   * the browser's own layout, never forced. Null until the first report.
+   */
+  const frameBoxRef = useRef<{ w: number; h: number } | null>(null);
+  /** New content arrived before the first size report: fit on that report. */
+  const fitPendingRef = useRef(false);
 
   const [scale, setScale] = useState(1);
   const [canPan, setCanPan] = useState(false);
@@ -105,10 +112,14 @@ export function MermaidViewport({
   const pinchRef = useRef<{ distance: number; scale: number } | null>(null);
 
   /** Frame inner dimensions available for fitting (cap takes priority). */
+  // 🚨 Never read clientWidth/clientHeight here: this runs right after a new
+  // diagram's markup went into the page, so the read forces a layout of the
+  // WHOLE document — on a 1 MB page, 20–1,800 ms per diagram (2026-09-26). The
+  // ResizeObserver below reports the size after the browser's own layout.
   const frameSize = useCallback((): { fw: number; fh: number } => {
-    const frame = frameRef.current;
-    const fw = (frame?.clientWidth ?? 0) - FRAME_PADDING;
-    const fh = (maxFrameHeight ?? frame?.clientHeight ?? 0) - FRAME_PADDING;
+    const box = frameBoxRef.current ?? { w: 0, h: 0 };
+    const fw = box.w - FRAME_PADDING;
+    const fh = (maxFrameHeight ?? box.h) - FRAME_PADDING;
     return { fw: Math.max(0, fw), fh: Math.max(0, fh) };
   }, [maxFrameHeight]);
 
@@ -190,17 +201,18 @@ export function MermaidViewport({
 
     // Re-fit on new content unless the user has taken manual control (via refs,
     // so a frame-height change never re-injects and wipes scroll).
-    // 🚨 The fit READS layout (frame size). Read synchronously here, every
-    // diagram mounting in one commit forced its own full-document layout right
-    // after the previous one's write — a 1 MB document with dozens of diagrams
-    // spent 13-22 s in this line (the markdown-tester crash, 2026-09-26). In a
-    // frame callback every diagram's read shares ONE layout.
-    let frame = 0;
+    // 🚨 The fit needs the frame size, and READING it here forces a layout of
+    // the whole document: synchronously, every diagram in one commit forced its
+    // own (13-22 s on a 1 MB document, 2026-09-26); in a frame callback, each
+    // diagram drawn later in idle time still forced one (20–1,800 ms each).
+    // The ResizeObserver below reports the size after the browser's own
+    // layout, so fitting reads nothing: with a known size fit now; before the
+    // first report, fit on that report.
     if (userAdjustedRef.current) applyScaleRef.current(scaleRef.current);
-    else frame = requestAnimationFrame(() => fitRef.current());
+    else if (frameBoxRef.current) fitRef.current();
+    else fitPendingRef.current = true;
 
     return () => {
-      if (frame) cancelAnimationFrame(frame);
       onSvgMounted?.(null);
     };
   }, [svg, onSvgMounted]);
@@ -236,8 +248,13 @@ export function MermaidViewport({
     const frame = frameRef.current;
     if (!frame || typeof ResizeObserver === "undefined") return undefined;
     const ro = new ResizeObserver(() => {
+      // Inside the observer callback layout is already clean — these reads
+      // cost nothing.
       const w = frame.clientWidth;
-      if (w === lastFrameWidthRef.current) return;
+      frameBoxRef.current = { w, h: frame.clientHeight };
+      const pending = fitPendingRef.current;
+      fitPendingRef.current = false;
+      if (w === lastFrameWidthRef.current && !pending) return;
       lastFrameWidthRef.current = w;
       if (!userAdjustedRef.current) fit();
     });

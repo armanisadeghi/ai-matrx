@@ -138,6 +138,7 @@ import { GlobalAuthSync } from "@/features/auth/components/GlobalAuthSync";
 import { SandboxGateHost } from "@/components/dialogs/sandbox-gate/SandboxGateHost";
 import { ValuePromptsDialogHost } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
 import { ScopeMismatchDialogHost } from "@/components/dialogs/scope-mismatch/ScopeMismatchDialogHost";
+import { ConversationRenameDialogHost } from "@/features/agents/components/conversation-actions/rename/ConversationRenameDialogHost";
 import { GoogleOAuthRedirectNotice } from "@/providers/google-provider/GoogleOAuthRedirectNotice";
 import { SandboxLifecycleObserver } from "@/lib/sandbox/SandboxLifecycleObserver";
 import { SandboxLifecycleController } from "@/lib/sandbox/SandboxLifecycleController";
@@ -261,6 +262,11 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                   chat's durable tags. Dismiss cancels the send.
                                   See components/dialogs/scope-mismatch/. */}
                                           <ScopeMismatchDialogHost />
+                                          {/* The ONE rename-a-conversation dialog.
+                                  `openConversationRename(id, title)` from the
+                                  header menu and the answer menu's
+                                  Conversation section. */}
+                                          <ConversationRenameDialogHost />
                                           {/* Agent quick-look host. `openAgentPeek(id)`
                                   from anywhere opens the canonical
                                   AgentPeekWindow; it is what fills the ONE

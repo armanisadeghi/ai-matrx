@@ -16,7 +16,6 @@ import {
   Share2,
   Edit,
   BarChart3,
-  Shield,
   Settings,
   GitCompareArrows,
   MessagesSquare,
@@ -47,6 +46,9 @@ export interface MenuSection {
  */
 export const AI_SUBMENU_LABEL = "Improve with AI";
 
+/** The whole-conversation section's label (answer menus of chat messages). */
+export const CONVERSATION_SUBMENU_LABEL = "Conversation";
+
 export const MENU_STRUCTURE: MenuSection[] = [
   {
     // The doors a reader must see without scrolling or guessing (defect D6:
@@ -69,6 +71,29 @@ export const MENU_STRUCTURE: MenuSection[] = [
       "summarize-and-listen",
       "summarize-for-listening",
       "convert-to-study",
+    ],
+  },
+  {
+    // Everything that acts on the WHOLE conversation this message belongs to
+    // — the same verbs as the chat header's conversation menu, one row deep.
+    // Present only when the source carries a conversationId.
+    submenu: CONVERSATION_SUBMENU_LABEL,
+    icon: MessagesSquare,
+    actionIds: [
+      "conversation-find",
+      "conversation-pinned-only",
+      // Ask in chat — continues THIS conversation from the message (folded
+      // here 2026-09-26 so the menu stays within the 17-row D6 bound).
+      "ask-followup",
+      "quote-into-chat",
+      "conversation-share",
+      "conversation-copy-link",
+      "conversation-rename",
+      "conversation-duplicate",
+      "export-conversation-md",
+      "export-conversation-pdf",
+      "export-conversation-docx",
+      "export-conversation-html",
     ],
   },
   {
@@ -125,18 +150,10 @@ export const MENU_STRUCTURE: MenuSection[] = [
       "download-html",
       "print",
       "full-print",
-      // RC-B9 — the WHOLE conversation, not just this message.
-      "export-conversation-md",
-      "export-conversation-pdf",
-      "export-conversation-docx",
-      "export-conversation-html",
+      // This message only — the whole conversation's exports live in the
+      // Conversation section.
       "convert-to-broker",
     ],
-  },
-  {
-    submenu: "Ask in chat",
-    icon: MessagesSquare,
-    actionIds: ["ask-followup", "quote-into-chat"],
   },
   {
     submenu: "Compare",
@@ -163,14 +180,14 @@ export const MENU_STRUCTURE: MenuSection[] = [
     ],
   },
   {
+    // Creator/admin power tools, one row: the analysis doors and the
+    // server-API test verbs (a separate "Server API (test)" row pushed the
+    // admin menu past the 17-row D6 bound).
     submenu: "Creator tools",
     icon: BarChart3,
-    actionIds: ["analyze-response", "debug-stream"],
-  },
-  {
-    submenu: "Server API (test)",
-    icon: Shield,
     actionIds: [
+      "analyze-response",
+      "debug-stream",
       "server-api-admin-fork-at",
       "server-api-admin-fork-before",
       "server-api-admin-hide-from-model",
@@ -284,8 +301,16 @@ export function withAiSlot(
     icon: MENU_STRUCTURE.find((s) => s.submenu === AI_SUBMENU_LABEL)?.icon,
     actions: [],
   };
-  // MENU_STRUCTURE lists the AI section first among the submenus.
-  return [ai, ...submenus];
+  // Insert at MENU_STRUCTURE's position: after every present submenu that the
+  // structure lists before the AI section (the Conversation section does).
+  const order = (label: string) => MENU_STRUCTURE.findIndex((s) => s.submenu === label);
+  const aiAt = order(AI_SUBMENU_LABEL);
+  const index = submenus.findIndex((s) => {
+    const at = order(s.label);
+    return at === -1 || at > aiAt;
+  });
+  if (index === -1) return [...submenus, ai];
+  return [...submenus.slice(0, index), ai, ...submenus.slice(index)];
 }
 
 /** The tree as an ordered id list — what the one-tree guard compares. */
