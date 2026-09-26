@@ -321,8 +321,20 @@ export function useEntityList<TRow>({
   const generation = useRef(0);
   const hasLoadedOnce = useRef(false);
 
-  // Debounce only the text; every other query field applies immediately.
+  // When the person last typed into the search box. A search that arrives any
+  // other way — Back, a link, the URL settling after a navigation — is not
+  // typing, so it neither waits for the debounce nor keeps showing the rows
+  // of a different question (see THE ROWS ANSWER THIS QUESTION, below).
+  const lastTypedAt = useRef(0);
+  const typingRecently = () =>
+    Date.now() - lastTypedAt.current < SEARCH_DEBOUNCE_MS * 4;
+
+  // Debounce only TYPED text; every other query field applies immediately.
   useEffect(() => {
+    if (!typingRecently()) {
+      setDebouncedSearch(query.search);
+      return;
+    }
     const id = setTimeout(
       () => setDebouncedSearch(query.search),
       SEARCH_DEBOUNCE_MS,
@@ -341,8 +353,35 @@ export function useEntityList<TRow>({
     service: serviceKey,
   });
 
+  // 🚨 THE ROWS ANSWER THIS QUESTION (UX punch list 2026-09-26). Going Back to
+  // `?q=enrich` painted the whole unfiltered list under the "enrich" search box
+  // for as long as the filtered read took: the first render after a navigation
+  // reads the URL before it has settled, fetched the unfiltered page, and those
+  // rows stayed on screen while the real question was asked. Rows are now
+  // stamped with the question they answer (search, filters, scope, archive,
+  // depth), and rows for a DIFFERENT question are never shown — the list holds
+  // its skeleton instead. The one exception is the person typing: keeping the
+  // previous result under a search being typed is the expected feel.
+  const questionOf = (q: EntityListQuery, search: string) =>
+    JSON.stringify({
+      search: search.trim(),
+      filters: q.filters,
+      scope: q.scope,
+      archived: q.archived,
+      deep: q.deep,
+      service: serviceKey,
+    });
+  const [rowsAnswer, setRowsAnswer] = useState<string | null>(null);
+  const liveQuestion = questionOf(query, query.search);
+  const rowsAnswerThisQuestion =
+    rowsAnswer === null ||
+    rowsAnswer === liveQuestion ||
+    (typingRecently() &&
+      rowsAnswer === questionOf(query, JSON.parse(rowsAnswer).search));
+
   useEffect(() => {
     const gen = ++generation.current;
+    const askedQuestion = questionOf(effectiveQuery, effectiveQuery.search);
     if (hasLoadedOnce.current) setIsFetching(true);
     else setIsLoading(true);
 
@@ -357,6 +396,7 @@ export function useEntityList<TRow>({
         if (gen !== generation.current) return; // a newer query won
         setRows(page.rows);
         setTotal(page.total);
+        setRowsAnswer(askedQuestion);
         setError(null);
       } catch (err) {
         if (gen !== generation.current) return;
@@ -583,7 +623,10 @@ export function useEntityList<TRow>({
 
   const setScope = (scope: ListScope) => patchQuery({ scope });
   const setFilters = (filters: EntityFilters) => patchQuery({ filters });
-  const setSearch = (search: string) => patchQuery({ search });
+  const setSearch = (search: string) => {
+    lastTypedAt.current = Date.now();
+    patchQuery({ search });
+  };
   const setDeep = (deep: boolean) => patchQuery({ deep });
   const setPage = (page: number) => setQuery((prev) => ({ ...prev, page }));
   // Back to the SURFACE's default, not to the empty query. On a surface with
@@ -631,8 +674,8 @@ export function useEntityList<TRow>({
 
   return {
     query,
-    rows,
-    total,
+    rows: rowsAnswerThisQuestion ? rows : [],
+    total: rowsAnswerThisQuestion ? total : 0,
     counts,
     countsLoading,
     countsError,
@@ -641,7 +684,7 @@ export function useEntityList<TRow>({
     facetsError,
     archivedProbe,
     defaultArchived: defaultQuery.archived,
-    isLoading,
+    isLoading: isLoading || (!rowsAnswerThisQuestion && error === null),
     isFetching,
     error,
     setScope,
