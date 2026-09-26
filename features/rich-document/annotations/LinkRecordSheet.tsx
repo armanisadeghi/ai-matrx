@@ -49,7 +49,7 @@ export function LinkRecordSheet({
             onAttach={async (token, id, title) => {
               const ok = await onLink(token, id, title);
               if (ok) onOpenChange(false);
-              return ok ? { ok: true } : { ok: false, error: "Not linked — see the panel for the reason and a retry." };
+              return ok ? { ok: true } : { ok: false, error: "Not linked — the panel says why." };
             }}
             onDetach={async () => ({ ok: false, error: "Detach a link from the annotations panel." })}
           />

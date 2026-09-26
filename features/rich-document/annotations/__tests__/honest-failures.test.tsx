@@ -124,6 +124,19 @@ describe("a failed save says what happened and offers only remedies that work", 
     expect(h.retryable).toBe(true);
   });
 
+  it("a link kind nobody registered says so in words and offers no Retry (verifier finding)", () => {
+    jest.spyOn(console, "error").mockImplementation(() => {});
+    const raw = {
+      code: "internal",
+      message: "Unknown association type: conversation -> note (label: anchored_to). Register it in platform.association_types first.",
+      detail: { code: "23514", message: "Unknown association type: conversation -> note (label: anchored_to). Register it in platform.association_types first." },
+    };
+    const h = humanError("linking the record", raw);
+    expect(h.message).toMatch(/^Linking a conversation to a note isn't set up yet/);
+    expect(h.message).not.toMatch(/error internal|text changed|platform\./);
+    expect(h.retryable).toBe(false);
+  });
+
   it("a gated passage comment keeps the words, offers no Retry, and posts on the whole document", async () => {
     service.addComment.mockImplementation(async (input: { anchor?: unknown }) => {
       if (input.anchor) throw new SidecarError(ANCHOR_WRITES_OFF_SENTENCE, undefined, false);

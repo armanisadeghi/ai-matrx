@@ -32,7 +32,20 @@ export class EditConflictError extends SidecarError {
 function codeOf(e: unknown): string | undefined {
   if (!e || typeof e !== "object") return undefined;
   const c = (e as { code?: unknown }).code;
+  // The associations package wraps a Postgres error as {code:"internal", detail:<pg error>}:
+  // the database's own code is the one that says what happened.
+  const inner = (e as { detail?: unknown }).detail;
+  if (c === "internal" && inner && typeof inner === "object") {
+    const ic = (inner as { code?: unknown }).code;
+    if (typeof ic === "string" && ic) return ic;
+  }
   return typeof c === "string" ? c : undefined;
+}
+
+/** "conversation" → "a conversation" in words, for sentences about a record kind. */
+function kindWords(token: string): string {
+  const w = token.replace(/_/g, " ");
+  return /^[aeiou]/i.test(w) ? `an ${w}` : `a ${w}`;
 }
 
 function textOf(e: unknown): string {
@@ -63,7 +76,12 @@ export function humanError(action: string, e: unknown): SidecarError {
   const text = textOf(e);
   let sentence: string;
   let retryable = true;
-  if (code === "42501" || /permission|not allowed|forbidden|cannot comment|may not/i.test(text)) {
+  const unknownPair = /Unknown association type: (\S+) -> (\S+)/.exec(text);
+  if (unknownPair) {
+    // A pair nobody registered: trying again cannot work, so no Retry is offered.
+    sentence = `Linking ${kindWords(unknownPair[1])} to ${kindWords(unknownPair[2])} isn't set up yet, so ${action} did not go through. Pick another kind of record, or ask an admin to allow this link.`;
+    retryable = false;
+  } else if (code === "42501" || /permission|not allowed|forbidden|cannot comment|may not/i.test(text)) {
     sentence = `You don't have permission for this here, so ${action} did not go through. Ask the owner to share it with you.`;
     retryable = false;
   } else if (code === "23514" || /invalid text_anchor|passage is invalid/i.test(text)) {
