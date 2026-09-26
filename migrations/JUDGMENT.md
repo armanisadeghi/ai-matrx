@@ -68,6 +68,28 @@ a row write riding beside the shape — still reads `self_ledger: yes` and is re
 Fixtures `lg-01` … `lg-04`. Adding a name to that list is a runner change, made in both runners
 and this file in the same commit.
 
+### 1c. `-- draft: <owner> <reason>` — work in progress never reaches production (D351, 2026-09-26)
+
+**Write every new migration with this line FIRST, and remove it only when the file is done**
+(applied on the clone, inverse written, ready to ship). A lane committed an unfinished migration
+into `migrations/` and the 30-minute release sweep shipped it to production; `migrations/` is the
+swept directory, so a commit there IS a release request unless the file says otherwise.
+
+- `--target production`, **sweep** (aidream runner, what both release trains run): the file is
+  skipped and announced `held: draft by <owner>`; any later file that names an object the draft
+  creates waits for it. Not a failure — work in progress is normal.
+- `--target production`, **named** apply (`pnpm db:apply <file>`, aidream `--only`/`--rerun`):
+  refused, exit 1, `--dry-run` included, with the one remedy: *remove the -- draft: line when
+  it's ready*.
+- `--target clone`: allowed — rehearsing work in progress is what the clone is for.
+- A bare `-- draft:` (no owner) is still a draft. Read in the same 25-line header window as
+  `-- retired:`; a later line is body text.
+
+This is **not** a rehearsal gate: §6a stands (Arman, 2026-09-18 — the rehearsal copy drifts and
+is never a precondition). The draft line is the author's own statement that the file is not
+finished. Proof: `pnpm db:apply --draft-self-test` (spawns the real runner, RED then GREEN) and
+aidream `uv run pytest db/tests/test_migration_draft_marker.py`.
+
 ### 1b. `-- retired: <why>` — frozen history that may never execute again
 
 An already-ledgered file is **never re-judged**: its bytes are frozen history, and that is
@@ -385,15 +407,6 @@ uv run python db/apply_migrations.py --source campaign --only <file>.sql --targe
   control between lanes (§4.14), not a rehearsal claim.
 
 ### 6a. 🚨 THE REHEARSAL COPY IS NOT A GATE (owner ruling, 2026-09-18)
-
-> 🚨 **SUPERSEDED IN PART 2026-09-26 (FOUND_DEFECTS D351 "RULE27-GATE").** What this section
-> removed — the campaign BRANCH ledger row as a precondition — stays removed. But the release
-> sweep then applied an unrehearsed file (`rca5d_c`) to production and timed out every sidebar
-> load for 51 minutes, so every production apply, in both runners, now needs a passing rule-27
-> record for the file's exact bytes (`migrations/rehearsed/<sha256>.json`, written by
-> `pnpm db:rehearse` after up → inverse → up passes). Ledgered bytes are grandfathered; the one
-> door is `--unrehearsed-emergency "<reason>"`, written into the ledger row. This is a byte-level
-> precondition, not a header judgement, so `--judge-only` and the corpus are unchanged.
 
 **A file may be applied to the main database WITHOUT a prior rehearsal ledger row and WITHOUT a
 matching rehearsal checksum.** Both runners used to refuse a campaign production apply unless the

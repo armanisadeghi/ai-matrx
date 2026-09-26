@@ -29,11 +29,6 @@
  *      runner's, and this harness never writes to the database itself outside the
  *      rolled-back measure pass.
  *
- *   3. THE RECORD (RULE27-GATE, 2026-09-26). Only after all three legs AND the parity gate
- *      pass, it writes `migrations/rehearsed/<sha256>.json` for the up and for the inverse.
- *      Both production appliers refuse a file whose exact bytes have no such record —
- *      commit the record(s) with the file. See scripts/lib/migration-rehearsal.ts.
- *
  * TWO DETAILS THAT COST W1-ORG-PREP A WHOLE MEASUREMENT, WRITTEN DOWN HERE SO NOBODY
  * PAYS THEM AGAIN:
  *
@@ -103,7 +98,6 @@ import { formatDurationMs } from "@ai-matrx/kit/format";
 import { connectDirect } from "./lib/direct-db";
 import { functionsTouched, openProductionReadOnly, parityDrift } from "./lib/clone-parity";
 import { onceAsync, withBuildLockCleanup } from "./lib/build-lock-cleanup";
-import { writeRecord } from "./lib/migration-rehearsal";
 import { takeBuildLock, releaseBuildLock, startLockHeartbeat, type LockQuery } from "./lib/build-lock";
 import {
   cloneRefOverride,
@@ -1044,27 +1038,6 @@ async function main(): Promise<number> {
       `rehearsal rows in a copy of production's ledger, and the next nightly clone refresh ` +
       `restores production over them. That overwrite is expected.`,
   );
-  // 🚨 THE RECORD PRODUCTION'S APPLIERS READ (scripts/lib/migration-rehearsal.ts). Written
-  // ONLY here, after all three legs and the parity gate passed — for the up and for the
-  // inverse, each keyed by the sha256 of its exact bytes. Without it both production
-  // appliers refuse the file (incident 2026-09-26, rca5d_c).
-  const legs = { up: a1.ms, inverse: a2.ms, up_again: a3.ms };
-  for (const [file, role, other] of [
-    [upPath, "up", inversePath],
-    [inversePath, "inverse", upPath],
-  ] as const) {
-    const rp = writeRecord(file, {
-      role,
-      pairedWith: other,
-      cloneRef: cloneRef.cloneRef,
-      legsMs: legs,
-      tool: "pnpm db:rehearse",
-    });
-    console.log(
-      `${TAG.ok}rule-27 record written: ${relative(ROOT, rp)} ${C.dim}— commit it with the file; ` +
-        `production's appliers refuse these bytes without it${C.reset}`,
-    );
-  }
   return 0;
   }
 }
