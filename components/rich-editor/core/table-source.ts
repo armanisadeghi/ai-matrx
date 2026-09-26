@@ -63,12 +63,15 @@ function backslashRunBefore(text: string, index: number): number {
 }
 
 /**
- * A cell the person typed, made safe for one GFM cell: newlines become spaces
+ * A cell the person typed, made safe for one GFM cell: line breaks become `<br>`
  * and every `|` that would be a boundary (an EVEN run of backslashes before it,
  * zero included) gets one more backslash. A pipe already escaped is left alone.
  */
 export function freshCell(text: string): string {
-  const flat = text.replace(/\r?\n/g, " ");
+  // A line break is GFM's in-cell `<br>` — never flattened to a space and lost
+  // (verify-RC-B4 R6-3). A break spelled the paragraph way (two trailing spaces
+  // or a backslash) is the same break.
+  const flat = text.replace(/(?: {2,}|\\)?\r?\n/g, "<br>");
   let out = "";
   for (let i = 0; i < flat.length; i += 1) {
     if (flat[i] === "|" && backslashRunBefore(flat, i) % 2 === 0) out += "\\";

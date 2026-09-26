@@ -92,6 +92,9 @@ function pushInline(target: JSONContent[], node: JSONContent): void {
   target.push(node);
 }
 
+/** An HTML line break, however it is spelled (`<br>`, `<br/>`, `<BR />`). */
+const BR_TAG = /^<br\s*\/?>$/i;
+
 function withMarks(node: JSONContent, marks: MarkJSON[]): JSONContent {
   return marks.length ? { ...node, marks: marks.map((m) => ({ ...m })) } : node;
 }
@@ -105,6 +108,10 @@ function pushText(
   for (const piece of splitPlaceholders(text, state.islands)) {
     if (piece.kind === "text") {
       if (piece.text) pushInline(out, withMarks({ type: "text", text: piece.text }, marks));
+    } else if (BR_TAG.test(piece.island.raw)) {
+      // `<br>` is a line break (GFM's in-cell break, verify-RC-B4 R6-3): the
+      // person sees and edits a break; its exact bytes stay in mdRaw.
+      out.push(withMarks({ type: "hardBreak", attrs: { mdRaw: piece.island.raw } }, marks));
     } else {
       out.push(
         withMarks(
@@ -241,7 +248,9 @@ function inlineJSON(
         pushRaw(out, token.raw, "md_image", marks, state);
         break;
       case "html":
-        pushRaw(out, token.raw, "md_html", marks, state);
+        // `<br>` is a line break (verify-RC-B4 R6-3), as in pushText.
+        if (BR_TAG.test(token.raw)) out.push(withMarks({ type: "hardBreak", attrs: { mdRaw: token.raw } }, marks));
+        else pushRaw(out, token.raw, "md_html", marks, state);
         break;
       default:
         pushRaw(out, token.raw, "md_raw", marks, state);

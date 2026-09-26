@@ -294,3 +294,29 @@ describe("a code span never swallows another mark (verify-RC-B4 R5 corpus: linke
     );
   });
 });
+
+describe("a line break inside a table cell (verify-RC-B4 R6-3)", () => {
+  const STORED = "| Bay | Note |\n| --- | --- |\n| B3 | Re-scan<br>before 6am |";
+
+  it("a stored <br> opens as a line break and saves back byte for byte", () => {
+    const session = track(open(STORED));
+    let breaks = 0;
+    session.editor.state.doc.descendants((node) => {
+      if (node.type.name === "hardBreak") breaks += 1;
+      return true;
+    });
+    expect(breaks).toBe(1);
+    expect(session.save()).toBe(STORED);
+  });
+
+  it("a line break typed in a cell (Shift+Enter) is saved as <br>, never lost as a space", () => {
+    const stored = "| Bay | Note |\n| --- | --- |\n| B3 | Re-scan before 6am |";
+    const session = track(open(stored));
+    const at = positionOf(session.editor.state.doc, "before 6am");
+    session.editor.commands.command(({ tr }) => {
+      tr.replaceWith(at - 1, at, session.editor.schema.nodes.hardBreak!.create());
+      return true;
+    });
+    expect(session.save()).toBe("| Bay | Note |\n| --- | --- |\n| B3 | Re-scan<br>before 6am |");
+  });
+});

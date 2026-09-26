@@ -9,7 +9,7 @@
  * edited cells' bytes changed — and parseMarkdownTable (the ONE table parser)
  * reading `\|` as part of a cell.
  */
-import { rewriteTableSource } from "../core/table-source";
+import { freshCell, rewriteTableSource } from "../core/table-source";
 import { parseMarkdownTable } from "@/components/mardown-display/blocks/table/parseMarkdownTable";
 
 const DOCK = [
@@ -219,5 +219,23 @@ describe("the whole-table check is relative to what was stored (verify-RC-B4 R5 
     const rows = grid.rows.map((row) => [...row]);
     rows[0]![1] = "Multiple-choice questions";
     expect(() => rewriteTableSource(stored, { headers: grid.headers, rows })).not.toThrow();
+  });
+});
+
+// ── verify-RC-B4 R6-3: a line break in a cell is `<br>`, never lost ───────────
+describe("a line break inside a table cell", () => {
+  it("is written as <br> (GFM's in-cell break), never flattened to a space", () => {
+    expect(freshCell("Re-scan bay B3\nbefore 6am")).toBe("Re-scan bay B3<br>before 6am");
+    // A break that arrives in paragraph spelling (two spaces / backslash) is the same break.
+    expect(freshCell("Re-scan  \nbefore 6am")).toBe("Re-scan<br>before 6am");
+    expect(freshCell("Re-scan\\\nbefore 6am")).toBe("Re-scan<br>before 6am");
+  });
+
+  it("round-trips through the answer-table editor path", () => {
+    const stored = "| Bay | Note |\n| --- | --- |\n| B3 | ok |";
+    const grid = parseMarkdownTable(stored)!;
+    const written = rewriteTableSource(stored, { headers: grid.headers, rows: [["B3", "Re-scan\nbefore 6am"]] });
+    expect(written).toBe("| Bay | Note |\n| --- | --- |\n| B3 | Re-scan<br>before 6am |");
+    expect(parseMarkdownTable(written)!.rows[0]).toEqual(["B3", "Re-scan<br>before 6am"]);
   });
 });

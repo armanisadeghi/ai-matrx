@@ -172,3 +172,11 @@ it.each(["Action", "Actions", "**Action**"])("a column named %j is shown by defa
   const got = await renderedCells(table);
   expect(got[1]).toContain("Re-scan before 6am");
 });
+
+// ── verify-RC-B4 R6-3: an in-cell <br> renders as a line break ────────────────
+it("a cell's <br> renders as a real line break", async () => {
+  await renderedCells("| Bay | Note |\n| --- | --- |\n| B3 | Re-scan<br>before 6am |");
+  const cell = container.querySelectorAll("tbody td")[1] as HTMLElement | undefined;
+  expect(cell?.querySelector("br")).not.toBeNull();
+  expect(cell?.textContent).not.toContain("<br>");
+});
