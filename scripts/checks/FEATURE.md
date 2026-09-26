@@ -137,6 +137,7 @@ log, holding its own lock (`--with-checks` runs it in the foreground instead;
 | `./scripts/release.sh --dry-run` | what would ship, from origin/main's point of view; nothing changes |
 | `node scripts/checks/run.mjs [--json f] [--lane x] [--only id] [--list]` / `pnpm check:release-checks` | the runner, by hand |
 | `node scripts/checks/run.mjs --skip-live-db` | what the release runs: every row but the declared live-db ones |
+| `node scripts/checks/run.mjs --repo-only` | ONLY rows declared `repo-only` (clone-db, live-db, undeclared left out; header `skipped_not_repo_only`) — what `.github/workflows/repo-only-checks.yml` runs (dispatch-only; the app's `platform_checks_ci_pull` ingests its `checks-findings` artifact) |
 | `pnpm checks:classify` / `pnpm check:release-row-classes[:self-test]` | regenerate the row-class manifest / the guard that it is current |
 | `bash scripts/run-release-gates.sh [--strict]` | the old sequential gate runner — still the manifest (`--list`), still usable for one-by-one triage |
 | `pnpm test:release-ship-path` | the sandbox guard: dirty checkout + diverged branch + push landing mid-release → tag on origin |
@@ -172,6 +173,10 @@ push — are the ship path.
 
 ## Change log
 
+- 2026-09-26 — `run.mjs --repo-only` + `.github/workflows/repo-only-checks.yml` (checks-run-in-the-app
+  PLAN decision 4): the public-repo CI leg runs only declared repo-only rows with `MATRX_ITEMS=1` and
+  uploads `checks-findings`; `workflow_dispatch` only until Arman approves the hourly cadence.
+  Test `--repo-only runs ONLY rows declared repo-only…` in `run.test.mjs`.
 - 2026-09-26 — Row `pnpm check:shell-layout` (repo-only): the real-Chromium layout gate
   (`features/shell/layout-gate/`, now including the shipped `@ai-matrx/*` CSS) as a SIGNAL;
   no Chromium = `[FAIL] UNMEASURED` + `pnpm exec playwright install chromium`, a WARNING
