@@ -243,9 +243,9 @@ describe("unregistered windows are read and filled field by field (ARE-011 safet
     expect(forms[0].fields[2].options).toEqual(["member", "admin"]);
   });
 
-  it("refuses the whole write when one change breaks a field's rules, and applies nothing", () => {
+  it("refuses the whole write when one change breaks a field's rules, and applies nothing", async () => {
     openInviteDialog();
-    expect(() =>
+    await expect(
       applyWindowFormChanges({
         window: "Invite a teammate",
         changes: [
@@ -253,16 +253,16 @@ describe("unregistered windows are read and filled field by field (ARE-011 safet
           { field: "seats", value: 9 },
         ],
       }),
-    ).toThrow(/Nothing was changed.*Seats/);
+    ).rejects.toThrow(/Nothing was changed.*Seats/);
     expect((document.getElementById("email") as HTMLInputElement).value).toBe("");
   });
 
-  it("applies every change as typing would, firing the field's own input event", () => {
+  it("applies every change as typing would, firing the field's own input event", async () => {
     openInviteDialog();
     const email = document.getElementById("email") as HTMLInputElement;
     const typed = jest.fn();
     email.addEventListener("input", typed);
-    applyWindowFormChanges({
+    await applyWindowFormChanges({
       window: "Invite a teammate",
       changes: [
         { field: "work_email", value: "dana@allgreen.example" },
@@ -274,6 +274,40 @@ describe("unregistered windows are read and filled field by field (ARE-011 safet
     expect(typed).toHaveBeenCalled();
     expect((document.getElementById("seats") as HTMLInputElement).value).toBe("3");
     expect((document.getElementById("role") as HTMLSelectElement).value).toBe("admin");
+  });
+
+  it("picks a styled list's choice the way a keyboard user does, and refuses one it does not offer", async () => {
+    document.body.innerHTML = `
+      <div role="dialog" aria-label="New column">
+        <label id="kind-label">Kind</label>
+        <button role="combobox" aria-labelledby="kind-label" id="kind">Text</button>
+      </div>`;
+    const trigger = document.getElementById("kind") as HTMLButtonElement;
+    // A minimal styled list: Enter opens a listbox; Enter on an option picks it; Escape closes.
+    trigger.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      const list = document.createElement("div");
+      list.setAttribute("role", "listbox");
+      for (const choice of ["Text", "Number", "Choice"]) {
+        const option = document.createElement("div");
+        option.setAttribute("role", "option");
+        option.tabIndex = -1;
+        option.textContent = choice;
+        option.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") { trigger.textContent = choice; list.remove(); }
+        });
+        list.appendChild(option);
+      }
+      list.addEventListener("keydown", (e) => { if (e.key === "Escape") list.remove(); });
+      document.body.appendChild(list);
+    });
+    await expect(
+      applyWindowFormChanges({ window: "New column", changes: [{ field: "kind", value: "Date" }] }),
+    ).rejects.toThrow(/no choice "Date" \(choices: Text, Number, Choice\)/);
+    expect(trigger.textContent).toBe("Text");
+    await applyWindowFormChanges({ window: "New column", changes: [{ field: "kind", value: "choice" }] });
+    expect(trigger.textContent).toBe("Choice");
+    expect(document.querySelector('[role="listbox"]')).toBeNull();
   });
 
   it("a run carries the open window forms", async () => {

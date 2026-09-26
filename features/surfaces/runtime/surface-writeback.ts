@@ -740,7 +740,7 @@ async function applyWindowFormWrite(
     if (verdict !== true) return verdict;
   }
   try {
-    applyWindowFormChanges(rawValue);
+    await applyWindowFormChanges(rawValue);
     if (!opts?.quiet) toast.success(`${target.label} — filled in. Review and save.`);
     return { ok: true, surfaceName, target };
   } catch (error) {

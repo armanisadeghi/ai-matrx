@@ -23,9 +23,11 @@
  *
  * A change lands exactly as if the person typed it: the field's own handlers
  * run, so the form's own rules still apply. Each change is checked against
- * the field's constraints (required, type, pattern, min/max, length) BEFORE
- * anything is applied; one bad value refuses the whole write with the reason,
- * so the agent can correct it. Passwords and files are never read or written.
+ * the field's constraints (required, type, pattern, min/max, length) — and a
+ * styled list against its real choices, read by opening it the way a keyboard
+ * user does — BEFORE anything is applied; one bad value refuses the whole
+ * write with the reason, so the agent can correct it. Passwords and files are
+ * never read or written.
  */
 
 import { refuseSurfaceWrite } from "./surface-writeback";
@@ -59,7 +61,7 @@ export const WINDOW_FORM_TARGET: SurfaceWriteTarget = {
   name: WINDOW_FORM_TARGET_NAME,
   label: "Fields in an open window",
   description:
-    'Change fields in an open window that has no registered surface (listed in your context as window::<title>). Value: { "window": "<title exactly as listed>", "changes": [{ "field": "<field key>", "value": <new value> }] }. A text or number field takes a string or number, a checkbox or switch takes true/false, a list takes one of its listed options. Every change is checked against the field\'s rules before anything lands; the person approves first, and the window\'s own Save still decides.',
+    'Change fields in an open window that has no registered surface (listed in your context as window::<title>). Value: { "window": "<title exactly as listed>", "changes": [{ "field": "<field key>", "value": <new value> }] }. A text or number field takes a string or number, a checkbox or switch takes true/false, a list takes the text of one of its choices (a wrong choice is refused with the real ones). Every change is checked against the field\'s rules before anything lands; the person approves first, and the window\'s own Save still decides.',
   valueType: "object",
   mode: "draft",
   applyPolicy: "ask",
@@ -351,9 +353,71 @@ function constraintProblem(el: Element, value: unknown): string | null {
     return typeof value === "boolean" ? null : "expects true or false";
   }
   if (role === "combobox") {
-    return "is a list whose choices only exist while it is open — ask the person to pick it";
+    // Checked against its real choices in `listChoices`, which has to open it.
+    return typeof value === "string" && value.trim() ? null : "expects the text of one of its choices";
   }
   return "cannot be filled in automatically — ask the person to type it";
+}
+
+// ── styled lists (role="combobox") ─────────────────────────────────────────
+// A styled list's choices exist only while it is open, so the only honest way
+// to check or set one is the way a keyboard user does: open it, read its
+// options, press Enter on the one that matches (or Escape).
+
+const nextFrame = () =>
+  new Promise<void>((resolve) =>
+    typeof requestAnimationFrame === "function" ? requestAnimationFrame(() => resolve()) : setTimeout(resolve, 16),
+  );
+
+function key(el: Element, name: string) {
+  el.dispatchEvent(new KeyboardEvent("keydown", { key: name, bubbles: true, cancelable: true }));
+}
+
+async function openList(el: Element): Promise<HTMLElement[]> {
+  (el as HTMLElement).focus();
+  key(el, "Enter");
+  for (let attempt = 0; attempt < 10; attempt++) {
+    await nextFrame();
+    const options = Array.from(document.querySelectorAll<HTMLElement>('[role="listbox"] [role="option"]')).filter(
+      (option) => option.getAttribute("aria-disabled") !== "true" && !option.hasAttribute("data-disabled"),
+    );
+    if (options.length > 0) return options;
+  }
+  return [];
+}
+
+async function closeList() {
+  const list = document.querySelector('[role="listbox"]');
+  if (list) key(list, "Escape");
+  await nextFrame();
+}
+
+/** Index of the choice `wanted` names: an exact match first, then a prefix. */
+function matchChoice(choices: string[], wanted: string): number {
+  const target = wanted.trim().toLowerCase();
+  const exact = choices.findIndex((choice) => choice.toLowerCase() === target);
+  return exact !== -1 ? exact : choices.findIndex((choice) => choice.toLowerCase().startsWith(target));
+}
+
+/** The choices a styled list offers, read by opening and closing it. */
+async function listChoices(el: Element): Promise<string[]> {
+  const options = await openList(el);
+  const choices = options.map((option) => text(option));
+  await closeList();
+  return choices;
+}
+
+async function pickChoice(el: Element, wanted: string): Promise<boolean> {
+  const options = await openList(el);
+  const option = options[matchChoice(options.map((o) => text(o)), wanted)];
+  if (!option) {
+    await closeList();
+    return false;
+  }
+  option.focus();
+  key(option, "Enter");
+  await nextFrame();
+  return true;
 }
 
 function setNativeValue(el: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, value: string) {
@@ -405,10 +469,11 @@ export function labelWindowFormWrite(value: unknown): unknown {
 
 /**
  * The handler behind `window_form_fields`. Finds the window by title, checks
- * EVERY change first (unknown field, wrong type, a constraint it breaks), and
- * only then applies them all — never a half-filled form.
+ * EVERY change first (unknown field, wrong type, a constraint it breaks, a
+ * choice a list does not offer), and only then applies them all — never a
+ * half-filled form.
  */
-export function applyWindowFormChanges(value: unknown): void {
+export async function applyWindowFormChanges(value: unknown): Promise<void> {
   const { window: title, changes } = parseWrite(value);
   const windows = openUnregisteredWindows();
   const forms = readWindowForms();
@@ -422,19 +487,43 @@ export function applyWindowFormChanges(value: unknown): void {
   const win = windows.filter((w) => readFields(w).length > 0)[index];
   const live = readFields(win);
   const problems: string[] = [];
-  const resolved: Array<{ el: Element; value: unknown }> = [];
+  const resolved: Array<{ el: Element; value: unknown; list: boolean }> = [];
   for (const change of changes) {
     const target = live.find((entry) => entry.field.key === change.field);
     if (!target) {
       problems.push(`"${change.field}" is not a field in "${title}" (fields: ${live.map((entry) => entry.field.key).join(", ")})`);
       continue;
     }
+    const name = target.field.label || change.field;
     const problem = constraintProblem(target.el, change.value);
-    if (problem) problems.push(`"${target.field.label || change.field}" ${problem}`);
-    else resolved.push({ el: target.el, value: change.value });
+    if (problem) {
+      problems.push(`"${name}" ${problem}`);
+      continue;
+    }
+    const list = target.el.getAttribute("role") === "combobox";
+    if (list) {
+      const choices = await listChoices(target.el);
+      if (choices.length === 0) {
+        problems.push(`"${name}" did not show its choices when opened — ask the person to pick it`);
+        continue;
+      }
+      if (matchChoice(choices, String(change.value)) === -1) {
+        problems.push(`"${name}" has no choice "${String(change.value)}" (choices: ${choices.join(", ")})`);
+        continue;
+      }
+    }
+    resolved.push({ el: target.el, value: change.value, list });
   }
   if (problems.length > 0) {
     refuseSurfaceWrite(`Nothing was changed in "${title}": ${problems.join("; ")}.`);
   }
-  for (const { el, value: next } of resolved) applyChange(el, next);
+  for (const { el, value: next, list } of resolved) {
+    if (!list) applyChange(el, next);
+  }
+  // Lists last, one at a time: each opens its own popup.
+  for (const { el, value: next, list } of resolved) {
+    if (list && !(await pickChoice(el, String(next)))) {
+      refuseSurfaceWrite(`"${text(el)}": the choice "${String(next)}" disappeared before it could be picked.`);
+    }
+  }
 }
