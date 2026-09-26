@@ -288,14 +288,13 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.gmailSend],
       attachableResourceTypes: [],
       stopsOnRevoke: "any reviewed email from being sent as this account",
-      // A person does not start a Gmail send from a screen: an agent drafts one
-      // and it waits in the approval queue, which is empty the moment this row is
-      // switched on, so sending them there would be a door onto nothing. Revisit
-      // when a compose surface exists (lane F-51 escalated it to the chair).
+      // Gmail sending has a contextual compose surface in the CRM (Person/deal
+      // records) and an agent-assisted review card in chat. Start at the CRM
+      // list because the compose window needs a record's recipient context.
       firstAction: {
-        kind: "none",
-        because:
-          "Nothing to open yet — a Gmail send begins with an agent's draft, not with a screen a person visits.",
+        kind: "route",
+        label: "Open a Person in CRM to email",
+        href: "/crm",
       },
     },
     {

@@ -306,8 +306,10 @@ test(
     const notice = container.querySelector("[data-google-document-append-unsupported]");
     expect(notice).not.toBeNull();
     expect(notice?.textContent).toContain("Google Docs action");
-    expect(notice?.textContent).toContain("Settings");
-    expect(notice?.textContent).toContain("Google Workspace");
+    expect(notice?.textContent).toContain("Google Workspace review");
+    expect(
+      notice?.querySelector('a[href="/google-workspace-review"]')?.textContent,
+    ).toBe("Google Workspace review");
   },
 );
 
@@ -342,8 +344,8 @@ test(
     expect(notice).not.toBeNull();
     // The class-level defect: the Sheets range-editor line named for
     // `spreadsheet` must never render for a row whose kind is `other`.
-    expect(notice?.textContent).not.toContain("range write on this Sheet");
-    expect(notice?.textContent).not.toContain("Settings → Integrations → Google Workspace");
+    expect(notice?.textContent).not.toContain("read or update a range");
+    expect(notice?.textContent).not.toContain("Google Workspace review");
     expect(notice?.textContent).toContain("AI Matrx has no write for this file type");
     const link = notice?.querySelector("a");
     expect(link).not.toBeNull();
@@ -392,12 +394,15 @@ describe.each(ALL_MIME_KINDS)("mime_kind census — %s", (mimeKind) => {
     const text = unsupported?.textContent ?? "";
 
     if (mimeKind === "spreadsheet") {
-      expect(text).toContain("range write on this Sheet");
-      expect(text).toContain("Settings → Integrations → Google Workspace");
+      expect(text).toContain("read or update a range");
+      expect(text).toContain("Google Workspace review");
+      expect(
+        unsupported?.querySelector('a[href="/google-workspace-review"]'),
+      ).not.toBeNull();
     } else {
       // Every other kind: never the Sheets sentence, only the honest line.
-      expect(text).not.toContain("range write on this Sheet");
-      expect(text).not.toContain("Settings → Integrations → Google Workspace");
+      expect(text).not.toContain("read or update a range");
+      expect(text).not.toContain("Google Workspace review");
       expect(text).toContain("AI Matrx has no write for this file type");
     }
   });

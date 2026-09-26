@@ -71,8 +71,8 @@ const WINDOW_REQUIRED_CONTEXT_KEYS: Readonly<
  * The rows that have NOTHING to offer yet, each with a reason in the config.
  *
  * 🚨 THIS LIST ONLY EVER SHRINKS. It is not permission — it is the visible debt
- * lane F-51 escalated to the chair. Gmail is what is left: a send begins with an
- * agent's draft in the approval queue, not with a screen a person visits.
+ * lane F-51 escalated to the chair. Gmail left this list once its contextual
+ * CRM composer gave the send row a real first door.
  *
  * Struck since:
  *   * `tag_manager` — U-M2 built `SiteTrackingPanel` and the `siteTrackingWindow`,
@@ -88,12 +88,21 @@ const WINDOW_REQUIRED_CONTEXT_KEYS: Readonly<
  * built, which is the direction that actually happened.
  */
 const OFFERS_NOTHING_YET: Readonly<Record<string, readonly string[]>> = {
-  google: ["gmail"],
+  google: [],
 };
 
 describe("every product a person can switch on offers its first useful action", () => {
   for (const provider of PROVIDERS) {
     describe(provider.name, () => {
+      it("starts Gmail sending at the CRM record composer", () => {
+        const gmail = provider.products.find((product) => product.key === "gmail");
+        expect(gmail?.firstAction).toMatchObject({
+          kind: "route",
+          label: "Open a Person in CRM to email",
+          href: "/crm",
+        });
+      });
+
       it("declares one of the three shapes on every row — never a bare null", () => {
         const undeclared = provider.products.filter((product) => {
           const action = product.firstAction as unknown;

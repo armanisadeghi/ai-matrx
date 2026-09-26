@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Archive, ExternalLink, FolderOpen, Lock, Plug, TriangleAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -659,8 +660,11 @@ export function GoogleDocumentPanel({ initialRow }: { initialRow: GoogleDocument
             {row.mime_kind === "spreadsheet" ? (
               <>
                 Adding to the end of a document is a Google Docs action, and this record is a{" "}
-                sheet. A range write on this Sheet lives in Settings → Integrations → Google
-                Workspace, not here.
+                sheet. To read or update a range, open the{" "}
+                <Link href="/google-workspace-review" className="underline">
+                  Google Workspace review
+                </Link>
+                .
               </>
             ) : (
               <>
