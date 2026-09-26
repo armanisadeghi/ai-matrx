@@ -113,6 +113,42 @@ const AlchemyMenuContent = dynamic(() => import("./components/AlchemyMenuContent
   ssr: false,
 });
 
+// ── The palette opens from ANYWHERE on a surface with a menu (ALC-15) ───────
+// ⌘/Ctrl+Shift+K with focus on the page body (a read-only note) or over a grid
+// cell (cells are not focusable) opens the palette of the INNERMOST surface
+// under the pointer, resolved for the element under the pointer. One document
+// listener for the whole page (on globalThis — module state is per bundle).
+type PaletteOpener = (element: HTMLElement) => void;
+interface PaletteRegistry {
+  openers: Map<symbol, PaletteOpener>;
+  last: { id: symbol; element: HTMLElement } | null;
+  installed: boolean;
+}
+const PALETTE_KEY = Symbol.for("ai-matrx.context-menu.palette");
+function paletteRegistry(): PaletteRegistry {
+  const g = globalThis as unknown as Record<symbol, PaletteRegistry | undefined>;
+  let reg = g[PALETTE_KEY];
+  if (!reg) {
+    reg = { openers: new Map(), last: null, installed: false };
+    g[PALETTE_KEY] = reg;
+  }
+  if (!reg.installed && typeof document !== "undefined") {
+    reg.installed = true;
+    const r = reg;
+    document.addEventListener("keydown", (e) => {
+      if (e.defaultPrevented) return;
+      if (!(e.metaKey || e.ctrlKey) || !e.shiftKey || e.key.toLowerCase() !== "k") return;
+      const last = r.last;
+      const open = last ? r.openers.get(last.id) : undefined;
+      if (!last || !open || !last.element.isConnected) return;
+      e.preventDefault();
+      open(last.element);
+    });
+  }
+  return reg;
+}
+const CLAIMED = "__alchemyPaletteClaimed";
+
 type OpenMenu = {
   mode: "context" | "sheet" | "palette";
   point: { x: number; y: number };
@@ -696,6 +732,38 @@ export function ContextMenuV3({
     onMenuOpenChange?.(true);
   };
 
+  // Register this surface's palette opener; the innermost trigger under the
+  // pointer (or holding focus) claims "last surface" for the page listener.
+  const paletteIdRef = useRef<symbol | null>(null);
+  paletteIdRef.current ??= Symbol("context-menu-surface");
+  const openPaletteAt = (element: HTMLElement) => {
+    if (suppressed) return;
+    const container = selectionOwnerRef.current ?? element;
+    captureContext(element, container);
+    setOpenSeq((n) => n + 1);
+    setPaletteOpen(true);
+    onMenuOpenChange?.(true);
+  };
+  const openPaletteRef = useRef(openPaletteAt);
+  useEffect(() => {
+    openPaletteRef.current = openPaletteAt;
+  });
+  useEffect(() => {
+    const reg = paletteRegistry();
+    const id = paletteIdRef.current as symbol;
+    reg.openers.set(id, (el) => openPaletteRef.current(el));
+    return () => {
+      reg.openers.delete(id);
+      if (reg.last?.id === id) reg.last = null;
+    };
+  }, []);
+  const claimSurface = (e: React.SyntheticEvent<HTMLElement>) => {
+    const native = e.nativeEvent as Event & { [CLAIMED]?: boolean };
+    if (native[CLAIMED]) return; // an inner surface already claimed it
+    native[CLAIMED] = true;
+    paletteRegistry().last = { id: paletteIdRef.current as symbol, element: e.target as HTMLElement };
+  };
+
   const mode: "context" | "sheet" | "palette" | null = sheetOpen
     ? "sheet"
     : paletteOpen
@@ -746,6 +814,8 @@ export function ContextMenuV3({
     },
     onMouseDown: isMobile ? undefined : handleMouseDown,
     onKeyDown: handlePaletteKey,
+    onPointerOver: claimSurface,
+    onFocus: claimSurface,
     ...(isMobile
       ? {
           onTouchStart: handleTouchStart,

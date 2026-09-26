@@ -229,6 +229,7 @@ import {
   datasetTableEntityRef,
 } from "@/features/data-tables/dataset-table-actions";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { OpenSurfaceMenuButton } from "@/features/context-menu-v3/components/OpenSurfaceMenuButton";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { BulkRowActions } from "@/features/data-tables/components/BulkRowActions";
 import {
@@ -4517,7 +4518,14 @@ const UserTableViewer = ({
             ) : null}
           </div>
         }
-        toolbarTrailing={toolbarTrailing}
+        // The grid's ONE menu has a ⋯ (ALC-15): table-level, the same shell and
+        // rows right-click opens, anchored at the button.
+        toolbarTrailing={
+          <>
+            {toolbarTrailing}
+            <OpenSurfaceMenuButton getSurface={() => grid.containerRef.current} label="Table actions" />
+          </>
+        }
       />,
       )}
 
