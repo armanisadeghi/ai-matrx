@@ -182,7 +182,11 @@ function renderNotice(props: Record<string, unknown>): {
   const html = host.innerHTML;
   const text = host.textContent ?? "";
   const click = (selector: string) => {
-    const el = host.querySelector(selector) as HTMLElement | null;
+    // The Alchemy Menu's trigger is a button too — the notice's own control is
+    // the one outside the menu.
+    const el = [...host.querySelectorAll(selector)].find(
+      (node) => !node.closest("[data-error-alchemy-menu]"),
+    ) as HTMLElement | undefined;
     if (!el) throw new Error(`no element for ${selector}`);
     act(() => {
       el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
