@@ -190,7 +190,7 @@ export function ErrorAlchemyMenu({
   return (
     <>
       <span ref={markerRef} hidden data-error-alchemy-anchor="" />
-      {placement.target ? createPortal(menu, placement.target) : menu}
+      {placement.target && placement.host ? createPortal(menu, placement.host) : menu}
     </>
   );
 }
@@ -209,6 +209,18 @@ type Placement = {
   target: Element | null;
   /** Inside a truncating line: held at its visible right end. */
   truncated: boolean;
+  /**
+   * The portal's container: a span this hook owns, appended as the target's
+   * last child. NEVER the target itself — the target is a React-owned element
+   * (`<p>{text}</p>`), and a portal straight into it shares its child list
+   * with React: when the error text changed, React reset the block's text
+   * (dropping the portal's nodes), then removed those nodes again and threw
+   * "NotFoundError: The node to be removed is not a child of this node" —
+   * the whole error render fell over on its SECOND error (2026-09-26,
+   * DurableRunFailure). A text reset only detaches this span, which keeps
+   * its own children, and the layout effect puts it back.
+   */
+  host: HTMLSpanElement | null;
 };
 
 const INLINE_DISPLAYS = /^(inline|contents|none)/;
@@ -229,7 +241,7 @@ function lastTextBlock(el: Element): Element | null {
   let node: Element = el;
   for (let hops = 0; hops < 8; hops += 1) {
     let last: Element | null = node.lastElementChild;
-    while (last && (last.hasAttribute("data-error-alchemy-anchor") || last.hasAttribute("data-error-alchemy-menu") || !hasWords(last))) {
+    while (last && (last.hasAttribute("data-error-alchemy-anchor") || last.hasAttribute("data-error-alchemy-menu") || last.hasAttribute("data-error-alchemy-host") || !hasWords(last))) {
       last = last.previousElementSibling;
     }
     if (!last || !isBlockish(last) || NEVER_HOST.has(last.tagName.toLowerCase())) break;
@@ -265,7 +277,21 @@ function useInlinePlacement(
   self: RefObject<HTMLSpanElement | null>,
   markerRef: RefObject<HTMLSpanElement | null>,
 ): Placement {
-  const [state, setState] = useState<Placement>({ target: null, truncated: false });
+  const [state, setState] = useState<Omit<Placement, "host">>({ target: null, truncated: false });
+  const [host] = useState<HTMLSpanElement | null>(() => {
+    if (typeof document === "undefined") return null;
+    const span = document.createElement("span");
+    span.setAttribute("data-error-alchemy-host", "");
+    return span;
+  });
+  // Keep the host at the END of the target on every render: a text reset on
+  // the target detaches it, and React appends new children after it.
+  useLayoutEffect(() => {
+    const target = state.target;
+    if (!target || !host) return;
+    if (host.parentNode !== target || target.lastChild !== host) target.appendChild(host);
+  });
+  useLayoutEffect(() => () => host?.remove(), [host]);
   useLayoutEffect(() => {
     const marker = markerRef.current;
     if (!marker || typeof getComputedStyle !== "function") return;
@@ -295,7 +321,7 @@ function useInlinePlacement(
       host.style.paddingRight = prev.paddingRight;
     };
   }, [state.truncated, state.target, self]);
-  return state;
+  return { ...state, host };
 }
 
 /**
