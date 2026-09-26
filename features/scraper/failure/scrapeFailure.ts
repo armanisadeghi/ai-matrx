@@ -24,6 +24,7 @@
 // features/scraper/failure/__tests__/scrapeFailure.test.ts.
 
 import type { ScraperApiErrorDiagnostics } from "@/features/scraper/hooks/useScraperApi";
+import { ORGANIZATION_REQUIRED_REMEDY } from "@/lib/organizations/organizationRefusalToast";
 
 /** What actually went wrong, in the terms a REMEDY depends on. */
 export type ScrapeFailureKind =
@@ -169,10 +170,12 @@ function plainWords(
         remedy: "Check the link for a typo, or paste the text in instead.",
       };
     case "needs_organization":
+      // Only reached from `isOrganizationRequiredError` (useScraperApi), i.e.
+      // the kernel's own refusal after the organization wait — never from a
+      // nullable id — and worded by the ONE remedy sentence.
       return {
-        title: "Choose the organization you're working in, then try again.",
-        remedy:
-          "Pick one with the organization picker at the top of the page — the page was not read yet.",
+        title: "The page was not read because no organization is selected.",
+        remedy: ORGANIZATION_REQUIRED_REMEDY,
       };
     default:
       return {

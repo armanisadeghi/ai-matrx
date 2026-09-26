@@ -55,7 +55,6 @@
     "features/files/components/core/FilePreview/FilePreview.tsx",
     "features/github-integration/useGitHubConnection.ts",
     "features/hr/settings/activation/HrActivationWizard.tsx",
-    "features/mandates/overrides.ts",
     "features/marketing/competitors/CompetitorIdentification.tsx",
     "features/marketing/components/brands/BrandEditorDialog.tsx",
     "features/marketing/components/brands/BrandPicker.tsx",

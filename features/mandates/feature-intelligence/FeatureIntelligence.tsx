@@ -17,11 +17,11 @@ import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectOrganizationId,
-  selectOrgBootstrapResolved,
   selectOrganizationName,
   selectPersonalOrganizationId,
 } from "@/lib/redux/slices/appContextSlice";
 import { useUserRole } from "@/features/organizations/hooks";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { memberMandateRecordHref } from "../member-list/routes";
 import { useFeatureIntelligence } from "./useFeatureIntelligence";
@@ -73,7 +73,9 @@ export function FeatureIntelligence({
   className,
 }: FeatureIntelligenceProps) {
   const activeOrgId = useAppSelector(selectOrganizationId);
-  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
+  // "resolving" is the only state worth waiting on — a failed organization read
+  // ("unavailable") settles the seat exactly like an answered one (R37).
+  const { organizationState } = useOrganizationRequired();
   const activeOrgName = useAppSelector(selectOrganizationName);
   const personalOrgId = useAppSelector(selectPersonalOrganizationId);
   const userId = useAppSelector(selectUserId);
@@ -96,7 +98,7 @@ export function FeatureIntelligence({
     // and the role only matters on the organization level — waiting on it at
     // the person level refetched every job the moment it flickered.
     enabled:
-      (orgBootstrapResolved || Boolean(activeOrgId)) &&
+      organizationState !== "resolving" &&
       (seatLevel === "person" || !activeOrgId || !roleLoading),
   });
   const actions = useIntelligenceActions({
