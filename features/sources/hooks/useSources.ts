@@ -42,6 +42,8 @@ export interface UseSourcesResult {
   error: string | null;
   /** Set when the per-row facts failed (stage/attached-to then read as unknown). */
   factsError: string | null;
+  /** True while the per-row facts are being read (cells say "Checking…"). */
+  factsLoading: boolean;
 }
 
 const FACTS_BATCH = 200;
@@ -88,13 +90,14 @@ export function useSources(scope: SourcesScope | null, userId: string | null, re
     loading: true,
     error: null,
     factsError: null,
+    factsLoading: true,
   });
   const scopeKey = scope ? (scope.kind === "mine" ? "mine" : `orgs:${scope.organizationId}`) : "none";
 
   useEffect(() => {
     if (!scope || !userId) return undefined;
     let cancelled = false;
-    setState((s) => ({ ...s, loading: true, error: null }));
+    setState((s) => ({ ...s, loading: true, error: null, factsLoading: true }));
     void (async () => {
       let rows: SourceListRow[];
       try {
@@ -128,6 +131,7 @@ export function useSources(scope: SourcesScope | null, userId: string | null, re
             ...s,
             loading: false,
             error: "Your Sources could not be loaded. Refresh to try again.",
+            factsLoading: false,
           }));
         return;
       }
@@ -155,6 +159,7 @@ export function useSources(scope: SourcesScope | null, userId: string | null, re
             ? "Stage and attachments could not be read, so they show as unknown."
             : null,
         orgNames,
+        factsLoading: false,
       }));
     })();
     return () => {

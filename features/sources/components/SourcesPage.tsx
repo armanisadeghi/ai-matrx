@@ -202,8 +202,8 @@ function AttachedList({ attachments }: { attachments: SourceAttachment[] }) {
   );
 }
 
-function AttachedCell({ facts }: { facts: SourceFacts | undefined }) {
-  if (!facts) return <span className="text-muted-foreground">—</span>;
+function AttachedCell({ facts, loading }: { facts: SourceFacts | undefined; loading: boolean }) {
+  if (!facts) return <span className="text-muted-foreground">{loading ? "Checking…" : "Unknown"}</span>;
   const n = facts.attachments.length;
   if (n === 0) return <span className="text-muted-foreground">Not attached</span>;
   return (
@@ -253,7 +253,7 @@ export function SourcesPage() {
       : activeOrgId
         ? { kind: "orgs", organizationId: activeOrgId }
         : null;
-  const { rows, facts, orgNames, loading, error, factsError } = useSources(scope, userId, refreshKey);
+  const { rows, facts, orgNames, loading, error, factsError, factsLoading } = useSources(scope, userId, refreshKey);
   const visibleRows = applySavedFilter(rows, savedFilter);
   const savedCount = rows.filter(isSourceSaved).length;
   const refresh = () => setRefreshKey((n) => n + 1);
@@ -484,7 +484,7 @@ export function SourcesPage() {
       header: "Stage",
       accessorFn: (r) => {
         const f = facts.get(r.id);
-        return f ? SOURCE_STAGE_LABEL[sourceStage(r, f)] : "Unknown";
+        return f ? SOURCE_STAGE_LABEL[sourceStage(r, f)] : factsLoading ? "Checking…" : "Unknown";
       },
       filter: "select",
       width: 110,
@@ -493,14 +493,15 @@ export function SourcesPage() {
       id: "attached",
       header: "Attached to",
       accessorFn: (r) => facts.get(r.id)?.attachments.length ?? 0,
-      cell: (r) => <AttachedCell facts={facts.get(r.id)} />,
+      cell: (r) => <AttachedCell facts={facts.get(r.id)} loading={factsLoading} />,
       filter: false,
       width: 120,
     },
     {
       id: "organization",
       header: "Organization",
-      accessorFn: (r) => (r.visibility === "personal" ? "Personal" : (orgNames.get(r.organization_id) ?? "An organization")),
+      accessorFn: (r) =>
+        r.visibility === "personal" ? "Personal" : (orgNames.get(r.organization_id) ?? (factsLoading ? "Checking…" : "An organization you belong to")),
       filter: "select",
       width: 150,
     },
@@ -603,7 +604,7 @@ export function SourcesPage() {
         }
       />
 
-      <div className="flex h-full min-h-0 flex-col gap-2 overflow-auto px-3 pb-4 pt-2 sm:px-4">
+      <div className="flex h-full min-h-0 flex-col gap-2 overflow-auto px-3 pb-4 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
         {error ? (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive" role="alert">
             {error}

@@ -3,7 +3,7 @@
 --
 --   R1  THE PRE-FIX BODY IS BACK (the bytes of the inverse, run with \i — which also proves the
 --       inverse is valid SQL against this catalogue). The door still returns the full walk's ids —
---       the fix never changed an answer — but it asks custom.visible_set once for EVERY
+--       the fix never changed an answer — but it asks custom.visible_predicate_sql once for EVERY
 --       (organization, Table) pair on the database: V2's claim is false. R1 is GREEN only when that
 --       defect is present.
 --   R2  A WRONG PRUNE IS PLANTED — "a person only sees her own organizations and the system ones",
@@ -79,7 +79,10 @@ end $oracle$;
 
 select set_config('vrid.calls_before',
          coalesce((select calls from pg_stat_xact_user_functions
-                    where schemaname = 'custom' and funcname = 'visible_set'), 0)::text, true);
+                    where schemaname = 'custom' and funcname = 'visible_predicate_sql'), 0)::text, true),
+       set_config('vrid.vrid_before',
+         coalesce((select calls from pg_stat_xact_user_functions
+                    where schemaname = 'custom' and funcname = 'visible_record_ids'), 0)::text, true);
 select set_config('request.jwt.claims',
                   json_build_object('sub', :'vrid_person', 'role', 'authenticated')::text, true);
 set local role authenticated;
@@ -92,18 +95,26 @@ do $r1$
 declare
   v_pairs integer := current_setting('vrid.pairs')::integer;
   v_calls integer := coalesce((select calls from pg_stat_xact_user_functions
-                                where schemaname = 'custom' and funcname = 'visible_set'), 0)
+                                where schemaname = 'custom' and funcname = 'visible_predicate_sql'), 0)
                      - current_setting('vrid.calls_before')::integer;
+  v_entries integer := coalesce((select calls from pg_stat_xact_user_functions
+                                  where schemaname = 'custom' and funcname = 'visible_record_ids'), 0)
+                       - current_setting('vrid.vrid_before')::integer;
+  v_per integer;
 begin
   if current_setting('vrid.door') <> current_setting('vrid.oracle') then
     raise exception 'R1 BROKEN — the pre-fix body no longer returns the full walk; the oracle itself is wrong';
   end if;
-  if v_calls < v_pairs then
-    raise exception 'R1 NOT RED — with the pre-fix body back the door asked custom.visible_set only % times for % pairs; V2 would pass on the defect',
-      v_calls, v_pairs;
+  if v_entries < 1 then
+    raise exception 'R1 BROKEN — the door never entered custom.visible_record_ids';
   end if;
-  raise notice 'R1 RED AS EXPECTED — the pre-fix body asks custom.visible_set % times for % pairs (V2 fails on it)',
-    v_calls, v_pairs;
+  v_per := v_calls / v_entries;
+  if v_per < v_pairs then
+    raise exception 'R1 NOT RED — with the pre-fix body back each entry asked about only % of % pairs; V2 would pass on the defect',
+      v_per, v_pairs;
+  end if;
+  raise notice 'R1 RED AS EXPECTED — the pre-fix body asks about % of % pairs per entry (% calls over % entries; V2 fails on it)',
+    v_per, v_pairs, v_calls, v_entries;
 end $r1$;
 
 -- ══ R2: A WRONG PRUNE — her own organizations and the system ones, nothing else.

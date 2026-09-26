@@ -1,14 +1,13 @@
 -- vridprune_the_record_set_skips_organizations_a_person_has_no_way_into
 -- target: clone
--- additive: yes
--- guard: custom/accessible_entity_ids_guard
 -- based-on: custom.visible_record_ids(uuid, permission_level) a99682186e83ae0581e5708b4d9cfe5f9c2af9f7c17b8a10a4289aeab8c6d5b1
 --
 -- 🚨 WHERE THIS FILE LIVES, AND WHY. migrations/rehearsal/ is scanned by no release path, so no
 -- sweep can apply it; `-- target: clone` lets it be rehearsed on the dev clone only. TO SHIP IT
--- (the owner's step): `git mv` it to migrations/, change `-- target: clone` to
--- `-- target: production` (the additive + guard lines it then demands are already here), then
--- `pnpm db:apply migrations/<this file>`. It carries a NEW basename on purpose: its first copy,
+-- (the owner's step): `git mv` it to migrations/, DELETE the `-- target: clone` line (a file with
+-- no target line is production-only; no additive/guard line is needed or wanted — the only knob
+-- that fits, custom/accessible_entity_ids_guard, is already ON, and the runner refuses a guarded
+-- file whose knob is on), then `pnpm db:apply migrations/<this file>`. It carries a NEW basename on purpose: its first copy,
 -- migrations/vridprune_a_person_is_asked_only_about_organizations_they_have_a_way_into.sql, has a
 -- production ledger row (2026-09-26 00:15:15Z, duration_ms 0, checksum 373f5506…) although its
 -- body was never applied — production's custom.visible_record_ids still hashes a99682186e83….

@@ -13,9 +13,13 @@
 --       is exactly the FULL WALK — every pair on the database, each through
 --       custom.visible_predicate_sql, the pre-VRID-PRUNE definition — computed inline here as the
 --       oracle. Same ids, none lost, none gained.
---   V2  THE COST. That door call asks custom.visible_set strictly fewer times than there are
+--   V2  THE COST. That door call asks custom.visible_predicate_sql (one call per pair asked) strictly fewer times than there are
 --       (organization, Table) pairs on the database: the organizations she has no way into are
 --       never asked about.
+--       It counts custom.visible_predicate_sql calls PER ENTRY of custom.visible_record_ids: one
+--       direct call asks the builder exactly once per pair (clone 2026-09-26: 255 calls, 1 entry,
+--       for the one-organization member), but the door statement below enters the function twice,
+--       so a raw count against the pair count stayed red after the fix (1,846 = 2 x 923).
 --
 -- RUN IT (clone or main; ONE transaction, always rolled back; ~1-2 min, the oracle is the full
 -- walk on purpose):
@@ -88,7 +92,10 @@ begin
           set_config('vrid.oracle_ms', round(extract(epoch from clock_timestamp() - t0) * 1000)::text, true),
           set_config('vrid.calls_before',
                      coalesce((select calls from pg_stat_xact_user_functions
-                                where schemaname = 'custom' and funcname = 'visible_set'), 0)::text, true);
+                                where schemaname = 'custom' and funcname = 'visible_predicate_sql'), 0)::text, true),
+          set_config('vrid.vrid_before',
+                     coalesce((select calls from pg_stat_xact_user_functions
+                                where schemaname = 'custom' and funcname = 'visible_record_ids'), 0)::text, true);
   raise notice 'ORACLE — the full walk: % pairs, % ids, % ms',
     v_pairs, coalesce(array_length(v_ids, 1), 0), current_setting('vrid.oracle_ms');
 end $oracle$;
@@ -139,15 +146,25 @@ do $v2$
 declare
   v_pairs integer := current_setting('vrid.pairs')::integer;
   v_calls integer := coalesce((select calls from pg_stat_xact_user_functions
-                                where schemaname = 'custom' and funcname = 'visible_set'), 0)
+                                where schemaname = 'custom' and funcname = 'visible_predicate_sql'), 0)
                      - current_setting('vrid.calls_before')::integer;
+  -- The door statement may enter custom.visible_record_ids more than once (measured: twice
+  -- inside the set_config above), so the cost is judged PER ENTRY — pairs asked per call.
+  v_entries integer := coalesce((select calls from pg_stat_xact_user_functions
+                                  where schemaname = 'custom' and funcname = 'visible_record_ids'), 0)
+                       - current_setting('vrid.vrid_before')::integer;
+  v_per integer;
 begin
-  if v_calls >= v_pairs then
-    raise exception 'V2 FAILED — the door asked custom.visible_set % times for % pairs: it still walks every organization on the database (door % ms, full walk % ms)',
-      v_calls, v_pairs, current_setting('vrid.door_ms'), current_setting('vrid.oracle_ms');
+  if v_entries < 1 then
+    raise exception 'V2 CANNOT ASSERT — the door never entered custom.visible_record_ids (knob or routing changed)';
   end if;
-  raise notice 'V2 PASSED — the door asked custom.visible_set % times of % pairs (door % ms, full walk % ms)',
-    v_calls, v_pairs, current_setting('vrid.door_ms'), current_setting('vrid.oracle_ms');
+  v_per := v_calls / v_entries;
+  if v_per >= v_pairs then
+    raise exception 'V2 FAILED — each entry of custom.visible_record_ids asked custom.visible_predicate_sql about % of % pairs (% calls over % entries): it still walks every organization on the database (door % ms, full walk % ms)',
+      v_per, v_pairs, v_calls, v_entries, current_setting('vrid.door_ms'), current_setting('vrid.oracle_ms');
+  end if;
+  raise notice 'V2 PASSED — each entry of custom.visible_record_ids asked about % of % pairs (% calls over % entries; door % ms, full walk % ms)',
+    v_per, v_pairs, v_calls, v_entries, current_setting('vrid.door_ms'), current_setting('vrid.oracle_ms');
 end $v2$;
 
 rollback;
