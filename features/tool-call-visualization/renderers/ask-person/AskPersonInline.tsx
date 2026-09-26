@@ -31,6 +31,7 @@ import type { ToolRendererProps } from "../../types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { ToolResultCard } from "../_shared-entity/ToolResultCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ASK_PERSON_TINT = "text-amber-600 dark:text-amber-400";
 
@@ -90,6 +91,7 @@ export const AskPersonInline: React.FC<ToolRendererProps> = (props) => {
     <div className="flex items-center justify-between gap-3 p-4">
       <p className="text-sm text-muted-foreground">
         We could not reach your agent just now. Nothing was lost — try again.
+        <ErrorAlchemyMenu />
       </p>
       <Button size="sm" variant="outline" onClick={lookup.retry}>
         Try again

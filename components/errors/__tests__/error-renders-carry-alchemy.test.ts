@@ -259,6 +259,15 @@ describe("round-5 probes (RC-B12 verify), red then green", () => {
   });
 });
 
+describe("facts about errors are not errors (UI audit C)", () => {
+  it("an error count or an error-type badge is a label, not a display to copy", () => {
+    expect(count('<span className="text-red-500">{r.error_count}</span>')).toBe(0);
+    expect(count('{r.error_count > 0 ? <span className="text-red-500">{r.error_count}</span> : null}')).toBe(0);
+    expect(count('<Badge variant="destructive">{r.error_type}</Badge>')).toBe(0);
+    expect(count('<span className="text-red-500">{r.error}</span>')).toBe(1);
+  });
+});
+
 describe("one error box carries one menu", () => {
   const doubles = (jsx: string) =>
     findDoubleMenus(`export function C({ error, ok }: any) { return (<>${jsx}</>); }`).length;
@@ -294,6 +303,7 @@ describe("a menu never shows when nothing failed", () => {
     expect(orphans('<ErrorAlchemyMenu input={{ message: "x" }} />')).toBe(0);
     expect(orphans('{problems.map((problem) => <div key={problem}>{problem}<ErrorAlchemyMenu error={problem} /></div>)}')).toBe(0);
     expect(orphans('<div><ErrorAlchemyMenu error={title} /></div>')).toBe(1);
+    expect(orphans('<ul role="alert">{errs.map((e, i, all) => <li key={i}>{e}{i === all.length - 1 && <ErrorAlchemyMenu />}</li>)}</ul>')).toBe(0);
   });
 
   it("no file has an orphan menu", () => {

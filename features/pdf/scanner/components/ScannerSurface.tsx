@@ -182,7 +182,7 @@ export default function ScannerSurface() {
             <p className="pb-1 text-center text-[11px] text-destructive">
               {session.errorCount} upload{session.errorCount === 1 ? "" : "s"}{" "}
               failed — tap a failed tile to retry, or remove it.
-              <ErrorAlchemyMenu error={session.errorCount} />
+              <ErrorAlchemyMenu operation="Upload these files" />
             </p>
           )}
           <div className="flex items-center gap-2 pb-2">

@@ -1089,6 +1089,7 @@ export function SourcesPage() {
                       <span>·</span>
                       <span className="text-warning">
                         {STAGE_CELL_LABEL.read_failed}
+                        <ErrorAlchemyMenu />
                       </span>
                     </>
                   ) : null}

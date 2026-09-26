@@ -30,6 +30,7 @@ import {
     type SourceListRow,
 } from "@/features/sources/sourceRows";
 import { CATALOGUED_SOURCE_LABEL, cataloguedSourceIds } from "../catalog/cataloguedSources";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function CataloguedSourcesList({
     libraryId,
@@ -171,6 +172,7 @@ export function CataloguedSourcesList({
                             Try again
                         </Button>
                     </span>
+                  <ErrorAlchemyMenu error={shownError} />
                 </p>
             ) : null}
             <div className="flex min-h-0 flex-1 flex-col">

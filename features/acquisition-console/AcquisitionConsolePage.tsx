@@ -210,10 +210,9 @@ export function AcquisitionConsolePage() {
           // 🚨 A DROPPED ROW ANNOUNCES ITSELF. The tables below are missing
           // exactly these rows and say so in the words of the field that broke.
           <ul className="max-w-prose list-disc space-y-1 rounded-md border border-amber-500/40 px-6 py-2 text-xs text-amber-800 dark:text-amber-300">
-            {data.problems.map((problem) => (
-              <li key={problem}>{problem}</li>
+            {data.problems.map((problem, __i, __all) => (
+              <li key={problem}>{problem}{__i === __all.length - 1 && <ErrorAlchemyMenu />}</li>
             ))}
-            <li className="list-none"><ErrorAlchemyMenu /></li>
           </ul>
         )}
 

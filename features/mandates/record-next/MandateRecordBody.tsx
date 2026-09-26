@@ -279,7 +279,7 @@ function OneMandateRecordBody({
     if (failed.kind === "not-a-system-mandate" && "mandateId" in failed) {
       return (
         <div className="mx-auto flex max-w-md flex-col items-center gap-3 px-6 py-16 text-center">
-          <p className="text-sm text-muted-foreground">{failed.message}</p>
+          <p className="text-sm text-muted-foreground">{failed.message} <ErrorAlchemyMenu error={failed.message} /></p>
           <div className="flex items-center gap-2">
             <Button asChild variant="outline" size="sm">
               <Link href={adminMandateSupportRecordHref(String(failed.mandateId))}>

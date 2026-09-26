@@ -202,10 +202,9 @@ export function TransferTableOwnership({
         )}
         {refused.length > 0 && (
           <ul className="flex flex-col gap-1 text-sm text-destructive" data-transfer-refused>
-            {refused.map((s, i) => (
-              <li key={i}>{s}</li>
+            {refused.map((s, i, __all) => (
+              <li key={i}>{s}{i === __all.length - 1 && <ErrorAlchemyMenu />}</li>
             ))}
-            <li className="list-none"><ErrorAlchemyMenu /></li>
           </ul>
         )}
 

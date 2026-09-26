@@ -884,7 +884,7 @@ export function IntakeCaptureScreen({
                 {session.errorCount} upload
                 {session.errorCount === 1 ? "" : "s"} failed — tap the red
                 thumbnail.
-                <ErrorAlchemyMenu error={session.errorCount} />
+                <ErrorAlchemyMenu operation="Upload these files" />
               </span>
             )}
           </p>

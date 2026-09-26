@@ -93,7 +93,7 @@ const toolUsageColumns: MatrxColumnDef<ToolUsageRow>[] = [
     width: 80,
     cell: (r) =>
       r.error_count > 0 ? (
-        <span className="text-red-500">{r.error_count} <ErrorAlchemyMenu error={r.error_count} /></span>
+        <span className="text-red-500">{r.error_count}</span>
       ) : (
         <span className="text-muted-foreground">0</span>
       ),

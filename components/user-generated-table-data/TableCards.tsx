@@ -733,6 +733,7 @@ export default function TableCards() {
           {movedError && (
             <p className="text-sm text-destructive">
               Some tables that moved to the new system could not be listed: {movedError}
+              <ErrorAlchemyMenu error={movedError} />
             </p>
           )}
         </div>

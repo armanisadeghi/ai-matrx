@@ -469,7 +469,7 @@ export function IntakeCaptureScreenV3({
                     {session.errorCount > 0 && (
                       <span className="text-red-400">
                         {session.errorCount} failed — tap the red thumbnail.
-                        <ErrorAlchemyMenu error={session.errorCount} />
+                        <ErrorAlchemyMenu operation="Upload these files" />
                       </span>
                     )}
                   </span>

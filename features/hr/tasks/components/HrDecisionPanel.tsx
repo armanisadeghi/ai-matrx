@@ -656,6 +656,7 @@ export function HrDecisionPanel({
                                             {str(f, "failure_reason") ? (
                                                 <span className="truncate text-muted-foreground">
                                                     {str(f, "failure_reason")}
+                                                    <ErrorAlchemyMenu error={str(f, "failure_reason")} />
                                                 </span>
                                             ) : null}
                                             <Button
@@ -674,7 +675,6 @@ export function HrDecisionPanel({
                                             </Button>
                                         </li>
                                     ))}
-                                  <li className="list-none"><ErrorAlchemyMenu /></li>
                                 </ul>
                                 {hiddenOpenFailureCount > 0 ? (
                                     <Button
@@ -698,7 +698,6 @@ export function HrDecisionPanel({
                                         failures
                                         <span className="ml-1 text-muted-foreground">
                                             ({hiddenOpenFailureCount} remaining)
-                                          <ErrorAlchemyMenu error={hiddenOpenFailureCount} />
                                         </span>
                                     </Button>
                                 ) : null}

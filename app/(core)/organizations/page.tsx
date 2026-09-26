@@ -577,12 +577,14 @@ export default function OrganizationsPage() {
                   <h3 className="font-semibold mb-1">
                     We couldn&apos;t load your organizations
                   </h3>
-                  <p className="text-sm text-muted-foreground mb-4">{error}</p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {error}
+                    <ErrorAlchemyMenu error={error} />
+                  </p>
                   <Button size="sm" variant="outline" onClick={refresh}>
                     Try again
                   </Button>
                 </div>
-                <ErrorAlchemyMenu error={error} />
               </Card>
             ) : organizations.length === 0 ? (
               <Card className="p-12 text-center">

@@ -347,12 +347,11 @@ function ProposalDoors({
       {failure ? <TopicalMapFailed what={failure.what} error={failure.error} /> : null}
       {patchErrors.length > 0 ? (
         <ul role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs">
-          {patchErrors.map((err, i) => (
+          {patchErrors.map((err, i, __all) => (
             <li key={`${err.slug ?? "?"}:${i}`}>
               <span className="font-mono">{err.slug ?? "(no slug)"}</span>: {err.message}
-            </li>
+            {i === __all.length - 1 && <ErrorAlchemyMenu />}</li>
           ))}
-          <li className="list-none"><ErrorAlchemyMenu /></li>
         </ul>
       ) : null}
 

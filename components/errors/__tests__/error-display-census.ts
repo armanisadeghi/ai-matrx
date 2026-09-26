@@ -180,14 +180,19 @@ function isErrorLeaf(leaf: ts.Expression, names: RegExp = ERROR_NAME): boolean {
   if (ts.isPropertyAccessExpression(leaf) || ts.isElementAccessExpression(leaf)) {
     const text = leaf.getText();
     if (/\.(length|count|size|total)$/.test(text)) return false;
-    // An identifier of an error (its digest, id or code) is a reference, not the error shown.
+    // An identifier of an error (its digest, id or code) is a reference, not the error shown;
+    // a count or a type/kind label is a fact ABOUT errors ("3", "RateLimit"), not one to copy.
     if (/\.(digest|id|code|errorId|error_id|error_code|errorCode)$/.test(text)) return false;
+    if (/(?:_count|Count|_total|Total|_type|Type|_kind|Kind)$/.test(text)) return false;
     const parts = text.split(/\??\.|\[|\]/).filter(Boolean);
     const last = parts[parts.length - 1];
     // `problem.title` is a math problem's title; only a value NAMED problem is one.
     return parts.some((part) => names.test(part) && !(/^problems?$/i.test(part) && part !== last));
   }
-  if (ts.isIdentifier(leaf)) return names.test(leaf.text) || ERROR_CONSTANT.test(leaf.text);
+  if (ts.isIdentifier(leaf)) {
+    if (/(?:_count|Count|_total|Total|_type|Type|_kind|Kind)$/.test(leaf.text)) return false;
+    return names.test(leaf.text) || ERROR_CONSTANT.test(leaf.text);
+  }
   return false;
 }
 
@@ -328,12 +333,17 @@ function ownChildren(node: JsxLike): {
 }
 
 /** Is this element rendered only in an error state (inside a branch on an error value)? */
+/** A branch on an error COUNT ("r.error_count > 0") is about how many, not an error state. */
+function conditionText(n: ts.Node): string {
+  return n.getText().replace(/[\w.?]*(?:_count|Count|_total|Total)\b/g, "");
+}
+
 function inErrorBranch(node: ts.Node): boolean {
   let child: ts.Node = node;
   let current: ts.Node | undefined = node.parent;
   while (current) {
     if (ts.isConditionalExpression(current)) {
-      const cond = current.condition.getText();
+      const cond = conditionText(current.condition);
       if (child === current.whenTrue && ERROR_CONDITION.test(cond) && !/^!/.test(cond.trim())) return true;
       if (child === current.whenFalse && /^!/.test(cond.trim()) && ERROR_CONDITION.test(cond)) return true;
     }
@@ -341,13 +351,13 @@ function inErrorBranch(node: ts.Node): boolean {
       ts.isBinaryExpression(current) &&
       current.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken &&
       child === current.right &&
-      ERROR_CONDITION.test(current.left.getText()) &&
+      ERROR_CONDITION.test(conditionText(current.left)) &&
       !/^!/.test(current.left.getText().trim())
     ) {
       return true;
     }
     if (ts.isIfStatement(current) && child === current.thenStatement) {
-      const cond = current.expression.getText();
+      const cond = conditionText(current.expression);
       if (ERROR_CONDITION.test(cond) && !/^!/.test(cond.trim())) return true;
     }
     if (ts.isFunctionLike(current)) return false;
@@ -460,13 +470,23 @@ function hasSiblingMenu(box: JsxLike): boolean {
   );
 }
 
-function jsxAncestors(node: ts.Node): JsxLike[] {
+function jsxAncestors(node: ts.Node, throughMaps = false): JsxLike[] {
   const out: JsxLike[] = [];
   let current: ts.Node | undefined = node.parent;
   while (current) {
     if (ts.isJsxElement(current)) out.push(current);
-    // A box never spans components.
-    if (ts.isFunctionLike(current)) break;
+    // A box never spans components — but a row rendered by `list.map((x) => …)`
+    // inside the box is still in it.
+    if (ts.isFunctionLike(current)) {
+      const call = current.parent;
+      const isMapRow =
+        throughMaps &&
+        call !== undefined &&
+        ts.isCallExpression(call) &&
+        ts.isPropertyAccessExpression(call.expression) &&
+        call.expression.name.text === "map";
+      if (!isMapRow) break;
+    }
     current = current.parent;
   }
   return out;
@@ -552,7 +572,7 @@ export function findOrphanMenus(source: string, fileName = "file.tsx"): number[]
     if ((ts.isJsxSelfClosingElement(n) || ts.isJsxElement(n)) && tagName(n) === "ErrorAlchemyMenu") {
       const hasInput = attrText(n, "input") !== null;
       if (!hasInput) {
-        const ancestors = jsxAncestors(n);
+        const ancestors = jsxAncestors(n, true);
         const inDisplay = ancestors.some(
           (a) =>
             isErrorStyled(a) ||

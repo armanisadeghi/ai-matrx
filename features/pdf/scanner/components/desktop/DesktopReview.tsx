@@ -201,7 +201,7 @@ export function DesktopReview({
           <p className="mt-2 text-xs text-destructive">
             {session.errorCount} upload{session.errorCount === 1 ? "" : "s"}{" "}
             failed — retry or remove them before saving.
-            <ErrorAlchemyMenu error={session.errorCount} />
+            <ErrorAlchemyMenu operation="Upload these files" />
           </p>
         )}
       </div>

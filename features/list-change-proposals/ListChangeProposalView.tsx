@@ -272,12 +272,11 @@ export function ListChangeProposalView({
           role="alert"
           className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs"
         >
-          {unreadable.map((u) => (
+          {unreadable.map((u, __i, __all) => (
             <li key={u.index}>
               Proposal {u.index + 1} was not shown because {u.why}.
-            </li>
+            {__i === __all.length - 1 && <ErrorAlchemyMenu />}</li>
           ))}
-          <li className="list-none"><ErrorAlchemyMenu /></li>
         </ul>
       ) : null}
 

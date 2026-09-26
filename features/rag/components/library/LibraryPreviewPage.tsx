@@ -337,6 +337,7 @@ export function LibraryPreviewPage({
           {version.error && (
             <div className="border-b px-4 py-1 text-xs text-warning shrink-0">
               {version.error}
+              <ErrorAlchemyMenu error={version.error} />
             </div>
           )}
 

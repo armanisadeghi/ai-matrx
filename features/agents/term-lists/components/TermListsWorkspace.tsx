@@ -383,12 +383,11 @@ export function TermListEditor({
       />
       {problems.length ? (
         <ul className="px-1 text-xs text-destructive" data-testid="term-list-problems">
-          {problems.slice(0, 5).map((p) => (
+          {problems.slice(0, 5).map((p, __i, __all) => (
             <li key={`${p.row}-${p.message}`}>
               Row {p.row}: {p.message}
-            </li>
+            {__i === __all.length - 1 && <ErrorAlchemyMenu />}</li>
           ))}
-          <li className="list-none"><ErrorAlchemyMenu /></li>
         </ul>
       ) : null}
     </div>
