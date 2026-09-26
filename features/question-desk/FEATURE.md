@@ -21,7 +21,7 @@ Cross-repo plan and rulings: `common-docs/projects/question-desk-in-app/PLAN.md`
 - `app/(admin)/administration/question-desk/[interviewId]/page.tsx` — the interview. `?q=<slug>` opens that exact question; it is the shape the `question_desk.answer_recorded` notification's deep link uses.
 - `app/(admin)/administration/question-desk/layout.tsx` — route metadata **and** the Newsreader `--font-editorial` variable (ruling QD-R7).
 
-The `(admin)` group admits any admin level. That is deliberate and it is not a hole: both tables are `data_class='private'` and RLS grants a row to its filer and its respondent only, so the page can hold nothing a reader is not already entitled to. There is no second, hand-written gate on this surface.
+The `(admin)` group admits any admin level. That is deliberate and it is not a hole: `interview.decision_interview` is `data_class='private'` and its questions (`interview.decision_question`, a component) inherit its access — RLS grants an interview to its filer and its respondent only, so the page can hold nothing a reader is not already entitled to. There is no second, hand-written gate on this surface.
 
 **Components**
 - `components/InterviewListClient.tsx` — `MatrxDataTable` + `ArchiveFilter`.

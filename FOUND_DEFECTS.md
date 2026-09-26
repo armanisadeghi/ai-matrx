@@ -290,8 +290,10 @@ closed the STAFF lane on both (that is what the class demands and what the guard
 the owner/org arms verbatim, because whether colleagues may see each other's connected Google /
 Microsoft / GitHub accounts is a product ruling, not a guard's. Two consistent end states: classify
 `organization` (the policy is already that; the staff lane would then be lawful again and could be
-regenerated back), or keep `private` and narrow the policy to the owner. Needs the owner lane's
-ruling; until then the table is in-between. Owner: integrations (users.*).
+regenerated back), or keep `private` and narrow the policy to the owner. The access-ladder law
+decides it: every table starts at Organization and only Arman approves Private, so
+with no approval on record the end state is `organization` (the live policy already
+is). Owner: integrations (users.*).
 
 
 ### D333 — Four Media Source Catalog endpoints are published in the contract but were never built, and the frontend called all four (2026-09-18)
@@ -2140,11 +2142,13 @@ in, among others: `users.user_secrets` **86**, `users.credential_items` **33**,
 `rag.kg_alerts` **14**, `rag.scope_suggestions` **5**, and
 `tool.mcp_user_conn` **1**. No secret values were read.
 
-**Fix:** classify every admin-lane table as (a) truly admin-inventory-visible or
-(b) personal. Move (b) to `rls_variant='personal'`, audit its frontend list
-queries for explicit `user_id` scope, and require admin inventory to use an
-explicit admin surface/RPC rather than ambient app-session access. Credential
-and secret tables are the first remediation batch. The DB/generator half belongs
+**Fix (per `common-docs/policies/access-ladder.md`):** platform admins read
+everything only inside the admin apps; on every normal page an admin is an
+ordinary person. So every ordinary product query carries its own owner/org
+scope (`lib/list-scope`) and never leans on the admin lane, and admin inventory
+uses an explicit admin surface/RPC. Never drop or narrow the admin read lane
+(`common-docs/policies/our-own-admin-database-access.md`). Credential and
+secret tables are the first remediation batch. The DB/generator half belongs
 in aidream as an `AD<n> — D252 remainder`; this repo owns consumer hardening.
 
 ### D251 — a `user`-scoped retention policy silently governs EVERY entity, and its label follows (2026-08-22)
@@ -3227,24 +3231,16 @@ Arman: these are two near-duplicate ~400-line components (plus the untouched 191
 `draggable-card.tsx`, still with zero consumers) sharing one drag/snap/container model — should they
 converge? Neither may be deleted (unfinished-work alarm).
 
-### D193 — Four user-content entities can't be shared with an organization at all (2026-08-15)
+### D193 — Four work-product tables are classified Private (re-measured live 2026-09-26)
 
-**Found by the platform-wide scope audit Arman asked for** after the CMS finding ("everything in our database should essentially be the same unless it's truly a private personal thing"). Good news first: of **193 active entity tables**, only 5 lack `organization_id` and 4 of those are correct (`iam.organizations` IS the org; `public.app_log` is a system log; `runtime.global_origin` is D100; `ui.ui_surface` is a registry, chipped). The platform is broadly consistent.
-
-The real gap is `visibility`. These four are **registered as shareable**, are user-created work product, already carry `organization_id` — and have **no `visibility` column**, so they sit on the legacy boolean `is_public` + `user_id` model. There is no way to express "share with my org": every row is private-or-world.
-
-| token             | table                            | live rows |
-| ----------------- | -------------------------------- | --------- |
-| `workbook`        | `workbench.udt_workbooks`        | 17        |
-| `udt_document`    | `workbench.udt_documents`        | 24        |
-| `dataset`         | `workbench.udt_datasets`         | 140       |
-| `structured_list` | `workbench.udt_structured_lists` | 28        |
-
-Their `shareable_resource_registry` rows say `is_public_column='is_public'`, `owner_column='user_id'` — the legacy `make_resource_public` path, not the canonical `setVisibilityColumn` enum path. **Chip fired 2026-08-15.**
-
-**Separate, smaller, same audit — `context_item` sharing is half-wired:** `platform.shareable_resource_registry.context_item` declares `is_public_column='visibility'`, but `context.context_items` **has no `visibility` column** (D117's exact class, which was fixed once for `content_ir_kind_instance`), and its `url_path_template` is an empty string. 203 live rows. So the public toggle writes a column that does not exist and the sharing UI cannot link to one. Fix the registry row (live + TS mirror + snapshot together, parity test) and decide whether context items should carry canonical visibility — they are scope data belonging to an org, so per Arman's ruling they probably should.
-
-The other 51 `visibility`-less entities were reviewed and are legitimately non-shareable (user preferences, memberships, invitations, likes/views, system errors, job runs).
+`workbook` (`workbench.udt_workbooks`), `udt_document` (`workbench.udt_documents`), `dataset`
+(`workbench.udt_datasets`) and `structured_list` (`workbench.udt_structured_lists`) carry
+`platform.entity_types.data_class = 'private'`. They are work made for the job, which the
+access-ladder law (`common-docs/policies/access-ladder.md`) puts at **Organization** — Private is
+only one person's own communications or thinking, and only Arman approves it. Moving them to
+Organization needs no approval. All four already carry `visibility`, `organization_id` and a
+link-shareable registry row. `context_item` is `organization` (correct) and link-sharing is off for
+it (`is_link_shareable = false`) — short of the law's "any record can be shared by link".
 
 ### D244 (filed as D194, renumbered 2026-08-21) — two surface providers at the same depth silently pick a winner; no warning (2026-08-15)
 
@@ -3393,7 +3389,7 @@ Found by the guard rail Arman required before folding GRANTs into `iam.apply_rls
 
 **`batch.cost_event` is closed (2026-08-21) and its answer is the template for the other three.** The openness call this entry says is Arman's was _made_ by Arman for batch — _"Absolutely users need to be able to see their batch jobs. Fix it please."_ — and the resolution needed no new judgement once the table was classified: it is an append-only org-scoped cost log, so it is a **`ledger`**, and the `ledger` variant already encodes exactly "users read their own org, the server writes." The whole fix was `update platform.entity_types set rls_variant='ledger'` + `iam.apply_rls(...)`; the generator then issued `SELECT`-only grants and the pre-existing `SIUD` disappeared as a side effect of being done properly. **The `anon` grant was the part the generator could NOT fix** (§6d-2: `anon` is deliberately untouched), and it was worse than this entry recorded — `anon` held the same four privileges as `authenticated`, not none. Check `anon` explicitly on the remaining three. Sibling migrations: aidream `0438`/`0439`/`0440`; live proof `aidream/scripts/_verify_batch_access_model.py`.
 
-**Deliberately NOT auto-swept.** `iam.apply_table_grants` refuses to grant on any of them, so the v3 backfill skipped them safely. Fixing each needs a judgement about _intended_ openness — an openness call (db-rules §6 security philosophy), so it is Arman's, not an agent's. **Do not "fix" these by granting; give them real policies.**
+**Deliberately NOT auto-swept.** `iam.apply_table_grants` refuses to grant on any of them, so the v3 backfill skipped them safely. Fixing each means choosing its level under the access-ladder law (`common-docs/policies/access-ladder.md`: every table starts at Organization; only Arman approves Confidential or Private). **Do not "fix" these by granting; give them real policies.**
 
 ### D182 — Component-RLS remainder (2026-08-13; **re-measured live + largely fixed 2026-08-14**)
 
