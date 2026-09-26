@@ -188,6 +188,25 @@ afterEach(() => {
 });
 
 describe("two accounts, two presses", () => {
+  it("shows and targets the account whose card started consent", async () => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    act(() => root!.render(<ConnectorsSettingsPanel />));
+
+    expect(container.textContent).toContain("one@aimatrx.com");
+    await act(async () => {
+      accountReconnect(1).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(run).toHaveBeenCalledWith(
+      expect.objectContaining({ targetAccountId: "acct-2" }),
+      expect.objectContaining({ loginHint: "two@aimatrx.com" }),
+    );
+    expect(container.querySelector("#connector-consent-account")?.textContent)
+      .toContain("two@aimatrx.com");
+  });
+
   it("keeps the first account's control spinning when the second is refused", async () => {
     container = document.createElement("div");
     document.body.appendChild(container);

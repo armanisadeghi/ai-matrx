@@ -126,6 +126,13 @@ function ProviderConnectorsPanel({
    * press now removes only its own entry.
    */
   const [busy, setBusy] = useState<readonly ConnectorBusyAction[]>([]);
+  // Keep the consent panel's visible account aligned with a card action.
+  // Without this, its independent default can name another connected mailbox
+  // while the card sends a correctly targeted provider request.
+  const [cardConsent, setCardConsent] = useState<{
+    accountId: string;
+    productKeys: string[];
+  } | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [failure, setFailure] = useState<ConsentFailureAnswer | null>(null);
 
@@ -173,6 +180,7 @@ function ProviderConnectorsPanel({
       });
       return;
     }
+    setCardConsent({ accountId, productKeys });
     setBusy((running) =>
       running.some((entry) => busyActionKey(entry) === busyActionKey(pressed))
         ? running
@@ -404,6 +412,9 @@ function ProviderConnectorsPanel({
           </div>
         </header>
         <ConnectorConsentBody
+          key={cardConsent
+            ? `${cardConsent.accountId}:${cardConsent.productKeys.join(",")}`
+            : "default"}
           provider={provider}
           rowAnchorPrefix="integration-google-product-"
           searchFocus={searchFocus}
@@ -413,6 +424,8 @@ function ProviderConnectorsPanel({
           rolloutUnavailable={state.rolloutUnavailable}
           errorMessage={state.errorMessage}
           refetch={state.refetch}
+          initialAccountId={cardConsent?.accountId ?? null}
+          initialProductKeys={cardConsent?.productKeys}
         />
       </section>
     </div>
