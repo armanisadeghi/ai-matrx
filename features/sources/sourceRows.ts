@@ -63,11 +63,82 @@ export interface SourceAttachment {
   label: string | null;
 }
 
-/** Per-row facts the list reads in one call (`docproc.source_list_facts`). */
+/**
+ * Per-row facts the list reads in one call (`docproc.source_list_facts`).
+ *
+ * A person's edit (plan §1 rule 4) is the Source's CURRENT version — what
+ * people read and what AI must search — so the stage is read from the
+ * `current*` facts, never from the listed capture's own chunks (those are the
+ * pre-edit text once an edit exists).
+ */
 export interface SourceFacts {
+  /** Chunks on the listed row itself. */
   chunkCount: number;
   entityCount: number;
   attachments: SourceAttachment[];
+  /** The version people read: the live edit, else the listed row. */
+  currentDocumentId: string;
+  currentChunkCount: number;
+  currentEntityCount: number;
+  /** Chunks still held by this Source's OTHER versions — old text answering searches. */
+  staleChunkCount: number;
+  /** An intelligence job for the current version is pending or running. */
+  indexing: boolean;
+}
+
+export interface SourceFactsRow {
+  processed_document_id: string;
+  chunk_count: number | null;
+  entity_count: number | null;
+  attachments: unknown;
+  current_document_id?: string | null;
+  current_chunk_count?: number | null;
+  current_entity_count?: number | null;
+  stale_chunk_count?: number | null;
+  indexing?: boolean | null;
+}
+
+function asAttachments(value: unknown): SourceAttachment[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((v): SourceAttachment[] => {
+    if (!v || typeof v !== "object") return [];
+    const r = v as Record<string, unknown>;
+    if (typeof r.target_type !== "string" || typeof r.target_id !== "string")
+      return [];
+    return [
+      {
+        target_type: r.target_type,
+        target_id: r.target_id,
+        label: typeof r.label === "string" ? r.label : null,
+      },
+    ];
+  });
+}
+
+/**
+ * One facts row → `SourceFacts`, or null when the row lacks the
+ * current-version columns (an older server function): the caller then shows
+ * the stage as unknown — it never falls back to the capture's chunk count,
+ * which is exactly the lie this read exists to prevent.
+ */
+export function sourceFactsFromRow(r: SourceFactsRow): SourceFacts | null {
+  if (
+    typeof r.current_document_id !== "string" ||
+    typeof r.current_chunk_count !== "number" ||
+    typeof r.stale_chunk_count !== "number" ||
+    typeof r.indexing !== "boolean"
+  )
+    return null;
+  return {
+    chunkCount: r.chunk_count ?? 0,
+    entityCount: r.entity_count ?? 0,
+    attachments: asAttachments(r.attachments),
+    currentDocumentId: r.current_document_id,
+    currentChunkCount: r.current_chunk_count,
+    currentEntityCount: r.current_entity_count ?? 0,
+    staleChunkCount: r.stale_chunk_count,
+    indexing: r.indexing,
+  };
 }
 
 // ── Kind ─────────────────────────────────────────────────────────────────────
@@ -166,29 +237,40 @@ export function captureClientLabel(
 
 // ── Stage ────────────────────────────────────────────────────────────────────
 
-export type SourceStage = "raw" | "cleaned" | "searchable" | "entities";
+export type SourceStage =
+  "not_searchable" | "indexing" | "searchable" | "entities" | "stale";
 
 export const SOURCE_STAGE_LABEL: Record<SourceStage, string> = {
-  raw: "Raw only",
-  cleaned: "Cleaned",
+  not_searchable: "Not yet searchable",
+  indexing: "Indexing…",
   searchable: "Searchable",
-  entities: "Entities",
+  entities: "Searchable · entities",
+  stale: "Index stale — re-index",
 };
 
 /**
- * The furthest stage this Source reached. `facts` is absent while the per-row
- * read is in flight or failed — the caller renders that as unknown, never as
- * "Raw only".
+ * Where the Source's CURRENT version stands for search. `facts` is absent
+ * while the per-row read is in flight or failed — the caller renders that as
+ * unknown, never as a stage.
+ *
+ *   indexing   — a job for the current version is open (it will replace any
+ *                old chunks when it finishes).
+ *   entities / searchable — the current version has chunks.
+ *   stale      — the current version has none, but an older version still
+ *                does: searches answer with text people no longer read.
+ *   not_searchable — nothing is indexed.
  */
 export function sourceStage(
-  row: Pick<SourceListRow, "clean_content_completed_at" | "canonical_clean_id">,
-  facts: Pick<SourceFacts, "chunkCount" | "entityCount">,
+  facts: Pick<
+    SourceFacts,
+    "currentChunkCount" | "currentEntityCount" | "staleChunkCount" | "indexing"
+  >,
 ): SourceStage {
-  if (facts.entityCount > 0) return "entities";
-  if (facts.chunkCount > 0) return "searchable";
-  if (row.clean_content_completed_at || row.canonical_clean_id)
-    return "cleaned";
-  return "raw";
+  if (facts.indexing) return "indexing";
+  if (facts.currentChunkCount > 0)
+    return facts.currentEntityCount > 0 ? "entities" : "searchable";
+  if (facts.staleChunkCount > 0) return "stale";
+  return "not_searchable";
 }
 
 // ── Saved ────────────────────────────────────────────────────────────────────

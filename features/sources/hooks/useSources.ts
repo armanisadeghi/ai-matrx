@@ -23,8 +23,9 @@ import { supabase } from "@/utils/supabase/client";
 import {
   SOURCE_LIST_COLUMNS,
   currentVersionsOnly,
-  type SourceAttachment,
+  sourceFactsFromRow,
   type SourceFacts,
+  type SourceFactsRow,
   type SourceListRow,
 } from "@/features/sources/sourceRows";
 
@@ -53,30 +54,6 @@ export interface UseSourcesResult {
 const FACTS_BATCH = 25;
 const FACTS_PARALLEL = 8;
 
-interface FactsRow {
-  processed_document_id: string;
-  chunk_count: number;
-  entity_count: number;
-  attachments: unknown;
-}
-
-function asAttachments(value: unknown): SourceAttachment[] {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((v): SourceAttachment[] => {
-    if (!v || typeof v !== "object") return [];
-    const r = v as Record<string, unknown>;
-    if (typeof r.target_type !== "string" || typeof r.target_id !== "string")
-      return [];
-    return [
-      {
-        target_type: r.target_type,
-        target_id: r.target_id,
-        label: typeof r.label === "string" ? r.label : null,
-      },
-    ];
-  });
-}
-
 export async function readSourceFacts(
   ids: string[],
   onBatch?: (partial: Map<string, SourceFacts>) => void,
@@ -99,12 +76,18 @@ export async function readSourceFacts(
           "The stage and attachments of these Sources could not be read.",
         );
       }
-      for (const r of (data ?? []) as FactsRow[]) {
-        out.set(r.processed_document_id, {
-          chunkCount: r.chunk_count ?? 0,
-          entityCount: r.entity_count ?? 0,
-          attachments: asAttachments(r.attachments),
-        });
+      for (const r of (data ?? []) as SourceFactsRow[]) {
+        const facts = sourceFactsFromRow(r);
+        if (!facts) {
+          // The server's facts lack the current-version columns: the stage
+          // would have to be guessed from the capture's own chunks, which is
+          // the "Searchable" lie for an edited Source. Say so instead.
+          failed = true;
+          throw new Error(
+            "The stage of these Sources could not be read: the server did not say which version is current.",
+          );
+        }
+        out.set(r.processed_document_id, facts);
       }
       onBatch?.(new Map(out));
     }

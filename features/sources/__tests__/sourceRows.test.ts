@@ -9,7 +9,10 @@ import {
   applySavedFilter,
   currentVersionsOnly,
   isSourceSaved,
+  sourceFactsFromRow,
   sourceStage,
+  SOURCE_STAGE_LABEL,
+  type SourceFacts,
   type SourceListRow,
 } from "@/features/sources/sourceRows";
 
@@ -72,11 +75,77 @@ describe("one row per Source", () => {
   });
 });
 
-describe("stage", () => {
-  it("is the furthest stage reached", () => {
-    expect(sourceStage(row({}), { chunkCount: 0, entityCount: 0 })).toBe("raw");
-    expect(sourceStage(row({ clean_content_completed_at: "x" }), { chunkCount: 0, entityCount: 0 })).toBe("cleaned");
-    expect(sourceStage(row({}), { chunkCount: 3, entityCount: 0 })).toBe("searchable");
-    expect(sourceStage(row({}), { chunkCount: 3, entityCount: 2 })).toBe("entities");
+function facts(over: Partial<SourceFacts>): SourceFacts {
+  return {
+    chunkCount: 0,
+    entityCount: 0,
+    attachments: [],
+    currentDocumentId: "id",
+    currentChunkCount: 0,
+    currentEntityCount: 0,
+    staleChunkCount: 0,
+    indexing: false,
+    ...over,
+  };
+}
+
+describe("stage — read from the version people read", () => {
+  it("an edit with no chunks is NOT searchable, even though the pre-edit capture has chunks", () => {
+    // Live 2026-09-26: 40494b3e… — capture 2 chunks, current edit 0.
+    const f = facts({
+      chunkCount: 2,
+      currentDocumentId: "edit",
+      currentChunkCount: 0,
+      staleChunkCount: 2,
+    });
+    expect(sourceStage(f)).toBe("stale");
+    expect(SOURCE_STAGE_LABEL[sourceStage(f)]).toBe("Index stale — re-index");
+  });
+
+  it("says Indexing… while the current version has a job open", () => {
+    expect(sourceStage(facts({ indexing: true, staleChunkCount: 2 }))).toBe("indexing");
+    expect(SOURCE_STAGE_LABEL.indexing).toBe("Indexing…");
+  });
+
+  it("is searchable only when the current version has chunks", () => {
+    expect(sourceStage(facts({ currentChunkCount: 3 }))).toBe("searchable");
+    expect(sourceStage(facts({ currentChunkCount: 3, currentEntityCount: 2 }))).toBe("entities");
+    expect(SOURCE_STAGE_LABEL.searchable).toBe("Searchable");
+  });
+
+  it("a Source with no chunks anywhere is not yet searchable", () => {
+    expect(sourceStage(facts({}))).toBe("not_searchable");
+    expect(SOURCE_STAGE_LABEL.not_searchable).toBe("Not yet searchable");
+  });
+});
+
+describe("reading the facts row", () => {
+  it("maps the current-version columns", () => {
+    expect(
+      sourceFactsFromRow({
+        processed_document_id: "h",
+        chunk_count: 2,
+        entity_count: 0,
+        attachments: [],
+        current_document_id: "e",
+        current_chunk_count: 0,
+        current_entity_count: 0,
+        stale_chunk_count: 2,
+        indexing: false,
+      }),
+    ).toEqual(
+      facts({ chunkCount: 2, currentDocumentId: "e", staleChunkCount: 2 }),
+    );
+  });
+
+  it("refuses a row without current-version facts rather than guessing a stage", () => {
+    expect(
+      sourceFactsFromRow({
+        processed_document_id: "h",
+        chunk_count: 2,
+        entity_count: 0,
+        attachments: [],
+      }),
+    ).toBeNull();
   });
 });

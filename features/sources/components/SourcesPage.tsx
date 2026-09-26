@@ -174,7 +174,8 @@ function toLibrarySummary(
   row: SourceListRow,
   facts: SourceFacts | undefined,
 ): LibraryDocSummary {
-  const chunks = facts?.chunkCount ?? 0;
+  // The version people read — an edit's own chunks, never the capture's.
+  const chunks = facts?.currentChunkCount ?? 0;
   return {
     id: row.id,
     name: row.name,
@@ -196,6 +197,62 @@ function toLibrarySummary(
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+/**
+ * The stage of the version people read. "Index stale" carries its remedy: one
+ * click indexes the current version (the old chunks are replaced when it
+ * finishes).
+ */
+function StageCell({
+  facts,
+  loading,
+  busy,
+  onReindex,
+}: {
+  facts: SourceFacts | undefined;
+  loading: boolean;
+  busy: boolean;
+  onReindex: () => void;
+}) {
+  if (!facts)
+    return (
+      <span className="text-xs text-muted-foreground">
+        {loading ? "Checking…" : "Unknown"}
+      </span>
+    );
+  const stage = sourceStage(facts);
+  if (stage !== "stale")
+    return (
+      <span
+        className={cn(
+          "text-xs",
+          stage === "not_searchable" && "text-muted-foreground",
+        )}
+      >
+        {SOURCE_STAGE_LABEL[stage]}
+      </span>
+    );
+  return (
+    <span className="flex items-center gap-1.5 text-xs text-warning">
+      <span title="Searches still answer with this Source's previous text; its current version is not indexed yet.">
+        Index stale
+      </span>
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-6 px-2 text-xs"
+        disabled={busy}
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          onReindex();
+        }}
+      >
+        Re-index
+      </Button>
+    </span>
+  );
 }
 
 function AttachedList({ attachments }: { attachments: SourceAttachment[] }) {
@@ -481,20 +538,29 @@ export function SourcesPage() {
       return landed.notices?.[0]?.message ?? null;
     });
 
-  const bulkProcess = (targets: SourceListRow[]) =>
-    runBulk("Processing", targets, async (row) => {
-      // Saving is the signal that starts processing; when the organization's
-      // policy still defers it, the person's "Process now" overrides.
-      const landed = await keepSource(row.id, {
-        organizationId: row.organization_id,
-      });
-      if (landed.intelligence === "queued") return "Processing has started.";
-      const processed = await processSourceNow(row.id, {
-        isFileExtract: isFileCanonicalExtract(row),
-      });
-      if (!processed.ok) throw new Error(processed.message);
-      return processed.message;
+  // Saving is the signal that starts processing (the server queues the
+  // Source's CURRENT version — a person's edit when there is one); when the
+  // organization's policy still defers it, the person's "Process now"
+  // overrides — on the current version too, never the pre-edit capture.
+  const processOne = async (row: SourceListRow) => {
+    const landed = await keepSource(row.id, {
+      organizationId: row.organization_id,
     });
+    if (landed.intelligence === "queued") return "Processing has started.";
+    const current = facts.get(row.id)?.currentDocumentId ?? row.id;
+    const processed = await processSourceNow(current, {
+      isFileExtract: current === row.id && isFileCanonicalExtract(row),
+    });
+    if (!processed.ok) throw new Error(processed.message);
+    return processed.message;
+  };
+
+  const bulkProcess = (targets: SourceListRow[]) =>
+    runBulk("Processing", targets, processOne);
+
+  /** "Index stale — re-index": index the version people read now. */
+  const reindex = (row: SourceListRow) =>
+    runBulk("Re-indexing", [row], processOne);
 
   const confirmDelete = async () => {
     if (!deleteRows) return;
@@ -615,13 +681,21 @@ export function SourcesPage() {
       accessorFn: (r) => {
         const f = facts.get(r.id);
         return f
-          ? SOURCE_STAGE_LABEL[sourceStage(r, f)]
+          ? SOURCE_STAGE_LABEL[sourceStage(f)]
           : factsLoading
             ? "Checking…"
             : "Unknown";
       },
+      cell: (r) => (
+        <StageCell
+          facts={facts.get(r.id)}
+          loading={factsLoading}
+          busy={bulkBusy}
+          onReindex={() => void reindex(r)}
+        />
+      ),
       filter: "select",
-      width: 110,
+      width: 170,
     },
     {
       id: "attached",
@@ -928,7 +1002,7 @@ export function SourcesPage() {
                   {f ? (
                     <>
                       <span>·</span>
-                      <span>{SOURCE_STAGE_LABEL[sourceStage(r, f)]}</span>
+                      <span>{SOURCE_STAGE_LABEL[sourceStage(f)]}</span>
                       {f.attachments.length ? (
                         <>
                           <span>·</span>
