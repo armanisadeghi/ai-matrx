@@ -42,9 +42,11 @@ Arman: an error must be copyable for AI with everything needed to act on it. One
 | Error toasts | `lib/toast.ts` decorator registered by `components/ui/sonner.tsx`; legacy `components/ui/toaster.tsx` destructive toasts | automatic; a caller's own action is never displaced |
 
 - **Payload** — `error-alchemy.ts` `buildErrorAlchemyPayload`: the sentence shown, code/status/name/details/hint/stack, operation, records, unsaved input, and the surface with its DECLARED values (`useErrorSurfaceSnapshot.ts`: nearest `AlchemySurfaceBridge`, else the active page surface; secret/non-exportable values never leave; an unregistered page says so). Variant "Error with fix request" wraps it in an instruction.
-- **Guard** — `__tests__/error-renders-carry-alchemy.test.ts`: shrink-only census (`error-render-census.baseline.json`) of hand-drawn `role="alert"` boxes and "Something went wrong" sentences. A new one fails; a fixed one must lower its entry. Move a render onto `ErrorNotice` (`size="inline"` for `<p role="alert" className="text-destructive">`).
+- **Guard** — `__tests__/error-renders-carry-alchemy.test.ts`: shrink-only census (`error-render-census.baseline.json`) of hand-drawn `role="alert"` boxes and "Something went wrong" sentences. A new one fails; a fixed one must lower its entry. Move a render onto `ErrorNotice` (`size="inline"` for `<p role="alert" className="text-destructive">`), or put `<ErrorAlchemyMenu />` (no props needed) inside the existing box. The baseline is empty and stays empty.
 
 ## Change Log
+
+- 2026-09-26 — RC-B12 census at zero: `ErrorAlchemyMenu` with no `input` reads the words of the `role="alert"` box it sits in, and every bespoke error box in `app/ components/ features/ lib/` carries it (108 files by insertion + public error pages by hand). The guard now ignores comments, warning-styled notices and fallback strings, and counts renders beyond the file's menu carriers. NOT covered: error boxes rendered inside `@ai-matrx/*` packages (design-system data table, org picker, associations) — they need the menu in the package.
 
 - 2026-09-25 — RC-B12: the Alchemy Menu on every error render (table above); six bespoke core `error.tsx` delegate to `ErrorBoundaryView`; 75 files of one-line field errors moved onto `ErrorNotice size="inline"`; census 297 → 183 renders, guarded shrink-only.
 
