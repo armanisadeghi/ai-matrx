@@ -20,7 +20,6 @@ export function renderPackageErrorActions(facts: ErrorActionsInput) {
   if (facts.message) {
     return (
       <ErrorAlchemyMenu
-        className="ml-auto"
         input={{
           message: facts.message,
           ...(facts.title ? { title: facts.title } : {}),
@@ -36,7 +35,6 @@ export function renderPackageErrorActions(facts: ErrorActionsInput) {
   }
   return (
     <ErrorAlchemyMenu
-      className="ml-auto"
       {...(facts.operation ? { operation: facts.operation } : {})}
       {...(facts.records ? { records: facts.records } : {})}
       {...(facts.unsavedInput !== undefined ? { unsavedInput: facts.unsavedInput } : {})}

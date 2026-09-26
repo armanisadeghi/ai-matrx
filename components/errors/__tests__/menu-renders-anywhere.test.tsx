@@ -22,3 +22,19 @@ it("renders with no provider above it", async () => {
   expect(host.querySelector("[data-error-alchemy-menu] button")).not.toBeNull();
   await act(async () => root.unmount());
 });
+
+it("takes one line-height of width in the text flow, not its 32px tap target (never wraps a line that just fits)", async () => {
+  // Measured 2026-09-26: the organization picker's "Could not load
+  // organizations." is 170px in a 202px line; a 32px-wide menu filled it to
+  // the pixel and wrapped, growing the box from 32px to 48px.
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const root = createRoot(host);
+  await act(async () => {
+    root.render(<p>Could not load organizations.<ErrorAlchemyMenu input={{ message: "Could not load organizations." }} /></p>);
+  });
+  const menu = host.querySelector("[data-error-alchemy-menu]")!;
+  const cls = menu.className.split(/\s+/);
+  expect(cls).toEqual(expect.arrayContaining(["w-[1lh]", "h-[1lh]", "justify-center", "overflow-visible"]));
+  await act(async () => root.unmount());
+});

@@ -145,10 +145,11 @@ export function ErrorAlchemyMenu({
       data-error-alchemy-menu=""
       data-placement={placement.target ? "moved" : placement.truncated ? "truncated" : "inline"}
       className={cn(
-        // The menu rides the error's own line: one line tall (its buttons
-        // overflow it, centred), so it never grows the line or the box.
-        "inline-flex h-[1lh] shrink-0 items-center overflow-visible align-top",
-        placement.target && "ml-1",
+        // The menu rides the error's own line: one line tall AND one line
+        // wide (its 32px tap target overflows it, centred), so it never grows
+        // the line or the box — nor wraps a line the sentence just fits
+        // (the organization picker grew 32→48px at 1400px, RC-B12 layout).
+        "ml-1 inline-flex h-[1lh] w-[1lh] shrink-0 items-center justify-center overflow-visible align-top",
         // A truncating line hides anything in its text flow behind the "…",
         // so there the menu leaves the flow and holds the line's right end.
         placement.truncated && "absolute right-0 top-0 pl-1",
