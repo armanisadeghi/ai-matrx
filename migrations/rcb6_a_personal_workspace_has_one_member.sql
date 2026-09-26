@@ -1,3 +1,4 @@
+-- chair-step: revokes client EXECUTE on the new trigger function only (it is never a client door); adds a membership guard trigger on iam.memberships (SHARE ROW EXCLUSIVE, 86 ms on the clone)
 -- lane: RC-B6
 -- lock: iam
 --
