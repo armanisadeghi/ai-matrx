@@ -173,6 +173,7 @@ const client = {
     return ok(table ? JSON.parse(JSON.stringify(store.options.get(table) ?? [])) : []);
   }),
   list: jest.fn(async () => ok({ rows: [] })),
+  tableCapacity: jest.fn(async () => ok({ records: 0, visible: 0 })),
   tableDecorations: jest.fn(async () => ok({ rules: [] })),
   rowActions: jest.fn(async () => ok({ actions: [] })),
   views: jest.fn(async () => ok([])),
