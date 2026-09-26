@@ -9,7 +9,7 @@
  */
 
 import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";
-import { rowCells } from "@/components/rich-editor/core/table-source";
+import { dataRowIndexes, rowCells } from "@/components/rich-editor/core/table-source";
 import { isGfmDelimiterRow } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 export interface ParsedTable {
@@ -54,8 +54,8 @@ export function parseMarkdownTable(content: string): ParsedTable | null {
     // Every row GFM shows is kept — an all-empty row is a row, not noise (a
     // hidden row is a screen that lies). Only a trailing line with no cells at
     // all (a lone `|` still arriving) waits.
-    const rows = lines.slice(2).map(parseRow);
-    const validRows = rows.length && rows[rows.length - 1]!.length === 0 ? rows.slice(0, -1) : rows;
+    const dataLines = lines.slice(2);
+    const validRows = dataRowIndexes(dataLines, dataLines.map((_line, index) => index)).map((index) => parseRow(dataLines[index] ?? ""));
 
     const normalizedData = validRows.map((row) => {
       const rowData: { [key: string]: string } = {};

@@ -262,6 +262,19 @@ function rewriteLine(line: string, texts: readonly string[], lead: boolean, trai
  * A row added or removed changes only its own line; a column added or
  * removed rewrites the rows (and the delimiter row) it touches.
  */
+/**
+ * Which of a table's data lines are ROWS — THE rule the parser (parseMarkdownTable)
+ * and the writer share, so they can never disagree about row count: every
+ * non-blank line after the delimiter is a row (an all-empty `| | |` included, as
+ * GFM shows it); only a trailing line with no cells at all (a lone `|` still
+ * arriving) is not.
+ */
+export function dataRowIndexes(lines: readonly string[], candidates: readonly number[]): number[] {
+  const last = candidates[candidates.length - 1];
+  if (last !== undefined && rowCells(lines[last] ?? "").length === 0) return candidates.slice(0, -1);
+  return [...candidates];
+}
+
 export function rewriteTableSource(original: string, grid: TableGrid): string {
   const lines = original.split("\n");
   const used = lines.map((line, index) => (line.trim() ? index : -1)).filter((index) => index >= 0);
@@ -281,8 +294,9 @@ export function rewriteTableSource(original: string, grid: TableGrid): string {
     out[delimAt] = freshRow(grid.headers.map(() => "---"), lead, trail);
   }
 
-  // Data rows exactly as the ONE parser keeps them (a row of only empty cells is skipped).
-  const dataAt = used.slice(2).filter((index) => rowCells(lines[index] ?? "").some((cell) => cell !== ""));
+  // Data rows exactly as the ONE parser keeps them (dataRowIndexes — shared with
+  // parseMarkdownTable): every row GFM shows, an all-empty row included.
+  const dataAt = dataRowIndexes(lines, used.slice(2));
   if (grid.rows.length === dataAt.length) {
     grid.rows.forEach((row, i) => {
       const at = dataAt[i] as number;

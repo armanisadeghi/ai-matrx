@@ -239,3 +239,14 @@ describe("a line break inside a table cell", () => {
     expect(parseMarkdownTable(written)!.rows[0]).toEqual(["B3", "Re-scan<br>before 6am"]);
   });
 });
+
+// ── the parser and the writer agree on which lines are rows (corpus after R6) ──
+describe("an all-empty row is a row for the parser AND the writer", () => {
+  it.each([
+    "| Unit | Hours |\n| --- | --- |\n| | |\n| Instructional | 40 |",
+    "| A | B | C |\n|---|---|---|\n| 1 | 2 | 3 |\n| | | |\n| 4 | 5 | 6 |",
+  ])("a no-op edit returns the stored bytes: %j", (stored) => {
+    const grid = parseMarkdownTable(stored)!;
+    expect(rewriteTableSource(stored, grid)).toBe(stored);
+  });
+});
