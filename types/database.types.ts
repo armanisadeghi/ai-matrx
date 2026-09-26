@@ -19493,6 +19493,7 @@ export type Database = {
         Args: { p_archive: string; p_organization_id: string; p_scope: string }
         Returns: boolean
       }
+      _write_came_through: { Args: { p_doors: string[] }; Returns: boolean }
       annotation_create: {
         Args: {
           p_anchor?: Json
@@ -19538,6 +19539,15 @@ export type Database = {
           word_count: number
         }[]
       }
+      document_origin: {
+        Args: { p_document_id: string }
+        Returns: {
+          organization_id: string
+          organization_name: string
+          owner_id: string
+          owner_name: string
+        }[]
+      }
       document_search_vector: {
         Args: { p_body: string; p_summary: string; p_title: string }
         Returns: unknown
@@ -19545,6 +19555,10 @@ export type Database = {
       find_document: {
         Args: { p_key: string; p_organization_id: string; p_type_slug: string }
         Returns: string
+      }
+      is_publicly_readable: {
+        Args: { d: Database["content"]["Tables"]["document"]["Row"] }
+        Returns: boolean
       }
       local_sync_changes: {
         Args: { p_limit?: number; p_since?: string }
@@ -19605,6 +19619,9 @@ export type Database = {
           headline: string
           id: string
           organization_id: string
+          organization_name: string
+          owner_id: string
+          owner_name: string
           preview: string
           rank: number
           summary: string
@@ -72139,6 +72156,7 @@ export type Database = {
           max_level: Database["public"]["Enums"]["permission_level"]
         }[]
       }
+      detail_parent_columns: { Args: { p_token: string }; Returns: string[] }
       doctrine_shape_vocabulary: {
         Args: never
         Returns: {
@@ -73325,6 +73343,7 @@ export type Database = {
         Args: { p: Json; p_target_id: string; p_target_type: string }
         Returns: string
       }
+      token_is_detail: { Args: { p_token: string }; Returns: boolean }
       undeclared_carrying_cycles: {
         Args: never
         Returns: {
