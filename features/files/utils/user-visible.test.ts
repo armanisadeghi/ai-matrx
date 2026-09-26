@@ -113,6 +113,21 @@ describe("Recents — mirror of files.is_recent_activity", () => {
     ])
       expect(isRecentActivityFile({ ...person, filePath })).toBe(false);
   });
+  it("never admits a file a service carried for an organization — browsable, not recent", () => {
+    const org = "3e790542-fdaf-40b2-8bf3-658bf94fe67f";
+    for (const filePath of [
+      `page-captures-${org}/scrape_parsed_page/ai-google-dev/bd1b60a0.json.gz`,
+      `seo-data-${org}/provider-gsc/74d39496-payload.json`,
+      `/web-crawls-${org}/site/sessions/a.md`,
+      `record-store-${org}/whole-values/v.json`,
+    ]) {
+      expect(isUserVisibleFilePath(filePath)).toBe(true);
+      expect(isRecentActivityPath(filePath)).toBe(false);
+    }
+    // Only the exact <root>-<uuid> segment: a person's own folder of that name is theirs.
+    expect(isRecentActivityPath("page-captures/notes.md")).toBe(true);
+    expect(isRecentActivityPath(`My Files/page-captures-${org}/x.md`)).toBe(true);
+  });
   it("matches whole segments, not prefixes", () => {
     expect(isRecentActivityPath("Images/GeneratedX/cat.png")).toBe(true);
     expect(isRecentActivityPath("FastFire/decks/d.json")).toBe(true);

@@ -25715,6 +25715,7 @@ export type Database = {
           canonical_clean_id: string | null
           canonical_identity: string | null
           capture_method: string | null
+          captured_at: string
           clean_content: string | null
           clean_content_completed_at: string | null
           clean_content_cost_usd: number | null
@@ -25763,6 +25764,7 @@ export type Database = {
           canonical_clean_id?: string | null
           canonical_identity?: string | null
           capture_method?: string | null
+          captured_at?: string
           clean_content?: string | null
           clean_content_completed_at?: string | null
           clean_content_cost_usd?: number | null
@@ -25811,6 +25813,7 @@ export type Database = {
           canonical_clean_id?: string | null
           canonical_identity?: string | null
           capture_method?: string | null
+          captured_at?: string
           clean_content?: string | null
           clean_content_completed_at?: string | null
           clean_content_cost_usd?: number | null
@@ -25875,6 +25878,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _source_captured_at_of: {
+        Args: {
+          p_created_at: string
+          p_intelligence_policy: string
+          p_metadata: Json
+          p_source_id: string
+          p_source_kind: string
+        }
+        Returns: string
+      }
       _source_facts_may_read: { Args: { p_doc: string }; Returns: boolean }
       _source_facts_may_read_any: {
         Args: { p_id: string; p_type: string }
@@ -25883,6 +25896,10 @@ export type Database = {
       recompute_canonical_for_file: {
         Args: { p_file_id: string }
         Returns: undefined
+      }
+      source_captured_at: {
+        Args: { p: Database["docproc"]["Tables"]["processed_documents"]["Row"] }
+        Returns: string
       }
       source_list_facts: {
         Args: { p_ids: string[] }
@@ -70748,6 +70765,125 @@ export type Database = {
         }
         Relationships: []
       }
+      secure_delivery: {
+        Row: {
+          actor_token_id: string | null
+          close_reason: string | null
+          closed_at: string | null
+          code_channel: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          expires_at: string
+          field_keys: string[]
+          id: string
+          link_channel: string
+          metadata: Json
+          note: string | null
+          organization_id: string
+          payload_ciphertext: string | null
+          recipient_email: string | null
+          recipient_name: string | null
+          recipient_phone: string | null
+          resource_id: string
+          resource_label: string
+          resource_type: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          viewed_at: string | null
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          actor_token_id?: string | null
+          close_reason?: string | null
+          closed_at?: string | null
+          code_channel: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at: string
+          field_keys?: string[]
+          id?: string
+          link_channel: string
+          metadata?: Json
+          note?: string | null
+          organization_id: string
+          payload_ciphertext?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          resource_id: string
+          resource_label: string
+          resource_type: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          viewed_at?: string | null
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          actor_token_id?: string | null
+          close_reason?: string | null
+          closed_at?: string | null
+          code_channel?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at?: string
+          field_keys?: string[]
+          id?: string
+          link_channel?: string
+          metadata?: Json
+          note?: string | null
+          organization_id?: string
+          payload_ciphertext?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          resource_id?: string
+          resource_label?: string
+          resource_type?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          viewed_at?: string | null
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "secure_delivery_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "secure_delivery_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "secure_delivery_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "secure_delivery_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       share_links: {
         Row: {
           created_at: string
@@ -72197,6 +72333,17 @@ export type Database = {
       _report_undeclared_confirmation_write: {
         Args: { p_org: string; p_relid: unknown; p_user: string }
         Returns: undefined
+      }
+      _secure_delivery_by_secret: {
+        Args: { p_secret: string }
+        Returns: {
+          delivery: Database["platform"]["Tables"]["secure_delivery"]["Row"]
+          token: Database["platform"]["Tables"]["actor_token"]["Row"]
+        }[]
+      }
+      _secure_delivery_mask: {
+        Args: { p_channel: string; p_target: string }
+        Returns: string
       }
       _set_table_strict_class: {
         Args: {
@@ -74097,6 +74244,55 @@ export type Database = {
       }
       schema_is_client_exposed: { Args: { p_schema: string }; Returns: boolean }
       schema_is_doors_only: { Args: { p_schema: string }; Returns: boolean }
+      secure_delivery_close: {
+        Args: {
+          p_actor?: string
+          p_delivery_id: string
+          p_reason: string
+          p_status: string
+        }
+        Returns: Json
+      }
+      secure_delivery_create: {
+        Args: {
+          p_code_channel: string
+          p_expires_at: string
+          p_field_keys: string[]
+          p_link_channel: string
+          p_note: string
+          p_organization_id: string
+          p_payload_ciphertext: string
+          p_recipient_email: string
+          p_recipient_name: string
+          p_recipient_phone: string
+          p_resource_id: string
+          p_resource_label: string
+          p_resource_type: string
+          p_sender: string
+        }
+        Returns: Json
+      }
+      secure_delivery_due: { Args: { p_limit?: number }; Returns: string[] }
+      secure_delivery_issue_code: {
+        Args: { p_max_per_hour: number; p_secret: string }
+        Returns: Json
+      }
+      secure_delivery_open: {
+        Args: { p_ip?: unknown; p_secret: string }
+        Returns: Json
+      }
+      secure_delivery_phone_reachable: {
+        Args: { p_phone: string }
+        Returns: Json
+      }
+      secure_delivery_record_snapshot: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: Json
+      }
+      secure_delivery_verify_and_consume: {
+        Args: { p_code: string; p_ip?: unknown; p_secret: string }
+        Returns: Json
+      }
       set_org_change_policy: {
         Args: {
           p_change_type_key: string

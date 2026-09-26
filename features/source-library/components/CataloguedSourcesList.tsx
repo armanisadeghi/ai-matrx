@@ -27,6 +27,7 @@ import {
     captureWords,
     listedSource,
     sourceKindGroup,
+    sourceListedAt,
     type SourceListRow,
 } from "@/features/sources/sourceRows";
 import { CATALOGUED_SOURCE_LABEL, cataloguedSourceIds } from "../catalog/cataloguedSources";
@@ -139,13 +140,13 @@ export function CataloguedSourcesList({
         {
             id: "created_at",
             header: "When",
-            accessorFn: (r) => r.created_at,
+            accessorFn: (r) => sourceListedAt(r),
             cell: (r) => (
                 <span
-                    title={new Date(r.created_at).toLocaleString()}
+                    title={new Date(sourceListedAt(r)).toLocaleString()}
                     className="text-muted-foreground"
                 >
-                    {formatRelativeTime(r.created_at)}
+                    {formatRelativeTime(sourceListedAt(r))}
                 </span>
             ),
             filter: "date",

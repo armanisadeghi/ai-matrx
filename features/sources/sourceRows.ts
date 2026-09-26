@@ -27,13 +27,52 @@ export const SOURCE_LIST_COLUMNS = [
   "derivation_kind",
   "parent_processed_id",
   "kept_at",
+  "intelligence_policy",
   "total_pages",
   "organization_id",
   "created_by",
   "visibility",
   "created_at",
   "updated_at",
+  // When the Source entered the person's world — see SOURCE_LIST_ORDER_COLUMN.
+  "captured_at",
 ].join(",");
+
+/**
+ * THE order of every Source list: newest by the time the Source entered the
+ * person's world (`captured_at`, stamped once when the row lands — the
+ * recorded capture time, which a backfill carries over from the original
+ * capture, or a backfilled file's upload time), never by the row's birth. On 2026-09-26 the SOURCE-CONVERGENCE backfills landed ~12,000
+ * months-old captures, research pages and files with created_at = that day;
+ * ordered by created_at they filled the first 100 Saved rows 100/100 and hid
+ * everything the person had actually done. `id` makes it a total order.
+ */
+export const SOURCE_LIST_ORDER_COLUMN = "captured_at";
+
+/**
+ * A Source the platform materialized in the background — the backfills stamp
+ * `intelligence_policy = 'materialize_only'`, and nothing a person does lands
+ * one. It is never "an upload", whatever its kind: the files backfill turned
+ * 3,366 of one owner's files (3,324 of them crawler output under
+ * `system-files/`) into `cld_file` Sources. As a PostgREST `or` value: rows
+ * that are NOT background-materialized.
+ */
+export const BACKGROUND_MATERIALIZED_POLICY = "materialize_only";
+export const NOT_BACKGROUND_MATERIALIZED_OR =
+  `intelligence_policy.is.null,intelligence_policy.neq.${BACKGROUND_MATERIALIZED_POLICY}`;
+
+export function isBackgroundMaterialized(
+  row: Pick<SourceListRow, "intelligence_policy">,
+): boolean {
+  return row.intelligence_policy === BACKGROUND_MATERIALIZED_POLICY;
+}
+
+/** The time a Source list shows and sorts by (falls back to created_at). */
+export function sourceListedAt(
+  row: Pick<SourceListRow, "captured_at" | "created_at">,
+): string {
+  return row.captured_at ?? row.created_at;
+}
 
 export interface SourceListRow {
   id: string;
@@ -47,12 +86,16 @@ export interface SourceListRow {
   derivation_kind: string;
   parent_processed_id: string | null;
   kept_at: string | null;
+  /** `materialize_only` = landed in the background by a backfill. */
+  intelligence_policy?: string | null;
   total_pages: number | null;
   organization_id: string;
   created_by: string;
   visibility: string;
   created_at: string;
   updated_at: string;
+  /** When the Source entered the person's world — see SOURCE_LIST_ORDER_COLUMN. */
+  captured_at?: string | null;
 }
 
 /**
@@ -391,12 +434,18 @@ export function stageCellState(
  * someone deliberately uploaded before Save existed: an upload IS a save —
  * nobody uploads a PDF by accident — and hiding 300 uploaded files behind a
  * default "Saved" filter would read as "my files are gone". Captures (web
- * pages, agent fetches) are Saved only when someone said so.
+ * pages, agent fetches) are Saved only when someone said so. A Source the
+ * platform materialized in the background is never "an upload" — only a
+ * Save (`kept_at`) makes it Saved.
  */
 export function isSourceSaved(
-  row: Pick<SourceListRow, "kept_at" | "source_kind" | "origin_client">,
+  row: Pick<
+    SourceListRow,
+    "kept_at" | "source_kind" | "origin_client" | "intelligence_policy"
+  >,
 ): boolean {
   if (row.kept_at) return true;
+  if (isBackgroundMaterialized(row)) return false;
   const group = sourceKindGroup(row.source_kind);
   if (
     group === "file" &&
@@ -413,7 +462,10 @@ export type SavedFilter = "saved" | "all";
 export const DEFAULT_SAVED_FILTER: SavedFilter = "saved";
 
 export function applySavedFilter<
-  T extends Pick<SourceListRow, "kept_at" | "source_kind" | "origin_client">,
+  T extends Pick<
+    SourceListRow,
+    "kept_at" | "source_kind" | "origin_client" | "intelligence_policy"
+  >,
 >(rows: readonly T[], filter: SavedFilter): T[] {
   return filter === "all" ? [...rows] : rows.filter(isSourceSaved);
 }
@@ -468,12 +520,12 @@ export const SOURCES_PAGE_SIZE = 100;
 /**
  * `isSourceSaved` as a PostgREST `or` filter — the two must mean the same:
  * saved by a person, an upload (no origin recorded, or `upload`), or pasted
- * text from before Save existed.
+ * text from before Save existed — the last two never background-materialized.
  */
 export const SAVED_FILTER_OR =
   "kept_at.not.is.null," +
-  "and(source_kind.in.(cld_file,legacy,code_file),or(origin_client.is.null,origin_client.eq.upload))," +
-  "and(source_kind.eq.inline,origin_client.is.null)";
+  `and(source_kind.in.(cld_file,legacy,code_file),or(origin_client.is.null,origin_client.eq.upload),or(${NOT_BACKGROUND_MATERIALIZED_OR})),` +
+  `and(source_kind.eq.inline,origin_client.is.null,or(${NOT_BACKGROUND_MATERIALIZED_OR}))`;
 
 /** Name-or-address search as a PostgREST `or` filter; `null` for a blank search. */
 export function searchFilterOr(search: string): string | null {

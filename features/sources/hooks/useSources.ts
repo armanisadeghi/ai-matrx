@@ -25,6 +25,7 @@ import {
   SOURCE_LIST_COLUMNS,
   appendSourcePage,
   applySourcesScope,
+  SOURCE_LIST_ORDER_COLUMN,
   sourcesListFilter,
   listedSource,
   sourceFactsFromRow,
@@ -189,7 +190,7 @@ export function useSources(
         .or(sourcesListFilter({ saved: options.saved, search: options.search }));
       q = applySourcesScope(q, scope, userId);
       const { data, error, count } = await q
-        .order("created_at", { ascending: false })
+        .order(SOURCE_LIST_ORDER_COLUMN, { ascending: false })
         .order("id", { ascending: true })
         .range(offset, offset + SOURCES_PAGE_SIZE - 1);
       if (error) throw new Error(error.message);

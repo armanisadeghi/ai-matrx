@@ -125,6 +125,7 @@ import {
   isFileCanonicalExtract,
   isSourceSaved,
   sourceKindGroup,
+  sourceListedAt,
   sourceStage,
   stageCellState,
   STAGE_CELL_LABEL,
@@ -715,13 +716,13 @@ export function SourcesPage() {
     {
       id: "created_at",
       header: "When",
-      accessorFn: (r) => r.created_at,
+      accessorFn: (r) => sourceListedAt(r),
       cell: (r) => (
         <span
-          title={new Date(r.created_at).toLocaleString()}
+          title={new Date(sourceListedAt(r)).toLocaleString()}
           className="text-muted-foreground"
         >
-          {formatRelativeTime(r.created_at)}
+          {formatRelativeTime(sourceListedAt(r))}
         </span>
       ),
       filter: "date",
@@ -1073,7 +1074,7 @@ export function SourcesPage() {
                   <span>·</span>
                   <span>{captureWords(r)}</span>
                   <span>·</span>
-                  <span>{formatRelativeTime(r.created_at)}</span>
+                  <span>{formatRelativeTime(sourceListedAt(r))}</span>
                   <span>·</span>
                   <span
                     className={cn(

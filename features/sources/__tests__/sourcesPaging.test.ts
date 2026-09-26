@@ -8,6 +8,9 @@
 import {
   SOURCES_PAGE_SIZE,
   SAVED_FILTER_OR,
+  SOURCE_LIST_COLUMNS,
+  SOURCE_LIST_ORDER_COLUMN,
+  sourceListedAt,
   appendSourcePage,
   isSourceSaved,
   searchFilterOr,
@@ -36,6 +39,25 @@ describe("paged Sources read", () => {
     expect(SAVED_FILTER_OR).toMatch(/origin_client\.eq\.upload/);
     expect(SAVED_FILTER_OR).toMatch(/source_kind\.eq\.inline/);
     expect(isSourceSaved(row({ source_kind: "cld_file", origin_client: null }))).toBe(true);
+  });
+
+  it("a Source the platform materialized in the background is never 'an upload' (2026-09-26 files backfill)", () => {
+    // 3,366 of one owner's files became cld_file Sources with no origin — 3,324 of them crawler
+    // output — and the upload clause admitted every one into the default Saved view.
+    const backfilled = row({ source_kind: "cld_file", origin_client: null, intelligence_policy: "materialize_only" });
+    expect(isSourceSaved(backfilled)).toBe(false);
+    expect(isSourceSaved(row({ source_kind: "inline", origin_client: null, intelligence_policy: "materialize_only" }))).toBe(false);
+    // A Save still counts, whatever landed it.
+    expect(isSourceSaved({ ...backfilled, kept_at: "2026-09-26T00:00:00Z" })).toBe(true);
+    // The server's filter says the same: both no-origin clauses exclude the background policy.
+    expect(SAVED_FILTER_OR.match(/intelligence_policy\.neq\.materialize_only/g)).toHaveLength(2);
+  });
+
+  it("the list orders and shows by when the Source entered the person's world", () => {
+    expect(SOURCE_LIST_COLUMNS.split(",")).toContain("captured_at");
+    expect(SOURCE_LIST_ORDER_COLUMN).toBe("captured_at");
+    expect(sourceListedAt(row({ captured_at: "2026-03-02T23:48:06Z" }))).toBe("2026-03-02T23:48:06Z");
+    expect(sourceListedAt(row({ captured_at: null }))).toBe("2026-09-26T00:00:00Z");
   });
 
   it("search matches the name or the address, and PostgREST-special characters cannot break the filter", () => {

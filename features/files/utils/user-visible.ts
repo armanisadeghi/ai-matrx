@@ -12,7 +12,8 @@
  *   files.is_user_visible_folder_path(text) — folders (system + machine namespaces)
  *   files.is_recent_activity(files.files)   — RECENTS: visible, not device-written
  *                                             (origin_device_id), not machine output under
- *                                             the person's roots
+ *                                             the person's roots, not carried for an
+ *                                             organization (`page-captures-<org>/…`)
  *
  * Declared once in aidream packages/matrx-files/matrx_files/user_visible.py. The
  * rule and how a machine writer registers: common-docs
@@ -62,6 +63,25 @@ const RECENT_EXCLUDED_ROOTS = [
   "FastFire/sessions",
   "FastFire/responses",
 ] as const;
+
+/**
+ * Mirror of `CARRIED_ROOTS` / `CARRIED_ROOT_SEGMENT_PATTERN` — the roots a
+ * service writes into when it carries a file FOR an organization
+ * (`<root>-<organization uuid>/…`). Browsable in the tree; never Recents.
+ */
+const CARRIED_ROOTS = [
+  "record-store",
+  "web-crawls",
+  "seo-data",
+  "login-captures",
+  "payroll-exports",
+  "timesheet-reports",
+  "hr-letters",
+  "page-captures",
+] as const;
+const CARRIED_ROOT_SEGMENT = new RegExp(
+  `^(${CARRIED_ROOTS.join("|")})-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`,
+);
 
 /** `ltrim(p,'/')` — the database's own leading-slash shape. */
 function stripLeadingSlashes(path: string): string {
@@ -141,6 +161,7 @@ export function isRecentActivityPath(
 ): boolean {
   if (!isUserVisibleFilePath(path)) return false;
   const trimmed = stripLeadingSlashes(path as string);
+  if (CARRIED_ROOT_SEGMENT.test(firstSegment(trimmed))) return false;
   return !RECENT_EXCLUDED_ROOTS.some(
     (root) => trimmed === root || trimmed.startsWith(`${root}/`),
   );

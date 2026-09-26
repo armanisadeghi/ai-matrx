@@ -19,6 +19,7 @@ import { filesDb } from "@/features/files/filesDb";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { operationFailed } from "@/utils/errors";
+import { NOT_BACKGROUND_MATERIALIZED_OR } from "@/features/sources/sourceRows";
 
 export interface StudioDocSummary {
   id: string;
@@ -159,9 +160,7 @@ export function usePdfStudioDocs(opts?: {
           // not something this person extracted: 8,200 of them — crawled
           // pages, markdown, HTML — pushed every real PDF past `pageSize`
           // and out of this list. PDFs stay whatever made them.
-          .or(
-            "intelligence_policy.is.null,intelligence_policy.neq.materialize_only,mime_type.eq.application/pdf",
-          )
+          .or(`${NOT_BACKGROUND_MATERIALIZED_OR},mime_type.eq.application/pdf`)
           .order("created_at", { ascending: false })
           .limit(pageSize);
         if (err) throw err;
