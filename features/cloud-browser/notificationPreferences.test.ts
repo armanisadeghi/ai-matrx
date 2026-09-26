@@ -30,7 +30,16 @@ function table(name: string) {
     maybeSingle: async () => ({ data: row, error: null }),
     update: (values: Record<string, unknown>) => {
       state.writes.push({ table: name, values });
-      return { eq: async () => ({ error: null }) };
+      // The service proves a single-record write landed (writeOne): the update
+      // ends in `.select("id")` and must hand back the row it matched.
+      return {
+        eq: (_column: string, id: unknown) => ({
+          select: async () => ({
+            data: row && row.id === id ? [{ id }] : [],
+            error: null,
+          }),
+        }),
+      };
     },
     insert: async (values: Record<string, unknown>) => {
       state.writes.push({ table: name, values });
