@@ -23,6 +23,9 @@ export type LucideIconName = string;
 
 export type ToolsCategory = string;
 
+/** One declared home: a route prefix, or one exact page. */
+export type UnbiddenHomeRoute = string | { route: string; exact: true };
+
 export interface WindowPreservationConfig {
   /** Allowlisted semantic keys; geometry/chrome are handled by the platform. */
   dataKeys: readonly string[];
@@ -141,8 +144,12 @@ export interface WindowStaticMetadata {
   /**
    * WHERE THIS WINDOW MAY OPEN ITSELF WITH NOBODY HAVING CLICKED ANYTHING.
    *
-   * Route prefixes — `/administration` covers `/administration/spend`. A
-   * window that omits this may NOT raise itself on any route (default deny);
+   * Route prefixes — `/administration/spend` covers `/administration/spend/x`.
+   * `{ route, exact: true }` matches that one page only, never its children:
+   * a landing page is a place to look at the platform, the working tables
+   * under it are not (the spend window opened over the mandate list,
+   * 2026-09-26). A window that omits this may NOT raise itself on any route
+   * (default deny);
    * `mayRaiseUnbidden` warns when an automatic raiser asks for one that
    * declared no home.
    *
@@ -153,7 +160,7 @@ export interface WindowStaticMetadata {
    * home is the dashboard and administration surfaces — not wherever the
    * viewer happened to be when the app booted.
    */
-  unbiddenHome?: readonly string[];
+  unbiddenHome?: readonly UnbiddenHomeRoute[];
   /**
    * Optional seed data builder invoked when opening this overlay from the
    * Tools grid (or other generic entry points). Runs client-side at click

@@ -1754,7 +1754,13 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     // super admin is already looking at how the platform is doing; a drop
     // zone, a chat, or a document is not. Away from home it DEFERS — the
     // "shown today" record is untouched and it raises on the next visit here.
-    unbiddenHome: ["/dashboard", "/administration"],
+    // The administration LANDING page only — never the working tables under
+    // it (2026-09-26: it opened over the middle of the mandate list).
+    unbiddenHome: [
+      "/dashboard",
+      { route: "/administration", exact: true },
+      "/administration/spend",
+    ],
   },
 
   // ── Details (one structured value, through the canonical renderer) ────────

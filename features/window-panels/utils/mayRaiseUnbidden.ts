@@ -28,6 +28,7 @@
 // Doc: features/window-panels/FEATURE.md
 
 import { getStaticEntryByOverlayId } from "../registry/windowRegistryMetadata";
+import type { UnbiddenHomeRoute } from "../registry/windowRegistryTypes";
 
 export type UnbiddenRefusalCode =
   /** The registry entry declares no `unbiddenHome` (or there is no entry). */
@@ -42,7 +43,7 @@ export interface UnbiddenRaiseVerdict {
   reason: string;
   /** Set only when `allowed` is false. */
   code?: UnbiddenRefusalCode;
-  /** The routes this window declared as home, for diagnostics. */
+  /** The routes this window declared as home, for diagnostics (exact ones end in " (exact)"). */
   home: readonly string[];
 }
 
@@ -55,6 +56,10 @@ export function isUnderRoute(pathname: string, route: string): boolean {
   if (pathname === route) return true;
   const base = route.endsWith("/") ? route.slice(0, -1) : route;
   return pathname === base || pathname.startsWith(`${base}/`);
+}
+
+function describeHome(h: UnbiddenHomeRoute): string {
+  return typeof h === "string" ? h : `${h.route} (exact)`;
 }
 
 /**
@@ -70,7 +75,8 @@ export function mayRaiseUnbidden(
   pathname: string | null | undefined,
 ): UnbiddenRaiseVerdict {
   const entry = getStaticEntryByOverlayId(overlayId);
-  const home = entry?.unbiddenHome ?? [];
+  const declared: readonly UnbiddenHomeRoute[] = entry?.unbiddenHome ?? [];
+  const home = declared.map(describeHome);
 
   if (home.length === 0) {
     const reason = entry
@@ -86,7 +92,10 @@ export function mayRaiseUnbidden(
     return { allowed: false, reason, code: "away-from-home", home };
   }
 
-  const match = home.find((route) => isUnderRoute(pathname, route));
+  const matched = declared.find((h) =>
+    typeof h === "string" ? isUnderRoute(pathname, h) : pathname === h.route,
+  );
+  const match = matched === undefined ? undefined : describeHome(matched);
   if (!match) {
     const reason = `window "${overlayId}" lives on ${home.join(", ")} — not on "${pathname}" — so it is deferred until the viewer is on one of its own surfaces`;
     console.info(`[window-panels] unbidden raise deferred — ${reason}`);

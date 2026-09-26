@@ -117,6 +117,19 @@ describe("mayRaiseUnbidden — the window registry decides where a window may op
     }
   });
 
+  it("(b1) refuses it on working administration pages — only the landing page is home", () => {
+    for (const route of [
+      "/administration/intelligence/mandates",
+      "/administration/intelligence/mandates/agent_apps.auto_create",
+      "/administration/users",
+    ]) {
+      expect({ route, allowed: mayRaiseUnbidden(SPEND, route).allowed }).toEqual({
+        route,
+        allowed: false,
+      });
+    }
+  });
+
   it("(b2) does not mistake a route that merely starts with the same letters for home", () => {
     expect(mayRaiseUnbidden(SPEND, "/administration-archive").allowed).toBe(
       false,
