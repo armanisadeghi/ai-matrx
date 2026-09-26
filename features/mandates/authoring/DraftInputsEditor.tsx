@@ -91,8 +91,7 @@ export function DraftInputsEditor({
         </Button>
         {items.length > 0 ? (
           <span className="text-[11px] text-muted-foreground/70">
-            Names and kinds can wait — descriptions are enough to create. An
-            example shows whoever binds this job what the value looks like.
+            A description is enough to create.
           </span>
         ) : null}
       </div>
