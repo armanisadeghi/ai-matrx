@@ -61,6 +61,8 @@ import { StatusBadge } from "./StatusBadge";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useLibraryDoc } from "@/features/rag/hooks/useLibrary";
 import { usePortionLocators } from "@/features/sources/hooks/usePortionLocators";
+import { useCurrentVersion } from "@/features/sources/hooks/useCurrentVersion";
+import { viewedDocumentId } from "@/features/sources/currentVersion";
 import {
   PORTION_KIND_WORD,
   portionKindOf,
@@ -121,17 +123,26 @@ export function LibraryPreviewPage({
   externalSearch,
   hideSearchBar = false,
 }: LibraryPreviewPageProps) {
+  // A person's edit is the Source's CURRENT version (plan §1 rule 4): resolve
+  // it BEFORE reading pages or chunks, so the screen never shows the pre-edit
+  // text as if it were current. "View original" is one click away.
+  const version = useCurrentVersion(documentId);
+  const [showOriginal, setShowOriginal] = useState(false);
+  const viewedId = version.versions
+    ? viewedDocumentId(version.versions, showOriginal)
+    : null;
   const {
     doc,
-    loading: docLoading,
+    loading: docReadLoading,
     error: docError,
     readError: docReadError,
     reload: reloadDoc,
-  } = useLibraryDoc(documentId);
+  } = useLibraryDoc(viewedId);
+  const docLoading = version.loading || docReadLoading;
   // Every portion's kind + locator (page n · heading path · t0–t1 speaker):
   // the list and the pane header name portions from these, never "p.N" for a
   // web section or a transcript segment.
-  const { byIndex: locators } = usePortionLocators(documentId);
+  const { byIndex: locators } = usePortionLocators(viewedId);
   // The hook reports `loading` until the read for THIS id has settled, so
   // "not loading and no doc" really means missing / deleted / not readable.
   const docUnavailable = !docLoading && !doc;
@@ -147,7 +158,7 @@ export function LibraryPreviewPage({
   // In-document search — lifted to the viewer so one query drives the page-text
   // highlights, the summary banner, the per-page match stepper, and the ranked
   // results list at once.
-  const search = useDocumentSearch(documentId);
+  const search = useDocumentSearch(viewedId ?? documentId);
 
   // Shared-library grant provenance for the status band — the /files/f/[id]
   // redirect for grant readers lands HERE, so this is where "why can I read
@@ -303,6 +314,32 @@ export function LibraryPreviewPage({
             !embedded && "pt-[var(--shell-header-h)]",
           )}
         >
+          {version.versions?.edited && (
+            <div
+              className="border-b px-4 py-1 flex items-center gap-2 min-w-0 shrink-0 text-xs"
+              data-testid="source-version-switch"
+            >
+              <span className="text-muted-foreground truncate">
+                {showOriginal
+                  ? "Showing the original capture — people and AI search read the edited version."
+                  : "Showing edited version"}
+              </span>
+              <span className="text-muted-foreground">·</span>
+              <button
+                type="button"
+                className="shrink-0 text-primary hover:underline"
+                onClick={() => setShowOriginal((v) => !v)}
+              >
+                {showOriginal ? "View edited version" : "View original"}
+              </button>
+            </div>
+          )}
+          {version.error && (
+            <div className="border-b px-4 py-1 text-xs text-warning shrink-0">
+              {version.error}
+            </div>
+          )}
+
           {!embedded && doc && (
             <div className="border-b px-4 py-1.5 flex items-center gap-2 min-w-0 shrink-0">
               <StatusBadge status={(doc.status as DocStatus) ?? "unknown"} />
@@ -389,7 +426,7 @@ export function LibraryPreviewPage({
             <div className="flex-1 min-h-0 grid grid-cols-[220px_360px_minmax(0,1fr)] divide-x overflow-hidden">
               {/* Left: pages list */}
               <PagesNav
-                documentId={documentId}
+                documentId={viewedId ?? documentId}
                 totalPages={doc?.pagesPersisted ?? 0}
                 docLoading={docLoading}
                 activePageIndex={activePageIndex}
@@ -403,7 +440,7 @@ export function LibraryPreviewPage({
               alongside the page list, without the wide page-text panel in
               between. */}
               <RightRail
-                documentId={documentId}
+                documentId={viewedId ?? documentId}
                 activePageNumber={activePageIndex + 1}
                 search={search}
                 onJumpToPage={jumpToPage}
@@ -413,7 +450,7 @@ export function LibraryPreviewPage({
               read the cleaned / raw text of the active page, with the active
               search term highlighted in place. */}
               <PageContent
-                documentId={documentId}
+                documentId={viewedId ?? documentId}
                 pageIndex={activePageIndex}
                 totalPages={doc?.pagesPersisted ?? 0}
                 docLoading={docLoading}
@@ -443,7 +480,7 @@ export function LibraryPreviewPage({
           >
             <KnowledgeAssetPanel
               doc={{
-                id: documentId,
+                id: doc.id,
                 name: doc.name,
                 totalPages: doc.pagesPersisted ?? null,
               }}
