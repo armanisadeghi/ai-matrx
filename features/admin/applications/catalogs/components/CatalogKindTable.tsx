@@ -548,6 +548,7 @@ export function CatalogKindTable({
                     pendingToggle.row.kind,
                   )} schema: {activationPayloadCheck.issues.join("; ")} — open
                   the entry and fix it before activating.
+                  <ErrorAlchemyMenu />
                 </p>
               ) : null}
               {pendingToggle.row.artifact_url ? (

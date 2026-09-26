@@ -460,6 +460,7 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
                   </p>
                 ))}
               </div>
+              <ErrorAlchemyMenu />
             </div>
           )}
 

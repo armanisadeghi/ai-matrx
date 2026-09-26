@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/accordion";
 import { BarChart, ExternalLink, FileText, Search } from "lucide-react";
 import ScraperDataUtils from "../utils/data-utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Overview {
   uuid: string;
@@ -272,6 +273,7 @@ const HeaderAnalysis = ({ overview }: { overview: Overview }) => {
                       <li key={index}>• {issue}</li>
                     ))}
                   </ul>
+                  <ErrorAlchemyMenu />
                 </div>
               )}
 

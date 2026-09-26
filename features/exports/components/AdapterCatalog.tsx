@@ -127,10 +127,10 @@ export function AdapterCatalog({ className }: { className?: string }) {
             <ErrorAlchemyMenu />
           </p>
           <ul className="mt-1 space-y-1">
-            {problems.map((problem) => (
+            {problems.map((problem, rowIndex, allRows) => (
               <li key={problem} className="text-xs text-muted-foreground">
                 {problem}
-              </li>
+              {rowIndex === allRows.length - 1 && <ErrorAlchemyMenu error={allRows} />}</li>
             ))}
           </ul>
         </div>

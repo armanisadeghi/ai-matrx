@@ -236,14 +236,14 @@ export default function ShapeRenderStatusStrip({
           </p>
           {hasProblems && (
             <ul className="mt-1.5 space-y-1">
-              {status.problems.map((problem) => (
+              {status.problems.map((problem, rowIndex, allRows) => (
                 <li
                   key={problem}
                   className="flex items-start gap-1.5 text-xs text-amber-800 dark:text-amber-200"
                 >
                   <CircleAlert className="mt-0.5 h-3 w-3 shrink-0" />
                   <span>{problem}</span>
-                </li>
+                {rowIndex === allRows.length - 1 && <ErrorAlchemyMenu error={allRows} />}</li>
               ))}
             </ul>
           )}

@@ -2551,6 +2551,13 @@
 :not(.flex, .inline-flex, .grid, .inline-grid) > [data-error-alchemy-menu]:not([data-placement="truncated"]) {
   margin-right: calc(-1lh - 0.25rem);
 }
+/* In a truncating cell the menu holds the cell's right end (absolute). There it
+   keeps its full tap-target width so the icon sits INSIDE the cell — a 1lh-wide
+   box centred its 32px button half past the edge, where the cell's overflow
+   clipped it (check-findings "Why broken", RC-B12 round 7). */
+[data-error-alchemy-menu][data-placement="truncated"] {
+  width: auto;
+}
 [data-slot="alert"] > [data-error-alchemy-menu] {
   position: absolute;
   top: 0.5rem;

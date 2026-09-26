@@ -47,6 +47,7 @@ function ProblemRow({ problem }: { problem: ConversionProblem }) {
     <li className={cn("font-mono text-[10px]", tone)}>
       <span className="font-semibold uppercase">{problem.severity}</span>
       {problem.path ? ` · ${problem.path}` : ""} — {problem.message}
+      {problem.severity === "error" && <ErrorAlchemyMenu error={problem.message} />}
     </li>
   );
 }

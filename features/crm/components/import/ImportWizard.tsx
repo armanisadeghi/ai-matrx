@@ -832,6 +832,7 @@ export function ImportWizard() {
                             )}
                           >
                             {row.problems.join("; ")}
+                            <ErrorAlchemyMenu />
                           </span>
                         )}
                       </td>

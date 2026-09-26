@@ -763,6 +763,7 @@ export function BatchMode({
               </li>
             ))}
           </ul>
+          <ErrorAlchemyMenu />
         </div>
       ) : null}
 

@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 import type { KindProblem } from "@/features/content-ir/react/kind-problems";
 import { hasKindErrors } from "@/features/content-ir/react/kind-problems";
 import { IntoTileActions, useHasTileActionsSlot } from "./tile-actions-slot";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Tab = "preview" | "json" | "errors";
 
@@ -198,6 +199,7 @@ export function StructuredValueTabs({
               </div>
             </div>
           ))}
+          <ErrorAlchemyMenu />
         </div>
       ) : (
         <pre className="max-h-[28rem] overflow-auto rounded-md border border-border bg-muted/30 p-3 font-mono text-xs leading-relaxed text-foreground">

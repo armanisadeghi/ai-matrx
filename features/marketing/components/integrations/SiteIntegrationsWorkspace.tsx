@@ -1748,8 +1748,8 @@ function BuiltInProviderCard({
           <div className="space-y-1.5">
             {issues.length ? (
               <ul className="space-y-0.5 rounded-md border border-destructive/50 bg-destructive/10 px-2 py-1.5 text-[10px] leading-4 text-foreground">
-                {issues.map((issue) => (
-                  <li key={issue}>{issue}</li>
+                {issues.map((issue, rowIndex, allRows) => (
+                  <li key={issue}>{issue}{rowIndex === allRows.length - 1 && <ErrorAlchemyMenu error={allRows} />}</li>
                 ))}
               </ul>
             ) : null}

@@ -65,6 +65,7 @@ import type {
 import type { RootState } from "@/lib/redux/store";
 import { cn } from "@/lib/utils";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const DEFAULT_SURFACE_NAME = "matrx-default/default";
 const PICKER_CONSUMER_ID = "surface-agent-bind-panel";
 
@@ -602,11 +603,11 @@ export function SurfaceAgentBindPanel({
             data-testid="surface-bind-save-refusal"
             className="mr-auto min-w-0 space-y-1 text-[11px] leading-relaxed text-muted-foreground"
           >
-            {saveRefusals.map((reason) => (
+            {saveRefusals.map((reason, rowIndex, allRows) => (
               <li key={reason} className="flex items-start gap-1.5">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>{reason}</span>
-              </li>
+              {rowIndex === allRows.length - 1 && <ErrorAlchemyMenu error={allRows} />}</li>
             ))}
           </ul>
         ) : null}

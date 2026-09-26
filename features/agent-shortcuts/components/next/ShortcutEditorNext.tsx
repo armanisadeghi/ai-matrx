@@ -57,6 +57,7 @@ import type {
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const DEFAULT_SURFACE_NAME = "matrx-default/default";
 
 /**
@@ -496,11 +497,11 @@ export function ShortcutEditorNext({
             data-testid="shortcut-save-refusal"
             className="mb-2 space-y-1 text-[11.5px] leading-relaxed text-muted-foreground"
           >
-            {saveRefusals.map((reason) => (
+            {saveRefusals.map((reason, rowIndex, allRows) => (
               <li key={reason} className="flex items-start gap-1.5">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>{reason}</span>
-              </li>
+              {rowIndex === allRows.length - 1 && <ErrorAlchemyMenu error={allRows} />}</li>
             ))}
           </ul>
         ) : null}

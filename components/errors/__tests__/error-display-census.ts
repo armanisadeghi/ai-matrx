@@ -64,6 +64,8 @@ const FAILURE_WORDS =
   /something went wrong|\boops\b|(?:page|app|screen) crashed|server refused|did(?:n['’]t| not) work|could(?:n['’]t| not) (?:load|save|read|open|find|update|create|delete|connect|send|start|reach|be (?:loaded|saved|read))|failed to (?:load|save|read|fetch|create|update|delete|send|start|connect|open)|unable to (?:load|save|read|fetch|open|find|create|update|delete|send|start|connect|reach|play|process|generate)|error (?:loading|saving|fetching|reading|creating|updating|deleting|sending|connecting|processing)|\b(?:save|load|upload|download|delete|update|sync|send|fetch|import|export|connection|request|generation) failed\b|\bnot saved\b|unexpected error|an error occurred|failed to compile|\btemplate error\b|permission denied|access denied|\btimed out\b|\bnot authori[sz]ed\b/i;
 /** Words that only mean an error when the text is painted red ("Error: {detail}"). */
 const RED_ONLY_WORDS = /\berror\b\s*:?|\bdenied\b|\binvalid\b/i;
+/** A list whose entries are errors: `brokenReasons`, `issues`, `failures`, `validationErrors`, `problems`. */
+const ERROR_LIST_NAME = /(?:^|[a-z])(?:[rR]easons|[iI]ssues|[fF]ailures|[eE]rrors|[pP]roblems|[rR]efusals)$|^(?:reasons|issues|failures|errors|problems|refusals)$/;
 const ERROR_NAME = /(?:[eE]rror|Err$|^err$|^e$|[fF]ailure|[rR]efusal|^why$|Why$|[pP]roblem(?!_?[sS]tatement))/;
 /** Message-like names count only in red text: an amber `{message}` is usually a warning. */
 const MESSAGE_NAME = /(?:^msg$|Msg$|^message$|Message$|^reason$|Reason$|^detail$|Detail$)/;
@@ -174,6 +176,12 @@ function isErrorLeaf(leaf: ts.Expression, names: RegExp = ERROR_NAME): boolean {
   }
   if (ts.isCallExpression(leaf)) {
     const callee = leaf.expression.getText();
+    // A list of reasons / issues / failures / errors, joined or mapped, IS the
+    // error shown ("The check needs repair: {row.brokenReasons.join(" · ")}").
+    if (/\.(map|join|flatMap)$/.test(callee)) {
+      const list = callee.replace(/\.(map|join|flatMap)$/, "").split(/\??\.|\[|\]/).filter(Boolean).pop() ?? "";
+      if (ERROR_LIST_NAME.test(list)) return true;
+    }
     if (/\.(map|filter|flatMap|reduce|forEach|sort|join|slice)$/.test(callee)) return false;
     return /[eE]rror|[fF]ailure|[rR]efusal/.test(callee) || leaf.arguments.some((arg) => isErrorLeaf(arg, names));
   }
@@ -444,6 +452,9 @@ const FORM_MESSAGE = /^(FormMessage|FieldError|FormError|FieldErrorMessage|Error
 /** `title={error}` — an error you can only hover is still an error shown. */
 function tooltipError(node: JsxLike): boolean {
   const name = tagName(node);
+  // A status chip's hover text explains the chip; the chip is a label (the
+  // same rule as its words), not the error display.
+  if (/^(Badge|StatusBadge|Chip)$/.test(name)) return false;
   if (/^[A-Z]/.test(name)) {
     // On a component, `title` is a tooltip only beside children or a label;
     // otherwise it is the heading the component draws (errorFedByProp's case).
@@ -581,6 +592,12 @@ function containsCarrier(node: ts.Node): boolean {
     // `{true ? null : <Menu/>}` renders only its live arm.
     if (ts.isConditionalExpression(n) && (isFalsyLiteral(n.condition) || isTruthyLiteral(n.condition))) {
       visit(isTruthyLiteral(n.condition) ? n.whenTrue : n.whenFalse);
+      return;
+    }
+    // A component whose own render draws the menu carries the box it sits in
+    // (a list of <ProblemRow/>s that each carry their error).
+    if ((ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n)) && carryingHere.has(tagName(n)) && !isHiddenStyled(n)) {
+      found = true;
       return;
     }
     if ((ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n)) && CARRIER_NAMES.has(tagName(n))) {

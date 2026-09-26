@@ -246,8 +246,8 @@ export function DecisionPlayground() {
             <section className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-950 dark:text-amber-100">
               <p className="font-medium">Ready check</p>
               <ul className="mt-1 list-disc pl-5">
-                {validationErrors.map((message) => (
-                  <li key={message}>{message}</li>
+                {validationErrors.map((message, rowIndex, allRows) => (
+                  <li key={message}>{message}{rowIndex === allRows.length - 1 && <ErrorAlchemyMenu error={allRows} />}</li>
                 ))}
               </ul>
             </section>

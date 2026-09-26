@@ -82,6 +82,7 @@ import {
 } from "./types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const EMPTY: ValueComboFormState = {
   valueIds: [],
   effect: "never",
@@ -619,13 +620,13 @@ export function ValueComboEditor({
 
             {issues.length > 0 ? (
               <ul className="space-y-1 rounded-md border border-warning/40 bg-warning/10 px-2.5 py-2">
-                {issues.map((issue) => (
+                {issues.map((issue, rowIndex, allRows) => (
                   <li
                     key={issue}
                     className="text-[11px] leading-4 text-warning"
                   >
                     {issue}
-                  </li>
+                  {rowIndex === allRows.length - 1 && <ErrorAlchemyMenu error={allRows} />}</li>
                 ))}
               </ul>
             ) : null}

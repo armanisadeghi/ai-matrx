@@ -1297,11 +1297,11 @@ function TemplateEditor({
         </div>
         {saveIssues.length > 0 && (
           <ul className="space-y-0.5 text-[10px] text-amber-700 dark:text-amber-400 mt-1.5">
-            {saveIssues.map((issue) => (
+            {saveIssues.map((issue, rowIndex, allRows) => (
               <li key={issue} className="flex items-start gap-1">
                 <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
                 {issue}
-              </li>
+              {rowIndex === allRows.length - 1 && <ErrorAlchemyMenu error={allRows} />}</li>
             ))}
           </ul>
         )}

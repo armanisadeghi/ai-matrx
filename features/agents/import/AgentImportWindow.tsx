@@ -241,10 +241,10 @@ function ImportAnalysisPanel({
           ) : null}
 
           {errors.length > 0 && (
-            <div>
+            <div role="alert">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-red-700/80 dark:text-red-300/80 mb-1">
                 Errors
-                <ErrorAlchemyMenu />
+                <ErrorAlchemyMenu error={errors} />
               </p>
               <ul className="space-y-1.5">
                 {errors.map((issue, i) => (

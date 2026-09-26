@@ -403,7 +403,7 @@ function CheckBoard({
       // healthy — so a broken check's reason never appeared (RC-B12 round 7).
       cell: (r) =>
         r.brokenReasons.length ? (
-          <span className="relative block truncate text-destructive" title={r.brokenReasons.join("\n")}>
+          <span className="relative block truncate pr-7 text-destructive" title={r.brokenReasons.join("\n")}>
             {r.brokenReasons.join(" · ")}
             <ErrorAlchemyMenu error={r.brokenReasons.join("\n")} operation={`Run the check ${r.check.label}`} />
           </span>

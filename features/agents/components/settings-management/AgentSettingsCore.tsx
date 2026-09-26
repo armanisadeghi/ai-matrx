@@ -442,6 +442,8 @@ function IssueTable({
             <span className="text-[10px] text-yellow-600 dark:text-yellow-500">
               {issues.length} issue{issues.length !== 1 ? "s" : ""} detected
             </span>
+            {/* In the header bar that owns this section — never a row of its own. */}
+            <ErrorAlchemyMenu error={issues} operation="Validate this agent's settings" />
             {diagnosticPayload && (
               <Tooltip>
                 <TooltipTrigger asChild>

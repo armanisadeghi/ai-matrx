@@ -24,6 +24,7 @@ import {
   type DecisionAnswerView,
   type DecisionAnswersView,
 } from "@ai-matrx/agents/presentation/decision-answers";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function percent(value: number | null): string {
   if (value == null) return "—";
@@ -300,6 +301,7 @@ export function DecisionAnswers({
                 <span>{refusal.reason}</span>
               </div>
             ))}
+            <ErrorAlchemyMenu />
           </div>
         </div>
       )}

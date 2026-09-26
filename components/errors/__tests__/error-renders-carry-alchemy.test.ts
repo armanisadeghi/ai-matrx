@@ -282,6 +282,17 @@ describe("round-6 probes (RC-B12 verify), red then green", () => {
   });
 });
 
+describe("round-7 probes (RC-B12 verify): lists of reasons are errors", () => {
+  it("red text rendering reasons / issues / failures / errors — plain, .join(...) or .map(...) — counts", () => {
+    expect(count('<span className="text-destructive">The check needs repair: {row.brokenReasons.join(" · ")}</span>')).toBe(1);
+    expect(count('<p className="text-red-600">{issues.join(", ")}</p>')).toBe(1);
+    expect(count('<ul className="text-destructive">{failures.map((f) => <li key={f}>{f}</li>)}</ul>')).toBe(1);
+    expect(count('<p className="text-destructive">{validationErrors.join("; ")}</p>')).toBe(1);
+    expect(count('<span className="text-destructive">{row.brokenReasons.join(" · ")}<ErrorAlchemyMenu /></span>')).toBe(0);
+    expect(count('<p className="text-muted-foreground">{tags.join(", ")}</p>')).toBe(0);
+  });
+});
+
 describe("one error box carries one menu", () => {
   const doubles = (jsx: string) =>
     findDoubleMenus(`export function C({ error, ok }: any) { return (<>${jsx}</>); }`).length;
