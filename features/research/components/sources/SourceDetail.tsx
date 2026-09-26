@@ -999,7 +999,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
         refetchSourceEditState();
         toast.success(
           landed
-            ? (landed.notices[0]?.message ??
+            ? (landed.notices?.[0]?.message ??
                 "Your edit was saved to the Source; the original capture is kept.")
             : "Saved in research. This page is not yet a Source, so the edit stays in research until it lands.",
         );
@@ -1018,7 +1018,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
       refetchContent();
       refetchSourceEditState();
       toast.success(
-        landed?.notices[0]?.message ?? "Restored the original page content",
+        landed?.notices?.[0]?.message ?? "Restored the original page content",
       );
     } catch (err) {
       toast.error(`Couldn't restore: ${sourceRefusalSentence(err)}`);
