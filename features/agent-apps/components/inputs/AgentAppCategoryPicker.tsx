@@ -176,7 +176,7 @@ export function AgentAppCategoryPicker({
             {error && (
               <div className="px-3 py-2 text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></div>
             )}
-            {!loading && filteredSystem.length === 0 && !showCreate && (
+            {!loading && !error && filteredSystem.length === 0 && !showCreate && (
               <CommandEmpty>
                 Type a name and press Enter to create your own.
               </CommandEmpty>

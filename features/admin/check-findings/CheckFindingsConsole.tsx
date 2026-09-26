@@ -804,6 +804,7 @@ function CheckDetail({
           ) : loadingSnapshot ? (
             <span className="text-muted-foreground">Reading the check…</span>
           ) : (
+            // read-gate-exempt: CheckDetail mounts only when the snapshot read did not fail (the parent renders LoadError instead), so this is a successful read's answer
             <span className="text-destructive">No static check has id {checkId}.</span>
           )}
         </div>

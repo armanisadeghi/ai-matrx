@@ -21,6 +21,7 @@ import {
 } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   fetchAgentVersionHistory,
   type AgentVersionHistoryItem,
@@ -51,16 +52,22 @@ export function AgentVersionCompact({
     null,
   );
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<unknown>(null);
 
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
 
   useEffect(() => {
     if (!open || !agentId || versions !== null || loading) return;
     setLoading(true);
+    setLoadError(null);
     dispatch(fetchAgentVersionHistory({ agentId }))
       .unwrap()
       .then((rows) => setVersions(rows ?? []))
-      .catch(() => setVersions([]))
+      .catch((err: unknown) => {
+        // Settle the list so the effect stops re-reading; the failure is shown.
+        setLoadError(err ?? true);
+        setVersions([]);
+      })
       .finally(() => setLoading(false));
   }, [open, agentId, versions, loading, dispatch]);
 
@@ -139,6 +146,16 @@ export function AgentVersionCompact({
                   message="Loading agent versions…"
                 />
               </div>
+            ) : loadError ? (
+              <ReadFailure
+                error={loadError}
+                what="this agent's versions"
+                className="m-1"
+                onRetry={() => {
+                  setLoadError(null);
+                  setVersions(null);
+                }}
+              />
             ) : !versions || versions.length === 0 ? (
               <div className="px-2 py-2 text-xs text-muted-foreground">
                 No versions yet.

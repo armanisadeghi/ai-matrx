@@ -11,7 +11,7 @@
 import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
 import { splitFrontmatter } from "@/components/markdown-core/syntax/frontmatter";
 import { fenceLineKinds } from "@ai-matrx/content-ir/source";
-import { tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { findTableEnd, tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 /** Private-use sentinel for a standalone `===` line. The `p` renderer swaps a
  *  paragraph whose only child is this token for a thick blue rule. */
@@ -152,7 +152,21 @@ const INDENT_RUN = /^( +)(?! |[*+-][ \t]|\d+[.)][ \t])/;
 export function preserveIndentation(source: string): string {
   let inList = false;
   let changed = false;
-  const lines = source.split("\n").map((line) => {
+  // A table's rows keep their indentation: it is markdown structure (a table
+  // indented under a list item), and nbsp there made GFM read no table
+  // (verify-RC-B4 round 9; THE table rule, gfm-table-lines).
+  const raw = source.split("\n");
+  const tableLine = new Set<number>();
+  if (source.includes("|")) {
+    for (let i = 0; i + 1 < raw.length; i += 1) {
+      if (!tableStartsAt(raw, i)) continue;
+      const end = findTableEnd(raw, i);
+      for (let k = i; k < end; k += 1) tableLine.add(k);
+      i = end - 1;
+    }
+  }
+  const lines = raw.map((line, index) => {
+    if (tableLine.has(index)) return line;
     if (LIST_ITEM_LINE.test(line)) {
       inList = true;
       return line;

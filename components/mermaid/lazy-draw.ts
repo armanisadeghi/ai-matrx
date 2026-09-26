@@ -93,10 +93,15 @@ if (typeof window !== "undefined") {
  * Draw every diagram now. Resolves when all mounted diagrams have drawn, or
  * after `timeoutMs` with the number still pending (never silently).
  */
-export function renderAllDiagrams(timeoutMs = 20_000): Promise<{ pending: number }> {
+export async function renderAllDiagrams(timeoutMs = 20_000): Promise<{ pending: number }> {
   renderAll = true;
   emit();
-  if (pending.size === 0) return Promise.resolve({ pending: 0 });
+  // Render-all also mounts every block a long list was still holding back
+  // (progressive mount follows the same switch). That commit — and the
+  // diagrams in it registering themselves — lands after this task, so count
+  // what is pending only then (a macrotask: rAF stops in a hidden tab).
+  await new Promise((r) => setTimeout(r, 0));
+  if (pending.size === 0) return { pending: 0 };
   return new Promise((resolve) => {
     const done = () => {
       if (pending.size > 0) return;
@@ -125,6 +130,16 @@ export async function printLivePage(): Promise<void> {
 }
 
 /**
+ * True once a print or page capture asked for EVERYTHING to render (the
+ * render-all switch). Anything that renders lazily — diagrams, a long list
+ * mounting in slices — follows it, so a print never shows a placeholder or a
+ * "Showing 600 of N" cut.
+ */
+export function useRenderAllRequested(): boolean {
+  return useSyncExternalStore(subscribe, () => renderAll, () => false);
+}
+
+/**
  * True once this diagram should draw: it came near the viewport, a render-all
  * was requested, or the browser cannot tell (no IntersectionObserver).
  */
@@ -132,7 +147,7 @@ export function useDrawWhenNear(ref: RefObject<HTMLElement | null>): {
   shouldDraw: boolean;
   markDrawn: () => void;
 } {
-  const all = useSyncExternalStore(subscribe, () => renderAll, () => false);
+  const all = useRenderAllRequested();
   const [near, setNear] = useState(false);
   const [token] = useState(() => Symbol("diagram"));
 

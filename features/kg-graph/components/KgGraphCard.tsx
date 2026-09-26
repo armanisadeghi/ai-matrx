@@ -209,6 +209,8 @@ export function KgGraphCard({
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between px-3 py-1.5 text-[10px] text-muted-foreground">
           {status === "loading" ? (
             <span>Loading preview…</span>
+          ) : status === "error" ? (
+            <span>Preview unavailable — open the full graph</span>
           ) : isEmpty ? (
             <span>No graph data yet</span>
           ) : isLoaded ? (
@@ -218,8 +220,6 @@ export function KgGraphCard({
                 .map((n) => n.name)
                 .join(" · ")}
             </span>
-          ) : status === "error" ? (
-            <span>Preview unavailable — open the full graph</span>
           ) : (
             <span>&nbsp;</span>
           )}

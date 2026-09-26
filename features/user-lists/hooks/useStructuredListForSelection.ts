@@ -20,6 +20,10 @@ export interface UseStructuredListForSelectionResult {
   loading: boolean;
   /** True when the list is missing or the caller can't access it (no info-leak distinction). */
   unavailable: boolean;
+  /** The failed read's error — set only when the read itself threw (not for a missing list). */
+  error: unknown;
+  /** Run the read again after a failure. */
+  retry: () => void;
 }
 
 // Module-level cache keyed by listId — labels are public and rarely change within a session.
@@ -141,31 +145,32 @@ export function useStructuredListForSelection(
     listId ? _cache.get(listId) : null,
   );
   const [loading, setLoading] = useState(false);
-  const [errored, setErrored] = useState(false);
+  const [readError, setReadError] = useState<unknown>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!listId) {
       setData(null);
-      setErrored(false);
+      setReadError(null);
       return undefined;
     }
     if (_cache.has(listId)) {
       setData(_cache.get(listId));
-      setErrored(false);
+      setReadError(null);
       return undefined;
     }
     let cancelled = false;
     setLoading(true);
-    setErrored(false);
+    setReadError(null);
     getStructuredListForSelection(listId)
       .then((result) => {
         if (cancelled) return;
         _cache.set(listId, result);
         setData(result);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         if (cancelled) return;
-        setErrored(true);
+        setReadError(err ?? new Error("The picklist read failed"));
         setData(null);
       })
       .finally(() => {
@@ -174,7 +179,7 @@ export function useStructuredListForSelection(
     return () => {
       cancelled = true;
     };
-  }, [listId]);
+  }, [listId, attempt]);
 
   const flat = flatten(data ?? null);
   const groups = groupName
@@ -182,7 +187,15 @@ export function useStructuredListForSelection(
     : flat.groups;
   const items = groupName ? groups.flatMap((g) => g.items) : flat.items;
 
+  const errored = readError != null;
   const unavailable = !loading && !!listId && (errored || data === null);
 
-  return { items, groups, loading, unavailable };
+  return {
+    items,
+    groups,
+    loading,
+    unavailable,
+    error: errored ? readError : null,
+    retry: () => setAttempt((n) => n + 1),
+  };
 }

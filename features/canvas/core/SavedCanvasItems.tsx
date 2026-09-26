@@ -2,6 +2,7 @@
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
 import React, { useEffect, useState } from "react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useCanvasItems } from "@/features/canvas/hooks/useCanvasItems";
 import { useOpenCanvasItem } from "@/features/canvas/hooks/useOpenCanvasItem";
 import {
@@ -50,6 +51,7 @@ export function SavedCanvasItems() {
   const {
     items,
     isLoading,
+    loadError,
     load,
     update,
     remove,
@@ -346,7 +348,9 @@ export function SavedCanvasItems() {
 
       {/* Items List */}
       <div className="flex-1 overflow-y-auto scrollbar-thin p-4">
-        {activeItems.length === 0 && archivedItems.length === 0 ? (
+        {loadError != null && items.length === 0 ? (
+          <ReadFailure error={loadError} what="your saved canvas items" onRetry={() => load()} />
+        ) : activeItems.length === 0 && archivedItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <Archive className="w-12 h-12 text-gray-300 dark:text-gray-700 mb-3" />
             <p className="text-gray-500 dark:text-gray-400">

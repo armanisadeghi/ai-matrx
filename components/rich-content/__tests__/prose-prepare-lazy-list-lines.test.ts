@@ -23,6 +23,9 @@ it.each([
   // A pipe-less table whose delimiter row starts with `---` stays a table (the
   // setext-heading guard used to put a blank line under its header).
   ["a pipe-less table", "Step | Task | Who\n--- | --- | ---\n1 | Drain the print queue | Tom"],
+  // A table indented 3 spaces (split out of a list item) keeps its spaces — nbsp
+  // there made GFM read no table.
+  ["an indented table", "   | Mechanism | Active attachments |\n   |---|---:|\n   | stamp default | 321 |"],
 ])("%s reads as GFM reads it", (_label, md) => {
   const prepared = preprocessProse(md);
   expect(topTypes(prepared)).toEqual(topTypes(md));

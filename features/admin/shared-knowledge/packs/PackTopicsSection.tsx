@@ -35,6 +35,7 @@ import {
   type TopicOption,
 } from "./data";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const NONE = "__none__";
 
@@ -62,15 +63,21 @@ function TopicPicker({ onPick, exclude }: { onPick: (t: TopicOption) => void; ex
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<TopicOption[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState<unknown>(null);
+  const [searchAttempt, setSearchAttempt] = useState(0);
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     const t = setTimeout(() => {
       searchTopics(q)
         .then((r) => {
-          if (!cancelled) setRows(r.filter((x) => !exclude.has(x.id)));
+          if (cancelled) return;
+          setRows(r.filter((x) => !exclude.has(x.id)));
+          setSearchError(null);
         })
-        .catch((e) => toast.error(extractErrorMessage(e)))
+        .catch((e: unknown) => {
+          if (!cancelled) setSearchError(e ?? new Error("The topic search failed"));
+        })
         .finally(() => {
           if (!cancelled) setLoading(false);
         });
@@ -79,7 +86,7 @@ function TopicPicker({ onPick, exclude }: { onPick: (t: TopicOption) => void; ex
       cancelled = true;
       clearTimeout(t);
     };
-  }, [q, exclude]);
+  }, [q, exclude, searchAttempt]);
   return (
     <div className="space-y-1.5">
       <div className="relative">
@@ -89,6 +96,15 @@ function TopicPicker({ onPick, exclude }: { onPick: (t: TopicOption) => void; ex
       <ul className="max-h-48 divide-y divide-border overflow-y-auto rounded-md border border-border">
         {loading && rows.length === 0 ? (
           <li className="px-2.5 py-2 text-xs text-muted-foreground">Searching…</li>
+        ) : searchError ? (
+          <li>
+            <ReadFailure
+              error={searchError}
+              what="the topic tree"
+              onRetry={() => setSearchAttempt((n) => n + 1)}
+              className="m-1.5"
+            />
+          </li>
         ) : rows.length === 0 ? (
           <li className="px-2.5 py-2 text-xs text-muted-foreground">No topics match.</li>
         ) : (

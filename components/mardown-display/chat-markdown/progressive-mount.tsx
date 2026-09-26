@@ -20,6 +20,7 @@
 "use client";
 
 import { nearestScrollRoot } from "@/lib/layout/scroll-root";
+import { useRenderAllRequested } from "@/components/mermaid/lazy-draw";
 import { startTransition, useEffect, useRef, useState, type ReactNode } from "react";
 
 /** Blocks mounted in the first commit — above any real chat answer. */
@@ -49,8 +50,15 @@ export function useProgressiveMount(total: number): ProgressiveMount {
   if (total <= PROGRESSIVE_FIRST_SLICE && mounted > PROGRESSIVE_FIRST_SLICE) {
     setMounted(PROGRESSIVE_FIRST_SLICE);
   }
-  const shown = Math.max(Math.min(total, PROGRESSIVE_FIRST_SLICE), Math.min(mounted, total));
+  // A print or page capture renders EVERYTHING (the render-all switch), or the
+  // printout would stop at "Showing 600 of N blocks".
+  const renderAll = useRenderAllRequested();
+  const shown = renderAll
+    ? total
+    : Math.max(Math.min(total, PROGRESSIVE_FIRST_SLICE), Math.min(mounted, total));
   const auto = shown < Math.min(total, PROGRESSIVE_AUTO_LIMIT);
+
+
 
   useEffect(() => {
     if (!auto) return undefined;

@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import AppLink from "@/components/navigation/AppLink";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -67,6 +68,9 @@ export function ComparisonSetLoaderDialog({
   const loading = open && sets === null;
   const [allModes, setAllModes] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  // The last read's failure; the list shows it instead of "no saved battles".
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [attempt, setAttempt] = useState(0);
 
   const allSets = sets ?? [];
   const visibleSets = allModes
@@ -75,7 +79,10 @@ export function ComparisonSetLoaderDialog({
 
   const handleOpenChange = (next: boolean) => {
     // Re-read the list on every opening: battles are created on every first run.
-    if (!next) setSets(null);
+    if (!next) {
+      setSets(null);
+      setLoadError(null);
+    }
     onOpenChange(next);
   };
 
@@ -85,18 +92,25 @@ export function ComparisonSetLoaderDialog({
     dispatch(listMyBattleSets())
       .unwrap()
       .then((rows) => {
-        if (!cancelled) setSets(rows);
+        if (cancelled) return;
+        setLoadError(null);
+        setSets(rows);
       })
-      .catch((err) => {
-        if (!cancelled) setSets([]);
-        toast.error(
-          `Couldn't list your saved battles: ${err instanceof Error ? err.message : err}`,
-        );
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setLoadError(err ?? true);
+        setSets([]);
       });
     return () => {
       cancelled = true;
     };
-  }, [open, dispatch]);
+  }, [open, attempt, dispatch]);
+
+  const retryRead = () => {
+    setLoadError(null);
+    setSets(null);
+    setAttempt((n) => n + 1);
+  };
 
   const handleConfirmDelete = async () => {
     if (!confirmDeleteId) return;
@@ -166,6 +180,12 @@ export function ComparisonSetLoaderDialog({
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span className="text-sm">Reading your saved battles…</span>
               </div>
+            ) : loadError ? (
+              <ReadFailure
+                error={loadError}
+                what="your saved battles"
+                onRetry={retryRead}
+              />
             ) : visibleSets.length === 0 ? (
               <div className="text-center py-8 text-sm text-muted-foreground">
                 {allModes

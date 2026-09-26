@@ -43,6 +43,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { renderIcon } from "@ai-matrx/icons";
 import { matchesSearch } from "@ai-matrx/kit/search-scoring";
 import {
@@ -108,6 +109,7 @@ export default function AgentAppsCategoriesAdminPage() {
   const { toast } = useToast();
   const [categories, setCategories] = useState<AgentAppCategoryRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -126,7 +128,9 @@ export default function AgentAppsCategoriesAdminPage() {
     try {
       const data = await fetchAgentAppCategories();
       setCategories(data);
+      setLoadError(null);
     } catch (err) {
+      setLoadError(err);
       toast({
         title: "Error",
         description:
@@ -369,6 +373,16 @@ export default function AgentAppsCategoriesAdminPage() {
       <div className="flex items-center justify-center h-full w-full">
         <MatrxMiniLoader />
       </div>
+    );
+  }
+
+  if (loadError && categories.length === 0) {
+    return (
+      <ReadFailure
+        error={loadError}
+        what="the agent app categories"
+        onRetry={() => void load()}
+      />
     );
   }
 

@@ -31,6 +31,8 @@ export function useCanvasItems(initialFilters?: CanvasItemFilters) {
   const [items, setItems] = useState<CanvasItemRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<any>(null);
+  /** The latest LIST read's failure only (mutations report through `error`). */
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [filters, setFilters] = useState<CanvasItemFilters>(initialFilters || {});
 
   /**
@@ -45,9 +47,11 @@ export function useCanvasItems(initialFilters?: CanvasItemFilters) {
 
     if (loadError) {
       setError(loadError);
+      setLoadError(loadError);
       toast.error('Failed to load canvas items');
-    } else if (data) {
-      setItems(data);
+    } else {
+      setLoadError(null);
+      if (data) setItems(data);
     }
 
     setIsLoading(false);
@@ -261,6 +265,7 @@ export function useCanvasItems(initialFilters?: CanvasItemFilters) {
     items,
     isLoading,
     error,
+    loadError,
     filters,
     
     // Actions

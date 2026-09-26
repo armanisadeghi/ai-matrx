@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { AgentAppsGrid } from "@/features/agent-apps/components/layouts/AgentAppsGrid";
 import type { AgentApp } from "@/features/agent-apps/types";
 import {
@@ -70,6 +71,7 @@ export default function AgentAppsAdminDashboardPage() {
   const [apps, setApps] = useState<AgentAppAdminView[]>([]);
   const [categories, setCategories] = useState<AgentAppCategoryRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [showAllFeatured, setShowAllFeatured] = useState(false);
   const [showAllRecent, setShowAllRecent] = useState(false);
 
@@ -82,7 +84,9 @@ export default function AgentAppsAdminDashboardPage() {
       ]);
       setApps(a);
       setCategories(c);
+      setLoadError(null);
     } catch (err) {
+      setLoadError(err);
       toast({
         title: "Error",
         description:
@@ -376,6 +380,12 @@ export default function AgentAppsAdminDashboardPage() {
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Loading featured apps…
               </div>
+            ) : loadError && apps.length === 0 ? (
+              <ReadFailure
+                error={loadError}
+                what="the agent apps"
+                onRetry={() => void load()}
+              />
             ) : featuredApps.length === 0 ? (
               <Card className="border-dashed">
                 <CardContent className="p-4 text-xs text-muted-foreground flex items-center gap-2">
@@ -469,6 +479,12 @@ export default function AgentAppsAdminDashboardPage() {
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Loading…
               </div>
+            ) : loadError && apps.length === 0 ? (
+              <ReadFailure
+                error={loadError}
+                what="the agent apps"
+                onRetry={() => void load()}
+              />
             ) : (
               <AgentAppsGrid
                 apps={recentlyUpdated as unknown as AgentApp[]}

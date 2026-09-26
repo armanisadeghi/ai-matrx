@@ -789,24 +789,24 @@ export const canvasArtifactService = {
   /**
    * Get all versions of an artifact given any version's ID.
    */
+  /**
+   * The version chain, or a thrown failure — for views that must tell "no
+   * versions" apart from "the read failed" (RC-B12).
+   */
+  async readVersionHistory(canvasId: string): Promise<CanvasArtifactRow[]> {
+    const { data, error } = await supabase.rpc(
+      "cx_canvas_get_version_history",
+      {
+        p_canvas_id: canvasId,
+      },
+    );
+    if (error) throw error;
+    return (data ?? []) as CanvasArtifactRow[];
+  },
+
   async getVersionHistory(canvasId: string): Promise<CanvasArtifactRow[]> {
     try {
-      const { data, error } = await supabase.rpc(
-        "cx_canvas_get_version_history",
-        {
-          p_canvas_id: canvasId,
-        },
-      );
-
-      if (error) {
-        console.error(
-          "[canvasArtifactService.getVersionHistory] RPC error:",
-          error,
-        );
-        return [];
-      }
-
-      return (data ?? []) as CanvasArtifactRow[];
+      return await canvasArtifactService.readVersionHistory(canvasId);
     } catch (err) {
       console.error("[canvasArtifactService.getVersionHistory] Error:", err);
       return [];

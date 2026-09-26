@@ -33,6 +33,7 @@ import {
   type CanvasArtifactRow,
 } from "@/features/canvas/services/canvasArtifactService";
 import { CANVAS_ITEM_UPDATED_EVENT } from "@/features/canvas/hooks/useCanvasItem";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 /** Pull the readable body out of the stored `{ data, type, metadata }` shape. */
 function versionText(row: CanvasArtifactRow): string {
@@ -63,16 +64,20 @@ export function ArtifactVersionHistory({
 }: ArtifactVersionHistoryProps) {
   const [rows, setRows] = useState<CanvasArtifactRow[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [restoringId, setRestoringId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const history = await canvasArtifactService.getVersionHistory(canvasItemId);
+      const history = await canvasArtifactService.readVersionHistory(canvasItemId);
       const sorted = [...history].sort((a, b) => b.version - a.version);
       setRows(sorted);
       setSelectedId(sorted[0]?.id ?? null);
+      setLoadError(null);
+    } catch (err) {
+      setLoadError(err ?? true);
     } finally {
       setLoading(false);
     }
@@ -138,7 +143,15 @@ export function ArtifactVersionHistory({
           </div>
         )}
 
-        {!loading && rows && rows.length === 0 && (
+        {!loading && loadError != null && (
+          <ReadFailure
+            error={loadError}
+            what="this artifact's versions"
+            onRetry={() => void load()}
+          />
+        )}
+
+        {!loading && loadError == null && rows && rows.length === 0 && (
           <div className="px-3 py-6 text-center text-xs text-muted-foreground">
             No saved versions yet.
           </div>

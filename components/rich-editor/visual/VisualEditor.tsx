@@ -29,8 +29,11 @@ import type { FindOptions } from "../core/find-replace";
 import { createVisualExtensions, type RichShellActions } from "./visual-extensions";
 import { findHighlightKey } from "./decorations";
 import { BlockHandle } from "./BlockHandle";
-import { SelectionToolbar } from "./SelectionToolbar";
 import { TableToolbar } from "./TableToolbar";
+import { useAlchemyActions } from "@ai-matrx/alchemy/react/host";
+import { useSelectionZone } from "@/components/selection-toolbar/selection-zones";
+import { ensureProvider } from "@/components/selection-toolbar/selection-actions";
+import { RICH_EDITOR_HOST_KEY, richEditorFormatProvider, type RichEditorSelectionHost } from "./format-actions";
 import { useRichEditorContext } from "../RichEditorContext";
 
 const HEADLESS_SCHEMA = getSchema(createRichEditorExtensions());
@@ -284,22 +287,29 @@ export function VisualEditor({
     currentLink: () => (editor?.getAttributes("link").href as string | undefined) ?? null,
   }));
 
+  // Formatting lives in the ONE selection toolbar (components/selection-toolbar):
+  // this editor is a selection zone carrying its half of the click target, and
+  // the formatting verbs are registry actions (./format-actions).
+  const { registry } = useAlchemyActions();
+  ensureProvider(registry, richEditorFormatProvider);
+  const [zoneElement, setZoneElement] = useState<HTMLDivElement | null>(null);
+  const editorHalf: RichEditorSelectionHost | null = editor
+    ? { kind: "rich-editor", editor, onEditLink: shell.editLink, offerVariables: context.variables !== null }
+    : null;
+  useSelectionZone(zoneElement, editorHalf ? { editable: !context.readOnly, host: { [RICH_EDITOR_HOST_KEY]: editorHalf } } : null);
+
   return (
     <div
-      ref={container}
+      ref={(node) => {
+        container.current = node;
+        setZoneElement(node);
+      }}
       className={cn("rich-editor-visual relative h-full overflow-y-auto", focusMode && "rich-editor-focus")}
       data-testid="rich-editor-visual"
     >
       <BlockHandle editor={editor} container={container} />
       <EditorContent editor={editor} className="mx-auto max-w-3xl pb-[40dvh]" />
       {editor && !context.readOnly && <TableToolbar editor={editor} />}
-      {editor && (
-        <SelectionToolbar
-          editor={editor}
-          onEditLink={shell.editLink}
-          offerVariables={context.variables !== null}
-        />
-      )}
     </div>
   );
 }

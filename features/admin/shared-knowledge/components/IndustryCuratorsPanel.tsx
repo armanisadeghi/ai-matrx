@@ -9,7 +9,7 @@
 // (admin), grant/revoke via the existing RPC pair; people are found by email
 // through the canonical `searchUserByEmail`.
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Loader2, Plus, ShieldCheck, X } from "lucide-react";
@@ -24,10 +24,10 @@ import {
 } from "@/features/industries/service";
 import type { Industry } from "@/features/industries/types";
 import { UserSearchField } from "@/features/user-search/UserSearchField";
+import { useRead } from "@/components/read-state/useRead";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export function IndustryCuratorsPanel({ industry }: { industry: Industry }) {
-  const [curators, setCurators] = useState<IndustryCurator[]>([]);
-  const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [granting, setGranting] = useState(false);
@@ -37,23 +37,13 @@ export function IndustryCuratorsPanel({ industry }: { industry: Industry }) {
   const [revokeBusy, setRevokeBusy] = useState(false);
   const [bumper, setBumper] = useState(0);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    fetchIndustryCurators(industry.id)
-      .then((rows) => {
-        if (!cancelled) setCurators(rows);
-      })
-      .catch((e) => {
-        if (!cancelled) toast.error(extractErrorMessage(e));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [industry.id, bumper]);
+  const curatorsRead = useRead(
+    () => fetchIndustryCurators(industry.id),
+    [industry.id, bumper],
+    { initialData: [] as IndustryCurator[] },
+  );
+  const curators = curatorsRead.data ?? [];
+  const loading = curatorsRead.isLoading;
 
   const onGrant = async () => {
     const value = email.trim();
@@ -149,6 +139,13 @@ export function IndustryCuratorsPanel({ industry }: { industry: Industry }) {
         <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading…
         </div>
+      ) : curatorsRead.isError && curators.length === 0 ? (
+        <ReadFailure
+          error={curatorsRead.error ?? true}
+          what={`the curators of ${industry.name}`}
+          onRetry={curatorsRead.retry}
+          className="m-0"
+        />
       ) : curators.length === 0 ? (
         <div className="rounded-md border border-dashed border-border px-3 py-3 text-center text-xs text-muted-foreground">
           No curators yet — only platform admins can author packs for this
