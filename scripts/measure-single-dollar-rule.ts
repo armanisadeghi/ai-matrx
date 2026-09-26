@@ -97,10 +97,12 @@ function afterOf(text: string, close: number, mode: AfterMode): string | undefin
  *   - `template-literal`: `${a}${b}`, `${name}` — the span is `{identifier}` or the
  *     closer is glued to the next `${`;
  *   - `shell-variable-chain`: `$USER$HOSTNAME`, `A=$A$B`, `df$col$sub`, `$name.$ext`,
- *     `PS1='$USER@$HOST'` — an identifier span whose closer is glued to the next name.
+ *     `PS1='$USER@$HOST'` — an identifier span whose closer is glued to the next name;
+ *   - `php-perl-member`: `$this->$prop`, `$obj->$method`, `$class::$instance`.
  */
 function spanClass(content: string, afterName: string): string {
   if (/^\{[A-Za-z_][\w.]*\}$/.test(content) || afterName.startsWith("{")) return "template-literal";
+  if (/^[A-Za-z_][A-Za-z0-9_]*(?:->|::)$/.test(content) && /^[A-Za-z0-9_]/.test(afterName)) return "php-perl-member";
   if (/^[A-Za-z_][A-Za-z0-9_]*[.@-]?$/.test(content) && /^[A-Za-z0-9_]/.test(afterName)) return "shell-variable-chain";
   return "other";
 }
