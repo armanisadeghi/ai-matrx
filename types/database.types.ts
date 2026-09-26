@@ -55634,7 +55634,6 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
-          is_personal: boolean | null
           is_system: boolean
           logo_file_id: string | null
           logo_url: string | null
@@ -55655,7 +55654,6 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
-          is_personal?: boolean | null
           is_system?: boolean
           logo_file_id?: string | null
           logo_url?: string | null
@@ -55676,7 +55674,6 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
-          is_personal?: boolean | null
           is_system?: boolean
           logo_file_id?: string | null
           logo_url?: string | null
@@ -56530,15 +56527,6 @@ export type Database = {
         Args: { p_email: string; p_meta: Json }
         Returns: string
       }
-      backfill_org_from_owner: {
-        Args: { p_execute?: boolean }
-        Returns: {
-          note: string
-          rows_affected: number
-          schema_name: string
-          table_name: string
-        }[]
-      }
       can_access_conversation: { Args: { p_conv: string }; Returns: boolean }
       can_access_run: { Args: { p_run: string }; Returns: boolean }
       can_decide_access_request: {
@@ -56631,7 +56619,7 @@ export type Database = {
       }
       default_organization_id: { Args: { p_user_id: string }; Returns: string }
       derive_organization_abbreviation: {
-        Args: { p_is_personal?: boolean; p_name: string }
+        Args: { p_name: string }
         Returns: string
       }
       discoverable_card: {
@@ -56972,14 +56960,6 @@ export type Database = {
         Args: { p_org_id: string; p_user_id: string }
         Returns: boolean
       }
-      is_personal_dependents: {
-        Args: never
-        Returns: {
-          detail: string
-          identity: string
-          kind: string
-        }[]
-      }
       is_trusted_backend: { Args: never; Returns: boolean }
       lane_of: {
         Args: { p_resource_id: string; p_resource_type: string }
@@ -57160,12 +57140,11 @@ export type Database = {
       personal_data_relations: {
         Args: never
         Returns: {
-          is_personal: boolean
+          names_a_person: boolean
           relation: string
           why: string
         }[]
       }
-      personal_org_id: { Args: { p_user_id: string }; Returns: string }
       placeholder_in_a_name: {
         Args: { p_name: string; p_slug?: string }
         Returns: string
@@ -60429,7 +60408,6 @@ export type Database = {
               home_label: string
               id: string
               is_enabled: boolean
-              is_personal_home: boolean
               is_system: boolean
               mandate_key: string
               name: string
@@ -60460,7 +60438,6 @@ export type Database = {
           in_orgs: boolean
           in_public: boolean
           in_shared: boolean
-          is_personal_home: boolean
           is_system: boolean
           mandate_key: string
           name: string
@@ -73059,6 +73036,10 @@ export type Database = {
         Args: { p_definitions: Json; p_organization_id: string; p_values: Json }
         Returns: Json
       }
+      cutover_carry_removals: {
+        Args: { p_org: string; p_tables?: string[] }
+        Returns: Json
+      }
       cutover_census_record: {
         Args: { p_census: Json; p_key: string; p_seam: string }
         Returns: Json
@@ -73071,6 +73052,22 @@ export type Database = {
       cutover_evaluation_carry: {
         Args: { p_id: string; p_org: string; p_patch: Json }
         Returns: boolean
+      }
+      cutover_older_removal_rows: {
+        Args: { p_org: string; p_tables?: string[] }
+        Returns: {
+          kept_image: boolean
+          kind: string
+          principal_kind: string
+          record_id: string
+          table_id: string
+          table_name: string
+          what: string
+        }[]
+      }
+      cutover_older_removals: {
+        Args: { p_org: string; p_tables?: string[] }
+        Returns: Json
       }
       cutover_older_row_changed_since: {
         Args: { p_now: Json; p_row: string; p_since: string; p_table: string }
@@ -76763,10 +76760,6 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      _d31_impl_ensure_personal_organization: {
-        Args: { p_user_id: string }
-        Returns: string
-      }
       _d31_impl_get_feedback_comments: {
         Args: { p_feedback_id: string }
         Returns: Database["users"]["Tables"]["feedback_comments"]["Row"][]
@@ -79866,7 +79859,6 @@ export type Database = {
       crm_unmerge_parties: { Args: { p_merge_id: string }; Returns: undefined }
       ctx_seed_template: { Args: { p_template: Json }; Returns: string }
       curatable_processed_document_ids: { Args: never; Returns: string[] }
-      current_personal_org_id: { Args: never; Returns: string }
       cvx_audience: {
         Args: {
           p_conversation_type: string
@@ -80688,10 +80680,6 @@ export type Database = {
           p_organization_id: string
           p_owner_id: string
         }
-        Returns: string
-      }
-      ensure_personal_organization: {
-        Args: { p_user_id: string }
         Returns: string
       }
       ensure_updated_at_on_table: {
@@ -81978,7 +81966,6 @@ export type Database = {
         Args: { user_id: string }
         Returns: {
           id: string
-          is_personal: boolean
           name: string
           role: Database["public"]["Enums"]["org_role"]
           slug: string
@@ -83672,7 +83659,6 @@ export type Database = {
           archive_reason: string
           archived_at: string
           id: string
-          is_personal: boolean
           name: string
           role: Database["public"]["Enums"]["org_role"]
           slug: string
