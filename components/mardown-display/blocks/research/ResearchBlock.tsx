@@ -9,12 +9,31 @@ import type {
   ResearchRecommendation,
 } from "./parseResearchMarkdown";
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { 
-  BookOpen, ExternalLink, ChevronDown, ChevronRight, 
-  Maximize2, Minimize2, Search, TrendingUp, AlertTriangle,
-  CheckCircle2, Target, Lightbulb, Award, Eye, Filter,
-  BarChart3, Users, Briefcase, Scale, Clock, Star, Printer
-} from 'lucide-react';
+import {
+  BookOpen,
+  ExternalLink,
+  ChevronDown,
+  ChevronRight,
+  Maximize2,
+  Minimize2,
+  Search,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle2,
+  Target,
+  Lightbulb,
+  Award,
+  Eye,
+  Filter,
+  BarChart3,
+  Users,
+  Briefcase,
+  Scale,
+  Clock,
+  Star,
+  Printer,
+  ArrowUpRight,
+} from "lucide-react";
 import { useCanvas } from '@/features/canvas/hooks/useCanvas';
 import { useOpenArtifactInCanvas } from '@/features/canvas/hooks/useOpenArtifactInCanvas';
 import { isMaterializedArtifactId } from '@/features/canvas/artifact-types/artifactId';
@@ -266,7 +285,7 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({
                         onClick={handleOpenCanvas}
                         className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500 dark:bg-purple-600 text-white text-sm font-semibold shadow-md hover:bg-purple-600 dark:hover:bg-purple-700 hover:shadow-lg transform hover:scale-105 transition-all"
                       >
-                        <ExternalLink className="h-4 w-4" />
+                        <ArrowUpRight className="h-4 w-4" />
                         <span>Canvas</span>
                       </button>
                       <button

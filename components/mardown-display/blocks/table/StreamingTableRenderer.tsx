@@ -25,11 +25,11 @@ import {
   FileDown,
   ChevronDown,
   Database,
-  ExternalLink,
   Table2,
   Columns3,
   Maximize2,
   EyeOff,
+  ArrowUpRight,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -739,7 +739,7 @@ const StreamingTableRendererCore: React.FC<
           onClick={handleViewSavedTable}
           className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
         >
-          <ExternalLink className="h-4 w-4" />
+          <ArrowUpRight className="h-4 w-4" />
           View Saved Table
         </Button>
       );

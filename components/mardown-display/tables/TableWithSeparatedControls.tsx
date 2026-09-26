@@ -17,7 +17,7 @@ import {
   FileDown,
   ChevronDown,
   Database,
-  ExternalLink,
+  ArrowUpRight,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -223,7 +223,7 @@ const TableControls: React.FC<TableControlsProps> = ({
           className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
           disabled={isUpdating}
         >
-          <ExternalLink className="h-4 w-4" />
+          <ArrowUpRight className="h-4 w-4" />
           View Saved Table
         </Button>
       );
@@ -273,7 +273,7 @@ const TableControls: React.FC<TableControlsProps> = ({
           >
             {savedTableInfo ? (
               <>
-                <ExternalLink className="h-4 w-4" />
+                <ArrowUpRight className="h-4 w-4" />
                 View Saved Table
               </>
             ) : (

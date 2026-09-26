@@ -23,8 +23,8 @@ import {
   Save,
   Cloud,
   CloudOff,
-  ExternalLink,
   Printer,
+  ArrowUpRight,
 } from "lucide-react";
 import { quizPrinter } from "./quiz-printer";
 import {
@@ -1006,7 +1006,7 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
           }}
           title="Open in Canvas"
         >
-          <ExternalLink className="h-3.5 w-3.5" />
+          <ArrowUpRight className="h-3.5 w-3.5" />
         </Button>
       )}
       <Button

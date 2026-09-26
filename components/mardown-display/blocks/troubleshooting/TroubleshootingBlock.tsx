@@ -36,6 +36,7 @@ import {
   MessageSquare,
   Upload,
   Printer,
+  ArrowUpRight,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
@@ -415,7 +416,7 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
                         onClick={handleOpenCanvas}
                         className="flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500 dark:bg-purple-600 text-white text-sm font-semibold shadow-md hover:bg-purple-600 dark:hover:bg-purple-700 hover:shadow-lg transition-all @4xl:min-h-0 @4xl:w-auto @4xl:flex-none"
                       >
-                        <ExternalLink className="h-4 w-4" />
+                        <ArrowUpRight className="h-4 w-4" />
                         <span>Canvas</span>
                       </button>
                       <button

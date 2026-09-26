@@ -64,6 +64,7 @@ const ViewTableModal: React.FC<ViewTableModalProps> = ({
               onClick={handleOpenInNewTab}
               className="text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-800/30 border border-blue-300 dark:border-blue-700"
             >
+              {/* new-tab-icon: handler calls window.open(..., "_blank", ...) defined elsewhere in this file */}
               <ExternalLink className="h-4 w-4 mr-2" />
               Open in New Tab
             </Button>

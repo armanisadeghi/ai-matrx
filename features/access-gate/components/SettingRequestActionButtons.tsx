@@ -132,7 +132,7 @@ export function SettingRequestActionButtons({
       ) : null}
       {safeHref ? (
         <Button asChild className={size} size="sm" variant="outline">
-          <Link href={safeHref}>
+          <Link href={safeHref} target="_blank" rel="noopener noreferrer">
             <ExternalLink className="h-3.5 w-3.5" aria-hidden />
             Open setting
           </Link>

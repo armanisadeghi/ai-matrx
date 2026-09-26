@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, ExternalLink } from "lucide-react";
+import { Loader2, ArrowUpRight } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { VALID_DATA_TYPES } from "@/utils/user-table-utls/table-utils";
 // The seam's one birth and row write (lane INTEG-CLIENTS): the record store for an
@@ -332,7 +332,7 @@ export const JsonToTableDialog: React.FC<JsonToTableDialogProps> = ({
               </>
             ) : (
               <>
-                <ExternalLink className="w-4 h-4 mr-2" />
+                <ArrowUpRight className="w-4 h-4 mr-2" />
                 Save & open
               </>
             )}

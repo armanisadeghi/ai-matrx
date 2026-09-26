@@ -150,7 +150,9 @@ export default function PodcastEpisodeBlock({
             <Link
               href={episodeUrl}
               className="ml-auto inline-flex items-center gap-1 rounded text-xs text-primary underline-offset-2 hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-            >
+               target="_blank"
+               rel="noopener noreferrer"
+             >
               Open episode
               <ExternalLink className="h-3 w-3" />
             </Link>

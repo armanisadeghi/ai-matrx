@@ -3,12 +3,12 @@
 import React, { useMemo, useState } from "react";
 import {
   BookOpen,
-  ExternalLink,
   Grid2x2,
   LayoutList,
   Maximize2,
   Printer,
   Smartphone,
+  ArrowUpRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WrenchTapButton } from "@ai-matrx/tap-target/buttons";
@@ -302,7 +302,7 @@ export function FlashcardsSetControls({
             onClick={onOpenCanvas}
             disabled={openingCanvas}
           >
-            <ExternalLink className="h-3 w-3" />
+            <ArrowUpRight className="h-3 w-3" />
             Canvas
           </Button>
           {showFullscreen && onFullscreen && (
@@ -375,7 +375,7 @@ export function FlashcardsSetControls({
         disabled={openingCanvas}
         title="Open in canvas"
       >
-        <ExternalLink className={iconClass} />
+        <ArrowUpRight className={iconClass} />
       </Button>
       {showFullscreen && onFullscreen && (
         <Button

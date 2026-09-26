@@ -9,7 +9,7 @@
 // student's own completion comes from edu_class_student_progress(class, self).
 // Reuses the shared assignment display primitives + the education entityRoutes map.
 
-import { ClipboardList, ExternalLink } from "lucide-react";
+import { ClipboardList, ArrowUpRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useClassAssignments } from "../hooks/useClassAssignments";
@@ -87,7 +87,7 @@ export function AssignedToYouPanel({ classId }: { classId: string }) {
                     className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent"
                   >
                     {status === "completed" ? "Review" : "Study"}
-                    <ExternalLink className="h-3 w-3" />
+                    <ArrowUpRight className="h-3 w-3" />
                   </button>
                 )}
               </li>

@@ -329,7 +329,7 @@ export function CmsPageAiActionDialog({
                 }
                 action={
                   <Button asChild variant="outline" size="sm">
-                    <a href={planHref}>
+                    <a href={planHref} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                       Open Plan
                     </a>

@@ -27,7 +27,7 @@
  */
 
 import type { LucideIcon } from "lucide-react";
-import { ExternalLink, Quote } from "lucide-react";
+import { ArrowUpRight, Quote } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -96,7 +96,7 @@ export function CitationPopoverBody({
           onClick={onOpen}
           className="inline-flex items-center gap-1 self-start text-xs font-medium text-primary hover:underline"
         >
-          <ExternalLink className="h-3 w-3" aria-hidden />
+          <ArrowUpRight className="h-3 w-3" aria-hidden />
           {openLabel}
         </button>
       )}

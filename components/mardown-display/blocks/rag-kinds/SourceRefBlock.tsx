@@ -32,7 +32,7 @@
  */
 
 import React from "react";
-import { ExternalLink, Quote } from "lucide-react";
+import { ArrowUpRight, Quote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
 import { readSearchKindValue, text } from "../search-kinds/search-kind-data";
@@ -232,7 +232,7 @@ export function SourceRefBlock({
               onClick={onOpen}
               className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
             >
-              <ExternalLink className="h-3 w-3" aria-hidden />
+              <ArrowUpRight className="h-3 w-3" aria-hidden />
               Open source
             </button>
           )}

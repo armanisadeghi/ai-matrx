@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, ExternalLink, AlertTriangle, ArrowRight } from "lucide-react";
+import { Loader2, AlertTriangle, ArrowRight, ArrowUpRight } from "lucide-react";
 import { toast } from "@/lib/toast";
 import type { TableField } from "@/utils/user-table-utls/table-utils";
 import { listTablesEverywhere, readTableDetails } from "@/features/data-tables/service";
@@ -423,7 +423,7 @@ export const AppendToTableDialog: React.FC<AppendToTableDialogProps> = ({
               </>
             ) : (
               <>
-                <ExternalLink className="w-4 h-4 mr-2" />
+                <ArrowUpRight className="w-4 h-4 mr-2" />
                 Append &amp; open
               </>
             )}

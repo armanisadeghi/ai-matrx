@@ -21,11 +21,11 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
   ArrowDownUp,
+  ArrowUpRight,
   Bug,
   ChevronDown,
   Cloud,
   CloudOff,
-  ExternalLink,
   Code,
   Eye,
   Layers,
@@ -378,7 +378,7 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
             content.metadata?.canvasItemId ?? item.savedItemId,
           ) && (
             <TapTargetButton
-              icon={<ExternalLink className="h-4 w-4" />}
+              icon={<ArrowUpRight className="h-4 w-4" />}
               ariaLabel="Open full page"
               tooltip="Open full page"
               onClick={() => {

@@ -6,10 +6,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { 
-  BookmarkIcon, 
-  TrashIcon, 
-  CopyIcon, 
-  ExternalLinkIcon, 
+  BookmarkIcon,
+  TrashIcon,
+  CopyIcon,
+  ArrowRightIcon,
   FileUp,
   ImportIcon,
   FilterIcon,
@@ -351,7 +351,7 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
                                   }}
                                   className="h-8 w-8"
                                 >
-                                  <ExternalLinkIcon className="h-4 w-4" />
+                                  <ArrowRightIcon className="h-4 w-4" />
                                 </Button>
                               )}
                               <Button
