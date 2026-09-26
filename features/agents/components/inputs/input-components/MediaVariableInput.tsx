@@ -171,7 +171,8 @@ export function MediaVariableInput({
     selectRuntimeVariableResourcePolicies(conversationId ?? ""),
   );
   const policyKey = variableKey ?? variableName;
-  const effectiveResourceContext = runtimePolicies[policyKey] ?? resourceContext;
+  const effectiveResourceContext =
+    runtimePolicies[policyKey] ?? resourceContext;
   const meta = KIND_META[mediaKind];
   const Icon = meta.Icon;
   const stored = readValue(value);

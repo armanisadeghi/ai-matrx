@@ -237,7 +237,19 @@ function messageMediaPartToUserInputPart(
 
 /** Convert an already-persisted part back to the generated request contract. */
 export function messagePartToUserInputPart(part: MessagePart): UserInputPart {
-  return part.type === "media" ? messageMediaPartToUserInputPart(part) : part;
+  if (part.type === "media") return messageMediaPartToUserInputPart(part);
+  if (part.type === "hosted_tool") {
+    // hosted_tool is server-persisted assistant-turn state (a provider
+    // server_tool_use / web_search_tool_result block replayed verbatim) — it
+    // is never user-authored and has no request-side shape. Reaching this
+    // branch means a caller fed assistant content through the user-input
+    // conversion path; fail loudly instead of smuggling it into the request
+    // contract as an arbitrary object.
+    throw new Error(
+      "messagePartToUserInputPart: hosted_tool is server-only assistant state and can never be a user input part.",
+    );
+  }
+  return part;
 }
 
 function requestPartLabel(part: UserInputPart): string {

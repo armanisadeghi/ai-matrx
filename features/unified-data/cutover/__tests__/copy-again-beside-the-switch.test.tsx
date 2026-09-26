@@ -9,7 +9,9 @@
 //   1. "Copy again" sits beside "Check again" when a check copying again clears is unmet;
 //   2. pressing it runs the rerun for THIS organization, shows its progress, then its one line, and
 //      measures again on its own, so the sentence updates (the second board is green, the button goes);
-//   3. it is absent when nothing copying again clears is unmet, and for a member who may not press.
+//   3. it is absent when nothing copying again clears is unmet, and for a member who may not press;
+//   4. (lane MOVER-CARRY-TAILS) it is absent when the only unmet check's differences are ones copying
+//      again cannot clear — a share only the copy has — and the check's sentence says what to do.
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
@@ -39,7 +41,10 @@ const ORG = "1fedf48b-9a77-432e-a5e3-2d93ee140564";
 const COLOUR_SAYS =
   "1 colour differs, in 1 table: Service Calls: cell d4b68c2d · Job is teal on the older table and red on the copy. Copying again brings the older table's colours.";
 
-function board(opts: { colours: boolean; mayPress?: boolean }): SeamBoard {
+const SHARE_SAYS =
+  "1 share differs. Copying again does not change it: Service Calls: dispatch@ridgelinehvac.test holds the copy as viewer and has no share on the older table — take it off the copy's Share, or share the older table the same way.";
+
+function board(opts: { colours: boolean; mayPress?: boolean; copyOnlyShare?: boolean }): SeamBoard {
   const checks: SeamCheck[] = [
     { key: "copied", says: "Every table is copied into the new system", met: true, detail: "3 of 3 tables copied." },
     {
@@ -50,6 +55,16 @@ function board(opts: { colours: boolean; mayPress?: boolean }): SeamBoard {
     },
     { key: "automations_follow", says: "Every automation names its table", met: true, detail: null },
   ];
+  if (opts.copyOnlyShare) {
+    checks.push({
+      key: "shares_match",
+      says: "Every copy is shared exactly as its older table",
+      met: false,
+      detail: SHARE_SAYS,
+      copy_again_clears: 0,
+      copy_again_leaves: 1,
+    });
+  }
   return {
     organizationId: ORG,
     checkedAt: "2026-09-26T06:00:00Z",
@@ -160,4 +175,19 @@ test("absent when nothing copying again clears is unmet, and for a member", asyn
   await mount();
   expect(container.textContent).toContain(COLOUR_SAYS);
   expect(button("Copy again")).toBeUndefined();
+});
+
+test("absent when the only unmet check is one copying again cannot clear, whose sentence says what to do", async () => {
+  readSeamBoard.mockResolvedValue(board({ colours: true, copyOnlyShare: true }));
+  await mount();
+  expect(container.textContent).toContain(SHARE_SAYS);
+  expect(button("Check again")).toBeDefined();
+  expect(button("Copy again")).toBeUndefined();
+  act(() => root.unmount());
+  container.remove();
+
+  // The same share beside a colour copying again does clear: offered.
+  readSeamBoard.mockResolvedValue(board({ colours: false, copyOnlyShare: true }));
+  await mount();
+  expect(button("Copy again")).toBeDefined();
 });

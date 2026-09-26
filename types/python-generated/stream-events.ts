@@ -4298,6 +4298,13 @@ export interface WebSearchPart {
   status?: string;
 }
 
+export interface HostedToolPart {
+  metadata?: Record<string, unknown>;
+  type: "hosted_tool";
+  provider?: string;
+  block?: Record<string, unknown>;
+}
+
 export interface PreFetchedUrl {
   [key: string]: unknown;
   url: string;
@@ -4665,6 +4672,7 @@ export type MessagePart =
   | CodeExecPart
   | CodeResultPart
   | WebSearchPart
+  | HostedToolPart
   | WebpageInputPart
   | NotesInputPart
   | TaskInputPart
@@ -6068,6 +6076,38 @@ const MESSAGE_PART_SCHEMA: MessagePartJsonSchema = {
         "table_id"
       ],
       "title": "FullTableBookmark",
+      "type": "object"
+    },
+    "HostedToolPart": {
+      "additionalProperties": false,
+      "description": "A provider-hosted tool block (Anthropic ``server_tool_use`` /\n``web_search_tool_result``) stored verbatim so a resumed tool loop can\nreplay the assistant turn block-for-block. Provider state, never a call.",
+      "properties": {
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        },
+        "type": {
+          "const": "hosted_tool",
+          "default": "hosted_tool",
+          "title": "Type",
+          "type": "string"
+        },
+        "provider": {
+          "default": "",
+          "title": "Provider",
+          "type": "string"
+        },
+        "block": {
+          "additionalProperties": true,
+          "title": "Block",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "HostedToolPart",
       "type": "object"
     },
     "ImageMediaPart": {
@@ -8251,6 +8291,9 @@ const MESSAGE_PART_SCHEMA: MessagePartJsonSchema = {
     },
     {
       "$ref": "#/$defs/WebSearchPart"
+    },
+    {
+      "$ref": "#/$defs/HostedToolPart"
     },
     {
       "$ref": "#/$defs/WebpageInputPart"

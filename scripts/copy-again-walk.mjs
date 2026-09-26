@@ -7,7 +7,7 @@
 // 2. With TABLE=<copied table id>: /data-v2/<table> ⋯ menu shows "Copy this table again"; with
 //    PRESS=1 it is chosen and the toast's result is read.
 //
-//   ORIGIN=<site> ORG=<id> [TABLE=<id>] SHOTS=<dir> [PRESS=1] node scripts/copy-again-walk.mjs
+//   ORIGIN=<site> ORG=<id> [TABLE=<id>] SHOTS=<dir> [PRESS=1] [EXPECT_COPY_AGAIN=0] node scripts/copy-again-walk.mjs
 //
 // Prints a JSON verdict; exit 1 on any miss.
 import { chromium } from "playwright";
@@ -71,7 +71,11 @@ try {
   out.card_before = await sectionText();
   out.copy_again_shown = await button("Copy again").isVisible().catch(() => false);
   await page.screenshot({ path: join(SHOTS, `copy-again-card-${TAG}-before.png`), fullPage: false });
-  if (!out.copy_again_shown) misses.push("Copy again is not beside Check again");
+  // EXPECT_COPY_AGAIN=0 (lane MOVER-CARRY-TAILS): the switch names nothing copying again clears, so
+  // the button must be ABSENT; its presence is then the miss.
+  if (process.env.EXPECT_COPY_AGAIN === "0") {
+    if (out.copy_again_shown) misses.push("Copy again is offered although no unmet check has anything it clears");
+  } else if (!out.copy_again_shown) misses.push("Copy again is not beside Check again");
 
   if (PRESS && out.copy_again_shown) {
     await button("Copy again").click();
@@ -100,7 +104,8 @@ try {
     if (!out.menu_item_shown) misses.push("the table menu has no Copy this table again");
     if (PRESS && out.menu_item_shown) {
       await item.click();
-      const done = page.locator("[data-sonner-toast]", { hasText: /Copied|not copied again/ }).last();
+      // The toast first carries progress ("Copied 1 of 1: …"), then the result line; wait for the result.
+      const done = page.locator("[data-sonner-toast]", { hasText: /again\.|not copied again|already being copied/ }).last();
       await need("toast result", () => done.isVisible(), 300000);
       out.toast_text = (await done.innerText()).trim();
       await page.screenshot({ path: join(SHOTS, `copy-again-menu-${TAG}-toast.png`) });

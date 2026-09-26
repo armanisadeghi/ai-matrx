@@ -194,7 +194,7 @@ async function main() {
 
     const plan = syncPlan(manifests, organizationId);
     const surfaceRows = await client.query<Row>(
-      "select name, client_name, execution_mode, description, is_active, label, value_groups, readiness, readiness_note, overlay_id, url_pattern, intro, parent_surface_name from ui.ui_surface where name = any($1::text[])",
+      "select name, client_name, execution_mode, description, is_active, label, value_groups, readiness, readiness_note, overlay_id, url_pattern, intro, parent_surface_name, content_hash from ui.ui_surface where name = any($1::text[])",
       [namesSql],
     );
     const childRows: QueryResult<Row>[] = [];

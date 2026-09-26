@@ -51,6 +51,7 @@ import {
 import { useEntityListSelection } from "../useEntityListSelection";
 import type { MatrxDataTableSelectionConfig } from "@ai-matrx/design-system/data-table/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { EntitySourceFailures } from "./EntitySourceFailures";
 
 const EMPTY_ITEM_MENU_CONFIG: ItemMenuConfig = { sections: [] };
 
@@ -639,7 +640,13 @@ export function EntityListPage<TRow>({
               scope={list.query.scope}
               scopes={visibleScopes}
               counts={list.counts}
-              countsLoading={list.countsLoading}
+              // 🚨 A FAILED COUNT IS NOT ZERO. When the counts read fails the
+              // controller holds EMPTY_SCOPE_COUNTS, and a settled empty count
+              // renders as `0` on every tab — /mandates/list-preview read
+              // "0 · 0 · 0" over a populated list after a 57014 (2026-09-26).
+              // A count nobody measured shows no number; the notice below says
+              // why and offers Try again.
+              countsLoading={list.countsLoading || Boolean(list.countsError)}
               onChange={list.setScope}
             />
           </div>
@@ -726,6 +733,28 @@ export function EntityListPage<TRow>({
             )}
             <ErrorAlchemyMenu className="ml-auto" />
           </div>
+        )}
+
+        {/*
+          THE SIDE READS' FAILURE. The rows loaded but the tab counts or the
+          filter options did not: one plain sentence each, one Try again
+          (a refresh re-asks all three reads). Never shown while the rows
+          themselves failed — the slot above already speaks for the list.
+        */}
+        {!list.error && (list.countsError || list.facetsError) && (
+          <EntitySourceFailures
+            operation={`Load ${plural}`}
+            failures={[
+              ...(list.countsError
+                ? [{ label: "The tab counts", error: list.countsError }]
+                : []),
+              ...(list.facetsError
+                ? [{ label: "The filter options", error: list.facetsError }]
+                : []),
+            ]}
+            consequence="The tabs show no number and the filters offer no options until they load; the list itself is unaffected."
+            onRetry={list.refresh}
+          />
         )}
 
         {/*

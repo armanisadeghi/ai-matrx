@@ -13,6 +13,7 @@ import { AGENT_CONFIG_KEYS, type AgentConfigKey } from "../../admin/types";
 import { AgentRoleCard } from "./AgentRoleCard";
 import { useResearchAgentRoles } from "./useResearchAgentRoles";
 import { GoogleBackgroundAgentCard } from "./GoogleBackgroundAgentCard";
+import { DeepResearchMandateCard } from "./DeepResearchMandateCard";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
@@ -156,6 +157,9 @@ export default function TopicAgentsPage() {
         />
       </header>
 
+      {/* Deep research runs through its mandate. The old direct card below it
+          stays, labelled, until Arman approves its removal (UI-REGISTER). */}
+      <DeepResearchMandateCard topic={topic} />
       <GoogleBackgroundAgentCard topicId={topic.id} />
 
       {/* ── Role cards ─────────────────────────────────────────── */}

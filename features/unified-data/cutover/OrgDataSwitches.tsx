@@ -15,7 +15,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { usePageCaptureContribution } from "@/components/agent-copy/page-capture/usePageCapture";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { pressSeam, readSeamBoard, type Seam, type SeamBoard, type SeamState } from "./seamSwitches";
-import { CHECKS_COPY_AGAIN_CLEARS, copyAgain } from "./copyAgain";
+import { copyAgain, copyAgainClears } from "./copyAgain";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Pending = { seam: Seam; to: SeamState } | null;
@@ -119,12 +119,13 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
   if (!board) return null;
 
   const pressable = board.seams.filter((s) => s.pressKind === "owner_press");
-  // Offered only when the tables switch is on the old side and names a difference copying again clears.
+  // Offered only when the tables switch is on the old side and an unmet check has a difference copying
+  // again clears (the readiness answer says so per check; the rest are named with what to do instead).
   const tables = board.seams.find((s) => s.key === "older_tables");
-  const copyAgainClears =
+  const offerCopyAgain =
     board.mayPress &&
     tables?.state === "old" &&
-    tables.checks.some((c) => !c.met && CHECKS_COPY_AGAIN_CLEARS.includes(c.key));
+    tables.checks.some(copyAgainClears);
   const elsewhere = board.seams.filter((s) => s.pressKind !== "owner_press");
 
   return (
@@ -135,7 +136,7 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
           <RefreshCw className={`h-3.5 w-3.5 mr-1 ${loading ? "animate-spin" : ""}`} />
           Check again
         </Button>
-        {(copyAgainClears || copying) && (
+        {(offerCopyAgain || copying) && (
           <Button
             variant="outline"
             size="sm"

@@ -39,9 +39,9 @@ import { resolveSurfaceUrlPattern } from "@/features/surfaces/utils/surface-url-
  * column — or upserts on a key — the database does not have.
  */
 export const SYNC_SCHEMA: SyncSchema = {
-  itemType: false,
-  valueContract: false,
-  contentHash: false,
+  itemType: true,
+  valueContract: true,
+  contentHash: true,
 };
 
 const NAME_RE = /^[a-z][a-z0-9_]*$/;

@@ -14,13 +14,19 @@
 
 import type { AppDispatch } from "@/lib/redux/store";
 import { callApi } from "@/lib/api/call-api";
+
+import type { SeamCheck } from "./seamSwitches";
 import type {
   CutoverCopyAgainProgressData,
   CutoverCopyAgainReportData,
   TypedStreamEvent,
 } from "@/types/python-generated/stream-events";
 
-/** The readiness checks a copy-again rerun clears — the switch shows "Copy again" when one is unmet. */
+/**
+ * The readiness checks a copy-again rerun can clear. Only the fallback for a readiness answer that
+ * does not say per check (a database without lane MOVER-CARRY-TAILS' file): the answer's own
+ * `copy_again_clears` decides otherwise — see {@link copyAgainClears}.
+ */
 export const CHECKS_COPY_AGAIN_CLEARS: readonly string[] = [
   "copied",
   "rows_present",
@@ -30,6 +36,18 @@ export const CHECKS_COPY_AGAIN_CLEARS: readonly string[] = [
   "formats_match",
   "shares_match",
 ];
+
+/**
+ * Would pressing "Copy again" clear any of this unmet check's differences? The readiness answer says
+ * so per check (`copy_again_clears`, lane MOVER-CARRY-TAILS): a share only the copy has, a level that
+ * differs, a format that changes a column's kind are not cleared, and the button must not be offered
+ * for them alone — the check's sentence names what to do instead.
+ */
+export function copyAgainClears(check: Pick<SeamCheck, "key" | "met" | "copy_again_clears">): boolean {
+  if (check.met) return false;
+  if (typeof check.copy_again_clears === "number") return check.copy_again_clears > 0;
+  return CHECKS_COPY_AGAIN_CLEARS.includes(check.key);
+}
 
 export type CopyAgainProgress = { done: number; total: number; says: string };
 

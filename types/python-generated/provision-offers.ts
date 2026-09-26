@@ -2828,6 +2828,14 @@ export interface ResearchTaggedPagesOffer {
   tagged_page_summaries: string;
 }
 
+/** Offered shape of provision `research.topic_deep_research` (kind `research.topic_deep_research.offer`). */
+export interface ResearchTopicDeepResearchOffer {
+  __kind?: "research.topic_deep_research.offer";
+  topic: string;
+  sources?: string;
+  question: string;
+}
+
 /** Offered shape of provision `research.topic_setup` (kind `research.topic_setup.offer`). */
 export interface ResearchTopicSetupOffer {
   __kind?: "research.topic_setup.offer";
@@ -3802,6 +3810,7 @@ export interface ProvisionOffers {
   "research.source_read_candidate": ResearchSourceReadCandidateOffer;
   "research.source_triage": ResearchSourceTriageOffer;
   "research.tagged_pages": ResearchTaggedPagesOffer;
+  "research.topic_deep_research": ResearchTopicDeepResearchOffer;
   "research.topic_setup": ResearchTopicSetupOffer;
   "research_client.context_bundle": ResearchClientContextBundleOffer;
   "research_client.report_output": ResearchClientReportOutputOffer;
@@ -4100,6 +4109,7 @@ export const PROVISION_OFFER_KINDS = {
   "research.source_read_candidate": "research.source_read_candidate.offer",
   "research.source_triage": "research.source_triage.offer",
   "research.tagged_pages": "research.tagged_pages.offer",
+  "research.topic_deep_research": "research.topic_deep_research.offer",
   "research.topic_setup": "research.topic_setup.offer",
   "research_client.context_bundle": "research_client.context_bundle.offer",
   "research_client.report_output": "research_client.report_output.offer",

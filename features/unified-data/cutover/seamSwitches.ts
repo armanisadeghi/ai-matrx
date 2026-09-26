@@ -25,6 +25,13 @@ export type SeamCheck = {
   detail: string | null;
   /** For a fact the cutover census measures (every release re-runs it): when it was last measured. */
   measured_at?: string | null;
+  /**
+   * How many of this check's differences copying the older tables again clears, and how many it
+   * leaves (each named in `detail` with what to do instead). Lane MOVER-CARRY-TAILS; absent on a
+   * database without that file.
+   */
+  copy_again_clears?: number;
+  copy_again_leaves?: number;
 };
 
 export type Seam = {

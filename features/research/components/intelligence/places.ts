@@ -27,6 +27,9 @@ export const RESEARCH_CALL_JOBS = {
   generateTagSuggestions: [K.research__cross_cutting_tags],
   generateDocument: [K.research__document_assembly],
   suggest: [K.research__suggest_setup],
+  // Not a research endpoint: the Agents page's Deep research card launches
+  // this job through the mandate door itself (`launcher.launchMandate(`).
+  launchMandate: [K.research__topic_deep_research],
 } as const;
 
 export type ResearchCall = keyof typeof RESEARCH_CALL_JOBS;
@@ -71,6 +74,11 @@ export const RESEARCH_PLACE_CALLS: Record<string, Record<string, readonly Resear
   },
   new: {
     "features/research/components/init/ResearchInitForm.tsx": ["suggest"],
+  },
+  agents: {
+    "features/research/components/agents/DeepResearchMandateCard.tsx": [
+      "launchMandate",
+    ],
   },
 };
 
@@ -127,5 +135,6 @@ export const RESEARCH_PLACES: FeaturePlaces = {
     ),
     place("tag", "One tag", "Consolidate", "/research/topics/[topicId]/tags/[tagId]"),
     place("document", "Document", "Generate document", "/research/topics/[topicId]/document"),
+    place("agents", "Agents", "Deep research", "/research/topics/[topicId]/agents"),
   ],
 };

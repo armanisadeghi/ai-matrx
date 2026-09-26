@@ -1,4 +1,3 @@
--- draft: deep-lane read-lane-v2 batch b2; lock measured on the clone, applied only inside its batch
 -- read_lane_v2_b2_22_agent_prompt_remediation — enroll agent.prompt_remediation in read-lane v2 and regenerate its policies (one table, one transaction).
 -- Design + chair approval: common-docs/projects/rich-content-unification/evidence/generator-perf-design.md
 -- Needs read_lane_v2_a_generator.sql. The enroll row is written BEFORE the regeneration, never inside

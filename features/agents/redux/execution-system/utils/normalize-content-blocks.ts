@@ -153,6 +153,15 @@ function normalizeSingle(raw: MessagePart, index: number): RenderBlockPayload {
         metadata: raw.metadata,
       };
 
+    case "hosted_tool":
+      // Provider-hosted tool state (Anthropic server_tool_use /
+      // web_search_tool_result) the server persists verbatim so a resumed
+      // tool loop can replay the assistant turn — it is not itself a user-
+      // facing call and has no dedicated renderer. Route it through the same
+      // honest fallback a genuinely unrecognised kind gets rather than
+      // inventing display UI here.
+      return makeUnknown(raw, index, "hosted_tool_not_rendered");
+
     case "input_webpage":
       return {
         blockId: newId("input_webpage"),

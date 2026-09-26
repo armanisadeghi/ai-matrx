@@ -104,7 +104,10 @@ export function CurrencyVariableInput({
         onValueChange={(c) => emit({ amount, currency: c })}
         disabled={disabled}
       >
-        <SelectTrigger className="w-24 shrink-0" aria-label={`${variableName} currency`}>
+        <SelectTrigger
+          className="w-24 shrink-0"
+          aria-label={`${variableName} currency`}
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

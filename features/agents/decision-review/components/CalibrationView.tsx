@@ -9,10 +9,8 @@
  */
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { AlertTriangle, ListChecks } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import {
-  Button,
   SegmentedControl,
   Select,
   SelectContent,
@@ -27,7 +25,6 @@ import { METHOD_LABELS, type DecisionMethod } from "@/features/agents/decision-a
 import {
   loadCalibration,
   loadFacets,
-  reviewAnswersHref,
   type DecisionCalibrationReport,
   type GroupCalibration,
   type QueueFacets,
@@ -164,12 +161,6 @@ export function CalibrationView({ agentId }: { agentId: string }) {
             target precision {pct(report.target_precision)} · agreement scored from {report.min_labels} labels
           </span>
         )}
-        <Button asChild size="sm" variant="outline" className={cn("h-7 gap-1.5 text-xs", !report && "ml-auto")}>
-          <Link href={reviewAnswersHref(agentId)}>
-            <ListChecks className="h-3.5 w-3.5" />
-            Review answers
-          </Link>
-        </Button>
       </div>
 
       {error && (

@@ -41,6 +41,7 @@ const KNOWN_MESSAGE_PART_TYPES = {
   code_exec: true,
   code_result: true,
   web_search: true,
+  hosted_tool: true,
   input_webpage: true,
   input_notes: true,
   input_task: true,
