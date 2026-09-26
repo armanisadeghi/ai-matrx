@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { connectGoogle } from "@/features/marketing/google/service";
+import type { GoogleConnectionResult } from "@/features/marketing/google/types";
+import { GOOGLE_CONNECTOR_PROVIDER } from "@/features/connectors/provider-config";
 import { Button } from "@/components/ui/button";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
@@ -28,6 +30,38 @@ function providerMessage(
 ): string {
   if (error === "access_denied") return "Google access was not granted.";
   return description || error || "Google authorization did not complete.";
+}
+
+export function googleProductOutcomeMessage(refusedKeys: readonly string[], connectedCount: number): string {
+  if (refusedKeys.length === 0) {
+    return "Google approved access, but the products connected could not be confirmed. Review them in Settings → Connectors.";
+  }
+  const names = [...new Set(refusedKeys.map((key) =>
+    GOOGLE_CONNECTOR_PROVIDER.products.find((product) =>
+      product.capabilityKeys.includes(key))?.name ?? "a selected product"))];
+  return `${connectedCount > 0 ? "Google connected the available products." : "Google did not connect the selected products."} Not available for this account yet: ${names.join(", ")}. Review the products in Settings → Connectors.`;
+}
+
+export function googleRedirectOutcome(
+  pending: GoogleOAuthRedirectPending,
+  result: GoogleConnectionResult,
+): { returnTo: string; status: "connected" | "partial"; message?: string } {
+  if (pending.connectionPurpose !== "google_products") {
+    return { returnTo: pending.returnTo, status: "connected" };
+  }
+  if (result.productOutcomeConfirmed && result.refusedCapabilityKeys.length === 0 &&
+      (pending.capabilityKeys ?? []).every((key) =>
+        result.connectedCapabilityKeys.includes(key))) {
+    return { returnTo: pending.returnTo, status: "connected" };
+  }
+  return {
+    returnTo: "/user-settings/integrations",
+    status: "partial",
+    message: googleProductOutcomeMessage(
+      result.refusedCapabilityKeys,
+      result.connectedCapabilityKeys.length,
+    ),
+  };
 }
 
 export function GoogleOAuthRedirectCallback({
@@ -58,7 +92,7 @@ export function GoogleOAuthRedirectCallback({
         return;
       }
       try {
-        await connectGoogle(code, pending.owner, pending.connectionPurpose, {
+        const result = await connectGoogle(code, pending.owner, pending.connectionPurpose, {
           redirectUri: window.location.origin,
           organizationContextId: pending.organizationContextId,
           expectedUserId: pending.initiatingUserId,
@@ -66,11 +100,13 @@ export function GoogleOAuthRedirectCallback({
           capabilityKey: pending.capabilityKey,
           capabilityKeys: pending.capabilityKeys,
         });
+        const outcome = googleRedirectOutcome(pending, result);
         window.location.replace(
           returnPathWithGoogleOAuthResult(
-            pending.returnTo,
+            outcome.returnTo,
             window.location.origin,
-            "connected",
+            outcome.status,
+            outcome.message,
           ),
         );
       } catch (cause) {

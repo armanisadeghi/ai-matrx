@@ -225,13 +225,13 @@ export function assertGoogleOAuthRedirectInitiator(
 export function returnPathWithGoogleOAuthResult(
   returnTo: string,
   origin: string,
-  status: "connected" | "failed",
+  status: "connected" | "partial" | "failed",
   message?: string,
 ): string {
   const url = new URL(safeReturnPath(returnTo, origin), origin);
   url.searchParams.set("google_oauth", status);
-  if (status === "failed" && message) {
-    url.searchParams.set("google_oauth_message", message.slice(0, 240));
+  if ((status === "failed" || status === "partial") && message) {
+    url.searchParams.set("google_oauth_message", message.slice(0, 500));
   } else {
     url.searchParams.delete("google_oauth_message");
   }

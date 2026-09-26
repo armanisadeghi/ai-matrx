@@ -23,7 +23,7 @@ import {
   resetGate,
   selectOrganization,
 } from "@/lib/organization/__tests__/gate-harness";
-import { listGmailLabels, modifyGmailMessage, postGoogleBackend } from "./service";
+import { connectGoogle, listGmailLabels, modifyGmailMessage, postGoogleBackend } from "./service";
 
 describe("Google backend transport — organization gate", () => {
   beforeEach(() => {
@@ -33,6 +33,34 @@ describe("Google backend transport — organization gate", () => {
     selectOrganization(getState, null);
   });
   afterEach(resetGate);
+
+  it("keeps the backend's mixed product result for the redirect notice", async () => {
+    const previousClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID = "test-client";
+    try {
+      selectOrganization(getState, CHOSEN_ORG);
+      mockFetchJson({
+        connection_id: "review-mailbox",
+        connected_capability_keys: ["docs"],
+        refused_capability_keys: [{
+          key: "gmail_modify", error: "google_oauth_internal_test_required",
+          message: "Internal testing is required.",
+        }],
+      });
+      await expect(connectGoogle("google-code", { type: "user" }, "google_products", {
+        organizationContextId: CHOSEN_ORG,
+        capabilityKeys: ["docs", "gmail_modify"],
+      })).resolves.toMatchObject({
+        connectionId: "review-mailbox",
+        productOutcomeConfirmed: true,
+        connectedCapabilityKeys: ["docs"],
+        refusedCapabilityKeys: ["gmail_modify"],
+      });
+    } finally {
+      if (previousClientId === undefined) delete process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+      else process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID = previousClientId;
+    }
+  });
 
   it("a Google write with no organization selected asks, then the SAME call continues", async () => {
     const fetchMock = mockFetchJson({ ok: true });

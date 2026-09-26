@@ -174,6 +174,10 @@ export interface GoogleConnectionInventory {
 
 export interface GoogleConnectionResult {
   connectionId: string;
+  /** Present only when the hub returned a valid per-product exchange result. */
+  productOutcomeConfirmed: boolean;
+  connectedCapabilityKeys: string[];
+  refusedCapabilityKeys: string[];
 }
 
 /** Gmail read review contracts; kept local until the generated API snapshot is refreshed. */

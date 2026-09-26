@@ -1,10 +1,11 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { connectGoogle } from "@/features/marketing/google/service";
-import { GoogleOAuthRedirectCallback } from "./GoogleOAuthRedirectCallback";
+import { GoogleOAuthRedirectCallback, googleRedirectOutcome } from "./GoogleOAuthRedirectCallback";
 import {
   buildGoogleOAuthRedirectPending,
   readGoogleOAuthRedirectPending,
+  returnPathWithGoogleOAuthResult,
   storeGoogleOAuthRedirectPending,
 } from "./oauthRedirect";
 
@@ -73,16 +74,18 @@ function seedCapabilityPending() {
 }
 
 function seedProductsPending() {
-  storeGoogleOAuthRedirectPending(window.sessionStorage,
-    buildGoogleOAuthRedirectPending(STATE, {
+  const pending = buildGoogleOAuthRedirectPending(STATE, {
       initiatingUserId: USER,
+      returnTo: "/chat/new",
       owner: { type: "user" },
       organizationContextId: ORG,
       connectionPurpose: "google_products",
       targetConnectionId: "review-mailbox",
       capabilityKeys: ["gmail_modify"],
       scopes: ["openid", "https://www.googleapis.com/auth/gmail.modify"],
-    }, window.location.origin));
+    }, window.location.origin);
+  storeGoogleOAuthRedirectPending(window.sessionStorage, pending);
+  return pending;
 }
 
 async function renderCallback() {
@@ -225,6 +228,39 @@ it("exchanges the exact product selection and account through the canonical serv
       expectedUserId: USER,
       redirectUri: window.location.origin,
     }));
+});
+
+it("routes a mixed product result to review and names the refused product", () => {
+  const pending = { ...seedProductsPending(), capabilityKeys: ["docs", "gmail_modify"] };
+  const outcome = googleRedirectOutcome(pending, {
+    connectionId: "review-mailbox",
+    productOutcomeConfirmed: true,
+    connectedCapabilityKeys: ["docs"],
+    refusedCapabilityKeys: ["gmail_modify"],
+  });
+  expect(outcome).toMatchObject({
+    returnTo: "/user-settings/integrations",
+    status: "partial",
+  });
+  const path = returnPathWithGoogleOAuthResult(
+    outcome.returnTo, window.location.origin, outcome.status, outcome.message,
+  );
+  expect(path).toContain("google_oauth=partial");
+  expect(new URL(path, window.location.origin).searchParams.get("google_oauth_message"))
+    .toContain("Not available for this account yet: Gmail changes");
+  expect(path).not.toContain("gmail_modify");
+  expect(path).not.toContain("google_oauth_internal_test_required");
+});
+
+it("calls a product grant fully connected only when confirmed with no refusals", () => {
+  const pending = seedProductsPending();
+  const base = { connectionId: "review-mailbox", connectedCapabilityKeys: ["gmail_modify"] };
+  expect(googleRedirectOutcome(pending, {
+    ...base, productOutcomeConfirmed: true, refusedCapabilityKeys: [],
+  })).toEqual({ returnTo: "/chat/new", status: "connected" });
+  expect(googleRedirectOutcome(pending, {
+    ...base, productOutcomeConfirmed: false, refusedCapabilityKeys: [],
+  }).status).toBe("partial");
 });
 
 it("does not exchange a tampered product selection", async () => {

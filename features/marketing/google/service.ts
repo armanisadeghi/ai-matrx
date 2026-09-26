@@ -563,11 +563,28 @@ export async function connectGoogle(
     options?.organizationContextId,
     options?.expectedUserId,
   );
-  const body = (await response.json()) as { connection_id?: unknown };
+  const body = (await response.json()) as {
+    connection_id?: unknown;
+    connected_capability_keys?: unknown;
+    refused_capability_keys?: unknown;
+  };
   if (typeof body.connection_id !== "string") {
     throw new Error("Google connected without returning a connection ID.");
   }
-  return { connectionId: body.connection_id };
+  const connected = body.connected_capability_keys;
+  const refused = body.refused_capability_keys;
+  const productOutcomeConfirmed =
+    Array.isArray(connected) && connected.every((key) => typeof key === "string") &&
+    Array.isArray(refused) && refused.every((item) =>
+      item && typeof item === "object" && typeof item.key === "string");
+  return {
+    connectionId: body.connection_id,
+    productOutcomeConfirmed,
+    connectedCapabilityKeys: productOutcomeConfirmed ? connected as string[] : [],
+    refusedCapabilityKeys: productOutcomeConfirmed
+      ? (refused as { key: string }[]).map((item) => item.key)
+      : [],
+  };
 }
 
 export async function disconnectGoogle(connectionId: string): Promise<void> {
