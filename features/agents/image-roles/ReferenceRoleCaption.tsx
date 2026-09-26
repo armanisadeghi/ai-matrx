@@ -1,6 +1,6 @@
 "use client";
 
-import { referenceRoleCaption } from "./roles";
+import { referenceRoleCaption } from "@ai-matrx/agents";
 
 /**
  * The reference role (and `@name`) an image or video carried as an input,

@@ -30,7 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useServerOrganizationId } from "@/lib/api/useServerOrganizationId";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { errorRowsHref, fetchMandateReferenceBoard, formatRepoList, formatSeconds, costCell, type MandatePatrolRun, type MandatePatrolSection, type MandateReferenceBoard, type MandateReferenceBoardRepo } from "./references";
@@ -434,7 +434,7 @@ export function MandateReferenceBoardView() {
   // painted "Select an organization" over a session that HAS one. Waiting for
   // the id is the honest fix; the screen says it is waiting rather than
   // reporting a failure that is really a timing artefact.
-  const organizationId = useAppSelector(selectOrganizationId);
+  const organizationId = useServerOrganizationId();
   // 🚨 "NO ORG YET" IS NOT "STILL READING" — the same class MandatesConsole and
   // useMandateInputSurface already fixed. `loading` starts `true`, so a bare
   // early return on a missing organization left "Waiting for your organization

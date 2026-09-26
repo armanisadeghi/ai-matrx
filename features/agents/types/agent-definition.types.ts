@@ -1,4 +1,4 @@
-import type { ReferenceRole } from "@/features/agents/image-roles/roles";
+import type { ReferenceRole } from "@ai-matrx/agents";
 import type {
   ContextPolicy,
   CustomToolDefinition,

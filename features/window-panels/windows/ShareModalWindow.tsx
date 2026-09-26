@@ -132,6 +132,7 @@ export default function ShareModalWindow({
     isPublic: resourceIsPublic,
     organizationDefault,
     whoCanSee,
+    personalHome,
     setWhoCanSee,
     loading,
     error,
@@ -272,6 +273,7 @@ export default function ShareModalWindow({
           <div className="flex-1 mt-3 min-h-0 overflow-y-auto">
             <TabsContent value="users" className="mt-0 space-y-3 pb-4">
               <WhoCanSeeThis
+                offerOrganization={!personalHome}
                 whoCanSee={whoCanSee}
                 canChange={isOwner && !ownerLoading}
                 onChoose={setWhoCanSee}
@@ -306,6 +308,7 @@ export default function ShareModalWindow({
 
             <TabsContent value="public" className="mt-0 pb-4">
               <PublicAccessTab
+                offerOrganization={!personalHome}
                 isPublic={resourceIsPublic}
                 publicPermission={publicPermission}
                 isOwner={isOwner && !ownerLoading}

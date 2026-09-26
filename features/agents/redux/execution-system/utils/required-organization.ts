@@ -1,4 +1,5 @@
 import type { RootState } from "@/lib/redux/store";
+import { adminLaneOrganizationId } from "@/lib/api/admin-lane";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 /**
@@ -87,7 +88,7 @@ export function requireExecutionOrganizationId(
   // ordinary chat shell has none and must use the live explicit picker.
   if (instance.cacheOnly !== false) {
     const startOrganizationId =
-      instance.organizationId ?? selectOrganizationId(state);
+      instance.organizationId ?? adminLaneOrganizationId() ?? selectOrganizationId(state);
     if (startOrganizationId) return startOrganizationId;
 
     throw new Error(

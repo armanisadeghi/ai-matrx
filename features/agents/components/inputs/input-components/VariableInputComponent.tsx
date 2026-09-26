@@ -30,7 +30,7 @@ import { Label } from "@/components/ui/label";
 import { useContainerWidth } from "./useContainerColumns";
 import { Button } from "@/components/ui/button";
 import { Dices } from "lucide-react";
-import { IMAGE_ROLE_META } from "@/features/agents/image-roles/roles";
+import { IMAGE_ROLE_META } from "@ai-matrx/agents";
 import { choiceControlFor } from "@/features/agents/utils/choice-rule";
 import {
   isAutoAssignValue,

@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true, "incremental": false },
+  "include": [],
+  "files": [
+    "features/surfaces/runtime/loaded-value-check.ts",
+    "features/surfaces/runtime/SurfaceRuntimeContext.tsx",
+    "features/surfaces/manifests/registry.ts",
+    "features/surfaces/services/execute-sync-plan.ts",
+    "features/surfaces/services/manifest-sync.service.ts",
+    "scripts/lib/surface-sync-check.ts",
+    "scripts/sync-surface-manifests-direct.ts",
+    "features/surfaces/runtime/__tests__/loaded-value-check.test.ts",
+    "features/surfaces/services/__tests__/execute-sync-plan-governance.test.ts",
+    "features/surfaces/services/__tests__/manifest-sync-one-path.test.ts",
+    "scripts/lib/__tests__/surface-sync-check.test.ts",
+    "features/surfaces/runtime/surface-chain.test.tsx",
+    "features/surfaces/runtime/SurfaceRuntimeProvider.scope-freshness.test.tsx"
+  ]
+}

@@ -25,9 +25,9 @@ import {
   setAgentVariableDefinitions,
 } from "@/features/agents/redux/agent-definition/slice";
 import {
-  isControlVariable,
   unbindControlVariable,
 } from "@/features/agents/utils/control-variables";
+import { isControlVariable } from "@ai-matrx/agents";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import { useOpenAgentVariableEditorWindow } from "@/features/overlays/openers/agentVariableEditorWindow";
 import {

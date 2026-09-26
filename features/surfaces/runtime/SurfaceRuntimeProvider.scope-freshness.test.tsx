@@ -42,7 +42,8 @@ describe("SurfaceRuntimeProvider scope freshness", () => {
   it("makes an already-registered runtime read the current render before passive effects", async () => {
     const accountScope = (account: string): SurfaceScopePayload => ({
       library_loaded: account !== "signed-out",
-      account,
+      // `view` is a declared value of this surface; a loaded value must be declared.
+      view: account,
       ...(account === "account-a" ? { audio_library: [{ id: "a-only" }] } : {}),
     });
 
@@ -55,7 +56,7 @@ describe("SurfaceRuntimeProvider scope freshness", () => {
     });
     const registered = getSurfaceRuntimeForName(SURFACE);
     expect(registered?.getScope()).toMatchObject({
-      account: "account-a",
+      view: "account-a",
       audio_library: [{ id: "a-only" }],
     });
 
@@ -74,11 +75,11 @@ describe("SurfaceRuntimeProvider scope freshness", () => {
 
     expect(scopeReadDuringRerender).toEqual({
       library_loaded: false,
-      account: "signed-out",
+      view: "signed-out",
     });
     expect(registered?.getScope()).toEqual({
       library_loaded: false,
-      account: "signed-out",
+      view: "signed-out",
     });
     expect(getSurfaceRuntimeForName(SURFACE)).toBe(registered);
   });

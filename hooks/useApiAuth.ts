@@ -2,6 +2,7 @@
 // Centralized hook for API authentication headers
 'use client';
 
+import { adminLaneOrganizationId } from "@/lib/api/admin-lane";
 import { useCallback, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -55,7 +56,8 @@ export function buildApiAuthHeaders(args: {
         headers = applyOrganizationContextHeader(
             headers,
             requireOrganizationContext(
-                args.organizationId,
+                // THE ADMIN SEAT (lib/api/admin-lane.ts): the platform tenant in admin.
+                adminLaneOrganizationId() ?? args.organizationId,
                 args.organizationIdOverride ?? undefined,
             ),
         );

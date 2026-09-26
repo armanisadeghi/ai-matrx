@@ -263,6 +263,7 @@ export function ShareModal({
     visibility: resourceVisibility,
     organizationDefault,
     whoCanSee,
+    personalHome: resolvedPersonalHome,
     setWhoCanSee,
     setVisibility,
     loading,
@@ -281,6 +282,11 @@ export function ShareModal({
     // notification is filed there and never asks which workspace this is for.
     organizationId ?? null,
   );
+
+  // PERSONAL HOME, FOR EVERY KIND (2026-09-26): `useSharing` reads the thing's own organization
+  // with its visibility and compares it with the viewer's personal workspace, so a host no
+  // longer has to remember to say it. A host that knows better may still pass `personalHome`.
+  const isPersonalHome = personalHome || resolvedPersonalHome === true;
 
   // Filter permissions by type for each tab
   const userPermissions = permissions.filter((p) => p.grantedToUserId);
@@ -439,7 +445,7 @@ export function ShareModal({
                   whoCanSee={whoCanSee}
                   canChange={isOwner}
                   onChoose={setWhoCanSee}
-                  offerOrganization={!personalHome}
+                  offerOrganization={!isPersonalHome}
                 />
                 {/* Current user permissions */}
                 <div>
@@ -558,7 +564,7 @@ export function ShareModal({
                   resourceType={resourceType}
                   resourceId={resourceId}
                   resourceName={resourceName}
-                  offerOrganization={!personalHome}
+                  offerOrganization={!isPersonalHome}
                 />
               </TabsContent>
             </div>

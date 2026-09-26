@@ -7,6 +7,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { extractErrorMessage } from "@/utils/errors";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectPersonalOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   Permission,
   PermissionWithDetails,
@@ -292,6 +294,7 @@ export function useSharing(
     isPublic: false,
     visibility: null,
   });
+  const personalOrgId = useAppSelector(selectPersonalOrganizationId);
   const { permissions, refresh: refreshPermissions } = usePermissions(
     resourceType,
     resourceId,
@@ -581,6 +584,17 @@ export function useSharing(
           }
         : null),
     whoCanSee,
+    /** The thing's own organization, read off its row; null when unknown. */
+    homeOrganizationId: visibility.homeOrganizationId ?? null,
+    /**
+     * PERSONAL HOME, FOR EVERY KIND (2026-09-26): the thing lives in the viewer's personal
+     * workspace, so "My organization" / "Everyone in <workspace>" name nobody. Every share host
+     * passes `offerOrganization={!personalHome}` — the dialog no longer depends on a call site
+     * remembering to say it (agents and workflows never did).
+     */
+    personalHome:
+      Boolean(personalOrgId) &&
+      (visibility.homeOrganizationId ?? organizationId ?? null) === personalOrgId,
     setWhoCanSee: handleSetWhoCanSee,
     loading,
     error,

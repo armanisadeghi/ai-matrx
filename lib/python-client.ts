@@ -24,6 +24,7 @@
  * collapse this back into it.
  */
 
+import { adminLaneHeadersFor, adminLaneOrganizationId } from "@/lib/api/admin-lane";
 import {
   parseHttpError,
   parseHttpErrorBody,
@@ -424,7 +425,10 @@ function resolveRequestOrganizationId(opts: RequestOptions): string {
   const selectedOrganizationId = store
     ? (selectOrganizationId(store.getState() as RootState) ?? null)
     : null;
-  return requireOrganizationContext(selectedOrganizationId, opts.organizationId);
+  return requireOrganizationContext(
+    adminLaneOrganizationId() ?? selectedOrganizationId,
+    opts.organizationId,
+  );
 }
 
 /**
@@ -467,6 +471,8 @@ function isReadMethod(method: string): boolean {
 }
 
 function selectedOrganizationIdOrNull(): string | null {
+  const adminLane = adminLaneOrganizationId();
+  if (adminLane) return adminLane;
   const store = getStore();
   return store
     ? (selectOrganizationId(store.getState() as RootState) ?? null)
@@ -1036,6 +1042,8 @@ export async function uploadWithProgress<T>(
       xhr.setRequestHeader("X-Cloud-Files-Bypass", opts.cloudFilesBypass);
     xhr.setRequestHeader("X-Request-Id", requestId);
     xhr.setRequestHeader("X-Organization-Id", organizationId);
+    for (const [name, value] of Object.entries(adminLaneHeadersFor(organizationId)))
+      xhr.setRequestHeader(name, value);
     xhr.setRequestHeader("Accept", "application/json");
 
     xhr.upload.addEventListener("progress", (ev) => {
@@ -1222,6 +1230,8 @@ export async function downloadBlobWithProgress(
       xhr.setRequestHeader("X-Cloud-Files-Bypass", opts.cloudFilesBypass);
     xhr.setRequestHeader("X-Request-Id", requestId);
     xhr.setRequestHeader("X-Organization-Id", organizationId);
+    for (const [name, value] of Object.entries(adminLaneHeadersFor(organizationId)))
+      xhr.setRequestHeader(name, value);
     xhr.setRequestHeader("Accept", "*/*");
 
     xhr.addEventListener("timeout", () => {

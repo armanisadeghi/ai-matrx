@@ -176,6 +176,12 @@ export interface ResourceVisibility {
    * (the record store); absent everywhere else, so no control is drawn that could not work.
    */
   whoCanSee?: WhoCanSee | null;
+  /**
+   * The thing's OWN organization, read off its row (never the active one). Null when its table
+   * names none or the read could not say. The Share dialog compares it with the viewer's
+   * personal workspace (`personalHome`).
+   */
+  homeOrganizationId?: string | null;
 }
 
 /** The three lanes the Share dialog's "Who can see this" control offers. */
@@ -377,6 +383,8 @@ export async function getResourceVisibility(
       visibility: row.is_public === true ? "public" : null,
       organizationDefault,
       whoCanSee,
+      homeOrganizationId:
+        typeof row.organization_id === "string" ? row.organization_id : null,
     };
   }
 
@@ -386,15 +394,22 @@ export async function getResourceVisibility(
   }
 
   const client = resolveDynamicClient(entry.schemaName);
+  const columns = capabilities.organizationColumn
+    ? `${capabilities.publicState.column},${capabilities.organizationColumn}`
+    : capabilities.publicState.column;
   const { data, error } = await client
     .from(entry.tableName)
-    .select(capabilities.publicState.column)
+    .select(columns)
     .eq(entry.idColumn, resourceId)
     .maybeSingle<Record<string, boolean | string | null>>();
 
   if (error || !data) {
     throw operationFailed("check this item's public visibility", error);
   }
+  const home = capabilities.organizationColumn
+    ? data[capabilities.organizationColumn]
+    : null;
+  const homeOrganizationId = typeof home === "string" ? home : null;
   const value = data[capabilities.publicState.column];
   if (capabilities.publicState.kind === "enum") {
     const enumValue = isVisibilityValue(value) ? value : null;
@@ -410,6 +425,7 @@ export async function getResourceVisibility(
     return {
       isPublic: value === "public",
       visibility: enumValue,
+      homeOrganizationId,
       ...(choice
         ? {
             whoCanSee: {
@@ -427,7 +443,7 @@ export async function getResourceVisibility(
         : {}),
     };
   }
-  return { isPublic: value === true, visibility: null };
+  return { isPublic: value === true, visibility: null, homeOrganizationId };
 }
 
 const VISIBILITY_VALUES = ["personal", "internal", "link", "public"] as const;

@@ -88,6 +88,7 @@ import { resilientFetch } from "@ai-matrx/data/net";
 import { isNetError } from "@ai-matrx/data/net";
 import { extractErrorMessage } from "@/utils/errors";
 import { captureApiError } from "@/lib/diagnostics/captureApiError";
+import { adminLaneOrganizationId } from "@/lib/api/admin-lane";
 import { wasStreamErrorCaptured } from "@/lib/diagnostics/captureStreamError";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { fetchWithMatrxProtocolFallback } from "@ai-matrx/agents/matrx";
@@ -671,6 +672,8 @@ function isReadMethod(method: string): boolean {
  * organization is selected. Never picks one; only answers the question.
  */
 async function readHasNoOrganization(getState: () => RootState): Promise<boolean> {
+  // THE ADMIN SEAT binds the platform tenant (lib/api/admin-lane.ts).
+  if (adminLaneOrganizationId()) return false;
   if (selectOrganizationId(getState())) return false;
   const { waitForOrganizationAdmission } = await import(
     "@/lib/api/organization-admission"
@@ -687,7 +690,8 @@ async function ensureOrganizationContextForCall(
     "@/lib/organization/organization-gate"
   );
   return ensureOrganizationContext({
-    organizationId: overrideOrganizationId ?? selectedOrganizationId,
+    organizationId:
+      overrideOrganizationId ?? adminLaneOrganizationId() ?? selectedOrganizationId,
     interactive: false,
   });
 }
@@ -714,9 +718,9 @@ export function resolveScope(
   // valid request context: the required-org guard below refuses the request.
   const hasAppContext = !!(state as Partial<RootState>)?.appContext;
 
-  const selectedOrganizationId = hasAppContext
-    ? selectOrganizationId(state)
-    : undefined;
+  const selectedOrganizationId =
+    adminLaneOrganizationId() ??
+    (hasAppContext ? selectOrganizationId(state) : undefined);
   // The JWT lane is fail-closed (an authenticated request MUST name a
   // verified organization); the guest lane is admitted org-less by the
   // server and never refused here — see GuestResolvedCallScope.

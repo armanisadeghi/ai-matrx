@@ -14,17 +14,33 @@ import {
   type DeclarationIssue,
   type ResolvedSurfaceDeclaration,
 } from "@ai-matrx/alchemy/declare";
-import { getManifest } from "@/features/surfaces/manifests/registry";
+
+export type LoadedValueDeclarationLookup = (
+  surfaceName: string,
+) => Pick<ResolvedSurfaceDeclaration, "values"> | undefined;
+
+/**
+ * The manifest registry registers its lookup here when it loads. Importing the
+ * registry from this module would pull every manifest into the surface
+ * runtime's module graph and close an import cycle through manifests that use
+ * the runtime; until the registry has loaded no surface is declared, so the
+ * check has nothing to judge.
+ */
+let lookupDeclaration: LoadedValueDeclarationLookup = () => undefined;
+
+export function registerLoadedValueDeclarations(lookup: LoadedValueDeclarationLookup): void {
+  lookupDeclaration = lookup;
+}
 
 /** Undeclared loaded values for a registered surface ([] for an unregistered one). */
 export function findUndeclaredLoadedValues(
   surfaceName: string,
   scope: Record<string, unknown>,
 ): DeclarationIssue[] {
-  const manifest = getManifest(surfaceName);
-  if (!manifest) return [];
+  const declaration = lookupDeclaration(surfaceName);
+  if (!declaration) return [];
   return validateLoadedValues(
-    manifest as unknown as Pick<ResolvedSurfaceDeclaration, "surfaceName" | "values" | "itemTypes">,
+    { ...(declaration as Pick<ResolvedSurfaceDeclaration, "values" | "itemTypes">), surfaceName },
     scope,
   );
 }

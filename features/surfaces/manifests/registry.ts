@@ -17,6 +17,10 @@
  * destruction.
  */
 
+import {
+  registerLoadedValueDeclarations,
+  type LoadedValueDeclarationLookup,
+} from "@/features/surfaces/runtime/loaded-value-check";
 import { createDeclarationRegistry } from "@ai-matrx/alchemy/declare";
 import type {
   ResolvedSurfaceManifest,
@@ -624,3 +628,10 @@ export function getSurfaceValue(surfaceName: string, valueName: string) {
   if (!manifest) return undefined;
   return manifest.values.find((v) => v.name === valueName);
 }
+
+// The runtime's loaded-value check (ALC-14) reads declarations through this
+// lookup, so the runtime never imports the registry (no import cycle).
+registerLoadedValueDeclarations(
+  (surfaceName) =>
+    getManifest(surfaceName) as unknown as ReturnType<LoadedValueDeclarationLookup>,
+);

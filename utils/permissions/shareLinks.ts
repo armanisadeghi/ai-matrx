@@ -66,6 +66,12 @@ export interface ShareCapabilities {
         kind: "boolean";
       }
     | null;
+  /**
+   * The column naming the thing's OWN organization (`organization_id`), when its table has one.
+   * The Share dialog reads it to tell a thing homed in its owner's personal workspace — where
+   * "My organization" and "Add everyone in …" name nobody — for every kind (2026-09-26).
+   */
+  organizationColumn: "organization_id" | null;
 }
 
 /**
@@ -99,6 +105,8 @@ export async function getShareCapabilities(
     supportsPublic: data.supports_public === true && publicState !== null,
     isLinkShareable: data.is_link_shareable === true,
     publicState,
+    organizationColumn:
+      data.organization_column === "organization_id" ? "organization_id" : null,
   };
 }
 

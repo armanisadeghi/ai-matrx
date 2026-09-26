@@ -29,6 +29,7 @@
  * of those mocks (it broke `media-client/client.test.ts` on arrival).
  */
 
+import { adminLaneOrganizationId } from "@/lib/api/admin-lane";
 import type { RootState } from "@/lib/redux/store";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import {
@@ -42,6 +43,8 @@ export type OrganizationAdmission = "ready" | "unresolved" | "timed-out" | "unav
 const ORGANIZATION_ADMISSION_TIMEOUT_MS = 8_000;
 
 function readAdmission(state: RootState): OrganizationAdmission | null {
+  // THE ADMIN SEAT: the admin section binds the platform tenant — nothing to wait for.
+  if (adminLaneOrganizationId()) return "ready";
   if (selectOrganizationId(state)) return "ready";
   if (selectOrgBootstrapResolved(state)) return "unresolved";
   return null;
@@ -49,6 +52,11 @@ function readAdmission(state: RootState): OrganizationAdmission | null {
 
 /** The currently selected organization id, or null. Never waits. */
 export function peekSelectedOrganizationId(): string | null {
+  // THE ADMIN SEAT (lib/api/admin-lane.ts): inside the admin section the
+  // organization a server request binds is the platform tenant, never the
+  // admin's own workspace.
+  const adminLane = adminLaneOrganizationId();
+  if (adminLane) return adminLane;
   const store = getStoreSingleton();
   if (!store) return null;
   return selectOrganizationId(store.getState() as RootState) ?? null;

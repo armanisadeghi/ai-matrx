@@ -10,11 +10,11 @@ import {
   deriveControlComponent,
   isControlBindable,
   LANGUAGE_OPTIONS,
-  orderVariablesForForm,
   readControlBindablePolicy,
   unbindControlVariable,
   DEFAULT_CONTROL_BINDABLE_POLICY,
 } from "../control-variables";
+import { orderVariablesForForm } from "@ai-matrx/agents";
 import type { ControlDefinition } from "@/features/agents/hooks/useModelControls";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import reducer, {

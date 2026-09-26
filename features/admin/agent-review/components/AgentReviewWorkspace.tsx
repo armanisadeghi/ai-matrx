@@ -22,7 +22,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { ConversationPane } from "@/features/messaging/components/ConversationPane";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useServerOrganizationId } from "@/lib/api/useServerOrganizationId";
 import { toast } from "@/lib/toast";
 import {
   useSurfaceRuntimeRegistration,
@@ -87,7 +87,7 @@ export default function AgentReviewWorkspace({
   const user = useAppSelector(selectUser);
   // The organization the reviewer is acting in — carried into "Approve and
   // raise", whose feedback item is filed under one organization.
-  const selectedOrganizationId = useAppSelector(selectOrganizationId);
+  const selectedOrganizationId = useServerOrganizationId();
   const [row, setRow] = useState<ReviewQueueRow | null>(null);
   const [registry, setRegistry] = useState<ReviewRegistry>(
     EMPTY_REVIEW_REGISTRY,

@@ -24,7 +24,7 @@ import {
   variableRunLabel,
   type ImageRoleLimits,
   type ReferenceRole,
-} from "@/features/agents/image-roles/roles";
+} from "@ai-matrx/agents";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

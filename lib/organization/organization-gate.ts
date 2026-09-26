@@ -42,6 +42,7 @@
  * fail-closed error, exactly as before.
  */
 
+import { adminLaneOrganizationId } from "@/lib/api/admin-lane";
 import {
   OrganizationContextError,
   requireOrganizationContext,
@@ -182,6 +183,10 @@ function requestOrganizationSelection(
 // ---------------------------------------------------------------------------
 
 function readSelectedOrganizationId(): string | null {
+  // THE ADMIN SEAT: the admin section never asks the admin to choose a
+  // workspace — its server work runs in the platform tenant (lib/api/admin-lane.ts).
+  const adminLane = adminLaneOrganizationId();
+  if (adminLane) return adminLane;
   const store = getStoreSingleton();
   if (!store) return null;
   const state = store.getState() as RootState;

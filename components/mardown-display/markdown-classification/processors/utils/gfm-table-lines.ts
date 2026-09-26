@@ -1,89 +1,28 @@
 /**
- * Where a GFM table starts and how far it runs — the ONE rule the chat block
- * splitter (V2, content-splitter-core) and the live stream accumulator share
- * (verify-RC-B4 R5-3: a table written without edge pipes showed as plain text
- * in chat while Studio and every other preset drew it).
+ * The GFM table rule for matrx-frontend's readers — THE rule itself lives in
+ * `@ai-matrx/content-ir/source` (source/gfm-table.ts: one splitter, one cell-pipe
+ * rule, where a table starts and runs), shared with @ai-matrx/print, the chat
+ * package and — by vectors — the Python block detector. This module re-exports
+ * it for the app's readers and adds the STREAMING helpers only the live
+ * renderer needs (a table still arriving). verify-RC-B4 R5/R6.
  *
- * GFM: a table starts at a header line holding an unescaped pipe whose NEXT
- * line is a delimiter row (`--- | :-:`, edge pipes optional) with the same
- * number of cells. It runs until a blank line or a line that starts another
- * block. Cells are split by THE one splitter (rich-editor/core/table-source),
- * so an escaped `\|` never counts as a boundary here either.
- *
- * Every table READER in the app goes through here (guard: `pnpm check:table-readers`):
- * `findTableStart`, `continuesTable`, `isGfmDelimiterRow`, `rowCells`, `unescapeCellPipes`.
+ * Every table READER in the app goes through here (guard: `pnpm check:table-readers`).
  */
-import { rowCells, splitRowSegments } from "@/components/rich-editor/core/table-source";
+import { continuesTable } from "@ai-matrx/content-ir/source";
 
-/** THE row splitter's cells (table-source) — re-exported so a table reader needs this one module. */
-export { rowCells, splitRowSegments };
-export { unescapeCellPipes } from "@/components/markdown-core/syntax/gfm-cell-pipes";
-
-/** A line GFM reads as the start of another block (list item, quote, heading, fence, rule). */
-const BLOCK_START = /^(?:[-+*](?:\s|$)|\d{1,9}[.)](?:\s|$)|>|#{1,6}(?:\s|$)|```|~~~|(?:-\s*){3,}$|(?:\*\s*){3,}$|(?:_\s*){3,}$)/;
-
-const DELIMITER_CELL = /^:?-+:?$/;
-
-/** A GFM delimiter row: every cell `---`, `:--`, `--:` or `:-:`, with at least one pipe. */
-export function isGfmDelimiterRow(line: string): boolean {
-  const trimmed = line.trim();
-  if (!trimmed.includes("|")) return false;
-  const cells = rowCells(trimmed);
-  return cells.length > 0 && cells.every((cell) => DELIMITER_CELL.test(cell));
-}
-
-/** True when `header` + `delimiter` open a table whose header has NO leading pipe. */
-export function startsPipelessTable(header: string, delimiter: string | undefined): boolean {
-  const head = header.trim();
-  if (!head || head.startsWith("|") || BLOCK_START.test(head)) return false;
-  if (splitRowSegments(head).length < 2) return false;
-  if (delimiter === undefined || !isGfmDelimiterRow(delimiter)) return false;
-  return rowCells(head).length === rowCells(delimiter.trim()).length;
-}
-
-/**
- * A line that continues an open table: a pipe-led row (the older rule), or a
- * pipe-less line holding an unescaped pipe that does not start another block.
- */
-export function continuesTable(line: string): boolean {
-  const trimmed = line.trim();
-  if (!trimmed) return false;
-  if (trimmed.startsWith("|")) return trimmed.includes("|", 1);
-  return splitRowSegments(trimmed).length > 1 && !BLOCK_START.test(trimmed);
-}
-
-/** A pipe-led row that opens (or continues) a table: `|` first, and another `|` after it. */
-export function isPipeLedRow(line: string): boolean {
-  const trimmed = line.trim();
-  return trimmed.startsWith("|") && trimmed.includes("|", 1);
-}
-
-/**
- * Index of the first line at or after `from` that opens a table — a pipe-led
- * row, or a pipe-less GFM header over its delimiter row; -1 when none.
- */
-export function findTableStart(lines: readonly string[], from = 0): number {
-  for (let i = Math.max(0, from); i < lines.length; i += 1) if (opensTable(lines, i)) return i;
-  return -1;
-}
-
-/** Line `index` opens a table: a pipe-led row, or a pipe-less GFM header over its delimiter row. */
-export function opensTable(lines: readonly string[], index: number): boolean {
-  const line = lines[index] ?? "";
-  return isPipeLedRow(line) || startsPipelessTable(line, lines[index + 1]);
-}
-
-/** A WHOLE table header at `index`: a table opens here AND its next line is a GFM delimiter row. */
-export function tableStartsAt(lines: readonly string[], index: number): boolean {
-  return opensTable(lines, index) && isGfmDelimiterRow(lines[index + 1] ?? "");
-}
-
-/** Index just past the table whose header is at `start` (header, delimiter, then continuation rows). */
-export function findTableEnd(lines: readonly string[], start: number): number {
-  let end = Math.min(lines.length, start + 2);
-  while (end < lines.length && continuesTable(lines[end] ?? "")) end += 1;
-  return end;
-}
+export {
+  continuesTable,
+  findTableEnd,
+  findTableStart,
+  isGfmDelimiterRow,
+  isPipeLedRow,
+  opensTable,
+  rowCells,
+  splitRowSegments,
+  startsPipelessTable,
+  tableStartsAt,
+  unescapeCellPipes,
+} from "@ai-matrx/content-ir/source";
 
 // ── Streaming: a table still arriving ───────────────────────────────────────
 

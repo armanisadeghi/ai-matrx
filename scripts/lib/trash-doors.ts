@@ -122,14 +122,34 @@ export function judgeTrashTimings(rows: TrashTiming[]): TrashDoorFinding[] {
 // thing is now covered fails too (the list only shrinks).
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 
-/** The record store's Trash kinds (public._trash_kind_rows' store branch), keyed by data_class. */
-export const STORE_TRASH_KINDS: Readonly<Record<string, string>> = { table: "table", record: "record" };
+/**
+ * The record store's Trash kinds (public._trash_kind_rows' store branch), keyed by data_class. Lane
+ * STORE-RESTORE-DOORS (2026-09-26) added the five a person removes on their own — a Field, a Rule, a
+ * link between Records, a document template and a dashboard — each restored through its own store door.
+ */
+export const STORE_TRASH_KINDS: Readonly<Record<string, string>> = {
+  table: "table",
+  record: "record",
+  field: "field",
+  rule: "rule",
+  relation: "relation",
+  doc_template: "doc_template",
+  dashboard: "dashboard",
+};
 
 export interface ArchivedThing {
   /** `entity:<platform.entity_types.token>` or `store:<custom.record.data_class>`. */
   thing: string;
   /** True when the probe found its newest archived row in its owner's Trash. */
   covered: boolean;
+  /**
+   * Lane STORE-RESTORE-DOORS: the same row asked of its ORGANIZATION's Trash (organization mode, the
+   * owner's seat). `undefined` when the thing has no organization to ask (a Vault credential, a row with
+   * no organization column). TRASH-COVERAGE-2 found Organization Trash silently skipping every kind
+   * whose table has no visibility column while personal Trash listed them — a probe of personal Trash
+   * alone could never see it.
+   */
+  orgCovered?: boolean;
   /** What the probe saw, for the operator. */
   detail?: string;
 }
@@ -139,34 +159,18 @@ export interface ArchivedThing {
  * by lane TRASH-COVERAGE-2 the same day against the chair's test: A TRUE EXCUSE NAMES WHY A PERSON CAN
  * NEVER ARCHIVE IT THEMSELVES. An entry that fails that test is not an excuse — it is marked
  * `STORE GAP` (the record store has no door that puts it back) and reported to the chair; it stays
- * listed only so the gap is named, never so it is forgotten.
+ * listed only so the gap is named, never so it is forgotten. Lane STORE-RESTORE-DOORS (2026-09-26) closed
+ * the five STORE GAPs (field, rule, relation, doc_template, dashboard): each has a restore door and a Trash
+ * kind now, so none is excused.
  */
 export const TRASH_COVERAGE_EXEMPT: Readonly<Record<string, string>> = {
   // ── the record store ────────────────────────────────────────────────────────────────────────
   "entity:record":
     "custom.record is the record store's ONE physical table; its Tables and Records are covered by the " +
     "store branch (store:table, store:record), probed separately. The generic loop must not list it.",
-  "store:field":
-    "STORE GAP, not an excuse: a person retires a Field on its own (custom.field_retire) and the record " +
-    "store has no door that puts a retired column back, so a Trash row would be a dead control. Fields " +
-    "archived with their Table come back with it. Owed: a store restore door (TRASH-COVERAGE-2 report).",
-  "store:rule":
-    "STORE GAP, not an excuse: a Rule is archived when it is rewritten or removed in its Table's rule " +
-    "editor (custom._rule_definition_write) and the store has no door that brings one Rule back. Owed: a " +
-    "store restore door (TRASH-COVERAGE-2 report).",
-  "store:relation":
-    "STORE GAP, not an excuse: a link between Records is archived when it is unlinked " +
-    "(custom.relation_uncarry / custom.relation_edges_withdraw); the way back is linking again, and the " +
-    "store has no door that restores the old link. Owed: a store ruling (TRASH-COVERAGE-2 report).",
   "store:work_approval":
     "Nobody archives an approval: custom._work_approvals_withdraw_on_archive withdraws it when its Record " +
     "is archived, and it comes back with the Record.",
-  "store:doc_template":
-    "STORE GAP, not an excuse: removed through custom.doc_template_delete (today only the store test " +
-    "bench calls it); the store has no door that brings a template back. Owed: a store restore door.",
-  "store:dashboard":
-    "STORE GAP, not an excuse: removed through custom.dashboard_delete (no screen calls it yet); the " +
-    "store has no door that brings a dashboard back. Owed: a store restore door.",
   "entity:io_comment":
     "No person-facing delete: record comments are archived only with their Record or by a table move " +
     "(custom.table_move), and come back with the Record.",
@@ -227,6 +231,14 @@ export function judgeTrashCoverage(
           `has archived rows but is not in Trash${t.detail ? ` (${t.detail})` : ""}. Register it ` +
           "(platform.entity_types.user_artifact_kind, or the store branch of public._trash_kind_rows) so its " +
           "owner can find and restore it, or add it to TRASH_COVERAGE_EXEMPT with the reason it comes back another way.",
+      });
+    } else if (t.covered && t.orgCovered === false && !why) {
+      out.push({
+        door: t.thing,
+        problem:
+          `is in its owner's personal Trash but not in its organization's Trash${t.detail ? ` (${t.detail})` : ""}. ` +
+          "Organization Trash (public._trash_kind_rows in organization mode, read by org_trash_list) must list " +
+          "every row of the organization it lists for the person — an owner or admin restores members' removals there.",
       });
     } else if (t.covered && why && t.thing !== "entity:record") {
       out.push({

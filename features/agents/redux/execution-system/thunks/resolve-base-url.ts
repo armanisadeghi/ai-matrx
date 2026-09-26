@@ -1,4 +1,5 @@
 import type { RootState } from "@/lib/redux/store";
+import { adminLaneHeadersFor, adminLaneOrganizationId } from "@/lib/api/admin-lane";
 import {
   selectResolvedBaseUrl,
   selectActiveServer,
@@ -231,9 +232,13 @@ export function resolveBackendForConversation(
   const conversationOrganizationId =
     state.conversations?.byConversationId?.[conversationId]?.organizationId ??
     null;
-  const organizationId = conversationOrganizationId ?? selectOrganizationId(state);
+  // THE ADMIN SEAT (lib/api/admin-lane.ts): a conversation started in the
+  // admin section runs in the platform tenant, never the admin's workspace.
+  const organizationId =
+    conversationOrganizationId ?? adminLaneOrganizationId() ?? selectOrganizationId(state);
   if (organizationId) {
     headers["X-Organization-Id"] = organizationId;
+    Object.assign(headers, adminLaneHeadersFor(organizationId));
   }
 
   if (overrideUrl) {

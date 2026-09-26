@@ -34,7 +34,7 @@ import { AlertTriangle, Loader2, OctagonAlert } from "lucide-react";
 
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useServerOrganizationId } from "@/lib/api/useServerOrganizationId";
 import { SINGLE_SITE_SENTENCE, fetchMandateReferences, formatRepoList, unreportedSentence, type MandateReferenceReport, type MandateReferenceRow } from "./references";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -162,7 +162,7 @@ export function MandateSourceUsage({
   // belongs to the person). This key's references are one record read by key;
   // callApi sends a GET with no organization after its bounded restore wait.
   // The id stays a dependency only so the read refreshes when one arrives.
-  const organizationId = useAppSelector(selectOrganizationId);
+  const organizationId = useServerOrganizationId();
   const [report, setReport] = useState<MandateReferenceReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reading, setReading] = useState(true);

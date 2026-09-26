@@ -125,7 +125,21 @@ describe("the surface chain carries every other open screen (ARE-010)", () => {
       1001,
     );
 
-    const scope = await withLiveSurfaceContext(TABLE_SETTINGS, { settings_tab: "actions" });
+    // An undeclared loaded value fails under test (loaded-value-check.ts); this
+    // case proves the chain's own filter, so read as development does: the
+    // value is announced (with its remedy) and still never sent.
+    const errors = jest.spyOn(console, "error").mockImplementation(() => {});
+    const env = process.env as Record<string, string | undefined>;
+    const previousEnv = env.NODE_ENV;
+    env.NODE_ENV = "development";
+    let scope: Record<string, unknown>;
+    try {
+      scope = await withLiveSurfaceContext(TABLE_SETTINGS, { settings_tab: "actions" });
+    } finally {
+      env.NODE_ENV = previousEnv;
+    }
+    expect(errors.mock.calls.some((call) => String(call[0]).includes('"not_declared_anywhere" it never declared'))).toBe(true);
+    errors.mockRestore();
     const chain = scope[SURFACE_CHAIN_KEY] as SurfaceChainLevel[];
     expect(chain).toHaveLength(1);
     expect(chain[0].surface).toBe(DATA_TABLES);

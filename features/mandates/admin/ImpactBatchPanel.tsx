@@ -55,7 +55,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin, selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useServerOrganizationId } from "@/lib/api/useServerOrganizationId";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import {
@@ -251,7 +251,7 @@ export function ImpactBatchPanel({
   // then fails its own preflight ("Select an organization…") and the panel
   // sat on that error until a manual Re-grade. Wait for the same Redux
   // authority the transport reads, and re-read when it arrives.
-  const selectedOrganizationId = useAppSelector(selectOrganizationId);
+  const selectedOrganizationId = useServerOrganizationId();
   // 🚨 THE FOURTH STATE (R37): `orgBootstrapResolved` is TRUE when the read
   // FAILED too, so it can never be the refusal on its own.
   const { organizationState } = useOrganizationRequired();

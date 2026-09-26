@@ -14,7 +14,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Plus, Variable, AlertCircle, Trash2, X } from "lucide-react";
-import { isControlVariable } from "@/features/agents/utils/control-variables";
+import { isControlVariable } from "@ai-matrx/agents";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";

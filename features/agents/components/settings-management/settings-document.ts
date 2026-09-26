@@ -38,8 +38,8 @@ import type { VariableDefinition } from "@/features/agents/types/agent-definitio
 import {
   deriveControlComponent,
   findControlVariable,
-  isControlVariable,
 } from "@/features/agents/utils/control-variables";
+import { isControlVariable } from "@ai-matrx/agents";
 
 /** The marker key that says "this setting is a run input". */
 export const BOUND_CONTROL_MARKER_KEY = "$var";

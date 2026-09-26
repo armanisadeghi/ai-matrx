@@ -50,7 +50,7 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAccessToken } from "@/lib/redux/slices/userSlice";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useServerOrganizationId } from "@/lib/api/useServerOrganizationId";
 import { operationFailed } from "@/utils/errors";
 import { createClient } from "@/utils/supabase/client";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
@@ -144,7 +144,7 @@ export function CatalogEntryEditor({
   const { toast } = useToast();
   const accessToken = useAppSelector(selectAccessToken);
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
-  const organizationId = useAppSelector(selectOrganizationId);
+  const organizationId = useServerOrganizationId();
   const isNew = row === null;
   const seed = isNew ? (prefill ?? null) : null;
 

@@ -20,7 +20,7 @@ import {
 } from "@/features/resource-manager/webpage/webpage-snapshot";
 import { resolveContextItemDef } from "./registry";
 import { hasContextItemDef } from "./context-item-block-types";
-import { referenceRoleCaption } from "@/features/agents/image-roles/roles";
+import { referenceRoleCaption } from "@ai-matrx/agents";
 import type { FileIdentityHint, Visibility } from "@/features/files/types";
 import type {
   ContextBookmark,

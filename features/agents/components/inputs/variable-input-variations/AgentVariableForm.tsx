@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { isControlVariable } from "@/features/agents/utils/control-variables";
+import { isControlVariable } from "@ai-matrx/agents";
 import { selectVisibleInputDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
 import { BoundVariableChips } from "@/features/agents/components/inputs/BoundVariableChips";
 import {

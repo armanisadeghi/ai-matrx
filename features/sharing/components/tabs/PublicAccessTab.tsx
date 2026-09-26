@@ -160,6 +160,7 @@ export function PublicAccessTab({
     supportsPublic: false,
     isLinkShareable: false,
     publicState: null,
+    organizationColumn: null,
   });
   const [capabilitiesLoading, setCapabilitiesLoading] = useState(true);
   const [capabilitiesError, setCapabilitiesError] = useState<string | null>(

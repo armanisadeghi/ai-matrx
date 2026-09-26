@@ -129,7 +129,7 @@ describe("Trash coverage (judgeTrashCoverage)", () => {
       judgeTrashCoverage([
         { thing: "store:table", covered: true },
         { thing: "store:record", covered: true },
-        { thing: "store:field", covered: false },
+        { thing: "store:work_approval", covered: false },
         { thing: "entity:record", covered: false },
       ]),
     ).toEqual([]);
@@ -163,16 +163,41 @@ describe("Trash coverage (judgeTrashCoverage)", () => {
     expect(judgeTrashCoverage(TRASH_COVERAGE_2_KINDS.map((thing) => ({ thing, covered: true })))).toEqual([]);
   });
 
-  test("an entry that is not a true excuse says so (STORE GAP), never dressed as one", () => {
-    for (const k of ["store:field", "store:rule", "store:relation", "store:doc_template", "store:dashboard"]) {
-      expect(TRASH_COVERAGE_EXEMPT[k]).toMatch(/^STORE GAP, not an excuse/);
-    }
+  // lane STORE-RESTORE-DOORS: the five STORE GAPs are Trash kinds now — never excused again.
+  const STORE_CHILDREN = ["field", "rule", "relation", "doc_template", "dashboard"];
+  test("RED: a removed Field, Rule, link, template or dashboard that no Trash lists fails — none is excused", () => {
+    for (const k of STORE_CHILDREN) expect(TRASH_COVERAGE_EXEMPT[`store:${k}`]).toBeUndefined();
+    const found = judgeTrashCoverage(STORE_CHILDREN.map((k) => ({ thing: `store:${k}`, covered: false })));
+    expect(found.map((f) => f.door)).toEqual(STORE_CHILDREN.map((k) => `store:${k}`));
   });
 
-  test("the store's Trash kinds are exactly Table and Record, and never exempted", () => {
-    expect(STORE_TRASH_KINDS).toEqual({ table: "table", record: "record" });
-    expect(TRASH_COVERAGE_EXEMPT["store:table"]).toBeUndefined();
-    expect(TRASH_COVERAGE_EXEMPT["store:record"]).toBeUndefined();
+  test("GREEN: the five store kinds pass once each is findable in personal and Organization Trash", () => {
+    expect(
+      judgeTrashCoverage(STORE_CHILDREN.map((k) => ({ thing: `store:${k}`, covered: true, orgCovered: true }))),
+    ).toEqual([]);
+  });
+
+  // lane STORE-RESTORE-DOORS: the blind spot. TRASH-COVERAGE-2 found Organization Trash silently skipping
+  // every kind whose table has no visibility column (sandboxes, scope types, feedback) while personal
+  // Trash listed them; a coverage pass that asked personal Trash alone stayed green over it.
+  test("RED: a thing in its owner's personal Trash but missing from its organization's Trash fails", () => {
+    const found = judgeTrashCoverage([{ thing: "entity:sandbox_instance", covered: true, orgCovered: false }]);
+    expect(found).toHaveLength(1);
+    expect(found[0]!.door).toBe("entity:sandbox_instance");
+    expect(found[0]!.problem).toContain("not in its organization's Trash");
+  });
+
+  test("GREEN: a thing with no organization to ask (orgCovered undefined) is judged on personal Trash", () => {
+    expect(judgeTrashCoverage([{ thing: "entity:credential_item", covered: true }])).toEqual([]);
+    expect(judgeTrashCoverage([{ thing: "entity:sandbox_instance", covered: true, orgCovered: true }])).toEqual([]);
+  });
+
+  test("the store's Trash kinds are Table, Record and the five removed-on-their-own kinds, never exempted", () => {
+    expect(STORE_TRASH_KINDS).toEqual({
+      table: "table", record: "record", field: "field", rule: "rule", relation: "relation",
+      doc_template: "doc_template", dashboard: "dashboard",
+    });
+    for (const k of Object.keys(STORE_TRASH_KINDS)) expect(TRASH_COVERAGE_EXEMPT[`store:${k}`]).toBeUndefined();
     for (const why of Object.values(TRASH_COVERAGE_EXEMPT)) expect(why.length).toBeGreaterThan(40);
   });
 });

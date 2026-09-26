@@ -44,7 +44,7 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAccessToken } from "@/lib/redux/slices/userSlice";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useServerOrganizationId } from "@/lib/api/useServerOrganizationId";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { resolveCatalogLink } from "@/features/admin/applications/catalogs/resolver";
 import { CATALOG_KINDS, CATALOG_KEY_REGEX } from "@/features/admin/applications/catalogs/schemas";
@@ -97,7 +97,7 @@ export function AddFromLinkDialog({
 }: AddFromLinkDialogProps) {
   const accessToken = useAppSelector(selectAccessToken);
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
-  const organizationId = useAppSelector(selectOrganizationId);
+  const organizationId = useServerOrganizationId();
 
   const [url, setUrl] = useState("");
   const [kindHint, setKindHint] = useState<string>(

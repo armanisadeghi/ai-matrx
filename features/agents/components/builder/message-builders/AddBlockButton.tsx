@@ -78,7 +78,7 @@ import {
   rolesFor,
   type ImageRoleLimits,
   type ReferenceRole,
-} from "@/features/agents/image-roles/roles";
+} from "@ai-matrx/agents";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------------------------------------------------------------------------

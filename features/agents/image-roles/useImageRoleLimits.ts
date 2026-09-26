@@ -16,7 +16,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { readImageRoleLimits, type ImageRoleLimits } from "./roles";
+import { readImageRoleLimits, type ImageRoleLimits } from "@ai-matrx/agents";
 
 const cache = new Map<string, ImageRoleLimits | null>();
 

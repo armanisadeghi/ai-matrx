@@ -56,7 +56,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { isJsonObject } from "@/types/json";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useServerOrganizationId } from "@/lib/api/useServerOrganizationId";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import {
@@ -312,7 +312,7 @@ export function MandatesConsole() {
     },
     [navPending, router],
   );
-  const selectedOrganizationId = useAppSelector(selectOrganizationId);
+  const selectedOrganizationId = useServerOrganizationId();
   // 🚨 THE FOURTH STATE (R37). This used to read `orgBootstrapResolved` and
   // call resolved-with-no-id the refusal — but `setOrgBootstrapFailure` sets
   // resolved TRUE, so a failed read told a member of thirteen organizations to

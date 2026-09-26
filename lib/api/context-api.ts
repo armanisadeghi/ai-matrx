@@ -14,6 +14,7 @@
  * shape will match.
  */
 
+import { adminLaneOrganizationId } from "@/lib/api/admin-lane";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 import type { RootState } from "@/lib/redux/store";
@@ -89,7 +90,9 @@ export const fetchContextState = createAsyncThunk<
     // fallback organization ever chosen.
     let organizationId: string;
     try {
-      organizationId = requireOrganizationContext(selectOrganizationId(state));
+      organizationId = requireOrganizationContext(
+        adminLaneOrganizationId() ?? selectOrganizationId(state),
+      );
     } catch (error) {
       if (error instanceof OrganizationContextError) {
         return rejectWithValue(error.code);

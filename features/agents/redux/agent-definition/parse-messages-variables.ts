@@ -23,7 +23,7 @@ import {
 } from "@/features/agents/types/agent-definition.types";
 import type { components } from "@/types/python-generated/api-types";
 import { isMessagePart } from "@/types/python-generated/stream-events";
-import { isReferenceRole } from "@/features/agents/image-roles/roles";
+import { isReferenceRole } from "@ai-matrx/agents";
 import { isSpeechScriptPart } from "@/features/agents/speech-script/types";
 import {
   DECISION_QUESTIONS_KIND,

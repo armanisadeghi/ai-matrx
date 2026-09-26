@@ -84,35 +84,11 @@ export const LANGUAGE_OPTIONS = [
   "tl",
 ] as const;
 
-export function isControlVariable(def: VariableDefinition): boolean {
-  return typeof def.control?.key === "string" && def.control.key.length > 0;
-}
-
 export function findControlVariable(
   defs: readonly VariableDefinition[] | null | undefined,
   key: string,
 ): VariableDefinition | undefined {
   return (defs ?? []).find((d) => d.control?.key === key);
-}
-
-/** Content inputs first, bound controls after — stable within each group. */
-export function partitionControlVariables<T extends VariableDefinition>(
-  defs: readonly T[],
-): { content: T[]; settings: T[] } {
-  const content: T[] = [];
-  const settings: T[] = [];
-  for (const d of defs) (isControlVariable(d) ? settings : content).push(d);
-  return { content, settings };
-}
-
-/** The order every variable form renders in. Returns the same array when already ordered. */
-export function orderVariablesForForm<T extends VariableDefinition>(
-  defs: T[],
-): T[] {
-  const { content, settings } = partitionControlVariables(defs);
-  if (settings.length === 0) return defs;
-  const ordered = [...content, ...settings];
-  return ordered.every((d, i) => d === defs[i]) ? defs : ordered;
 }
 
 /** Read the knob's value defensively: a malformed policy falls back to the default. */

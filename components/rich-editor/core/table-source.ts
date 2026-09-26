@@ -16,45 +16,13 @@
 // Guard: scripts/check-table-writers.ts (no table writer outside this module).
 
 import { marked, type Tokens } from "marked";
-import { unescapeCellPipes } from "@/components/markdown-core/syntax/gfm-cell-pipes";
+import { rowCells, splitRowSegments, unescapeCellPipes } from "@ai-matrx/content-ir/source";
 
-/**
- * THE table-row splitter — GFM's rule, exactly: a `|` is a cell boundary unless
- * an ODD run of backslashes precedes it (`\|` is a pipe in the cell, `\\|` is
- * an escaped backslash and then a boundary). Code spans get no special
- * treatment: GFM splits rows before inline parsing, so an unescaped `|` inside
- * backticks is a boundary too. The parser, the writer and the renderer's
- * table readers all split through here; tests and the corpus gate judge it
- * against an independent GFM parser (scripts/lib/gfm-table-oracle.ts).
- * Returns the row's bytes between boundaries (edge segments included).
- */
-export function splitRowSegments(line: string): string[] {
-  const segments: string[] = [];
-  let start = 0;
-  for (let i = 0; i < line.length; i += 1) {
-    const ch = line[i];
-    if (ch === "\\") {
-      i += 1; // the escaped character — never a boundary
-      continue;
-    }
-    if (ch === "|") {
-      segments.push(line.slice(start, i));
-      start = i + 1;
-    }
-  }
-  segments.push(line.slice(start));
-  return segments;
-}
-
-/** A row's cell texts as GFM reads them (source bytes, trimmed; edge pipes dropped). */
-export function rowCells(line: string): string[] {
-  const cells = splitRowSegments(line).map((cell) => cell.trim());
-  if (cells.length > 1 && cells[0] === "") cells.shift();
-  if (cells.length > 1 && cells[cells.length - 1] === "") cells.pop();
-  else if (cells.length === 1 && cells[0] === "") cells.pop();
-  return cells;
-}
-
+// THE table-row splitter and a row's cells — GFM's rule (backslash-run parity) —
+// live in @ai-matrx/content-ir/source (source/gfm-table.ts), shared with every
+// reader; tests and the corpus gate judge it against an independent GFM parser
+// (scripts/lib/gfm-table-oracle.ts).
+export { rowCells, splitRowSegments } from "@ai-matrx/content-ir/source";
 /** Length of the run of backslashes ending just before `index`. */
 function backslashRunBefore(text: string, index: number): number {
   let run = 0;

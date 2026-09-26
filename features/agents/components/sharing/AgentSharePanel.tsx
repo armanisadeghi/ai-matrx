@@ -39,6 +39,7 @@ export function AgentSharePanel({
     updateLevel,
     refresh,
     whoCanSee,
+    personalHome,
     setWhoCanSee,
     organizationDefault,
   } = useSharing("agent", agentId, true);
@@ -118,6 +119,7 @@ export function AgentSharePanel({
             <>
               {/* WHO CAN SEE THIS (SHARE-LANE-CONTROL): absent for a kind with no lane door. */}
               <WhoCanSeeThis
+                offerOrganization={!personalHome}
                 whoCanSee={whoCanSee}
                 canChange={isOwner}
                 onChoose={setWhoCanSee}
@@ -154,6 +156,7 @@ export function AgentSharePanel({
 
           {activeSubTab === "public" && (
             <PublicAccessTab
+              offerOrganization={!personalHome}
               isPublic={resourceIsPublic}
               publicPermission={publicPermission}
               isOwner={isOwner}

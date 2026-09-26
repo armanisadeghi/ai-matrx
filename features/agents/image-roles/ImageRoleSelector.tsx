@@ -22,7 +22,7 @@ import {
   roleTakesName,
   type ImageRoleLimits,
   type ReferenceRole,
-} from "./roles";
+} from "@ai-matrx/agents";
 
 export interface ImageRoleSelectorProps {
   value: ReferenceRole | null;

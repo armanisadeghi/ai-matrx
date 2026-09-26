@@ -25,6 +25,7 @@
  *     `ai_v2_downgrade` telemetry record.
  */
 
+import { adminLaneHeadersFor, adminLaneOrganizationId } from "@/lib/api/admin-lane";
 import type { Action } from "redux";
 import type { ThunkAction } from "redux-thunk";
 import type { RootState } from "@/lib/redux/store";
@@ -178,7 +179,8 @@ export function createMatrxTransport(
       let organizationId: string | null = null;
       if (isAuthenticated) {
         organizationId = requireOrganizationContext(
-          hasAppContext ? selectOrganizationId(state) : undefined,
+          adminLaneOrganizationId() ??
+            (hasAppContext ? selectOrganizationId(state) : undefined),
           options.organizationId,
         );
       } else if (options.organizationId) {
@@ -191,7 +193,12 @@ export function createMatrxTransport(
         baseUrl: resolveBaseUrl(state),
         channel: "global",
         ...(organizationId
-          ? { policyHeaders: { "X-Organization-Id": organizationId } }
+          ? {
+              policyHeaders: {
+                "X-Organization-Id": organizationId,
+                ...adminLaneHeadersFor(organizationId),
+              },
+            }
           : {}),
       };
     },

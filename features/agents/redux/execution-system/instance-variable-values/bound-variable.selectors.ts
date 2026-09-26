@@ -19,7 +19,7 @@ import type { RootState } from "@/lib/redux/store";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import { selectAllContextItems } from "@/features/scopes/redux/contextItemCatalog";
 import type { ContextItem } from "@/features/scopes/redux/contextItemCatalog";
-import { orderVariablesForForm } from "@/features/agents/utils/control-variables";
+import { orderVariablesForForm } from "@ai-matrx/agents";
 import {
   contextItemBindingOf,
   isCustomDataBinding,

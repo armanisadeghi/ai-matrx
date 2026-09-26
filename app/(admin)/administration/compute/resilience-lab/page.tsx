@@ -51,7 +51,7 @@ import { useRequestRecovery } from "@/features/request-recovery/providers/Reques
 import { selectActiveNetRequests } from "@/lib/redux/net/selectors";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { selectAccessToken } from "@/lib/redux/slices/userSlice";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useServerOrganizationId } from "@/lib/api/useServerOrganizationId";
 import {
   applyOrganizationContextHeader,
   requireOrganizationContext,
@@ -448,7 +448,7 @@ export default function ResilienceLabPage() {
   const activeRequests = useAppSelector(selectActiveNetRequests);
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
   const accessToken = useAppSelector(selectAccessToken);
-  const organizationId = useAppSelector(selectOrganizationId);
+  const organizationId = useServerOrganizationId();
 
   const [inputValue, setInputValue] = useState(MOCK_USER_INPUT);
   const [log, setLog] = useState<

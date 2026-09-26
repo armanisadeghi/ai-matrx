@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Minus, Plus } from "lucide-react";
 import { formatText } from "@ai-matrx/kit/text-case";
-import { variableRunLabel } from "@/features/agents/image-roles/roles";
+import { variableRunLabel } from "@ai-matrx/agents";
 import type { VariableDefinition as PromptVariable } from "@/features/agents/types/agent-definition.types";
 
 // ============================================================================

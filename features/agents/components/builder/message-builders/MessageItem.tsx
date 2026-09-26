@@ -35,7 +35,7 @@ import {
 import {
   isReferenceRole,
   variableNameOfMediaUrl,
-} from "@/features/agents/image-roles/roles";
+} from "@ai-matrx/agents";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.

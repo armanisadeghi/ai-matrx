@@ -7,7 +7,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus } from "lucide-react";
 import { formatText } from "@ai-matrx/kit/text-case";
-import { variableRunLabel } from "@/features/agents/image-roles/roles";
+import { variableRunLabel } from "@ai-matrx/agents";
 import { cn } from "@/lib/utils";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import { isMediaVariableType } from "@/features/agents/types/agent-definition.types";

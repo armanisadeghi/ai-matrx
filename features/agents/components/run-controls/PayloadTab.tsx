@@ -41,7 +41,7 @@ import {
   isReferenceRole,
   variableNameOfImageUrl,
   type ReferenceRole,
-} from "@/features/agents/image-roles/roles";
+} from "@ai-matrx/agents";
 import { EmptyStats, StatRow, StatSection } from "./panels/shared";
 import { TYPE_COLORS } from "./ContextPoliciesTab";
 import { cn } from "@/lib/utils";

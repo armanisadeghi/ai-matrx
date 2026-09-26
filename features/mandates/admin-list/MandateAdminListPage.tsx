@@ -20,7 +20,7 @@ import {
   selectAuthReady,
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useServerOrganizationId } from "@/lib/api/useServerOrganizationId";
 import { onMandateCacheInvalidated } from "@/features/mandates/service";
 import {
   batchEligibilityOf,
@@ -64,7 +64,7 @@ export function MandateAdminListPage() {
   const userId = useAppSelector(selectUserId);
   const accessToken = useAppSelector(selectAccessToken);
   const authReady = useAppSelector(selectAuthReady);
-  const organizationId = useAppSelector(selectOrganizationId);
+  const organizationId = useServerOrganizationId();
   // The server reports ride the organization header: when a workspace is
   // chosen (or changed) after the rows loaded, they are asked again.
   const reportsOrg = useRef(organizationId);

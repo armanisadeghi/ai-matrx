@@ -7,7 +7,7 @@
  */
 
 import { formatText } from "@ai-matrx/kit/text-case";
-import { variableRunLabel } from "@/features/agents/image-roles/roles";
+import { variableRunLabel } from "@ai-matrx/agents";
 import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import { BoundVariableChips } from "@/features/agents/components/inputs/BoundVariableChips";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";

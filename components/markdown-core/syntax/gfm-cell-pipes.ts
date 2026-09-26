@@ -6,7 +6,6 @@
  * a table cell), the chat and artifact table (StreamingTableRenderer, on each
  * cell's inline source before the inline core reads it) and the table writer's
  * read-back (rich-editor/core/table-source). verify-RC-B4 R4-3, R5-2.
+ * The rule itself lives in @ai-matrx/content-ir/source; this is its door here.
  */
-export function unescapeCellPipes(cell: string): string {
-  return cell.replace(/\\\|/g, "|");
-}
+export { unescapeCellPipes } from "@ai-matrx/content-ir/source";

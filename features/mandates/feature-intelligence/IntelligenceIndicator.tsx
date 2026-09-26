@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useLiveSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+import { useSettingsPresentation } from "@/features/settings/components/SettingsPresentationContext";
 import { fetchMandateIdentities, type MandateIdentity } from "../service";
 import { mandateDisplayName } from "../mandate-words";
 import { featureIntelligenceHref, featureOfMandateKey } from "./hrefs";
@@ -81,6 +82,14 @@ export function IntelligenceIndicator({
   const does = new Map(live.map((ref) => [ref.mandateKey as string, ref.does]));
 
   const [open, setOpen] = useState(false);
+  // Inside the Settings window (Dictionary's door), leaving for the feature
+  // page also closes the window once the page has changed — otherwise it sits
+  // on top of the page the person asked to see.
+  const { closeShellAfterNavigation } = useSettingsPresentation();
+  const leave = (href: string) => {
+    setOpen(false);
+    closeShellAfterNavigation?.(href);
+  };
   const [identities, setIdentities] = useState<Record<string, MandateIdentity>>({});
   const keyList = keys.join("|");
   useEffect(() => {
@@ -145,7 +154,9 @@ export function IntelligenceIndicator({
                 <li key={key}>
                   <Link
                     href={featureIntelligenceHref(resolvedFeature, { mandateKey: key, context })}
-                    onClick={() => setOpen(false)}
+                    onClick={() =>
+                      leave(featureIntelligenceHref(resolvedFeature, { mandateKey: key, context }))
+                    }
                     className="group flex items-start gap-2 px-3 py-1.5 hover:bg-accent"
                   >
                     <span className="min-w-0 flex-1">
@@ -165,7 +176,7 @@ export function IntelligenceIndicator({
         ) : null}
         <Link
           href={pageHref}
-          onClick={() => setOpen(false)}
+          onClick={() => leave(pageHref)}
           className="flex items-center justify-between border-t border-border px-3 py-2 text-[12.5px] font-medium text-primary hover:bg-accent"
         >
           All {featureName.toLowerCase()} intelligence

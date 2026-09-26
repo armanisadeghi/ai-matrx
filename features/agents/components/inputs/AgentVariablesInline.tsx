@@ -36,11 +36,11 @@ import { setExpandedVariableId } from "@/features/agents/redux/execution-system/
 import { VariableInputComponent } from "./input-components/VariableInputComponent";
 import { BoundVariableChips } from "./BoundVariableChips";
 import { formatText } from "@ai-matrx/kit/text-case";
-import { variableRunHint, variableRunLabel } from "@/features/agents/image-roles/roles";
+import { variableRunHint, variableRunLabel } from "@ai-matrx/agents";
 import { variableValueToDisplay } from "@/features/agents/utils/variable-utils";
 import { calculateVisualViewportLift } from "@/lib/dom/visual-viewport-lift";
 import { collapsedRowKind } from "./collapsed-row";
-import { isControlVariable } from "@/features/agents/utils/control-variables";
+import { isControlVariable } from "@ai-matrx/agents";
 
 interface AgentVariablesInlineProps {
   conversationId: string;

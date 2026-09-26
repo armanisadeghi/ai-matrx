@@ -28,7 +28,7 @@ import {
 import { VariableInputComponent } from "../input-components/VariableInputComponent";
 import { BoundVariableChips } from "../BoundVariableChips";
 import { formatText } from "@ai-matrx/kit/text-case";
-import { variableRunLabel } from "@/features/agents/image-roles/roles";
+import { variableRunLabel } from "@ai-matrx/agents";
 
 interface AgentVariablesWizardProps {
   conversationId: string;
