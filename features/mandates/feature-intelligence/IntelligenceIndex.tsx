@@ -286,7 +286,7 @@ export function IntelligenceIndex() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-8 sm:px-6">
-      <div className="sticky top-0 z-10 -mx-4 bg-background/95 px-4 pb-3 pt-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:-mx-6 sm:px-6">
+      <div className="sticky top-0 z-10 -mx-4 max-w-none bg-background/95 px-4 pb-3 pt-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:-mx-6 sm:px-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
           <SearchInput
             value={query}
