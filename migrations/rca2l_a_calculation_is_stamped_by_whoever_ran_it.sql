@@ -1,4 +1,3 @@
--- draft: rc-a2-deep HR snapshot actor; remove when rehearsed + suite green on the clone
 -- based-on: public.hr_write_calculation_snapshot(uuid, text, uuid, text, text, date, text, text, jsonb, jsonb, jsonb, jsonb, text, uuid, uuid, jsonb, boolean, uuid, uuid) 8fa1b2f97ee8750a0dacec66641db39c8dd9cf30ece33c219e07693bb374132e
 --
 -- RC-A2 round 4 (register row RC-A2). A CALCULATION IS STAMPED BY WHOEVER RAN IT.
