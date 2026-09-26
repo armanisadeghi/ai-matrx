@@ -28,7 +28,7 @@ export const DATA_PLACES: FeaturePlaces = {
       trigger: "Row actions, page assistant",
       urlPattern: "/data-v2/[tableId]",
       mandateKeys: [K.data__row_action, K.data__page_guidance],
-      sources: ["app/(core)/data-v2/[tableId]/page.tsx"],
+      sources: ["features/data-tables/records-ui-host/recordsUiHost.tsx"],
     },
     {
       id: "formula",

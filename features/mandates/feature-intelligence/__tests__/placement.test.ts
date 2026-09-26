@@ -99,7 +99,7 @@ describe("registry placement", () => {
   });
 
   it("labels are the registry's own words", () => {
-    expect(targetLabel("seo")).toBe("Seo");
+    expect(targetLabel("seo")).toBe("SEO");
     expect(targetLabel("local-listings")).toBe("Local Listings");
     expect(targetLabel("education/unassigned")).toBe(
       "Education: not yet assigned to a feature",

@@ -226,7 +226,7 @@ describe("feature intelligence — registry pages and old ids", () => {
     const row = (feature: string) =>
       rows.find((entry: { feature: string }) => entry.feature === feature);
     expect(row("seo")).toMatchObject({
-      label: "Seo",
+      label: "SEO",
       domain: "marketing",
       jobs: 1,
     });

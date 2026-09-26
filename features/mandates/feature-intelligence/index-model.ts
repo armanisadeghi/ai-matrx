@@ -109,9 +109,6 @@ const SECTION_OF_FEATURE: Readonly<Record<string, string>> = {
   voice: CHAT_SECTION, // talking to the AI: /chat/voice, /chat/talk
   "agent-memory": CHAT_SECTION, // observational memory of conversations
   "agent-apps": AGENT_APPS_SECTION,
-  orchestras: "workflows", // an Orchestra is a Holder like a Workflow
-  "execution-runtime": "platform",
-  "agent-tools": "platform",
   "agent-iteration": "agents", // improving an agent is authoring it
 };
 

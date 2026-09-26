@@ -3,7 +3,8 @@
 // THE REGISTRY, as the /intelligence directory reads it: every Domain and its
 // Features, ids and names exactly as `platform.taxonomy_node` holds them
 // (common-docs/systems/platform/vocabulary/FEATURE.md: the DB is the source;
-// never coin or rename). Snapshot taken 2026-09-26 from the live DB — when a
+// never coin or rename). Snapshot taken 2026-09-26 from the live DB (after Arman's
+// ruling moved Orchestras, Agent Tools and Execution Runtime out of Agents) — when a
 // node is added or renamed there, update this list (the guard in
 // `__tests__/placement.test.ts` fails when a placement names a node missing here).
 // `proposed: true` marks nodes Arman has not ratified yet; they still place jobs.
@@ -33,13 +34,12 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
       { id: "agent-samples", name: "Agent Samples", proposed: true },
       { id: "agent-skills", name: "Agent Skills" },
       { id: "agent-studio", name: "Agent Studio" },
-      { id: "agent-tools", name: "Agent Tools" },
       {
         id: "agent-variable-binding",
         name: "Agent Variable Binding",
         proposed: true,
       },
-      { id: "ai-models", name: "Ai Models" },
+      { id: "ai-models", name: "AI Models" },
       { id: "batch-runs", name: "Batch Runs" },
       { id: "chat", name: "Chat" },
       {
@@ -47,8 +47,6 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
         name: "Conversation Start Contract",
         proposed: true,
       },
-      { id: "execution-runtime", name: "Execution Runtime" },
-      { id: "orchestras", name: "Orchestras" },
       { id: "prompts", name: "Prompts" },
       { id: "typed-messages", name: "Typed Messages", proposed: true },
       { id: "voice", name: "Voice" },
@@ -73,7 +71,7 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
         proposed: true,
       },
       { id: "native-apps", name: "Native Apps", proposed: true },
-      { id: "on-device-ai", name: "On Device Ai" },
+      { id: "on-device-ai", name: "On Device AI" },
       { id: "remote-catalogs", name: "Remote Catalogs", proposed: true },
       { id: "web-data-extraction", name: "Web Data Extraction" },
     ],
@@ -82,10 +80,10 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
     id: "coding",
     name: "Coding",
     features: [
-      { id: "agent-fs", name: "Agent Fs" },
+      { id: "agent-fs", name: "Agent FS" },
       { id: "code-workspace", name: "Code Workspace" },
       { id: "coding-session-bridge", name: "Coding Session Bridge" },
-      { id: "ide-plugins", name: "Ide Plugins" },
+      { id: "ide-plugins", name: "IDE Plugins" },
       { id: "vscode-extension", name: "Vscode Extension" },
     ],
   },
@@ -118,7 +116,7 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
     name: "CRM",
     features: [
       { id: "contact-import", name: "Contact Import" },
-      { id: "crm-inbox", name: "Crm Inbox" },
+      { id: "crm-inbox", name: "CRM Inbox" },
       { id: "deals", name: "Deals" },
       { id: "party", name: "Party" },
     ],
@@ -127,7 +125,7 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
     id: "education",
     name: "Education",
     features: [
-      { id: "ai-tutor", name: "Ai Tutor" },
+      { id: "ai-tutor", name: "AI Tutor" },
       { id: "child-safety", name: "Child Safety" },
       { id: "classes-and-creators", name: "Classes And Creators" },
       { id: "education-games", name: "Education Games" },
@@ -207,11 +205,11 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
     name: "Integrations",
     features: [
       { id: "bing", name: "Bing" },
-      { id: "github", name: "Github" },
+      { id: "github", name: "GitHub" },
       { id: "google", name: "Google" },
-      { id: "mcp-connections", name: "Mcp Connections" },
+      { id: "mcp-connections", name: "MCP Connections" },
       { id: "provider-access", name: "Provider Access" },
-      { id: "third-party-apis", name: "Third Party Apis" },
+      { id: "third-party-apis", name: "Third Party APIs" },
     ],
   },
   {
@@ -226,7 +224,7 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
       { id: "document-intelligence", name: "Document Intelligence" },
       { id: "ingestion", name: "Ingestion" },
       { id: "knowledge-graph", name: "Knowledge Graph" },
-      { id: "rag", name: "Rag" },
+      { id: "rag", name: "RAG" },
       { id: "research", name: "Research" },
       { id: "scraper", name: "Scraper" },
       { id: "web-search", name: "Web Search", proposed: true },
@@ -237,7 +235,7 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
     name: "Legal",
     features: [
       { id: "legal-search", name: "Legal Search" },
-      { id: "wc-ratings", name: "Wc Ratings" },
+      { id: "wc-ratings", name: "WC Ratings" },
     ],
   },
   {
@@ -254,14 +252,14 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
       },
       { id: "content-planning", name: "Content Planning" },
       { id: "content-studio", name: "Content Studio" },
-      { id: "free-seo-tools", name: "Free Seo Tools" },
+      { id: "free-seo-tools", name: "Free SEO Tools" },
       { id: "growth-loop", name: "Growth Loop" },
       { id: "local-listings", name: "Local Listings" },
       { id: "marketing-analytics", name: "Marketing Analytics" },
       { id: "outreach", name: "Outreach" },
       { id: "outreach-data", name: "Outreach Data", proposed: true },
       { id: "public-relations", name: "Public Relations" },
-      { id: "seo", name: "Seo" },
+      { id: "seo", name: "SEO" },
       { id: "social", name: "Social" },
       {
         id: "url-change-discovery",
@@ -287,7 +285,7 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
     id: "media",
     name: "Media",
     features: [
-      { id: "audio-tts", name: "Audio Tts" },
+      { id: "audio-tts", name: "Audio TTS" },
       { id: "file-service", name: "File Service" },
       { id: "images", name: "Images" },
       { id: "media-capture", name: "Media Capture" },
@@ -297,7 +295,7 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
         name: "Media Source Catalog",
         proposed: true,
       },
-      { id: "pdf", name: "Pdf" },
+      { id: "pdf", name: "PDF" },
       { id: "podcasts", name: "Podcasts" },
       { id: "printing", name: "Printing" },
       { id: "product-capture", name: "Product Capture", proposed: true },
@@ -308,6 +306,8 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
     id: "platform",
     name: "Platform",
     features: [
+      { id: "execution-runtime", name: "Execution Runtime" },
+      { id: "agent-tools", name: "Agent Tools" },
       { id: "access", name: "Access" },
       { id: "admin-console-shell", name: "Admin Console Shell" },
       {
@@ -357,7 +357,7 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
         proposed: true,
       },
       { id: "organizations", name: "Organizations" },
-      { id: "orm-persistence", name: "Orm Persistence" },
+      { id: "orm-persistence", name: "ORM Persistence" },
       { id: "platform-spend", name: "Platform Spend", proposed: true },
       { id: "proof-runs", name: "Proof Runs", proposed: true },
       { id: "provenance", name: "Provenance" },
@@ -397,7 +397,7 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
       { id: "download", name: "Download" },
       { id: "landing-pages", name: "Landing Pages" },
       { id: "legal-pages", name: "Legal Pages" },
-      { id: "og-cards", name: "Og Cards" },
+      { id: "og-cards", name: "OG Cards" },
       { id: "pricing", name: "Pricing" },
       { id: "share-viewers", name: "Share Viewers" },
     ],
@@ -416,8 +416,8 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
     id: "website-platform",
     name: "Website Platform",
     features: [
-      { id: "cms", name: "Cms" },
-      { id: "html-pages", name: "Html Pages" },
+      { id: "cms", name: "CMS" },
+      { id: "html-pages", name: "HTML Pages" },
       { id: "site-publishing", name: "Site Publishing" },
     ],
   },
@@ -425,6 +425,7 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
     id: "workflows",
     name: "Workflows",
     features: [
+      { id: "orchestras", name: "Orchestras" },
       { id: "plan-nodes", name: "Plan Nodes" },
       { id: "workflow-authoring", name: "Workflow Authoring" },
       { id: "workflow-engine", name: "Workflow Engine" },

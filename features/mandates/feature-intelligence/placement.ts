@@ -59,7 +59,7 @@ export const PLACEMENT_RULES: readonly PlacementRule[] = [
     "shortcut.system_prompt_enhancer_*",
   ),
   ...rule("agents", "agent-memory", "memory.*"),
-  ...rule("agents", "agent-tools", "tools.*", "content_gate.*"),
+  ...rule("platform", "agent-tools", "tools.*", "content_gate.*"),
   ...rule(
     "agents",
     "chat",
@@ -67,8 +67,8 @@ export const PLACEMENT_RULES: readonly PlacementRule[] = [
     "conversation.*",
     "shortcut.matrx_custom_chat",
   ),
-  ...rule("agents", "execution-runtime", "orchestration.*"),
-  ...rule("agents", "orchestras", "orchestras.*"),
+  ...rule("platform", "execution-runtime", "orchestration.*"),
+  ...rule("workflows", "orchestras", "orchestras.*"),
   ...rule("agents", "voice", "voice.*"),
   // Every other shortcut sits with the feature it serves (below); the rest,
   // and the scroll assistant (`ambient.*`), have no Domain yet.
