@@ -172,6 +172,12 @@ push — are the ship path.
 
 ## Change log
 
+- 2026-09-26 — Row `pnpm check:shell-layout` (repo-only): the real-Chromium layout gate
+  (`features/shell/layout-gate/`, now including the shipped `@ai-matrx/*` CSS) as a SIGNAL;
+  no Chromium = `[FAIL] UNMEASURED` + `pnpm exec playwright install chromium`, a WARNING
+  finding, never a silent pass. Note: `run.mjs` reads `run-release-gates.sh --strict --list`
+  (plus `EXTRA_ROWS`) — a row added only to the non-strict lane never runs here.
+
 - 2026-09-26 — `pnpm findings` / `pnpm findings accept` (PLAN.md decision 8 + C1): the
   in-session face of the item line. Accept adapters for visibility-vocabulary, access-guard-check
   (in-place allowlist append), api-contract-ratchet (sibling `api-contracts-baseline.reasons.json`),

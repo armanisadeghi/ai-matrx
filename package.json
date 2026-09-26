@@ -642,6 +642,7 @@
     "check:record-toasts:self-test": "tsx scripts/check-record-toasts.ts --self-test",
     "test:kind-sandbox:browser": "playwright test -c playwright.kind-sandbox.config.ts",
     "test:shell-layout": "playwright test -c playwright.shell-layout.config.ts",
+    "check:shell-layout": "node scripts/check-shell-layout-gate.mjs",
     "test:rule-row-squeeze": "playwright test -c playwright.rule-row-squeeze.config.ts",
     "test:library-table-reachable": "playwright test -c playwright.library-table-reachable.config.ts",
     "check:kind-sandbox-gate": "tsx scripts/check-kind-sandbox-gate.ts",

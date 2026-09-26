@@ -616,6 +616,10 @@ if $STRICT; then
         # controls still firing; exit 1. `pnpm check:kind-sandbox-gate:self-test`
         # proves the gate's own comparison logic can still fail.
         "The Shape sandbox boundary, in a real browser (DD-242)|pnpm check:kind-sandbox-gate"
+        # SHIPPED CSS vs REAL LAYOUT (2026-09-26) — same row as the non-strict lane;
+        # this lane is the one `scripts/checks/run.mjs` reads. A SIGNAL: the runner
+        # exits 0; missing Chromium is `[FAIL] UNMEASURED` with the install remedy.
+        "Shipped CSS never collapses the shell or a context-menu region (real browser)|pnpm check:shell-layout"
         # THE `__kind` MARKER LAW genuinely blocks a MERGE — ci.yml runs
         # `pnpm check:kind-marker-law` on every push and PR, so unlike most gates
         # here a red really does stop something. It exits 1 in both modes. `__kind` is part of
@@ -813,6 +817,16 @@ if $STRICT; then
 else
     # Non-strict variants still print the full loud report; they exit 0.
     declare -a GATES=(
+        # SHIPPED CSS vs REAL LAYOUT, in Chromium (2026-09-26). jsdom computes no
+        # layout; this is the only place a stylesheet the app ships is measured.
+        # `features/shell/layout-gate/` loads styles/shell.css and every
+        # `@ai-matrx/*` CSS file the app imports (derived from the imports, never
+        # hand-listed) and measures the shell and every ContextMenuV3 region shape
+        # with vs without the trigger attributes. Born of design-system 0.44.1's
+        # `[data-alchemy-trigger] { width: 2rem }` collapsing the /chat composer and
+        # every sidebar chat name for ~90 min. A SIGNAL: missing Chromium prints
+        # `[FAIL] UNMEASURED` with the install remedy, never a silent pass. ~17 s.
+        "Shipped CSS never collapses the shell or a context-menu region (real browser)|pnpm check:shell-layout"
         "Hidden failure announcements (an error only a screen reader can perceive is a dead button)|pnpm check:hidden-alerts"
         # 🚨 CRITICAL-1 (VERIFIER-8, 2026-09-21). `iam.api_keys` granted INSERT to
         # `authenticated` over PostgREST with an RLS policy that pinned `created_by`

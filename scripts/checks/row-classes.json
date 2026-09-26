@@ -6,7 +6,7 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 94,
+    "repo-only": 95,
     "live-db": 56,
     "clone-db": 3
   },
@@ -1439,6 +1439,13 @@
           "signal": "unknown binary \"playwright\" — not followed"
         }
       ]
+    },
+    "shipped-css-never-collapses-the-shell-or-a-context-menu-regi": {
+      "label": "Shipped CSS never collapses the shell or a context-menu region (real browser)",
+      "class": "repo-only",
+      "cmd": "pnpm check:shell-layout",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
     },
     "the-kind-marker-law-no-stripping": {
       "label": "The __kind marker law (no stripping)",
