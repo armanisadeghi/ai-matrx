@@ -26,11 +26,13 @@ import {
   Eye,
   FileText,
   Volume2,
+  Type,
   Waves,
   type LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { runV2Parser } from "@/components/admin/markdown-tester/utils/run-v2-parser";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import { RichDocumentActionSurface } from "@/features/rich-document/RichDocumentActionSurface";
@@ -119,11 +121,16 @@ interface PreviewPanelProps {
    * the preview (task checkboxes) write back through the splice API.
    */
   onContentChange?: (next: string) => void;
+  /**
+   * Phones show one pane at a time: when given, the header carries a "Source"
+   * button that switches back — no tab strip row above the panes.
+   */
+  onShowSource?: () => void;
 }
 
 export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
   function PreviewPanel(
-    { content, contentSource, sourceActions, mode, onModeChange, title, onContentChange },
+    { content, contentSource, sourceActions, mode, onModeChange, title, onContentChange, onShowSource },
     ref,
   ) {
     const [serverMode, setServerMode] = useState<BlockProcessingMode>("stream");
@@ -165,8 +172,21 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
 
     return (
       <div className="@container flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card/30">
-        <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-1.5">
-          <div className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-md border border-border bg-background/40 p-0.5">
+        {/* ONE header row at every width (UI audit B): the mode strip gives up
+            labels and scrolls before anything wraps onto a second row. */}
+        <div className="flex min-w-0 items-center gap-2 border-b border-border px-3 py-1.5">
+          {onShowSource && (
+            <button
+              type="button"
+              onClick={onShowSource}
+              className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground lg:hidden"
+              title="Show the source"
+            >
+              <Type className="h-3.5 w-3.5" />
+              Source
+            </button>
+          )}
+          <div className="flex min-w-0 shrink items-center gap-0.5 overflow-x-auto rounded-md border border-border bg-background/40 p-0.5">
             {PREVIEW_MODES.map((m) => {
               const Icon = MODE_META[m].icon;
               return (
@@ -187,7 +207,7 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
                   {/* A narrow pane (a phone, or the half-width desktop split):
                       inactive tabs go icon-only, the active one stays named.
                       Measured on the PANE (container query), not the screen. */}
-                  <span className={cn(mode !== m && "hidden @xl:inline")}>
+                  <span className={cn(mode !== m && "hidden @3xl:inline")}>
                     {MODE_META[m].label}
                   </span>
                 </button>
@@ -196,10 +216,12 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
           </div>
 
           {mode === "rendered" && (
-            <div className="ml-auto flex items-center gap-1">
+            <div className="ml-auto flex shrink-0 items-center gap-1">
+              {/* Replay settings open FROM the Stream button — never a row under the header. */}
+              <Popover open={showStreamControls} onOpenChange={setShowStreamControls}>
+              <PopoverTrigger asChild>
               <button
                 type="button"
-                onClick={() => setShowStreamControls((v) => !v)}
                 className={cn(
                   "inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
                   showStreamControls || streamText !== null
@@ -212,6 +234,28 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
                 <Waves className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Stream</span>
               </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-[min(26rem,calc(100vw-2rem))] p-3">
+                <StreamSimControls
+                  settings={simSettings}
+                  onSettingsChange={setSimSettings}
+                  progress={simProgress}
+                  onRun={runReplay}
+                  onStop={sim.stop}
+                  disabled={!hasContent}
+                  runLabel="Replay as stream"
+                />
+                {streamText !== null && !isReplaying && (
+                  <button
+                    type="button"
+                    onClick={endReplay}
+                    className="mt-2 rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    Show full
+                  </button>
+                )}
+              </PopoverContent>
+              </Popover>
               <RichDocumentActionSurface
                 surfaceId={STUDIO_ACTION_SURFACE_ID}
                 variant="bar"
@@ -221,7 +265,7 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
           )}
 
           {mode === "server" && (
-            <div className="ml-auto flex items-center gap-0.5 rounded-md border border-border bg-background/40 p-0.5">
+            <div className="ml-auto flex shrink-0 items-center gap-0.5 rounded-md border border-border bg-background/40 p-0.5">
               {(["stream", "json"] as const).map((m) => (
                 <button
                   key={m}
@@ -240,30 +284,6 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
             </div>
           )}
         </div>
-
-        {mode === "rendered" && (showStreamControls || streamText !== null) && (
-          <div className="flex items-start gap-2 border-b border-border bg-muted/20 px-3 py-2">
-            <StreamSimControls
-              className="flex-1"
-              settings={simSettings}
-              onSettingsChange={setSimSettings}
-              progress={simProgress}
-              onRun={runReplay}
-              onStop={sim.stop}
-              disabled={!hasContent}
-              runLabel="Replay as stream"
-            />
-            {streamText !== null && !isReplaying && (
-              <button
-                type="button"
-                onClick={endReplay}
-                className="shrink-0 rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
-              >
-                Show full
-              </button>
-            )}
-          </div>
-        )}
 
         {mode === "rendered" &&
           (hasContent ? (

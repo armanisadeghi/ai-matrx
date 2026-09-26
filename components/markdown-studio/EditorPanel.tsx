@@ -7,7 +7,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Hash, RotateCcw, Type } from "lucide-react";
+import { Eye, Hash, RotateCcw, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,11 @@ interface EditorPanelProps {
   onScroll?: () => void;
   onClear: () => void;
   textareaRef: React.Ref<HTMLTextAreaElement>;
+  /**
+   * Phones show one pane at a time: when given, the header carries a
+   * "Preview" button — no tab strip row above the panes (UI audit B).
+   */
+  onShowPreview?: () => void;
 }
 
 export function EditorPanel({
@@ -28,6 +33,7 @@ export function EditorPanel({
   onScroll,
   onClear,
   textareaRef,
+  onShowPreview,
 }: EditorPanelProps) {
   const stats = useMemo(() => {
     const lines = content.split("\n").length;
@@ -82,6 +88,17 @@ export function EditorPanel({
           >
             <RotateCcw className="h-3 w-3" />
           </Button>
+          {onShowPreview && (
+            <button
+              type="button"
+              onClick={onShowPreview}
+              className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground lg:hidden"
+              title="Show the preview"
+            >
+              <Eye className="h-3.5 w-3.5" />
+              Preview
+            </button>
+          )}
         </div>
       </div>
 
