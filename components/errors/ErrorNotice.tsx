@@ -118,6 +118,8 @@ export function ErrorNotice({
     );
   }
   const compact = size === "compact";
+  // Title, actions or extra content make the card taller than the ⋯ + menu column.
+  const stacked = Boolean(title || actions || children);
   // The card is an action host like any other content (ALC-15): right-click,
   // ⋯ (the same menu, opened at the button), the phone's sheet and the palette
   // (⌘/Ctrl+Shift+K) all show the ONE registry's actions over this sentence.
@@ -151,15 +153,21 @@ export function ErrorNotice({
           )}
           <p className={cn("break-words text-foreground", title && "mt-0.5")}>
             {sentence}
-            {/* The menu rides the sentence's last line — never a column of its
-                own that narrows every line (a 375px card grew 176→224px with
-                it beside the ⋯, RC-B12 layout rule). */}
-            <ErrorAlchemyMenu input={input} size="xs" />
+            {!stacked && <ErrorAlchemyMenu input={input} size="xs" />}
           </p>
           {children}
           {actions && <div className="mt-1 flex flex-wrap gap-1">{actions}</div>}
         </div>
-        <OpenOneMenuButton source={source} className={compact ? "h-6 w-6" : undefined} />
+        {/* The corner column the ⋯ already owns carries the menu under it: no
+            new column (beside the ⋯ it narrowed every line — 176→224px at
+            375px) and no new line (inline, a full last line wrapped it,
+            +16px). A one-line notice with nothing under its sentence is
+            shorter than that column, so there the menu rides the sentence
+            (RC-B12 layout rule). */}
+        <div className="flex shrink-0 flex-col items-center">
+          <OpenOneMenuButton source={source} className={compact ? "h-6 w-6" : undefined} />
+          {stacked && <ErrorAlchemyMenu input={input} size="xs" />}
+        </div>
       </div>
     </div>
   );
