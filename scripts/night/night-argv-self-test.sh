@@ -62,10 +62,9 @@ run_tree() {
 source "$T/lib-night.sh"
 night_resolve_psql >/dev/null || exit 78
 PGDUMP="\${PSQL:h}/pg_dump"
-BR="\$(night_branch_dsn)"; CL="\$(night_clone_dsn)"
-night_assert_target branch "\$BR" >/dev/null || exit 78
+# (No branch leg: the rehearsal branch was deleted 2026-09-26 — lane DB-TOOLS-NO-BRANCH.)
+CL="\$(night_clone_dsn)"
 night_assert_target clone  "\$CL" >/dev/null || exit 78
-"\$PSQL" "\$BR" -qAt -c 'select 1' >/dev/null
 "\$PSQL" "\$(night_target_dsn clone)" -qAt -c 'select 1' >/dev/null
 night_dsn_args "\$CL" && PGPASSWORD="\${NIGHT_DSN_PASSWORD:-}" "\$PSQL" "\${NIGHT_DSN_ARGS[@]}" -qAt -c 'select 1' >/dev/null
 "\$PGDUMP" "\$CL" --schema-only --no-owner -t platform.feature_knob -f /dev/null
@@ -115,6 +114,17 @@ make_tree() {
     else git -C "$FRONTEND" show "${rev}:scripts/night/${f:t}" > "$T/${f:t}" 2>/dev/null || cp "$f" "$T/${f:t}"; fi
   done
   sed -i '' "s#source /Users/armanisadeghi/code/matrx-frontend/scripts/night/lib-night.sh#source $T/lib-night.sh#" "$T"/*.sh
+  # A HISTORIC library required BRANCH-REF's branch keys for EVERY target, and the branch was
+  # deleted 2026-09-26, so the RED tree's clone assertion refused and the RED half judged nothing
+  # (lane DB-TOOLS-NO-BRANCH). Give that library a BRANCH-REF carrying production's real identity
+  # plus inert branch keys that match no server; the exercise never targets the branch.
+  if [ "$rev" != WORKTREE ]; then
+    local real="/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/plan/BRANCH-REF"
+    { grep -E '^\s*parent_(ref|system_identifier)\s*=' "$real"
+      print -r -- "branch_ref = retired-branch-placeholder"
+      print -r -- "system_identifier = 0"; } > "$T/BRANCH-REF"
+    sed -i '' "s#^BRANCH_REF_FILE=.*#BRANCH_REF_FILE=$T/BRANCH-REF#" "$T/lib-night.sh"
+  fi
 }
 
 rc=0

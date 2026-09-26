@@ -113,4 +113,9 @@ export interface SidecarCapabilities {
   links: boolean;
   /** CSS Custom Highlight API present — otherwise the panel still lists everything. */
   paint: boolean;
+  /**
+   * The person may edit the record itself (editor rung), so suggestions can be accepted or
+   * rejected by them. False → Accept/Reject are absent, never shown to refuse.
+   */
+  canEdit: boolean;
 }

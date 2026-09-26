@@ -12,6 +12,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Loader2 } from "lucide-react";
+import { guardedSave } from "@/lib/save/guardedSave";
 
 interface DeleteConfirmDialogProps {
   open: boolean;
@@ -32,7 +33,11 @@ export function DeleteConfirmDialog({
 
   const handleConfirm = () => {
     startTransition(async () => {
-      await onConfirm();
+      // Deleting again is safe (it is already gone or it goes now): Retry offered.
+      await guardedSave(async () => onConfirm(), {
+        what: "the delete",
+        onRetry: () => void onConfirm(),
+      });
       onOpenChange(false);
     });
   };

@@ -96,8 +96,9 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { connectDirect } from "./lib/direct-db";
-import { functionsTouched, openProductionReadOnly, parityDrift } from "./lib/clone-parity";
+import { functionsTouched, openProductionReadOnly, parityCompare } from "./lib/clone-parity";
 import { onceAsync, withBuildLockCleanup } from "./lib/build-lock-cleanup";
+import { legDidNothing, rule27Legs } from "./lib/rule27-legs";
 import { takeBuildLock, releaseBuildLock, startLockHeartbeat, type LockQuery } from "./lib/build-lock";
 import {
   cloneRefOverride,
@@ -638,16 +639,31 @@ function guessInverse(upPath: string): string | null {
   return candidates.find((p) => existsSync(p)) ?? null;
 }
 
-async function apply(args: string[]): Promise<{ code: number; ms: number }> {
-  const { spawnSync } = await import("node:child_process");
+/** Spawn `pnpm db:apply`, streaming its output AND keeping it, so a no-op leg can be named. */
+async function apply(args: string[]): Promise<{ code: number; ms: number; out: string }> {
+  const { spawn } = await import("node:child_process");
   const t0 = Date.now();
-  const r = spawnSync("npx", ["tsx", resolve(ROOT, "scripts", "apply-migration.ts"), ...args], {
-    cwd: ROOT,
-    stdio: "inherit",
-    env: process.env,
-    timeout: 1_800_000,
+  return await new Promise((done) => {
+    const child = spawn("npx", ["tsx", resolve(ROOT, "scripts", "apply-migration.ts"), ...args], {
+      cwd: ROOT,
+      stdio: ["inherit", "pipe", "pipe"],
+      env: process.env,
+    });
+    let out = "";
+    const timer = setTimeout(() => child.kill("SIGTERM"), 1_800_000);
+    child.stdout.on("data", (d: Buffer) => {
+      out += d.toString();
+      process.stdout.write(d);
+    });
+    child.stderr.on("data", (d: Buffer) => {
+      out += d.toString();
+      process.stderr.write(d);
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      done({ code: code ?? 2, ms: Date.now() - t0, out });
+    });
   });
-  return { code: r.status ?? 2, ms: Date.now() - t0 };
 }
 
 async function main(): Promise<number> {
@@ -776,7 +792,7 @@ async function main(): Promise<number> {
   console.log(
     `\n${C.bold}db:rehearse${C.reset} ${C.white}${relative(ROOT, upPath)}${C.reset}\n` +
       `${TAG.info}inverse: ${relative(ROOT, inversePath)}\n` +
-      `${TAG.info}rule 27 - up, inverse, up again, on the clone, every apply through pnpm db:apply`,
+      `${TAG.info}rule 27 - the up and its inverse, each executed (never skipped), on the clone, every apply through pnpm db:apply`,
   );
 
   const common = ["--target", "clone", `--statement-timeout=${statementTimeout}`];
@@ -884,71 +900,119 @@ async function main(): Promise<number> {
 
   // ── rule 27's three legs, so the release above wraps every one of their exits ──
   async function runLegs(): Promise<number> {
-  // -- leg 1: the up ---------------------------------------------------------
-  const m1 = await measure(env, "up", upSql, statementTimeout);
-  const s1 = printMeasurement("MEASURE - up", upPath, m1, upNamed);
-  if (m1.failedAt === null) recordPolicyDdlMeasurement(upPath, upSql, m1);
-  // `--measure-only`: the MEASURE PASS and nothing else. It exists because the
-  // `-- policy-ddl: one-table` exemption needs ONE NUMBER, and running rule 27's three apply
-  // legs on the shared clone to get it is exactly the ceremony that was banned on 2026-09-18.
-  // It applies nothing, ledgers nothing, and needs no inverse — so it is never a substitute for
-  // rule 27, which every file still owes before it lands anywhere.
+  // `--measure-only`: the MEASURE PASS of the up and nothing else. It exists because the
+  // `-- policy-ddl: one-table` exemption needs ONE NUMBER, and running rule 27's apply legs on
+  // the shared clone to get it is exactly the ceremony that was banned on 2026-09-18. It applies
+  // nothing, ledgers nothing, and needs no inverse — so it is never a substitute for rule 27.
   if (measureOnly) {
-    if (m1.failedAt !== null) return 1;
+    const m = await measure(env, "up", upSql, statementTimeout);
+    printMeasurement("MEASURE - up", upPath, m, upNamed);
+    if (m.failedAt !== null) return 1;
+    recordPolicyDdlMeasurement(upPath, upSql, m);
     console.log(
       `${TAG.ok}--measure-only: the measure pass ran and rolled back. ` +
         `${C.dim}Rule 27 was NOT run — this proves nothing about the file's inverse.${C.reset}`,
     );
     return 0;
   }
-  if (m1.failedAt !== null) {
-    console.error(
-      `${TAG.fail}the up failed in the measure pass at statement ${m1.failedAt + 1} (rolled back, ` +
-        `nothing applied). Fix it before rule 27 can mean anything.`,
-    );
-    return 1;
-  }
-  const a1 = await apply([upPath, ...common, ...campaignFlags]);
-  if (a1.code !== 0) {
-    console.error(`${TAG.fail}rule 27 leg 1 (up) exited ${a1.code}. Nothing further was attempted.`);
-    return 1;
-  }
-  console.log(`${TAG.ok}leg 1 - up applied and ledgered on the clone ${C.dim}(${a1.ms} ms)${C.reset}`);
 
-  // -- leg 2: the inverse ----------------------------------------------------
-  const m2 = await measure(env, "inverse", downSql, statementTimeout);
-  const s2 = printMeasurement("MEASURE - inverse", inversePath, m2, downNamed);
-  if (m2.failedAt !== null) {
-    console.error(
-      `${TAG.fail}the INVERSE failed in the measure pass at statement ${m2.failedAt + 1} (rolled ` +
-        `back). The up is applied on the clone and its inverse does not run - that is the ` +
-        `finding, and it is the one rule 27 exists to produce.`,
-    );
-    return 1;
+  // -- WHERE THE CLONE STANDS BEFORE LEG 1 (lane DB-TOOLS-NO-BRANCH, 2026-09-25) -------------
+  //
+  // 🚨 THE SILENT SKIP THIS CLOSES. Leg 1 and leg 2 used to spawn a plain apply. When the pair
+  // was ALREADY ledgered on the clone — every file rehearsed once before, every file whose lane
+  // ran the legs by hand — the runner answered "Already applied, byte-identical. Nothing to do."
+  // and exited 0, so legs 1 and 2 did NOTHING and the rehearsal still printed "rule 27 complete".
+  // So the ledger is read first, and:
+  //   · the up NOT on the clone  → up, inverse, up                (rule 27 as written)
+  //   · the up ALREADY on it     → inverse, up, inverse, up       (the clone holds the up's state,
+  //                                so the inverse runs first and the pair is proven twice)
+  //   · every leg whose file is already ledgered runs with --reapply, so it EXECUTES;
+  //   · and a leg whose runner still says "Already applied" is a FAILURE, named, never a pass.
+  let upLedgered: boolean;
+  let downLedgered: boolean;
+  {
+    const lc = await connectDirect({ ...env }, "db:rehearse (ledger read)");
+    try {
+      const rows = await lc.query<{ filename: string; checksum: string; applied_at: string }>(
+        `select filename, checksum, applied_at::text as applied_at from public._schema_migrations
+           where filename = any($1::text[])`,
+        [[basename(upPath), basename(inversePath)]],
+      );
+      const byName = new Map(rows.rows.map((r) => [r.filename, r]));
+      const upRow = byName.get(basename(upPath));
+      const downRow = byName.get(basename(inversePath));
+      upLedgered = !!upRow;
+      downLedgered = !!downRow;
+      const say = (what: string, row: typeof upRow, sqlText: string) =>
+        !row
+          ? `${what} not ledgered on the clone`
+          : `${what} ledgered on the clone ${row.applied_at}` +
+            (row.checksum === sha256OfBytes(sqlText) || row.checksum === sha256OfBytes(sqlText.replace(/\s+$/, ""))
+              ? " (these bytes)"
+              : ` (DIFFERENT bytes, ${row.checksum.slice(0, 12)}) — --reapply executes the bytes on disk`);
+      console.log(`${TAG.info}${say("up", upRow, upSql)}; ${say("inverse", downRow, downSql)}`);
+    } finally {
+      await lc.end().catch(() => undefined);
+    }
   }
-  const a2 = await apply([inversePath, ...common]);
-  if (a2.code !== 0) {
-    console.error(
-      `${TAG.fail}rule 27 leg 2 (inverse) exited ${a2.code}. The up is applied on the clone and ` +
-        `the inverse did not land - say so, do not re-run the up over it.`,
-    );
-    return 1;
-  }
-  console.log(`${TAG.ok}leg 2 - inverse applied on the clone ${C.dim}(${a2.ms} ms)${C.reset}`);
+  const legs = rule27Legs(upLedgered).map((kind) => ({ kind }));
+  console.log(
+    `${TAG.info}rule 27 legs: ${legs.map((l) => l.kind).join(" -> ")}` +
+      (upLedgered ? ` ${C.dim}(the up is already on the clone, so the inverse runs first)${C.reset}` : ""),
+  );
 
-  // -- leg 3: the up again, over the state the inverse left ------------------
-  // --reapply because leg 1 ledgered these exact bytes: the ledger row matches and the
-  // runner would otherwise answer "already applied, byte-identical".
-  const a3 = await apply([upPath, ...common, ...campaignFlags, "--reapply"]);
-  if (a3.code !== 0) {
-    console.error(
-      `${TAG.fail}rule 27 leg 3 (up again) exited ${a3.code}. The inverse did not leave the ` +
-        `database in a state the up can land on - which means the inverse is wrong, not the up.`,
-    );
-    return 1;
+  const surprises: Array<{ relation: string }> = [];
+  const legMs: Array<{ kind: string; ms: number }> = [];
+  const measured = { up: false, inverse: false };
+  const ledgered = { up: upLedgered, inverse: downLedgered };
+  for (let i = 0; i < legs.length; i++) {
+    const { kind } = legs[i]!;
+    const n = i + 1;
+    const filePath = kind === "up" ? upPath : inversePath;
+    const fileSql = kind === "up" ? upSql : downSql;
+    // One MEASURE PASS per file, before its first apply — on the state that apply lands on.
+    if (!measured[kind]) {
+      const m = await measure(env, kind, fileSql, statementTimeout);
+      const sm = printMeasurement(`MEASURE - ${kind}`, filePath, m, kind === "up" ? upNamed : downNamed);
+      surprises.push(...sm.surprises);
+      if (kind === "up" && m.failedAt === null) recordPolicyDdlMeasurement(upPath, upSql, m);
+      measured[kind] = true;
+      if (m.failedAt !== null) {
+        console.error(
+          `${TAG.fail}the ${kind === "up" ? "up" : "INVERSE"} failed in the measure pass at statement ` +
+            `${m.failedAt + 1} (rolled back, nothing applied by this leg). ` +
+            (kind === "up"
+              ? `Fix it before rule 27 can mean anything.`
+              : `Its inverse does not run - that is the finding, and it is the one rule 27 exists to produce.`),
+        );
+        return 1;
+      }
+    }
+    const args = [filePath, ...common, ...(kind === "up" ? campaignFlags : []), ...(ledgered[kind] ? ["--reapply"] : [])];
+    const r = await apply(args);
+    if (r.code !== 0) {
+      console.error(
+        `${TAG.fail}rule 27 leg ${n} (${kind}) exited ${r.code}. ` +
+          (kind === "inverse"
+            ? `The up is applied on the clone and the inverse did not land - say so, do not re-run the up over it.`
+            : n === 1
+              ? `Nothing further was attempted.`
+              : `The inverse did not leave the database in a state the up can land on - which means the inverse is wrong, not the up.`),
+      );
+      return 1;
+    }
+    if (legDidNothing(r.out)) {
+      console.error(
+        `${TAG.fail}rule 27 leg ${n} (${kind}) DID NOTHING — the runner answered "Already applied" ` +
+          `and executed no statement. A leg that runs nothing proves nothing; refusing rather than ` +
+          `reporting a rehearsal that did not happen.`,
+      );
+      return 1;
+    }
+    ledgered[kind] = true;
+    legMs.push({ kind, ms: r.ms });
+    console.log(`${TAG.ok}leg ${n} - ${kind} executed and ledgered on the clone ${C.dim}(${r.ms} ms)${C.reset}`);
   }
-  console.log(`${TAG.ok}leg 3 - up re-applied on the clone ${C.dim}(${a3.ms} ms)${C.reset}`);
-
   // -- the exit gate: the clone is a MIRROR, so leg 3 must have put it back ---
   //
   // 🚨 CHAIR RULING 2026-09-22 (lane CLONE-CATCHUP). Lanes may rehearse on the clone ONLY
@@ -960,6 +1024,14 @@ async function main(): Promise<number> {
   // somebody else moved. So leg 3 is not the end: every function body this pair touches is
   // hashed on the clone AND on production (SELECT-only, the server proving it refuses a write),
   // and a difference is printed BY NAME and exits non-zero. There is no flag that skips it.
+  //
+  // 🚨 AGAINST THE FILE'S BASED-ON BODY (lane DB-TOOLS-NO-BRANCH, 2026-09-25). Production's
+  // CURRENT body is the wrong comparison for a file not yet on production: after the last leg the
+  // clone holds the file's new body and production the old, so the gate failed every body-replacing
+  // file until it had already shipped. A difference is allowed exactly when production still holds
+  // the up's `-- based-on:` body (pending), and a based-on production no longer holds fails by name.
+  // Proof: pnpm check:clone-parity:self-test (RED-3/GREEN-3/RED-4) and
+  // scripts/__tests__/clone-parity-based-on.test.ts.
   {
     const names = [...new Set([...functionsTouched(upSql), ...functionsTouched(downSql)])].sort();
     if (names.length === 0) {
@@ -980,11 +1052,22 @@ async function main(): Promise<number> {
       }
       const cloneClient = await connectDirect({ ...env }, "db:rehearse (parity, clone)");
       try {
-        const drift = await parityDrift(
+        // Against the UP file's `-- based-on:` bodies, not production's current ones: a file
+        // not yet on production leaves production holding exactly its based-on body, and that
+        // passes; a based-on that production no longer holds fails (lib/clone-parity judgeParity).
+        const { drift, pending } = await parityCompare(
           async (sql, params) => (await cloneClient.query(sql, params as never)).rows,
           prod.q,
           names,
+          upSql,
         );
+        if (pending.length) {
+          console.log(
+            `${TAG.info}parity: ${pending.length} body/bodies differ from production only because ` +
+              `this file is not on production yet — production still holds the file's -- based-on ` +
+              `body for ${pending.join(", ")}, so the production apply lands on the state rehearsed here.`,
+          );
+        }
         if (drift.length) {
           console.error(
             `${TAG.fail}${drift.length} function body/bodies are NOT level with production after ` +
@@ -1005,8 +1088,8 @@ async function main(): Promise<number> {
           return 1;
         }
         console.log(
-          `${TAG.ok}parity: ${names.length} function name(s) hash identically on the clone and on ` +
-            `production ${C.dim}(read-only, project ref ${cloneRef.parentRef})${C.reset}`,
+          `${TAG.ok}parity: ${names.length} function name(s) are level with production or pending ` +
+            `on its based-on body ${C.dim}(read-only, project ref ${cloneRef.parentRef})${C.reset}`,
         );
       } finally {
         await cloneClient.end().catch(() => undefined);
@@ -1017,11 +1100,11 @@ async function main(): Promise<number> {
 
   console.log(
     `\n${TAG.ok}${C.bold}rule 27 complete on the dev clone ${cloneRef.cloneRef}${C.reset} - ` +
-      `up ${a1.ms} ms, inverse ${a2.ms} ms, up again ${a3.ms} ms ` +
+      `${legMs.map((l) => `${l.kind} ${l.ms} ms`).join(", ")} ` +
       `${C.dim}(wall time includes connection setup through the pooler)${C.reset}`,
   );
   const allSurprises = [
-    ...new Set([...s1.surprises, ...s2.surprises].map((x) => x.relation)),
+    ...new Set(surprises.map((x) => x.relation)),
   ].sort();
   if (allSurprises.length) {
     console.log(

@@ -32,15 +32,11 @@ import {
   parseBasedOnLines,
   type Query,
 } from "../migration-based-on";
+import { basedOnHashesByName, judgeParity } from "./clone-parity-judge";
+export { basedOnHashesByName, judgeParity } from "./clone-parity-judge";
 
-/** One function body that is not the same on the two databases. */
-export interface ParityDrift {
-  /** `schema.name(identity args)` — what `-- based-on:` and `pnpm db:based-on` print. */
-  readonly signature: string;
-  readonly onClone: string | null;
-  readonly onProduction: string | null;
-  readonly why: string;
-}
+export type { ParityDrift } from "./clone-parity-judge";
+import type { ParityDrift } from "./clone-parity-judge";
 
 /**
  * Every function whose BODY a file writes: the `-- based-on:` lines (which exist precisely
@@ -131,36 +127,42 @@ async function overloadHashes(q: Query, name: string): Promise<Map<string, strin
 }
 
 /**
- * Compare every named function body on the clone against production.
+ * Compare every named function body on the clone against production, allowing production to
+ * still hold the file's `-- based-on:` body (see judgeParity). `basedOnSql` is the UP file — the
+ * body production had before it. Omit it and the comparison is the plain mirror check.
  *
  * A function that exists on the CLONE and not on production is not drift — it is a new function
  * a rehearsal has not yet carried anywhere — and a function that exists on PRODUCTION and not on
  * the clone IS drift, because the clone is meant to hold production's world.
  */
-export async function parityDrift(
+export async function parityCompare(
   cloneQ: Query,
   prodQ: Query,
   names: readonly string[],
-): Promise<ParityDrift[]> {
+  basedOnSql = "",
+): Promise<{ drift: ParityDrift[]; pending: string[] }> {
+  const byName = basedOnHashesByName(basedOnSql);
   const drift: ParityDrift[] = [];
+  const pending: string[] = [];
   for (const name of names) {
     const [onClone, onProd] = await Promise.all([
       overloadHashes(cloneQ, name),
       overloadHashes(prodQ, name),
     ]);
-    for (const [signature, prodHash] of onProd) {
-      const cloneHash = onClone.get(signature) ?? null;
-      if (cloneHash === prodHash) continue;
-      drift.push({
-        signature,
-        onClone: cloneHash,
-        onProduction: prodHash,
-        why:
-          cloneHash === null
-            ? "production has this overload and the clone does not"
-            : "the body on the clone is not the body on production",
-      });
-    }
+    const key = name.replace(/"/g, "").toLowerCase();
+    const r = judgeParity(name, onClone, onProd, byName.get(key) ?? new Set());
+    drift.push(...r.drift);
+    pending.push(...r.pending);
   }
-  return drift;
+  return { drift, pending };
+}
+
+/** The plain mirror check (no based-on allowance) — what the nightly catch-up needs. */
+export async function parityDrift(
+  cloneQ: Query,
+  prodQ: Query,
+  names: readonly string[],
+  basedOnSql = "",
+): Promise<ParityDrift[]> {
+  return (await parityCompare(cloneQ, prodQ, names, basedOnSql)).drift;
 }

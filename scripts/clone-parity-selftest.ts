@@ -16,6 +16,9 @@
  * RED-1  a body that exists on production and is DIFFERENT on the clone is named.
  * RED-2  a body that exists on production and is ABSENT from the clone is named.
  * GREEN  the same comparison with the body put back is silent.
+ * RED-3  the OLD gate (production's current body) fails a file that is merely not on production yet.
+ * GREEN-3 the based-on gate passes that file — production still holds its `-- based-on:` body.
+ * RED-4  a file whose `-- based-on:` hash production no longer holds is named as drifted.
  *
  * Production has no probe function, of course — so the two databases swap roles for the probe:
  * the CLONE stands in as "production" (it is a physical copy of it, which is the whole premise)
@@ -26,7 +29,7 @@
 import process from "node:process";
 import { connectDirect } from "./lib/direct-db";
 import { loadCloneDbEnv, loadCloneRef, cloneRefOverride } from "./lib/migration-target";
-import { openProductionReadOnly, parityDrift } from "./lib/clone-parity";
+import { openProductionReadOnly, parityCompare, parityDrift } from "./lib/clone-parity";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -111,6 +114,34 @@ async function main(): Promise<number> {
     await b.query(body(SCHEMA, "the body production has"));
     drift = await parityDrift(qb, qa, [LOGICAL]);
     check("GREEN-2 putting the body back makes the gate quiet", drift.length === 0, JSON.stringify(drift));
+
+    // ── the based-on half (lane DB-TOOLS-NO-BRANCH, 2026-09-25) ─────────────────────────
+    // A file that replaces this body and is NOT on production yet: after rule 27's last leg the
+    // clone holds the file's NEW body and production still holds the OLD one — the body the
+    // file's `-- based-on:` line declares.
+    const oldHash = String(((await qa()) as Array<{ hash: string }>)[0]!.hash);
+    const fileSql = `-- based-on: ${LOGICAL}() ${oldHash}\n${body(SCHEMA, "THE FILE'S NEW BODY")};\n`;
+    await b.query(body(SCHEMA, "THE FILE'S NEW BODY"));
+    drift = await parityDrift(qb, qa, [LOGICAL]);
+    check(
+      "RED-3 the OLD gate (production's current body) fails a file that is simply not on production yet",
+      drift.length === 1,
+      JSON.stringify(drift),
+    );
+    let cmp = await parityCompare(qb, qa, [LOGICAL], fileSql);
+    check(
+      "GREEN-3 the based-on gate passes it: production still holds the file's based-on body (pending)",
+      cmp.drift.length === 0 && cmp.pending.length === 1,
+      JSON.stringify(cmp),
+    );
+    const staleSql = `-- based-on: ${LOGICAL}() ${"0".repeat(64)}\n${body(SCHEMA, "THE FILE'S NEW BODY")};\n`;
+    cmp = await parityCompare(qb, qa, [LOGICAL], staleSql);
+    check(
+      "RED-4 a file whose based-on no longer matches production is named as drifted",
+      cmp.drift.length === 1 && /based-on DRIFTED/.test(cmp.drift[0]!.why),
+      JSON.stringify(cmp),
+    );
+    await b.query(body(SCHEMA, "the body production has"));
   } finally {
     await b.query(`drop function if exists ${SCHEMA}.${NAME}()`).catch(() => undefined);
     await b.end().catch(() => undefined);

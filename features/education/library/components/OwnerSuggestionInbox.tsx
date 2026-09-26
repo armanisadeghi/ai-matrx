@@ -6,8 +6,12 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { listOwnerSuggestionsAction, resolveSuggestionAction } from "../actions";
+import {
+  listOwnerSuggestionsAction,
+  resolveSuggestionAction,
+} from "../actions";
 import type { DeckSuggestionRow } from "../types";
+import { guardedSave } from "@/lib/save/guardedSave";
 
 /** The deck owner's inbox of suggest-edits on their decks. Accept/decline
  *  routes through the owner-gated RPC. */
@@ -34,7 +38,10 @@ export function OwnerSuggestionInbox() {
     setPendingId(id);
     startTransition(async () => {
       try {
-        await resolveSuggestionAction(id, status);
+        await guardedSave(() => resolveSuggestionAction(id, status), {
+          what: "your answer to the suggestion",
+          onRetry: () => resolve(id, status),
+        });
         await load();
       } catch (e) {
         toast.error((e as Error).message);

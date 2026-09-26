@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { updateTopic } from "../../../service";
 import type { SearchProvider } from "../../../types";
+import { guardedSave } from "@/lib/save/guardedSave";
 
 const OPTIONS: {
   value: SearchProvider;
@@ -53,7 +54,13 @@ export function ProviderControl({ topicId, value, onSaved }: Props) {
     }
     startTransition(async () => {
       try {
-        await updateTopic(topicId, { default_search_provider: next });
+        await guardedSave(
+          () => updateTopic(topicId, { default_search_provider: next }),
+          {
+            what: "the search provider",
+            onRetry: () => handleSelect(next),
+          },
+        );
         toast.success(
           `Search provider set to ${OPTIONS.find((o) => o.value === next)?.label ?? next}`,
         );

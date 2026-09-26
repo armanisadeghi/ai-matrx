@@ -328,7 +328,7 @@ function ItemCard({ item, active }: { item: ResolvedItem; active: boolean }) {
                 Post on the whole document
               </Button>
             )}
-            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); api.discardDraft(item.key); }}>
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); void run(api.discardDraft(item.key)); }}>
               Discard
             </Button>
             </>
@@ -479,6 +479,8 @@ function ThreadActions({
   const [replyRequestId, setReplyRequestId] = useState(newRequestId);
   const [conflict, setConflict] = useState<{ mine: string; theirs: string } | null>(null);
   const doors = api.state.capabilities.collaborationDoors;
+  // Accept and Reject change what the RECORD says: only its editors see them (door law).
+  const canEdit = api.state.capabilities.canEdit;
   const id = item.commentId!;
   // Frozen when the editor opens (see the reply above): the compare-and-swap base.
   const [base, setBase] = useState({ body: item.body, version: item.version ?? null });
@@ -568,13 +570,13 @@ function ThreadActions({
   return (
     <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
       <div className="flex flex-wrap items-center gap-1">
-        {item.kind === "suggestion" && !item.resolvedAt && canApply && (
+        {item.kind === "suggestion" && !item.resolvedAt && canApply && canEdit && (
           <Button size="sm" className="h-7 px-2 text-xs" onClick={() => void run(api.acceptSuggestion(item), "Applied — only that part of the document changed.")}>
             <Check className="mr-1 h-3 w-3" aria-hidden />Accept
           </Button>
         )}
-        {item.kind === "suggestion" && !item.resolvedAt && (
-          <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => void run(api.rejectSuggestion(id), "Suggestion rejected.")}>
+        {item.kind === "suggestion" && !item.resolvedAt && canEdit && (
+          <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => void run(api.rejectSuggestion(id), "Suggestion rejected — it stays under resolved.")}>
             Reject
           </Button>
         )}

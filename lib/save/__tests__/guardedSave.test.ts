@@ -63,3 +63,34 @@ it("a save that is not safe to repeat gets no Retry, only the honest wait", asyn
   finish("ok");
   await p;
 });
+
+/**
+ * THE CENSUS (RC-B6 round 2): every transition that saves goes through the one
+ * stall step. A new `startTransition(async …)` must either use `guardedSave` or
+ * be listed here as a READ, with the reason.
+ */
+const READS: Record<string, string> = {
+  "app/(admin)/administration/database/sql-functions/components/SqlFunctionTester.tsx":
+    "an admin tester running a read-only function call",
+  "app/(dev)/demos/general/voice/debate-assistant/debate-page.tsx": "a dev demo, no save",
+  "features/education/library/components/LibraryBrowser.tsx": "lists public decks (read)",
+  "features/mandates/admin/advanced/AdvancedMandateCrud.tsx": "lists rows (read)",
+};
+
+it("every transition that saves uses the one stall step", () => {
+  jest.useRealTimers();
+  const { execSync } = jest.requireActual<typeof import("child_process")>("child_process");
+  const files = execSync(
+    'git grep -l "startTransition(async" -- "*.tsx" "*.ts" ":!work" ":!**/__tests__/**" ":!**/*.md" || true',
+    { cwd: `${__dirname}/../../..`, encoding: "utf8" },
+  )
+    .split("\n")
+    .filter(Boolean);
+  const fs = jest.requireActual<typeof import("fs")>("fs");
+  const offenders = files.filter(
+    (f) =>
+      !(f in READS) &&
+      !fs.readFileSync(`${__dirname}/../../../${f}`, "utf8").includes("guardedSave"),
+  );
+  expect(offenders).toEqual([]);
+});

@@ -21,8 +21,10 @@ import type { TextAnchor } from "./anchor";
 import { resolveAnchor } from "./resolve";
 import { applySuggestion } from "./suggestion";
 import { mentionedUserIds } from "./mentions";
+import { WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import {
   addComment,
+  canEditSource,
   createHighlight,
   deleteComment,
   deleteHighlight,
@@ -130,6 +132,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [doors, setDoors] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
   const [capturedBodies, setCapturedBodies] = useState<Record<number, string | null>>({});
   const sourceRef = useRef(source);
   sourceRef.current = source;
@@ -145,11 +148,13 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
     // The two halves load independently: a refused edge read must never hide
     // the comment threads (or the reverse). Each failure is shown by name.
     const titles = getAssociationsStore().titles;
-    const [threads, edges] = await Promise.allSettled([
+    const [threads, edges, editable] = await Promise.allSettled([
       listCommentThreads(src),
       listEdgeItems(src, (token, ids) => titles.fetch(token, ids)),
+      src.save ? canEditSource(src) : Promise.resolve(false),
     ]);
     if (seq !== loadSeq.current) return;
+    setCanEdit(editable.status === "fulfilled" && editable.value === true);
     const next: AnnotationItem[] = [];
     const errors: string[] = [];
     if (threads.status === "fulfilled") {
@@ -418,9 +423,45 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
     [runDraft, doors],
   );
 
-  const discardDraft = useCallback((key: string) => {
-    setDrafts((d) => d.filter((x) => x.key !== key));
-  }, []);
+  /**
+   * Discard a draft that did not save — RECONCILED with the server (verify RC-B11 round 2, finding
+   * 2): an attempt whose answer was lost may have landed, and a discard that only forgets the
+   * draft brings it back on the next reload. The landed row is found by the draft's own client
+   * request id and removed the platform's way (soft delete); a row that never landed is fine.
+   * Returns a sentence when the server could not be asked (the draft stays, nothing is lost).
+   */
+  const discardDraft = useCallback(
+    async (key: string): Promise<string | null> => {
+      const draft = drafts.find((d) => d.key === key);
+      const src = sourceRef.current;
+      try {
+        if (draft && src && draft.clientRequestId) {
+          if (draft.kind === "highlight" || draft.kind === "note") {
+            // The highlight's document id IS its client request id (content.annotation_create p_id).
+            await deleteHighlight(draft.clientRequestId).catch((e: unknown) => {
+              if (!(e instanceof WriteDidNotLandError)) throw e; // nothing landed — nothing to remove
+            });
+          } else if (draft.kind === "comment" || draft.kind === "suggestion") {
+            const { items } = await listCommentThreads(src);
+            const landed = items.find((i) => i.clientRequestId === draft.clientRequestId && i.commentId);
+            if (landed?.commentId) {
+              ledger.current.deletedIds.add(landed.commentId);
+              await deleteComment(landed.commentId);
+            }
+          }
+        }
+        if (draft?.kind === "link" && src && draft.link) {
+          await unlinkRecord(src, draft.link.token, draft.link.id).catch(() => undefined);
+        }
+      } catch (e) {
+        return `We couldn't check whether this was already saved, so it was kept. ${message(e)}`;
+      }
+      setDrafts((d) => d.filter((x) => x.key !== key));
+      await reload();
+      return null;
+    },
+    [drafts, reload],
+  );
 
   const link = useCallback(
     async (token: string, id: string, title: string, anchor: TextAnchor | null) => {
@@ -464,6 +505,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
       if (!src?.save || !item.anchor || item.suggestedText == null || !item.commentId) {
         return "This document cannot be edited here, so the suggestion cannot be applied.";
       }
+      if (!canEdit) return "Only someone who can edit this document can accept a suggestion, so it was not applied.";
       try {
         const { nextBody } = applySuggestion(src.body, src.contentVersion, item.anchor, item.suggestedText);
         await src.save(nextBody);
@@ -474,7 +516,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
         return message(e);
       }
     },
-    [reload],
+    [reload, canEdit],
   );
 
   /**
@@ -498,6 +540,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
     collaborationDoors: doors,
     links: !!(source && tryGetEntityInfo(source.token)),
     paint: typeof CSS !== "undefined" && "highlights" in CSS,
+    canEdit,
   };
 
   return {
@@ -510,7 +553,8 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
     postOnWholeDocument,
     discardDraft,
     acceptSuggestion,
-    rejectSuggestion: (commentId: string) => act(() => deleteComment(commentId)),
+    // Rejecting keeps the suggestion (resolved, under "Show resolved") — archive, never delete.
+    rejectSuggestion: (commentId: string) => act(() => resolveComment(commentId, true)),
     editComment: editMine,
     deleteComment: (commentId: string) =>
       act(async () => {

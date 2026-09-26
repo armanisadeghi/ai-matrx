@@ -243,6 +243,7 @@ function parseStringArray(buffer: string, fieldName: string): string[] {
 // below reads chunks via the new envelope.
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { guardedSave } from "@/lib/save/guardedSave";
 
 // ── Step dots ─────────────────────────────────────────────────────────────────
 
@@ -991,7 +992,8 @@ function AiCanvas({
                 </Button>
               )}
               <span className="text-[11px] text-muted-foreground/60">
-                Click to edit · drag to reorder · use the remove button to delete
+                Click to edit · drag to reorder · use the remove button to
+                delete
               </span>
             </div>
           </div>
@@ -1426,15 +1428,20 @@ export default function ResearchInitForm() {
 
     startTransition(async () => {
       try {
-        const { topic, projectLink } = await createTopic(
-          activeOrgId,
-          {
-            name,
-            description: description.trim() || null,
-            autonomy_level: autonomyLevel,
-            template_id: selectedTemplate?.id ?? null,
-          },
-          selectedProjectId ? { projectId: selectedProjectId } : undefined,
+        // A new topic is not safe to repeat: no Retry, only the honest wait.
+        const { topic, projectLink } = await guardedSave(
+          () =>
+            createTopic(
+              activeOrgId,
+              {
+                name,
+                description: description.trim() || null,
+                autonomy_level: autonomyLevel,
+                template_id: selectedTemplate?.id ?? null,
+              },
+              selectedProjectId ? { projectId: selectedProjectId } : undefined,
+            ),
+          { what: "the new topic" },
         );
         if (!projectLink.ok) {
           // LOUD + RETRYABLE: topic exists; only the optional edge failed.
@@ -2320,7 +2327,10 @@ export default function ResearchInitForm() {
           ) : aiPhase.status === "error" ? (
             <div className="space-y-6 py-8">
               <div className="relative rounded-xl border border-destructive/30 bg-destructive/5 p-5 space-y-2">
-                <ErrorAlchemyMenu className="absolute right-3 top-3" operation="Set up a research project with AI" />
+                <ErrorAlchemyMenu
+                  className="absolute right-3 top-3"
+                  operation="Set up a research project with AI"
+                />
                 <p className="font-semibold text-destructive">
                   Something went wrong
                 </p>

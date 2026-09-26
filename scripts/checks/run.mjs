@@ -198,8 +198,9 @@ export function manifestRows({ manifestPath, extras = true, classes } = {}) {
 
 // Lines a failing row prints that are never its finding: pnpm's script echo and ELIFECYCLE
 // trailer (2026-09-25: fifteen findings were titled only "ELIFECYCLE Command failed with exit
-// code 1" because the title was the LAST line), node's warnings, and the check's own passes.
-const NOISE = /^\s*(?:ELIFECYCLE\b|ERR_PNPM_|npm (?:ERR!|error)|> |\(node:\d+\)|\(Use `node --trace|Warning: |✓|✔|PASS\b|\[self-test\]\s+PASS\b|(?:\[[\w:.-]+\]\s*)?OK\b)/;
+// code 1" because the title was the LAST line), node's warnings, the check's own passes, and the
+// type-check wrapper's queue chatter (it waits for one of the machine's two tsc slots).
+const NOISE = /^\s*(?:ELIFECYCLE\b|ERR_PNPM_|npm (?:ERR!|error)|> |\(node:\d+\)|\(Use `node --trace|Warning: |✓|✔|PASS\b|\[self-test\]\s+PASS\b|(?:\[[\w:.-]+\]\s*)?OK\b|\[tsc-capped\] .*waiting for a free slot)/;
 // `path/to/file.ts:12`, `path/to/file.tsx(12,5)` or `path/to/file.ts` — the offender a line names.
 const LOCATION_SRC = String.raw`(?:[\w@.\[\]()+-]+\/)+[\w@.\[\]+-]+\.[a-z]{1,5}(?::\d+(?::\d+)?|\(\d+,\d+\))?`;
 const LOCATION = new RegExp(LOCATION_SRC);

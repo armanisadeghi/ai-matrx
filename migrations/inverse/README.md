@@ -34,7 +34,7 @@ ATTACK-5 finding 1's "the abort checklist cannot undo it", literally.
 - **It is never swept, so it is always named.** Run one deliberately:
 
 ```
-pnpm db:apply migrations/inverse/<file>.sql --target branch
+pnpm db:apply migrations/inverse/<file>.sql --target clone   # --target branch is an alias since the branch was deleted 2026-09-26
 pnpm db:apply migrations/inverse/<file>.sql --target production --confirm-chair-step <file>.sql
 ```
 

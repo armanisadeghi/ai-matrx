@@ -20,8 +20,8 @@ and §4.14 were all false of what actually runs.
 ## The one command
 
 ```
-pnpm db:apply migrations/campaign/<file>.sql --source campaign --target branch --lane <lane>
-# …then, and only then:
+pnpm db:rehearse migrations/campaign/<file>.sql --target clone --source campaign --lane <lane>
+# …then:
 pnpm db:apply migrations/campaign/<file>.sql --source campaign --target production --lane <lane>
 ```
 
@@ -38,11 +38,14 @@ Both runners refuse every other combination, by name:
 - `--source campaign` naming a file **not** in here — the flag is an assertion about
   the file, not a mode;
 - `--source campaign` without `--target`, without `--only`, or without `--lane`;
-- `--target production` when the **same bytes** carry no rehearsal ledger row on the
-  branch (§6b.1 becomes a check, not a claim);
-- `--target production` when `campaign_watch.build_lock` **on the rehearsal branch**
-  holds no row for that `--lane` (§4.14). A lane that failed, stopped or released its
-  lock cannot land on production.
+- ~~`--target production` when the same bytes carry no rehearsal ledger row~~ — removed
+  2026-09-18 (JUDGMENT.md §6a: the rehearsal copy is information, never a gate);
+- ~~`--target production` when `campaign_watch.build_lock` on the rehearsal branch holds no
+  row for that `--lane`~~ — removed 2026-09-25 (lane DB-TOOLS-NO-BRANCH): the branch was
+  deleted 2026-09-26 00:30Z and that read refused every campaign file. At production
+  `pnpm db:apply` now needs `--lane` and matching `-- based-on:` hashes, and PRINTS the
+  pair's clone-ledger state (`--dry-run` included). aidream's runner still reads the branch
+  here — the same defect, open.
 
 Ledgered by **basename** under the owning repo's source label, so a file that moves in
 here keeps the identity its rehearsal row already carries.

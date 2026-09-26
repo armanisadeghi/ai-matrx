@@ -25,6 +25,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { suggestEditAction } from "../actions";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { guardedSave } from "@/lib/save/guardedSave";
 
 /**
  * Suggest-edit — the ethical contribution flywheel. A studier proposes an
@@ -50,7 +51,10 @@ export function SuggestEditDialog({
     }
     startTransition(async () => {
       try {
-        await suggestEditAction(deckId, body.trim());
+        // A new suggestion is not safe to repeat: no Retry, only the honest wait.
+        await guardedSave(() => suggestEditAction(deckId, body.trim()), {
+          what: "your suggestion",
+        });
         toast.success("Sent to the deck owner");
         setBody("");
         setOpen(false);
@@ -98,7 +102,11 @@ export function SuggestEditDialog({
             >
               Cancel
             </Button>
-            <Button onClick={submit} disabled={isPending} className="flex-1 gap-1.5">
+            <Button
+              onClick={submit}
+              disabled={isPending}
+              className="flex-1 gap-1.5"
+            >
               {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Send suggestion
             </Button>
@@ -121,7 +129,11 @@ export function SuggestEditDialog({
         </DialogHeader>
         {field}
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
+          <Button
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={isPending}
+          >
             Cancel
           </Button>
           <Button onClick={submit} disabled={isPending} className="gap-1.5">

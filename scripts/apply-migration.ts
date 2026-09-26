@@ -232,12 +232,7 @@ import {
   type RebaseProof,
   type RebaseReceipt,
 } from "./lib/ledger-rebase";
-import {
-  listBuildLocks,
-  startLockHeartbeat,
-  BuildLockLeaseAbsent,
-  type LockQuery,
-} from "./lib/build-lock";
+import { clonePairSelfTest, clonePairVerdict, type CloneLedgerFact } from "./lib/campaign-authorisation";
 import {
   rebaseTrailerLine,
   recordAppliedRow,
@@ -640,189 +635,88 @@ async function ledgerRow(
 
 
 /**
- * A CAMPAIGN FILE MAY LAND ON THE MAIN DATABASE BEHIND ITS OWN LANE LOCK.
+ * A CAMPAIGN FILE'S PRODUCTION AUTHORISATION — NO BRANCH (lane DB-TOOLS-NO-BRANCH, 2026-09-25 PT).
  *
- * 🚨 THE REHEARSAL COPY IS NOT A GATE (owner ruling, 2026-09-18: *"we have no
- * production. It's all just dev… All of your work should just go live"*). Until
- * then this function ALSO demanded a `public._schema_migrations` row on the branch
- * for the same basename with a byte-identical checksum, and refused the apply
- * without one. That gate is GONE: the rehearsal copy is a fast scratch run to catch
- * syntax errors, never a precondition. A file may be applied to the main database
- * with no prior rehearsal ledger row and no matching rehearsal checksum.
+ * Until today this opened a connection to the REHEARSAL BRANCH to read a
+ * `campaign_watch.build_lock` row held by `--lane`. The branch was deleted 2026-09-26 00:30Z, so
+ * `loadBranchDbEnv` refused and every campaign file was refused at production; three lanes ran
+ * the legs by hand. What the authorisation is now (scripts/lib/campaign-authorisation.ts):
  *
- * Nothing about the STATEMENTS moved. The additive allow-list, the guard-read rule,
- * the named-by-the-command (chair-step) class and the `-- based-on:` hash check —
- * which is recomputed against THE DATABASE BEING APPLIED TO, immediately before the
- * file executes — all still judge every campaign file exactly as before.
+ *   · an explicit `--lane` — refused without one, before the header is read (applyFile);
+ *   · the `-- based-on:` hashes recomputed against PRODUCTION immediately before the file runs
+ *     (DD-220) — unchanged, it never read the branch;
+ *   · the PAIR on the dev clone — the up and its inverse, each ledgered there with the checksum
+ *     of the bytes on disk — READ AND PRINTED. Information, never a refusal: JUDGMENT.md §6a
+ *     (Arman, 2026-09-18) stands, and a rehearsal gate was tried and reverted 2026-09-26 (D351).
+ *     Work in progress is held off production by `-- draft:` (JUDGMENT §1c).
  *
- * What remains here is the LANE LOCK: a `campaign_watch.build_lock` row on the
- * branch whose `held_by` is this `--lane`. It is concurrency control between lanes
- * (§4.14 — two lanes never land on one object at once), not a rehearsal claim, so it
- * stays. Read-only on the branch; opens and closes its own connection; refuses on
- * any error rather than assuming.
- *
- * 🚨 THE ROW MUST BE LIVE, NOT MERELY PRESENT (lane LOCK-HYGIENE, 2026-09-22). Since
- * `lockhyg_a_lock_row_carries_a_lease.sql` every row carries `expires_at`, and a row whose
- * lease has lapsed is EXPIRED — the next lane's TAKE evicts it. So an expired row is not an
- * authorisation either: it authorises exactly what it blocks, which is nothing. A lane whose
- * own row has gone stale is told to take it again (the take will evict its corpse and say so)
- * rather than landing on production behind a lock every other lane is entitled to steal.
- *
- * It returns the lock names this lane holds LIVE, so the caller can keep their heartbeat
- * beating for as long as the apply runs — a fifteen-minute lease must never lapse under a
- * lane that is still working.
+ * It runs on `--dry-run` too — it is read-only — so a dry-run shows exactly what the real apply
+ * would print. It opens and closes its own clone connection, inside `begin read only`.
  */
-async function assertCampaignProductionIsAuthorised(
+async function reportCampaignClonePair(
   filename: string,
-  checksum: string,
-  lane: string,
-  branchRef: BranchRef,
-): Promise<{ refusal: string | null; liveLocks: string[] }> {
-  const no = (refusal: string) => ({ refusal, liveLocks: [] as string[] });
-  let branchEnv;
-  try {
-    branchEnv = loadBranchDbEnv(ROOT, branchRef);
-  } catch (err) {
-    return no(
-      err instanceof TargetRefusal
-        ? err.message
-        : `could not read the rehearsal branch's connection: ${String(err)}`,
-    );
-  }
-  const branch = new pg.Client({
-    host: branchEnv.host,
-    port: branchEnv.port,
-    user: branchEnv.user,
-    password: branchEnv.password,
-    database: branchEnv.database,
-    ssl: { rejectUnauthorized: false },
-    application_name: "db:apply (campaign authorisation, read only)",
-  });
-  try {
-    await branch.connect();
-    // The rehearsal row is read for INFORMATION ONLY — never to refuse. See the header.
-    const rehearsal = await branch.query<{ checksum: string; applied_at: string }>(
-      `select checksum, applied_at::text as applied_at from public._schema_migrations
-         where source = $1 and filename = $2`,
-      [SOURCE, filename],
-    );
-    const row = rehearsal.rows[0];
-    const rehearsalNote = !row
-      ? `${C.dim}not rehearsed on the copy — applying straight to the main database${C.reset}`
-      : row.checksum !== checksum
-        ? `${C.dim}rehearsed ${row.applied_at} with DIFFERENT bytes (copy ${row.checksum.slice(0, 12)}, ` +
-          `this file ${checksum.slice(0, 12)}) — the copy is not a gate${C.reset}`
-        : `${C.dim}rehearsed on the copy at ${row.applied_at}, byte-identical${C.reset}`;
-    // Every row, with the state the LEASE gives it. An `expired` row is not an authorisation:
-    // the next lane's take is entitled to evict it, so landing on production behind one is
-    // landing behind nothing.
-    const q: LockQuery = async (sql, params) => (await branch.query(sql, params as never)).rows;
-    const all = await listBuildLocks(q, `the branch ${branchRef.branchRef}`);
-    const mine = all.filter((r) => r.held_by === lane);
-    const live = mine.filter((r) => r.state === "live");
-    if (live.length === 0) {
-      const stale = mine.length
-        ? `  Lane ${lane}'s own row(s) are EXPIRED: ` +
-          mine
-            .map((r) => `${r.lock_name} taken ${r.taken_at}, no sign of life for ${r.since_heartbeat}`)
-            .join("; ") +
-          `.\n` +
-          `  An expired row blocks nobody — the next lane's take evicts it — so it authorises\n` +
-          `  nothing either. Take it again (the take will evict the corpse and say so).\n`
-        : "";
-      const othersLive = all.filter((r) => r.state === "live");
-      return no(
-        `lane ${lane} holds NO LIVE campaign_watch.build_lock row on the branch ${branchRef.branchRef}.\n` +
-          `  §4.14: the production apply happens WHILE the lane holds its object lock, so two lanes\n` +
-          `  never land on the same object at once and a lane that failed cannot land at all.\n` +
-          stale +
-          (othersLive.length
-            ? `  Live right now: ${othersLive.map((r) => `${r.lock_name} by ${r.held_by} (${r.lease_left} of lease left)`).join(", ")}.\n`
-            : `  No lock is LIVE for anybody right now.\n`) +
-          `  Take yours on the BRANCH first:\n` +
-          `    select * from campaign_watch.lock_take('<custom|platform|iam>', '${lane}', '<what for>');`,
-      );
-    }
-    console.log(
-      `${TAG.ok}campaign authorisation ${C.dim}— lock ${live.map((r) => r.lock_name).join(", ")} ` +
-        `held LIVE by ${lane} since ${live[0]!.taken_at} (${live[0]!.lease_left} of lease left); ` +
-        `${rehearsalNote}${C.reset}`,
-    );
-    return { refusal: null, liveLocks: live.map((r) => r.lock_name) };
-  } catch (err) {
-    if (err instanceof BuildLockLeaseAbsent) return no(err.message);
-    return no(
-      `the campaign authorisation could not be READ on the branch, so it is refused rather than\n` +
-        `  assumed: ${err instanceof Error ? err.message : String(err)}`,
-    );
-  } finally {
-    await branch.end().catch(() => {});
-  }
-}
-
-/**
- * Keep this lane's lock rows alive on the BRANCH for as long as the apply runs on production
- * (lane LOCK-HYGIENE, 2026-09-22).
- *
- * The lease is fifteen minutes and an apply is normally seconds, so this does nothing almost
- * every time — which is the point: the one apply that DOES run long must not finish holding a
- * row the rest of the fleet is entitled to evict. It opens ONE extra connection to the branch,
- * renews every five minutes (a third of the lease, so two lost renews are survivable), and
- * closes on every exit path. It never refuses: a heartbeat that cannot connect is announced and
- * the apply carries on, because killing a running production apply over a lock bookkeeping
- * connection would be the cure being worse than the disease.
- */
-async function startLeaseHeartbeats(
-  lockNames: readonly string[],
-  lane: string | null,
-  branchRef: BranchRef,
-): Promise<{ stop: () => Promise<void> }> {
-  if (lockNames.length === 0 || !lane) return { stop: async () => {} };
-  let branch: pg.Client;
-  try {
-    const env = loadBranchDbEnv(ROOT, branchRef);
-    branch = new pg.Client({
-      host: env.host,
-      port: env.port,
-      user: env.user,
-      password: env.password,
-      database: env.database,
-      ssl: { rejectUnauthorized: false },
-      application_name: `db:apply (build_lock heartbeat, ${lane})`,
-    });
-    await branch.connect();
-  } catch (err) {
-    console.warn(
-      `${TAG.warn}the build_lock heartbeat could not connect to the branch ` +
-        `(${err instanceof Error ? err.message : String(err)}). The apply continues; its lease ` +
-        `runs down normally and is renewed by the lane's next take.`,
-    );
-    return { stop: async () => {} };
-  }
-  const q: LockQuery = async (sql, params) => (await branch.query(sql, params as never)).rows;
-  const beats = lockNames.map((name) =>
-    startLockHeartbeat(q, name, lane, `the branch ${branchRef.branchRef}`, (why) =>
-      console.warn(`${TAG.warn}${why}`),
-    ),
-  );
-  return {
-    stop: async () => {
-      for (const b of beats) b.stop();
-      await branch.end().catch(() => undefined);
-    },
+  sql: string,
+  cloneRef: CloneRef | null,
+): Promise<string> {
+  const inverseName = `${filename.replace(/\.sql$/, "")}_down.sql`;
+  const inversePath = resolve(MIGRATIONS_DIR, INVERSE_DIRNAME, inverseName);
+  const inverseSql = existsSync(inversePath) ? readFileSync(inversePath, "utf8") : null;
+  const facts = {
+    upName: filename,
+    upSql: sql,
+    inverseName: inverseSql === null ? null : inverseName,
+    inverseSql,
+    upOnClone: null as CloneLedgerFact | null,
+    inverseOnClone: null as CloneLedgerFact | null,
+    cloneUnreadable: null as string | null,
   };
+  if (!cloneRef) {
+    facts.cloneUnreadable = "CLONE-REF could not be read";
+  } else {
+    let client: pg.Client | null = null;
+    try {
+      const env = loadCloneDbEnv(ROOT, cloneRef);
+      client = new pg.Client({
+        host: env.host,
+        port: env.port,
+        user: env.user,
+        password: env.password,
+        database: env.database,
+        ssl: { rejectUnauthorized: false },
+        application_name: "db:apply (campaign clone-pair read, read only)",
+      });
+      await client.connect();
+      await client.query("begin read only");
+      const rows = await client.query<{ filename: string; checksum: string; applied_at: string }>(
+        `select filename, checksum, applied_at::text as applied_at from public._schema_migrations
+           where source = $1 and filename = any($2::text[])`,
+        [SOURCE, [filename, inverseName]],
+      );
+      await client.query("rollback");
+      for (const r of rows.rows) {
+        if (r.filename === filename) facts.upOnClone = r;
+        else if (r.filename === inverseName) facts.inverseOnClone = r;
+      }
+    } catch (err) {
+      facts.cloneUnreadable = err instanceof Error ? err.message.split("\n")[0]! : String(err);
+    } finally {
+      await client?.end().catch(() => undefined);
+    }
+  }
+  return clonePairVerdict(facts).note;
 }
 
 function usage(): void {
   console.log(
     `${C.bold}pnpm db:apply <migrations/file.sql> [--target branch|clone|production] [--dry-run] [--reapply] [--statement-timeout=10min] [--confirm-chair-step <file.sql>]${C.reset}\n` +
-      `  pnpm db:apply migrations/${CAMPAIGN_DIRNAME}/<file>.sql --source ${CAMPAIGN_SOURCE} --target branch|production --lane <lane>\n` +
+      `  pnpm db:apply migrations/${CAMPAIGN_DIRNAME}/<file>.sql --source ${CAMPAIGN_SOURCE} --target clone|production --lane <lane>\n` +
       `                                     the ONLY route into migrations/${CAMPAIGN_DIRNAME}/, which no\n` +
       `                                     release path, sweep, CI job or scheduled job scans\n` +
       `  pnpm db:apply --self-test          prove RED/GREEN on the NIGHTLY DEV CLONE (the default);\n` +
       `                                     --target production must be spelled out AND fall inside\n` +
       `                                     the 1-4 AM Pacific window\n` +
-      `  pnpm db:apply --target-self-test   prove the --target refusal RED/GREEN on the rehearsal branch\n` +
+      `  pnpm db:apply --campaign-auth-self-test   prove a campaign file's production authorisation\n` +
+      `                                     needs no branch (RED/GREEN; production dry-run only)\n` +
       `  pnpm db:apply --clone-self-test    prove the CLONE refusal RED/GREEN (production presented as\n` +
       `                                     the clone, and the clone presented as production)\n` +
       `  pnpm db:rehearse <file> --target clone   up -> inverse -> up on the dev clone, timed, with\n` +
@@ -950,9 +844,9 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       `${TAG.fail}${relative(ROOT, path)} is in migrations/${CAMPAIGN_DIRNAME}/, which no release ` +
         `path scans.\n` +
         `  The ONE route to either database is the plan's own command:\n` +
-        `    pnpm db:apply ${relative(ROOT, path)} --source ${CAMPAIGN_SOURCE} --target branch --lane <lane>\n` +
-        `  and, while this lane holds its campaign_watch.build_lock row, the same file with\n` +
-        `  --target production. A rehearsal on the copy is a convenience, never a precondition.\n` +
+        `    pnpm db:rehearse ${relative(ROOT, path)} --target clone --source ${CAMPAIGN_SOURCE} --lane <lane>\n` +
+        `  and then the same file with pnpm db:apply … --target production. A rehearsal on the\n` +
+        `  clone is a convenience, never a precondition (JUDGMENT §6a).\n` +
         `  Refusing by LOCATION, before its header is read.`,
     );
     return 1;
@@ -970,9 +864,8 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   if (inCampaign && !lane) {
     console.error(
       `${TAG.fail}${relative(ROOT, path)} is a campaign migration and no --lane was named.\n` +
-        `  Every campaign apply is attributable to ONE lane: the lane id is what the\n` +
-        `  campaign_watch.build_lock row on the rehearsal branch is checked against before a\n` +
-        `  production apply. Pass --lane <lane id>.`,
+        `  Every campaign apply is attributable to ONE lane: the lane id goes into the ledger\n` +
+        `  row (applied_by_lane) and is part of the production authorisation. Pass --lane <lane id>.`,
     );
     return 1;
   }
@@ -1456,15 +1349,15 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     }
     chairStepConfirmed = chairStep.why;
   }
-  /** The LIVE lock rows this lane holds on the branch — kept beating for the whole apply. */
-  let liveLocks: string[] = [];
-  if (inCampaign && target === "production" && !dryRun) {
-    const auth = await assertCampaignProductionIsAuthorised(filename, checksum, lane!, branchRef);
-    if (auth.refusal) {
-      console.error(`${TAG.fail}${auth.refusal}`);
-      return 1;
-    }
-    liveLocks = auth.liveLocks;
+  // The campaign's production authorisation (no branch — see reportCampaignClonePair). `--lane`
+  // was required above; the `-- based-on:` hashes are recomputed against production right before
+  // the file executes; the clone pair is read and printed, on --dry-run too, and never refuses.
+  if (inCampaign && target === "production") {
+    const note = await reportCampaignClonePair(filename, sql, cloneRef);
+    console.log(
+      `${TAG.ok}campaign authorisation ${C.dim}— lane ${lane}; no branch read (deleted 2026-09-26); ` +
+        `based-on recomputed on production before execution; clone pair: ${note}${C.reset}`,
+    );
   }
 
   let env: DbEnv | { missing: string[]; looked: string[] };
@@ -1991,14 +1884,6 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       return 0;
     }
 
-    // ── THE LEASE KEEPS BEATING WHILE THE APPLY RUNS (lane LOCK-HYGIENE, 2026-09-22) ──
-    // The lock row lives on the BRANCH and the apply runs on production, so nothing about the
-    // apply touches the lease: a file that takes longer than the lease would finish holding a
-    // row every other lane is entitled to evict. So a second connection to the branch pushes
-    // `expires_at` forward every five minutes for as long as this transaction is open, and
-    // stops on every exit path. A heartbeat that renews NOTHING is announced, never swallowed:
-    // it means somebody else now holds the row, which changes what this apply is doing.
-    const heartbeats = await startLeaseHeartbeats(liveLocks, lane, branchRef);
 
     const t0 = Date.now();
     try {
@@ -2039,7 +1924,6 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
         }
       }
     } catch (err) {
-      await heartbeats.stop();
       await client.query("rollback").catch(() => undefined);
       console.error(
         `${TAG.fail}${filename} FAILED — the transaction was rolled back, nothing was applied ` +
@@ -2048,7 +1932,6 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       console.error(`${C.red}${formatPgError(err, sql)}${C.reset}`);
       return 1;
     }
-    await heartbeats.stop();
     const elapsed = Date.now() - t0;
 
     // Proof, not assumption: re-read the row and compare it to what we hashed.
@@ -2772,6 +2655,58 @@ function draftSelfTest(): number {
     rmSync(dir, { recursive: true, force: true });
   }
   console.log(failures ? `${TAG.fail}draft self-test: ${failures} failure(s)` : `${TAG.ok}draft self-test: RED then GREEN`);
+  return failures ? 1 : 0;
+}
+
+/**
+ * `pnpm db:apply --campaign-auth-self-test [migrations/campaign/<file>.sql]` — the campaign
+ * production authorisation WITHOUT THE BRANCH (lane DB-TOOLS-NO-BRANCH), RED then GREEN.
+ *
+ *   PURE   the clone-pair verdict: rehearsed / aidream's rstrip hash / edited after rehearsal /
+ *          never rehearsed / no inverse / clone unreadable — and in EVERY case no refusal
+ *          (JUDGMENT §6a: the copy is information, never a gate).
+ *   RED    a retired BRANCH-REF (the real one since 2026-09-26) makes the old authorisation's
+ *          first call — loadBranchDbEnv — refuse; that call is what refused every campaign file.
+ *   GREEN  the real runner, spawned at `--target production --dry-run --source campaign --lane`,
+ *          prints the authorisation line (no branch read, the clone pair) and exits 0. A dry-run
+ *          sends nothing; the production connection only reads.
+ */
+function campaignAuthSelfTest(argv: readonly string[]): number {
+  let failures = 0;
+  const ok = (label: string, pass: boolean, detail = "") => {
+    if (!pass) failures += 1;
+    console.log(`${pass ? TAG.ok : TAG.fail}${label}${detail ? ` ${C.dim}${detail}${C.reset}` : ""}`);
+  };
+  const pure = clonePairSelfTest();
+  ok(`PURE the clone-pair verdict, 6 cases, never a refusal`, pure.length === 0, pure.join("; "));
+
+  let redMessage = "";
+  try {
+    loadBranchDbEnv(ROOT, loadBranchRef(ROOT));
+  } catch (err) {
+    redMessage = err instanceof Error ? err.message.split("\n")[0]! : String(err);
+  }
+  ok(`RED the retired BRANCH-REF refuses the branch connection the old authorisation opened`, redMessage.includes("names no rehearsal branch"), redMessage);
+
+  const given = argv.find((a) => a.endsWith(".sql"));
+  const file = given
+    ? resolve(process.cwd(), given)
+    : resolve(MIGRATIONS_DIR, CAMPAIGN_DIRNAME, "doorspeed_a_page_is_sorted_searched_and_counted_and_a_batch_is_one_transaction.sql");
+  if (!existsSync(file)) {
+    ok(`GREEN needs a campaign file: ${relative(ROOT, file)} is not there (pass one)`, false);
+  } else {
+    const run = spawnSyncNode([
+      resolve(ROOT, "scripts", "apply-migration.ts"), file,
+      "--source", CAMPAIGN_SOURCE, "--target", "production", "--lane", "db-apply-campaign-auth-self-test", "--dry-run",
+    ]);
+    const line = run.out.split("\n").find((l) => l.includes("campaign authorisation")) ?? "";
+    ok(
+      `GREEN ${basename(file)} at --target production --dry-run: authorisation printed, no branch read, exit ${run.status}`,
+      run.status === 0 && line.includes("no branch read") && line.includes("clone pair:") && !run.out.includes("names no rehearsal branch"),
+      line.replace(/\x1b\[[0-9;]*m/g, "").trim() || run.out.split("\n").filter((l) => /FAIL/.test(l)).join(" | "),
+    );
+  }
+  console.log(failures ? `${TAG.fail}campaign-auth self-test: ${failures} failure(s)` : `${TAG.ok}campaign-auth self-test: RED then GREEN`);
   return failures ? 1 : 0;
 }
 
@@ -4967,7 +4902,7 @@ async function ledgerRebase(path: string, argv: readonly string[]): Promise<numb
     return 1;
   };
   if (!reason) return refuse(`--reason "<one sentence: why these bytes, not the lost ones>" is required; it is kept on the row forever.`);
-  if (!lane) return refuse(`--lane <lane> is required: a production rebase happens while that lane holds a LIVE build-lock lease.`);
+  if (!lane) return refuse(`--lane <lane> is required: every production rebase is attributable to one lane.`);
   const chairRefusal = await confirmChairStep(
     filename,
     `ledger rebase of ${filename}: ${reason}`,
@@ -4982,8 +4917,8 @@ async function ledgerRebase(path: string, argv: readonly string[]): Promise<numb
   if (!proof) {
     return refuse(proofRefusal(null, { file: rel, sha256: newChecksum, ledgeredChecksum: "", now: new Date() })!);
   }
-  const auth = await assertCampaignProductionIsAuthorised(filename, newChecksum, lane, branchRef);
-  if (auth.refusal) return refuse(auth.refusal);
+  // No branch lock: the rehearsal branch that held campaign_watch.build_lock was deleted
+  // 2026-09-26. What authorises a production rebase is the clone proof above and --lane.
 
   const env = loadDbEnv();
   if ("missing" in env) return refuse(`missing ${env.missing.join(", ")} — cannot reach the production ledger.`);
@@ -5325,6 +5260,7 @@ async function main(): Promise<number> {
   }
 
   if (argv.includes("--draft-self-test")) return draftSelfTest();
+  if (argv.includes("--campaign-auth-self-test")) return campaignAuthSelfTest(argv);
   if (argv.includes("--policy-only-self-test")) return policyOnlySelfTest();
   if (argv.includes("--window-class-self-test")) return windowClassSelfTest();
   if (argv.includes("--ground-gate-self-test")) return groundGateSelfTest();
@@ -5374,9 +5310,8 @@ async function main(): Promise<number> {
         `  database that must not be reached by accident.\n` +
         `  The one command:\n` +
         `    pnpm db:apply migrations/${CAMPAIGN_DIRNAME}/<file>.sql --source ${CAMPAIGN_SOURCE} ` +
-        `--target branch|clone --lane <lane>\n` +
-        `  …and, once that rehearsal is ledgered on the branch and the lane holds its lock,\n` +
-        `  the same command with --target production.`,
+        `--target clone --lane <lane>\n` +
+        `  …and the same command with --target production (the clone pair is printed, never required).`,
     );
     return 1;
   }

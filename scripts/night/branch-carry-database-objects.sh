@@ -34,6 +34,15 @@
 # ─────────────────────────────────────────────────────────────────────────────
 source /Users/armanisadeghi/code/matrx-frontend/scripts/night/lib-night.sh
 
+# 🚨 RETIRED 2026-09-26 (lane DB-TOOLS-NO-BRANCH): the rehearsal branch this job carried objects onto was deleted
+# at 00:30Z. There is no database for it to write. It refuses by name instead of reaching a stale
+# SUPABASE_BRANCH_DATABASE_URL; rehearsals run on the quarantined clone
+# (common-docs/operations/clone/CURRENT.md). Kept for its history; do not re-arm its plist.
+say "RETIRED: branch-carry-database-objects.sh carried objects onto the rehearsal branch, which was deleted 2026-09-26. Nothing attempted."
+say "  Rehearse on the clone: pnpm db:rehearse <file> --target clone (common-docs/operations/clone/CURRENT.md)."
+exit 78
+
+
 typeset -A SKIP
 SKIP=(
   policylock_red_escalates "a RED-suite fixture left on the clone (policylock_red_probe.escalate takes ACCESS EXCLUSIVE on a bystander table on every CREATE/ALTER/DROP POLICY); production does not carry it"

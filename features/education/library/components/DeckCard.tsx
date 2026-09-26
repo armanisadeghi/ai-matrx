@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { BadgeCheck, ExternalLink, Layers, Loader2, ShieldOff } from "lucide-react";
+import {
+  BadgeCheck,
+  ExternalLink,
+  Layers,
+  Loader2,
+  ShieldOff,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -10,6 +16,7 @@ import { CertifiedBadge } from "./CertifiedBadge";
 import { SuggestEditDialog } from "./SuggestEditDialog";
 import { certifyDeckAction, uncertifyDeckAction } from "../actions";
 import type { PublicDeck } from "../types";
+import { guardedSave } from "@/lib/save/guardedSave";
 
 /** One community-library deck. Links into the P7 public viewer (signed-out OK),
  *  offers duplicate-to-edit + suggest-edit, and — for super-admins — a
@@ -33,8 +40,11 @@ export function DeckCard({
     const next = !certified;
     startTransition(async () => {
       try {
-        if (next) await certifyDeckAction(deck.id);
-        else await uncertifyDeckAction(deck.id);
+        await guardedSave(
+          () =>
+            next ? certifyDeckAction(deck.id) : uncertifyDeckAction(deck.id),
+          { what: "the certification", onRetry: () => toggleCertify() },
+        );
         setCertified(next);
         onCertifyChange?.(deck.id, next);
         toast.success(next ? "Certified" : "Certification removed");
@@ -73,7 +83,9 @@ export function DeckCard({
           {deck.cardCount === 1 ? "" : "s"}
         </span>
         {deck.topic ? (
-          <span className="rounded-full border border-border px-2 py-0.5">{deck.topic}</span>
+          <span className="rounded-full border border-border px-2 py-0.5">
+            {deck.topic}
+          </span>
         ) : null}
         {deck.difficulty ? (
           <span className="rounded-full border border-border px-2 py-0.5">
@@ -96,7 +108,9 @@ export function DeckCard({
           size="sm"
           variant="secondary"
         />
-        {isSignedIn ? <SuggestEditDialog deckId={deck.id} deckName={deck.name} /> : null}
+        {isSignedIn ? (
+          <SuggestEditDialog deckId={deck.id} deckName={deck.name} />
+        ) : null}
         {isSuperAdmin ? (
           <Button
             variant="ghost"

@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.2357",
+  "version": "0.4.2358",
   "private": true,
   "scripts": {
     "dev": "bash scripts/agent-dev-server.sh start",
@@ -237,6 +237,9 @@
     "check:branch-seed-list": "zsh scripts/night/branch-seed-census.sh --check",
     "check:branch-seed-list:write": "zsh scripts/night/branch-seed-census.sh --write",
     "check:branch-seed-list:self-test": "zsh scripts/night/branch-seed-census.sh --self-test",
+    "check:night-no-branch": "zsh scripts/night/night-no-branch-census.sh",
+    "check:night-no-branch:self-test": "zsh scripts/night/night-no-branch-census.sh --self-test",
+    "check:campaign-auth:self-test": "tsx scripts/apply-migration.ts --campaign-auth-self-test",
     "db:apply:self-test": "tsx scripts/apply-migration.ts --self-test",
     "check:policy-lock-set": "./scripts/check-policy-lock-set.sh",
     "check:store-on-by-default": "./scripts/check-store-on-by-default.sh",

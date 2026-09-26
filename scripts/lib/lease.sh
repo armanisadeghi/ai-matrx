@@ -17,14 +17,15 @@
 # is written once, in the database; this file only calls it.
 #
 # CREDENTIALS: never on a command line, never in argv. This file sources
-# `scripts/night/lib-night.sh` for its pgpass machinery — `night_branch_dsn` writes the
+# `scripts/night/lib-night.sh` for its pgpass machinery — `night_lock_dsn` (the clone) writes the
 # password into a per-process 0600 pgpass file and hands back a DSN with NO password in it,
 # exactly the way every other lock caller on this database already works. There is no second
 # way to get a password into a connection here.
 #
-# THE LOCK ROW ALWAYS LIVES ON THE REHEARSAL BRANCH — same as every other caller
-# (`pnpm db:apply`, `pnpm db:rehearse`, `scripts/lib/borrow-live-switch.sh`). This file does
-# not take a --target; there is only one place a build_lock row is ever checked.
+# THE LOCK ROW LIVES ON THE DEV CLONE (lane DB-TOOLS-NO-BRANCH, 2026-09-25). It lived on the
+# rehearsal branch until that branch was deleted (2026-09-26 00:30Z); this helper then refused
+# every take. `pnpm db:rehearse` and `scripts/night/lib-night.sh` (`night_lock_dsn`) take their
+# rows on the clone too. This file does not take a --target; there is one place a row is checked.
 #
 # USAGE
 #   scripts/lib/lease.sh take    <lock> <lane> <note>
@@ -55,7 +56,7 @@ emulate -L zsh
 LEASE_SELF="${0:A}"
 LEASE_DIR="${LEASE_SELF:h}"
 
-# Reuse the night-job library for psql resolution and the pgpass-backed branch DSN — the same
+# Reuse the night-job library for psql resolution and the pgpass-backed clone DSN — the same
 # credential path every other lock caller on this database already uses. Sourcing it is safe
 # from an interactive shell: it sets up its own per-process pgpass dir and never touches a
 # launchd plist unless night_self_destruct is called, which this file never calls.
@@ -69,8 +70,8 @@ night_resolve_psql || { return 78 2>/dev/null || exit 78; }
 LEASE_DSN=""
 lease_dsn() {
   [ -n "$LEASE_DSN" ] && { print -r -- "$LEASE_DSN"; return 0; }
-  LEASE_DSN="$(night_branch_dsn)" || {
-    print -u2 -r -- "REFUSED: could not read SUPABASE_BRANCH_DATABASE_URL from .env.local — the lock row lives on the rehearsal branch and this helper has no other target."
+  LEASE_DSN="$(night_lock_dsn)" || {
+    print -u2 -r -- "REFUSED: could not assemble the dev clone's connection (CLONE_DATABASE_URL, or CLONE-REF + its password file) — the lock row lives on the clone."
     return 78
   }
   print -r -- "$LEASE_DSN"
@@ -90,7 +91,7 @@ lease_take() {
   if [ $? -ne 0 ]; then
     print -u2 -r -- "REFUSED: campaign_watch.lock_take errored — ${row:-(no output)}."
     print -u2 -r -- "  If this is 42883/42703, the lease migration has not landed on this database:"
-    print -u2 -r -- "  pnpm db:apply migrations/campaign/lockhyg_a_lock_row_carries_a_lease.sql --source campaign --target branch --lane <LANE>"
+    print -u2 -r -- "  pnpm db:apply migrations/campaign/lockhyg_a_lock_row_carries_a_lease.sql --source campaign --target clone --lane <LANE>"
     return 78
   fi
   outcome="${row%%|*}"

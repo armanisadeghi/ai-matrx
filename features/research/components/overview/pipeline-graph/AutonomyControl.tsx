@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { updateTopic } from "../../../service";
 import type { AutonomyLevel } from "../../../types";
+import { guardedSave } from "@/lib/save/guardedSave";
 
 const OPTIONS: {
   value: AutonomyLevel;
@@ -60,7 +61,13 @@ export function AutonomyControl({ topicId, value, onSaved }: Props) {
     }
     startTransition(async () => {
       try {
-        await updateTopic(topicId, { autonomy_level: next });
+        await guardedSave(
+          () => updateTopic(topicId, { autonomy_level: next }),
+          {
+            what: "the autonomy level",
+            onRetry: () => handleSelect(next),
+          },
+        );
         toast.success(`Autonomy set to ${next}`);
         setOpen(false);
         onSaved?.();

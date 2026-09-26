@@ -17,8 +17,9 @@
  * file, works out which live functions its `CREATE OR REPLACE` statements would
  * overwrite, and prints exactly the lines that file is missing.
  *
- * 🚨 WHICH DATABASE IT MEASURES: `--based-on-target production|branch` (alias
- * `--target`), default `production` — the main database. A `-- based-on:` line is a
+ * 🚨 WHICH DATABASE IT MEASURES: `--based-on-target production|clone` (alias
+ * `--target`), default `production` — the main database. `branch` is an announced alias of
+ * `clone`: the rehearsal branch was deleted 2026-09-26 (lane DB-TOOLS-NO-BRANCH). A `-- based-on:` line is a
  * hash of a body on ONE database, and `db:apply` recomputes it against the database
  * IT is applying to; the two bodies can differ, so a line generated here against the
  * main database and pasted into a file rehearsed on the copy will refuse there, and
@@ -43,7 +44,7 @@ import {
   type Query,
 } from "./migration-based-on";
 import { connectDirect, DB_VARS, loadDbEnv, type DbEnv } from "./lib/direct-db";
-import { loadBranchDbEnv, loadBranchRef, TargetRefusal } from "./lib/migration-target";
+import { BRANCH_RETIRED_NOTICE, loadCloneDbEnv, loadCloneRef, TargetRefusal } from "./lib/migration-target";
 
 const ROOT = resolve(import.meta.dirname, "..");
 
@@ -70,17 +71,22 @@ function viewLine(v: LiveView): string {
 }
 
 /** `--based-on-target` / `--target` — WHICH database the hash is measured on. */
-function parseBasedOnTarget(argv: string[]): "production" | "branch" | { bad: string } {
-  let picked: "production" | "branch" = "production";
+function parseBasedOnTarget(argv: string[]): "production" | "clone" | { bad: string } {
+  let picked: "production" | "clone" = "production";
   for (let i = 0; i < argv.length; i++) {
     const f = argv[i]!;
     const m = /^--(?:based-on-)?target(?:=(.*))?$/.exec(f);
     if (!m) continue;
     // Both spellings, because a flag that works one way and not the other is a trap.
-    const value = m[1] ?? argv[i + 1];
-    if (value === undefined) return { bad: `${f} needs a value: --based-on-target production|branch` };
-    if (value !== "production" && value !== "branch")
-      return { bad: `--based-on-target ${value} is not a database. Name production or branch.` };
+    let value = m[1] ?? argv[i + 1];
+    if (value === undefined) return { bad: `${f} needs a value: --based-on-target production|clone` };
+    if (value === "branch") {
+      // The branch is gone; every doc that says `--based-on-target branch` lands on the clone.
+      console.error(`! ${BRANCH_RETIRED_NOTICE}`);
+      value = "clone";
+    }
+    if (value !== "production" && value !== "clone")
+      return { bad: `--based-on-target ${value} is not a database. Name production or clone.` };
     picked = value;
   }
   return picked;
@@ -104,7 +110,7 @@ async function main(): Promise<number> {
   }
   if (argv.length !== 1) {
     console.log(
-      `${C.bold}pnpm db:based-on <schema.function | schema.function(argtypes) | migrations/file.sql> [--based-on-target production|branch]${C.reset}\n` +
+      `${C.bold}pnpm db:based-on <schema.function | schema.function(argtypes) | migrations/file.sql> [--based-on-target production|clone]${C.reset}\n` +
         `  Prints the \`-- based-on:\` header line(s) for a function, from the live catalogue.\n` +
         `  Paste them into the migration that replaces the body; db:apply verifies them before it runs.\n` +
         `  --based-on-target (alias --target) picks WHICH database is measured; default production,\n` +
@@ -115,9 +121,9 @@ async function main(): Promise<number> {
   }
 
   let env: DbEnv | { missing: string[]; looked: string[] };
-  if (basedOnTarget === "branch") {
+  if (basedOnTarget === "clone") {
     try {
-      env = { ...loadBranchDbEnv(ROOT, loadBranchRef(ROOT)) };
+      env = { ...loadCloneDbEnv(ROOT, loadCloneRef(ROOT)) };
     } catch (err) {
       console.error(
         `${C.red}[FAIL]${C.reset} ${err instanceof TargetRefusal ? err.message : String(err)}`,

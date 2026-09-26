@@ -43,6 +43,7 @@ const service = {
   rewriteHighlightEdge: jest.fn(),
   saveHighlightNote: jest.fn(),
   mentionCandidates: jest.fn(async () => []),
+  canEditSource: jest.fn(async () => true),
 };
 jest.mock("../service", () => service);
 jest.mock("@ai-matrx/realtime/react", () => ({ useChannel: jest.fn() }));
