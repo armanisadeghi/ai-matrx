@@ -28,12 +28,13 @@ function AttachmentItem({
       fileId={item.refs.fileId}
       fileHint={item.refs.fileHint}
       nameOverride={item.title}
+      badge={item.caption}
       size="xs"
       onOpen={onOpen}
     />
   ) : (
     <ResourceAttachmentTile
-      typeLabel={item.typeLabel}
+      typeLabel={item.caption ?? item.typeLabel}
       title={item.title}
       icon={item.icon}
       themeKey={item.themeKey}

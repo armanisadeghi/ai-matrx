@@ -88,6 +88,12 @@ export interface ContextDrawerItem {
   typeLabel: string;
   /** Display title — one line. */
   title: string;
+  /**
+   * What this item is FOR in the message ("Subject reference · @shoe") —
+   * shown as its own badge on the chip so the filename can truncate without
+   * eating the role. Absent for items with no role.
+   */
+  caption?: string;
   icon: ComponentType<{ className?: string }>;
   /** Theme key for ResourceAttachmentTile / chrome. */
   themeKey: string;

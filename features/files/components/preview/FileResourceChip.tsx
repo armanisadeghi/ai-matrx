@@ -61,6 +61,11 @@ export interface FileResourceChipProps {
   size?: "xs" | "sm";
   /** Override the displayed name (rare — mostly for sub-references). */
   nameOverride?: string;
+  /**
+   * A short role tag shown before the name ("Subject reference"). It never
+   * truncates; the file name does.
+   */
+  badge?: string;
   /** Optional className passthrough for layout fine-tuning. */
   className?: string;
 }
@@ -78,6 +83,7 @@ export function FileResourceChip({
   onOpen,
   size = "sm",
   nameOverride,
+  badge,
   className,
 }: FileResourceChipProps) {
   useEnsureCloudFile(fileId, {
@@ -139,6 +145,14 @@ export function FileResourceChip({
         className={cn("h-5 w-5", "shrink-0 rounded-sm")}
         rounded="rounded-sm"
       />
+      {badge && (
+        <span
+          className="shrink-0 whitespace-nowrap rounded bg-primary/10 px-1 py-0.5 text-[10px] font-medium leading-none text-primary"
+          data-chip-badge
+        >
+          {badge}
+        </span>
+      )}
       <span
         className={cn(
           "truncate",

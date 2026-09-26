@@ -509,8 +509,9 @@ export function normalizeMessagePart(
     editable: false,
     raw: part,
   });
-  // A media reference keeps its role + `@name` on the chip after reload
-  // ("Subject reference · shoe.png"). Both are top-level part fields.
+  // A media reference keeps its role + `@name` on the chip after reload, as
+  // its own badge beside the filename (never prefixed into the title, which
+  // truncated to "Subject reference · I…"). Both are top-level part fields.
   const caption =
     partType === "media"
       ? referenceRoleCaption(
@@ -519,5 +520,5 @@ export function normalizeMessagePart(
         )
       : null;
   if (!caption) return items;
-  return items.map((item) => ({ ...item, title: `${caption} · ${item.title}` }));
+  return items.map((item) => ({ ...item, caption }));
 }
