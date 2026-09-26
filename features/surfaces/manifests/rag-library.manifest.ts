@@ -25,7 +25,7 @@
  *
  * Emitters (both via `buildRagLibraryContextData` in
  * `features/rag/agent-context/buildRagLibraryContextData.ts`):
- *   - `features/rag/components/library/LibraryPage.tsx`
+ *   - `features/sources/components/SourcesPage.tsx` (the Sources page; emits the library view from Source rows)
  *   - `features/rag/components/library-catalog/LibraryCatalogPage.tsx`
  *
  * DELIBERATELY NOT DECLARED: the open document's page text and segment

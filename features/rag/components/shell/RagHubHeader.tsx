@@ -20,7 +20,7 @@ import {
 const HUB_NAV_ITEMS = [
   { name: "Home", href: "/knowledge", icon: Home },
   { name: "Data Stores", href: "/knowledge/data-stores", icon: Database },
-  { name: "Library", href: "/knowledge/library", icon: FileText },
+  { name: "Sources", href: "/knowledge/library", icon: FileText },
   { name: "Catalog", href: "/knowledge/library-catalog", icon: Library },
   { name: "Search", href: "/knowledge/search", icon: Search },
   { name: "Repositories", href: "/knowledge/repositories", icon: Code2 },

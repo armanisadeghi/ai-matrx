@@ -139,6 +139,15 @@ export interface ScraperResult {
    * skipped.
    */
   ladder: LadderOutcome | null;
+  /**
+   * The Source this page landed as (SOURCE-CONVERGENCE §4.1): every scrape
+   * route lands its pages through the door and the page payload carries the
+   * `processed_document_id`. `null` when it did not land — `sourceNotices`
+   * then says why. Surfaces offer the Save panel only when this is set.
+   */
+  processedDocumentId: string | null;
+  /** Every decision the door made about this page, in sentences — rendered, never dropped. */
+  sourceNotices: BatchSourceNotice[];
 }
 
 export interface ScraperApiState {
@@ -799,6 +808,7 @@ function mapToScraperResult(
     proxyBypassed:
       typeof raw.proxy_bypassed === "boolean" ? raw.proxy_bypassed : null,
     ladder: readLadderOutcome(raw),
+    ...readSourceLanding(raw),
   };
 }
 

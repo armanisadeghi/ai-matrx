@@ -4,8 +4,8 @@
  * features/sources/api/sourcesApi.ts
  *
  * The client side of the landing door's WRITE routes (SOURCE-CONVERGENCE §3.1):
- * `POST /sources/{id}/keep` today; `/sources/land` and `/sources/{id}/edit`
- * join it as surfaces need them. Every page, transcript or file the platform
+ * `POST /sources/land` and `POST /sources/{id}/keep`; `/sources/{id}/edit`
+ * joins them when a surface edits a Source. Every page, transcript or file the platform
  * acquires is a Source — a `docproc.processed_documents` row — and keeping or
  * filing one is a server write, because Keep is the signal that starts its
  * (metered) AI processing. READS never come through here: Sources are read
@@ -24,6 +24,23 @@ export type LandedSource = components["schemas"]["LandedSource"];
 export type LandingNotice = components["schemas"]["LandingNotice"];
 export type SourceAttachTarget = components["schemas"]["AttachTarget"];
 export type KeepSourceBody = components["schemas"]["KeepBody"];
+export type SourceLandingBody = components["schemas"]["SourceLanding"];
+
+export const SOURCE_LAND_PATH = "/sources/land";
+
+/**
+ * Land one acquisition as a Source through the door (`POST /sources/land`).
+ * The body names its organization (`organization_id`) and so does the
+ * request header — the same id, captured once by the caller.
+ */
+export async function landSource(body: SourceLandingBody): Promise<LandedSource> {
+  const { data } = await postJson<LandedSource, SourceLandingBody>(
+    SOURCE_LAND_PATH,
+    body,
+    { organizationId: body.organization_id },
+  );
+  return data;
+}
 
 export function sourceKeepPath(processedDocumentId: string): string {
   return `/sources/${encodeURIComponent(processedDocumentId)}/keep`;
