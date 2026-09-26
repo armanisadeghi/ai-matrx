@@ -6,7 +6,7 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 91,
+    "repo-only": 94,
     "live-db": 56,
     "clone-db": 3
   },
@@ -49,7 +49,7 @@
     "cx-source-attribution-is-registered": {
       "class": "repo-only",
       "cmd": "pnpm check:source-attribution",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "both-migration-runners-judge-the-corpus-identically": {
@@ -100,12 +100,12 @@
           "signal": "SUPABASE_MATRIX_* direct Postgres credentials"
         },
         {
-          "file": "scripts/lib/direct-db.ts",
-          "signal": "direct-db loader (loadDbEnv)"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "live database host"
         },
         {
-          "file": "scripts/lib/direct-db.ts",
-          "signal": "pg / postgres client"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "SUPABASE_MATRIX_* direct Postgres credentials"
         }
       ]
     },
@@ -230,12 +230,12 @@
           "signal": "gate-db helper (openGateDb/withGateDb)"
         },
         {
-          "file": "scripts/lib/direct-db.ts",
-          "signal": "direct-db loader (loadDbEnv)"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "live database host"
         },
         {
-          "file": "scripts/lib/direct-db.ts",
-          "signal": "pg / postgres client"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "SUPABASE_MATRIX_* direct Postgres credentials"
         }
       ]
     },
@@ -253,12 +253,12 @@
           "signal": "gate-db helper (openGateDb/withGateDb)"
         },
         {
-          "file": "scripts/lib/direct-db.ts",
-          "signal": "direct-db loader (loadDbEnv)"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "live database host"
         },
         {
-          "file": "scripts/lib/direct-db.ts",
-          "signal": "pg / postgres client"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "SUPABASE_MATRIX_* direct Postgres credentials"
         }
       ]
     },
@@ -326,8 +326,8 @@
           "signal": "pg / postgres client"
         },
         {
-          "file": "scripts/lib/direct-db.ts",
-          "signal": "direct-db loader (loadDbEnv)"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "live database host"
         }
       ]
     },
@@ -363,12 +363,12 @@
           "signal": "gate-db helper (openGateDb/withGateDb)"
         },
         {
-          "file": "scripts/lib/direct-db.ts",
-          "signal": "direct-db loader (loadDbEnv)"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "live database host"
         },
         {
-          "file": "scripts/lib/direct-db.ts",
-          "signal": "pg / postgres client"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "SUPABASE_MATRIX_* direct Postgres credentials"
         }
       ]
     },
@@ -386,12 +386,12 @@
           "signal": "gate-db helper (openGateDb/withGateDb)"
         },
         {
-          "file": "scripts/lib/direct-db.ts",
-          "signal": "direct-db loader (loadDbEnv)"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "live database host"
         },
         {
-          "file": "scripts/lib/direct-db.ts",
-          "signal": "pg / postgres client"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "SUPABASE_MATRIX_* direct Postgres credentials"
         }
       ]
     },
@@ -445,7 +445,7 @@
     "doc-claims-vs-live-config": {
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/check-doc-claims.ts --strict",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "route-metadata-and-favicons": {
@@ -475,13 +475,13 @@
     "record-naming-toasts-carry-their-record": {
       "class": "repo-only",
       "cmd": "pnpm check:record-toasts:strict",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "ui-primitives-check": {
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/check-ui-primitives.ts --strict",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "canonical-agent-model-pickers": {
@@ -720,13 +720,13 @@
     "release-row-classes-match-what-each-row-s-code-reaches": {
       "class": "repo-only",
       "cmd": "pnpm check:release-row-classes",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "and-that-guard-can-still-fail-pnpm-check-release-r": {
       "class": "repo-only",
       "cmd": "pnpm check:release-row-classes:self-test",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "door-rows-a-door-returns-only-what-its-caller-may-read-dd-19": {
@@ -812,8 +812,8 @@
           "signal": "service-role / secret key"
         },
         {
-          "file": "scripts/lib/direct-db.ts",
-          "signal": "direct-db loader (loadDbEnv)"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "live database host"
         }
       ]
     },
@@ -835,8 +835,8 @@
           "signal": "service-role / secret key"
         },
         {
-          "file": "scripts/lib/direct-db.ts",
-          "signal": "direct-db loader (loadDbEnv)"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "live database host"
         }
       ]
     },
@@ -996,7 +996,7 @@
     "api-contract-ratchet": {
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/check-api-contracts.ts --strict",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "backend-boundary-approvals": {
@@ -1039,6 +1039,18 @@
       "class": "repo-only",
       "cmd": "pnpm check:docs-twins",
       "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
+    "a-check-self-test-plants-its-fixture-in-the-live-source-tree": {
+      "class": "repo-only",
+      "cmd": "pnpm check:self-tests-stay-out-of-tree",
+      "reason": "no database access in 4 file(s) reached",
+      "evidence": []
+    },
+    "and-that-guard-can-still-fail-pnpm-check-self-test": {
+      "class": "repo-only",
+      "cmd": "pnpm check:self-tests-stay-out-of-tree:self-test",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "a-node-modules-symlink-is-tracked-or-not-ignored-eloop-on-ev": {
@@ -1111,7 +1123,7 @@
     "access-guard-check": {
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/check-access-guards.ts --strict",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "staff-door-private-confidential-components-included": {
@@ -1147,12 +1159,12 @@
           "signal": "gate-db helper (openGateDb/withGateDb)"
         },
         {
-          "file": "scripts/lib/direct-db.ts",
-          "signal": "direct-db loader (loadDbEnv)"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "live database host"
         },
         {
-          "file": "scripts/lib/direct-db.ts",
-          "signal": "pg / postgres client"
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "SUPABASE_MATRIX_* direct Postgres credentials"
         }
       ]
     },
@@ -1178,7 +1190,7 @@
     "visibility-vocabulary": {
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/check-visibility-vocab.ts --strict",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "component-ownership-law-no-created-by": {
@@ -1321,13 +1333,13 @@
     "menu-section-naming-law-use-hooks-build-pure-no-bare-menusec": {
       "class": "repo-only",
       "cmd": "pnpm check:menu-naming",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "menu-items-that-cannot-act-the-live-item-law": {
       "class": "repo-only",
       "cmd": "pnpm check:menu-live-items",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "no-ui-flag-aimed-at-a-headless-mode": {
@@ -1345,7 +1357,7 @@
     "content-ir-kinds-test-suite": {
       "class": "repo-only",
       "cmd": "pnpm test:content-ir",
-      "reason": "no database access in 156 file(s) reached",
+      "reason": "no database access in 157 file(s) reached",
       "evidence": []
     },
     "whole-jest-suite-every-suite-not-ci-s-four-scopes": {
@@ -1446,7 +1458,7 @@
     "url-state-written-outside-the-canonical-primitive": {
       "class": "repo-only",
       "cmd": "pnpm check:url-state",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "retired-database-project-id-handed-to-agents": {
@@ -1470,6 +1482,12 @@
     "hardcoded-agent-ids-raw-agent-uuids-in-code": {
       "class": "repo-only",
       "cmd": "pnpm check:hardcoded-agents",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "reserved-icon-used-outside-its-domain-braincircuit-intellige": {
+      "class": "repo-only",
+      "cmd": "pnpm check:reserved-icons",
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
@@ -1529,13 +1547,13 @@
     "unbounded-reads-the-detector-can-still-fail-self-test": {
       "class": "repo-only",
       "cmd": "pnpm check:unbounded-reads --self-test",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "complete-list-reads-postgrest-silently-caps-at-1000": {
       "class": "repo-only",
       "cmd": "pnpm check:unbounded-reads",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "settings-registry-rows-no-code-reads": {

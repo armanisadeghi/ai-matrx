@@ -525,6 +525,8 @@
     "check:package-twins:self-test": "node scripts/check-package-twins.mjs --self-test",
     "check:docs-twins": "node scripts/check-docs-twins.mjs",
     "check:docs-twins:self-test": "node scripts/check-docs-twins.mjs --self-test",
+    "check:self-tests-stay-out-of-tree": "tsx scripts/check-self-tests-stay-out-of-tree.ts",
+    "check:self-tests-stay-out-of-tree:self-test": "tsx scripts/check-self-tests-stay-out-of-tree.ts --self-test",
     "check:dependency-dirs-untracked": "node scripts/check-dependency-dirs-untracked.mjs",
     "check:dependency-dirs-untracked:self-test": "node scripts/check-dependency-dirs-untracked.mjs --self-test",
     "check:single-worktree": "node scripts/check-single-worktree.mjs",

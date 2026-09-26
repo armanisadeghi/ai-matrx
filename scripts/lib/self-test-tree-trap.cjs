@@ -7,10 +7,10 @@
  * app/, lib/ … and delete them afterwards. `scripts/checks/run.mjs` runs checks six at a time, so
  * while a fixture sat in the real tree every OTHER scanner saw it — reporting it as a real finding,
  * or crashing with ENOENT when it vanished mid-scan (`check:unwired`, 2026-09-25) — and a
- * concurrent `git add` sweep of this shared checkout could commit it. A self-test plants into a
- * private `mkdtemp` directory (`scripts/lib/self-test-sandbox.ts`) and points the check there.
+ * concurrent `git add` sweep of this shared checkout could commit it. A self-test plants in
+ * memory or in a private `mkdtempSync(join(tmpdir(), …))` directory and points the check there.
  *
- * Used by `scripts/check-self-tests-stay-out-of-tree.mjs` (the guard). Environment:
+ * Used by `scripts/check-self-tests-stay-out-of-tree.ts --dynamic` (the census). Environment:
  *   SELF_TEST_TREE_TRAP_ROOT  the checkout to protect (required; the trap is inert without it)
  *   SELF_TEST_TREE_TRAP_LOG   file each offending write is appended to, one JSON line each
  *
@@ -28,8 +28,10 @@ if (ROOT && LOG) {
   const path = require("node:path");
   const { syncBuiltinESMExports } = require("node:module");
 
-  // Captured BEFORE patching: the trap's own log write must not trap itself.
-  const append = fs.appendFileSync.bind(fs);
+  // Opened BEFORE patching and written with writeSync (never patched): appendFileSync goes
+  // through the exported fs.writeFileSync internally, so logging with it would trap itself.
+  const logFd = fs.openSync(LOG, "a");
+  const append = (line) => fs.writeSync(logFd, line);
   const SCRATCH = ["tmp", "node_modules", ".next", ".git", ".wt", "coverage", ".turbo"];
   const rootWithSep = ROOT.endsWith(path.sep) ? ROOT : ROOT + path.sep;
 
@@ -50,9 +52,9 @@ if (ROOT && LOG) {
     const top = rel.split(path.sep)[0];
     if (SCRATCH.includes(top)) return;
     try {
-      append(LOG, JSON.stringify({ op, path: rel, pid: process.pid, argv: process.argv.slice(1, 3) }) + "\n");
-    } catch {
-      /* the log is best-effort; the guard reports a missing log as UNMEASURED */
+      append(JSON.stringify({ op, path: rel, pid: process.pid, argv: process.argv.slice(1, 3) }) + "\n");
+    } catch (err) {
+      process.stderr.write(`[self-test-tree-trap] could not record ${op}(${rel}): ${err}\n`);
     }
   };
 

@@ -106,6 +106,17 @@ log, holding its own lock (`--with-checks` runs it in the foreground instead;
   row, or a declared class that disagrees with detection = `[FAIL]`, exit 1) +
   `:self-test` (red on a mismatched manifest, green on the real one) — in CI
   (`marker-law` job) and as rows of `run-release-gates.sh`.
+- **Rows share one checkout, so no row writes into it.** Six rows run at once
+  over the same tree: a self-test that plants its RED fixture in `lib/`,
+  `features/`, `migrations/`… is a fake finding for the scanner beside it (or an
+  ENOENT when it vanishes mid-scan) and a commit for a concurrent sweep. A
+  self-test plants in memory or in `mkdtempSync(join(tmpdir(), …))` and passes
+  that root to the scan. Guard: `pnpm check:self-tests-stay-out-of-tree` (static
+  AST, ~3 s: every write inside self-test code whose target evaluates into the
+  checkout and is not gitignored) + `:self-test` (RED on the seven recorded
+  pre-fix files, GREEN on today's); `--dynamic` runs every package.json
+  self-test under `scripts/lib/self-test-tree-trap.cjs` and names each write
+  that landed in the tracked tree (the census, minutes).
 - **Findings** — `tmp/release-logs/findings-vX.Y.Z.jsonl`: first line
   `{"ran":[...]}`, then one JSON object per finding — `check, category, level,
   title (≤100), count, fingerprint, remedy, detail` — the exact shape aidream's
@@ -157,6 +168,13 @@ the after phase; the two things that made the build — migrations and the
 push — are the ship path.
 
 ## Change log
+
+- 2026-09-26 — Seven self-tests stopped planting fixtures in the live tree
+  (org-refusal-honesty, org-three-states, no-default-organization[-sql],
+  agent-list-reads, docs-twins, `db:apply --self-test`); guard
+  `check:self-tests-stay-out-of-tree` + self-test added as release-gate rows
+  (repo-only). Census + notes:
+  `common-docs/projects/checks-run-in-the-app/BACKLOG-L7b-selftests.md`.
 
 - 2026-09-25 — Declared row classes (`row-classes.json` + `row-classes.mjs` +
   `row-classes.signals.json`), `run.mjs --skip-live-db` (passed by

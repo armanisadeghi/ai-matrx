@@ -467,6 +467,11 @@ if $STRICT; then
         "The proxy or an app/api route makes an auth-server round trip per request, or reads a timeout as a logout|pnpm check:proxy-auth-hot-path --strict"
         "Package logic re-grown outside its package|pnpm check:package-twins:strict"
         "A doc or skill teaches a hand-rolled recipe the package owns|pnpm check:docs-twins"
+        # A self-test that plants its RED fixture in lib/, features/, migrations/… is seen by every
+        # check this runner runs beside it (fake findings, ENOENT mid-scan) and can be committed
+        # by a concurrent sweep. Static, ~3 s; `--dynamic` is the slow census that found the seven.
+        "A check self-test plants its fixture in the live source tree|pnpm check:self-tests-stay-out-of-tree"
+        "…and that guard can still fail|pnpm check:self-tests-stay-out-of-tree:self-test"
         "A node_modules symlink is tracked or not ignored (ELOOP on every pull)|pnpm check:dependency-dirs-untracked"
         "A repo holds a second worktree or a local branch (Arman 2026-09-20: exactly one of each)|pnpm check:single-worktree"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
@@ -1036,6 +1041,11 @@ else
         "The proxy or an app/api route makes an auth-server round trip per request, or reads a timeout as a logout|pnpm check:proxy-auth-hot-path --strict"
         "Package logic re-grown outside its package|pnpm check:package-twins:strict"
         "A doc or skill teaches a hand-rolled recipe the package owns|pnpm check:docs-twins"
+        # A self-test that plants its RED fixture in lib/, features/, migrations/… is seen by every
+        # check this runner runs beside it (fake findings, ENOENT mid-scan) and can be committed
+        # by a concurrent sweep. Static, ~3 s; `--dynamic` is the slow census that found the seven.
+        "A check self-test plants its fixture in the live source tree|pnpm check:self-tests-stay-out-of-tree"
+        "…and that guard can still fail|pnpm check:self-tests-stay-out-of-tree:self-test"
         "A node_modules symlink is tracked or not ignored (ELOOP on every pull)|pnpm check:dependency-dirs-untracked"
         "A repo holds a second worktree or a local branch (Arman 2026-09-20: exactly one of each)|pnpm check:single-worktree"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
