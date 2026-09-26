@@ -1,8 +1,11 @@
 import {
   countPersonVisibleParts,
   isAnswerlessTurn,
+  rowAsksThePerson,
   type AnswerlessTurnInput,
 } from "./answerless-turn";
+import { selectRequestAwaitingPerson } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import type { RootState } from "@/lib/redux/store";
 
 /**
  * The witness for the production case found on 2026-09-18: `Quick Test Agent`
@@ -180,5 +183,63 @@ describe("countPersonVisibleParts", () => {
   it("is 0 for a row with no parts", () => {
     expect(countPersonVisibleParts(undefined)).toBe(0);
     expect(countPersonVisibleParts([])).toBe(0);
+  });
+});
+
+
+/**
+ * The live case from 2026-09-26: an agent asked for a sign-in with
+ * `ask_person`, the turn parked, and under the open ask card the screen said
+ * "This run finished without writing an answer. Run it again". The turn had
+ * not finished — it was waiting on the person.
+ */
+describe("a turn parked on the person is waiting, never answerless", () => {
+  // The persisted row, exactly as `chat.message` stores it (conversation
+  // 847a3d1e-…, position 3): thinking, then the ask.
+  const parkedRow = [
+    { type: "thinking", text: "They gave the username; ask for the password." },
+    { type: "tool_call", name: "ask_person", call_id: "toolu_1", arguments: {} },
+  ];
+
+  it("recognises a reloaded row that ends by asking the person", () => {
+    expect(rowAsksThePerson(parkedRow)).toBe(true);
+    expect(rowAsksThePerson([{ type: "tool_call", name: "web_search" }])).toBe(false);
+    expect(rowAsksThePerson([{ type: "text" }])).toBe(false);
+    expect(rowAsksThePerson(null)).toBe(false);
+  });
+
+  it("the live stream's suspension, or a parked tool output, marks the request as waiting", () => {
+    const stateWith = (request: Record<string, unknown>) =>
+      ({
+        activeRequests: {
+          byRequestId: { r1: { infoEvents: [], toolLifecycle: {}, ...request } },
+        },
+      }) as unknown as RootState;
+
+    expect(selectRequestAwaitingPerson("r1")(stateWith({}))).toBe(false);
+    expect(
+      selectRequestAwaitingPerson("r1")(
+        stateWith({ infoEvents: [{ code: "suspended_awaiting_client" }] }),
+      ),
+    ).toBe(true);
+    expect(
+      selectRequestAwaitingPerson("r1")(
+        stateWith({
+          toolLifecycle: {
+            c1: { result: { __kind: "action_request.parked", action_request_id: "x" } },
+          },
+        }),
+      ),
+    ).toBe(true);
+    expect(selectRequestAwaitingPerson("missing")(stateWith({}))).toBe(false);
+  });
+
+  it("with that signal the settled empty turn stays silent", () => {
+    expect(
+      isAnswerlessTurn({
+        ...settledEmptyAnswer,
+        awaitingPerson: rowAsksThePerson(parkedRow),
+      }),
+    ).toBe(false);
   });
 });

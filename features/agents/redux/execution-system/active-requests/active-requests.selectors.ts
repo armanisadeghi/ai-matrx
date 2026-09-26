@@ -1897,6 +1897,33 @@ export const selectInfoEvents =
   (state: RootState): InfoPayload[] | undefined =>
     state.activeRequests.byRequestId[requestId]?.infoEvents;
 
+/**
+ * True when this request's turn ended PARKED on the person rather than
+ * finished: the server said so (`info` code `suspended_awaiting_client`, sent
+ * when a tool call — client-delegated or a server tool such as `ask_person` —
+ * suspends the turn), or a tool call's own output is a parked ask. Primitive.
+ */
+export const selectRequestAwaitingPerson =
+  (requestId: string) =>
+  (state: RootState): boolean => {
+    const request = state.activeRequests.byRequestId[requestId];
+    if (!request) return false;
+    if (request.infoEvents.some((info) => info?.code === "suspended_awaiting_client")) {
+      return true;
+    }
+    for (const entry of Object.values(request.toolLifecycle ?? {})) {
+      const result = entry?.result;
+      if (
+        result &&
+        typeof result === "object" &&
+        (result as Record<string, unknown>).__kind === "action_request.parked"
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
+
 // =============================================================================
 // Record Reservation Selectors
 // =============================================================================

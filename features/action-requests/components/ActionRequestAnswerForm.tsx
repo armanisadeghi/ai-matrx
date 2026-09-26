@@ -33,6 +33,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { cn } from "@/lib/utils";
 import type {
   ActionRequestRefusal,
+  CaptureField,
   ActionRequestRender,
   ConfirmDetailsRender,
   CredentialRender,
@@ -77,7 +78,11 @@ export const ACTION_REQUEST_UNREACHED =
  * A second tap while in flight does nothing — `busy` is a render behind the
  * tap, so the ref is checked in the same turn the handler runs.
  */
-export function useActionRequestAnswer(transport: ActionRequestTransport) {
+export function useActionRequestAnswer(
+  transport: ActionRequestTransport,
+  /** Called once when the server confirms (`state: "done"`). */
+  onDone?: (done: ActionRequestDone) => void,
+) {
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<ActionRequestRefusal | null>(null);
   const [done, setDone] = useState<ActionRequestDone | null>(null);
@@ -103,7 +108,9 @@ export function useActionRequestAnswer(transport: ActionRequestTransport) {
         return;
       }
       if (body.state === "done") {
-        setDone({ message: body.message ?? "Got it.", next: body.next ?? null });
+        const confirmed = { message: body.message ?? "Got it.", next: body.next ?? null };
+        setDone(confirmed);
+        onDone?.(confirmed);
         return;
       }
       // A ONE-TIME CODE THAT EXPIRED ON THE WAY IN IS NOT AN ERROR AND NOT AN
@@ -299,6 +306,20 @@ type FormProps<R> = {
   onSubmit: (answer: ActionRequestAnswer) => void | Promise<void>;
 };
 
+/**
+ * The starting values: what the person already said, on non-secret boxes only.
+ * A secret box starts empty whatever arrives — a password is typed, never shown.
+ */
+function prefilledValues(fields: CaptureField[]): Record<string, string> {
+  const initial: Record<string, string> = {};
+  for (const field of fields) {
+    if (!field.secret && typeof field.prefill === "string" && field.prefill) {
+      initial[field.key] = field.prefill;
+    }
+  }
+  return initial;
+}
+
 function ConfirmDetails({ render, busy, idPrefix, onSubmit }: FormProps<ConfirmDetailsRender>) {
   const [edits, setEdits] = useState<Record<string, string>>({});
 
@@ -389,7 +410,7 @@ function FieldList({
   setValues,
   idPrefix,
 }: {
-  fields: { key: string; label: string; secret: boolean }[];
+  fields: CaptureField[];
   values: Record<string, string>;
   setValues: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   idPrefix: string;
@@ -424,7 +445,9 @@ function FieldList({
 }
 
 function Credential({ render, busy, idPrefix, onSubmit }: FormProps<CredentialRender>) {
-  const [values, setValues] = useState<Record<string, string>>({});
+  const [values, setValues] = useState<Record<string, string>>(() =>
+    prefilledValues(render.fields),
+  );
   const [authenticator, setAuthenticator] = useState("");
   const [showAuthenticator, setShowAuthenticator] = useState(false);
 
@@ -504,7 +527,9 @@ function Credential({ render, busy, idPrefix, onSubmit }: FormProps<CredentialRe
  * origin line and without the origin echo: nothing is being signed into.
  */
 function VaultItem({ render, busy, idPrefix, onSubmit }: FormProps<VaultItemRender>) {
-  const [values, setValues] = useState<Record<string, string>>({});
+  const [values, setValues] = useState<Record<string, string>>(() =>
+    prefilledValues(render.fields),
+  );
 
   return (
     <div className="flex flex-col gap-4">

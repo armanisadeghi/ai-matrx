@@ -20,9 +20,18 @@ import {
   type PendingActionRequest,
 } from "@/features/action-requests/self-service";
 
-export function ActionRequestInlineAnswer({ request }: { request: PendingActionRequest }) {
-  const { busy, refusal, done, submit } = useActionRequestAnswer((answer) =>
-    completeActionRequestAsSelf(request.request_id, request.organization_id, answer),
+export function ActionRequestInlineAnswer({
+  request,
+  onAnswered,
+}: {
+  request: PendingActionRequest;
+  /** Runs once the server confirms — e.g. the chat re-reading the resumed turn. */
+  onAnswered?: () => void;
+}) {
+  const { busy, refusal, done, submit } = useActionRequestAnswer(
+    (answer) =>
+      completeActionRequestAsSelf(request.request_id, request.organization_id, answer),
+    () => onAnswered?.(),
   );
 
   if (done) {

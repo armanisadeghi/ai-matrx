@@ -18,6 +18,17 @@ jest.mock("@/features/action-requests/self-service", () => ({
   completeActionRequestAsSelf: (...args: unknown[]) => completeAsSelf(...args),
 }));
 
+const dispatchSpy = jest.fn((action: unknown) => ({
+  unwrap: () => Promise.resolve(action),
+}));
+jest.mock("@/lib/redux/hooks", () => ({
+  useAppDispatch: () => dispatchSpy,
+}));
+const loadConversation = jest.fn((args: unknown) => ({ type: "loadConversation", args }));
+jest.mock("@/features/agents/redux/execution-system/thunks/load-conversation.thunk", () => ({
+  loadConversation: (args: unknown) => loadConversation(args),
+}));
+
 import { AskPersonInline } from "./AskPersonInline";
 
 const REQUEST_ID = "3b1c6a52-8f7e-4c1d-9a2b-5d6e7f809123";
@@ -95,6 +106,8 @@ describe("AskPersonInline — the in-chat ask", () => {
   beforeEach(() => {
     fetchPending.mockReset();
     completeAsSelf.mockReset();
+    dispatchSpy.mockClear();
+    loadConversation.mockClear();
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -114,8 +127,9 @@ describe("AskPersonInline — the in-chat ask", () => {
         origin: "https://example.com",
         site_name: "example.com",
         fields: [
-          { key: "username", label: "Username", secret: false },
-          { key: "password", label: "Password", secret: true },
+          { key: "username", label: "Username", secret: false, prefill: "test@example.com" },
+          // A secret box is never prefilled, even if a value arrives.
+          { key: "password", label: "Password", secret: true, prefill: "must-not-show" },
         ],
         allow_authenticator_secret: true,
         submit_label: "Save sign-in",
@@ -154,9 +168,12 @@ describe("AskPersonInline — the in-chat ask", () => {
     const password = container.querySelector('input[autocomplete="current-password"]') as HTMLInputElement;
     expect(password).not.toBeNull();
     const username = container.querySelector('input[autocomplete="username"]') as HTMLInputElement;
+    // PREFILL: the username the person already gave is there, editable; the
+    // secret box is empty.
+    expect(username.value).toBe("test@example.com");
+    expect(password.value).toBe("");
 
     await act(async () => {
-      setInput(username, "test@example.com");
       setInput(password, "hunter2-example");
     });
     await act(async () => {
@@ -170,6 +187,8 @@ describe("AskPersonInline — the in-chat ask", () => {
     });
     expect(container.textContent).toContain("Got it, I'm on it.");
     expect(container.textContent).toContain("Saved to your vault.");
+    // THE RESUMED REPLY IS RE-READ at once — no reload needed to see it.
+    expect(loadConversation).toHaveBeenCalledWith({ conversationId: "conv-1" });
     expect(container.querySelector("input")).toBeNull();
   });
 

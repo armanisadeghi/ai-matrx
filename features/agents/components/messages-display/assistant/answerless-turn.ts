@@ -97,6 +97,27 @@ export function countPersonVisibleParts(
   return count;
 }
 
+/**
+ * Tools whose call ENDS the turn to wait for a person (an agent asking for a
+ * yes, a sign-in, a code). A turn that stops on one of these has not finished:
+ * the ask's own card is its status, and it resumes when the person answers.
+ */
+const PERSON_WAITING_TOOLS: ReadonlySet<string> = new Set(["ask_person"]);
+
+/**
+ * True when a persisted row ends its turn by asking the person — it carries a
+ * `tool_call` part for a {@link PERSON_WAITING_TOOLS} tool. Used after a reload,
+ * when the live stream's suspension signal is gone and only the row remains.
+ */
+export function rowAsksThePerson(
+  parts: ReadonlyArray<{ type?: string | null; name?: string | null }> | null | undefined,
+): boolean {
+  if (!parts) return false;
+  return parts.some(
+    (part) => part?.type === "tool_call" && PERSON_WAITING_TOOLS.has(part?.name ?? ""),
+  );
+}
+
 export interface AnswerlessTurnInput {
   /** Is this member the turn's ANSWER (the last one), not an intermediate step? */
   isTurnAnswer: boolean;
@@ -131,9 +152,12 @@ export interface AnswerlessTurnInput {
   streamedAnswerBlockCount: number;
   /**
    * True while the run is suspended waiting on the person — an approval card
-   * for a page write, a client tool. The turn has not finished, so it must
-   * never say it "finished without writing an answer" (seen live 2026-09-26
-   * under a pending "Formula for one step" card). Optional: absent = false.
+   * for a page write, a client tool, or a server tool that parked the turn to
+   * ask the person (`ask_person`: the stream's `suspended_awaiting_client`
+   * info, or a row ending on that tool call after a reload). The turn has not
+   * finished, so it must never say it "finished without writing an answer"
+   * (seen live 2026-09-26 under a pending "Formula for one step" card, and
+   * under an open sign-in ask). Optional: absent = false.
    */
   awaitingPerson?: boolean;
 }

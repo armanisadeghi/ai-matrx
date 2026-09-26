@@ -106,11 +106,24 @@ export interface PickTimeRender extends RenderCommon {
   submit_label: string;
 }
 
+/**
+ * One typed box on a credential or vault form. `prefill` is what the person
+ * already told the agent (a username) — the server carries it on a
+ * `secret: false` box only, and the form never prefills a secret box even if
+ * one arrives.
+ */
+export interface CaptureField {
+  key: string;
+  label: string;
+  secret: boolean;
+  prefill?: string | null;
+}
+
 export interface CredentialRender extends RenderCommon {
   form: "credential";
   origin: string;
   site_name: string;
-  fields: { key: string; label: string; secret: boolean }[];
+  fields: CaptureField[];
   allow_authenticator_secret: boolean;
   submit_label: string;
 }
@@ -146,7 +159,7 @@ export interface OneTimeCodeRender extends RenderCommon {
  */
 export interface VaultItemRender extends RenderCommon {
   form: "vault_item";
-  fields: { key: string; label: string; secret: boolean }[];
+  fields: CaptureField[];
   submit_label: string;
 }
 

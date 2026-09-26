@@ -51,6 +51,7 @@ import {
   selectProviderRetry,
   selectLiveCitationSources,
   selectVisibleWarnings,
+  selectRequestAwaitingPerson,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { selectBufferStream } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectStreamPhase } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
@@ -84,7 +85,11 @@ import {
 } from "./AssistantMessageFooter";
 import { AssistantNoAnswer } from "./AssistantNoAnswer";
 import { selectInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
-import { countPersonVisibleParts, isAnswerlessTurn } from "./answerless-turn";
+import {
+  countPersonVisibleParts,
+  isAnswerlessTurn,
+  rowAsksThePerson,
+} from "./answerless-turn";
 import { retryConversationTurn } from "@/features/agents/redux/execution-system/message-crud/retry-turn.thunk";
 import { commitInlineContentEdit } from "@/features/agents/redux/execution-system/message-crud/commit-inline-edit.thunk";
 import { InPlaceAnswerEditor } from "./InPlaceAnswerEditor";
@@ -449,10 +454,19 @@ export function AgentAssistantMessage({
   // A run that finished and produced NOTHING says so, in words, with a remedy —
   // never an empty bubble wearing a like/copy/speak bar (see answerless-turn.ts).
   const instanceStatus = useAppSelector(selectInstanceStatus(conversationId));
+  // A turn parked on the person (an open ask) is WAITING, not finished — the
+  // ask's card is its status. Live: the stream said so. Reloaded: the row ends
+  // on the asking tool call.
+  const requestAwaitingPerson = useAppSelector(
+    requestId ? selectRequestAwaitingPerson(requestId) : () => false,
+  );
   const answerless = isAnswerlessTurn({
     isTurnAnswer,
     isStreamActive,
-    awaitingPerson: instanceStatus === "paused",
+    awaitingPerson:
+      instanceStatus === "paused" ||
+      requestAwaitingPerson ||
+      rowAsksThePerson(extractContentBlocks(record)),
     failed,
     coldMarkdownReady,
     messageId,

@@ -24,6 +24,8 @@ import React from "react";
 import { HandHelping } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { ActionRequestInlineAnswer } from "@/features/action-requests/components/ActionRequestInlineAnswer";
 import { usePendingActionRequest } from "@/features/action-requests/hooks/usePendingActionRequest";
 
@@ -46,6 +48,24 @@ export const AskPersonInline: React.FC<ToolRendererProps> = (props) => {
     expanded,
     onToggleExpanded,
   } = props;
+
+  const dispatch = useAppDispatch();
+  // THE AGENT'S REPLY APPEARS WITHOUT A RELOAD. The signed-in answer door runs
+  // the parked turn forward BEFORE it answers (aidream `_tell_the_agent`, not
+  // detached for a web answer), so by the time the confirmation lands the
+  // resumed reply is already in `chat.message`. Re-reading the conversation is
+  // the same refetch the runtime reconnect does when a server turn ends.
+  const rereadConversation = () => {
+    if (!conversationId) return;
+    void dispatch(loadConversation({ conversationId }))
+      .unwrap()
+      .catch((err: unknown) => {
+        console.warn(
+          "[ask_person] the answer was saved, but re-reading the conversation failed — the reply shows on the next load.",
+          err,
+        );
+      });
+  };
 
   const result = resultAsObject(entry);
   const parked = result?.__kind === "action_request.parked";
@@ -86,7 +106,7 @@ export const AskPersonInline: React.FC<ToolRendererProps> = (props) => {
           : null;
 
   const body = open ? (
-    <ActionRequestInlineAnswer request={open} />
+    <ActionRequestInlineAnswer request={open} onAnswered={rereadConversation} />
   ) : lookup.phase === "unreachable" ? (
     <div className="flex items-center justify-between gap-3 p-4">
       <p className="text-sm text-muted-foreground">

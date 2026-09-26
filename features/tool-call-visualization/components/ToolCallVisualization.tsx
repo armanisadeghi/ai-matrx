@@ -15,7 +15,7 @@
  * doing that produced the legacy "every card shows every tool" bug.
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -67,6 +67,8 @@ import { ToolUpdatesOverlay } from "./ToolUpdatesOverlay";
 import { getToolArtifact } from "../registry/toolArtifact";
 import { ArtifactResultBar } from "./ArtifactResultBar";
 import { resolveToolShellDisplayMode } from "./resolveToolShellDisplayMode";
+import { withoutCorrectedFailures } from "./correctedFailures";
+import { selectCorrectedToolCallIds } from "@/features/agents/redux/execution-system/observability/observability.selectors";
 
 // ─── Public props ─────────────────────────────────────────────────────────────
 
@@ -135,16 +137,32 @@ const ToolCallVisualizationInner: React.FC<{
   const allTerminal =
     entries.length > 0 &&
     entries.every((e) => e.status === "completed" || e.status === "error");
-  const headerTool = entries[0] ?? null;
+  // A failure the agent already corrected (a later call of the same tool that
+  // did not fail) never labels the group; see `withoutCorrectedFailures`.
+  const settled = withoutCorrectedFailures(entries);
+  const headerTool = settled[0] ?? entries[0] ?? null;
   // Actively streaming RIGHT NOW (live only — a reloaded snapshot is never "streaming").
   const streamingNow = !isPersisted && anyActive;
+
+  // A reloaded turn puts each model iteration in its own group, so a failure
+  // the agent corrected in a LATER iteration is invisible to the filter above.
+  // The conversation's tool-call rows know: such a group says it was retried,
+  // never "Couldn't …" above the call that went through.
+  const correctedIdsSelector = useMemo(
+    () => selectCorrectedToolCallIds(conversationId ?? ""),
+    [conversationId],
+  );
+  const correctedIds = useAppSelector(correctedIdsSelector);
+  const correctedGroup =
+    settled.length > 0 &&
+    settled.every((e) => e.status === "error" && correctedIds.has(e.callId));
 
   const phase: "starting" | "processing" | "complete" | "error" =
     entries.length === 0
       ? "starting"
       : anyActive || !allTerminal
         ? "processing"
-        : entries.some((e) => e.status === "error")
+        : settled.some((e) => e.status === "error")
           ? "error"
           : "complete";
 
@@ -185,10 +203,10 @@ const ToolCallVisualizationInner: React.FC<{
   const glyph = getToolGlyph(headerTool?.toolName ?? null);
   // A write the store held for a person: the chip says so, and the card that
   // decides it is open — a decision nobody can see is the dead end this closes.
-  const heldWait = entries.length === 1 ? heldWriteOf(headerTool) : null;
+  const heldWait = settled.length === 1 ? heldWriteOf(headerTool) : null;
   const heldTableName = useHeldWriteTableName(heldWait);
   const legacyHeld =
-    entries.length === 1 &&
+    settled.length === 1 &&
     headerTool?.status === "error" &&
     isHeldForApprovalError(headerTool);
   const HeaderInline =
@@ -200,7 +218,7 @@ const ToolCallVisualizationInner: React.FC<{
     getToolChrome(headerTool?.toolName ?? null) === "card" &&
     allTerminal &&
     phase !== "error" &&
-    entries.length === 1 &&
+    settled.length === 1 &&
     !!HeaderInline;
 
   // ─── Expand state — motion is ONE-WAY, memory survives remounts ──────────
@@ -282,8 +300,8 @@ const ToolCallVisualizationInner: React.FC<{
   }, [entries]);
 
   const toolDisplayName =
-    entries.length > 1
-      ? `${entries.length} Tools`
+    settled.length > 1
+      ? `${settled.length} Tools`
       : !headerTool
         ? getToolDisplayName(null)
         : // A DB renderer's declared label is authoritative for its own tool —
@@ -341,7 +359,9 @@ const ToolCallVisualizationInner: React.FC<{
   // to update plan: <reason>" on error), not by a status icon. Per-tool labels
   // live in the registry; common widget tools have built-in fallbacks; the
   // rest fall back to the displayName as-is.
-  const phaseLabel = heldWait
+  const phaseLabel = correctedGroup
+    ? `${toolDisplayName} · corrected and retried`
+    : heldWait
     ? heldWriteHeadline(heldWait, heldTableName)
     : legacyHeld
       ? [
@@ -370,7 +390,7 @@ const ToolCallVisualizationInner: React.FC<{
   // final version. Single-entry only (a batch has no single artifact); each kind
   // needs its open handle (working document → conversationId; note → its id).
   const artifactRaw =
-    phase === "complete" && entries.length === 1 && !heldWait
+    phase === "complete" && settled.length === 1 && !heldWait
       ? getToolArtifact(headerTool)
       : null;
   const artifact =

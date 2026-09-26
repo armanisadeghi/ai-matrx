@@ -153,6 +153,35 @@ export const selectToolCallsForConversation = (conversationId: string) =>
     },
   );
 
+/**
+ * callIds of FAILED tool calls the agent corrected: a later call of the same
+ * tool, in the same user request, that did not fail. A reloaded turn splits
+ * each model iteration into its own tool group, so a refused first attempt
+ * sits in a group of its own — and without this it would still read "Couldn't
+ * ask" above the ask that went through. Stable empty set when there is none.
+ *
+ * Factory — callers must memoize the instance.
+ */
+export const selectCorrectedToolCallIds = (conversationId: string) =>
+  createSelector(selectToolCallsForConversation(conversationId), (calls): ReadonlySet<string> => {
+    let corrected: Set<string> | null = null;
+    calls.forEach((call, index) => {
+      if (call.status !== "error") return;
+      const retried = calls
+        .slice(index + 1)
+        .some(
+          (later) =>
+            later.toolName === call.toolName &&
+            later.userRequestId === call.userRequestId &&
+            later.status !== "error",
+        );
+      if (retried) (corrected ??= new Set()).add(call.callId);
+    });
+    return corrected ?? EMPTY_CALL_ID_SET;
+  });
+
+const EMPTY_CALL_ID_SET: ReadonlySet<string> = new Set();
+
 // ---------------------------------------------------------------------------
 // Timelines
 // ---------------------------------------------------------------------------
