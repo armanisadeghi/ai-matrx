@@ -38,8 +38,9 @@ import { ShareButton } from "@/features/sharing/components/ShareButton";
 />;
 ```
 
-This opens the full `ShareModal` with tabs for Users, Organizations, and Public
-access. `showStatus={false}` skips the eager public-state read. When status is
+This opens the full `ShareModal` with People and Public tabs — a share names a
+person or goes out as a public link, never to an organization (law:
+`common-docs/policies/access-ladder.md`). `showStatus={false}` skips the eager public-state read. When status is
 shown, the capability RPC names the verified enum/boolean column; a link-only
 type performs no row query.
 
@@ -270,7 +271,7 @@ When adding sharing to a feature, every item below matters. Missing any one crea
 
 - [ ] `ShareButton` or `ShareModal` available on owned resources
 - [ ] Only visible to the resource owner
-- [ ] All three tabs work: Users, Organizations, Public
+- [ ] Both tabs work: People, Public
 
 ---
 
@@ -350,7 +351,6 @@ That's it. No RPC edits, no `getTableName()`, no `ShareModal.getShareUrl()`, no 
 const {
   permissions,
   shareWithUser,
-  shareWithOrg,
   makePublic,
   revokeAccess,
   updateLevel,
@@ -394,7 +394,7 @@ const { permissions, loading } = useSharedWithMe("canvas_items");
 | `features/sharing/components/ShareButton.tsx`     | Self-contained button + modal                                         |
 | `features/sharing/components/PermissionsList.tsx` | Displays/manages current permissions                                  |
 | `features/sharing/components/PermissionBadge.tsx` | Visual permission level badges                                        |
-| `features/sharing/components/tabs/`               | Individual tab content (User, Org, Public)                            |
+| `features/sharing/components/tabs/`               | Individual tab content (People, Public)                               |
 | `features/sharing/emailService.ts`                | Email notification service                                            |
 
 ---
