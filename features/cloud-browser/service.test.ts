@@ -104,7 +104,7 @@ describe("browserActionBlockedReason", () => {
         peekSelectedOrganizationId: () => null,
         waitForOrganizationAdmission: async () => "unresolved",
       }));
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+       
       const { browserActionBlockedReason } = require("./service") as typeof import("./service");
       expect(browserActionBlockedReason()).toMatch(/Choose an organization/);
     });
@@ -116,7 +116,7 @@ describe("browserActionBlockedReason", () => {
         peekSelectedOrganizationId: () => "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
         waitForOrganizationAdmission: async () => "ready",
       }));
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+       
       const { browserActionBlockedReason } = require("./service") as typeof import("./service");
       expect(browserActionBlockedReason()).toBeNull();
     });
