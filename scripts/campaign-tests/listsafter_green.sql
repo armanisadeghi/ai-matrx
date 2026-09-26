@@ -12,6 +12,8 @@
 --   · the older table reads that still answered unmarked (get_table_row / _cell / _column,
 --     list_table_rows / _columns, udt_table_profile, udt_column_facets, the CSV export) carry
 --     moved_to for the moved table;
+--   · before the press, the readiness card says when a pick list is not copied (and offers Copy
+--     again), because the press refuses the whole switch for it;
 --   · Switch back: the list is older again, read from the older rows; a new list is older.
 --
 -- THE REAL USE CASE: admin@admin.com's Workspace. Its pick list "Countries by Continent" moves
@@ -97,6 +99,22 @@ begin
   -- before the press the live older list is older, and read from its older rows
   if platform.list_lives_in(f.lst) is distinct from 'older' then
     raise exception '1pre: a live older list does not live in the older store (%)', platform.list_lives_in(f.lst);
+  end if;
+
+  -- 1r. the readiness card says when a pick list is not copied (the press would refuse), and
+  -- offers Copy again for it; a list made after the copy is named
+  insert into workbench.udt_structured_lists (id, list_name, user_id, organization_id, created_by, visibility)
+  values ('7c1e5a2b-4d6f-4a8b-9c0d-1e2f3a4b5c6d', 'Operatory Rooms', f.admin, f.ws, f.admin, 'personal');
+  v_did := (select c from jsonb_array_elements(platform._cutover_seam_readiness('older_tables', f.ws) -> 'checks') c
+             where c ->> 'key' = 'lists_copied');
+  if v_did is null or (v_did ->> 'met')::boolean or (v_did ->> 'copy_again_clears')::int < 1
+     or v_did ->> 'detail' not like '%Operatory Rooms%' then
+    raise exception '1r: the readiness card does not say an uncopied pick list stops the switch: %', v_did;
+  end if;
+  update workbench.udt_structured_lists set deleted_at = now() where id = '7c1e5a2b-4d6f-4a8b-9c0d-1e2f3a4b5c6d';
+  if not (select (c ->> 'met')::boolean from jsonb_array_elements(platform._cutover_seam_readiness('older_tables', f.ws) -> 'checks') c
+           where c ->> 'key' = 'lists_copied') then
+    raise exception '1r2: with every live pick list copied the readiness card still says one is not';
   end if;
 
   v_did := platform._cutover_seam_apply('older_tables', f.ws, 'new', f.admin, f.press_new);
