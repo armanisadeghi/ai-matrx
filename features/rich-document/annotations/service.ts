@@ -256,7 +256,7 @@ async function findLandedComment(input: AddCommentInput): Promise<string | null>
 
 /**
  * Edit my comment as a compare-and-swap. With the RC-B11 door, the database refuses a moved
- * version (40001) and hands back the current text; until then the thread is re-read and the
+ * version (PT409, HTTP 409) and hands back the current text; until then the thread is re-read and the
  * base compared, so an edit never silently overwrites somebody else's. Returns the new version
  * when the door reports it (the realtime echo of exactly this write is then recognised by it).
  */
@@ -271,7 +271,9 @@ export async function editComment(
   if (doors && base.version != null) {
     const { data, error } = await commentSeam("cmt_edit", { p_id: id, p_body: body, p_expected_version: force ? null : base.version });
     if (error) {
-      if ((error as { code?: string }).code === "40001") {
+      // PT409 = the door's "changed since you started" (HTTP 409). Never 40001: PostgREST retries
+      // that as a serialization failure and the refusal never arrives (localhost 2026-09-26).
+      if ((error as { code?: string }).code === "PT409") {
         let current: { body?: string; version?: number } = {};
         try { current = JSON.parse((error as { details?: string }).details ?? "{}"); } catch { /* the thread re-read below still answers */ }
         throw new EditConflictError(current.body ?? "", current.version ?? null);

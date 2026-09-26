@@ -23,7 +23,8 @@ jest.mock("@/utils/auth/getUserId", () => ({ getUserId: () => "u-1" }));
 import { projectSource, rangeToSource, sourceToRanges } from "../projection";
 import { mentionedUserIds, parseDateQuery, personMention, tokenizeMentions } from "../mentions";
 import { ANCHOR_WRITES_ENABLED } from "../constants";
-import { addComment, AnchorWritesOffError } from "../service";
+import { addComment, AnchorWritesOffError, editComment } from "../service";
+import { EditConflictError } from "../errors";
 import { associationsDataSource } from "@/features/scopes/host/associationsStore";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { buildTextAnchor } from "../anchor";
@@ -127,5 +128,20 @@ describe("passage writes (RC-A5 and the RC-B11 doors applied 2026-09-26)", () =>
     const [fn, args] = (associationsDataSource.rpc as jest.Mock).mock.calls.find(([f]: [string]) => f === "cmt_add");
     expect(fn).toBe("cmt_add");
     expect(args).not.toHaveProperty("p_anchor"); // resolves on the old AND new door identity
+  });
+});
+
+describe("a stale edit is an honest conflict (PT409, never a retried 40001)", () => {
+  it("turns the door's PT409 into the current text and version", async () => {
+    const source = { token: "note", id: "n-1", title: "Maps", body: SOURCE, contentVersion: 1 };
+    (associationsDataSource.rpc as jest.Mock).mockReset();
+    (associationsDataSource.rpc as jest.Mock).mockResolvedValue({
+      data: null,
+      error: { code: "PT409", message: "cmt_edit: this comment changed since you started editing it", details: JSON.stringify({ version: 2, body: "Size shows magnitude." }) },
+    });
+    const err = await editComment(source, "c-1", "mine", { body: "old", version: 1 }, true).catch((e) => e);
+    expect(err).toBeInstanceOf(EditConflictError);
+    expect(err.currentBody).toBe("Size shows magnitude.");
+    expect(err.currentVersion).toBe(2);
   });
 });
