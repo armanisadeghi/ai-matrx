@@ -189,5 +189,76 @@ $a$)
 end
 $patch$;
 
+-- The detail rule is now part of the access kernel: has_access_for_base calls it for every
+-- detail.  Keep the fingerprint's member list honest, then record the NEW live fingerprint and
+-- member snapshot in this same transaction.  Otherwise the next policy generation safely falls
+-- back to an unbounded lane, and a later edit of the helper is invisible to the fingerprint.
+CREATE OR REPLACE FUNCTION iam.entity_read_kernel_fingerprint()
+RETURNS text
+LANGUAGE sql
+STABLE
+SET search_path TO 'pg_catalog'
+AS $function$
+  SELECT md5(string_agg(p.prosrc, '|' ORDER BY n.nspname, p.proname,
+                        pg_get_function_identity_arguments(p.oid)))
+  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE (n.nspname, p.proname) IN (
+    ('iam','has_access_for'), ('iam','has_access_for_base'),
+    ('iam','accessible_entity_ids'), ('iam','has_org_access_for'),
+    ('files','has_access_for'), ('files','is_crawl_artifact'), ('files','crawl_site_conveys'),
+    ('platform','entity_row_access_attrs'), ('platform','detail_parent_access_for'),
+    ('public','user_can_read_via_library_grant'), ('public','library_is_open'),
+    ('public','is_rulebook_curator'), ('public','is_pack_curator'),
+    ('public','_edu_can_read_via_assignment'), ('public','has_permission_for'),
+    ('public','is_org_admin_for'), ('public','user_can_read_data_store_via_grant')
+  )
+$function$;
+
+CREATE OR REPLACE FUNCTION iam.entity_read_kernel_members_live()
+RETURNS jsonb
+LANGUAGE sql
+STABLE
+SET search_path TO 'public', 'pg_catalog'
+AS $function$
+  SELECT coalesce(jsonb_object_agg(n.nspname || '.' || p.proname || '(' ||
+                                   pg_get_function_identity_arguments(p.oid) || ')', md5(p.prosrc)),
+                  '{}'::jsonb)
+  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE (n.nspname, p.proname) IN (
+    ('iam','has_access_for'), ('iam','has_access_for_base'),
+    ('iam','accessible_entity_ids'), ('iam','has_org_access_for'),
+    ('files','has_access_for'), ('files','is_crawl_artifact'), ('files','crawl_site_conveys'),
+    ('platform','entity_row_access_attrs'), ('platform','detail_parent_access_for'),
+    ('public','user_can_read_via_library_grant'), ('public','library_is_open'),
+    ('public','is_rulebook_curator'), ('public','is_pack_curator'),
+    ('public','_edu_can_read_via_assignment'), ('public','has_permission_for'),
+    ('public','is_org_admin_for'), ('public','user_can_read_data_store_via_grant')
+  )
+$function$;
+
+DO $rerecord$
+DECLARE
+  v_fp text := iam.entity_read_kernel_fingerprint();
+  v_members jsonb := iam.entity_read_kernel_members_live();
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM jsonb_object_keys(v_members) AS k
+    WHERE k LIKE 'platform.detail_parent_access_for(%'
+  ) THEN
+    RAISE EXCEPTION 'rca2h: detail_parent_access_for is not fingerprinted';
+  END IF;
+  EXECUTE format($ddl$CREATE OR REPLACE FUNCTION iam.entity_read_kernel_expected()
+RETURNS text LANGUAGE sql IMMUTABLE AS $f$ SELECT %L::text $f$$ddl$, v_fp);
+  EXECUTE format($ddl$CREATE OR REPLACE FUNCTION iam.entity_read_kernel_members_expected()
+RETURNS jsonb LANGUAGE sql IMMUTABLE AS $f$ SELECT %L::jsonb $f$$ddl$,
+                 jsonb_build_object('fingerprint', v_fp, 'members', v_members)::text);
+  IF iam.entity_read_kernel_fingerprint() IS DISTINCT FROM iam.entity_read_kernel_expected()
+     OR (iam.entity_read_kernel_members_expected()->'members') IS DISTINCT FROM iam.entity_read_kernel_members_live()
+     OR (iam.entity_read_kernel_members_expected()->>'fingerprint') IS DISTINCT FROM iam.entity_read_kernel_expected() THEN
+    RAISE EXCEPTION 'rca2h: kernel fingerprint re-record did not match the live kernel';
+  END IF;
+END
+$rerecord$;
+
 -- The table read (and so the realtime feed) asks the one rule: regenerate through the generator.
 select iam.apply_rls('platform', 'comments', 'comment', 'detail');

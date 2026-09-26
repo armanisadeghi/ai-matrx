@@ -76,8 +76,15 @@ try {
   check("3-reload-shows-the-policy-head", cellText.includes("Records Retention and Destruction Policy") && cellText.includes("Effective January 1, 2027"), cellText.slice(0, 200));
   const link = row().getByText(/Open the whole text/).first();
   const linked = await until("whole-text link", () => link.isVisible(), Number(process.env.LINK_WAIT_MS ?? 30000));
-  results.push({ name: "3b-open-the-whole-text (needs the follower on the live server)", ok: null, detail: linked.v ? "drawn" : "not drawn yet" });
-  console.log(`INFO 3b-open-the-whole-text — ${linked.v ? "drawn" : "not drawn yet"}`);
+  // The first writer may finish before the asynchronous follower stores the whole text.  The
+  // follow-up is READ_ONLY and exists specifically to prove that handoff; there, a missing link
+  // is a failure, never an informational null that lets the walk exit zero.
+  if (process.env.READ_ONLY) {
+    check("3b-open-the-whole-text (follower completed)", Boolean(linked.v), linked.v ? "drawn" : "not drawn");
+  } else {
+    results.push({ name: "3b-open-the-whole-text (awaiting follower)", ok: null, detail: linked.v ? "drawn" : "not drawn yet" });
+    console.log(`INFO 3b-open-the-whole-text — ${linked.v ? "drawn" : "not drawn yet"}`);
+  }
   if (linked.v) {
     const a = row().locator("[data-whole-value-file] a, a").filter({ hasText: /Open the whole text/ }).first();
     const href = (await a.count()) ? await a.getAttribute("href") : null;
