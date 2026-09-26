@@ -154,6 +154,8 @@ async function door(env: { url: string; key: string }, sql: string): Promise<Arr
 /** The two shapes `iam.apply_rls` emits for a walled staff arm, as `pg_get_expr` renders them. */
 const W_ADMIN = "(visibility >= 'internal'::platform.visibility) AND ( SELECT is_platform_admin() AS is_platform_admin)";
 const W_SUPER = "(visibility >= 'internal'::platform.visibility) AND is_super_admin()";
+/** The same walled arm as the generator emits it since 2026-09-26 (evaluated once per statement). */
+const W_SUPER_ONCE = "(visibility >= 'internal'::platform.visibility) AND ( SELECT is_super_admin() AS is_super_admin)";
 /**
  * The WALLED §6e system-organization super-admin arm (DD-180), as `iam.entity_read_expr` emits it
  * and `pg_get_expr` renders it. Subtracted like the other two, so the arm is checked rather than
@@ -191,7 +193,7 @@ export function unwalledArms(row: RowVisibilityRow): string[] {
       bad.push(`${p.polname}: USING does not exclude visibility='personal'`);
       continue;
     }
-    const rest = q.split(W_ADMIN).join("").split(W_SUPER).join("").split(W_SYSORG).join("");
+    const rest = q.split(W_ADMIN).join("").split(W_SUPER_ONCE).join("").split(W_SUPER).join("").split(W_SYSORG).join("");
     if (rest.includes("is_platform_admin")) bad.push(`${p.polname}: unwalled platform-admin arm`);
     else if (rest.includes("is_super_admin")) {
       bad.push(
