@@ -40,8 +40,9 @@
  *   pnpm check:retired-db-ref
  *   pnpm check:retired-db-ref --json
  */
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { spawnSync } from "node:child_process";
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
 import process from "node:process";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
@@ -101,49 +102,53 @@ type Finding = { file: string; line: number; text: string };
 
 const findings: Finding[] = [];
 
-function walk(dir: string): void {
-  let entries: string[];
+function scanFile(rel: string): void {
+  if (!isInstructional(rel)) return;
+  if (rel.split("/").some((part) => SKIP_DIRS.has(part))) return;
+  // The guard's own prose necessarily names the ref while explaining it.
+  if (rel === "scripts/check-retired-db-ref.ts") return;
+  const full = join(ROOT, rel);
+  let content: string;
   try {
-    entries = readdirSync(dir);
+    if (statSync(full).size > 2_000_000) return;
+    content = readFileSync(full, "utf8");
   } catch {
     return;
   }
-  for (const entry of entries) {
-    if (SKIP_DIRS.has(entry)) continue;
-    const full = join(dir, entry);
-    let st;
-    try {
-      st = statSync(full);
-    } catch {
-      continue;
-    }
-    if (st.isDirectory()) {
-      walk(full);
-      continue;
-    }
-    const rel = relative(ROOT, full);
-    if (!isInstructional(rel)) continue;
-    // The guard's own prose necessarily names the ref while explaining it.
-    if (rel === "scripts/check-retired-db-ref.ts") continue;
-    if (st.size > 2_000_000) continue;
+  if (!content.includes(RETIRED_REF)) return;
 
-    let content: string;
-    try {
-      content = readFileSync(full, "utf8");
-    } catch {
-      continue;
-    }
-    if (!content.includes(RETIRED_REF)) continue;
-
-    content.split("\n").forEach((line, i) => {
-      if (!line.includes(RETIRED_REF)) return;
-      if (isWarningLine(line)) return;
-      findings.push({ file: rel, line: i + 1, text: line.trim().slice(0, 160) });
-    });
-  }
+  content.split("\n").forEach((line, i) => {
+    if (!line.includes(RETIRED_REF)) return;
+    if (isWarningLine(line)) return;
+    findings.push({ file: rel, line: i + 1, text: line.trim().slice(0, 160) });
+  });
 }
 
-walk(ROOT);
+/**
+ * The files this checkout holds: git's tracked + untracked-not-ignored list, plus the
+ * machine-local agent settings git is told to ignore. Until 2026-09-25 this walked the whole
+ * working tree with a stat per entry — every worktree, cache and build folder included — and
+ * took 5m51s alone (229 s of it in the kernel), timing out at 900 s on every release run.
+ */
+function repoFiles(): string[] {
+  const listed = spawnSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard"], {
+    cwd: ROOT,
+    encoding: "utf8",
+    maxBuffer: 256 * 1024 * 1024,
+  });
+  if (listed.status !== 0) {
+    console.error(`[LOUD] check:retired-db-ref: UNMEASURED — git ls-files failed: ${listed.stderr.trim()}`);
+    exitAfterDrain(1);
+    return [];
+  }
+  const files = listed.stdout.split("\0").filter(Boolean);
+  for (const local of [".claude/settings.local.json", ".mcp.json"]) {
+    if (!files.includes(local) && existsSync(join(ROOT, local))) files.push(local);
+  }
+  return files;
+}
+
+for (const rel of repoFiles()) scanFile(rel);
 
 const asJson = process.argv.includes("--json");
 if (asJson) {
