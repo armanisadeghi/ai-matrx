@@ -398,7 +398,7 @@ export function AgentWidgetsPage({
   return (
     <div className="relative flex flex-col h-full overflow-hidden">
       {/* Header — mirrors AgentRunHeader, minus the new-run button (no conversation here) */}
-      <div className="hidden lg:flex items-center justify-between w-full gap-2 shrink-0 pr-12">
+      <div className="@container/agent-header hidden lg:flex items-center justify-between w-full gap-2 shrink-0 pr-12">
         <div className="flex items-center">
           <Link href={basePath} aria-label="Back to Agents">
             <ChevronLeftTapButton />

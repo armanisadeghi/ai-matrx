@@ -160,11 +160,7 @@ export function AgentModeController({
           {MODES.map(({ id, label, icon: Icon }) => {
             const isActive = id === mode;
             return (
-              <NavItemTooltip
-                key={id}
-                label={label}
-                contentClassName="2xl:hidden"
-              >
+              <NavItemTooltip key={id} label={label}>
                 <Link
                   href={getModeHref(id)}
                   onClick={(e) => {
@@ -181,7 +177,14 @@ export function AgentModeController({
                   )}
                 >
                   <Icon />
-                  <span className="hidden 2xl:inline">{label}</span>
+                  {/* Labels key off the width the HOST HEADER actually has (its
+                      `@container/agent-header`), never the viewport: the header
+                      right set (Choose org, Review answers, save status) takes a
+                      varying share, and a viewport breakpoint let the labelled
+                      pill overflow onto "Choose org" at 1440px (2026-09-26).
+                      Outside a named container the labels stay hidden and the
+                      tooltip carries the name. */}
+                  <span className="hidden @min-[1240px]/agent-header:inline">{label}</span>
                 </Link>
               </NavItemTooltip>
             );

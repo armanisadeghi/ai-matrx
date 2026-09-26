@@ -48,7 +48,7 @@ export function AgentHeader({
       </div>
 
       {/* ── Desktop layout (>= lg) ───────────────────────────────────────── */}
-      <div className="hidden lg:flex items-center justify-between w-full gap-0 px-0">
+      <div className="@container/agent-header hidden lg:flex items-center justify-between w-full gap-0 px-0">
         <div className="flex items-center">
           <ChevronLeftTapButton href={backHref} aria-label="Back to Agents" />
           <AgentSelectorIsland
