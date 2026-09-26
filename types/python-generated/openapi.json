@@ -1079,6 +1079,266 @@
         }
       }
     },
+    "/secure-delivery/open": {
+      "post": {
+        "tags": [
+          "Secure Delivery"
+        ],
+        "summary": "Open Secure Delivery",
+        "description": "What the page draws. Consumes nothing and sends nothing.",
+        "operationId": "open_secure_delivery_secure_delivery_open_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecretBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipientPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/secure-delivery/code": {
+      "post": {
+        "tags": [
+          "Secure Delivery"
+        ],
+        "summary": "Send Secure Delivery Code",
+        "description": "Send the code to the channel the link did not travel on.",
+        "operationId": "send_secure_delivery_code_secure_delivery_code_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecretBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipientPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/secure-delivery/view": {
+      "post": {
+        "tags": [
+          "Secure Delivery"
+        ],
+        "summary": "View Secure Delivery",
+        "description": "The code, then the payload — once. Never cached: the response is the only copy.",
+        "operationId": "view_secure_delivery_secure_delivery_view_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ViewBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipientPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/secure-delivery/options": {
+      "get": {
+        "tags": [
+          "Secure Delivery"
+        ],
+        "summary": "Secure Delivery Options",
+        "operationId": "secure_delivery_options_secure_delivery_options_get",
+        "parameters": [
+          {
+            "name": "resource_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Resource Type"
+            }
+          },
+          {
+            "name": "resource_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Resource Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OptionsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/secure-delivery": {
+      "post": {
+        "tags": [
+          "Secure Delivery"
+        ],
+        "summary": "Create Secure Delivery",
+        "operationId": "create_secure_delivery_secure_delivery_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/secure-delivery/{delivery_id}/revoke": {
+      "post": {
+        "tags": [
+          "Secure Delivery"
+        ],
+        "summary": "Revoke Secure Delivery",
+        "operationId": "revoke_secure_delivery_secure_delivery__delivery_id__revoke_post",
+        "parameters": [
+          {
+            "name": "delivery_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Delivery Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevokeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/agents/{agent_id}/warm": {
       "post": {
         "tags": [
@@ -145596,6 +145856,100 @@
         ],
         "title": "CreateArgs"
       },
+      "CreateBody": {
+        "properties": {
+          "resource_type": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Resource Type"
+          },
+          "resource_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Resource Id"
+          },
+          "recipient_email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 320
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipient Email"
+          },
+          "recipient_phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipient Phone"
+          },
+          "recipient_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipient Name"
+          },
+          "field_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Field Keys"
+          },
+          "link_channel": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "email",
+                  "sms"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link Channel"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "resource_type",
+          "resource_id"
+        ],
+        "title": "CreateBody"
+      },
       "CreateDocumentRequest": {
         "properties": {
           "connection_id": {
@@ -146115,6 +146469,65 @@
         ],
         "title": "CreateProfileRequest",
         "description": "Start a NEW cloud browser (D-28, Arman 2026-08-23: *\"they can have as many\nas they want… make it easy to start\"*).\n\nThe user names it. Nothing else is a caller decision: ownership is the acting\nuser, the organization is resolved by the platform resolver (never accepted\nfrom the client), and the new profile is NEVER the default — the single\ndefault is the one the DB's partial unique index guarantees."
+      },
+      "CreateResponse": {
+        "properties": {
+          "delivery_id": {
+            "type": "string",
+            "title": "Delivery Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "link_channel": {
+            "type": "string",
+            "enum": [
+              "email",
+              "sms"
+            ],
+            "title": "Link Channel"
+          },
+          "code_channel": {
+            "type": "string",
+            "enum": [
+              "email",
+              "sms"
+            ],
+            "title": "Code Channel"
+          },
+          "same_channel": {
+            "type": "boolean",
+            "title": "Same Channel"
+          },
+          "expires_at": {
+            "type": "string",
+            "title": "Expires At"
+          },
+          "field_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Field Keys"
+          },
+          "sentence": {
+            "type": "string",
+            "title": "Sentence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "delivery_id",
+          "status",
+          "link_channel",
+          "code_channel",
+          "same_channel",
+          "expires_at",
+          "field_keys",
+          "sentence"
+        ],
+        "title": "CreateResponse"
       },
       "CreateSealedCaseRequest": {
         "properties": {
@@ -152613,6 +153026,50 @@
         ],
         "title": "Deliverable",
         "description": "One declared deliverable of a workflow (SPEC §2.2/§2.4): an\n``output.*`` node, or a terminal node declaring an output kind, with\n``node.data.deliverable: true|false`` overriding membership either way."
+      },
+      "DeliveredField": {
+        "properties": {
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "secret": {
+            "type": "boolean",
+            "title": "Secret",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "DeliveredField"
       },
       "DemioServiceStatus": {
         "properties": {
@@ -218274,6 +218731,32 @@
         ],
         "title": "OptimizelyServiceStatus"
       },
+      "OptionsResponse": {
+        "properties": {
+          "protected_fields": {
+            "items": {
+              "$ref": "#/components/schemas/ProtectedFieldOption"
+            },
+            "type": "array",
+            "title": "Protected Fields"
+          },
+          "link_ttl_minutes": {
+            "type": "integer",
+            "title": "Link Ttl Minutes"
+          },
+          "code_ttl_minutes": {
+            "type": "integer",
+            "title": "Code Ttl Minutes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "protected_fields",
+          "link_ttl_minutes",
+          "code_ttl_minutes"
+        ],
+        "title": "OptionsResponse"
+      },
       "OracleHealthCapability": {
         "properties": {
           "provider": {
@@ -237076,6 +237559,40 @@
         ],
         "title": "ProspectQuery"
       },
+      "ProtectedFieldOption": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "available"
+        ],
+        "title": "ProtectedFieldOption"
+      },
       "Provenance": {
         "properties": {
           "origin_client": {
@@ -241661,6 +242178,239 @@
           "executions"
         ],
         "title": "RecentExecutionsResponse"
+      },
+      "RecipientPage": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "expired",
+              "locked",
+              "locked_out",
+              "opened",
+              "ready",
+              "revoked",
+              "unavailable",
+              "viewed",
+              "wrong_code"
+            ],
+            "title": "State"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "remedy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remedy"
+          },
+          "sender_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender Name"
+          },
+          "organization_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Name"
+          },
+          "code_channel": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "email",
+                  "sms"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code Channel"
+          },
+          "masked_target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Masked Target"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "viewed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Viewed At"
+          },
+          "locked_until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locked Until"
+          },
+          "code_sent": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code Sent"
+          },
+          "attempts_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attempts Left"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "record": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DeliveredField"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fields"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "title": "RecipientPage",
+        "description": "Every state the recipient page draws. ``state`` decides which fields are present."
       },
       "ReclaimStatusResult": {
         "properties": {
@@ -250762,6 +251512,29 @@
         ],
         "title": "RevisionsResponse"
       },
+      "RevokeResponse": {
+        "properties": {
+          "delivery_id": {
+            "type": "string",
+            "title": "Delivery Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "sentence": {
+            "type": "string",
+            "title": "Sentence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "delivery_id",
+          "status",
+          "sentence"
+        ],
+        "title": "RevokeResponse"
+      },
       "RichDataStoreMember": {
         "properties": {
           "source_kind": {
@@ -257144,6 +257917,22 @@
           "source_id"
         ],
         "title": "SearchSourceRef"
+      },
+      "SecretBody": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Token"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "SecretBody"
       },
       "SeededCompetitor": {
         "properties": {
@@ -296392,6 +297181,29 @@
           "duration_seconds"
         ],
         "title": "VideoRecordResponse"
+      },
+      "ViewBody": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Token"
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 16,
+            "minLength": 1,
+            "title": "Code"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "token",
+          "code"
+        ],
+        "title": "ViewBody"
       },
       "Viewport": {
         "properties": {

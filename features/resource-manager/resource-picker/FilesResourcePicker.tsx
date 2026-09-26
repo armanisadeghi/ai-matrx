@@ -152,6 +152,13 @@ interface FilesResourcePickerProps {
    */
   selectionMode?: "single" | "multiple";
   /**
+   * Controlled checked state for `selectionMode="multiple"` — the ids that are
+   * ALREADY picked outside this picker (e.g. files attached to a container).
+   * The list shows them checked on open and follows the host's truth after
+   * every toggle, so a refused write never stays looking checked.
+   */
+  selectedFileIds?: ReadonlySet<string>;
+  /**
    * Optional: restrict the picker to specific top-level folders (e.g.
    * `["Images", "Documents"]`). Ignored if empty or omitted.
    *
@@ -634,6 +641,7 @@ export function FilesResourcePicker({
   onSelect,
   onDeselect,
   selectionMode = "single",
+  selectedFileIds: controlledSelectedFileIds,
   allowedBuckets,
   initialFilter = "all",
   fillHost = false,
@@ -686,6 +694,30 @@ export function FilesResourcePicker({
   );
   const selectedFileIdsRef = useRef<Set<string>>(new Set());
   const pendingFileIdsRef = useRef<Set<string>>(new Set());
+  // Controlled selection: mirror the host's ids, keeping any in-flight toggle
+  // at its optimistic value until it settles.
+  const controlledRef = useRef(controlledSelectedFileIds);
+  useEffect(() => {
+    controlledRef.current = controlledSelectedFileIds;
+  }, [controlledSelectedFileIds]);
+  const controlledKey = controlledSelectedFileIds
+    ? [...controlledSelectedFileIds].sort().join(",")
+    : null;
+  const syncFromControlled = useCallback(() => {
+    const truth = controlledRef.current;
+    if (!truth) return;
+    const next = new Set(truth);
+    for (const id of pendingFileIdsRef.current) {
+      if (selectedFileIdsRef.current.has(id)) next.add(id);
+      else next.delete(id);
+    }
+    selectedFileIdsRef.current = next;
+    setSelectedFileIds(next);
+  }, []);
+  useEffect(() => {
+    if (controlledKey === null) return;
+    syncFromControlled();
+  }, [controlledKey, syncFromControlled]);
   const [fileFilter, setFileFilter] = useState<FileFilter>(initialFilter);
   const [fileSort, setFileSort] = useState<FileSort>("updated");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -944,6 +976,12 @@ export function FilesResourcePicker({
           const pending = new Set(pendingFileIdsRef.current);
           pending.delete(file.id);
           pendingFileIdsRef.current = pending;
+          // A controlled host reports writes by changing its ids; when a
+          // write is refused nothing changes, so fall back to its truth once
+          // the host has had time to answer.
+          if (controlledRef.current) {
+            window.setTimeout(syncFromControlled, 1500);
+          }
         });
       return;
     }

@@ -125,7 +125,8 @@ export function useCopyMandateAgent(): {
             "Copied — opening your editable version to update.",
         );
       } catch {
-        toast.info(
+        // Copied, but connecting it failed: a partial failure is a warning.
+        toast.warning(
           options.copiedOnlyMessage ??
             "Copied your editable version — connect it to this step later.",
         );

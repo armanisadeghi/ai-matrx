@@ -43,6 +43,7 @@ import type { GuardianLinkView } from "../types";
 import { GuardianConsentVerifyDialog } from "./GuardianConsentVerifyDialog";
 import { StudentAgeBandControl } from "./StudentAgeBandControl";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 function displayName(link: GuardianLinkView): string {
   return link.counterpart_name?.trim() || link.counterpart_email || "Learner";
@@ -227,7 +228,9 @@ export function FamilyDashboard() {
             <Skeleton className="h-14 rounded-lg" />
             <Skeleton className="h-14 rounded-lg" />
           </div>
-        ) : buckets.students.length === 0 ? (
+        ) : error ? (
+<ReadFailure error={error} what="the students" />
+) : buckets.students.length === 0 ? (
           <p className="rounded-lg border border-dashed border-border bg-background px-3 py-6 text-center text-sm text-muted-foreground">
             No students yet. Ask a student to add you below, or request access to
             their account.

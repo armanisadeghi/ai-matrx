@@ -185,7 +185,7 @@ export function AutomationButton({
       }
       onClick={() => {
         if (refusedReason !== null) {
-          toast.info(
+          toast.error(
             unavailableAutomationMandateLine(mandateKey, refusedReason),
           );
           return;

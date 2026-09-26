@@ -41,6 +41,7 @@ import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { toast } from "@/lib/toast";
 import { RunHistoryCard, runEditHref, runHistoryHref } from "./RunHistoryCard";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 type FilterKey = "all" | "active" | "completed" | "failed" | "draft";
 
@@ -333,7 +334,9 @@ export function RunsManageView({
                 </div>
               ))}
             </div>
-          ) : runs.length === 0 ? (
+          ) : error ? (
+<ReadFailure error={error} what="this list" />
+) : runs.length === 0 ? (
             <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-16 text-center">
               <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                 <Mic className="h-7 w-7" />

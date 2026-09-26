@@ -32,7 +32,7 @@ const EDUCATION_NAV_ITEMS = [
   },
   {
     name: "Guides",
-    href: "/education/learn",
+    href: "/education/study-guides",
     icon: BookOpen,
   },
   {

@@ -1,3 +1,4 @@
+-- retired: graveyard.system_personal_org_failures (ex iam.system_personal_org_failures, 0 rows) DROPPED 2026-09-26 by the database estate-reduction program (backup /Users/armanisadeghi/db-estate-backups/2026-09-26/graveyard.system_personal_org_failures.dump); this file creates, moves, or asserts a table that no longer exists and must never run again
 -- chair-step: DROPS only the outbound FK system_personal_org_failures_user_id_fkey on the empty iam.system_personal_org_failures and moves that table to graveyard (SET SCHEMA, reversible). No rows exist; no other object is touched.
 -- lane: access-ladder T-3
 -- lock: iam

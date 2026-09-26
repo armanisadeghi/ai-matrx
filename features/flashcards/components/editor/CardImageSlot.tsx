@@ -238,7 +238,7 @@ function FaceRow({
           result?.judgment?.reasoning ||
           result?.verdict?.reasoning ||
           "No image cleared the quality bar for this card.";
-        toast.info(`No image attached: ${why}`);
+        toast.warning(`No image attached: ${why}`);
       }
     } finally {
       setBusy(null);

@@ -66,6 +66,17 @@ export interface FilePickerWindowProps {
   pickedCount?: number;
   /** A checked file was unchecked (multi only). */
   onUnpick?: (fileId: string) => void;
+  /**
+   * Live-attach mode for association hosts: every check ATTACHES at once
+   * (through `onPick`) and every uncheck DETACHES (through `onDetach`). The
+   * files already attached (`ids`) open checked and follow the host's truth,
+   * and the footer counts what is attached with a plain "Done" — nothing is
+   * batched, so nothing claims to be waiting for a final "Attach" press.
+   */
+  attached?: {
+    ids: ReadonlySet<string>;
+    onDetach: (fileId: string, name: string) => void | Promise<void>;
+  };
   /** Header title. Default "Choose a file". */
   title?: string;
   /** Human-readable scope for the window id (debugging / tray labels). */
@@ -81,6 +92,7 @@ export function FilePickerWindow({
   multi = false,
   pickedCount = 0,
   onUnpick,
+  attached,
   title = "Choose a file",
   scopeId,
   initialFilter,
@@ -156,14 +168,37 @@ export function FilePickerWindow({
           <FilesResourcePicker
             onBack={onClose}
             onSelect={(selection) => void handleSelect(selection)}
-            onDeselect={multi ? (selection) => onUnpick?.(selection.fileId) : undefined}
-            selectionMode={multi ? "multiple" : "single"}
+            onDeselect={
+              attached
+                ? (selection) =>
+                    void attached.onDetach(
+                      selection.fileId,
+                      selection.details.filename || "File",
+                    )
+                : multi
+                  ? (selection) => onUnpick?.(selection.fileId)
+                  : undefined
+            }
+            selectionMode={attached || multi ? "multiple" : "single"}
+            selectedFileIds={attached?.ids}
             initialFilter={initialFilter}
             fillHost
             topSlot={<InlineUploadArea onSelect={handleUpload} selectionMode="single" />}
           />
         </div>
-        {multi && (
+        {attached && (
+          <div className="flex shrink-0 items-center justify-between gap-2 border-t bg-background px-3 py-2">
+            <span className="text-xs text-muted-foreground">
+              {attached.ids.size === 0
+                ? "Check files to attach them"
+                : `${attached.ids.size} file${attached.ids.size === 1 ? "" : "s"} attached`}
+            </span>
+            <Button type="button" size="sm" className="h-7 text-xs" onClick={onClose}>
+              Done
+            </Button>
+          </div>
+        )}
+        {multi && !attached && (
           <div className="flex shrink-0 items-center justify-between gap-2 border-t bg-background px-3 py-2">
             <span className="text-xs text-muted-foreground">
               {pickedCount === 0

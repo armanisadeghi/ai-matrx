@@ -20,6 +20,13 @@
  *      Since the Dialog became a non-blocking window, such a confirmation no
  *      longer blocks — found live on the data table's "Delete row?" on
  *      2026-09-23. A confirmation is `ConfirmDialog` / `AlertDialog`.
+ *   4. a `<Sheet …>` / `<SheetContent …>` from `@ai-matrx/design-system` or
+ *      `@/components/ui/sheet` — the side drawer is focus-trapping and dims
+ *      the page, exactly what shipped the blocking "Add study content" drawer
+ *      on /education/classes (2026-09-26): its picker opened the Add-files
+ *      window, which could not take a keystroke. A picker or form lives in
+ *      `MatrxDynamicPanelHost` (docked, `aria-modal="false"`, or
+ *      `presentation="floating"`). `<Sheet modal={false}>` is fine.
  *
  * Every allowlist entry carries a reason; an entry that no longer matches
  * anything fails too, so the list only shrinks.
@@ -35,7 +42,11 @@ const ROOT = process.cwd();
 const SCAN_DIRS = ["app", "components", "features", "lib", "hooks", "providers"];
 const ALLOWLIST_PATH = "scripts/blocking-dialogs-allowlist.json";
 
-type Allow = { file: string; kind: "forced-modal" | "direct-radix" | "confirmation-on-dialog"; reason: string };
+type Allow = {
+  file: string;
+  kind: "forced-modal" | "direct-radix" | "confirmation-on-dialog" | "blocking-sheet";
+  reason: string;
+};
 type Finding = { file: string; line: number; kind: Allow["kind"]; text: string };
 
 /** Opening tags of a Dialog root, possibly spanning lines. */
@@ -47,8 +58,35 @@ const DIRECT_RADIX = /from\s+["']@radix-ui\/react-dialog["']/;
 const CONFIRM_TITLE =
   /<DialogTitle\b[^>]*>[^<]*\b(Delete|Remove|Discard|Are you sure|Permanently|Revoke|Overwrite|Destroy|Erase)\b/;
 
+/** Named imports (multi-line aware) from the two Sheet sources. */
+const SHEET_IMPORT =
+  /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["'](?:@ai-matrx\/design-system|@\/components\/ui\/sheet)["']/gs;
+/** Local names bound to `Sheet` / `SheetContent` by those imports. */
+function sheetLocalNames(source: string): string[] {
+  const names: string[] = [];
+  for (const m of source.matchAll(SHEET_IMPORT)) {
+    for (const raw of m[1].split(",")) {
+      const spec = raw.trim().replace(/^type\s+/, "");
+      const alias = spec.match(/^(Sheet|SheetContent)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/);
+      if (alias) names.push(alias[2] ?? alias[1]);
+    }
+  }
+  return names;
+}
+
 export function findViolations(file: string, source: string): Finding[] {
   const findings: Finding[] = [];
+  const sheetNames = sheetLocalNames(source);
+  if (sheetNames.length) {
+    const open = new RegExp(`<(${sheetNames.map((n) => n.replace(/\$/g, "\\$")).join("|")})(\\s[^>]*?)?>`, "gs");
+    for (const match of source.matchAll(open)) {
+      const attrs = match[2] ?? "";
+      if (/(^|\s)modal\s*=\s*\{\s*false\s*\}/.test(attrs)) continue;
+      const line = source.slice(0, match.index).split("\n").length;
+      findings.push({ file, line, kind: "blocking-sheet", text: match[0].replace(/\s+/g, " ").slice(0, 120) });
+      break; // one finding per file — the allowlist is per file
+    }
+  }
   for (const match of source.matchAll(DIALOG_OPEN_TAG)) {
     const attrs = match[2] ?? "";
     if (FORCED_MODAL.test(attrs)) {
@@ -113,6 +151,41 @@ function selfTest(): number {
       src: `<AlertDialog open><AlertDialogContent><AlertDialogTitle>Delete this row?</AlertDialogTitle></AlertDialogContent></AlertDialog>`,
       expect: 0,
     },
+    {
+      name: "design-system Sheet is blocking",
+      src: `import {\n  Sheet,\n  SheetContent,\n  SheetHeader,\n} from "@ai-matrx/design-system";\n<Sheet open={o} onOpenChange={s}><SheetContent side="right">x</SheetContent></Sheet>`,
+      expect: 1,
+    },
+    {
+      name: "ui/sheet SheetContent is blocking",
+      src: `import { SheetContent } from "@/components/ui/sheet";\n<SheetContent>x</SheetContent>`,
+      expect: 1,
+    },
+    {
+      name: "aliased Sheet is still blocking",
+      src: `import { Sheet as Drawerish } from "@ai-matrx/design-system";\n<Drawerish open>x</Drawerish>`,
+      expect: 1,
+    },
+    {
+      name: "Sheet modal={false} is fine",
+      src: `import { Sheet, SheetContent } from "@ai-matrx/design-system";\n<Sheet open modal={false}>x</Sheet>`,
+      expect: 0,
+    },
+    {
+      name: "SheetHeader alone is not a host",
+      src: `import { SheetHeader } from "@ai-matrx/design-system";\n<SheetHeader>x</SheetHeader>`,
+      expect: 0,
+    },
+    {
+      name: "a Sheet-named component from elsewhere is fine",
+      src: `import { Sheet } from "./my-sheet";\n<Sheet open>x</Sheet>`,
+      expect: 0,
+    },
+    {
+      name: "the docked panel host is fine",
+      src: `import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";\n<MatrxDynamicPanelHost open>x</MatrxDynamicPanelHost>`,
+      expect: 0,
+    },
   ];
   let failed = 0;
   for (const c of cases) {
@@ -149,7 +222,9 @@ function main(): number {
           ? "forces a BLOCKING dialog"
           : f.kind === "direct-radix"
             ? "builds a dialog straight on Radix"
-            : "is a CONFIRMATION built on the non-blocking Dialog — use ConfirmDialog / AlertDialog"
+            : f.kind === "blocking-sheet"
+              ? "hosts content in a BLOCKING Sheet — use MatrxDynamicPanelHost (docked or floating)"
+              : "is a CONFIRMATION built on the non-blocking Dialog — use ConfirmDialog / AlertDialog"
       } — ${f.text}`,
     );
   }
@@ -157,7 +232,8 @@ function main(): number {
   if (offending.length || stale.length) {
     console.error(
       `\ncheck:blocking-dialogs FAILED. A desktop dialog must not block the page (register ARE-008): drop \`modal\`, ` +
-        `use ConfirmDialog for a yes/no confirmation, or build on @ai-matrx/design-system Dialog. ` +
+        `use ConfirmDialog for a yes/no confirmation, build on @ai-matrx/design-system Dialog, ` +
+        `or move a Sheet's content into MatrxDynamicPanelHost. ` +
         `A genuine exception goes in ${ALLOWLIST_PATH} with its reason.`,
     );
     return 1;

@@ -24,6 +24,7 @@ import {
   Package,
 } from "lucide-react";
 import { kitHref } from "@/features/education/kits/kitService";
+import { educationEntityStudyHref } from "@/features/education/data/entityRoutes";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -96,6 +97,12 @@ export function KitBoard({
       t.status === "running" || (t.status === "success" && t.stillGenerating),
   ).length;
   const failed = kit.targets.filter((t) => t.status === "error").length;
+  const studyNotes = kit.targets.find(
+    (target) => target.targetKind === "notes" && target.status === "success" && target.artifactId && !target.stillGenerating,
+  );
+  const studyNotesHref = studyNotes?.artifactId
+    ? educationEntityStudyHref("note", studyNotes.artifactId) ?? studyNotes.href
+    : null;
 
   // Keep ticking while ANY target is still producing — the fan-out can be
   // "done" while a streamed target (audio) is minutes from finishing, and a
@@ -138,6 +145,14 @@ export function KitBoard({
             <span className="tabular-nums text-xs text-muted-foreground">
               {formatElapsed(elapsed)}
             </span>
+          )}
+          {studyNotesHref && (
+            <Button asChild size="sm" variant="outline" className="gap-1.5">
+              <Link href={studyNotesHref}>
+                <FileText className="h-4 w-4" />
+                Read study guide
+              </Link>
+            </Button>
           )}
           {/* THE KIT'S OWN DOOR. Without this the kit dies with the tab: the
               artifacts persist but the THING the learner made — one subject,
@@ -381,8 +396,11 @@ function TargetRow({
   );
 
   if (t.status === "success" && t.href && !t.stillGenerating) {
+    const href = t.targetKind === "notes" && t.artifactId
+      ? educationEntityStudyHref("note", t.artifactId) ?? t.href
+      : t.href;
     return (
-      <Link href={t.href} className="block">
+      <Link href={href} className="block">
         {body}
       </Link>
     );

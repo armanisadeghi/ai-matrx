@@ -65,6 +65,7 @@ import {
 } from "@/features/server-logs/log-rules";
 import { replaceAppHref } from "@/lib/deployment/navigate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 // ─── App registry ─────────────────────────────────────────────────────────────
 
@@ -1469,7 +1470,9 @@ export default function CoolifyLogViewer({
                     message="Loading server logs…"
                   />
                 </div>
-              ) : !rawLogs ? (
+              ) : error ? (
+<ReadFailure error={error} what="this list" />
+) : !rawLogs ? (
                 <div className="px-4 py-2 text-muted-foreground text-xs font-mono">
                   No logs. Select an app and click Refresh.
                 </div>

@@ -58,6 +58,7 @@ import {
   type AgentShortcutsPanelKpis,
 } from "@/features/agent-shortcuts/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface AgentShortcutsPanelProps {
   agentId: string;
@@ -362,7 +363,9 @@ export function AgentShortcutsPanel({
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading shortcuts…
             </Card>
-          ) : shortcuts.length === 0 ? (
+          ) : error ? (
+<ReadFailure error={error} what="this list" />
+) : shortcuts.length === 0 ? (
             <EmptyState
               agentId={agentId}
               basePath={basePath}

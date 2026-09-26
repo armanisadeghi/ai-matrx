@@ -1,6 +1,7 @@
 // Sidebar.tsx — Server component for desktop sidebar
 // Three sections: Brand (top), Nav (middle, scrollable), Footer (bottom)
-// Content-push expansion driven by CSS :has(#shell-sidebar-toggle:checked)
+// Content-push expansion driven by the #shell-sidebar-toggle checkbox through
+// sibling combinators and .shell-root[data-sidebar-expanded] (never :has — shell.css)
 //
 // Brand section has two layers:
 //   Default: collapse toggle (PanelLeft icon)

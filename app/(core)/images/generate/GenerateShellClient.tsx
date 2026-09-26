@@ -90,7 +90,8 @@ export default function GenerateShellClient() {
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Generate failed";
-      toast.info(
+      // A failed generate is an error (with the Alchemy Menu), never an info note (RC-B12 r11).
+      toast.error(
         /404|not.*found|not.*implement/i.test(msg)
           ? "Image generation is temporarily unavailable. Please try again later."
           : msg,

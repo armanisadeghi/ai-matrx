@@ -1,4 +1,65 @@
 {
-  "description": "Screens allowed to force a BLOCKING dialog or build one straight on Radix. Every entry needs a reason; a stale entry fails the guard. Register: common-docs/projects/ai-reachable-everywhere/REGISTER.md (ARE-008).",
-  "entries": []
+  "description": "Screens allowed to force a BLOCKING dialog, build one straight on Radix, or host content in a BLOCKING Sheet. Every entry needs a reason; a stale entry fails the guard. Register: common-docs/projects/ai-reachable-everywhere/REGISTER.md (ARE-008).",
+  "entries": [
+    {
+      "file": "components/rich-editor/RichEditorImpl.tsx",
+      "kind": "blocking-sheet",
+      "reason": "pre-existing, pending conversion to MatrxDynamicPanelHost"
+    },
+    {
+      "file": "components/ui/sidebar.tsx",
+      "kind": "blocking-sheet",
+      "reason": "phone-only presentation of the shell sidebar (rendered only when useIsMobile() is true) \u2014 a drawer is allowed as the phone presentation, never the desktop host"
+    },
+    {
+      "file": "features/canvas/core/CanvasSideSheetImpl.tsx",
+      "kind": "blocking-sheet",
+      "reason": "pre-existing, pending conversion to MatrxDynamicPanelHost"
+    },
+    {
+      "file": "features/marketing/content-plan/components/AgentPayloadSheet.tsx",
+      "kind": "blocking-sheet",
+      "reason": "pre-existing, pending conversion to MatrxDynamicPanelHost"
+    },
+    {
+      "file": "features/marketing/content-plan/components/PlanDriftSheet.tsx",
+      "kind": "blocking-sheet",
+      "reason": "pre-existing, pending conversion to MatrxDynamicPanelHost"
+    },
+    {
+      "file": "features/marketing/content-plan/components/PlanRealityBar.tsx",
+      "kind": "blocking-sheet",
+      "reason": "pre-existing, pending conversion to MatrxDynamicPanelHost"
+    },
+    {
+      "file": "features/marketing/discovery/youtube/YouTubeSearchHistory.tsx",
+      "kind": "blocking-sheet",
+      "reason": "pre-existing, pending conversion to MatrxDynamicPanelHost"
+    },
+    {
+      "file": "features/marketing/seo/topical-map/panel/sections/AssociationsSection.tsx",
+      "kind": "blocking-sheet",
+      "reason": "pre-existing, pending conversion to MatrxDynamicPanelHost"
+    },
+    {
+      "file": "features/rag/components/library/LibraryTrashSheet.tsx",
+      "kind": "blocking-sheet",
+      "reason": "pre-existing, pending conversion to MatrxDynamicPanelHost"
+    },
+    {
+      "file": "features/rich-document/annotations/LinkRecordSheet.tsx",
+      "kind": "blocking-sheet",
+      "reason": "pre-existing, pending conversion to MatrxDynamicPanelHost"
+    },
+    {
+      "file": "features/war-room/components/room/RoomResourcesButton.tsx",
+      "kind": "blocking-sheet",
+      "reason": "pre-existing, pending conversion to MatrxDynamicPanelHost"
+    },
+    {
+      "file": "features/war-room/components/thread/ThreadResourcesSheet.tsx",
+      "kind": "blocking-sheet",
+      "reason": "pre-existing, pending conversion to MatrxDynamicPanelHost"
+    }
+  ]
 }

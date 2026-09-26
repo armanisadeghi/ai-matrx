@@ -121,7 +121,11 @@ export default async function AppLayout({
 
   return (
     <Providers initialReduxState={initialReduxState}>
-      <div className="shell-root" data-pathname={pathname}>
+      <div
+        className="shell-root"
+        data-pathname={pathname}
+        {...(sidebarExpanded ? { "data-sidebar-expanded": "" } : {})}
+      >
         <input
           type="checkbox"
           id="shell-sidebar-toggle"

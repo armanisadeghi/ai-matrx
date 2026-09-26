@@ -486,7 +486,8 @@ export function SandboxVersionHealthCard({
         if (failure.kind === "busy_deferred") {
           finishOperation(operationId, generation);
           setMigrationNotice(null);
-          toast.info(failure.message);
+          // Deferred, not failed: a warning, not an info note that reads like success.
+          toast.warning(failure.message);
           return;
         }
         const status = parseSandboxMigrationStatus(payload, {

@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * ShellSidebarCookieSync — persistence island for the CSS-driven sidebar.
+ * ShellSidebarCookieSync — persistence island for the CSS-driven sidebar, and
+ * the mirror of its checkbox onto `.shell-root[data-sidebar-expanded]`.
  *
  * The sidebar expand/collapse is a pure-CSS checkbox (`#shell-sidebar-toggle`)
  * with no React state, so there's nothing for Redux/sync to hook into. This
@@ -24,7 +25,16 @@ export default function ShellSidebarCookieSync() {
     ) as HTMLInputElement | null;
     if (!toggle) return undefined;
 
+    // The shell's own grid reads the state from .shell-root[data-sidebar-expanded]
+    // (styles/shell.css § 3: a :has() on .shell-root re-checked the whole app on
+    // every DOM insertion). The server renders it from the same cookie; this
+    // keeps it true on every toggle.
+    const root = toggle.closest(".shell-root");
+    const mirror = () => root?.toggleAttribute("data-sidebar-expanded", toggle.checked);
+    mirror();
+
     const write = () => {
+      mirror();
       document.cookie =
         `${SHELL_SIDEBAR_COOKIE}=${toggle.checked ? "1" : "0"}` +
         `; path=/; max-age=${SHELL_SIDEBAR_COOKIE_MAX_AGE}; samesite=lax`;

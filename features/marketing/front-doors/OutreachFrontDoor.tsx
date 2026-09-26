@@ -73,6 +73,7 @@ import {
   frontDoorSitePath,
   useFrontDoorSite,
 } from "./FrontDoorSiteSelect";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const RECENT_WIN_LIMIT = 5;
 
@@ -286,7 +287,9 @@ export function OutreachFrontDoor({
         </header>
         {loading ? (
           <Skeleton className="h-12 w-full" />
-        ) : summary.wins.length === 0 ? (
+        ) : error ? (
+<ReadFailure error={error} what="the confirmed placements" />
+) : summary.wins.length === 0 ? (
           <p className="text-xs text-muted-foreground">
             No confirmed placements yet. Wins appear here on their own — a
             campaign pitches, our backlink crawl later sees the link, and the

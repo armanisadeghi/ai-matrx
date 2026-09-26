@@ -446,7 +446,7 @@ export function EditModeShell({
   const handleHeaderSave = useCallback(() => {
     nextSaveModeRef.current = "version";
     if (!triggerFilerobotSave()) {
-      toast.info(
+      toast.error(
         "Open the editor's Save panel to commit the edit (couldn't find the internal save button).",
       );
     }

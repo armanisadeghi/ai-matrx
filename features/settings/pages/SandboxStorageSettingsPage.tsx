@@ -47,6 +47,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
 import type { SandboxTier, UserPersistenceInfo } from "@/types/sandbox";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const TIER_DESCRIPTIONS: Record<SandboxTier, string> = {
   ec2: "Each EC2 sandbox keeps its own retained home directory. Manage that sandbox individually.",
@@ -171,7 +172,9 @@ export default function SandboxStoragePage() {
             />
           </CardContent>
         </Card>
-      ) : tierEntries.length === 0 ? (
+      ) : persistence.error ? (
+<ReadFailure error={persistence.error} what="the persistent volumes" />
+) : tierEntries.length === 0 ? (
         <Card>
           <CardContent className="p-6 text-sm text-muted-foreground">
             No persistent volumes found yet. Create a sandbox under{" "}

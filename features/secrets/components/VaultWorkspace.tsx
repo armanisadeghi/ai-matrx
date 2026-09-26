@@ -91,6 +91,7 @@ import { VaultBackupDialog } from "./VaultBackupDialog";
 import { VaultItemDetail } from "./VaultItemDetail";
 import { orgNameDistinguisher } from "@/features/scopes/utils/formatOrgDisplayName";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export interface VaultWorkspaceProps {
   principal: VaultPrincipal;
@@ -752,7 +753,7 @@ export function VaultWorkspace({
               </div>
             </div>
 
-            {vault.error && (
+            {vault.error && filtered.length > 0 && (
               <div className="m-3 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 {vault.error}
@@ -769,6 +770,9 @@ export function VaultWorkspace({
             <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
               {vault.loading ? (
                 <VaultWorkspaceListSkeleton />
+              ) : vault.error && filtered.length === 0 ? (
+                // A failed read is never "Your vault is empty" (RC-B12 round 11).
+                <ReadFailure error={vault.error} what="your credentials" />
               ) : favoritesOnly && vaultItemState.status !== "ready" ? (
                 <VaultItemStateUnavailable
                   error={vaultItemState.error}
@@ -1142,7 +1146,7 @@ export function VaultWorkspace({
         )}
       </div>
 
-      {vault.error && (
+      {vault.error && filtered.length > 0 && (
         <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           {vault.error}
@@ -1159,6 +1163,9 @@ export function VaultWorkspace({
       {/* List */}
       {vault.loading ? (
         <VaultListSkeleton />
+      ) : vault.error && filtered.length === 0 ? (
+        // A failed read is never "Your vault is empty" (RC-B12 round 11).
+        <ReadFailure error={vault.error} what="your credentials" />
       ) : favoritesOnly && vaultItemState.status !== "ready" ? (
         <VaultItemStateUnavailable
           error={vaultItemState.error}

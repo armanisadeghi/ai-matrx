@@ -107,6 +107,8 @@ export const errorRenderCarriesAlchemy = {
     },
     schema: [],
     messages: {
+      softToast:
+        "A failure announced with toast.info / toast.message — no error styling and no Alchemy Menu. Use toast.error(…) (it carries the menu); a partial success is toast.warning.",
       doubledStop:
         "A message value is followed by its own full stop here — messages usually end in one, so the screen shows \"try again.. \". Wrap the value: {asClause(value)} from @/lib/text/asClause.",
       uncarried:
@@ -132,6 +134,9 @@ export const errorRenderCarriesAlchemy = {
         } finally {
           census.setCarryingComponentsResolver(null);
         }
+        for (const line of census.findSoftFailureToasts(source, rel)) {
+          context.report({ loc: { start: { line, column: 0 }, end: { line, column: 0 } }, messageId: "softToast" });
+        }
         for (const line of census.findDoubledStops(source, rel)) {
           context.report({
             loc: { start: { line, column: 0 }, end: { line, column: 0 } },
@@ -144,6 +149,40 @@ export const errorRenderCarriesAlchemy = {
             messageId: "uncarried",
             data: { what: `<${hit.tag}>`, reason: hit.reason },
           });
+        }
+      },
+    };
+  },
+};
+
+/**
+ * matrx/empty-state-needs-read-gate (RC-B12 round 11) — the sibling rule: an
+ * empty view ("No tasks found", <VaultEmptyState/>) under a loading check with
+ * no failure check says "nothing here" while the read failed. Gate it:
+ * <ReadGate status={readStatusOf(read)} …> (components/read-state/ReadGate.tsx),
+ * or a failure branch before it (`isError ? <ReadFailure …/> : …`).
+ * Warn severity: the shrink-only burn-down lives in
+ * components/errors/__tests__/empty-state-gate.baseline.json.
+ */
+export const emptyStateNeedsReadGate = {
+  meta: {
+    type: "problem",
+    docs: { description: "An empty view must be unreachable while its read is loading or failed." },
+    schema: [],
+    messages: {
+      ungated:
+        "This empty view hangs off a read (a loading check is above it) but nothing above it checks whether the read FAILED — a failed read would say \"nothing here\". Wrap it in <ReadGate status={readStatusOf(read)} …> from @/components/read-state/ReadGate, or add a failure branch first (isError ? <ReadFailure error={error} what=\"…\" /> : …).",
+    },
+  },
+  create(context) {
+    const filename = context.filename ?? context.getFilename();
+    const rel = path.relative(ROOT, filename).split(path.sep).join("/");
+    if (rel.startsWith("..") || !census.isCensusScannable(rel)) return {};
+    return {
+      "Program:exit"() {
+        const source = (context.sourceCode ?? context.getSourceCode()).text;
+        for (const line of census.findUngatedEmptyStates(source, rel)) {
+          context.report({ loc: { start: { line, column: 0 }, end: { line, column: 0 } }, messageId: "ungated" });
         }
       },
     };

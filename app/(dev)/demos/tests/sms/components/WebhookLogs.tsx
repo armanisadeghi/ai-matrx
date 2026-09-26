@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, RefreshCw, AlertCircle, Webhook, CheckCircle2, XCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface WebhookLog {
   id: string;
@@ -103,7 +104,9 @@ export default function WebhookLogs() {
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : logs.length === 0 ? (
+          ) : error ? (
+<ReadFailure error={error} what="this list" />
+) : logs.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Webhook className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p>No webhook logs yet</p>

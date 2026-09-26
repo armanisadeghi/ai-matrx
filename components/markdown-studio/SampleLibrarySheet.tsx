@@ -37,6 +37,7 @@ import type { MarkdownSample } from "@/components/admin/markdown-tester/samples-
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 // Note: the trigger lives in the route header (a `HeaderAction`), so this
 // component is fully controlled from outside — no internal open state or
@@ -190,7 +191,9 @@ export function SampleLibrarySheet({
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading samples…
             </div>
-          ) : filtered.length === 0 ? (
+          ) : error ? (
+<ReadFailure error={error} what="this list" />
+) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 py-12 px-6 text-center">
               <div className="rounded-full bg-muted/40 p-3">
                 <Inbox className="h-5 w-5 text-muted-foreground" />

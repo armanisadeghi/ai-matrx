@@ -1,3 +1,4 @@
+-- retired: graveyard.system_personal_org_failures (ex iam.system_personal_org_failures, 0 rows) DROPPED 2026-09-26 by the database estate-reduction program (backup /Users/armanisadeghi/db-estate-backups/2026-09-26/graveyard.system_personal_org_failures.dump); this file creates, moves, or asserts a table that no longer exists and must never run again
 -- Inverse of access_ladder_t3_retire_system_personal_org_failures.sql
 
 delete from platform.deprecated_relations where old_ref = 'iam.system_personal_org_failures';

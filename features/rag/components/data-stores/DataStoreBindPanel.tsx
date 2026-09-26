@@ -29,6 +29,7 @@ import {
   useDocumentDataStores,
 } from "@/features/rag/hooks/useDataStores";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface DataStoreBindPanelProps {
   processedDocumentId: string;
@@ -140,7 +141,9 @@ export function DataStoreBindPanel({
           <Loader2 className="w-3 h-3 animate-spin" />
           Loading data stores…
         </div>
-      ) : stores.length === 0 ? (
+      ) : error ? (
+<ReadFailure error={error} what="the data stores" />
+) : stores.length === 0 ? (
         <div className="px-3 py-3 border border-dashed border-border rounded-md bg-muted/20 text-[11px] text-muted-foreground leading-snug">
           No data stores yet. Create one to bind this document — agent retrieval
           (<code>knowledge_search</code>) requires an explicit store id.

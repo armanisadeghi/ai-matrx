@@ -25,6 +25,7 @@ import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { getTableMetadata, getTablePage, listTablesEverywhere } from "@/features/data-tables/service";
 import { locateTable } from "@/features/data-tables/data-source/locate-table";
 import { isServiceFailure } from "@/features/data-tables/types";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 type PaginatedRow = { data: Record<string, unknown> };
 
@@ -217,7 +218,9 @@ export default function TableDataSource({
           <div className="flex items-center justify-center py-4">
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
           </div>
-        ) : (
+        ) : error ? (
+<ReadFailure error={error} what="this list" />
+) : (
           <>
             <Input
               type="text"

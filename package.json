@@ -618,6 +618,8 @@
     "dev:stop": "bash scripts/dev-cleanup.sh ports",
     "dev:nuke": "bash scripts/dev-cleanup.sh all",
     "dev-login": "bash scripts/dev-login.sh",
+    "check:page-wide-has": "node scripts/check-page-wide-has.mjs",
+    "check:page-wide-has:self-test": "node scripts/check-page-wide-has.mjs --self-test",
     "preview:start": "bash scripts/agent-dev-server.sh start",
     "preview:stop": "bash scripts/agent-dev-server.sh stop",
     "preview:status": "bash scripts/agent-dev-server.sh status",

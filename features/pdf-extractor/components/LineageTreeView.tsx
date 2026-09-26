@@ -38,6 +38,7 @@ import {
 } from "../hooks/useDocumentLineage";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface LineageTreeViewProps {
   doc: PdfDocument;
@@ -86,7 +87,9 @@ export function LineageTreeView({ doc }: LineageTreeViewProps) {
       >
         {loading && !lineage ? (
           <SkeletonRow />
-        ) : (
+        ) : error ? (
+<ReadFailure error={error} what="the re-processing runs" />
+) : (
           <>
             {(lineage?.processingAncestors ?? []).map((n) => (
               <ProcessingRow key={n.id} node={n} variant="ancestor" />
@@ -140,7 +143,9 @@ export function LineageTreeView({ doc }: LineageTreeViewProps) {
       >
         {loading && !lineage ? (
           <SkeletonRow />
-        ) : doc.sourceKind !== "cld_file" ? (
+        ) : error ? (
+<ReadFailure error={error} what="the binary lineage chain to walk" />
+) : doc.sourceKind !== "cld_file" ? (
           <div className="px-3 py-3 border border-dashed border-border rounded-md bg-muted/20 space-y-1">
             <p className="text-[11px] text-muted-foreground leading-snug">
               This document was not ingested via the Cloud Files pipeline

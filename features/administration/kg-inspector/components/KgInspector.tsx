@@ -74,6 +74,7 @@ import {
   type KgEdgeRow,
 } from "../service/kgInspectorService";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const PAGE_SIZE = 50;
 const FETCH_MAX = 200;
@@ -672,7 +673,9 @@ function MentionsTab({ entity }: { entity: SelectedEntity | null }) {
             <Skeleton key={i} className="h-20 w-full" />
           ))}
         </div>
-      ) : rows.length === 0 ? (
+      ) : error ? (
+<ReadFailure error={error} what="this list" />
+) : rows.length === 0 ? (
         <div className="rounded-md border border-border bg-card p-8 text-center text-sm text-muted-foreground">
           No mentions recorded for this entity yet.
         </div>

@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import { RuleTester } from "eslint";
 import tseslint from "typescript-eslint";
-import { errorRenderCarriesAlchemy as rule } from "./error-render-carries-alchemy.mjs";
+import { emptyStateNeedsReadGate, errorRenderCarriesAlchemy as rule } from "./error-render-carries-alchemy.mjs";
 
 RuleTester.describe = describe;
 RuleTester.it = it;
@@ -66,6 +66,23 @@ tester.run("error-render-carries-alchemy", rule, {
       filename: inFeatures,
       code: `export function A({ error }: any) { return <span className="text-muted-foreground" title={error}>Failed</span>; }`,
       errors: uncarried,
+    },
+  ],
+});
+
+tester.run("empty-state-needs-read-gate", emptyStateNeedsReadGate, {
+  valid: [
+    {
+      filename: inFeatures,
+      code: `export function A({ tasks, isLoading, isError, error }: any) { return isLoading ? <Spinner /> : isError ? <ReadFailure error={error} /> : tasks.length === 0 ? <p>No tasks found.</p> : <List />; }`,
+    },
+  ],
+  invalid: [
+    {
+      // Quick Tasks before RC-B12 round 11.
+      filename: inFeatures,
+      code: `export function A({ tasks, isLoading }: any) { return isLoading ? <Spinner /> : tasks.length === 0 ? <p>No tasks found.</p> : <List />; }`,
+      errors: [{ messageId: "ungated" }],
     },
   ],
 });

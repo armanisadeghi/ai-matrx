@@ -25897,10 +25897,6 @@ export type Database = {
         Args: { p_file_id: string }
         Returns: undefined
       }
-      source_captured_at: {
-        Args: { p: Database["docproc"]["Tables"]["processed_documents"]["Row"] }
-        Returns: string
-      }
       source_list_facts: {
         Args: { p_ids: string[] }
         Returns: {
@@ -60122,6 +60118,10 @@ export type Database = {
         }
         Returns: Record<string, unknown>
       }
+      _reference_gap_scans_build: {
+        Args: { p_min_ratio?: number }
+        Returns: number
+      }
       _reference_record_states: {
         Args: {
           p_kind: string
@@ -60277,6 +60277,10 @@ export type Database = {
       sanitize_shortcut_segment: { Args: { p_seg: string }; Returns: string }
       shortcut_slug: { Args: { p_text: string }; Returns: string }
       shortcut_treatment_config: { Args: { p_row: Json }; Returns: Json }
+      split_reference_runs_at_gaps_batch: {
+        Args: { p_after: string; p_identities?: number }
+        Returns: Record<string, unknown>
+      }
       submit_scan_report: { Args: { p_report: Json }; Returns: Json }
       validate_treatment_config: {
         Args: { p_config: Json; p_tier: string }

@@ -912,3 +912,176 @@ export function findDoubledStops(source: string, fileName = "file.tsx"): number[
   visit(sf);
   return lines;
 }
+
+// ─── An empty state is an answer only after a read that succeeded (RC-B12 r11) ──
+//
+// "Your vault is empty" under the vault's own error, "No tasks found" when the
+// read failed: a list's empty view must be unreachable while its read is
+// loading or failed. The one way to say it is <ReadGate> (lib/read-state);
+// a hand-written branch passes only when a condition above the empty view
+// names the failure or a successful read.
+
+/** Copy that claims there is nothing. */
+const EMPTY_COPY =
+  /\bno [a-z][a-z -]{0,40}? (?:yet|found|here)\b|\b(?:is|are) empty\b|\bnothing (?:here|yet|to show)\b|\bnone yet\b|^\s*no [a-z][a-z -]{0,30}\.?\s*$/i;
+/** A component that exists to say "nothing". */
+const EMPTY_TAG = /^(?:[A-Z]\w*Empty(?:State|View|Pane|Placeholder)?|EmptyState|Empty)$/;
+/** A condition that knows the read's outcome. */
+const READ_GATE =
+  /[eE]rror|[fF]ail|isSuccess|succeeded|\bloaded\b|isLoaded|hasLoaded|(?<![!=])===?\s*["'`](?:ready|success|succeeded|loaded|done|error|failed)["'`]|\.ready\b|readStatus|read\.status/;
+/** A component that reads something (so its empty view can lie). */
+const HAS_READ = /\b(?:isError|isLoading|loading|isFetching|error|loadError|readError|status)\b/;
+
+function enclosingFunction(node: ts.Node): ts.FunctionLikeDeclaration | null {
+  let cur: ts.Node | undefined = node.parent;
+  while (cur) {
+    if (ts.isFunctionDeclaration(cur) || ts.isArrowFunction(cur) || ts.isFunctionExpression(cur) || ts.isMethodDeclaration(cur)) {
+      // The component, not a .map((row) => …) row renderer.
+      const parent = cur.parent;
+      const isCallback = parent && ts.isCallExpression(parent) && parent.arguments.includes(cur as ts.Expression);
+      if (!isCallback) return cur as ts.FunctionLikeDeclaration;
+    }
+    cur = cur.parent;
+  }
+  return null;
+}
+
+/** A condition about the read being in flight — the component knows this view hangs off a read. */
+const LOADING_GATE = /\b(?:is)?[lL]oading\b|isFetching|isPending|["'`]loading["'`]|\.loading\b|[lL]oading[A-Z]\w*/;
+
+/** Does a condition above the empty view (or an early return before it) know about the read? */
+function knowsItIsARead(node: ts.Node, fn: ts.FunctionLikeDeclaration): boolean {
+  let child: ts.Node = node;
+  let cur: ts.Node | undefined = node.parent;
+  while (cur && cur !== fn) {
+    if (ts.isConditionalExpression(cur) && child !== cur.condition && LOADING_GATE.test(cur.condition.getText())) return true;
+    if (ts.isBinaryExpression(cur) && child === cur.right && LOADING_GATE.test(cur.left.getText())) return true;
+    if (ts.isIfStatement(cur) && child !== cur.expression && LOADING_GATE.test(cur.expression.getText())) return true;
+    child = cur;
+    cur = cur.parent;
+  }
+  const body = fn.body;
+  if (!body || !ts.isBlock(body)) return false;
+  const at = node.getStart();
+  return body.statements.some(
+    (st) => st.getEnd() <= at && ts.isIfStatement(st) && LOADING_GATE.test(st.expression.getText()) && /\breturn\b/.test(st.thenStatement.getText()),
+  );
+}
+
+function gatedByAncestors(node: ts.Node, fn: ts.Node): boolean {
+  let child: ts.Node = node;
+  let cur: ts.Node | undefined = node.parent;
+  while (cur && cur !== fn) {
+    if (ts.isJsxElement(cur) && tagName(cur) === "ReadGate") return true;
+    if (ts.isJsxAttribute(cur) && cur.parent?.parent && (ts.isJsxOpeningElement(cur.parent.parent) || ts.isJsxSelfClosingElement(cur.parent.parent)) && cur.parent.parent.tagName.getText() === "ReadGate") return true;
+    if (ts.isConditionalExpression(cur) && child !== cur.condition && READ_GATE.test(cur.condition.getText())) return true;
+    if (ts.isBinaryExpression(cur) && child === cur.right && READ_GATE.test(cur.left.getText())) return true;
+    if (ts.isIfStatement(cur) && child !== cur.expression && READ_GATE.test(cur.expression.getText())) return true;
+    child = cur;
+    cur = cur.parent;
+  }
+  return false;
+}
+
+/** `if (error) return …` / `if (status !== "ready") return …` before the empty view. */
+function gatedByEarlyReturn(node: ts.Node, fn: ts.FunctionLikeDeclaration): boolean {
+  const body = fn.body;
+  if (!body || !ts.isBlock(body)) return false;
+  const at = node.getStart();
+  return body.statements.some(
+    (st) =>
+      st.getEnd() <= at &&
+      ts.isIfStatement(st) &&
+      READ_GATE.test(st.expression.getText()) &&
+      /\breturn\b/.test(st.thenStatement.getText()),
+  );
+}
+
+export function findUngatedEmptyStates(source: string, fileName = "file.tsx"): number[] {
+  const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const lines = new Set<number>();
+  const consider = (node: ts.Node) => {
+    const fn = enclosingFunction(node);
+    if (!fn || !fn.body) return;
+    if (!HAS_READ.test(fn.body.getText())) return;
+    // Only a view that hangs off a read: something above it waits for the
+    // read ("loading ? … : items.length === 0 ? <Empty/>") — and then must also
+    // know whether that read failed.
+    if (!knowsItIsARead(node, fn as ts.FunctionLikeDeclaration)) return;
+    if (gatedByAncestors(node, fn) || gatedByEarlyReturn(node, fn as ts.FunctionLikeDeclaration)) return;
+    lines.add(sf.getLineAndCharacterOfPosition(node.getStart()).line + 1);
+  };
+  const visit = (n: ts.Node) => {
+    if ((ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n)) && EMPTY_TAG.test(tagName(n)) && tagName(n) !== "ReadGate") {
+      consider(n);
+    } else if (ts.isJsxText(n) && EMPTY_COPY.test(decodeJsxEntities(n.getText()).trim())) {
+      consider(n);
+    } else if (
+      (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) &&
+      n.parent &&
+      (ts.isJsxExpression(n.parent) || ts.isConditionalExpression(n.parent)) &&
+      EMPTY_COPY.test(n.text.trim())
+    ) {
+      consider(n);
+    }
+    n.forEachChild(visit);
+  };
+  visit(sf);
+  return [...lines].sort((a, b) => a - b);
+}
+
+/**
+ * A failure announced as an info toast (RC-B12 round 11): GenerateShellClient
+ * caught a failed generate and said it with `toast.info(msg)` — no error
+ * styling, no Alchemy Menu (the menu rides `toast.error`). Returns the lines of
+ * every `toast.info(…)` / `toast.message(…)` that is a failure: called inside a
+ * `catch`, or whose words are a failure phrase, or whose value is an error.
+ */
+export function findSoftFailureToasts(source: string, fileName = "file.tsx"): number[] {
+  const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const lines: number[] = [];
+  const inCatch = (n: ts.Node): boolean => {
+    let cur: ts.Node | undefined = n.parent;
+    while (cur) {
+      if (ts.isCatchClause(cur)) return true;
+      if (ts.isFunctionLike(cur)) {
+        // `.catch((err) => toast.info(…))` is a catch too.
+        const call = cur.parent;
+        if (call && ts.isCallExpression(call) && ts.isPropertyAccessExpression(call.expression) && call.expression.name.text === "catch") return true;
+        return false;
+      }
+      cur = cur.parent;
+    }
+    return false;
+  };
+  const visit = (n: ts.Node) => {
+    if (
+      ts.isCallExpression(n) &&
+      /^toast\.(?:info|message)$/.test(n.expression.getText()) &&
+      n.arguments.length > 0
+    ) {
+      const arg = n.arguments[0];
+      const leaves: ts.Expression[] = [];
+      renderedLeaves(arg, leaves);
+      const words = leaves
+        .map((leaf) => (ts.isStringLiteral(leaf) || ts.isNoSubstitutionTemplateLiteral(leaf) ? leaf.text : ts.isTemplateExpression(leaf) ? leaf.getText() : ""))
+        .join(" ");
+      // A cancellation is information, not a failure.
+      const cancelled = /\bcancel|\babort/i.test(words);
+      // In a catch, a value (not fixed words) is the caught failure's text.
+      const valueFromCatch =
+        inCatch(n) &&
+        leaves.some((leaf) => !ts.isStringLiteral(leaf) && !ts.isNoSubstitutionTemplateLiteral(leaf));
+      const failure =
+        !cancelled &&
+        (valueFromCatch ||
+          FAILURE_WORDS.test(words) ||
+          /\bfailed\b|\bfailure\b|\berror\b/i.test(words) ||
+          leaves.some((leaf) => isErrorLeaf(leaf, TOOLTIP_ERROR_NAME)));
+      if (failure) lines.push(sf.getLineAndCharacterOfPosition(n.getStart()).line + 1);
+    }
+    n.forEachChild(visit);
+  };
+  visit(sf);
+  return lines;
+}

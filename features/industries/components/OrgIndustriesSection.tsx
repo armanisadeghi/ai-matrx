@@ -44,6 +44,7 @@ import { useUserRole } from "@/features/organizations/hooks";
 import { useIndustries, useOrgIndustries } from "@/features/industries/hooks";
 import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
 import { EntitlementChip } from "@/features/rag/components/library-catalog/EntitlementChip";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export function OrgIndustriesSection({ orgId }: { orgId: string }) {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
@@ -214,7 +215,9 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
           </div>
-        ) : catalog.items.length === 0 ? (
+        ) : catalog.error ? (
+<ReadFailure error={catalog.error} what="this list" />
+) : catalog.items.length === 0 ? (
           <div className="text-xs text-muted-foreground">
             No shared libraries are discoverable yet.
           </div>

@@ -150,9 +150,9 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     runningVerb: "Building your practice test",
   },
   notes: {
-    label: "Note",
+    label: "Study guide",
     unit: null,
-    verb: "Open",
+    verb: "Read",
     icon: NotebookPen,
     fg: "text-teal-600 dark:text-teal-400",
     chip: "bg-teal-500/10",

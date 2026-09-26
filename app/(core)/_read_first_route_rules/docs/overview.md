@@ -265,7 +265,7 @@ Key design decisions:
    - `#shell-panel-toggle` — secondary panel sidebar (desktop)
    - `#shell-panel-mobile` — secondary panel sidebar (mobile drawer)
 
-6. **Route-level controls** via sentinel elements: `<span class="shell-show-dock">` (mobile dock, opt-in) and `<span class="shell-hide-sidebar">` — routes drop invisible zero-size spans; shell detects them with `:has()` and adjusts layout globally.
+6. **Route-level controls** by pathname: `.shell-root` carries `data-pathname` (server-rendered, kept current by `NavActiveSync`), so a route that hides the sidebar or shows the mobile dock is listed by pathname in `styles/shell.css` § 17 (the admin launchpad hides the sidebar; no route shows the dock today). The old sentinel spans detected with `.shell-root:has(…)` / `body:has(…)` are gone: a `:has()` on the page root re-checks the whole app on every DOM insertion (590 ms per insertion on a 1 MB document, 2026-09-26). Guard: `pnpm check:page-wide-has`.
 
 7. **Glass tokens** remain the desktop/dock chrome source of truth in `app/globals.css`; the mobile navigation drawer deliberately uses `bg-background` with no backdrop filter.
 

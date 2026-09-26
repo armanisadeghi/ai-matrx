@@ -81,6 +81,7 @@ import {
   TITLE_LIMITS,
 } from "@/features/marketing/seo/serp/metrics";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface PageEditorProps {
   siteId: string;
@@ -1307,7 +1308,9 @@ export default function PageEditor({
                         <Loader2 className="h-4 w-4 animate-spin" />
                         <span className="text-sm">Loading versions…</span>
                       </div>
-                    ) : versions.versions.length === 0 ? (
+                    ) : versions.error ? (
+<ReadFailure error={versions.error} what="the history for this page" />
+) : versions.versions.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-8">
                         No history for this page yet.
                       </p>

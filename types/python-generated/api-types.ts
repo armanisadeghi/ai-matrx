@@ -691,6 +691,117 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/secure-delivery/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Open Secure Delivery
+         * @description What the page draws. Consumes nothing and sends nothing.
+         */
+        post: operations["open_secure_delivery_secure_delivery_open_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/secure-delivery/code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send Secure Delivery Code
+         * @description Send the code to the channel the link did not travel on.
+         */
+        post: operations["send_secure_delivery_code_secure_delivery_code_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/secure-delivery/view": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * View Secure Delivery
+         * @description The code, then the payload — once. Never cached: the response is the only copy.
+         */
+        post: operations["view_secure_delivery_secure_delivery_view_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/secure-delivery/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Secure Delivery Options */
+        get: operations["secure_delivery_options_secure_delivery_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/secure-delivery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Secure Delivery */
+        post: operations["create_secure_delivery_secure_delivery_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/secure-delivery/{delivery_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke Secure Delivery */
+        post: operations["revoke_secure_delivery_secure_delivery__delivery_id__revoke_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/agents/{agent_id}/warm": {
         parameters: {
             query?: never;
@@ -63417,6 +63528,25 @@ export interface components {
             /** Content */
             content?: string | null;
         };
+        /** CreateBody */
+        CreateBody: {
+            /** Resource Type */
+            resource_type: string;
+            /** Resource Id */
+            resource_id: string;
+            /** Recipient Email */
+            recipient_email?: string | null;
+            /** Recipient Phone */
+            recipient_phone?: string | null;
+            /** Recipient Name */
+            recipient_name?: string | null;
+            /** Field Keys */
+            field_keys?: string[];
+            /** Link Channel */
+            link_channel?: ("email" | "sms") | null;
+            /** Note */
+            note?: string | null;
+        };
         /** CreateDocumentRequest */
         CreateDocumentRequest: {
             /** Connection Id */
@@ -63604,6 +63734,31 @@ export interface components {
         CreateProfileRequest: {
             /** Display Name */
             display_name: string;
+        };
+        /** CreateResponse */
+        CreateResponse: {
+            /** Delivery Id */
+            delivery_id: string;
+            /** Status */
+            status: string;
+            /**
+             * Link Channel
+             * @enum {string}
+             */
+            link_channel: "email" | "sms";
+            /**
+             * Code Channel
+             * @enum {string}
+             */
+            code_channel: "email" | "sms";
+            /** Same Channel */
+            same_channel: boolean;
+            /** Expires At */
+            expires_at: string;
+            /** Field Keys */
+            field_keys: string[];
+            /** Sentence */
+            sentence: string;
         };
         /**
          * CreateSealedCaseRequest
@@ -66244,6 +66399,20 @@ export interface components {
             is_primary?: boolean;
         } & {
             [key: string]: unknown;
+        };
+        /** DeliveredField */
+        DeliveredField: {
+            /** Key */
+            key?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Value */
+            value?: string | null;
+            /**
+             * Secret
+             * @default false
+             */
+            secret?: boolean;
         };
         /** DemioServiceStatus */
         DemioServiceStatus: {
@@ -95940,6 +96109,15 @@ export interface components {
              */
             status_page?: "https://status.optimizely.com";
         };
+        /** OptionsResponse */
+        OptionsResponse: {
+            /** Protected Fields */
+            protected_fields: components["schemas"]["ProtectedFieldOption"][];
+            /** Link Ttl Minutes */
+            link_ttl_minutes: number;
+            /** Code Ttl Minutes */
+            code_ttl_minutes: number;
+        };
         /**
          * OracleHealthCapability
          * @description Safe projection of the open sandbox CapabilityStatement.
@@ -104554,6 +104732,17 @@ export interface components {
             /** Seed Keyword */
             seed_keyword: string;
         };
+        /** ProtectedFieldOption */
+        ProtectedFieldOption: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Available */
+            available: boolean;
+            /** Reason */
+            reason?: string | null;
+        };
         /**
          * Provenance
          * @description Who obtained this, how, and when.
@@ -106618,6 +106807,51 @@ export interface components {
             count: number;
             /** Executions */
             executions: components["schemas"]["ExecutionTreeNode"][];
+        };
+        /**
+         * RecipientPage
+         * @description Every state the recipient page draws. ``state`` decides which fields are present.
+         */
+        RecipientPage: {
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "expired" | "locked" | "locked_out" | "opened" | "ready" | "revoked" | "unavailable" | "viewed" | "wrong_code";
+            /** Message */
+            message?: string | null;
+            /** Remedy */
+            remedy?: string | null;
+            /** Sender Name */
+            sender_name?: string | null;
+            /** Organization Name */
+            organization_name?: string | null;
+            /** Code Channel */
+            code_channel?: ("email" | "sms") | null;
+            /** Masked Target */
+            masked_target?: string | null;
+            /** Expires At */
+            expires_at?: string | null;
+            /** Viewed At */
+            viewed_at?: string | null;
+            /** Locked Until */
+            locked_until?: string | null;
+            /** Code Sent */
+            code_sent?: boolean | null;
+            /** Attempts Left */
+            attempts_left?: number | null;
+            /** Label */
+            label?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Record */
+            record?: {
+                [key: string]: string | number | boolean | string[] | null;
+            } | null;
+            /** Fields */
+            fields?: components["schemas"]["DeliveredField"][] | null;
+            /** Sent At */
+            sent_at?: string | null;
         };
         /**
          * ReclaimStatusResult
@@ -110249,6 +110483,15 @@ export interface components {
             /** Truncated */
             truncated: boolean;
         };
+        /** RevokeResponse */
+        RevokeResponse: {
+            /** Delivery Id */
+            delivery_id: string;
+            /** Status */
+            status: string;
+            /** Sentence */
+            sentence: string;
+        };
         /** RichDataStoreMember */
         RichDataStoreMember: {
             /** Source Kind */
@@ -113258,6 +113501,11 @@ export interface components {
             source_kind: string;
             /** Source Id */
             source_id: string;
+        };
+        /** SecretBody */
+        SecretBody: {
+            /** Token */
+            token: string;
         };
         /**
          * SeededCompetitor
@@ -130419,6 +130667,13 @@ export interface components {
             /** Duration Seconds */
             duration_seconds: number | null;
         };
+        /** ViewBody */
+        ViewBody: {
+            /** Token */
+            token: string;
+            /** Code */
+            code: string;
+        };
         /** Viewport */
         Viewport: {
             /**
@@ -137703,6 +137958,201 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    open_secure_delivery_secure_delivery_open_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SecretBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipientPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_secure_delivery_code_secure_delivery_code_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SecretBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipientPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    view_secure_delivery_secure_delivery_view_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ViewBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipientPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    secure_delivery_options_secure_delivery_options_get: {
+        parameters: {
+            query: {
+                resource_type: string;
+                resource_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OptionsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_secure_delivery_secure_delivery_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_secure_delivery_secure_delivery__delivery_id__revoke_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                delivery_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevokeResponse"];
                 };
             };
             /** @description Validation Error */

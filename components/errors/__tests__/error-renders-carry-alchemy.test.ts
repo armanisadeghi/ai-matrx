@@ -24,6 +24,8 @@ import { buildCarryingResolver } from "./error-census-carriers";
 import {
   findDoubleMenus,
   findDoubledStops,
+  findUngatedEmptyStates,
+  findSoftFailureToasts,
   findOrphanMenus,
   carriersFromFacts,
   componentFacts,
@@ -343,6 +345,69 @@ describe("round-10 probes (RC-B12 verify): the verifier's missed phrases", () =>
     "The service is busy — try again later.",
   ])("counts: %s", (sentence) => {
     expect(count(`<p>${sentence}</p>`)).toBe(1);
+  });
+});
+
+describe("an empty view is an answer only after a read that succeeded (RC-B12 round 11)", () => {
+  const ungated = (body: string) => findUngatedEmptyStates(`export function C(p: any) { ${body} }`).length;
+  it("self-test: an empty view under a loading check with no failure check is refused", () => {
+    // Quick Tasks before the fix: the failed read said "No tasks found".
+    expect(ungated("const { tasks, isLoading } = p; return isLoading ? <Spinner /> : tasks.length === 0 ? <p>No tasks found.</p> : <List />;")).toBe(1);
+    // The Vault before the fix: the error banner above, then "Your vault is empty" below it.
+    expect(ungated("const vault = p.vault; return <>{vault.error && <Banner />}{vault.loading ? <Skeleton /> : items.length === 0 ? <VaultEmptyState /> : <List />}</>;")).toBe(1);
+    expect(ungated("const { tasks, isLoading, isError } = p; return isLoading ? <Spinner /> : isError ? <ReadFailure error /> : tasks.length === 0 ? <p>No tasks found.</p> : <List />;")).toBe(0);
+    expect(ungated("const { tasks, isLoading, error } = p; if (error) return <ReadFailure error={error} />; return isLoading ? <Spinner /> : tasks.length === 0 ? <p>No tasks yet</p> : <List />;")).toBe(0);
+    expect(ungated("const q = p.q; return <ReadGate status={readStatusOf(q)} isEmpty={!q.rows.length} empty={<p>No rows yet</p>}><List /></ReadGate>;")).toBe(0);
+    // Not a read-backed view: a search with no matches.
+    expect(ungated("return p.matches.length === 0 ? <p>No matches found</p> : <List />;")).toBe(0);
+  });
+
+  /**
+   * THE BURN-DOWN. Every read-backed empty view that is not gated on the
+   * read's outcome, per file, at the start of round 11. Shrink-only: a file
+   * may not gain one, a new file may not introduce one, a fixed file lowers
+   * its entry. The lint rule flags each one in the editor.
+   */
+  it("no file gained an ungated empty view, and the burn-down only shrinks", () => {
+    const baseline = JSON.parse(
+      fs.readFileSync(path.join(__dirname, "empty-state-gate.baseline.json"), "utf8"),
+    ) as Record<string, number>;
+    const files: string[] = [];
+    for (const dir of SCANNED_DIRS) walk(path.join(REPO_ROOT, dir), files);
+    const found: Record<string, number> = {};
+    for (const file of files) {
+      const rel = path.relative(REPO_ROOT, file).split(path.sep).join("/");
+      if (!isScannable(rel)) continue;
+      const n = findUngatedEmptyStates(fs.readFileSync(file, "utf8"), rel).length;
+      if (n > 0) found[rel] = n;
+    }
+    const grew = Object.entries(found).filter(([rel, n]) => n > (baseline[rel] ?? 0));
+    const shrank = Object.entries(baseline).filter(([rel, n]) => (found[rel] ?? 0) < n);
+    if (process.env.ERROR_CENSUS_PRINT === "1") console.log("UNGATED_EMPTY " + JSON.stringify({ grew, shrank }));
+    expect(grew).toEqual([]);
+    expect(shrank).toEqual([]);
+  });
+});
+
+describe("a failure is never an info toast (RC-B12 round 11)", () => {
+  const soft = (body: string) => findSoftFailureToasts(`export async function f(p: any) { ${body} }`).length;
+  it("self-test: the GenerateShellClient shape counts; a cancellation and plain info do not", () => {
+    expect(soft('try { await p.run(); } catch (err) { const msg = err instanceof Error ? err.message : "Generate failed"; toast.info(msg); }')).toBe(1);
+    expect(soft('toast.info("Upload failed — try again");')).toBe(1);
+    expect(soft('try { await p.run(); } catch { toast.info("Authorization cancelled — nothing changed."); }')).toBe(0);
+    expect(soft('toast.info("Copied to your clipboard");')).toBe(0);
+    expect(soft('try { await p.run(); } catch (err) { toast.error(String(err)); }')).toBe(0);
+  });
+  it("no file announces a failure with toast.info / toast.message", () => {
+    const files: string[] = [];
+    for (const dir of [...SCANNED_DIRS, "hooks", "providers"]) walk(path.join(REPO_ROOT, dir), files);
+    const found: string[] = [];
+    for (const file of files) {
+      const rel = path.relative(REPO_ROOT, file).split(path.sep).join("/");
+      if (!/\.(tsx?|mts)$/.test(rel) || /(__tests__|\.test\.|\.spec\.)/.test(rel)) continue;
+      for (const line of findSoftFailureToasts(fs.readFileSync(file, "utf8"), rel)) found.push(`${rel}:${line}`);
+    }
+    expect(found).toEqual([]);
   });
 });
 

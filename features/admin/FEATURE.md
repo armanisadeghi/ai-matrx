@@ -161,7 +161,7 @@ No database tables, API endpoints, or Redux state are owned by this feature.
 
 **Primitives reused**
 
-- Components: the existing `RouteMenuSlot`, `MobileRouteMenuSlot`, AppShell nav classes and `shell-hide-sidebar` sentinel, shadcn dropdown primitives, and `IconResolver`.
+- Components: the existing `RouteMenuSlot`, `MobileRouteMenuSlot`, AppShell nav classes and the shell's launchpad pathname rule (styles/shell.css § 17; the sentinel span was retired 2026-09-26), shadcn dropdown primitives, and `IconResolver`.
 - Utilities: existing filesystem route discovery, `matchesSearch`, and native anchor new-tab behavior.
 - State: the existing shell menu state; no parallel navigation state or Redux slice was introduced.
 

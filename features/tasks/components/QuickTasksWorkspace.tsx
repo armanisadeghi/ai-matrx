@@ -54,7 +54,12 @@ import {
   selectScopeSelectionsContext,
 } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
-import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import {
+  OrganizationContextNotice,
+  OrganizationRequiredNotice,
+} from "@/features/organizations/components/OrganizationRequiredNotice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 function normalizeProjectIdForCreate(projectId: string | null): string | null {
   if (!projectId || projectId === UNASSIGNED_PROJECT_ID) return null;
@@ -100,7 +105,7 @@ function useQuickTasksList() {
   // open — selectFilteredTasks derives snooze expiry / date windows from it,
   // and only /tasks mounts the tick otherwise (D129).
   useNowMinuteTick();
-  const { isLoading, isSuccess, isError } = useEnsureHierarchyLoaded();
+  const { isLoading, isSuccess, isError, error } = useEnsureHierarchyLoaded();
   const selectedOrgId = useAppSelector(selectQuickTasksSelectedOrgId);
   const showAllProjects = useAppSelector(selectShowAllProjects);
   const activeProject = useAppSelector(selectActiveProject);
@@ -117,6 +122,7 @@ function useQuickTasksList() {
     isLoading,
     isSuccess,
     isError,
+    error,
     showAllProjects,
     activeProject,
   };
@@ -181,7 +187,7 @@ export function QuickTasksSidebar() {
   const selectedProjectId = useAppSelector(selectActiveProject);
   const selectedTaskId = useAppSelector(selectQuickTasksSelectedTaskId);
   const searchQuery = useAppSelector(selectQuickTasksSearchQuery);
-  const { tasks, isLoading, showAllProjects } = useQuickTasksList();
+  const { tasks, isLoading, isError, error, showAllProjects } = useQuickTasksList();
 
   const tasksToDisplay = useMemo(
     () => filterQuickTasksBySearch(tasks, searchQuery),
@@ -230,6 +236,9 @@ export function QuickTasksSidebar() {
             <Loader2 className="h-5 w-5 animate-spin opacity-50" />
             <p>Loading tasks...</p>
           </div>
+        ) : isError && tasks.length === 0 ? (
+          // A failed read is never "No tasks found" (RC-B12 round 11).
+          <ReadFailure error={error ?? true} what="your tasks" />
         ) : tasksToDisplay.length === 0 ? (
           <div className="p-4 text-center text-xs text-muted-foreground flex flex-col items-center gap-2 mt-4">
             <Inbox className="h-6 w-6 opacity-20" />
@@ -290,6 +299,7 @@ export function QuickTasksMain({ surfaceDraftRef }: QuickTasksMainProps = {}) {
   const appOrgId = useAppSelector(selectOrganizationId);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
   const organizationId = quickTasksOrgId ?? appOrgId;
+  const orgGate = useOrganizationRequired();
 
   const selectedTask = useMemo(() => {
     if (!selectedTaskId) return null;
@@ -398,10 +408,17 @@ export function QuickTasksMain({ surfaceDraftRef }: QuickTasksMainProps = {}) {
   // No organization selected → say so with the picker attached instead of
   // offering a quick-add box whose write would be refused. The cascade in the
   // sidebar remains, so the person can also pick there.
+  // The organization read FAILED is not "no organization selected": say we
+  // could not check (the dashboard's notice, with Retry) instead of offering a
+  // picker that has nothing to pick from (RC-B12 round 11).
   if (!selectedTask && !organizationId) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center h-full bg-card/50">
-        <OrganizationRequiredNotice what="Tasks" />
+        {orgGate.organizationState === "unavailable" || orgGate.organizationState === "resolving" ? (
+          <OrganizationContextNotice state={orgGate.organizationState} what="Tasks" onRetry={orgGate.retry} />
+        ) : (
+          <OrganizationRequiredNotice what="Tasks" />
+        )}
       </div>
     );
   }

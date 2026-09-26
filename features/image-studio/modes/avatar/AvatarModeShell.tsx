@@ -116,7 +116,7 @@ export function AvatarModeShell({
       if (msg.includes("404")) {
         void announceComingSoon("image-studio.smart-crop");
       } else {
-        toast.info(msg);
+        toast.error(msg);
       }
     } finally {
       setSmartCropping(false);

@@ -64,6 +64,7 @@ const ROUTES: Record<string, EducationEntityRoute> = {
     label: "Note",
     Icon: NotebookPen,
     href: (id) => `/education/notes/${id}`,
+    studyHref: (id) => `/education/study-guides/${id}`,
   },
   file: {
     group: "Source materials",

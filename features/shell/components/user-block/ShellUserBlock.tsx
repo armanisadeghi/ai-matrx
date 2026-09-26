@@ -5,7 +5,7 @@
 // click-out backdrop and the menu panel. It is a sibling of the sidebar, not a
 // child of it, for three reasons:
 //   1. `/chat`, the launchpads and the settings route hide or reshape the
-//      sidebar (`.shell-hide-sidebar`, `[data-settings-route]`); the person
+//      sidebar (the launchpad's pathname rule, `[data-settings-route]`); the person
 //      must still be able to reach their menu there.
 //   2. The canvas pane and MatrxDynamicPanel cover the header's top-right
 //      corner — the reason the avatar used to be copied three times

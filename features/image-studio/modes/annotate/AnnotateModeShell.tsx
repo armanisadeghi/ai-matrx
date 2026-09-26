@@ -159,7 +159,7 @@ export function AnnotateModeShell({
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Face detect failed";
-      toast.info(
+      toast.error(
         /404|not.*implement/i.test(msg)
           ? "Face detection ships next wave."
           : msg,

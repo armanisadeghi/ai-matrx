@@ -14,12 +14,14 @@ import {
   CalendarClock,
   FileSearch,
   Flag,
+  NotebookPen,
   Route,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresentation";
+import { educationEntityStudyHref } from "@/features/education/data/entityRoutes";
 import type { GeneratedArtifact } from "@/features/education/convert/lineage";
 import type { TargetKind } from "@/features/education/convert/types";
 import {
@@ -94,6 +96,9 @@ function unitCount(kind: TargetKind, count: number | null): string | null {
 }
 
 function artifactActionHref(artifact: GeneratedArtifact): string {
+  if (artifact.targetKind === "notes") {
+    return educationEntityStudyHref("note", artifact.artifactId) ?? artifact.href;
+  }
   return artifact.targetKind === "deck"
     ? `${artifact.href}/study`
     : artifact.href;
@@ -380,12 +385,21 @@ export function KitHub({
   const challengeStats = challenge
     ? stats[kitArtifactKey(challenge)]
     : undefined;
+  const studyNotes = ordered.find((artifact) => artifact.targetKind === "notes");
 
   return (
     <>
       <EducationToolHeader title={kit.title} />
       <main className="mx-auto w-full max-w-6xl space-y-7 px-4 pb-10">
         <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+          {studyNotes && (
+            <Button asChild variant="outline" className="min-h-11 gap-1.5 sm:min-h-10">
+              <Link href={artifactActionHref(studyNotes)}>
+                <NotebookPen className="h-4 w-4" />
+                Study guide
+              </Link>
+            </Button>
+          )}
           {materialHref && (
             <Button
               asChild

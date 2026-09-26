@@ -46,6 +46,7 @@ import { safeVaultLoginUrl } from "../../utils";
 import { VaultCreateDialog } from "../VaultCreateDialog";
 import { AuthenticatorCode } from "./AuthenticatorCode";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 /** `totp_label` holds the URI's raw `Issuer:account` path. Show the account
  *  alone when the issuer is already the card's title — nobody wants to read
@@ -292,7 +293,9 @@ export function AuthenticatorWorkspace() {
             <div className="sm:rounded-b-xl sm:border-x sm:border-b sm:bg-card">
               <AuthenticatorListSkeleton />
             </div>
-          ) : entries.length === 0 ? (
+          ) : error ? (
+<ReadFailure error={error} what="this list" />
+) : entries.length === 0 ? (
             <div className="px-5 py-14 text-center sm:rounded-b-xl sm:border-x sm:border-b sm:bg-card">
               <p className="font-medium text-foreground">No codes yet</p>
               <Button

@@ -59,6 +59,7 @@ import { KEYWORD_MEANING_SURFACE } from "@/features/approvals/kinds/seo/keyword-
 import { GuidelinesDraftButton } from "./GuidelinesDraft";
 import { GUIDELINES_STALE_AFTER_DAYS } from "./GuidelinesGapPrompt";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 /** After this long without an edit the document is called out as possibly
  *  stale — "we keep these things up to date" is half the ruling. ONE line,
@@ -287,7 +288,9 @@ export function KwGuidelinesPanel({
             <>
               <Loader2 className="h-3 w-3 animate-spin" /> Loading…
             </>
-          ) : provenance ? (
+          ) : stored.error ? (
+<ReadFailure error={stored.error} what="this list" />
+) : provenance ? (
             <>
               <Clock className="h-3 w-3" /> {provenance}
             </>

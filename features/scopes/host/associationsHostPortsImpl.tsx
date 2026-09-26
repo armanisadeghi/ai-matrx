@@ -101,10 +101,21 @@ export function FileAssociationPickerImpl(props: AssociationPickerProps) {
         );
       }}
       onPick={async (selection) => {
+        // A check on an unattached file attaches; the bridge owns failures.
+        if (props.attachedIds.has(selection.fileId)) return;
         await bridge.toggle({
           id: selection.fileId,
           name: selection.details.filename || "File",
         });
+      }}
+      // The window shows what is already attached, checked, and an uncheck
+      // detaches — before this the window never showed attached state.
+      attached={{
+        ids: props.attachedIds,
+        onDetach: async (fileId, name) => {
+          if (!props.attachedIds.has(fileId)) return;
+          await bridge.toggle({ id: fileId, name });
+        },
       }}
     />
   );

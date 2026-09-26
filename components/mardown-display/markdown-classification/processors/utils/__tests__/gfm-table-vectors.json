@@ -642,6 +642,28 @@
       ]
     },
     {
+      "name": "a footnote definition under a row ends the table",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\n| Bay | Count |\n| --- | --- |\n| A1 | 12 |\n[^1]: counted Monday\n| A2 | 9 |\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "table",
+          "| Bay | Count |\n| --- | --- |\n| A1 | 12 |"
+        ],
+        [
+          "text",
+          "[^1]: counted Monday"
+        ],
+        [
+          "text",
+          "| A2 | 9 |\n\nOmar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
       "name": "a custom XML container keeps its block",
       "text": "Here is tonight's handover for the Harbor warehouse.\n\n<shift_note>\nBay B3 re-scan.\n</shift_note>\n\nOmar signs off once bay B3 is re-scanned.",
       "blocks": [
@@ -938,6 +960,28 @@
     },
     {
       "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "[^1]: counted Monday",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 3
+    },
+    {
+      "lines": [
+        "| Bay | Status |",
+        "| --- | --- |",
+        "| B3 | re-scan |",
+        "[1]: https://harbor.example/bays",
+        "Omar signs off."
+      ],
+      "start": 0,
+      "end": 5
+    },
+    {
+      "lines": [
         "- item",
         "",
         "    | a | b |",
@@ -1147,6 +1191,119 @@
     {
       "lines": [
         "-",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 1,
+      "opens": true
+    },
+    {
+      "lines": [
+        "<details>",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 1,
+      "opens": false
+    },
+    {
+      "lines": [
+        "<div>",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 1,
+      "opens": false
+    },
+    {
+      "lines": [
+        "<span>",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 1,
+      "opens": false
+    },
+    {
+      "lines": [
+        "text <b>B3</b> first",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 1,
+      "opens": true
+    },
+    {
+      "lines": [
+        "<!-- shift note -->",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 1,
+      "opens": true
+    },
+    {
+      "lines": [
+        "<script>x</script>",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 1,
+      "opens": true
+    },
+    {
+      "lines": [
+        "<details>",
+        "",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 2,
+      "opens": true
+    },
+    {
+      "lines": [
+        "Tonight's bays:",
+        "<span>",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 2,
+      "opens": true
+    },
+    {
+      "lines": [
+        "<div>",
+        "hello",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 2,
+      "opens": false
+    },
+    {
+      "lines": [
+        "</div>",
+        "| Bay | Status |",
+        "|---|---|",
+        "| B3 | re-scan |"
+      ],
+      "index": 1,
+      "opens": false
+    },
+    {
+      "lines": [
+        "<!DOCTYPE html>",
         "| Bay | Status |",
         "|---|---|",
         "| B3 | re-scan |"
