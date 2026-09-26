@@ -34,6 +34,7 @@ import { useAnnotationSidecar, type AnnotationSidecarApi } from "./useAnnotation
 import { MentionComposer } from "./MentionComposer";
 import { LinkRecordSheet } from "./LinkRecordSheet";
 import type { AnnotationSource } from "./types";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export interface CapturedSelection {
   anchor: TextAnchor;
@@ -267,6 +268,10 @@ function SelectionToolbar({
       : (at - 1 + list.length) % list.length;
     list[next].focus();
   };
+  // PHONE WIDTH (verify RC-B11 round 2, finding 3): a floating box beside the selection wrapped its
+  // labels a letter per line and ran off-screen. On a phone the toolbar is a bottom sheet — full
+  // width, above the home indicator (pb-safe), scrolling inside itself — never a positioned popover.
+  const isMobile = useIsMobile();
   const width = mode === "menu" ? 260 : 340;
   const left = Math.max(12, Math.min(window.innerWidth - width - 12, selection.rect.left));
   const top = Math.max(12, Math.min(window.innerHeight - 300, selection.rect.bottom + 8));
@@ -280,8 +285,13 @@ function SelectionToolbar({
 
   return (
     <div
-      className="fixed z-50 rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg"
-      style={{ left, top, width }}
+      data-annotation-toolbar={isMobile ? "sheet" : "popover"}
+      className={
+        isMobile
+          ? "fixed inset-x-0 bottom-0 z-50 max-h-[70dvh] overflow-y-auto rounded-t-xl border-t border-border bg-popover p-2 pb-safe text-popover-foreground shadow-lg"
+          : "fixed z-50 rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg"
+      }
+      style={isMobile ? undefined : { left, top, width }}
       ref={toolbarRef}
       role="toolbar"
       aria-label="Annotate the selected passage"
@@ -315,7 +325,7 @@ function SelectionToolbar({
         <div className="grid gap-0.5">
           <div className="flex items-center gap-1 px-1 py-1">
             <Highlighter className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
-            <span className="mr-auto text-xs text-muted-foreground">Highlight</span>
+            <span className="mr-auto shrink-0 whitespace-nowrap text-xs text-muted-foreground">Highlight</span>
             {HIGHLIGHT_COLORS.map((c) => (
               <button
                 key={c}

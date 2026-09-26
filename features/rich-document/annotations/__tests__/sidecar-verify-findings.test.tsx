@@ -20,6 +20,10 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+if (typeof window.matchMedia !== "function") {
+  // Desktop width: the selection toolbar is the positioned popover here (phone = bottom sheet, own test).
+  window.matchMedia = ((q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {}, onchange: null, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
+}
 if (typeof globalThis.ResizeObserver === "undefined") {
   globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} } as unknown as typeof ResizeObserver;
 }
