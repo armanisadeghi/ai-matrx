@@ -5,6 +5,7 @@ import { ChatMandateUnavailable, ChatNewLandingSkeleton } from "./ChatNewClient"
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
 import { useMandate } from "@/features/mandates/useMandate";
 import type { ConversationSandboxBinding } from "@/lib/sandbox/conversation-binding-row";
+import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
 
 /**
  * `/chat/[conversationId]` — the room for an EXISTING conversation.
@@ -78,8 +79,16 @@ function ChatConversationRoomResolved({
   conversationId: string;
   sandboxBinding: ConversationSandboxBinding | null;
 }) {
-  const { mandate, loading, error } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
+  const { mandate, loading, error, organizationPending } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
   if (loading) return <ChatNewLandingSkeleton />;
+  // No workspace chosen is a question, never "chat is unavailable".
+  if (organizationPending) {
+    return (
+      <WorkspaceGate sentence="This chat needs a workspace to open.">
+        <ChatNewLandingSkeleton />
+      </WorkspaceGate>
+    );
+  }
   if (error || !mandate) return <ChatMandateUnavailable error={error} />;
   return (
     <ChatRoomClient

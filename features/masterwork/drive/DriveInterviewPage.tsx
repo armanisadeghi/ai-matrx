@@ -78,6 +78,7 @@ import {
 import { matchDriveVoiceCommand } from "./voiceCommands";
 import { useDriveSettings, type DriveSettingsValues } from "./useDriveSettings";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
 
 const SOURCE_FEATURE = "masterwork" as const;
 
@@ -193,6 +194,18 @@ export function DriveInterviewPage({
           </DriveBigButton>
           <ErrorAlchemyMenu error={failure.reason} operation="Read your interview settings" />
         </DriveMessage>
+      </DriveShell>
+    );
+  }
+
+  // No workspace chosen is a question, never "no interviewer is bound": the
+  // job resolves through the active workspace, and nobody picks it for her.
+  if (interviewer.organizationPending || communicator.organizationPending) {
+    return (
+      <DriveShell>
+        <WorkspaceGate sentence="This interview needs a workspace to start.">
+          <DriveMessage headline="Getting ready" body="Setting up your workspace." />
+        </WorkspaceGate>
       </DriveShell>
     );
   }

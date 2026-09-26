@@ -441,6 +441,7 @@ export default function ThreadAgentPanel({
           sessionId={sessionId}
           compact={compact}
           revealInput
+          workspaceSentence="This thread needs a workspace to open."
         />
       </div>
     </div>

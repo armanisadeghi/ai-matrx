@@ -12,6 +12,7 @@ import {
 import { useMandate } from "@/features/mandates/useMandate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@/lib/text/asClause";
+import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
 
 /**
  * `/chat/new` — landing surface.
@@ -42,8 +43,16 @@ export function ChatNewClient({ agentId }: { agentId: string | null }) {
 
 /** SSR resolution failed — re-resolve client-side, loud on failure. */
 function ChatNewClientResolved() {
-  const { mandate, loading, error } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
+  const { mandate, loading, error, organizationPending } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
   if (loading) return <ChatNewLandingSkeleton />;
+  // No workspace chosen is a question, never "chat is unavailable".
+  if (organizationPending) {
+    return (
+      <WorkspaceGate sentence="Chat needs a workspace to open.">
+        <ChatNewLandingSkeleton />
+      </WorkspaceGate>
+    );
+  }
   if (error || !mandate) return <ChatMandateUnavailable error={error} />;
   return <ChatNewBody agentId={mandate.agentId} />;
 }

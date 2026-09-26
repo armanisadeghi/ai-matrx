@@ -33,6 +33,7 @@ import { WAR_ROOM_ROOM_AGENT_MANDATE } from "@/features/war-room/constants";
 import { useRoomAgent } from "@/features/war-room/hooks/useRoomAgent";
 import { useRoomConversationSelectAdapter } from "@/features/war-room/hooks/useThreadEntitySelect";
 import { startRoomConversation } from "@/features/war-room/redux/thunks";
+import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
 
 export default function RoomAgentPanel({ sessionId }: { sessionId: string }) {
   const dispatch = useAppDispatch();
@@ -113,9 +114,11 @@ export default function RoomAgentPanel({ sessionId }: { sessionId: string }) {
             </div>
           </div>
         ) : (
-          <div className="flex h-full items-center justify-center">
-            <Loader2 className="size-6 animate-spin text-muted-foreground" />
-          </div>
+          <WorkspaceGate sentence="This room's chat needs a workspace to open.">
+            <div className="flex h-full items-center justify-center">
+              <Loader2 className="size-6 animate-spin text-muted-foreground" />
+            </div>
+          </WorkspaceGate>
         )}
       </div>
     </div>

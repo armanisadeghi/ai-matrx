@@ -40,6 +40,7 @@ import { ingestExternalRecordingThunk } from "../../redux/thunks";
 import { RecordActionSheet, type RecordActionKey } from "./RecordActionSheet";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
+import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
 
 interface ExperimentalAgentScreenProps {
   sessionId: string;
@@ -54,6 +55,11 @@ interface ExperimentalAgentScreenProps {
    * behind the keyboard toggle). Drives the real component via a prop — no fork.
    */
   revealInput?: boolean;
+  /**
+   * What this host says when it cannot open because no workspace is chosen
+   * (the assistant's agent resolves through a Mandate, which needs one).
+   */
+  workspaceSentence?: string;
 }
 
 /** The finished turn: transcript + assembled audio + length, carried to the chooser. */
@@ -69,6 +75,7 @@ export function ExperimentalAgentScreen({
   sessionId,
   compact,
   revealInput = false,
+  workspaceSentence = "This assistant needs a workspace to open.",
 }: ExperimentalAgentScreenProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -307,9 +314,11 @@ export function ExperimentalAgentScreen({
 
   if (!conversationId) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
+      <WorkspaceGate sentence={workspaceSentence}>
+        <div className="flex h-full items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </WorkspaceGate>
     );
   }
 

@@ -34,6 +34,7 @@ import { clearFocus } from "@/features/agents/redux/execution-system/conversatio
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@/lib/text/asClause";
+import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
 
 interface QuickChatSheetProps {
   className?: string;
@@ -107,11 +108,20 @@ export function QuickChatSheet({
       ? state.conversations.byConversationId[initialConversationId]?.agentId
       : undefined,
   );
-  const { mandate, loading, error } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
+  const { mandate, loading, error, organizationPending } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
   if (loading || (initialConversationId && !handedOffAgentId)) {
     return (
       <div className={cn("flex h-full flex-col overflow-hidden", className)}>
         <ChatRoomSkeleton />
+      </div>
+    );
+  }
+  if (organizationPending) {
+    return (
+      <div className={cn("flex h-full flex-col overflow-hidden", className)}>
+        <WorkspaceGate sentence="Chat needs a workspace to open.">
+          <ChatRoomSkeleton />
+        </WorkspaceGate>
       </div>
     );
   }

@@ -81,6 +81,8 @@ import {
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@/lib/text/asClause";
+import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
+
 
 const SOURCE_FEATURE = "masterwork" as const;
 
@@ -583,6 +585,7 @@ export function ConductorContent({
   // that was never broken.
   if (organizationPending) {
     return (
+      <WorkspaceGate sentence="The build needs a workspace to start.">
       <div className="flex flex-col items-center justify-center gap-3 px-4 py-10 text-center">
         <LoadingSpinner />
         <p className="text-sm text-muted-foreground">
@@ -593,6 +596,7 @@ export function ConductorContent({
           start. If this does not clear in a moment, reload the page.
         </p>
       </div>
+      </WorkspaceGate>
     );
   }
   // NO SILENT FALLBACK. A Mandate resolves or the run refuses.

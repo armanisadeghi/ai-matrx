@@ -125,7 +125,7 @@ export function OrganizationRequiredNotice({
         <div className="space-y-2 p-3">
           <div>
             <h3 className="text-sm font-semibold text-foreground">{headline}</h3>
-            <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+            {description ? <p className="mt-1 text-xs text-muted-foreground">{description}</p> : null}
           </div>
           {picker}
           {retry}
@@ -146,7 +146,7 @@ export function OrganizationRequiredNotice({
           aria-hidden="true"
         />
         <h3 className="text-sm font-semibold text-foreground">{headline}</h3>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
         {picker}
         {retry}
       </div>

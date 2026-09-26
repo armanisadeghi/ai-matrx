@@ -92,6 +92,7 @@ import { TutorTrustStrip } from "./TutorTrustStrip";
 import { TutorTurnTrust } from "./TutorTurnTrust";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@/lib/text/asClause";
+import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
 
 const SOURCE_FEATURE = "education-tutor" as const;
 const BASE_PATH = "/education/tutor/[conversationId]";
@@ -134,7 +135,7 @@ export function EducationTutorClient(props: EducationTutorClientProps) {
   // unresolved mandate REFUSES with the error visible — never a fallback id.
   // TODO(platform): managed useAgentLauncher overload should accept a
   // mandateKey — pre-resolving drops config_overrides on this path.
-  const { mandate, loading, error } = useMandate(TUTOR_MANDATE_KEY);
+  const { mandate, loading, error, organizationPending } = useMandate(TUTOR_MANDATE_KEY);
 
   if (error && props.conversationId && props.conversationAgentId) {
     return (
@@ -142,6 +143,16 @@ export function EducationTutorClient(props: EducationTutorClientProps) {
         {...props}
         agentId={props.conversationAgentId}
       />
+    );
+  }
+  // No workspace chosen is a question, never "fix its binding".
+  if (organizationPending) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden bg-textured">
+        <WorkspaceGate sentence="The AI Tutor needs a workspace to open.">
+          <ChatRoomSkeleton />
+        </WorkspaceGate>
+      </div>
     );
   }
   if (error) {

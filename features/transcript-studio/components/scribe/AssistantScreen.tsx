@@ -3,6 +3,7 @@
 import { ListChecks, Loader2 } from "lucide-react";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
+import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
 import { useScribeDraftTasks } from "../../hooks/useScribeDraftTasks";
 
 interface AssistantScreenProps {
@@ -16,9 +17,11 @@ export function AssistantScreen({ sessionId }: AssistantScreenProps) {
 
   if (!conversationId) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
+      <WorkspaceGate sentence="This assistant needs a workspace to open.">
+        <div className="flex h-full items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </WorkspaceGate>
     );
   }
 
