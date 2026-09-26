@@ -65,7 +65,8 @@ export function ImageRoleSelector({
       <div
         role="radiogroup"
         aria-label="Reference image role"
-        className="inline-flex w-fit flex-wrap rounded-md border border-border bg-muted/40 p-0.5"
+        // One row, never a ragged wrap: on a phone it scrolls sideways.
+        className="inline-flex w-fit max-w-full overflow-x-auto rounded-md border border-border bg-muted p-0.5 [scrollbar-width:none]"
       >
         {roles.map((role) => {
           const meta = IMAGE_ROLE_META[role];
@@ -82,9 +83,9 @@ export function ImageRoleSelector({
               title={refused && verdict ? verdict.reason : meta.explanation}
               onClick={() => onChange(active ? null : role)}
               className={cn(
-                "rounded px-2 py-0.5 text-[11px] font-medium transition-colors",
+                "shrink-0 whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-medium transition-colors",
                 active
-                  ? "bg-background text-foreground shadow-sm"
+                  ? "bg-background text-foreground shadow-sm ring-1 ring-border"
                   : "text-muted-foreground hover:text-foreground",
                 refused && "opacity-40 line-through decoration-muted-foreground/60",
               )}
