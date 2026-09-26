@@ -66,23 +66,23 @@ const OTHER = "4060701e-706a-4c76-b3ca-0bbc69fa5a14"; // test@test.com — the n
 // `visibility >= 'internal'`.
 const CASES = [
   {
-    name: "another person's personal conversation (no platform-staff lane at all)",
+    name: "another person's personal conversation",
     token: "conversation",
     table: "chat.conversation",
     insert: `insert into chat.conversation (organization_id, created_by, visibility, title)
              values ($1, $2, 'personal', 'Kitchen remodel budget questions') returning id`,
-    level: "none",
+    level: "admin",
   },
   {
-    name: "a personal note (platform_admin_all admits only internal+)",
+    name: "another person's personal note",
     token: "note",
     table: "workbench.notes",
     insert: `insert into workbench.notes (organization_id, created_by, visibility, label, content)
              values ($1, $2, 'personal', 'Tile supplier callbacks', 'Call Brenda at Coastal Tile about the grout delay.') returning id`,
-    level: "none",
+    level: "admin",
   },
   {
-    name: "an internal note the platform-admin lane really admits",
+    name: "another person's internal note",
     token: "note",
     table: "workbench.notes",
     insert: `insert into workbench.notes (organization_id, created_by, visibility, label, content)
@@ -90,7 +90,7 @@ const CASES = [
     level: "admin",
   },
   {
-    name: "an internal scheduler task the admin can really read",
+    name: "another person's internal scheduler task",
     token: "sch_task",
     table: "scheduler.sch_task",
     insert: `insert into scheduler.sch_task (organization_id, created_by, user_id, visibility, kind, title)
@@ -116,6 +116,17 @@ function loadEnv(): pg.ClientConfig {
 }
 
 type Observed = { level: string; visible: number };
+/**
+ * THE RULING THIS SUITE PINS: common-docs/policies/our-own-admin-database-access.md.
+ * Arman, 2026-09-25, both halves:
+ *   · INSIDE the admin lane (a request carrying `x-matrx-admin-lane: 1`) the admin system has full
+ *     read — the policy's own acceptance proof is a platform admin who does NOT own a PERSONAL
+ *     conversation opening it in cx-explorer. So every case above is `admin` there, personal
+ *     rows included (`level` in CASES is the admin-section answer).
+ *   · On a user page (no lane header) admin power never applies: the same admin is an ordinary
+ *     person and none of test@test.com's rows are theirs — `none` everywhere.
+ * (This supersedes the 2026-09-15 reading in the header above, which predates the admin lane.)
+ */
 const LANES = ["user page", "admin section"] as const;
 type Lane = (typeof LANES)[number];
 /** On a user page a platform admin is an ordinary person: no admin arm is live, so nothing here is theirs. */
