@@ -124,7 +124,7 @@ same PR.
 [`organization-context.ts`](./organization-context.ts) is the one transport
 kernel for required UUID validation and header/query agreement. `callApi`
 reads only the explicitly selected organization or an entity-local
-`scopeOverrides.organization_id`; it never substitutes a personal organization.
+`scopeOverrides.organization_id`; it never substitutes an organization.
 It refuses missing context, rejects body/query/header disagreement, injects the
 organization into the JSON body, and sends the same value as
 `X-Organization-Id` for server middleware. When a call acts on an existing

@@ -341,7 +341,7 @@ freezes the explicitly selected `appContext.organization_id` into its typed
 `SandboxCreateRequest`; both shared create clients compare that value with the
 live app context immediately before `fetch`; `POST /api/sandbox` validates the
 required UUID again and forwards the exact value. No layer repairs absence with
-the personal organization, and a context switch invalidates a prebuilt request.
+any other organization, and a context switch invalidates a prebuilt request.
 
 All ten per-sandbox Next routes use `forwardToOrchestrator`. The helper preserves
 request `content-encoding`, authorization replacement, response status, content

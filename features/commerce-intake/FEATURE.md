@@ -175,8 +175,7 @@ Arman in the loop.
   the org's own commerce area alongside `/commerce/labels` — a warehouse lead certifying their own
   printer is the normal case, and a super-admin gate here would be over-tightening (db-rules §6).
 - Every write carries an EXPLICIT `organization_id` from the SELECTED active organization
-  (`selectOrganizationId`), never `selectEffectiveOrganizationId` — the personal-org fallback
-  filed intake work in a workspace the person never chose. The wizard refuses with a named
+  (`selectOrganizationId`); nothing substitutes an organization. The wizard refuses with a named
   remedy when no org or no signed-in user is present, and the capture session
   (`useIntakeSession`) waits through `awaitEffectiveOrganizationId` (explicit-only) and refuses
   with the remedy rather than creating a batch. The asset list, the answer queue, the label-batch

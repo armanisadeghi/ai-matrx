@@ -57,8 +57,7 @@ must obey.
   default model id in a seed or call site.
 - **`parseCapabilities` screams on unknown values instead of coercing.** Adding a capability value to
   the DB requires extending `capabilities/types.ts` in the same change, or live data is discarded.
-- **New catalog rows are homed via `resolveSystemOrgId()`**, never the `_stamp_org_default` trigger
-  (which would home them in the creating admin's personal org).
+- **New catalog rows are homed via `resolveSystemOrgId()`** — the platform's own organization, named explicitly.
 - **Rating rendering is centralized** in `format.ts` (`costRatingTier`/`speedRatingLabel`, 1–6, 6 = "5+").
   Hardcoded maker/price maps are forbidden.
 - **Deprecating a model is destructive at the reference layer.** Flip `is_deprecated`, then use

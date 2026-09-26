@@ -57,7 +57,7 @@ Field metadata (inject flag, env alias set/clear, description, `is_active`, hand
 Every Vault and Authenticator aidream transport requires the explicitly
 selected request organization from `appContext.organization_id` and sends it
 through `lib/api/organization-context.ts` as `X-Organization-Id`.
-`personal_organization_id` is never substituted. The
+No other organization is ever substituted. The
 transport itself refuses to call `fetch` when that request context is absent,
 including for personal Vault rows; organization context accompanies the
 request but does not replace the `user_id = auth.uid()` ownership boundary.

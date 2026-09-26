@@ -51,7 +51,7 @@ Run/job tables emit `run.completed` / `run.failed` to `activity_log` on a termin
 - **Attached to 12 tables** (verified end-to-end for both owner shapes): `files.file_rag_jobs`, `public.kg_sweep_run`, `public.agent_run`, `public.pc_studio_runs`, `public.sch_run`, `public.scrape_cycle_run`, `scraper.crawl_runs`, `public.studio_runs`, `public.page_extraction_runs` (owner `triggered_by`), `public.page_extraction_page_runs`, `public.derive_runs`, `legal.ingest_runs` (owner `triggered_by`).
 - **Add a new run table:** one line in each `do` block (`('schema','table','<owner_col>')`) — no function change.
 - **Not a producer:** `public.ai_runs` — its `status` is `active/archived/deleted` (record state, not job progress).
-- **`organization_id` is REQUIRED (NOT NULL) on all 12** (`migrations/run_org_required.sql`): backfilled from the owner's personal org (`ensure_personal_organization`), ownerless rows → the Matrx System org. A DB-edge `platform.stamp_run_org()` BEFORE INSERT trigger fills org when an insert leaves it NULL (owner's personal org, else system org), so the app's explicit org always wins and NOT NULL can never break an insert. Every run now has an org → every terminal transition emits.
+- **`organization_id` is REQUIRED (NOT NULL) on all 12.** Every insert names its organization explicitly; no trigger fills one (`platform.stamp_run_org()` no longer exists — verified live 2026-09-26). Every run has an org → every terminal transition emits.
 
 ## Transport 1 — Realtime kills in-app polling (STARTED)
 

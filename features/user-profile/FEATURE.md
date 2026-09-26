@@ -166,9 +166,9 @@ All five children render the same `UserProfilePage` with a different
 - **`display_name` in `users.profiles` is `NOT NULL` with a default `'User'`.**
   If the client clears it, the API route substitutes a fallback (auth
   `full_name` → literal `'User'`) so the upsert never fails on the constraint.
-- **`organization_id` in `users.profiles` is required.** The profile API uses
-  the canonical server-side personal-organization resolver before an upsert;
-  it never writes a null organization or relies on an implicit database fill.
+- **`organization_id` in `users.profiles` is required.** The profile API takes the
+  organization from `X-Organization-Id` (`ensureOrgIdServer`, which refuses
+  with the `organization_required` envelope when none is sent); it never writes a null organization or relies on an implicit database fill.
 - **`users.profiles` is publicly readable** (RLS qual = `true` on SELECT).
   Don't put anything sensitive in `status_text` — every authenticated user can
   read it. Address, phone, DOB, legal name, etc. all live on

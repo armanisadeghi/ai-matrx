@@ -193,8 +193,8 @@ neither prompt blocks nor run inputs: a canonical
 - **Every** upload — paste, drag/drop, and the inline picker — is stamped with
   the resolved workspace before bytes move, at the ONE choke point
   (`bindUploadOrganization` in `features/files/upload/cloudUpload.ts`), never
-  per-component. The inline picker sending nothing at all is what filed a
-  screenshot in a personal workspace nobody chose on 2026-08-30.
+  per-component. The inline picker sending nothing at all would file an upload
+  in an organization nobody chose.
 - **A file in another of your OWN organizations attaches normally.** The server
   gate is `iam.has_access_for`, not an organization comparison; multi-org
   membership exists so one person can keep several workspaces, and refusing her

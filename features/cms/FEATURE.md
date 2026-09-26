@@ -251,7 +251,7 @@ yields an owner-only site — fail closed, never a silent widening.
 
 **Org-less sites are repairable, not stuck:** `aidream/db/backfill_cms_site_orgs.py`
 is idempotent and derives the org from `web_site_id`, then the MAIN
-`settings.cms.site_id` pointer, then the owner's personal workspace — and leaves
+`settings.cms.site_id` pointer, then the owner's signup organization — and leaves
 a row null-and-REPORTED rather than guessing when an owner belongs to several orgs.
 
 **The agent side matches (2026-08-15).** aidream's `services/cms/access.py` was
@@ -266,7 +266,7 @@ knowing, both deliberate and both narrow-not-wide:
   membership would keep reaching org sites here and stop reaching them there. If
   you touch `resolveCmsCaller`, close that.
 - aidream's `CmsSiteService.create` stamps the org through the platform's
-  `resolve_effective_organization_id` (personal org when none is given), where
+  `resolve_effective_organization_id` (the signup organization when none is given — a substitution the org-context law forbids), where
   this repo's route yields an owner-only site if the org is omitted. Both fail
   safe; neither invents an org the caller is not in.
 
