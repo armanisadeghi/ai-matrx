@@ -83,7 +83,6 @@ export interface AssistantPreferences {
   alwaysWatching: boolean;
   useAudio: boolean;
   name: string;
-  isPersonal: boolean;
   memoryLevel: number;
   preferredProvider: AIProvider;
   preferredModel: string;
@@ -1030,7 +1029,6 @@ export const initializeUserPreferencesState = (
       alwaysWatching: false,
       useAudio: false,
       name: "Assistant",
-      isPersonal: false,
       memoryLevel: 0,
       preferredProvider: "default",
       preferredModel: "default",
@@ -1714,29 +1712,25 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
     write: async ({ identity, signal, body }) => {
       if (identity.type !== "auth") return; // guests only live in client storage
       const { supabase } = await import("@/utils/supabase/client");
-      const { resolvePersonalOrgId } = await import(
-        "@/lib/organizations/personalOrg"
-      );
-      const { error } = await supabase
+      // `users.user_preferences` is a user-global singleton (PK = user_id),
+      // created at signup together with the person's first organization, and
+      // it keeps the organization it was filed under. So a write UPDATES the
+      // existing row and never chooses an organization for it — the selected
+      // workspace org is unrelated here and can fail RLS when the user is
+      // working in HR.
+      const { data: written, error } = await supabase
         .schema("users")
         .from("user_preferences")
-        .upsert({
-          // org-fallback-deliberate: `users.user_preferences` is a user-global
-          // singleton (PK = user_id) — ONE row per person that follows them
-          // across every organization they work in, so its tenant is the
-          // person's own workspace by definition, not the organization they
-          // happen to have selected. This is the personal organization
-          // answering "which is this user's own workspace" — the one question
-          // it is still the right answer to
-          // (common-docs/policies/context-is-carried-never-rebuilt.md, rule 4)
-          // — never a substitute for a scope the write failed to carry. The
-          // selected workspace org is unrelated here and can fail RLS when the
-          // user is working in HR.
-          organization_id: await resolvePersonalOrgId(),
-          user_id: identity.userId,
-          preferences: body,
-        })
+        .update({ preferences: body })
+        .eq("user_id", identity.userId)
+        .select("user_id")
         .abortSignal(signal);
+      if (!error && (!written || written.length === 0)) {
+        throw new Error(
+          "Your preferences could not be saved: this account has no preferences record. " +
+            "Sign out and back in; if it persists, report it so the record can be restored.",
+        );
+      }
       if (error) throw error;
       void signal; // AbortSignal forwarded via query builder above
     },

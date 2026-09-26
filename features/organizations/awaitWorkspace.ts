@@ -33,10 +33,10 @@
 //
 // 🚨 WHAT IT WAITS FOR IS THE *SELECTED* ORGANIZATION (2026-09-17)
 // ----------------------------------------------------------------
-// This used to settle on `selectEffectiveOrganizationId` — `organization_id ??
-// personal_organization_id` — so a wait that timed out with nothing selected
-// still answered "ready" with the user's PERSONAL workspace, and the action
-// filed its work there with nothing on screen saying so. That is exactly the
+// This used to settle on `selectEffectiveOrganizationId` — the selection with a
+// fallback organization behind it — so a wait that timed out with nothing
+// selected still answered "ready" with an organization nobody chose, and the
+// action filed its work there with nothing on screen saying so. That is exactly the
 // silent tenant substitution `context-is-carried-never-rebuilt` forbids: the
 // organization an action writes in is the one the user selected, or the action
 // refuses. Now the wait watches ONLY the explicit selection, and settling with
@@ -98,7 +98,7 @@ const WORKSPACE_UNREADABLE =
 
 /**
  * The SELECTED organization right now, without waiting. Null when the user has
- * not chosen one — never the personal workspace standing in for it.
+ * not chosen one — never another organization standing in for it.
  */
 export function peekEffectiveOrganizationId(): string | null {
   const state = getStoreSingleton()?.getState();
@@ -120,7 +120,7 @@ function peekOrganizationUnreadableReason(): string | null {
  *
  * Reads the EXPLICITLY SELECTED organization only. A bootstrap that lands a
  * selection during the wait is a perfectly good answer; a bootstrap that ends
- * with nothing selected is `unavailable`, never the personal workspace
+ * with nothing selected is `unavailable`, never an organization
  * substituted for the one the user meant.
  */
 export async function awaitEffectiveOrganizationId(): Promise<WorkspaceResolution> {
@@ -162,7 +162,7 @@ const NO_WORKSPACE_FOR_READ =
  * From the seat, a cold load of `/detail/google_document/<id>` issued
  *
  *   +4231ms  GET …/google_document?select=*&id=eq.…
- *   +4610ms  POST …/rpc/current_personal_org_id      ← the organization question
+ *   +4610ms  POST …/rpc/<the boot organization read>  ← the organization question
  *
  * — the read went out with no organization on the wire and none in the store,
  * and the screen then blamed Google: "it may have been moved, deleted, or isn't

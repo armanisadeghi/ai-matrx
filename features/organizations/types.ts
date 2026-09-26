@@ -45,7 +45,6 @@ export interface Organization {
   createdAt: string;
   updatedAt: string;
   createdBy?: string | null;
-  isPersonal: boolean;
   settings?: JsonObject;
   /**
    * When this organization was archived, or null when it is live (THE
@@ -217,14 +216,11 @@ export function canManageSettings(role: OrgRole): boolean {
 
 /**
  * Pending invitations contain email addresses and acceptance tokens. They are
- * available only to managers of non-personal organizations; the database
- * intentionally rejects invitation management for personal organizations.
+ * available only to the organization's managers. Every organization is equal:
+ * anyone may be invited into any organization.
  */
-export function canManageInvitations(
-  role: OrgRole,
-  isPersonal: boolean,
-): boolean {
-  return !isPersonal && canManageMembers(role);
+export function canManageInvitations(role: OrgRole): boolean {
+  return canManageMembers(role);
 }
 
 /**
@@ -308,52 +304,6 @@ export function validateOrgSlug(slug: string): {
   return { valid: true };
 }
 
-/**
- * Is this organization the VIEWER'S OWN personal organization?
- *
- * 🚨 FOR DATA ROUTING ONLY — NEVER FOR DISPLAY. An organization is shown
- * under its real name, its real abbreviation and the viewer's real role in it,
- * always; nothing on screen is relabelled because a row carries `is_personal`
- * (Arman, 2026-09-11: *"annihilate the feature that renames an org and gives it
- * some override name by calling it my personal"*). Use this only where the
- * answer decides WHERE A ROW IS WRITTEN.
- *
- * 🚨 `isPersonal` ALONE IS NOT THE ANSWER — it says "this is somebody's private
- * workspace", never "it is yours". A user can hold a membership in another
- * person's personal org, and every surface that derived "Personal" / "ME" from
- * `isPersonal` alone was labelling someone else's private workspace as the
- * viewer's own.
- *
- * Live defect, 2026-09-11: an account holding an `admin` membership in another
- * account's personal org had `resolveActiveOrgContext` seed
- * `personal_organization_id` — the never-null org for WRITES — from
- * `find(o => o.isPersonal)`, which could match the workspace it did NOT own.
- * That is the class this predicate exists to close.
- *
- * Ownership is `created_by`. That is the same column the database keys on in
- * `iam.personal_org_id()` and in the partial unique index
- * `organizations_one_personal_per_creator`, so this predicate and the server
- * agree by construction rather than by coincidence.
- *
- * Accepts either wire spelling: the camelCase `Organization` shape and the
- * snake_case row/RPC shape are the same fact, so they share one predicate
- * instead of growing a second implementation.
- */
-export function isOwnPersonalOrg(
-  org: {
-    isPersonal?: boolean | null;
-    is_personal?: boolean | null;
-    createdBy?: string | null;
-    created_by?: string | null;
-  },
-  viewerUserId: string | null | undefined,
-): boolean {
-  const personal = org.isPersonal ?? org.is_personal ?? false;
-  if (personal !== true) return false;
-  const owner = org.createdBy ?? org.created_by ?? null;
-  return !!viewerUserId && !!owner && owner === viewerUserId;
-}
-
 const ABBREVIATION_IGNORED_WORDS = new Set([
   "A",
   "AN",
@@ -382,12 +332,8 @@ const ABBREVIATION_IGNORED_WORDS = new Set([
  * its NAME — meaningful word initials, preserving a short leading initialism
  * (AI Matrx -> AIM).
  *
- * There is no personal-organization special case. It used to return the
- * constant "ME" for any `is_personal` row, which is a viewer-relative word
- * applied as an absolute label: a user who belonged to two personal
- * organizations saw the same "ME" chip on both and could not tell them apart
- * (Arman, 2026-09-11). Every organization now abbreviates from its own name,
- * the same way every other name in the product is its own.
+ * Every organization abbreviates from its own name, the same way every other
+ * name in the product is its own — never a viewer-relative constant.
  */
 export function generateOrganizationAbbreviation(name: string): string {
   const words = (name.toUpperCase().match(/[A-Z]+/g) ?? []).filter(

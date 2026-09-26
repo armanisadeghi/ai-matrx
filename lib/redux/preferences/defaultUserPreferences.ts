@@ -44,7 +44,6 @@ export const defaultUserPreferences: UserPreferences = {
     alwaysWatching: false,
     useAudio: false,
     name: "Assistant",
-    isPersonal: false,
     memoryLevel: 0,
     preferredProvider: "default",
     preferredModel: "default",

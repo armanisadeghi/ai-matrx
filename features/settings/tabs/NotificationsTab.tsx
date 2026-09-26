@@ -25,14 +25,11 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 // the event's declared default applies (shown per row). Chips/assists are NOT
 // notifications and are deliberately not configured here.
 //
-// 🚨 A SWITCH GOVERNS A NAMED EMPLOYER, OR IT GOVERNS EVERYWHERE — never an
-// unnamed set of employers (hr_l3_116). Someone employed by two companies must be
-// able to stop A's leave decisions without stopping B's, and must be able to SEE
-// which one a switch is about. The employer picker therefore appears only when
-// there are at least two employers to tell apart; with one employer (or none) the
-// distinction is not real, so the screen is exactly what it always was and the
-// switches write the person's default-everywhere row, which the server's ladder
-// applies in that one employer anyway.
+// 🚨 A SWITCH GOVERNS A NAMED ORGANIZATION — never an unnamed set of them
+// (hr_l3_116). Someone in two companies must be able to stop A's leave
+// decisions without stopping B's, and must be able to SEE which one a switch is
+// about. The screen opens on the organization they are working in; the picker
+// appears only when there are at least two organizations to tell apart.
 export default function NotificationsTab() {
   const [scopes, setScopes] = useState<NotificationScope[] | null>(null);
   const [scopeId, setScopeId] = useState<string | null>(null);
@@ -43,15 +40,15 @@ export default function NotificationsTab() {
   useEffect(() => {
     let cancelled = false;
     loadNotificationScopes()
-      .then((rows) => {
+      .then(({ scopes: rows, initialOrganizationId }) => {
         if (cancelled) return;
         setScopes(rows);
-        setScopeId(rows[0]?.organizationId ?? null);
+        setScopeId(initialOrganizationId);
       })
       .catch((error: unknown) => {
         if (!cancelled) {
           setLoadError(
-            error instanceof Error ? error.message : "Could not load your employers.",
+            error instanceof Error ? error.message : "Could not load your organizations.",
           );
         }
       });
@@ -81,10 +78,9 @@ export default function NotificationsTab() {
   }, [scopeId]);
 
   const activeScope = scopes?.find((scope) => scope.organizationId === scopeId) ?? null;
-  const isGlobalScope = activeScope?.isGlobal ?? true;
-  // One employer is not a choice. Only a person with two or more has anything to
-  // tell apart, and they are exactly who the org dimension exists for.
-  const showScopePicker = (scopes?.length ?? 0) >= 3;
+  // One organization is not a choice. Only a person with two or more has
+  // anything to tell apart.
+  const showScopePicker = (scopes?.length ?? 0) >= 2;
 
   const reload = useCallback(() => {
     if (!scopeId) return;
@@ -106,8 +102,8 @@ export default function NotificationsTab() {
             ? {
                 ...event,
                 channels: { ...event.channels, [channel]: enabled },
-                // Setting a switch in an employer's scope creates that employer's
-                // own row — it stops inheriting the moment it is touched.
+                // Setting a switch creates this organization's own row — it
+                // stops inheriting the moment it is touched.
                 inherited: { ...event.inherited, [channel]: false },
               }
             : event,
@@ -127,7 +123,7 @@ export default function NotificationsTab() {
 
   const handleReset = useCallback(
     (eventKey: string, channelKeys: readonly string[]) => {
-      if (!scopeId || isGlobalScope) return;
+      if (!scopeId) return;
       setSavingKey(`${eventKey}:reset`);
       Promise.all(
         channelKeys.map((key) =>
@@ -142,7 +138,7 @@ export default function NotificationsTab() {
         )
         .finally(() => setSavingKey((k) => (k === `${eventKey}:reset` ? null : k)));
     },
-    [scopeId, isGlobalScope, reload],
+    [scopeId, reload],
   );
 
   return (
@@ -163,11 +159,7 @@ export default function NotificationsTab() {
             <SettingsSection title="Who these settings are about">
               <SettingsSelect
                 label="Applies to"
-                description={
-                  isGlobalScope
-                    ? "Your default everywhere. An employer you have set separately below keeps its own choice."
-                    : `Only ${activeScope?.label}. Anything you leave untouched follows your default everywhere.`
-                }
+                description={`Only ${activeScope?.label ?? "this organization"}. Anything you leave untouched follows your most recent choice in another organization, or the event's default.`}
                 value={scopeId}
                 onValueChange={setScopeId}
                 options={scopes.map((scope) => ({
@@ -192,9 +184,9 @@ export default function NotificationsTab() {
               const availableChannels = NOTIFICATION_CHANNELS.filter(
                 ({ key }) => event.availableChannels[key],
               );
-              const hasOwnRow =
-                !isGlobalScope &&
-                availableChannels.some(({ key }) => !event.inherited[key]);
+              const hasOwnRow = availableChannels.some(
+                ({ key }) => !event.inherited[key],
+              );
               return (
                 <SettingsSection
                   key={event.eventKey}
@@ -206,8 +198,8 @@ export default function NotificationsTab() {
                       key={key}
                       label={label}
                       description={
-                        !isGlobalScope && event.inherited[key]
-                          ? "Following your default everywhere."
+                        showScopePicker && event.inherited[key]
+                          ? "Not set here — following your choice elsewhere or the event default."
                           : event.defaults[key]
                             ? "On by default for this event."
                             : "Off by default for this event."
@@ -217,14 +209,14 @@ export default function NotificationsTab() {
                         handleToggle(event.eventKey, key, enabled)
                       }
                       disabled={savingKey === `${event.eventKey}:${key}`}
-                      last={index === availableChannels.length - 1 && !hasOwnRow}
+                      last={index === availableChannels.length - 1 && !(hasOwnRow && showScopePicker)}
                     />
                   ))}
-                  {hasOwnRow ? (
+                  {hasOwnRow && showScopePicker ? (
                     <SettingsButton
-                      label={`Set separately for ${activeScope?.label ?? "this employer"}`}
-                      description="Go back to following your default everywhere."
-                      actionLabel="Use my default"
+                      label={`Set separately for ${activeScope?.label ?? "this organization"}`}
+                      description="Go back to following your choice elsewhere or the event default."
+                      actionLabel="Stop setting it here"
                       kind="outline"
                       size="sm"
                       onClick={() =>

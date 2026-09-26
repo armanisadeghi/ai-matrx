@@ -80,8 +80,8 @@ export default function EmailTab() {
     setSaving(true);
     try {
       // Organization-scoped route: since the 2026-09-19 ruling it refuses a
-      // request that names no organization rather than filing the row in the
-      // person's personal workspace. `fetchWithOrganization` carries the
+      // request that names no organization rather than choosing one for the
+      // person. `fetchWithOrganization` carries the
       // selected organization and, on a refusal, opens the picker and replays
       // once with whatever they set.
       const res = await fetchWithOrganization("/api/user/email-preferences", {

@@ -356,8 +356,6 @@ export function AccessExplorerTab({
             </SelectTrigger>
             <SelectContent>
               {directory.organizations
-                // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-                .filter((o) => !o.is_personal)
                 .map((o) => (
                   <SelectItem key={o.id} value={o.id}>
                     {o.name}
@@ -549,7 +547,6 @@ export function AccessExplorerTab({
                     const reachedOrgIds =
                       g.audience === "global"
                         ? directory.organizations
-                            .filter((o) => !o.is_personal)
                             .map((o) => o.id)
                         : g.audience === "organization" && g.organizationId
                           ? [g.organizationId]

@@ -33,7 +33,7 @@ interface StateWithOrgBootstrapFailure {
 /**
  * WHY the organization question has no answer, or null when it has one (or is
  * still being asked). Non-null is the fourth state, `unavailable`: an aborted
- * fetch, a thrown membership read, or a degraded `current_personal_org_id()`.
+ * fetch, or a thrown membership read.
  *
  * Reads defensively, because it is handed whatever a caller's `useAppSelector`
  * passes it — including a state object that predates the field. An absent field

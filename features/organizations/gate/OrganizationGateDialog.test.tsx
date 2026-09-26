@@ -45,8 +45,6 @@ beforeEach(async () => {
           name: "Team workspace",
           abbreviation: "TEAM",
           slug: "team",
-          // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-          is_personal: false,
           role: "owner",
           scope_types: [],
           projects: [],
@@ -178,7 +176,6 @@ it("retries a failed membership read in place and offers the returned workspace"
           name: "Recovered team",
           abbreviation: "REC",
           slug: "recovered",
-          is_personal: false,
           role: "owner",
           scope_types: [],
           projects: [],
@@ -203,17 +200,16 @@ describe("workspaceChoices (review 2026-09-25)", () => {
   const row = (id: string, name: string, extra: Record<string, unknown> = {}) => ({
     id,
     name,
-    is_personal: false,
     ...extra,
   });
 
-  it("never offers another person's personal workspace; offers your own", () => {
+  it("offers every organization the person belongs to, whatever their role in it", () => {
     const choices = workspaceChoices([
-      row("a", "admin's Workspace", { is_personal: true, role: "member" }),
-      row("b", "Alex Hart's Workspace", { is_personal: true, role: "owner" }),
-      row("c", "Ashford Labs", { role: "member" }),
+      row("a", "Alex Hart", { role: "member" }),
+      row("b", "Rincon Plumbing Co", { role: "owner" }),
+      row("c", "Ashford Labs", { role: "admin" }),
     ]);
-    expect(choices.map((c) => c.id)).toEqual(["b", "c"]);
+    expect(choices.map((c) => c.id)).toEqual(["a", "b", "c"]);
   });
 
   it("tells two workspaces with the same name apart, and lists one id once", () => {

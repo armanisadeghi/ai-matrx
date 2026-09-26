@@ -106,7 +106,6 @@ describe("bootstrapActiveOrganization always answers", () => {
     resolveActiveOrgContext.mockResolvedValue({
       organization_id: "org-1",
       organization_name: "Acme",
-      personal_organization_id: null,
     });
     const store = makeStore();
     await store.dispatch(bootstrapActiveOrganization(USER) as never);

@@ -111,18 +111,6 @@ export function DangerZone({ organization }: DangerZoneProps) {
     }
   };
 
-  if (organization.isPersonal) {
-    return (
-      <div className="border border-border rounded-lg p-4">
-        <h3 className="font-medium">Archive Organization</h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          This is your personal workspace, so it cannot be archived — it is where
-          your own work lives.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
       <div className="border border-amber-200 dark:border-amber-900 rounded-lg p-4 space-y-4">

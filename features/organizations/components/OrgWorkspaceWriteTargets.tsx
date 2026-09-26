@@ -188,11 +188,6 @@ export function OrgWorkspaceWriteTargets({
 
     org_abbreviation: async (value: unknown) => {
       const org = requireWritableOrg("org_abbreviation");
-      if (org.isPersonal) {
-        throw new Error(
-          "org_abbreviation: personal workspaces always use ME — this one cannot be renamed.",
-        );
-      }
       const abbreviation = asString(value, "org_abbreviation");
       const validation = validateOrganizationAbbreviation(abbreviation);
       if (!validation.valid) {

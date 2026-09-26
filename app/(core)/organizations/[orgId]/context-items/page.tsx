@@ -55,7 +55,6 @@ export default function OrgContextItemsPage() {
           orgId={org.id}
           orgSlugOrId={orgSlugOrId}
           orgName={org.name}
-          orgIsPersonal={org.isPersonal}
           canManage={canManage}
         />
       </div>

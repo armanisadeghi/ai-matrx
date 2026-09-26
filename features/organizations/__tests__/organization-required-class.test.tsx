@@ -28,7 +28,6 @@ function storeWith(organizationId: string | null) {
     getState: () => ({
       appContext: {
         organization_id: organizationId,
-        personal_organization_id: "11111111-1111-1111-1111-111111111111",
       },
     }),
   };

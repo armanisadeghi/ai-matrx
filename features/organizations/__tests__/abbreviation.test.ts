@@ -11,9 +11,8 @@ describe("organization abbreviations", () => {
     ["AI Matrx", "AIM"],
     ["Titanium", "TIT"],
     ["X", "XX"],
-    // A personal organization is not special. It used to return the constant
-    // "ME" for any `is_personal` row, so two of them were indistinguishable
-    // (Arman, 2026-09-11). Every organization abbreviates from its own name.
+    // Every organization abbreviates from its own name, never a
+    // viewer-relative constant (Arman, 2026-09-11).
     ["Arman's Org", "ASO"],
     ["admin's Workspace", "ASW"],
   ])("derives %s as %s", (name, expected) => {

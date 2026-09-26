@@ -7,7 +7,7 @@
  * but the org picker and pure UI display may read it. No data read, no write,
  * no API route, no server action, no transport and no boot ladder may PICK an
  * organization for the person — not from a cookie, not from a saved preference,
- * not from their personal org. Sole-membership auto-select is fine; that is the
+ * not from "the one they created". Sole-membership auto-select is fine; that is the
  * one case where there is nothing to choose.
  *
  *   "one missed org check that should have just failed turns into 50 in a month
@@ -18,7 +18,7 @@
  * -----------------
  * Every instance of this class looks locally reasonable and is globally fatal:
  * a resolver quietly reads `user_preferences.organization.defaultOrganizationId`
- * and calls it the answer; a server helper substitutes `current_personal_org_id()`
+ * and calls it the answer; a server helper substitutes a fallback-organization RPC
  * when the caller passed nothing; a feature hook imports the picker's selector to
  * "pre-fill" a new record's org; a route handler reaches for client Redux. None
  * of them refuses. Each one files a person's work into an organization they never
@@ -31,9 +31,8 @@
  *   - `lib/organizations/resolveActiveOrgContext.ts` — `readDefaultOrgIdFromDb`
  *     selecting `defaultOrganizationId` out of `users.user_preferences` as a
  *     rung of the boot ladder;
- *   - `lib/organizations/personalOrg.ts` — `ensureOrgIdServer` /
- *     `resolveOrgIdForUserServer` calling `current_personal_org_id` /
- *     `ensure_personal_organization` outside `resolvePersonalOrgId`;
+ *   - `ensureOrgIdServer` / `resolveOrgIdForUserServer` calling a
+ *     fallback-organization RPC when the caller passed nothing;
  *   - `features/notes/hooks/useNewNoteOrganization.ts` — importing
  *     `selectDefaultOrganizationId` to choose a new note's organization.
  *
@@ -44,12 +43,11 @@
  *     out of `user_preferences`, or a function NAMED like `readDefaultOrgIdFromDb`
  *     — is allowed ONLY inside `features/organizations/**` (the picker) and
  *     `features/settings/**` (where the person states the preference).
- *  2. THE PERSONAL-ORG RPC. `current_personal_org_id` (and its provisioning twin
- *     `ensure_personal_organization`) may be CALLED or NAMED IN CODE only inside
- *     `lib/organizations/personalOrg.ts`, and there only inside
- *     `resolvePersonalOrgId` — plus guard scripts and tests, which this guard
- *     does not scan. Anywhere else it is a SUBSTITUTION: the server answering
- *     "which organization?" with "their personal one" because nobody asked.
+ *  2. THE RETIRED FALLBACK-ORGANIZATION RPCS. The RPCs listed in
+ *     `RETIRED_FALLBACK_ORG_RPCS` were deleted from the database (access ladder
+ *     T-3: organizations are unlimited and equal, no organization has a type).
+ *     Calling or naming one IN CODE anywhere is a reintroduction — there is no
+ *     home where it is legal. (Guard scripts and tests are not scanned.)
  *  3. `selectDefaultOrganizationId` CONSUMERS. The picker's selector may be read
  *     only from `features/organizations/**` and `features/settings/**`. Any other
  *     consumer is a feature choosing an organization out of a display preference.
@@ -101,10 +99,11 @@ const PREFERENCE_HOMES: readonly RegExp[] = [
   /^features\/settings\//,
 ];
 
-/** Rule 2's one home, and the one function inside it. */
-const PERSONAL_ORG_HOME = "lib/organizations/personalOrg.ts";
-const PERSONAL_ORG_FUNCTION = "resolvePersonalOrgId";
-const PERSONAL_ORG_RPCS = ["current_personal_org_id", "ensure_personal_organization"];
+/** Rule 2 — RPCs deleted from the database; naming one anywhere reintroduces it. */
+const RETIRED_FALLBACK_ORG_RPCS = [
+  "current_personal_org_id",
+  "ensure_personal_organization",
+];
 
 const SELECTOR = "selectDefaultOrganizationId";
 /**
@@ -372,23 +371,6 @@ function inPreferenceHome(rel: string): boolean {
   return PREFERENCE_HOMES.some((home) => home.test(rel));
 }
 
-/** The body of `resolvePersonalOrgId`, by brace matching over comment-free code. */
-export function personalOrgFunctionBody(code: string): { start: number; end: number } | null {
-  const match = new RegExp(`\\b${PERSONAL_ORG_FUNCTION}\\b`).exec(code);
-  if (!match) return null;
-  const open = code.indexOf("{", match.index);
-  if (open === -1) return null;
-  let depth = 0;
-  for (let k = open; k < code.length; k += 1) {
-    if (code[k] === "{") depth += 1;
-    else if (code[k] === "}") {
-      depth -= 1;
-      if (depth === 0) return { start: match.index, end: k + 1 };
-    }
-  }
-  return null;
-}
-
 const WHY = {
   1:
     "reads the stored default-organization preference to choose an org — a default " +
@@ -396,9 +378,9 @@ const WHY = {
     "data path may resolve an organization from it; outside the picker and settings this " +
     "must fail loudly instead.",
   2:
-    "names the personal-organization RPC outside resolvePersonalOrgId — substituting the " +
-    "person's personal org for the organization nobody asked about is exactly the ruling's " +
-    "failure (Arman, 2026-09-19): the work lands in a workspace they never chose, silently.",
+    "names a retired fallback-organization RPC — it was deleted from the database " +
+    "(organizations are equal; none has a type), and substituting an organization for the " +
+    "one nobody asked about is exactly the ruling's failure (Arman, 2026-09-19).",
   3:
     "consumes the picker's selectDefaultOrganizationId outside the picker and settings — a " +
     "display preference becomes the organization a record is filed into, which is how orgs " +
@@ -451,27 +433,19 @@ export function scanSource(rel: string, source: string): Violation[] {
     }
   }
 
-  // RULE 2 — the personal-org RPC. A string whose WHOLE content is the RPC name
-  // is a call (`.rpc("current_personal_org_id")`) or a name held for one; the
+  // RULE 2 — a retired fallback-organization RPC. A string whose WHOLE content
+  // is the RPC name is a call (`.rpc("<name>")`) or a name held for one; the
   // identifier in bare code is the same thing unquoted. A sentence that MENTIONS
   // the RPC — a log line, an Error message — invokes nothing and is left alone,
-  // for the same reason comments are.
-  {
-    const body =
-      rel === PERSONAL_ORG_HOME ? personalOrgFunctionBody(code) : null;
-    const insideHome = (index: number) =>
-      body !== null && index >= body.start && index < body.end;
-    for (const rpc of PERSONAL_ORG_RPCS) {
-      for (const span of strings) {
-        if (span.value.trim() !== rpc) continue;
-        if (insideHome(span.start)) continue;
-        add(2, span.start, `"${rpc}" — ${lineText(source, span.start)}`);
-      }
-      for (const m of bare.matchAll(new RegExp(`\\b${rpc}\\b`, "g"))) {
-        const idx = m.index ?? 0;
-        if (insideHome(idx)) continue;
-        add(2, idx, `${rpc} — ${lineText(source, idx)}`);
-      }
+  // for the same reason comments are. There is no legal home.
+  for (const rpc of RETIRED_FALLBACK_ORG_RPCS) {
+    for (const span of strings) {
+      if (span.value.trim() !== rpc) continue;
+      add(2, span.start, `"${rpc}" — ${lineText(source, span.start)}`);
+    }
+    for (const m of bare.matchAll(new RegExp(`\\b${rpc}\\b`, "g"))) {
+      const idx = m.index ?? 0;
+      add(2, idx, `${rpc} — ${lineText(source, idx)}`);
     }
   }
 
@@ -610,10 +584,11 @@ const COMPLIANT: Record<number, string> = {
   return organizationId;
 }
 `,
-  // 2 — the one home resolves it; everyone else takes the id as an argument.
-  2: `import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
-export async function whoseWorkspace() {
-  return resolvePersonalOrgId();
+  // 2 — the organization is taken as an argument or refused; no RPC answers it.
+  2: `import type { SupabaseClient } from "@supabase/supabase-js";
+import { ensureOrgIdServer } from "@/lib/organizations/ensureOrgId";
+export async function ensureOrgIdHere(client: SupabaseClient, orgId?: string | null) {
+  return ensureOrgIdServer(client, orgId);
 }
 `,
   // 3 — the selected organization, not the stated default.
@@ -712,26 +687,21 @@ export const x = 1;
   }
   check("allowlist: a reasonless entry is refused    ", reasonlessRefused, true);
 
-  // Rule 2's home: the RPC inside resolvePersonalOrgId is the ONE legal call,
-  // and the same call in the next function over is not.
-  const home = `import { supabase } from "@/utils/supabase/client";
-export async function resolvePersonalOrgId(): Promise<string> {
+  // Rule 2 has no home: the retired RPC is flagged in every file, including
+  // the ones that used to own it, and under either spelling.
+  const formerHome = `import { supabase } from "@/utils/supabase/client";
+export async function resolveOwnOrgId(): Promise<string> {
   const { data } = await supabase.rpc("current_personal_org_id");
   return data as string;
 }
-export async function ensureOrgIdServer(client: any, orgId?: string | null) {
-  if (orgId) return orgId;
-  const { data } = await client.rpc("current_personal_org_id");
-  return data as string;
+export async function provision(client: any, userId: string) {
+  return client.rpc("ensure_personal_organization", { p_user_id: userId });
 }
 `;
-  const homeHits = scanSource(PERSONAL_ORG_HOME, home).filter((v) => v.rule === 2);
-  check("rule 2: the one legal call is not flagged   ", homeHits.length === 1, true);
-  check(
-    "rule 2: the call outside the function IS flagged",
-    homeHits.some((v) => v.line === 8),
-    true,
+  const homeHits = scanSource("lib/organizations/ensureOrgId.ts", formerHome).filter(
+    (v) => v.rule === 2,
   );
+  check("rule 2: every retired RPC call is flagged   ", homeHits.length === 2, true);
   check(
     "rule 2: a log line MENTIONING the RPC is prose  ",
     scanSource(
@@ -786,7 +756,7 @@ function main(): number {
     `\nTHE RULING (Arman, 2026-09-19): a "default organization" is at most a per-client\n` +
       `DISPLAY preference. Nothing but the org picker and pure UI display may read it. No\n` +
       `data read, write, API route, server action, transport or boot ladder may pick an\n` +
-      `organization for the user from a cookie, a saved preference, or the personal org.\n` +
+      `organization for the user from a cookie, a saved preference, or "their first org".\n` +
       `Sole-membership auto-select is fine. Carry the organization the person SELECTED, or\n` +
       `fail loudly with the picker — never guess.\n` +
       `A genuine exception goes in scripts/no-default-organization.allowlist.json with a reason.`,

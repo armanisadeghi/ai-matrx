@@ -32,8 +32,7 @@
 //      happens to have written first. THREE states, and there is a name for
 //      each: `organizationState`.
 //   4. **The read FAILED.** (R37, 2026-09-18.) An aborted fetch, a membership
-//      read that threw, a `current_personal_org_id()` that answered
-//      `TypeError: Failed to fetch` — nobody looked, so nothing at all is known
+//      read that threw with `TypeError: Failed to fetch` — nobody looked, so nothing at all is known
 //      about this person's memberships. Saying "select an organization" here is
 //      a claim about memberships we never read: seat-proven on 2026-09-18,
 //      where a member of THIRTEEN organizations was told to pick one, disabled,

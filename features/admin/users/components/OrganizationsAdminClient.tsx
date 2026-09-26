@@ -189,10 +189,7 @@ export function OrganizationsAdminClient() {
   const availableUserOptions: UserSearchCandidate[] = users
     .filter(
       (user) =>
-        !currentMemberIds.has(user.id) &&
-        // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-        (!selectedOrganization?.is_personal ||
-          user.id === selectedOrganization.created_by),
+        !currentMemberIds.has(user.id),
     )
     .map((user) => ({
       id: user.id,
@@ -208,9 +205,7 @@ export function OrganizationsAdminClient() {
       createdAt: user.created_at,
       lastSignInAt: user.last_sign_in_at,
     }));
-  const editableRoleOptions: OrgRole[] = selectedOrganization?.is_personal
-    ? ["owner"]
-    : ROLE_OPTIONS;
+  const editableRoleOptions: OrgRole[] = ROLE_OPTIONS;
 
   // R21 (Arman, 2026-09-10): one owner per organization, and ownership moves
   // only through a transfer. The database refuses a second owner even for a
@@ -222,8 +217,7 @@ export function OrganizationsAdminClient() {
       (role) =>
         role !== "owner" ||
         member?.role === "owner" ||
-        !organizationHasOwner ||
-        selectedOrganization?.is_personal === true,
+        !organizationHasOwner,
     );
 
   function setOrganizationFocus(organization: AdminOrganizationRow) {
@@ -270,7 +264,7 @@ export function OrganizationsAdminClient() {
       await mutateMembership("POST", {
         organizationId: selectedOrganization.id,
         userId: addUserId,
-        role: selectedOrganization.is_personal ? "owner" : addRole,
+        role: addRole,
       });
       toast.success("Organization member added");
       setAddOpen(false);
@@ -382,19 +376,11 @@ export function OrganizationsAdminClient() {
       id: "type",
       header: "Type",
       accessorFn: (organization) =>
-        organization.is_system
-          ? "System"
-          : organization.is_personal
-            ? "Personal"
-            : "Shared",
+        organization.is_system ? "System" : "Shared",
       filter: "select",
       cell: (organization) => (
         <Badge variant="outline">
-          {organization.is_system
-            ? "System"
-            : organization.is_personal
-              ? "Personal"
-              : "Shared"}
+          {organization.is_system ? "System" : "Shared"}
         </Badge>
       ),
       width: 90,
@@ -450,12 +436,7 @@ export function OrganizationsAdminClient() {
         <Select
           value={member.role}
           onValueChange={(value) => void changeRole(member, value)}
-          disabled={
-            (selectedOrganization?.is_personal &&
-              (member.user_id !== selectedOrganization.created_by ||
-                member.role === "owner")) ||
-            savingMembershipId === member.id
-          }
+          disabled={savingMembershipId === member.id}
         >
           <SelectTrigger className="h-7 w-28 text-xs">
             <SelectValue />
@@ -652,23 +633,13 @@ export function OrganizationsAdminClient() {
               {selectedOrganization ? (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span>{members.length} members</span>
-                  {selectedOrganization.is_personal ? (
-                    <Badge variant="outline" className="h-5 text-[10px]">
-                      Personal — repair only
-                    </Badge>
-                  ) : null}
                 </div>
               ) : null}
             </div>
             <Button
               size="sm"
               onClick={() => setAddOpen(true)}
-              disabled={
-                !selectedOrganization ||
-                (selectedOrganization.is_personal &&
-                  (selectedOrganization.member_count > 0 ||
-                    !selectedOrganization.created_by))
-              }
+              disabled={!selectedOrganization}
             >
               <Plus className="mr-1 h-4 w-4" /> Add member
             </Button>
@@ -715,13 +686,7 @@ export function OrganizationsAdminClient() {
                       label: "Remove from organization…",
                       icon: Trash2,
                       destructive: true,
-                      disabled:
-                        !clickedMember ||
-                        Boolean(
-                          selectedOrganization?.is_personal &&
-                            clickedMember.user_id ===
-                              selectedOrganization.created_by,
-                        ),
+                      disabled: !clickedMember,
                       onSelect: () =>
                         clickedMember && void removeMember(clickedMember),
                     },
@@ -770,11 +735,7 @@ export function OrganizationsAdminClient() {
                     variant="ghost"
                     className="h-7 w-7 text-destructive hover:text-destructive"
                     title="Remove member"
-                    disabled={
-                      (selectedOrganization?.is_personal &&
-                        member.user_id === selectedOrganization.created_by) ||
-                      savingMembershipId === member.id
-                    }
+                    disabled={savingMembershipId === member.id}
                     onClick={() => void removeMember(member)}
                   >
                     {savingMembershipId === member.id ? (
@@ -815,8 +776,7 @@ export function OrganizationsAdminClient() {
             <DialogTitle>Add organization member</DialogTitle>
             <DialogDescription>
               Add an existing account to {selectedOrganization?.name}. New-user
-              invitations remain in the Invitations tab. Personal organizations
-              can only restore their creator as owner.
+              invitations remain in the Invitations tab.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -841,11 +801,10 @@ export function OrganizationsAdminClient() {
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Role</label>
               <Select
-                value={selectedOrganization?.is_personal ? "owner" : addRole}
+                value={addRole}
                 onValueChange={(role) => {
                   if (isOrgRole(role)) setAddRole(role);
                 }}
-                disabled={selectedOrganization?.is_personal}
               >
                 <SelectTrigger>
                   <SelectValue />

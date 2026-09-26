@@ -4,7 +4,7 @@
 // handler answers with. It lives apart from the error class and the
 // memberships read (`organizationRequiredServerError.ts`) for one mechanical
 // reason — `next/server` must never be dragged into a browser bundle, and
-// `lib/organizations/personalOrg.ts`, which raises the refusal, is imported
+// `lib/organizations/ensureOrgId.ts`, which raises the refusal, is imported
 // by client code (`usePreferenceSync`, every `ensureOrgId` callsite). Keeping
 // the throw in a `next/server`-free leaf is what lets both sides share ONE
 // error class instead of two that `instanceof` cannot match.

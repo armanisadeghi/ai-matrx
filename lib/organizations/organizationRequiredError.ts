@@ -43,7 +43,7 @@ export function isOrganizationRequiredError(err: unknown): boolean {
   //
   // `OrganizationRequiredServerError` (lib/organizations/organizationRequiredResponse)
   // is what a Next route handler throws when the request needs an organization
-  // and names none — the replacement for the `current_personal_org_id()`
+  // and names none — the replacement for the server-side
   // fallback the 2026-09-19 ruling removed. It is the SAME condition as the
   // transport kernel's, raised on the other side of the wire, so it must reach
   // the same screen: the notice with the picker, never a raw string.

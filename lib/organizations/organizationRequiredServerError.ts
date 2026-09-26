@@ -6,7 +6,7 @@
 // DISPLAY preference. Nothing but the org picker and pure UI display may read
 // it. No data read, no write, no API route, no server action, no transport and
 // no boot ladder may PICK an organization for the user — not from a cookie,
-// not from a saved preference, not from their personal workspace. A request
+// not from a saved preference, not from "their first organization". A request
 // that needs an organization and has none is HELD: the person is shown their
 // memberships, SETS one, and the request proceeds normally.
 //
@@ -15,10 +15,10 @@
 //    have a user and a default org, which means we just have user now."
 //
 // Until 2026-09-19 the route handlers under `app/api/**` that needed an
-// organization called `ensureOrgIdServer(client, undefined)`, which ended in
-// the `current_personal_org_id()` RPC — the server substituting the person's
-// personal workspace for a choice nobody made. That is the exact shape the
-// ruling forbids, on the one side of the wire the client cannot see.
+// organization called `ensureOrgIdServer(client, undefined)`, which ended in a
+// server-side fallback — the server substituting an organization for a choice
+// nobody made. That is the exact shape the ruling forbids, on the one side of
+// the wire the client cannot see.
 //
 // THE ENVELOPE IS BYTE-FOR-BYTE AIDREAM'S (2026-09-19 unification).
 // -------------------------------------------------------------------------

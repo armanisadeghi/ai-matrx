@@ -4,8 +4,8 @@
  *
  * From the seat, on a cold load whose Supabase calls failed:
  *
- *   +4.4s  [resolveActiveOrgContext] current_personal_org_id() failed;
- *          falling back to org-list heuristic {TypeError: Failed to fetch}
+ *   +4.4s  [resolveActiveOrgContext] the boot organization read failed
+ *          {TypeError: Failed to fetch}
  *   +4.4s  the import control's title: "Checking which organization you are
  *          working in…"  →  "Select an organization before importing Google
  *          Tasks.", disabled, for the remaining 24 seconds
@@ -225,14 +225,13 @@ describe("a failed organization read is unavailable, never required", () => {
     expect(gate.unavailableReason).toMatch(/Failed to fetch/);
   });
 
-  it("a degraded resolve (the personal-org RPC failed) is unavailable too", async () => {
-    // The exact seat shape: the RPC failed, the resolver fell through every
-    // rung and answered with no selection although thirteen memberships exist.
+  it("a degraded resolve (a failed read the resolver reported) is unavailable too", async () => {
+    // The resolver answered with no selection AND said it could not read —
+    // thirteen memberships exist and nobody looked.
     resolveActiveOrgContext.mockResolvedValue({
       organization_id: null,
       organization_name: null,
-      personal_organization_id: null,
-      unreadableReason: "the personal-organization read failed: Failed to fetch",
+      unreadableReason: "the organization read failed: Failed to fetch",
     });
     current = await boot();
     expect(readHook(() => useOrganizationRequired()).organizationState).toBe(
@@ -267,7 +266,6 @@ describe("a failed organization read is unavailable, never required", () => {
     resolveActiveOrgContext.mockResolvedValue({
       organization_id: "org-7",
       organization_name: "Titanium Success",
-      personal_organization_id: "personal-1",
       unreadableReason: null,
     });
     current = await boot();
@@ -287,12 +285,10 @@ describe("a failed organization read is unavailable, never required", () => {
     // 🚨 Settled with nothing: the press is the QUESTION (2026-09-19). This
     // half asserted `disabled === true` and a press that did nothing until
     // today. The control stays LIVE, the picker opens, and the act runs with
-    // the organization the PERSON set — "personal-1" is right there in the
-    // resolved context and is still never what the act receives.
+    // the organization the PERSON set — never one the platform guessed.
     resolveActiveOrgContext.mockResolvedValue({
       organization_id: null,
       organization_name: null,
-      personal_organization_id: "personal-1",
       unreadableReason: null,
     });
     current = await boot();
@@ -312,7 +308,6 @@ describe("a failed organization read is unavailable, never required", () => {
     expect(ensureOrganizationContext).toHaveBeenCalledTimes(1);
     expect(theAct).toHaveBeenCalledTimes(1);
     expect(theAct).toHaveBeenCalledWith("org-the-person-chose");
-    expect(theAct).not.toHaveBeenCalledWith("personal-1");
     // And the refusal's press is the picker, never the read's Try again.
     expect(retryActiveOrgBootstrap).not.toHaveBeenCalled();
   });
@@ -323,7 +318,6 @@ describe("a failed organization read is unavailable, never required", () => {
     resolveActiveOrgContext.mockResolvedValue({
       organization_id: null,
       organization_name: null,
-      personal_organization_id: "personal-1",
       unreadableReason: null,
     });
     current = await boot();
@@ -351,7 +345,6 @@ describe("a failed organization read is unavailable, never required", () => {
     resolveActiveOrgContext.mockResolvedValue({
       organization_id: null,
       organization_name: null,
-      personal_organization_id: "personal-1",
       unreadableReason: null,
     });
     current = await boot();
@@ -390,7 +383,6 @@ describe("a failed organization read is unavailable, never required", () => {
     resolveActiveOrgContext.mockResolvedValue({
       organization_id: null,
       organization_name: null,
-      personal_organization_id: "personal-1",
       unreadableReason: null,
     });
     current = await boot();
@@ -419,7 +411,6 @@ describe("a failed organization read is unavailable, never required", () => {
     resolveActiveOrgContext.mockResolvedValue({
       organization_id: "org-7",
       organization_name: "Titanium Success",
-      personal_organization_id: "personal-1",
       unreadableReason: null,
     });
     current = await boot();

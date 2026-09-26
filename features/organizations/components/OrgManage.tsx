@@ -118,13 +118,9 @@ export function OrgManage({
 
   const canManageSettings = isOwner || isAdmin;
   const canManageMembers = isOwner || isAdmin;
-  const mayManageInvitations = canManageInvitations(
-    userRole,
-    displayOrganization.isPersonal,
-  );
-  const canDelete = isOwner && !displayOrganization.isPersonal;
-  // A personal workspace has one member, whose archived items are already in their own Trash.
-  const showOrgTrash = canManageMembers && !displayOrganization.isPersonal;
+  const mayManageInvitations = canManageInvitations(userRole);
+  const canDelete = isOwner;
+  const showOrgTrash = canManageMembers;
 
   const slug = displayOrganization.slug ?? displayOrganization.id;
   const RoleIcon =
@@ -271,9 +267,6 @@ export function OrgManage({
                     abbreviation={displayOrganization.abbreviation}
                     className="h-5 min-w-8 rounded border border-border bg-muted px-1.5 text-[10px] text-muted-foreground"
                   />
-                  {displayOrganization.isPersonal && (
-                    <Badge variant="secondary">Personal</Badge>
-                  )}
                   <Badge variant="outline" className="text-xs capitalize gap-1">
                     <RoleIcon className="h-3 w-3" />
                     {userRole}
@@ -286,7 +279,7 @@ export function OrgManage({
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                {canManageMembers && !displayOrganization.isPersonal && (
+                {canManageMembers && (
                   <Button asChild variant="default" size="sm">
                     <Link href={`/organizations/${slug}/admin`}>
                       <UserCog className="h-3.5 w-3.5 mr-1.5" />
@@ -410,7 +403,6 @@ export function OrgManage({
                 orgSlugOrId={slug}
                 userRole={userRole}
                 isOwner={isOwner}
-                isPersonal={displayOrganization.isPersonal}
               />
             </SectionCard>
           )}

@@ -5,13 +5,10 @@
 // `utils/auth/getUserId.ts` for org instead of user.
 //
 // Source of truth is Redux ONLY: `appContext.organization_id`, the org the
-// user explicitly selected for the current request context. A personal org is
-// identity metadata, not a transport fallback and not a write fallback: there
-// is no `?? personal_organization_id` here any more (2026-09-17). Boot is
-// TOTAL since 2026-09-12 — `resolveActiveOrgContext` rung (b) explicitly
-// SELECTS the user's own personal workspace at bootstrap when nothing else
-// applies — so a null here means genuinely unresolved (no memberships) or not
-// yet hydrated, never "they have a personal org we could have used".
+// user explicitly selected for the current request context. There is no
+// fallback organization here (2026-09-17): a null means genuinely unresolved
+// (no selection among several memberships, or none at all) or not yet
+// hydrated.
 //
 // Why this exists: org is now required on every org-scoped write. Service
 // callsites must always attach the user's CURRENT org — not a per-callsite

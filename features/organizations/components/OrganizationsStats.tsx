@@ -3,13 +3,11 @@ import { Skeleton } from "@ai-matrx/design-system";
 interface OrganizationsStatsProps {
   loading: boolean;
   organizationCount: number;
-  teamCount: number;
 }
 
 export function OrganizationsStats({
   loading,
   organizationCount,
-  teamCount,
 }: OrganizationsStatsProps) {
   if (loading) {
     return (
@@ -17,11 +15,10 @@ export function OrganizationsStats({
         className="flex items-center gap-5 flex-wrap"
         role="status"
         aria-busy="true"
-        aria-label="Loading workspace statistics"
+        aria-label="Loading organization statistics"
       >
-        <span className="sr-only">Loading workspace statistics</span>
+        <span className="sr-only">Loading organization statistics</span>
         <Skeleton className="h-6 w-28" />
-        <Skeleton className="h-6 w-20" />
       </div>
     );
   }
@@ -30,9 +27,8 @@ export function OrganizationsStats({
     <div className="flex items-center gap-5 flex-wrap">
       <Stat
         value={organizationCount}
-        label={organizationCount === 1 ? "workspace" : "workspaces"}
+        label={organizationCount === 1 ? "organization" : "organizations"}
       />
-      <Stat value={teamCount} label={teamCount === 1 ? "team" : "teams"} />
     </div>
   );
 }

@@ -242,15 +242,11 @@ export function GeneralSettings({
         {/* Abbreviation */}
         <div className="space-y-2">
           <Label
-            htmlFor={
-              isEditing && !organization.isPersonal
-                ? `${fieldId}-abbreviation`
-                : undefined
-            }
+            htmlFor={isEditing ? `${fieldId}-abbreviation` : undefined}
           >
             Abbreviation *
           </Label>
-          {isEditing && !organization.isPersonal ? (
+          {isEditing ? (
             <>
               <Input
                 id={`${fieldId}-abbreviation`}
@@ -295,9 +291,7 @@ export function GeneralSettings({
             id={`${fieldId}-abbreviation-help`}
             className="text-xs text-muted-foreground"
           >
-            {organization.isPersonal
-              ? "Personal workspaces always use ME."
-              : "2–3 letters used anywhere the full organization name will not fit."}
+            2–3 letters used anywhere the full organization name will not fit.
           </p>
         </div>
 
@@ -492,19 +486,6 @@ export function GeneralSettings({
                 {organization.updatedAt
                   ? format(new Date(organization.updatedAt), "PPP")
                   : "Unknown"}
-              </p>
-            </div>
-
-            <div>
-              <Label className="text-xs text-muted-foreground">
-                Organization Type
-              </Label>
-              <p className="text-sm">
-                {organization.isPersonal ? (
-                  <Badge variant="secondary">Personal</Badge>
-                ) : (
-                  <Badge variant="secondary">Team</Badge>
-                )}
               </p>
             </div>
 
