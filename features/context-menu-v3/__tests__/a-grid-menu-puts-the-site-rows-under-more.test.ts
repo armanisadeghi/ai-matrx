@@ -69,3 +69,21 @@ describe("the canonical table asks for it", () => {
     expect(toContextMenuExtraSections(sections).every((s) => s.foldSiteMenu === true)).toBe(true);
   });
 });
+
+describe("the rich-document rows join the same More…", () => {
+  it("More… opens the model's site rows AND the rich rows, each run against the rich target", async () => {
+    const { foldRichIntoMore } = await import("../components/AlchemyMenuContent");
+    const actions = contextMenuActionsFromModel(foldSiteMenuIntoMore(gridCellMenu()), "g2");
+    const richTarget = createClickTarget({ host: { richDocument: { kind: "rich" } } });
+    const ran: unknown[] = [];
+    const compare = { id: "compare-clipboard", label: "Compare with clipboard", category: "history", order: 1, eligible: () => ({ status: "available" }), run: (t: unknown) => void ran.push(t) } as never;
+    const folded = foldRichIntoMore(actions, async () => [{ action: compare, target: richTarget }]);
+    const more = folded.find((a) => a.id === "cm:site-more")!;
+    const inside = await more.expand!(createClickTarget(), new AbortController().signal);
+    const labels = inside.map((a) => a.label);
+    expect(labels).toContain("Read aloud");
+    expect(labels).toContain("Compare with clipboard");
+    await inside.find((a) => a.label === "Compare with clipboard")!.run(createClickTarget(), {} as never);
+    expect(ran).toEqual([richTarget]);
+  });
+});
