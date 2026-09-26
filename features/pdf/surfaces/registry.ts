@@ -21,7 +21,7 @@ import {
   Zap,
   Database,
 } from "lucide-react";
-import { buildPdfExtractorHref } from "./hrefs";
+import { buildPdfExtractorHref, buildSourceHref } from "./hrefs";
 
 export type PdfSurfaceId =
   | "file-viewer"
@@ -71,10 +71,9 @@ export const PDF_SURFACES: PdfSurfaceDef[] = [
   },
   {
     id: "rag-library",
-    label: "Knowledge library",
-    description: "Knowledge documents built from this file",
+    label: "Knowledge source",
+    description: "This document's Source in Knowledge",
     icon: Database,
-    buildHref: ({ processedDocumentId }) =>
-      processedDocumentId ? `/knowledge/library` : null,
+    buildHref: buildSourceHref,
   },
 ];

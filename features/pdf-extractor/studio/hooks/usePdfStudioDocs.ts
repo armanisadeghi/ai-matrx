@@ -154,6 +154,14 @@ export function usePdfStudioDocs(opts?: {
           // Soft-deleted (trashed) docs stay out of view: that is deletion,
           // not archiving, and the law does not reveal it.
           .is("deleted_at", null)
+          // A Source materialized in the background (the 2026-09-26 files
+          // backfill stamps `intelligence_policy = 'materialize_only'`) is
+          // not something this person extracted: 8,200 of them — crawled
+          // pages, markdown, HTML — pushed every real PDF past `pageSize`
+          // and out of this list. PDFs stay whatever made them.
+          .or(
+            "intelligence_policy.is.null,intelligence_policy.neq.materialize_only,mime_type.eq.application/pdf",
+          )
           .order("created_at", { ascending: false })
           .limit(pageSize);
         if (err) throw err;
