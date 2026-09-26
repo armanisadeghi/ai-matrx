@@ -25111,6 +25111,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_fields: Json
+          deleted_at: string | null
           description: string | null
           extra_inputs: Json
           file_id: string
@@ -25134,6 +25135,8 @@ export type Database = {
           updated_by: string | null
           validates_job_id: string | null
           variable_mapping: Json
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           agent_id?: string | null
@@ -25146,6 +25149,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           description?: string | null
           extra_inputs?: Json
           file_id: string
@@ -25169,6 +25173,8 @@ export type Database = {
           updated_by?: string | null
           validates_job_id?: string | null
           variable_mapping?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           agent_id?: string | null
@@ -25181,6 +25187,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           description?: string | null
           extra_inputs?: Json
           file_id?: string
@@ -25204,6 +25211,8 @@ export type Database = {
           updated_by?: string | null
           validates_job_id?: string | null
           variable_mapping?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -25342,6 +25351,8 @@ export type Database = {
           file_id: string
           id: string
           job_id: string
+          metadata: Json
+          organization_id: string | null
           page_run_id: string
           payload: Json
           run_id: string
@@ -25354,6 +25365,8 @@ export type Database = {
           file_id: string
           id?: string
           job_id: string
+          metadata?: Json
+          organization_id?: string | null
           page_run_id: string
           payload: Json
           run_id: string
@@ -25366,6 +25379,8 @@ export type Database = {
           file_id?: string
           id?: string
           job_id?: string
+          metadata?: Json
+          organization_id?: string | null
           page_run_id?: string
           payload?: Json
           run_id?: string
@@ -25482,6 +25497,7 @@ export type Database = {
           is_continuation: boolean
           locator: Json
           metadata: Json
+          organization_id: string | null
           page_index: number
           page_number: number
           portion_kind: string
@@ -25514,6 +25530,7 @@ export type Database = {
           is_continuation?: boolean
           locator?: Json
           metadata?: Json
+          organization_id?: string | null
           page_index: number
           page_number: number
           portion_kind?: string
@@ -25546,6 +25563,7 @@ export type Database = {
           is_continuation?: boolean
           locator?: Json
           metadata?: Json
+          organization_id?: string | null
           page_index?: number
           page_number?: number
           portion_kind?: string
@@ -29184,86 +29202,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      wbx_capture: {
-        Row: {
-          captured_at: string
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          deleted_at: string | null
-          description: string | null
-          id: string
-          lang: string | null
-          ld_json: Json | null
-          markdown: string | null
-          media_count: number
-          metadata: Json | null
-          organization_id: string
-          pattern_id: string | null
-          soup: Json
-          title: string | null
-          updated_at: string
-          updated_by: string | null
-          url: string
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          captured_at?: string
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          lang?: string | null
-          ld_json?: Json | null
-          markdown?: string | null
-          media_count?: number
-          metadata?: Json | null
-          organization_id: string
-          pattern_id?: string | null
-          soup: Json
-          title?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          url: string
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          captured_at?: string
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          lang?: string | null
-          ld_json?: Json | null
-          markdown?: string | null
-          media_count?: number
-          metadata?: Json | null
-          organization_id?: string
-          pattern_id?: string | null
-          soup?: Json
-          title?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          url?: string
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wbx_capture_pattern_fk"
-            columns: ["pattern_id"]
-            isOneToOne: false
-            referencedRelation: "wbx_pattern"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       wbx_demo: {
         Row: {
@@ -55493,7 +55431,6 @@ export type Database = {
       }
       organization_preferences: {
         Row: {
-          auto_index_non_pdf: boolean | null
           auto_rag_enabled: boolean
           coding_session_provider_pin_wins: boolean | null
           created_at: string
@@ -55508,7 +55445,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          auto_index_non_pdf?: boolean | null
           auto_rag_enabled?: boolean
           coding_session_provider_pin_wins?: boolean | null
           created_at?: string
@@ -55523,7 +55459,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          auto_index_non_pdf?: boolean | null
           auto_rag_enabled?: boolean
           coding_session_provider_pin_wins?: boolean | null
           created_at?: string
@@ -65636,6 +65571,111 @@ export type Database = {
           },
         ]
       }
+      cutover_evaluation_replaced: {
+        Row: {
+          archived_ids: string[]
+          id: string
+          organization_id: string
+          people: string[]
+          press_id: string
+          replaced_at: string
+          rows_archived: number
+          rows_put_back: number
+          rows_unarchived: number
+          says: string
+          settings_archived: number
+          settings_put_back: number
+          table_id: string
+          table_name: string | null
+          writes: number
+        }
+        Insert: {
+          archived_ids?: string[]
+          id?: string
+          organization_id: string
+          people?: string[]
+          press_id: string
+          replaced_at?: string
+          rows_archived: number
+          rows_put_back: number
+          rows_unarchived: number
+          says: string
+          settings_archived: number
+          settings_put_back: number
+          table_id: string
+          table_name?: string | null
+          writes: number
+        }
+        Update: {
+          archived_ids?: string[]
+          id?: string
+          organization_id?: string
+          people?: string[]
+          press_id?: string
+          replaced_at?: string
+          rows_archived?: number
+          rows_put_back?: number
+          rows_unarchived?: number
+          says?: string
+          settings_archived?: number
+          settings_put_back?: number
+          table_id?: string
+          table_name?: string | null
+          writes?: number
+        }
+        Relationships: []
+      }
+      cutover_evaluation_write: {
+        Row: {
+          created: boolean
+          data_class: string
+          first_at: string
+          first_by: string | null
+          id: string
+          last_at: string
+          last_by: string | null
+          organization_id: string
+          pre_image: Json | null
+          record_id: string
+          replaced_at: string | null
+          replaced_in: string | null
+          table_id: string
+          writes: number
+        }
+        Insert: {
+          created: boolean
+          data_class: string
+          first_at?: string
+          first_by?: string | null
+          id?: string
+          last_at?: string
+          last_by?: string | null
+          organization_id: string
+          pre_image?: Json | null
+          record_id: string
+          replaced_at?: string | null
+          replaced_in?: string | null
+          table_id: string
+          writes?: number
+        }
+        Update: {
+          created?: boolean
+          data_class?: string
+          first_at?: string
+          first_by?: string | null
+          id?: string
+          last_at?: string
+          last_by?: string | null
+          organization_id?: string
+          pre_image?: Json | null
+          record_id?: string
+          replaced_at?: string | null
+          replaced_in?: string | null
+          table_id?: string
+          writes?: number
+        }
+        Relationships: []
+      }
       cutover_seam: {
         Row: {
           flip_does: string
@@ -71416,6 +71456,10 @@ export type Database = {
       _cf_valid_date: { Args: { p_value: string }; Returns: boolean }
       _cf_valid_datetime: { Args: { p_value: string }; Returns: boolean }
       _confirmation_admission: { Args: { p_relid: unknown }; Returns: string }
+      _cutover_copy_resync: {
+        Args: { p_actor: string; p_org: string; p_press: string }
+        Returns: Json
+      }
       _cutover_seam_apply: {
         Args: {
           p_actor: string
@@ -71979,6 +72023,10 @@ export type Database = {
         Args: { p_census: Json; p_key: string; p_seam: string }
         Returns: Json
       }
+      cutover_evaluation_carry: {
+        Args: { p_id: string; p_org: string; p_patch: Json }
+        Returns: boolean
+      }
       cutover_seam_press: {
         Args: {
           p_note?: string
@@ -72162,6 +72210,23 @@ export type Database = {
           item_type: string
           max_level: Database["public"]["Enums"]["permission_level"]
         }[]
+      }
+      detail_parent_access: {
+        Args: {
+          p_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_type: string
+        }
+        Returns: boolean
+      }
+      detail_parent_access_for: {
+        Args: {
+          p_id: string
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_type: string
+          p_user: string
+        }
+        Returns: boolean
       }
       detail_parent_columns: { Args: { p_token: string }; Returns: string[] }
       doctrine_shape_vocabulary: {
@@ -73587,6 +73652,7 @@ export type Database = {
         Args: { p_consumer_key: string; p_scope: Json }
         Returns: undefined
       }
+      write_is_a_persons_own: { Args: never; Returns: boolean }
     }
     Enums: {
       confirmation: "unconfirmed" | "confirmed"
@@ -77804,6 +77870,12 @@ export type Database = {
           p_target_type: string
         }
         Returns: number
+      }
+      association_link_sources: {
+        Args: { p_label?: string; p_target_type: string }
+        Returns: {
+          source_type: string
+        }[]
       }
       auth_is_org_admin: {
         Args: { org_id: string; user_id: string }
@@ -106189,7 +106261,6 @@ export type Database = {
       }
       user_preferences: {
         Row: {
-          auto_index_non_pdf: boolean | null
           auto_rag_enabled: boolean
           created_at: string
           created_by: string | null
@@ -106204,7 +106275,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          auto_index_non_pdf?: boolean | null
           auto_rag_enabled?: boolean
           created_at?: string
           created_by?: string | null
@@ -106219,7 +106289,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          auto_index_non_pdf?: boolean | null
           auto_rag_enabled?: boolean
           created_at?: string
           created_by?: string | null
