@@ -252,6 +252,22 @@ export function formatDecisionAnswer(answer: DecisionAnswerView): string {
 }
 
 /**
+ * The answer in words, for a glance. A score reads as its peak level
+ * ("4 · down for someone"), never "2.3 — down for someone", which put the
+ * probability-weighted average and the peak level's name in one phrase. The
+ * average stays available on the view (`answer.answer`) for surfaces that show
+ * it as a secondary figure; the text export keeps `formatDecisionAnswer`.
+ */
+export function formatAnswerHeadline(answer: DecisionAnswerView): string {
+  if (answer.type === "score" && typeof answer.answer === "number") {
+    const key = answer.answerKey;
+    const label = key == null ? undefined : answer.legend[key];
+    if (label) return `${key} · ${label}`;
+  }
+  return formatDecisionAnswer(answer);
+}
+
+/**
  * The one number that belongs beside the answer: the probability OF THE
  * ANSWER GIVEN, never the biggest number in the distribution and never the
  * raw `probability` field.

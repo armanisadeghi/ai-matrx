@@ -35,7 +35,7 @@ import {
 } from "../decisions/verdicts";
 import {
   answerProbability,
-  formatDecisionAnswer,
+  formatAnswerHeadline,
   METHOD_EXPLANATIONS,
   METHOD_LABELS,
   type DecisionAnswersView,
@@ -98,8 +98,8 @@ function ColumnAnswerCell({
   const probability = answerProbability(answer);
   return (
     <span className="inline-flex items-baseline gap-1.5">
-      <span className="font-medium">{formatDecisionAnswer(answer)}</span>
-      <span className="font-mono text-[10px] text-muted-foreground">
+      <span className="font-medium">{formatAnswerHeadline(answer)}</span>
+      <span className="text-[11px] tabular-nums text-muted-foreground">
         {percent(probability)}
       </span>
     </span>
@@ -123,7 +123,10 @@ export function DecisionComparisonTable() {
       columns.map((column, index) => ({
         columnId: column.columnId,
         label: column.label ?? `Agent ${index + 1}`,
-        view: selectColumnAnswers(messagesByConversationId, column.conversationId),
+        view: selectColumnAnswers(
+          messagesByConversationId,
+          column.conversationId,
+        ),
       })),
     [columns, messagesByConversationId],
   );
@@ -137,7 +140,8 @@ export function DecisionComparisonTable() {
       if (!questionNames.includes(answer.name)) questionNames.push(answer.name);
     }
     for (const refusal of column.view?.refusals ?? []) {
-      if (!questionNames.includes(refusal.name)) questionNames.push(refusal.name);
+      if (!questionNames.includes(refusal.name))
+        questionNames.push(refusal.name);
     }
   }
 
@@ -184,11 +188,20 @@ export function DecisionComparisonTable() {
         if (draft.trim()) {
           const conversationIds = answersByColumn
             .filter((c) => c.view?.answers.some((a) => a.name === questionName))
-            .map((c) => columns.find((col) => col.columnId === c.columnId)?.conversationId)
+            .map(
+              (c) =>
+                columns.find((col) => col.columnId === c.columnId)
+                  ?.conversationId,
+            )
             .filter((id): id is string => Boolean(id));
           if (conversationIds.length > 0) {
             try {
-              const labeled = await labelConversations(dispatch, conversationIds, questionName, draft);
+              const labeled = await labelConversations(
+                dispatch,
+                conversationIds,
+                questionName,
+                draft,
+              );
               const skipped = Object.values(labeled.skipped ?? {});
               if (skipped.length > 0) {
                 setVerdictError(
@@ -196,7 +209,10 @@ export function DecisionComparisonTable() {
                 );
               }
             } catch (labelError) {
-              console.error("[decision-verdicts] calibration label failed", labelError);
+              console.error(
+                "[decision-verdicts] calibration label failed",
+                labelError,
+              );
               setVerdictError(
                 "Saved on the comparison, but not recorded for calibration — label it from Review answers instead.",
               );
@@ -256,116 +272,141 @@ export function DecisionComparisonTable() {
         </p>
       )}
 
-      <table className="w-full text-xs border-collapse">
-        <thead>
-          <tr className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            <th className="text-left font-medium py-1 pr-2">Question</th>
-            {answering.map((column) => (
-              <th
-                key={column.columnId}
-                className="text-left font-medium py-1 pr-2"
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  {column.label}
-                  {column.view?.method && (
-                    <span
-                      className="normal-case font-normal text-[10px] text-muted-foreground"
-                      title={METHOD_EXPLANATIONS[column.view.method]}
-                    >
-                      {METHOD_LABELS[column.view.method]}
-                    </span>
-                  )}
-                </span>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[32rem] text-xs border-collapse">
+          <thead>
+            <tr className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              <th className="text-left font-medium py-1 pr-2">Question</th>
+              {answering.map((column) => (
+                <th
+                  key={column.columnId}
+                  className="text-left font-medium py-1 pr-2"
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    {column.label}
+                    {column.view?.method && (
+                      <span
+                        className="normal-case font-normal text-[10px] text-muted-foreground"
+                        title={METHOD_EXPLANATIONS[column.view.method]}
+                      >
+                        {METHOD_LABELS[column.view.method]}
+                      </span>
+                    )}
+                  </span>
+                </th>
+              ))}
+              <th className="text-left font-medium py-1 pr-2 w-[4.5rem]">
+                Delta
               </th>
-            ))}
-            <th className="text-left font-medium py-1 pr-2 w-[4.5rem]">Delta</th>
-            <th className="text-left font-medium py-1 w-[12rem]">Verdict</th>
-          </tr>
-        </thead>
-        <tbody>
-          {questionNames.map((name) => {
-            const answers = answering.map((c) =>
-              c.view?.answers.find((a) => a.name === name),
-            );
-            const probabilities = answers
-              .map((a) => (a ? answerProbability(a) : null))
-              .filter((p): p is number => p != null);
-            const spread =
-              probabilities.length >= 2
-                ? Math.max(...probabilities) - Math.min(...probabilities)
-                : null;
-            const shownAnswers = answers
-              .map((a) => (a ? formatDecisionAnswer(a) : null))
-              .filter((a): a is string => a != null);
-            const disagree =
-              shownAnswers.length >= 2 &&
-              new Set(shownAnswers).size > 1;
-            const verdict = verdicts[name];
-            const draft = drafts[name] ?? verdict?.answer ?? "";
-            return (
-              <tr key={name} className="border-t border-border/60 align-top">
-                <td className="py-1.5 pr-2 font-mono text-[10px] text-muted-foreground">
-                  {name}
-                </td>
-                {answering.map((column) => (
-                  <td key={column.columnId} className="py-1.5 pr-2">
-                    <ColumnAnswerCell view={column.view} questionName={name} />
+              <th className="text-left font-medium py-1 w-[12rem]">Verdict</th>
+            </tr>
+          </thead>
+          <tbody>
+            {questionNames.map((name) => {
+              const answers = answering.map((c) =>
+                c.view?.answers.find((a) => a.name === name),
+              );
+              const probabilities = answers
+                .map((a) => (a ? answerProbability(a) : null))
+                .filter((p): p is number => p != null);
+              const spread =
+                probabilities.length >= 2
+                  ? Math.max(...probabilities) - Math.min(...probabilities)
+                  : null;
+              const shownAnswers = answers
+                .map((a) => (a ? formatAnswerHeadline(a) : null))
+                .filter((a): a is string => a != null);
+              const disagree =
+                shownAnswers.length >= 2 && new Set(shownAnswers).size > 1;
+              const verdict = verdicts[name];
+              const draft = drafts[name] ?? verdict?.answer ?? "";
+              return (
+                <tr key={name} className="border-t border-border/60 align-top">
+                  <td className="py-1.5 pr-2">
+                    {/* The question as asked leads; the field name is secondary. */}
+                    {(() => {
+                      const asked = answers.find(
+                        (a) => a?.instruction,
+                      )?.instruction;
+                      return (
+                        <>
+                          {asked && (
+                            <span className="block text-xs leading-snug text-foreground">
+                              {asked}
+                            </span>
+                          )}
+                          <span className="block font-mono text-[10px] text-muted-foreground">
+                            {name}
+                          </span>
+                        </>
+                      );
+                    })()}
                   </td>
-                ))}
-                <td className="py-1.5 pr-2">
-                  {disagree ? (
-                    <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive">
-                      different answers
-                    </span>
-                  ) : spread != null ? (
-                    <span
-                      className={cn(
-                        "font-mono text-[10px]",
-                        spread >= 0.2
-                          ? "text-amber-600 dark:text-amber-400"
-                          : "text-muted-foreground",
-                      )}
-                    >
-                      {percent(spread)}
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-muted-foreground">—</span>
-                  )}
-                </td>
-                <td className="py-1.5">
-                  <div className="flex items-center gap-1">
-                    <Input
-                      value={draft}
-                      disabled={!setId}
-                      onChange={(e) =>
-                        setDrafts((prev) => ({
-                          ...prev,
-                          [name]: e.target.value,
-                        }))
-                      }
-                      onBlur={() => void commitVerdict(name)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") void commitVerdict(name);
-                      }}
-                      placeholder={setId ? "What was true" : "Save first"}
-                      aria-label={`True answer for ${name}`}
-                      className="h-6 text-[11px]"
-                    />
-                    {savingName === name ? (
-                      <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
-                    ) : verdict ? (
-                      <Check
-                        className="w-3 h-3 text-emerald-500"
-                        aria-label="Verdict saved"
+                  {answering.map((column) => (
+                    <td key={column.columnId} className="py-1.5 pr-2">
+                      <ColumnAnswerCell
+                        view={column.view}
+                        questionName={name}
                       />
-                    ) : null}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                    </td>
+                  ))}
+                  <td className="py-1.5 pr-2">
+                    {disagree ? (
+                      <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive">
+                        different answers
+                      </span>
+                    ) : spread != null ? (
+                      <span
+                        className={cn(
+                          "font-mono text-[10px]",
+                          spread >= 0.2
+                            ? "text-amber-600 dark:text-amber-400"
+                            : "text-muted-foreground",
+                        )}
+                      >
+                        {percent(spread)}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground">
+                        —
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-1.5">
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={draft}
+                        disabled={!setId}
+                        onChange={(e) =>
+                          setDrafts((prev) => ({
+                            ...prev,
+                            [name]: e.target.value,
+                          }))
+                        }
+                        onBlur={() => void commitVerdict(name)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") void commitVerdict(name);
+                        }}
+                        placeholder={setId ? "What was true" : "Save first"}
+                        aria-label={`True answer for ${name}`}
+                        className="h-6 text-[11px]"
+                      />
+                      {savingName === name ? (
+                        <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                      ) : verdict ? (
+                        <Check
+                          className="w-3 h-3 text-emerald-500"
+                          aria-label="Verdict saved"
+                        />
+                      ) : null}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

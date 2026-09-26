@@ -15,6 +15,7 @@
 
 import {
   answerProbability,
+  formatAnswerHeadline,
   formatDecisionAnswer,
   probabilityOfTrue,
   readDecisionAnswers,
@@ -250,6 +251,13 @@ describe("Score — the weighted number, then the MOST LIKELY level and its prob
     const urgency = answer(JEV_RUNNER_TURN, "urgency");
     expect(formatDecisionAnswer(urgency)).toBe("3.1 — down for someone");
     expect(answerProbability(urgency)).toBeCloseTo(0.44, 10);
+  });
+
+  it("the on-screen headline names the peak level alone — no average in the phrase", () => {
+    const urgency = answer(JEV_RUNNER_TURN, "urgency");
+    expect(formatAnswerHeadline(urgency)).toBe("4 · down for someone");
+    const isDefect = answer(JEV_RUNNER_TURN, "is_defect");
+    expect(formatAnswerHeadline(isDefect)).toBe(formatDecisionAnswer(isDefect));
   });
 
   it("3.12 reads as level 4 when level 4 holds most of the mass", () => {

@@ -18,26 +18,12 @@ import { formatUsd } from "@ai-matrx/kit/format";
 import { cn } from "@/lib/utils";
 import {
   answerProbability,
-  formatDecisionAnswer,
+  formatAnswerHeadline,
   METHOD_EXPLANATIONS,
   METHOD_LABELS,
   type DecisionAnswerView,
   type DecisionAnswersView,
 } from "./read";
-
-/**
- * The answer in words. A score reads as its peak level ("4 · down for
- * someone"); the probability-weighted average sits in the quiet footer —
- * "2.3 — down for someone" put two different numbers' meanings in one phrase.
- */
-function headline(answer: DecisionAnswerView): string {
-  if (answer.type === "score" && typeof answer.answer === "number") {
-    const key = answer.answerKey;
-    const label = key == null ? undefined : answer.legend[key];
-    if (label) return `${key} · ${label}`;
-  }
-  return formatDecisionAnswer(answer);
-}
 
 function percent(value: number | null): string {
   if (value == null) return "—";
@@ -249,7 +235,7 @@ export function DecisionAnswers({
                     unreadable && "text-destructive",
                   )}
                 >
-                  {headline(answer)}
+                  {formatAnswerHeadline(answer)}
                 </span>
                 {probability != null && (
                   <span className="text-xs tabular-nums text-muted-foreground">

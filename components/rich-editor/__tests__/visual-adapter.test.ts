@@ -320,3 +320,48 @@ describe("a line break inside a table cell (verify-RC-B4 R6-3)", () => {
     expect(session.save()).toBe("| Bay | Note |\n| --- | --- |\n| B3 | Re-scan<br>before 6am |");
   });
 });
+
+describe("an in-cell <br> is a line break, not protected HTML (verify-RC-B4 R6-3 follow-up)", () => {
+  const STORED = "| Bay | Note |\n| --- | --- |\n| B3 | Re-scan<br>before 6am |";
+
+  it("deleting the break saves without asking for protected-content consent", () => {
+    const plan = planSave(STORED, "| Bay | Note |\n| --- | --- |\n| B3 | Re-scan before 6am |");
+    expect(plan.error).toBeNull();
+    expect(plan.needsConsent).toEqual([]);
+  });
+
+  it("deleting it in Visual (Backspace over the break) saves without consent", () => {
+    const session = track(open(STORED));
+    let at = -1;
+    session.editor.state.doc.descendants((node, pos) => {
+      if (node.type.name === "hardBreak") at = pos;
+      return true;
+    });
+    session.editor.commands.command(({ tr }) => {
+      tr.replaceWith(at, at + 1, session.editor.schema.text(" "));
+      return true;
+    });
+    const text = session.save();
+    expect(text).toBe("| Bay | Note |\n| --- | --- |\n| B3 | Re-scan before 6am |");
+    const plan = planSave(STORED, text);
+    expect(plan.needsConsent).toEqual([]);
+    expect(plan.error).toBeNull();
+  });
+
+  it("adding a break in a cell needs no consent either", () => {
+    const plan = planSave("| Bay | Note |\n| --- | --- |\n| B3 | Re-scan before 6am |", STORED);
+    expect(plan.needsConsent).toEqual([]);
+    expect(plan.error).toBeNull();
+  });
+
+  it("other HTML in a cell stays protected — removing it still asks", () => {
+    const stored = "| Bay | Note |\n| --- | --- |\n| B3 | <span class=\"hot\">Re-scan</span> |";
+    const plan = planSave(stored, "| Bay | Note |\n| --- | --- |\n| B3 | Re-scan |");
+    expect(plan.needsConsent.length).toBeGreaterThan(0);
+  });
+
+  it("a <br> outside a table stays protected HTML", () => {
+    const plan = planSave("Re-scan<br>before 6am", "Re-scan before 6am");
+    expect(plan.needsConsent.length).toBeGreaterThan(0);
+  });
+});
