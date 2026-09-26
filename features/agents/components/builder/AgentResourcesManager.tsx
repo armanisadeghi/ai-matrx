@@ -1,5 +1,7 @@
 "use client";
 
+import { isSyntheticAgentId } from "@/features/agents/redux/agent-definition/synthetic-id";
+import { UnsavedAgentAttachmentRow } from "./UnsavedAgentAttachmentRow";
 import { useEffect, useState } from "react";
 import { FileText, Layers, Loader2, Plus } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -158,6 +160,11 @@ function AgentResourcePickerAction({
 }
 
 export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
+  if (isSyntheticAgentId(agentId)) return <UnsavedAgentAttachmentRow label="Resources" />;
+  return <SavedAgentResourcesManager agentId={agentId} />;
+}
+
+function SavedAgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
   const [edges, setEdges] = useState<AssociationTargetEdge[]>([]);
   const [loading, setLoading] = useState(true);
   /**

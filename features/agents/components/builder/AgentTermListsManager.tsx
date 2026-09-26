@@ -1,5 +1,7 @@
 "use client";
 
+import { isSyntheticAgentId } from "@/features/agents/redux/agent-definition/synthetic-id";
+import { UnsavedAgentAttachmentRow } from "./UnsavedAgentAttachmentRow";
 import { useEffect, useState } from "react";
 import { BookA, Check, ExternalLink, Loader2, Plus, X } from "lucide-react";
 import {
@@ -35,6 +37,11 @@ const EDITOR_HREF = "/resources/term-lists";
  * server places each list where the model's vendor wants it on every run.
  */
 export function AgentTermListsManager({ agentId }: { agentId: string }) {
+  if (isSyntheticAgentId(agentId)) return <UnsavedAgentAttachmentRow label="Term lists" />;
+  return <SavedAgentTermListsManager agentId={agentId} />;
+}
+
+function SavedAgentTermListsManager({ agentId }: { agentId: string }) {
   // `loading` is DERIVED, never a separate flag the effect sets synchronously:
   // it's "the fetch for this agentId hasn't landed yet", read straight off
   // whether `fetched.agentId` still matches the current prop. That is what
