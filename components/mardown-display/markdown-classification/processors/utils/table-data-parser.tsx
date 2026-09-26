@@ -12,7 +12,8 @@ export const parseMarkdownTable = (content: string): {
     data: NormalizedTableData | null 
 } => {
     try {
-        const lines = content.split('\n').filter(line => line.trim().length > 0);
+        // Blank lines stay: a blank line is where a GFM table ENDS (findTableEnd).
+        const lines = content.split('\n');
 
         // THE table rule (gfm-table-lines) finds the table — pipe-led or pipe-less —
         // and THE parser reads it: an escaped `\|` stays in its cell.

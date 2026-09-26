@@ -380,6 +380,42 @@
           "Omar signs off once bay B3 is re-scanned."
         ]
       ]
+    },
+    {
+      "name": "a line without a pipe continues the table (GFM 202)",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\nB4 clear\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "table",
+          "| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\nB4 clear"
+        ],
+        [
+          "text",
+          "Omar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "a quote line ends a pipe-less table",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\nZone | Temp\n--- | ---\nA | 4C\n> 8C | alarm\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "table",
+          "Zone | Temp\n--- | ---\nA | 4C"
+        ],
+        [
+          "text",
+          "> 8C | alarm\n\nOmar signs off once bay B3 is re-scanned."
+        ]
+      ]
     }
   ]
 }

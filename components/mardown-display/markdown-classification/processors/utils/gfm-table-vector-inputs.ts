@@ -32,6 +32,9 @@ export const DOCUMENT_INPUTS: ReadonlyArray<{ name: string; text: string }> = [
   { name: "list item with a pipe over a rule", text: `${INTRO}\n\n- keep a | b\n--- | ---\n\n${OUTRO}` },
   { name: "a 'delimiter' with no dashes is not a table", text: `${INTRO}\n\n| Bay | Status |\n| | |\n| B3 | re-scan |\n\n${OUTRO}` },
   { name: "a pipe-less row continues a pipe-led table", text: `${INTRO}\n\n| Bay | Status |\n| --- | --- |\nB3 | re-scan\n\n${OUTRO}` },
+  // GFM spec example 202 (verify-RC-B4 R7-2): a line without a pipe is a row; a quote line ends the table.
+  { name: "a line without a pipe continues the table (GFM 202)", text: `${INTRO}\n\n| Bay | Status |\n| --- | --- |\n| B3 | re-scan |\nB4 clear\n\n${OUTRO}` },
+  { name: "a quote line ends a pipe-less table", text: `${INTRO}\n\nZone | Temp\n--- | ---\nA | 4C\n> 8C | alarm\n\n${OUTRO}` },
 ];
 
 export const ROW_INPUTS: readonly string[] = [
