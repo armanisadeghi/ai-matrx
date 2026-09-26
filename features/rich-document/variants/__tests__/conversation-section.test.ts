@@ -13,7 +13,7 @@
 import "../../actions/handlers";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { resolveActions } from "../../actions/provider";
+import { getAction, resolveActions, toAlchemyAction } from "../../actions/provider";
 import { chatContext } from "../../test-utils/chatContext";
 import {
   CONVERSATION_SUBMENU_LABEL,
@@ -71,6 +71,16 @@ describe("the Conversation section", () => {
       ]),
     );
     expect(tree.topLevel.map((a) => a.id)).not.toContain("conversation-share");
+  });
+
+  it("sits in ONE place in the Alchemy layout: every row carries the section's layout category", () => {
+    // The layout groups a section by its rows' category; a mixed section
+    // landed after "Save as" (its first ask row pulled it into the AI group).
+    const ids = section(CONVERSATION_SUBMENU_LABEL)?.actionIds ?? [];
+    const categories = new Set(
+      ids.map((id) => getAction(id)).filter(Boolean).map((a) => toAlchemyAction(a!).category),
+    );
+    expect([...categories]).toEqual(["save"]);
   });
 
   it("is absent for content with no conversation", () => {

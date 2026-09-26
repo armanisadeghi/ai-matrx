@@ -105,13 +105,14 @@ export function richDocumentSectionId(label: string): string {
   return `rd:${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 }
 
-let placementCache: Map<string, { order: number; section?: { id: string; label: string; icon?: string } }> | null = null;
+type Placement = { order: number; category?: RichDocumentAction["category"]; section?: { id: string; label: string; icon?: string } };
+let placementCache: Map<string, Placement> | null = null;
 function placementOf(id: string) {
   placementCache ??= buildPlacement();
   return placementCache.get(id);
 }
 function buildPlacement() {
-  const map = new Map<string, { order: number; section?: { id: string; label: string; icon?: string } }>();
+  const map = new Map<string, Placement>();
   MENU_STRUCTURE.forEach((section, sectionIndex) => {
     section.actionIds.forEach((id, index) => {
       const order = sectionIndex * 100 + index;
@@ -121,6 +122,7 @@ function buildPlacement() {
         const icon = section.icon ? registerAlchemyIcon(section.icon) : undefined;
         map.set(id, {
           order,
+          ...(section.layoutCategory ? { category: section.layoutCategory } : {}),
           section: {
             id: richDocumentSectionId(section.submenu),
             label: section.submenu,
@@ -236,7 +238,7 @@ export function toAlchemyAction(rd: RichDocumentAction): Action {
           },
         }
       : {}),
-    category: rd.category,
+    category: place?.category ?? rd.category,
     order: place?.order ?? 10_000 + (rd.order ?? 0),
     placement: rd.renderSlot ?? "overflow",
     ...(place?.section ? { section: place.section } : {}),

@@ -31,6 +31,12 @@ export interface MenuSection {
   icon?: LucideIcon;
   /** Action IDs in this section, in intended display order. */
   actionIds: string[];
+  /**
+   * The category every row of this section takes in the Alchemy layout, which
+   * places a section in a group by its rows' category. Set it on a section
+   * whose rows mix categories, so the section sits in ONE predictable place.
+   */
+  layoutCategory?: RichDocumentAction["category"];
 }
 
 /**
@@ -79,6 +85,9 @@ export const MENU_STRUCTURE: MenuSection[] = [
     // Present only when the source carries a conversationId.
     submenu: CONVERSATION_SUBMENU_LABEL,
     icon: MessagesSquare,
+    // Its rows mix find/ask/share/edit/export; "save" seats the section in
+    // the document group, right after the promoted rows and before "Save as".
+    layoutCategory: "save",
     actionIds: [
       "conversation-find",
       "conversation-pinned-only",
