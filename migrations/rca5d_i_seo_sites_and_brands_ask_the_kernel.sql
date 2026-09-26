@@ -1,4 +1,3 @@
--- draft: rc-a5d-deep SEO batch of the definer-door census; remove when rehearsed + suite green
 -- RC-A5d census, batch 1 (SEO) — A SITE OR A BRAND IS OPENED BY THE KERNEL, NEVER BY ORGANIZATION MEMBERSHIP.
 -- Register row RC-A5d. Census: aidream db/tests/test_definer_doors_ask_each_record.py (backlog).
 --
