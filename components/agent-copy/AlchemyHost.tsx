@@ -2,7 +2,16 @@
 
 import { alchemyReferencePort } from "./alchemy-references";
 import { sendAlchemyEmail } from "./alchemy-email";
-import { startTransition, useLayoutEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  startTransition,
+  useContext,
+  useLayoutEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import type { AlchemyHostPorts } from "@ai-matrx/alchemy/ports";
+import { createAlchemyHostPorts } from "./alchemy-host-ports";
 import { useRouter } from "next/navigation";
 import "@ai-matrx/design-system/content-transfer.css";
 import {
@@ -105,6 +114,21 @@ export function guardAiPreparation(
   };
 }
 
+const AlchemyHostPortsContext = createContext<AlchemyHostPorts | null>(null);
+
+/**
+ * The app's Alchemy host ports (`@ai-matrx/alchemy/ports`), bound once by
+ * `AlchemyHost`. Throws outside it: an unbound host is a wiring defect, not an
+ * absent capability.
+ */
+export function useAlchemyHostPorts(): AlchemyHostPorts {
+  const ports = useContext(AlchemyHostPortsContext);
+  if (!ports) {
+    throw new Error("useAlchemyHostPorts must be used inside <AlchemyHost>.");
+  }
+  return ports;
+}
+
 /**
  * Supplies frontend identity and the existing live-run renderer to Alchemy.
  * The package owns preparation; this host only adopts the duplicate stream
@@ -114,15 +138,20 @@ export function AlchemyHost({ children }: { children: ReactNode }) {
   const store = useAppStore();
   const userId = useAppSelector(selectUserId);
   const orgId = useAppSelector(selectOrganizationId);
+  // Bound once per mount: the identity port reads the live store, so an
+  // account or organization switch needs no new ports.
+  const [hostPorts] = useState(() => createAlchemyHostPorts({ store }));
 
   return (
-    <AlchemyHostSession store={store} userId={userId} orgId={orgId}>
-      {/* Every error a package draws (ErrorBox / destructive Alert) carries the
-          same Alchemy Menu the frontend's own errors carry (RC-B12). */}
-      <ErrorActionsProvider render={renderPackageErrorActions}>
-        {children}
-      </ErrorActionsProvider>
-    </AlchemyHostSession>
+    <AlchemyHostPortsContext.Provider value={hostPorts}>
+      <AlchemyHostSession store={store} userId={userId} orgId={orgId}>
+        {/* Every error a package draws (ErrorBox / destructive Alert) carries the
+            same Alchemy Menu the frontend's own errors carry (RC-B12). */}
+        <ErrorActionsProvider render={renderPackageErrorActions}>
+          {children}
+        </ErrorActionsProvider>
+      </AlchemyHostSession>
+    </AlchemyHostPortsContext.Provider>
   );
 }
 
