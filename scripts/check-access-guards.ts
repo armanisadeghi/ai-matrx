@@ -32,9 +32,10 @@
  */
 
 import { execSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { repoFiles } from "./lib/repo-files";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");
@@ -97,27 +98,13 @@ const IGNORE_DIRS = new Set([
 // which holds full repo copies. Scanning those reported hundreds of duplicate
 // findings against code that is not this checkout. Same rule as
 // scripts/check-ui-primitives.ts.
+// The file list is git's (scripts/lib/repo-files.ts): a readdir walk followed the gitignored
+// `work/aidream` symlink into the whole aidream checkout and reported its files as this repo's.
 function walk(dir: string, out: string[] = []): string[] {
-  let entries: string[];
-  try {
-    entries = readdirSync(dir);
-  } catch {
-    return out;
-  }
-  for (const name of entries) {
-    if (name.startsWith(".") || IGNORE_DIRS.has(name)) continue;
-    const full = join(dir, name);
-    let st;
-    try {
-      st = statSync(full);
-    } catch {
-      continue;
-    }
-    if (st.isDirectory()) {
-      walk(full, out);
-    } else {
-      out.push(full);
-    }
+  const under = relative(ROOT, dir).split("\\").join("/");
+  for (const rel of repoFiles(ROOT, under ? { under: [under] } : {})) {
+    if (rel.split("/").some((part) => part.startsWith(".") || IGNORE_DIRS.has(part))) continue;
+    out.push(join(ROOT, rel));
   }
   return out;
 }

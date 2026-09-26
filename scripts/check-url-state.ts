@@ -33,10 +33,11 @@
  *   pnpm check:url-state
  *   pnpm check:url-state --json
  */
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import process from "node:process";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { repoFiles } from "./lib/repo-files";
 
 const ROOT = resolve(__dirname, "..");
 const SKIP = new Set([
@@ -60,35 +61,24 @@ function isExempt(rel: string): boolean {
 type Finding = { file: string; line: number; text: string; dispatches: boolean };
 const findings: Finding[] = [];
 
-function walk(dir: string): void {
-  let entries: string[];
-  try { entries = readdirSync(dir); } catch { return; }
-  for (const entry of entries) {
-    if (SKIP.has(entry)) continue;
-    const full = join(dir, entry);
-    let st;
-    try { st = statSync(full); } catch { continue; }
-    if (st.isDirectory()) { walk(full); continue; }
-    if (!/\.tsx?$/.test(entry)) continue;
+// The file list is git's (scripts/lib/repo-files.ts): a readdir walk followed the gitignored
+// `work/aidream` symlink into the whole aidream checkout (2 release timeouts at 900 s).
+for (const rel of repoFiles(ROOT, { match: /\.tsx?$/ })) {
+  if (rel.split("/").some((part) => SKIP.has(part))) continue;
+  if (isExempt(rel)) continue;
 
-    const rel = relative(ROOT, full);
-    if (isExempt(rel)) continue;
+  let content: string;
+  try { content = readFileSync(join(ROOT, rel), "utf8"); } catch { continue; }
+  if (!/history\.(push|replace)State/.test(content)) continue;
+  // Already on the canonical path — a file may legitimately do both.
+  if (content.includes("lib/url-state/useUrlState")) continue;
 
-    let content: string;
-    try { content = readFileSync(full, "utf8"); } catch { continue; }
-    if (!/history\.(push|replace)State/.test(content)) continue;
-    // Already on the canonical path — a file may legitimately do both.
-    if (content.includes("lib/url-state/useUrlState")) continue;
-
-    const dispatches = content.includes("matrx:url-state");
-    content.split("\n").forEach((line, i) => {
-      if (!/history\.(push|replace)State/.test(line)) return;
-      findings.push({ file: rel, line: i + 1, text: line.trim().slice(0, 120), dispatches });
-    });
-  }
+  const dispatches = content.includes("matrx:url-state");
+  content.split("\n").forEach((line, i) => {
+    if (!/history\.(push|replace)State/.test(line)) return;
+    findings.push({ file: rel, line: i + 1, text: line.trim().slice(0, 120), dispatches });
+  });
 }
-
-walk(ROOT);
 
 if (process.argv.includes("--json")) {
   console.log(JSON.stringify({ findings }, null, 2));

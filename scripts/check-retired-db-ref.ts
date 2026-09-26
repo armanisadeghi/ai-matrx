@@ -40,11 +40,11 @@
  *   pnpm check:retired-db-ref
  *   pnpm check:retired-db-ref --json
  */
-import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import process from "node:process";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { repoFiles } from "./lib/repo-files";
 
 const ROOT = resolve(__dirname, "..");
 
@@ -124,31 +124,19 @@ function scanFile(rel: string): void {
   });
 }
 
-/**
- * The files this checkout holds: git's tracked + untracked-not-ignored list, plus the
- * machine-local agent settings git is told to ignore. Until 2026-09-25 this walked the whole
- * working tree with a stat per entry — every worktree, cache and build folder included — and
- * took 5m51s alone (229 s of it in the kernel), timing out at 900 s on every release run.
- */
-function repoFiles(): string[] {
-  const listed = spawnSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard"], {
-    cwd: ROOT,
-    encoding: "utf8",
-    maxBuffer: 256 * 1024 * 1024,
-  });
-  if (listed.status !== 0) {
-    console.error(`[LOUD] check:retired-db-ref: UNMEASURED — git ls-files failed: ${listed.stderr.trim()}`);
-    exitAfterDrain(1);
-    return [];
-  }
-  const files = listed.stdout.split("\0").filter(Boolean);
+// The file list is git's (scripts/lib/repo-files.ts). Until 2026-09-25 this walked the whole
+// working tree with a stat per entry — following the gitignored `work/aidream` symlink into all of
+// aidream — and took 5m51s alone, timing out at 900 s on every release run. Machine-local agent
+// settings git is told to ignore are still read: an agent reads them as orders.
+function localFiles(): string[] {
+  const files = repoFiles(ROOT);
   for (const local of [".claude/settings.local.json", ".mcp.json"]) {
     if (!files.includes(local) && existsSync(join(ROOT, local))) files.push(local);
   }
   return files;
 }
 
-for (const rel of repoFiles()) scanFile(rel);
+for (const rel of localFiles()) scanFile(rel);
 
 const asJson = process.argv.includes("--json");
 if (asJson) {

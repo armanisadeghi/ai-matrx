@@ -34,9 +34,10 @@
  * Exit codes: 0 clean (or findings without --strict) · 1 findings + --strict · 2 script error
  */
 
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { repoFiles } from "./lib/repo-files";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");
@@ -112,27 +113,13 @@ const IGNORE_DIRS = new Set(["node_modules", "dist", "build", "coverage"]);
 
 // Dot-dirs are ALWAYS skipped — .git, every .next* build dir, and
 // .claude/worktrees (full repo copies). Same rule as check-access-guards.ts.
+// The file list is git's (scripts/lib/repo-files.ts): a readdir walk followed the gitignored
+// `work/aidream` symlink into the whole aidream checkout and reported its files as this repo's.
 function walk(dir: string, out: string[] = []): string[] {
-  let entries: string[];
-  try {
-    entries = readdirSync(dir);
-  } catch {
-    return out;
-  }
-  for (const name of entries) {
-    if (name.startsWith(".") || IGNORE_DIRS.has(name)) continue;
-    const full = join(dir, name);
-    let st;
-    try {
-      st = statSync(full);
-    } catch {
-      continue;
-    }
-    if (st.isDirectory()) {
-      walk(full, out);
-    } else {
-      out.push(full);
-    }
+  const under = relative(ROOT, dir).split("\\").join("/");
+  for (const rel of repoFiles(ROOT, under ? { under: [under] } : {})) {
+    if (rel.split("/").some((part) => part.startsWith(".") || IGNORE_DIRS.has(part))) continue;
+    out.push(join(ROOT, rel));
   }
   return out;
 }

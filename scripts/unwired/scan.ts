@@ -376,7 +376,17 @@ function featureOf(repository: UnwiredRepository, file: string): string {
 export function scanFrontendUnwired(root: string): { findings: UnwiredFinding[]; filesScanned: number } {
   const paths = walk(root, FRONTEND_ROOTS);
   const candidates: Candidate[] = [];
-  const facts = paths.map((path) => factsFor(root, path, candidates));
+  // A file listed a moment ago can be gone now: other checks' self-tests plant a file into the
+  // live tree and delete it while this scan runs beside them in the release runner. Vanished is
+  // not a crash (2026-09-25: ENOENT on features/organizations/__self_test_planted__.tsx).
+  const facts = paths.flatMap((path) => {
+    try {
+      return [factsFor(root, path, candidates)];
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+      throw error;
+    }
+  });
   const exports = new Map<string, Map<string, string>>(
     facts.map((fact) => [fact.path, new Map(fact.directExports)]),
   );
