@@ -108,7 +108,7 @@ const ENTITY_TOKEN_PLURALS: Record<string, string> = {
   transcript: "transcripts",
   studio_session: "audio sessions",
   file: "files",
-  udt_document: "documents",
+  udt_document: "cloud documents",
   fc_set: "flashcard sets",
   research_topic: "research topics",
   pc_show: "podcast shows",

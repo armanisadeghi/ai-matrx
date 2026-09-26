@@ -45,7 +45,7 @@ import React from "react";
 import { renderToString } from "react-dom/server";
 
 import { DUMP_SOURCE_TOKENS } from "../../sourceLinks";
-import { entityTokenNouns, sourceNounsFor } from "../../sourceTally";
+import { ENTITY_TOKEN_NOUN_KEYS, entityTokenNouns, sourceNounsFor } from "../../sourceTally";
 import { RULEBOOK_COLUMNS } from "../columns";
 import {
   formatSourceSummary,
@@ -211,7 +211,10 @@ describe("a Rulebook built from an interview and a pasted document", () => {
 describe("the walk-18 fixture, counted from both stores", () => {
   it("names every kind present, including the two pasted documents", () => {
     const sources = read(WALK18, WALK18_KEPT, WALK18_ATTACHED);
-    expect(formatSourceSummary(sources)).toBe("1 interview · 5 documents");
+    // The two pasted documents are `udt_document` — "Cloud document" in the
+    // platform's entity metadata (@ai-matrx/associations 0.11) — so they are
+    // named as their own kind, never as a second "documents" group.
+    expect(formatSourceSummary(sources)).toBe("1 interview · 3 documents · 2 cloud documents");
     expect(sources.state === "read" && sources.total).toBe(6);
   });
 
@@ -231,7 +234,24 @@ describe("the walk-18 fixture, counted from both stores", () => {
     const sources = read(WALK18, WALK18_KEPT, WALK18_ATTACHED);
     const words = formatSourceSummary(sources)!;
     expect(words).not.toContain("file");
-    expect(words.match(/documents/g)).toHaveLength(1);
+    const uploads =
+      sources.state === "read"
+        ? sources.groups.filter((g) => g.key === "document" || g.key === "file")
+        : [];
+    expect(uploads).toEqual([expect.objectContaining({ key: "document", count: 3 })]);
+  });
+
+  it("never prints two groups under one plural word", () => {
+    // A singular from the platform's metadata with a plural that did not follow
+    // it ("cloud document" / "documents") printed "3 documents · 2 documents".
+    for (const token of ENTITY_TOKEN_NOUN_KEYS) {
+      const nouns = entityTokenNouns(token);
+      if (!nouns) continue;
+      expect(`${token}: ${nouns.many}`).toBe(`${token}: ${nouns.many.startsWith(nouns.one) ? nouns.many : `<plural of "${nouns.one}">`}`);
+    }
+    const sources = read(WALK18, WALK18_KEPT, WALK18_ATTACHED);
+    const plurals = sources.state === "read" ? sources.groups.map((g) => g.many) : [];
+    expect(new Set(plurals).size).toBe(plurals.length);
   });
 
   it("ignores `kept_source` edges, which point at rows and not at material", () => {
