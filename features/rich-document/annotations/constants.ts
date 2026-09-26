@@ -21,7 +21,9 @@
  * is refused BEFORE any request with the sentence below, and the draft is
  * kept so nothing the person typed is lost.
  */
-export const ANCHOR_WRITES_ENABLED = false;
+// ON 2026-09-26: RC-A5 live on production 23:28Z 2026-09-25; rcb11_comment_collaboration_doors.sql
+// applied 00:35:35Z 2026-09-26 (checksum 3f026377…). Passage writes are the normal path now.
+export const ANCHOR_WRITES_ENABLED = true;
 
 export const ANCHOR_WRITES_OFF_SENTENCE =
   "Saving to a passage is not switched on yet: it waits on a privacy update to how quoted passages are stored. Your draft is kept, and you can still comment on the whole document.";

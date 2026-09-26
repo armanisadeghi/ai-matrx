@@ -1996,6 +1996,10 @@ export type Database = {
         Args: { p_organization_id: string }
         Returns: string[]
       }
+      next_free_agent_name: {
+        Args: { p_except?: string; p_name: string; p_organization_id: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
@@ -21598,7 +21602,7 @@ export type Database = {
           key: string
           last_fed_at?: string | null
           metadata?: Json
-          organization_id?: string
+          organization_id: string
           sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
           sort_order?: number
           updated_at?: string
@@ -25582,7 +25586,7 @@ export type Database = {
           metadata: Json
           mime_type: string | null
           name: string
-          organization_id: string | null
+          organization_id: string
           origin_client: string | null
           original_file_id: string | null
           owner_id: string
@@ -25598,6 +25602,7 @@ export type Database = {
           total_pages: number | null
           updated_at: string
           updated_by: string | null
+          version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
@@ -25629,7 +25634,7 @@ export type Database = {
           metadata?: Json
           mime_type?: string | null
           name: string
-          organization_id?: string | null
+          organization_id: string
           origin_client?: string | null
           original_file_id?: string | null
           owner_id: string
@@ -25645,6 +25650,7 @@ export type Database = {
           total_pages?: number | null
           updated_at?: string
           updated_by?: string | null
+          version?: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
@@ -25676,7 +25682,7 @@ export type Database = {
           metadata?: Json
           mime_type?: string | null
           name?: string
-          organization_id?: string | null
+          organization_id?: string
           origin_client?: string | null
           original_file_id?: string | null
           owner_id?: string
@@ -25692,6 +25698,7 @@ export type Database = {
           total_pages?: number | null
           updated_at?: string
           updated_by?: string | null
+          version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
@@ -26788,7 +26795,7 @@ export type Database = {
           keywords?: string[]
           letter?: string
           metadata?: Json
-          organization_id?: string
+          organization_id: string
           published_at?: string | null
           related?: Json
           sections?: Json
@@ -64832,10 +64839,12 @@ export type Database = {
         Row: {
           anchor: Json | null
           body: string
+          client_request_id: string | null
           created_at: string
           created_by: string | null
           custom_fields: Json
           deleted_at: string | null
+          edited_at: string | null
           entity_id: string
           entity_type: string
           id: string
@@ -64844,6 +64853,7 @@ export type Database = {
           parent_id: string | null
           resolved_at: string | null
           resolved_by: string | null
+          suggested_text: string | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -64852,10 +64862,12 @@ export type Database = {
         Insert: {
           anchor?: Json | null
           body: string
+          client_request_id?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
+          edited_at?: string | null
           entity_id: string
           entity_type: string
           id?: string
@@ -64864,6 +64876,7 @@ export type Database = {
           parent_id?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
+          suggested_text?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -64872,10 +64885,12 @@ export type Database = {
         Update: {
           anchor?: Json | null
           body?: string
+          client_request_id?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
+          edited_at?: string | null
           entity_id?: string
           entity_type?: string
           id?: string
@@ -64884,6 +64899,7 @@ export type Database = {
           parent_id?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
+          suggested_text?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -67099,6 +67115,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      kernel_fingerprint_record: {
+        Row: {
+          evidence: Json
+          fingerprint_from: string | null
+          fingerprint_to: string
+          fixture_version: string | null
+          id: string
+          members_changed: string[]
+          recorded_at: string
+          ruling: string
+          session_role: string
+          system_error_id: string | null
+          target: string | null
+          via: string
+        }
+        Insert: {
+          evidence?: Json
+          fingerprint_from?: string | null
+          fingerprint_to: string
+          fixture_version?: string | null
+          id?: string
+          members_changed?: string[]
+          recorded_at?: string
+          ruling: string
+          session_role?: string
+          system_error_id?: string | null
+          target?: string | null
+          via: string
+        }
+        Update: {
+          evidence?: Json
+          fingerprint_from?: string | null
+          fingerprint_to?: string
+          fixture_version?: string | null
+          id?: string
+          members_changed?: string[]
+          recorded_at?: string
+          ruling?: string
+          session_role?: string
+          system_error_id?: string | null
+          target?: string | null
+          via?: string
+        }
+        Relationships: []
       }
       knob_override: {
         Row: {
@@ -71421,9 +71482,23 @@ export type Database = {
         }
         Returns: number
       }
+      _provision_says_the_kernel_was_rerecorded: {
+        Args: { p_answer: Json }
+        Returns: Json
+      }
       _provision_shape_guard_impl: {
         Args: { p_cmds: Json }
         Returns: undefined
+      }
+      _provisioner_heals_a_stale_kernel: {
+        Args: {
+          p_applied_via: string
+          p_lane: string
+          p_org_id: string
+          p_pre: Json
+          p_spec: Json
+        }
+        Returns: Json
       }
       _provisioner_refuses_a_stale_kernel: {
         Args: {
@@ -72093,6 +72168,8 @@ export type Database = {
         Args: { p_schema: string; p_table: string }
         Returns: boolean
       }
+      edge_structural_labels: { Args: never; Returns: Json }
+      edge_structural_metadata_keys: { Args: never; Returns: string[] }
       emit_pending_assist: {
         Args: {
           p_action: Json
@@ -72184,6 +72261,9 @@ export type Database = {
       is_provisioning: { Args: never; Returns: boolean }
       is_service_only_history: { Args: { p_token: string }; Returns: boolean }
       is_sqlstate: { Args: { p_code: string }; Returns: boolean }
+      kernel_equivalence_answers: { Args: never; Returns: Json }
+      kernel_equivalence_check: { Args: never; Returns: Json }
+      kernel_equivalence_expected: { Args: never; Returns: Json }
       knob_archive: {
         Args: {
           p_feature: string
@@ -72887,6 +72967,14 @@ export type Database = {
       reanchor_outsider_token: { Args: { p_token_id: string }; Returns: Json }
       rebuild_reachability: { Args: never; Returns: number }
       rebuild_static_row_probes: { Args: never; Returns: number }
+      reference_gate: {
+        Args: { p_token: string }
+        Returns: {
+          id_column: string
+          type_column: string
+        }[]
+      }
+      reference_gate_columns: { Args: { p_token: string }; Returns: string[] }
       refresh_reachability: {
         Args: { p_container_id: string; p_container_type: string }
         Returns: undefined
@@ -77904,32 +77992,67 @@ export type Database = {
       }
       cmt_add: {
         Args: {
+          p_anchor?: Json
           p_body: string
+          p_client_request_id?: string
           p_entity_id: string
           p_entity_type: string
           p_org_id?: string
           p_parent_id?: string
+          p_suggested_text?: string
         }
         Returns: string
       }
       cmt_delete: { Args: { p_id: string }; Returns: undefined }
-      cmt_edit: { Args: { p_body: string; p_id: string }; Returns: undefined }
+      cmt_edit: {
+        Args: { p_body: string; p_expected_version?: number; p_id: string }
+        Returns: number
+      }
       cmt_list: {
         Args: { p_entity_id: string; p_entity_type: string }
         Returns: {
+          anchor: Json
           author_avatar_url: string
           author_display_name: string
           author_email: string
           body: string
+          client_request_id: string
           created_at: string
           created_by: string
+          edited_at: string
           entity_id: string
           entity_type: string
           id: string
           organization_id: string
           parent_id: string
+          resolved_at: string
+          resolved_by: string
+          suggested_text: string
           updated_at: string
+          version: number
         }[]
+      }
+      cmt_mention_candidates: {
+        Args: {
+          p_entity_id: string
+          p_entity_type: string
+          p_limit?: number
+          p_search?: string
+        }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          email: string
+          user_id: string
+        }[]
+      }
+      cmt_mention_notify: {
+        Args: {
+          p_comment_id: string
+          p_deep_link?: string
+          p_recipients: string[]
+        }
+        Returns: Json
       }
       cmt_resolve: {
         Args: { p_id: string; p_resolved?: boolean }
@@ -80866,6 +80989,15 @@ export type Database = {
         Returns: Json
       }
       hr_calendar_upsert: { Args: { p_payload: Json }; Returns: Json }
+      hr_capability: {
+        Args: {
+          p_at?: string
+          p_capability: string
+          p_organization_id?: string
+          p_subject_employment?: string
+        }
+        Returns: boolean
+      }
       hr_clock_state: { Args: { p_employment_id: string }; Returns: Json }
       hr_code_upsert: {
         Args: { p_kind: string; p_payload: Json }
@@ -80950,6 +81082,36 @@ export type Database = {
       }
       hr_engagement_upsert: { Args: { p_payload: Json }; Returns: Json }
       hr_establishment_upsert: { Args: { p_payload: Json }; Returns: Json }
+      hr_export_claim: {
+        Args: {
+          p_export_format: string
+          p_idempotency_key: string
+          p_includes_pii?: boolean
+          p_organization_id: string
+          p_pay_period_id: string
+          p_supersedes_export_id?: string
+        }
+        Returns: {
+          export_id: string
+          export_version: number
+          replayed: boolean
+          supersedes_export_id: string
+        }[]
+      }
+      hr_export_finish: {
+        Args: {
+          p_adjustment_ids: string[]
+          p_artifact_file_id: string
+          p_artifact_sha256: string
+          p_disputes_carried: Json
+          p_export_id: string
+          p_lines: Json
+          p_organization_id: string
+          p_total_amount: string
+          p_total_hours: string
+        }
+        Returns: number
+      }
       hr_external_identity_upsert: { Args: { p_payload: Json }; Returns: Json }
       hr_holiday_upsert: { Args: { p_payload: Json }; Returns: Json }
       hr_incident_advance: {
@@ -81177,6 +81339,18 @@ export type Database = {
           p_override_reason?: string
         }
         Returns: Json
+      }
+      hr_leave_figures: {
+        Args: {
+          p_as_of?: string
+          p_employment_id: string
+          p_leave_policy_id: string
+        }
+        Returns: Json
+      }
+      hr_leave_lead_days: {
+        Args: { p_key: string; p_organization_id?: string }
+        Returns: number[]
       }
       hr_leave_ledger_export: {
         Args: {
@@ -81416,6 +81590,21 @@ export type Database = {
           p_workweek: Json
         }
         Returns: Json
+      }
+      hr_record_access_audit: {
+        Args: {
+          p_action: string
+          p_basis: string
+          p_granted: boolean
+          p_organization_id: string
+          p_purpose: string
+          p_row_count?: number
+          p_sensitivity_tier?: string
+          p_subject_employment_id?: string
+          p_target_ids?: string[]
+          p_target_token: string
+        }
+        Returns: string
       }
       hr_relations_list: {
         Args: { p_filter?: Json; p_limit?: number; p_organization_id: string }
@@ -90255,6 +90444,8 @@ export type Database = {
           content_type: string | null
           created_at: string
           created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
           domain: string | null
           expires_at: string | null
           final_url: string | null
@@ -90290,6 +90481,8 @@ export type Database = {
           content_type?: string | null
           created_at?: string
           created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
           domain?: string | null
           expires_at?: string | null
           final_url?: string | null
@@ -90325,6 +90518,8 @@ export type Database = {
           content_type?: string | null
           created_at?: string
           created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
           domain?: string | null
           expires_at?: string | null
           final_url?: string | null
@@ -93652,7 +93847,7 @@ export type Database = {
           edge_type: string
           id?: string
           metadata?: Json
-          organization_id?: string
+          organization_id: string
           origin?: string
           serp_overlap?: number | null
           source_keyword_id: string
@@ -94171,7 +94366,7 @@ export type Database = {
           keyword_id: string
           metadata?: Json
           notes?: string | null
-          organization_id?: string
+          organization_id: string
           scope_brand_id?: string | null
           scope_site_id?: string | null
           scope_tier?: string

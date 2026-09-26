@@ -23,7 +23,7 @@ jest.mock("@/utils/auth/getUserId", () => ({ getUserId: () => "u-1" }));
 import { projectSource, rangeToSource, sourceToRanges } from "../projection";
 import { mentionedUserIds, parseDateQuery, personMention, tokenizeMentions } from "../mentions";
 import { ANCHOR_WRITES_ENABLED } from "../constants";
-import { addComment, AnchorWritesOffError, createHighlight, linkRecord } from "../service";
+import { addComment, AnchorWritesOffError } from "../service";
 import { associationsDataSource } from "@/features/scopes/host/associationsStore";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { buildTextAnchor } from "../anchor";
@@ -97,24 +97,30 @@ describe("mentions", () => {
   });
 });
 
-describe("the passage-write gate (RC-A5 unapplied)", () => {
+describe("passage writes (RC-A5 and the RC-B11 doors applied 2026-09-26)", () => {
   const source = { token: "document", id: "d-1", title: "Irrigation", body: SOURCE, contentVersion: 1 };
   const anchor = buildTextAnchor(SOURCE, SOURCE.indexOf("Walk"), SOURCE.indexOf("Walk") + 4, 1);
-  const ids = { clientRequestId: "11111111-1111-4111-8111-111111111111", doors: false, firstAttemptAt: new Date().toISOString() };
+  const ids = { clientRequestId: "11111111-1111-4111-8111-111111111111", doors: true, firstAttemptAt: new Date().toISOString() };
 
-  it("is off in code until the register says RC-A5 is applied", () => {
-    expect(ANCHOR_WRITES_ENABLED).toBe(false);
+  it("is on in code now that the register records both applied", () => {
+    expect(ANCHOR_WRITES_ENABLED).toBe(true);
   });
 
-  it("refuses every passage write before any request, with the plain sentence", async () => {
-    await expect(addComment({ source, body: "hi", anchor, ...ids })).rejects.toBeInstanceOf(AnchorWritesOffError);
-    await expect(createHighlight({ source, anchor, color: "yellow", note: "", clientRequestId: ids.clientRequestId })).rejects.toBeInstanceOf(AnchorWritesOffError);
-    await expect(linkRecord({ source, token: "task", id: "t-1", anchor })).rejects.toBeInstanceOf(AnchorWritesOffError);
-    expect(associationsDataSource.rpc).not.toHaveBeenCalled();
-    expect(associationsService.add).not.toHaveBeenCalled();
+  it("a passage comment carries its anchor and its request id through the one comment seam", async () => {
+    (associationsDataSource.rpc as jest.Mock).mockReset();
+    (associationsDataSource.rpc as jest.Mock).mockImplementation(async () => ({ data: "c-2", error: null }));
+    await expect(addComment({ source, body: "Walk the lines weekly?", anchor, ...ids })).resolves.toBe("c-2");
+    const [fn, args] = (associationsDataSource.rpc as jest.Mock).mock.calls.find(([f]: [string]) => f === "cmt_add");
+    expect(fn).toBe("cmt_add");
+    expect(args.p_anchor).toEqual(anchor);
+    expect(args.p_client_request_id).toBe(ids.clientRequestId);
+    expect(AnchorWritesOffError).toBeDefined();
   });
 
   it("still lets a whole-document comment through the one comment seam", async () => {
+    (associationsDataSource.rpc as jest.Mock).mockImplementation(async (fn: string) =>
+      fn === "cmt_list" ? { data: [], error: null } : { data: "c-1", error: null });
+    (associationsDataSource.rpc as jest.Mock).mockReset();
     (associationsDataSource.rpc as jest.Mock).mockImplementation(async (fn: string) =>
       fn === "cmt_list" ? { data: [], error: null } : { data: "c-1", error: null });
     await expect(addComment({ source, body: "Looks good", ...ids })).resolves.toBe("c-1");
