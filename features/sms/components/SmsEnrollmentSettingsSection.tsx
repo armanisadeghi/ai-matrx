@@ -86,7 +86,9 @@ export function SmsEnrollmentSettingsSection() {
         description="Verify a mobile number, then opt in to each text program you want. Each program has its own consent."
         icon={MessageSquareText}
       >
-        {enrollment.step === "complete" ? (
+        {!enrollment.hydrated ? (
+          <SettingsReadOnlyValue label="Enrollment" value="Loading…" icon={ShieldCheck} />
+        ) : enrollment.step === "complete" ? (
           <>
             <SettingsReadOnlyValue
               label="Verified mobile number"
@@ -208,8 +210,18 @@ export function SmsEnrollmentSettingsSection() {
               loading={enrollment.loading}
               disabled={!enrollment.phoneNumber.trim() || !enrollment.anyConsent}
               onClick={enrollment.sendCode}
-              last
+              last={!(enrollment.enrolled.notifications || enrollment.enrolled.personalStaff)}
             />
+            {(enrollment.enrolled.notifications || enrollment.enrolled.personalStaff) && (
+              <SettingsButton
+                label="Keep my current programs"
+                actionLabel="Cancel"
+                kind="ghost"
+                disabled={enrollment.loading}
+                onClick={enrollment.cancelAddProgram}
+                last
+              />
+            )}
           </>
         )}
       </SettingsSection>

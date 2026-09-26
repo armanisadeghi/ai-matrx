@@ -67,6 +67,7 @@ export function useSmsEnrollment(source: "settings" | "sms-demo") {
   const [personalStaffLegacy, setPersonalStaffLegacy] = useState(false);
   const [step, setStep] = useState<EnrollmentStep>("phone");
   const [loading, setLoading] = useState(true);
+  const [hydrated, setHydrated] = useState(false);
   const [result, setResult] = useState<SmsEnrollmentResult | null>(null);
 
   useEffect(() => {
@@ -112,7 +113,10 @@ export function useSmsEnrollment(source: "settings" | "sms-demo") {
           message: error instanceof Error ? error.message : "Unable to load SMS enrollment.",
         });
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+          setHydrated(true);
+        }
       }
     };
 
@@ -274,6 +278,12 @@ export function useSmsEnrollment(source: "settings" | "sms-demo") {
     setStep("phone");
   };
 
+  const cancelAddProgram = () => {
+    setConsents(NO_PROGRAMS);
+    setResult(null);
+    setStep("complete");
+  };
+
   const reset = () => {
     setStep("phone");
     setVerificationCode("");
@@ -288,10 +298,12 @@ export function useSmsEnrollment(source: "settings" | "sms-demo") {
     enrolled,
     personalStaffLegacy,
     step,
+    hydrated,
     loading,
     result,
     setConsent,
     addProgram,
+    cancelAddProgram,
     changePhoneNumber,
     changeVerificationCode,
     sendCode,
