@@ -17,10 +17,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { fetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import {
+  selectFullContextError,
   selectFullContextOrganizations,
   selectFullContextStatus,
   type NavOrganization,
@@ -121,6 +123,7 @@ export function AllContextItemsHub() {
   const dispatch = useAppDispatch();
   const orgs = useAppSelector(selectFullContextOrganizations);
   const status = useAppSelector(selectFullContextStatus);
+  const fullContextError = useAppSelector(selectFullContextError);
   const searchParams = useSearchParams();
   const focusItemId = searchParams?.get("item") ?? null;
 
@@ -281,6 +284,12 @@ export function AllContextItemsHub() {
         />
       ) : status === "loading" && realOrgs.length === 0 ? (
         <CenteredSpinner />
+      ) : status === "error" && realOrgs.length === 0 ? (
+        <ReadFailure
+          error={fullContextError ?? true}
+          what="your organizations and their context items"
+          onRetry={() => void dispatch(fetchFullContext())}
+        />
       ) : realOrgs.length === 0 ? (
         <Card className="p-8 text-center text-sm text-muted-foreground">
           No organizations.
