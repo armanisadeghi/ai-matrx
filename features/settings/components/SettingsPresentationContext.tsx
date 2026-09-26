@@ -37,6 +37,7 @@
 import { createContext, useCallback, useContext, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { ReactNode, MouseEvent as ReactMouseEvent } from "react";
+import { SETTINGS_BASE, tabIdToHref } from "../route-shell/routing";
 
 export type SettingsPresentation = "route" | "window" | "drawer";
 
@@ -192,9 +193,14 @@ export function useSettingsNavigate() {
  * real route navigation when on a standalone settings route.
  *
  * Pass `fallbackHref` for cases where the route-mode equivalent is a
- * separate page (e.g. `/settings/voice` for `voice.input`). When no
- * fallback is supplied we route to `/settings/preferences?tab={id}`,
- * which the legacy redirect page resolves into `openOverlay(...)`.
+ * separate page entirely. When no fallback is supplied we route to the
+ * tab's own canonical URL under `/user-settings` (`tabIdToHref`) — NOT
+ * the legacy `/settings/preferences?tab={id}` redirect, which resolves
+ * into the OLD `userPreferencesWindow` overlay (a different, pre-registry
+ * settings UI) rather than landing on the tab itself. A door that used
+ * the legacy fallback used to silently do nothing useful when clicked
+ * from a standalone `/user-settings/*` route (settings-truth-audit,
+ * 2026-09-25 — caught via the Voice input → Devices door).
  */
 export function useSettingsTabNavigate() {
   const router = useRouter();
@@ -214,7 +220,7 @@ export function useSettingsTabNavigate() {
       // in-place tab switch — the user expects a fresh tab.
       if (isNewTabIntent(event)) {
         const href =
-          options?.fallbackHref ?? `/settings/preferences?tab=${tabId}`;
+          options?.fallbackHref ?? tabIdToHref(SETTINGS_BASE, tabId);
         const target = event?.target as HTMLElement | undefined;
         const fromAnchor =
           target?.closest("a[href]") instanceof HTMLAnchorElement;
@@ -233,7 +239,7 @@ export function useSettingsTabNavigate() {
       }
 
       router.push(
-        options?.fallbackHref ?? `/settings/preferences?tab=${tabId}`,
+        options?.fallbackHref ?? tabIdToHref(SETTINGS_BASE, tabId),
       );
     },
     [presentation, setActiveTabId, router],
