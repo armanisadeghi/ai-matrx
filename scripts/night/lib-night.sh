@@ -286,13 +286,26 @@ night_assert_target() {
   prod_id="$(night_ref_key "$BRANCH_REF_FILE" parent_system_identifier)"
   branch_ref="$(night_ref_key "$BRANCH_REF_FILE" branch_ref)"
   prod_ref="$(night_ref_key "$BRANCH_REF_FILE" parent_ref)"
-  if [ -z "$branch_id" ] || [ -z "$prod_id" ] || [ -z "$branch_ref" ] || [ -z "$prod_ref" ]; then
-    say "REFUSED: BRANCH-REF is missing or unreadable ($BRANCH_REF_FILE). Nothing attempted."
+  # PRODUCTION's identity is required for EVERY target: it is what names a wrong connection.
+  # The branch keys are required only to target the branch. 🚨 lane PROVISION-BATCH-FIX,
+  # 2026-09-26: the rehearsal branch was deleted at 00:30Z and BRANCH-REF now carries production's
+  # two keys only; requiring all four refused EVERY night job (clone-catchup, body-drift, the
+  # kernel-fingerprint report), clone targets included, "BRANCH-REF is missing or unreadable".
+  if [ -z "$prod_id" ] || [ -z "$prod_ref" ]; then
+    say "REFUSED: BRANCH-REF is missing or unreadable ($BRANCH_REF_FILE) — it must carry"
+    say "  production's parent_system_identifier and parent_ref. Nothing attempted."
     return 78
   fi
 
   case "$want" in
-    branch)     want_id="$branch_id"; want_ref="$branch_ref"; label="the rehearsal branch" ;;
+    branch)
+      if [ -z "$branch_id" ] || [ -z "$branch_ref" ]; then
+        say "REFUSED: BRANCH-REF names no rehearsal branch ($BRANCH_REF_FILE says it was deleted)."
+        say "  Rehearse on the clone: --target clone (common-docs/operations/clone/CURRENT.md)."
+        say "  Nothing attempted."
+        return 78
+      fi
+      want_id="$branch_id"; want_ref="$branch_ref"; label="the rehearsal branch" ;;
     production) want_id="$prod_id";   want_ref="$prod_ref";   label="production" ;;
     clone)
       clone_id="$(night_ref_key "$CLONE_REF_FILE" system_identifier)"
@@ -318,7 +331,7 @@ night_assert_target() {
   if [ "$got" != "$want_id" ] || [ "$got_ref" != "$want_ref" ]; then
     local what="an unknown database"
     [ "$got" = "$prod_id" ]   && [ "$got_ref" = "$prod_ref" ]   && what="PRODUCTION"
-    [ "$got" = "$branch_id" ] && [ "$got_ref" = "$branch_ref" ] && what="the rehearsal branch"
+    [ -n "$branch_ref" ] && [ "$got" = "$branch_id" ] && [ "$got_ref" = "$branch_ref" ] && what="the rehearsal branch"
     [ -n "${clone_ref:-}" ] && [ "$got_ref" = "$clone_ref" ]    && what="the dev CLONE"
     [ -z "${clone_ref:-}" ] && clone_ref="$(night_ref_key "$CLONE_REF_FILE" clone_ref)"
     [ -n "$clone_ref" ] && [ "$got_ref" = "$clone_ref" ]        && what="the dev CLONE"
