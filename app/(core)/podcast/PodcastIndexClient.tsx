@@ -12,6 +12,7 @@
 import Link from "next/link";
 import { AudioLines, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useMyPodcasts } from "@/features/podcasts/hooks/useMyPodcasts";
@@ -26,7 +27,7 @@ import { PodcastGrid } from "./PodcastGrid";
 
 export function PodcastIndexClient({ published }: { published: PcShow[] }) {
   const userId = useAppSelector(selectUserId);
-  const { myShows, episodes, loading, error } = useMyPodcasts();
+  const { myShows, episodes, loading, error, refresh } = useMyPodcasts();
 
   const myShowIds = new Set(myShows.map((s) => s.id));
   const browse = published.filter((s) => !myShowIds.has(s.id));
@@ -85,12 +86,27 @@ export function PodcastIndexClient({ published }: { published: PcShow[] }) {
 
         <div className="w-full px-4 sm:px-6 py-6 space-y-8">
           {/* The signed-in user's library — includes drafts, with manage links. */}
-          {userId && (loading || myShows.length > 0) && (
+          {/* A failed read is shown, never a hidden section — without it the
+              page read as "you have no podcasts" (RC-B12 round 5). */}
+          {userId && (loading || myShows.length > 0 || error) && (
             <section>
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 Your podcasts
               </h2>
-              {loading && myShows.length === 0 ? (
+              {error && myShows.length === 0 ? (
+                <ErrorNotice
+                  size="compact"
+                  title="Your podcasts couldn't load"
+                  error={error}
+                  operation="List your podcasts"
+                  calls={["pc_shows", "pc_episodes"]}
+                  actions={
+                    <Button size="sm" variant="outline" onClick={() => void refresh()}>
+                      Try again
+                    </Button>
+                  }
+                />
+              ) : loading && myShows.length === 0 ? (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
                   {Array.from({ length: 3 }, (_, i) => (
                     <div

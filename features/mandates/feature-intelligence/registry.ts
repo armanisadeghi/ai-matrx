@@ -1,10 +1,11 @@
 // features/mandates/feature-intelligence/registry.ts
 //
 // EVERY FEATURE WITH AN INTELLIGENCE PAGE — the declared places maps, one per
-// feature, each kept true by a test that reads its call sites
+// CODE feature, each kept true by a test that reads its call sites
 // (`__tests__/declared-places.test.ts`, plus flashcards' and research's own).
-// Pure data: the service, the places resolver and the /intelligence index all
-// read it. Add a feature here beside its map.
+// These ids are code ids (`podcast`, `marketing`), not pages: pages are
+// registry targets (`placement.ts`), and `declaredPlacesForTarget` regroups the
+// places onto them. Add a feature's map here beside its code.
 
 import { FLASHCARDS_PLACES } from "@/features/flashcards/data/intelligence-places";
 import { RESEARCH_PLACES } from "@/features/research/components/intelligence/places";
@@ -51,7 +52,8 @@ import { MEET_PLACES } from "@/features/meet/intelligence-places";
 import { CODING_SESSION_PLACES } from "@/features/ai-work/conversations/intelligence-places";
 import { PROOF_RUNS_PLACES } from "@/features/proof-runs/intelligence-places";
 import { DISTILLATION_PLACES } from "@/features/masterwork/distillation-intelligence-places";
-import type { FeaturePlaces } from "./types";
+import { keyInTarget } from "./placement";
+import type { FeaturePlaces, MandatePlace } from "./types";
 
 export const DECLARED_FEATURES: readonly FeaturePlaces[] = [
   CHAT_PLACES,
@@ -111,84 +113,25 @@ export function featurePrefixes(feature: string): readonly string[] {
   return [feature, ...(declared?.extraPrefixes ?? [])];
 }
 
-/** The feature whose page shows this key (an extra prefix maps to its owner). */
-export function featureForKey(mandateKey: string): string {
-  const dot = mandateKey.indexOf(".");
-  const prefix = dot === -1 ? mandateKey : mandateKey.slice(0, dot);
-  const owner = DECLARED_FEATURES.find((entry) => entry.extraPrefixes?.includes(prefix));
-  return owner?.feature ?? prefix;
-}
-
-/** The page a feature slug lands on — an extra prefix (`seo`) opens its owner (`marketing`). */
-export function canonicalFeature(feature: string): string {
-  return featureForKey(`${feature}.`);
-}
-
 /**
- * Display names for key prefixes that have jobs but no places map yet. A raw
- * prefix ("ner", "kg", "rag_kinds") is never shown to a person; a prefix
- * missing here falls back to its humanized form — add it here when it shows up.
+ * Every declared place that runs a job of this registry target, narrowed to
+ * those jobs. Places are declared by the CODE feature that owns the screen;
+ * the registry groups jobs differently, so one place map can feed several
+ * targets and one target can gather places from several maps.
  */
-const UNDECLARED_FEATURE_LABELS: Readonly<Record<string, string>> = {
-  shortcut: "Shortcuts",
-  app: "Agent apps",
-  local: "Matrx Local",
-  ner: "Entity extraction",
-  masterworks: "Masterworks",
-  cms: "Website content",
-  iteration: "Iteration",
-  extend: "Browser extension",
-  google: "Google",
-  image_pipeline: "Image pipeline",
-  transcripts: "Transcripts",
-  audio: "Audio",
-  evaluators: "Evaluators",
-  kg: "Knowledge graph",
-  mandate_outcome: "Job outcomes",
-  memory: "Memory",
-  observability: "Observability",
-  agent_factory: "Agent factory",
-  content_gate: "Content gate",
-  docproc: "Document processing",
-  feedback: "Feedback",
-  foundry: "Foundry",
-  human_decisions: "Human decisions",
-  image: "Images",
-  mandate: "Mandates",
-  media_catalog: "Media catalog",
-  mermaid: "Mermaid diagrams",
-  orchestration: "Orchestration",
-  patrol: "Patrol",
-  purpose: "Purpose",
-  rag_kinds: "Knowledge base types",
-  records: "Records",
-  tools: "Tools",
-  web: "Web",
-};
-
-/**
- * Prefixes that exist only for tests and parity fixtures (`zzz.*`,
- * `wfparity.*`, `test_*`). Hidden from non-admins; admins see them labeled.
- */
-export function isFixtureFeature(feature: string): boolean {
-  return (
-    feature === "zzz" ||
-    feature === "wfparity" ||
-    /^(test|fixture|e2e)(_|$)/.test(feature)
-  );
-}
-
-function humanizeFeature(feature: string): string {
-  const words = feature.split(/[_-]+/).filter(Boolean).join(" ");
-  return words ? words.charAt(0).toUpperCase() + words.slice(1) : feature;
-}
-
-/** The name a person reads for a feature slug — never the raw prefix. */
-export function featureDisplayName(feature: string): string {
-  const declared = declaredPlacesFor(feature)?.label;
-  if (declared) return declared;
-  const known = UNDECLARED_FEATURE_LABELS[feature];
-  if (known) return known;
-  if (isFixtureFeature(feature)) return `Test fixture (${feature})`;
-  return humanizeFeature(feature);
+export function declaredPlacesForTarget(target: string): MandatePlace[] {
+  const out: MandatePlace[] = [];
+  for (const entry of DECLARED_FEATURES) {
+    for (const place of entry.places) {
+      const keys = place.mandateKeys.filter((key) => keyInTarget(key, target));
+      if (keys.length === 0) continue;
+      out.push({
+        ...place,
+        id:
+          entry.feature === target ? place.id : `${entry.feature}:${place.id}`,
+        mandateKeys: keys,
+      });
+    }
+  }
+  return out;
 }

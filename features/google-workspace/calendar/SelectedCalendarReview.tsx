@@ -375,6 +375,7 @@ export function SelectedCalendarReview() {
               Reconnect Google
             </Button>
           ) : null}
+          <ErrorAlchemyMenu error={problem.message} />
         </div>
       ) : null}
       {result ? <ReviewResult result={result} /> : null}

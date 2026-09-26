@@ -87,6 +87,7 @@ import agentComparisonRequestModReducer from "@/features/agent-comparison/modes/
 import agentComparisonModelReducer from "@/features/agent-comparison/modes/model/redux/slice";
 import agentComparisonTuningReducer from "@/features/agent-comparison/modes/tuning/redux/slice";
 import agentComparisonVariationsReducer from "@/features/agent-comparison/modes/variations/redux/slice";
+import agentComparisonConversationReducer from "@/features/agent-comparison/modes/conversation/redux/slice";
 import { conversationListReducer } from "@/features/agents/redux/conversation-list/conversation-list.slice";
 import { conversationHistoryReducer } from "@/features/agents/redux/conversation-history/slice";
 import agentShortcutReducer from "@/features/agents/redux/agent-shortcuts/slice";
@@ -381,6 +382,7 @@ export const slimReducerMap = {
   agentComparisonModel: agentComparisonModelReducer,
   agentComparisonTuning: agentComparisonTuningReducer,
   agentComparisonVariations: agentComparisonVariationsReducer,
+  agentComparisonConversation: agentComparisonConversationReducer,
 
   // Admin Markdown Tester — super-admin curated test samples.
   markdownSamples: markdownSamplesReducer,

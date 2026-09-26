@@ -13,7 +13,7 @@
 // RED before this lane: none of these modules existed — the merged grid told the page nothing and
 // /data-v2 mounted no agent surface.
 
-import type { GridContextSnapshot } from "@ai-matrx/records-ui";
+import type { GridContextSnapshot } from "../grid-agent-context/recordStoreTableScope";
 
 import { buildDataTablesScope } from "@/features/data-tables/agent-context/buildDataTablesScope";
 

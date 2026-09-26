@@ -26,6 +26,7 @@
 // `organization_id`; a token overrides only when its table diverges.
 
 import type { LucideIcon } from "lucide-react";
+import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import {
   AppWindow,
   AudioLines,
@@ -298,6 +299,13 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: Workflow,
     labelPlural: "Workflows",
     hrefFor: (id) => `/workflows/${id}`,
+  },
+  // A mandate's pages are keyed on its KEY; `/mandates/id/<id>` resolves the
+  // definition id to the person's record page. Peek: `MandatePeek`.
+  mandate: {
+    Icon: INTELLIGENCE_ICON,
+    labelPlural: "Mandates",
+    hrefFor: (id) => `/mandates/id/${encodeURIComponent(id)}`,
   },
   tool: {
     Icon: Wrench,

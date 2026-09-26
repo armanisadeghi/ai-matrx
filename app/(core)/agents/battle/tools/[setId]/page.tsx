@@ -1,3 +1,4 @@
+import { BattleSurfaceRuntime } from "@/features/agent-comparison/shared/BattleSurfaceRuntime";
 import { ToolsBattlePage } from "@/features/agent-comparison/modes/tools/components/ToolsBattlePage";
 
 export default async function SavedToolsBattleRoute({
@@ -6,5 +7,9 @@ export default async function SavedToolsBattleRoute({
   params: Promise<{ setId: string }>;
 }) {
   const { setId } = await params;
-  return <ToolsBattlePage setId={setId} />;
+  return (
+    <BattleSurfaceRuntime>
+      <ToolsBattlePage setId={setId} />
+    </BattleSurfaceRuntime>
+  );
 }

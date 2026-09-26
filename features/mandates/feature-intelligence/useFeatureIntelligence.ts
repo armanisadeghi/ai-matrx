@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { onMandateCacheInvalidated } from "../service";
 import { fetchFeatureIntelligence } from "./service";
-import { featurePrefixes } from "./registry";
+import { targetPrefixes } from "./placement";
 import {
   fetchRegisteredPlacesForFeature,
   keepVisibleJobs,
@@ -61,11 +61,11 @@ export function useFeatureIntelligence(args: {
     (async () => {
       try {
         // The jobs and the registered screens are read side by side: the
-        // screens are asked by the feature's key prefixes, then kept to the
-        // jobs this viewer can see.
+        // screens are asked by the target's key prefixes, then kept to the
+        // jobs this viewer can see (which are already only this target's).
         const [rows, registeredAnswer] = await Promise.all([
           fetchFeatureIntelligence({ feature, level, organizationId, userId }),
-          fetchRegisteredPlacesForFeature(featurePrefixes(feature), context).then(
+          fetchRegisteredPlacesForFeature(targetPrefixes(feature) ?? [], context).then(
             (places) => ({ places, error: null as string | null }),
             (error: unknown) => ({
               places: [] as ResolvedPlace[],

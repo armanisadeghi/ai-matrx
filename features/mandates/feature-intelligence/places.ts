@@ -1,14 +1,14 @@
 // features/mandates/feature-intelligence/places.ts
 //
 // WHERE EACH JOB RUNS — two real sources, one list:
-//   1. DECLARED places — each feature's map, kept true by its own test
-//      (flashcards, research).
+//   1. DECLARED places — each code feature's map, kept true by its own test,
+//      regrouped onto registry targets (`declaredPlacesForTarget`).
 //   2. REGISTERED places — screens whose manifest names the job
 //      (`ui.ui_surface_agent_role` joined to `ui.ui_surface`, public read).
 // A job neither source names is shown as "not recorded yet", never guessed.
 
 import { supabase } from "@/utils/supabase/client";
-import { declaredPlacesFor } from "./registry";
+import { declaredPlacesFor, declaredPlacesForTarget } from "./registry";
 import type { IntelligenceContext, ResolvedPlace } from "./types";
 
 export { declaredPlacesFor };
@@ -123,14 +123,12 @@ async function placesFromRoles(
   return [...grouped.values()];
 }
 
-/** Declared places for a feature, with links filled from the context. */
+/** Declared places for a registry target, with links filled from the context. */
 export function resolveDeclaredPlaces(
-  feature: string,
+  target: string,
   context: IntelligenceContext,
 ): ResolvedPlace[] {
-  const declared = declaredPlacesFor(feature);
-  if (!declared) return [];
-  return declared.places.map((place) => ({
+  return declaredPlacesForTarget(target).map((place) => ({
     id: place.id,
     label: place.label,
     trigger: place.trigger,

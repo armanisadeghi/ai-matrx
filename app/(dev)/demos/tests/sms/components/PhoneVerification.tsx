@@ -63,8 +63,8 @@ export default function PhoneVerification() {
               <div className="flex items-start gap-3 rounded-md border p-3">
                 <Checkbox
                   id="sms-consent"
-                  checked={enrollment.consentAccepted}
-                  onCheckedChange={(checked) => enrollment.setConsentAccepted(Boolean(checked))}
+                  checked={enrollment.consents.notifications}
+                  onCheckedChange={(checked) => enrollment.setConsent('notifications', Boolean(checked))}
                   disabled={enrollment.loading}
                 />
                 <Label htmlFor="sms-consent" className="text-sm font-normal leading-relaxed">
@@ -84,7 +84,7 @@ export default function PhoneVerification() {
                 disabled={
                   enrollment.loading ||
                   !enrollment.phoneNumber.trim() ||
-                  !enrollment.consentAccepted
+                  !enrollment.anyConsent
                 }
                 className="w-full"
               >

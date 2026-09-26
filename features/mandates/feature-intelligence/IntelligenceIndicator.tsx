@@ -31,13 +31,20 @@ import { useLiveSurfaceMandates } from "@/features/surfaces/runtime/surface-mand
 import { useSettingsPresentation } from "@/features/settings/components/SettingsPresentationContext";
 import { fetchMandateIdentities, type MandateIdentity } from "../service";
 import { mandateDisplayName } from "../mandate-words";
-import { featureIntelligenceHref, featureOfMandateKey } from "./hrefs";
-import { canonicalFeature, declaredPlacesFor } from "./registry";
+import { featureIntelligenceHref, resolveIntelligenceSlug } from "./hrefs";
+import { declaredPlacesFor } from "./registry";
+import { targetForKey, targetLabel } from "./placement";
+import { registryDomain } from "./taxonomy";
 import { keyInFeature, shortMandateName } from "./service";
 import type { IntelligenceContext } from "./types";
 
 export interface IntelligenceIndicatorProps {
-  /** The feature (mandate-key prefix). Defaults to the first key's feature. */
+  /**
+   * The code feature (`flashcards`, `education`) or registry Feature id whose
+   * jobs this is. Defaults to the page of the first key. The popover's page
+   * link opens the registry Feature all the jobs land on — or, when they span
+   * several, their Domain's section of the directory.
+   */
   feature?: string;
   /** The jobs behind this spot. Omit to use what the page registered. */
   mandateKeys?: readonly string[];
@@ -58,14 +65,14 @@ export function IntelligenceIndicator({
   className,
 }: IntelligenceIndicatorProps) {
   const live = useLiveSurfaceMandates();
-  const resolvedFeature = feature
-    ? canonicalFeature(feature)
-    : mandateKeys?.[0] ? featureOfMandateKey(mandateKeys[0]) : null;
+  const resolvedFeature = feature ?? (mandateKeys?.[0] ? targetForKey(mandateKeys[0]) : null);
+  const belongs = (key: string) =>
+    !resolvedFeature ||
+    keyInFeature(key, resolvedFeature) ||
+    targetForKey(key) === resolvedFeature;
   const registered = mandateKeys
     ? [...mandateKeys]
-    : live
-        .map((ref) => ref.mandateKey as string)
-        .filter((key) => (resolvedFeature ? keyInFeature(key, resolvedFeature) : true));
+    : live.map((ref) => ref.mandateKey as string).filter(belongs);
   // A door on a page that has not registered its jobs yet (the growth loop
   // before it starts) still lists the feature's jobs from its places map,
   // never an empty list under "the AI jobs behind this".
@@ -108,10 +115,18 @@ export function IntelligenceIndicator({
   }, [open, keyList]);
 
   if (!resolvedFeature) return null;
+  // The page these jobs live on: the one registry target they all land on, or
+  // the feature's own resolution (a Feature, or its Domain's section).
+  const targets = [...new Set(keys.map(targetForKey))];
+  const pageSlug = targets.length === 1 ? targets[0] : resolvedFeature;
+  const resolvedPage = resolveIntelligenceSlug(pageSlug);
   const featureName =
-    declaredPlacesFor(resolvedFeature)?.label ??
-    resolvedFeature.charAt(0).toUpperCase() + resolvedFeature.slice(1).replace(/[_-]/g, " ");
-  const pageHref = featureIntelligenceHref(resolvedFeature, { context });
+    resolvedPage && "target" in resolvedPage
+      ? targetLabel(resolvedPage.target)
+      : resolvedPage && "domain" in resolvedPage
+        ? (registryDomain(resolvedPage.domain)?.name ?? resolvedPage.domain)
+        : (declaredPlacesFor(resolvedFeature)?.label ?? resolvedFeature);
+  const pageHref = featureIntelligenceHref(pageSlug, { context });
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

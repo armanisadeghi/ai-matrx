@@ -2,17 +2,25 @@
 
 // features/mandates/feature-intelligence/IntelligenceIndex.tsx
 //
-// /intelligence — the directory of every part of the app that uses AI. One
-// card per feature: its icon and name, the jobs it runs, how many places they
-// run, and (once the member list answers) how many agents and workflows run
-// them for you and how many are not running. Search finds a feature by its
-// name or by anything inside it — a job's name or what it does, the screen it
-// runs on, the agent or workflow running it. Each card opens that feature's
-// intelligence page. Features with jobs but no declared places still appear.
+// /intelligence — the directory of every part of the app that uses AI, in the
+// registry's shape: a section per Domain, a card per registry Feature (its
+// icon and name, the jobs it runs, how many places they run, and — once the
+// member list answers — how many agents and workflows run them for you and how
+// many are not running), and one honest "not yet assigned to a feature" card
+// per Domain. Search finds a card by its name, its Domain, or anything inside
+// it — a job's name or what it does, the screen it runs on, the agent or
+// workflow running it. Each card opens that target's intelligence page.
+// `focusDomain` (from `?domain=`, where old page ids land) scrolls to a Domain.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { CircleAlert, CircleCheck, Loader2, MapPin, Workflow } from "lucide-react";
+import {
+  CircleAlert,
+  CircleCheck,
+  Loader2,
+  MapPin,
+  Workflow,
+} from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { readAllRows } from "@ai-matrx/data/db";
 import { mandateDefinitions } from "@/lib/supabase/mandateStorage";
@@ -21,7 +29,10 @@ import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { SearchInput } from "@/components/official/SearchInput";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin, selectUserId } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectIsAdmin,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -35,10 +46,12 @@ import { featureIcon } from "./feature-icons";
 import { lanesFor } from "./service";
 import {
   buildDirectory,
+  buildDomains,
   matchFeature,
   matchStrength,
   summarize,
   type DirectoryDefinition,
+  type DirectoryDomain,
   type DirectoryFeature,
   type DirectoryHolder,
   type MatchReason,
@@ -46,17 +59,21 @@ import {
 
 /** Kept for the index tests: one row per feature with its counts. */
 export function buildIndexRows(mandateKeys: readonly string[]) {
-  return buildDirectory(mandateKeys.map((mandate_key) => ({ mandate_key }))).map((row) => ({
+  return buildDirectory(
+    mandateKeys.map((mandate_key) => ({ mandate_key })),
+  ).map((row) => ({
     feature: row.feature,
     label: row.label,
+    domain: row.domain,
     jobs: row.jobs.length,
     places: row.places.length,
-    declared: row.declared,
+    unassigned: row.unassigned,
     fixture: row.fixture,
   }));
 }
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+const plural = (n: number, one: string, many = `${one}s`) =>
+  `${n} ${n === 1 ? one : many}`;
 
 function jobsLine(feature: DirectoryFeature): string {
   if (feature.jobs.length === 0) return "No jobs you can see yet";
@@ -86,7 +103,7 @@ function FeatureCard({
   feature: DirectoryFeature;
   reason: MatchReason;
 }) {
-  const Icon = featureIcon(feature.feature);
+  const Icon = featureIcon(feature.feature, feature.domain);
   const summary = summarize(feature);
   const why = reasonText(reason);
   return (
@@ -150,26 +167,43 @@ function FeatureCard({
   );
 }
 
-function Section({
-  id,
-  title,
+function DomainSection({
+  domain,
   items,
+  focused,
 }: {
-  id: string;
-  title?: string;
+  domain: DirectoryDomain;
   items: { feature: DirectoryFeature; reason: MatchReason }[];
+  focused: boolean;
 }) {
   if (items.length === 0) return null;
+  const id = `intelligence-domain-${domain.domain ?? "none"}`;
+  const jobs = items.reduce((sum, item) => sum + item.feature.jobs.length, 0);
   return (
-    <section className="mt-5 first:mt-0" aria-labelledby={title ? id : undefined}>
-      {title ? (
-        <h2 id={id} className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-          {title}
-        </h2>
-      ) : null}
+    <section
+      className="mt-6 scroll-mt-20 first:mt-0"
+      aria-labelledby={`${id}-title`}
+      id={id}
+    >
+      <h2
+        id={`${id}-title`}
+        className={cn(
+          "mb-2 flex items-baseline gap-2 text-[13px] font-semibold text-foreground",
+          focused && "text-primary",
+        )}
+      >
+        <span>{domain.label}</span>
+        <span className="text-[12px] font-normal tabular-nums text-muted-foreground">
+          {plural(items.length, "feature")}, {plural(jobs, "job")}
+        </span>
+      </h2>
       <ul className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-3">
         {items.map((item) => (
-          <FeatureCard key={item.feature.feature} feature={item.feature} reason={item.reason} />
+          <FeatureCard
+            key={`${item.feature.feature}:${item.feature.fixture ? "fixture" : "jobs"}`}
+            feature={item.feature}
+            reason={item.reason}
+          />
         ))}
       </ul>
     </section>
@@ -178,7 +212,10 @@ function Section({
 
 /** Every job's holder from this seat, in one read per lane the jobs live in. */
 async function fetchHolders(
-  defs: readonly (DirectoryDefinition & { organization_id: string | null; created_by: string | null })[],
+  defs: readonly (DirectoryDefinition & {
+    organization_id: string | null;
+    created_by: string | null;
+  })[],
   organizationId: string | null,
   userId: string | null,
 ): Promise<DirectoryHolder[]> {
@@ -208,9 +245,15 @@ async function fetchHolders(
   );
 }
 
-export function IntelligenceIndex() {
+export function IntelligenceIndex({
+  focusDomain = null,
+}: { focusDomain?: string | null } = {}) {
   const [defs, setDefs] = useState<
-    (DirectoryDefinition & { organization_id: string | null; created_by: string | null })[] | null
+    | (DirectoryDefinition & {
+        organization_id: string | null;
+        created_by: string | null;
+      })[]
+    | null
   >(null);
   const [holders, setHolders] = useState<DirectoryHolder[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -225,9 +268,12 @@ export function IntelligenceIndex() {
     readAllRows(
       ({ from, to }) =>
         mandateDefinitions(createClient())
-          .select("mandate_key, label, description, goal, organization_id, created_by", {
-            count: "exact",
-          })
+          .select(
+            "mandate_key, label, description, goal, organization_id, created_by",
+            {
+              count: "exact",
+            },
+          )
           .is("deleted_at", null)
           .order("mandate_key", { ascending: true })
           .range(from, to),
@@ -237,7 +283,8 @@ export function IntelligenceIndex() {
         if (!cancelled) setDefs(rows);
       })
       .catch((cause: unknown) => {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : String(cause));
+        if (!cancelled)
+          setError(cause instanceof Error ? cause.message : String(cause));
       });
     return () => {
       cancelled = true;
@@ -256,33 +303,54 @@ export function IntelligenceIndex() {
         if (!cancelled) setHolders(rows);
       })
       .catch((cause: unknown) => {
-        console.warn("[intelligence] holders for the directory could not be read", cause);
+        console.warn(
+          "[intelligence] holders for the directory could not be read",
+          cause,
+        );
       });
     return () => {
       cancelled = true;
     };
   }, [defs, activeOrgId, userId, organizationState]);
 
-  const directory = defs ? buildDirectory(defs, holders) : null;
-
-  const matched: { feature: DirectoryFeature; reason: MatchReason }[] = [];
-  for (const feature of directory ?? []) {
-    if (feature.fixture && !isAdmin) continue;
-    const reason = matchFeature(feature, query);
-    if (reason) matched.push({ feature, reason });
-  }
-  // While searching, the strongest matches lead (the sort is stable, so the
-  // directory's own order holds inside each strength).
-  if (query.trim()) matched.sort((a, b) => matchStrength(b.reason) - matchStrength(a.reason));
-
+  const domains = defs ? buildDomains(defs, holders) : null;
+  const directory = domains
+    ? domains.flatMap((domain) => domain.features)
+    : null;
   const searching = query.trim().length > 0;
-  const declared = matched.filter((item) => item.feature.declared);
-  const others = matched.filter((item) => !item.feature.declared && !item.feature.fixture);
-  const fixtures = matched.filter((item) => item.feature.fixture);
-  const totalJobs = (directory ?? [])
-    .filter((row) => !row.fixture)
-    .reduce((sum, row) => sum + row.jobs.length, 0);
-  const featureCount = (directory ?? []).filter((row) => !row.fixture).length;
+
+  const sections = (domains ?? []).map((domain) => {
+    const items: { feature: DirectoryFeature; reason: MatchReason }[] = [];
+    for (const feature of domain.features) {
+      if (feature.fixture && !isAdmin) continue;
+      const reason = matchFeature(feature, query);
+      if (reason) items.push({ feature, reason });
+    }
+    // While searching, the strongest matches lead (the sort is stable, so the
+    // registry's own order holds inside each strength).
+    if (searching)
+      items.sort((a, b) => matchStrength(b.reason) - matchStrength(a.reason));
+    return { domain, items };
+  });
+  const matchedCount = sections.reduce(
+    (sum, section) => sum + section.items.length,
+    0,
+  );
+  const visible = (directory ?? []).filter((row) => !row.fixture);
+  const totalJobs = visible.reduce((sum, row) => sum + row.jobs.length, 0);
+  const featureCount = visible.filter((row) => !row.unassigned).length;
+  const domainCount = new Set(visible.map((row) => row.domain).filter(Boolean))
+    .size;
+
+  // An old page id lands here with `?domain=` — bring that Domain into view once.
+  const scrolled = useRef(false);
+  useEffect(() => {
+    if (!focusDomain || !domains || scrolled.current) return;
+    scrolled.current = true;
+    document
+      .getElementById(`intelligence-domain-${focusDomain}`)
+      ?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, [focusDomain, domains]);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-8 sm:px-6">
@@ -291,7 +359,7 @@ export function IntelligenceIndex() {
           <SearchInput
             value={query}
             onValueChange={setQuery}
-            placeholder="Search features, jobs, screens, agents, workflows"
+            placeholder="Search domains, features, jobs, screens, agents, workflows"
             aria-label="Search intelligence"
             className="w-full sm:max-w-md"
             inputClassName="text-base sm:text-sm"
@@ -299,8 +367,8 @@ export function IntelligenceIndex() {
           {directory ? (
             <p className="shrink-0 text-[12.5px] tabular-nums text-muted-foreground">
               {searching
-                ? `${plural(matched.length, "feature")} match`
-                : `${plural(featureCount, "feature")}, ${plural(totalJobs, "job")}`}
+                ? `${matchedCount} match`
+                : `${plural(domainCount, "domain")}, ${plural(featureCount, "feature")}, ${plural(totalJobs, "job")}`}
             </p>
           ) : null}
         </div>
@@ -312,11 +380,16 @@ export function IntelligenceIndex() {
         </div>
       ) : directory === null ? (
         <div className="flex min-h-[30dvh] items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading features" />
+          <Loader2
+            className="h-6 w-6 animate-spin text-muted-foreground"
+            aria-label="Loading features"
+          />
         </div>
-      ) : matched.length === 0 ? (
+      ) : matchedCount === 0 ? (
         <div className="flex min-h-[20dvh] flex-col items-center justify-center gap-2 text-center">
-          <p className="text-[13.5px] text-muted-foreground">Nothing matches &ldquo;{query.trim()}&rdquo;.</p>
+          <p className="text-[13.5px] text-muted-foreground">
+            Nothing matches &ldquo;{query.trim()}&rdquo;.
+          </p>
           <button
             type="button"
             onClick={() => setQuery("")}
@@ -326,15 +399,14 @@ export function IntelligenceIndex() {
           </button>
         </div>
       ) : (
-        <>
-          <Section id="intelligence-main" items={declared} />
-          <Section
-            id="intelligence-more"
-            title={declared.length > 0 ? "More features" : undefined}
-            items={others}
+        sections.map((section) => (
+          <DomainSection
+            key={section.domain.domain ?? "none"}
+            domain={section.domain}
+            items={section.items}
+            focused={!searching && section.domain.domain === focusDomain}
           />
-          <Section id="intelligence-fixtures" title="Test fixtures, admins only" items={fixtures} />
-        </>
+        ))
       )}
     </div>
   );

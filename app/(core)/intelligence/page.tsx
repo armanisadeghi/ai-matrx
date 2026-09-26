@@ -6,27 +6,35 @@ import { loginHref } from "@/utils/auth/auth-destination";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 /**
- * /intelligence — every feature's AI jobs, by feature
- * (features/mandates/feature-intelligence). Each row opens
- * /intelligence/<feature>.
+ * /intelligence — every AI job, grouped by registry Domain and Feature
+ * (features/mandates/feature-intelligence). Each card opens
+ * /intelligence/<feature>; `?domain=<id>` scrolls to one Domain (old page ids
+ * that span several Features land there).
  */
 
 export const metadata = createRouteMetadata("/mandates", {
-  title: "Intelligence by feature",
-  description: "Every part of the app that uses AI, and the jobs it runs.",
+  title: "Intelligence",
+  description: "Every AI job in the app, by domain and feature.",
   letter: "IN",
 });
 
-export default async function IntelligenceIndexRoute() {
-  const { isAuthenticated } = await getSessionVerdict();
-  if (!isAuthenticated) redirect(loginHref("/intelligence"));
+export default async function IntelligenceIndexRoute({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const [{ isAuthenticated }, query] = await Promise.all([getSessionVerdict(), searchParams]);
+  const domain = typeof query.domain === "string" ? query.domain : null;
+  if (!isAuthenticated) {
+    redirect(loginHref(domain ? `/intelligence?domain=${encodeURIComponent(domain)}` : "/intelligence"));
+  }
   return (
     <>
       <PageHeader>
-        <span className="truncate text-sm font-medium text-foreground">Intelligence by feature</span>
+        <span className="truncate text-sm font-medium text-foreground">Intelligence</span>
       </PageHeader>
       <div className="h-full overflow-y-auto overflow-x-hidden pt-[var(--shell-header-h)]">
-        <IntelligenceIndex />
+        <IntelligenceIndex focusDomain={domain} />
       </div>
     </>
   );

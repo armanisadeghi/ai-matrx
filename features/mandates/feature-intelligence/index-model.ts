@@ -1,24 +1,31 @@
 // features/mandates/feature-intelligence/index-model.ts
 //
-// THE /intelligence DIRECTORY, as data: one card per feature — its jobs, the
-// places they run, and (once the member list answers) what runs each one from
-// the viewer's seat. Search reads all of it, so typing a job's name, what it
-// does, the screen it runs on, or the agent/workflow that runs it finds the
-// feature that owns it. Pure: the component and the tests share it.
+// THE /intelligence DIRECTORY, as data, in the registry's own shape: one
+// section per Domain, one card per registry Feature that holds jobs, and one
+// honest "not yet assigned to a feature" card per Domain for jobs no Feature
+// holds yet (`placement.ts`). Each card carries its jobs, the places they run
+// and (once the member list answers) what runs each one from the viewer's
+// seat. Search reads all of it, Domain name included. Pure: the component and
+// the tests share it.
 
 import type { MandateStatus } from "@/features/mandates/status/mandate-status";
+import { declaredPlacesForTarget } from "./registry";
 import {
-  DECLARED_FEATURES,
-  featureDisplayName,
-  featureForKey,
-  isFixtureFeature,
-} from "./registry";
+  NOT_ASSIGNED_TO_DOMAIN,
+  NOT_ASSIGNED_TO_FEATURE,
+  NO_DOMAIN_TARGET,
+  placementForKey,
+  targetForKey,
+  targetDomain,
+  targetLabel,
+} from "./placement";
+import { REGISTRY_DOMAINS, registryDomain } from "./taxonomy";
 import { shortMandateName } from "./service";
 
 /** One job as the directory needs it. */
 export interface DirectoryJob {
   key: string;
-  /** Name without the feature label the card already shows. */
+  /** Name without the feature or domain label the card already shows. */
   name: string;
   description: string | null;
   goal: string | null;
@@ -34,13 +41,25 @@ export interface DirectoryPlace {
 }
 
 export interface DirectoryFeature {
+  /** The page id (`placement.ts` target): a registry Feature id, `<domain>/unassigned`, or `unassigned`. */
   feature: string;
+  /** The card's name: the registry Feature's name, or the honest gap. */
   label: string;
+  /** Registry Domain id, or null for jobs with no Domain yet. */
+  domain: string | null;
   jobs: DirectoryJob[];
   places: DirectoryPlace[];
-  declared: boolean;
-  /** A test/parity fixture prefix — admins only, labeled as such. */
+  /** Jobs no registry Feature holds yet. */
+  unassigned: boolean;
+  /** A test/parity fixture group — admins only, labeled as such. */
   fixture: boolean;
+}
+
+export interface DirectoryDomain {
+  /** Registry Domain id, or null for the "not yet assigned to a domain" section. */
+  domain: string | null;
+  label: string;
+  features: DirectoryFeature[];
 }
 
 /** The definition columns the directory reads. */
@@ -60,23 +79,50 @@ export interface DirectoryHolder {
 }
 
 function humanizeKeyTail(key: string): string {
-  const tail = key.slice(key.indexOf(".") + 1).replace(/[._-]+/g, " ").trim();
+  const tail = key
+    .slice(key.indexOf(".") + 1)
+    .replace(/[._-]+/g, " ")
+    .trim();
   return tail ? tail.charAt(0).toUpperCase() + tail.slice(1) : key;
 }
 
+const FIXTURES = "fixtures";
+
+function cardLabel(target: string): string {
+  if (target === FIXTURES) return "Test fixtures";
+  if (target === NO_DOMAIN_TARGET) return NOT_ASSIGNED_TO_DOMAIN;
+  if (target.endsWith("/unassigned")) return NOT_ASSIGNED_TO_FEATURE;
+  return targetLabel(target);
+}
+
+/** Every card, flat — in directory order (Domain by name, then Feature by name, gaps last). */
 export function buildDirectory(
   defs: readonly DirectoryDefinition[],
   holders: readonly DirectoryHolder[] = [],
 ): DirectoryFeature[] {
+  return buildDomains(defs, holders).flatMap((domain) => domain.features);
+}
+
+export function buildDomains(
+  defs: readonly DirectoryDefinition[],
+  holders: readonly DirectoryHolder[] = [],
+): DirectoryDomain[] {
   const byKey = new Map(holders.map((row) => [row.mandateKey, row]));
-  const jobsByFeature = new Map<string, DirectoryJob[]>();
+  const jobsByTarget = new Map<string, DirectoryJob[]>();
   for (const def of defs) {
-    const feature = featureForKey(def.mandate_key);
-    const label = featureDisplayName(feature);
+    const target = placementForKey(def.mandate_key).fixture
+      ? FIXTURES
+      : targetForKey(def.mandate_key);
+    const domainName = registryDomain(targetDomain(target) ?? "")?.name ?? "";
     const holder = byKey.get(def.mandate_key);
     const job: DirectoryJob = {
       key: def.mandate_key,
-      name: def.label ? shortMandateName(def.label, label) : humanizeKeyTail(def.mandate_key),
+      name: def.label
+        ? shortMandateName(
+            shortMandateName(def.label, cardLabel(target)),
+            domainName,
+          )
+        : humanizeKeyTail(def.mandate_key),
       description: def.description ?? null,
       goal: def.goal ?? null,
       ...(holder
@@ -90,33 +136,55 @@ export function buildDirectory(
           }
         : {}),
     };
-    const list = jobsByFeature.get(feature) ?? [];
+    const list = jobsByTarget.get(target) ?? [];
     list.push(job);
-    jobsByFeature.set(feature, list);
+    jobsByTarget.set(target, list);
   }
-  for (const list of jobsByFeature.values()) list.sort((a, b) => a.name.localeCompare(b.name));
+  for (const list of jobsByTarget.values())
+    list.sort((a, b) => a.name.localeCompare(b.name));
 
-  const declared: DirectoryFeature[] = DECLARED_FEATURES.map((entry) => ({
-    feature: entry.feature,
-    label: entry.label,
-    jobs: jobsByFeature.get(entry.feature) ?? [],
-    places: entry.places.map((place) => ({ label: place.label, trigger: place.trigger })),
-    declared: true,
-    fixture: false,
-  }));
-  const known = new Set(declared.map((row) => row.feature));
-  const others: DirectoryFeature[] = [...jobsByFeature.entries()]
-    .filter(([feature]) => !known.has(feature))
-    .map(([feature, jobs]) => ({
-      feature,
-      label: featureDisplayName(feature),
-      jobs,
-      places: [],
-      declared: false,
-      fixture: isFixtureFeature(feature),
-    }))
-    .sort((a, b) => b.jobs.length - a.jobs.length || a.label.localeCompare(b.label));
-  return [...declared, ...others];
+  const card = (target: string, domain: string | null): DirectoryFeature => ({
+    feature: target === FIXTURES ? NO_DOMAIN_TARGET : target,
+    label: cardLabel(target),
+    domain,
+    jobs: jobsByTarget.get(target) ?? [],
+    places:
+      target === FIXTURES || target === NO_DOMAIN_TARGET
+        ? []
+        : declaredPlacesForTarget(target).map((place) => ({
+            label: place.label,
+            trigger: place.trigger,
+          })),
+    unassigned: target === NO_DOMAIN_TARGET || target.endsWith("/unassigned"),
+    fixture: target === FIXTURES,
+  });
+
+  const out: DirectoryDomain[] = [];
+  const domains = [...REGISTRY_DOMAINS].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+  for (const domain of domains) {
+    const features = [...domain.features]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((feature) => card(feature.id, domain.id))
+      // A registry Feature is a card when it holds jobs or places — an empty
+      // node is not intelligence.
+      .filter((row) => row.jobs.length > 0 || row.places.length > 0);
+    const gap = card(`${domain.id}/unassigned`, domain.id);
+    if (gap.jobs.length > 0) features.push(gap);
+    if (features.length > 0)
+      out.push({ domain: domain.id, label: domain.name, features });
+  }
+  const orphans = [card(NO_DOMAIN_TARGET, null), card(FIXTURES, null)].filter(
+    (row) => row.jobs.length > 0,
+  );
+  if (orphans.length > 0)
+    out.push({
+      domain: null,
+      label: NOT_ASSIGNED_TO_DOMAIN,
+      features: orphans,
+    });
+  return out;
 }
 
 /** How a card's jobs are filled, once the member list has answered. */
@@ -169,21 +237,29 @@ function jobText(job: DirectoryJob): string {
  * (name, what it does, its goal), a place (screen, control), or the agent or
  * workflow running a job? Returns why, or null.
  */
-export function matchFeature(feature: DirectoryFeature, query: string): MatchReason | null {
+export function matchFeature(
+  feature: DirectoryFeature,
+  query: string,
+): MatchReason | null {
   const tokens = tokensOf(query);
   if (tokens.length === 0) return { kind: "name" };
+  const name = `${feature.label} ${registryDomain(feature.domain ?? "")?.name ?? ""}`;
   const everything = [
-    feature.label,
+    name,
     ...feature.jobs.map((job) => `${jobText(job)} ${job.holderName ?? ""}`),
     ...feature.places.map((place) => `${place.label} ${place.trigger}`),
   ].join(" ");
   if (!hasAll(everything, tokens)) return null;
-  if (hasAll(feature.label, tokens)) return { kind: "name" };
+  if (hasAll(name, tokens)) return { kind: "name" };
   const job = feature.jobs.find((row) => hasAll(jobText(row), tokens));
   if (job) return { kind: "job", text: job.name };
-  const place = feature.places.find((row) => hasAll(`${row.label} ${row.trigger}`, tokens));
+  const place = feature.places.find((row) =>
+    hasAll(`${row.label} ${row.trigger}`, tokens),
+  );
   if (place) return { kind: "place", text: place.label };
-  const held = feature.jobs.find((row) => row.holderName && hasAll(row.holderName, tokens));
+  const held = feature.jobs.find(
+    (row) => row.holderName && hasAll(row.holderName, tokens),
+  );
   if (held?.holderName) return { kind: "holder", text: held.holderName };
   // Words spread across several things: the job holding the most of them explains it.
   let best: DirectoryJob | null = null;
@@ -196,7 +272,9 @@ export function matchFeature(feature: DirectoryFeature, query: string): MatchRea
       bestHits = hits;
     }
   }
-  return best ? { kind: "job", text: best.name, partial: true } : { kind: "name", partial: true };
+  return best
+    ? { kind: "job", text: best.name, partial: true }
+    : { kind: "name", partial: true };
 }
 
 /** Sort key: the name itself, then one thing holding every word, then words spread out. */

@@ -25855,8 +25855,8 @@ export type Database = {
           chunk_count: number
           current_chunk_count: number
           current_document_id: string
-          current_entity_count: number
-          entity_count: number
+          current_has_entities: boolean
+          has_entities: boolean
           indexing: boolean
           processed_document_id: string
           stale_chunk_count: number
@@ -60403,6 +60403,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      definition_restore: { Args: { p_mandate_id: string }; Returns: boolean }
       duplicate_mandate: {
         Args: {
           p_as_system?: boolean
@@ -76306,6 +76307,29 @@ export type Database = {
           title: string
         }[]
       }
+      _trash_store_children: {
+        Args: {
+          p_class: string
+          p_member: string
+          p_org: string
+          p_uid: string
+          p_window: number
+        }
+        Returns: {
+          created_by: string
+          deleted_at: string
+          id: string
+          organization_id: string
+        }[]
+      }
+      _trash_store_restore: {
+        Args: { p_id: string; p_organization_id: string }
+        Returns: undefined
+      }
+      _trash_store_title: {
+        Args: { p_id: string; p_organization_id: string }
+        Returns: string
+      }
       _version_diff_json: { Args: { a: Json; b: Json }; Returns: Json }
       accept_context_item_suggestion: {
         Args: { p_suggestion_id: string }
@@ -90867,6 +90891,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_disable_task: {
+        Args: { p_reason?: string; p_task_id: string }
+        Returns: Json
+      }
+      admin_mark_run_failed: {
+        Args: { p_reason: string; p_run_id: string }
+        Returns: Json
+      }
       realtime_topic_admits: { Args: { p_topic: string }; Returns: boolean }
       sch_run_claim: {
         Args: {

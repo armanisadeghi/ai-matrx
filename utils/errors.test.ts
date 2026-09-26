@@ -31,3 +31,16 @@ describe("governed data errors", () => {
     );
   });
 });
+
+describe("humanizeBackendError keeps a sentence that merely says 'query' (RC-B12 round 5)", () => {
+  it("does not cut 'readAllRows(x): query failed — …' at the word query", () => {
+    const { humanizeBackendError } = jest.requireActual("./errors") as typeof import("./errors");
+    expect(
+      humanizeBackendError("readAllRows(platform.feature_knob): query failed — forced failure (RC-B12 r5)"),
+    ).toBe("readAllRows(platform.feature_knob): query failed — forced failure (RC-B12 r5)");
+  });
+  it("still drops the ORM's labelled Query section", () => {
+    const { humanizeBackendError } = jest.requireActual("./errors") as typeof import("./errors");
+    expect(humanizeBackendError("Row was not saved Query: SELECT * FROM x")).toBe("Row was not saved");
+  });
+});

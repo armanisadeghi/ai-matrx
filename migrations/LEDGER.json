@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-26T11:11:26.117Z",
+  "generated_at": "2026-09-26T12:22:14.302Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4609,6 +4609,18 @@
       "filename": "storerel_the_three_retention_doors_say_the_ladder_themselves.sql",
       "checksum": "f85fa81f5bcbf65c3174dad8b37801379253ffaf19adaf9fa1573b44f8c41c8f",
       "applied_at": "2026-09-19 17:56:18.542037+00"
+    },
+    "migrations/campaign/storerestoredoors_a_removed_field_rule_link_template_dashboard_or_mandate_comes_back_from_trash.sql": {
+      "source": "matrx-frontend",
+      "filename": "storerestoredoors_a_removed_field_rule_link_template_dashboard_or_mandate_comes_back_from_trash.sql",
+      "checksum": "3759bd68b89d61a78ed71340cd29ff307603bd46bd2a409a4b732a75d3a98b2d",
+      "applied_at": "2026-09-26 12:02:10.98435+00"
+    },
+    "migrations/campaign/storerestoredoors_trash_reads_store_things_by_person_or_organization_apart.sql": {
+      "source": "matrx-frontend",
+      "filename": "storerestoredoors_trash_reads_store_things_by_person_or_organization_apart.sql",
+      "checksum": "d47fe9b334a638adf589c6192b30b09022ef53c5a4ada901af782caeef43ac00",
+      "applied_at": "2026-09-26 12:22:12.796018+00"
     },
     "migrations/campaign/storerulegaps_an_example_a_shortest_length_and_other_choices.sql": {
       "source": "matrx-frontend",

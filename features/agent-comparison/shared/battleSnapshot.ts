@@ -47,6 +47,7 @@ export const MODE_LABELS: Record<BattleModeId, string> = {
   tools: "Tools battle",
   "system-prompt": "System prompt battle",
   "request-mod": "Request mod battle",
+  conversation: "Conversation battle",
 };
 
 /** What each mode varies per column, in words. */
@@ -59,6 +60,8 @@ const VARIED_AXIS: Record<BattleModeId, string> = {
   tools: "the tools the agent can use",
   "system-prompt": "the system prompt",
   "request-mod": "the request (message and variables) sent to the same agent",
+  conversation:
+    "only what happens after the fork: each column continues its own copy of one conversation",
 };
 
 export interface BattleColumnSnapshot {
@@ -96,6 +99,8 @@ export interface BattleSnapshot {
   varies: string;
   battle: { id: string; name: string; url: string | null } | null;
   agent?: { id: string; name: string; version: string };
+  /** Conversation mode: the conversation every column was forked from. */
+  forked_from?: { conversation_id: string; title: string };
   shared_request?: { message: string; variables: Record<string, unknown> };
   blind: { active: boolean; revealed: boolean };
   columns: BattleColumnSnapshot[];
@@ -252,6 +257,7 @@ function describeVariant(
         version: versionLabel(col.agentVersion),
       };
     case "request-mod":
+    case "conversation":
       return undefined;
   }
 }
@@ -300,7 +306,7 @@ export function buildBattleSnapshot(state: RootState): BattleSnapshot | null {
   const columns = selectActiveBattleColumns(state);
 
   const lockedSlice =
-    mode === "open"
+    mode === "open" || mode === "conversation"
       ? null
       : mode === "model"
         ? state.agentComparisonModel
@@ -316,8 +322,12 @@ export function buildBattleSnapshot(state: RootState): BattleSnapshot | null {
                   ? state.agentComparisonVariations
                   : state.agentComparisonRequestMod;
 
-  const setId = lockedSlice ? lockedSlice.activeSetId : state.agentComparison.activeSetId;
-  const setName = lockedSlice ? lockedSlice.activeSetName : state.agentComparison.activeSetName;
+  const unlockedSlice =
+    mode === "conversation"
+      ? state.agentComparisonConversation
+      : state.agentComparison;
+  const setId = lockedSlice ? lockedSlice.activeSetId : unlockedSlice.activeSetId;
+  const setName = lockedSlice ? lockedSlice.activeSetName : unlockedSlice.activeSetName;
 
   let agent: BattleSnapshot["agent"];
   if (lockedSlice) {
@@ -340,6 +350,7 @@ export function buildBattleSnapshot(state: RootState): BattleSnapshot | null {
     lockedSlice && "inputConversationId" in lockedSlice
       ? (lockedSlice as { inputConversationId: string | null }).inputConversationId
       : null;
+  const source = mode === "conversation" ? state.agentComparisonConversation.source : null;
   const shared_request = inputConversationId
     ? draftOf(state, inputConversationId)
     : undefined;
@@ -413,6 +424,14 @@ export function buildBattleSnapshot(state: RootState): BattleSnapshot | null {
       ? { id: setId, name: setName ?? MODE_LABELS[mode], url: battleUrl(mode, setId) }
       : null,
     ...(agent ? { agent } : {}),
+    ...(source
+      ? {
+          forked_from: {
+            conversation_id: source.conversationId,
+            title: source.title ?? "Untitled chat",
+          },
+        }
+      : {}),
     ...(shared_request ? { shared_request } : {}),
     blind: { active: blind.active, revealed: blind.revealed },
     columns: snapshotColumns,
@@ -453,6 +472,7 @@ export function battleMarkdown(
   }
   if (setup) {
     if (snap.agent) out.push(`**Agent:** ${snap.agent.name} (${snap.agent.version})`);
+    if (snap.forked_from) out.push(`**Forked from:** ${snap.forked_from.title}`);
     if (snap.shared_request) {
       out.push("## Shared request");
       out.push(snap.shared_request.message || "_(no typed message)_");

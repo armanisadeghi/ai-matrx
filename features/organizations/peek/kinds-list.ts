@@ -53,6 +53,8 @@ export const PEEK_KINDS = [
   // A platform USER (member) by account id — @-mention chips, comment authors,
   // "shared by". Visible = shares ANY organization with the viewer (access is personal).
   "user",
+  // A mandate — `mandate.definition` by id (or key). `MandatePeek`.
+  "mandate",
 ] as const;
 
 const PEEK_KIND_SET: ReadonlySet<string> = new Set(PEEK_KINDS);

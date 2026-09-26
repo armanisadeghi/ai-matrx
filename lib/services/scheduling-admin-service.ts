@@ -1,13 +1,13 @@
 // lib/services/scheduling-admin-service.ts
 //
 // Admin-side reads/writes for the sch_* spine. Uses the browser supabase
-// client — admin escape hatch is in the RLS policies via is_platform_admin()
-// (see migrations/sch_admin_rls.sql). Mirrors lib/services/agent-apps-admin-
+// client. Reads go through RLS's platform_admin_read (admin lane); the two
+// writes go through the scheduler.admin_* doors below, because the staff
+// WRITE arm is closed on these tables. Mirrors lib/services/agent-apps-admin-
 // service.ts. NEVER call this from non-admin UI.
 
 import { supabase } from "@/utils/supabase/client";
 import { schedulerDb } from "@/utils/supabase/schedulerDb";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { pgErrorToError } from "@ai-matrx/data";
 import { buildSearchOr } from "@/utils/supabase-search";
 import type {
@@ -262,34 +262,51 @@ function unwrapCount(res: {
 
 // ── Admin mutations ────────────────────────────────────────────────────────
 
-export async function disableTaskAdmin(taskId: string): Promise<void> {
-  const { error } = await tryWriteOne(
-    schedulerDb(supabase)
-      .schema("scheduler").from("sch_task")
-      .update({ enabled: false })
-      .eq("id", taskId)
-      .select("id"),
-    { action: "update", noun: "scheduled task" },
+// Both writes go through audited SECURITY DEFINER doors, never a direct
+// update: sch_* are class `confidential` with the platform-staff write arm
+// closed (suppress_platform_admin_lane), so an admin's direct update of
+// another person's task or run matches 0 rows. The doors check
+// public.is_super_admin() (admin lane) before any read, raise P0002 for a
+// missing row, and write one admin.admin_audit_log row each
+// (migrations/sch_admin_doors_close_the_staff_write_arm_2026_09_26.sql).
+
+function assertDoorAnswer(
+  data: unknown,
+  idKey: "task_id" | "run_id",
+  expectedId: string,
+  noun: string,
+): void {
+  const answeredId =
+    data && typeof data === "object" && !Array.isArray(data)
+      ? (data as Record<string, unknown>)[idKey]
+      : undefined;
+  if (answeredId !== expectedId) {
+    throw new Error(
+      `The ${noun} change was not confirmed by the server (expected ${idKey} ${expectedId}). Refresh and check the ${noun} before trying again.`,
+    );
+  }
+}
+
+export async function disableTaskAdmin(
+  taskId: string,
+  reason?: string,
+): Promise<void> {
+  const { data, error } = await schedulerDb(supabase).rpc(
+    "admin_disable_task",
+    { p_task_id: taskId, ...(reason ? { p_reason: reason } : {}) },
   );
   if (error) throw pgErrorToError(error);
+  assertDoorAnswer(data, "task_id", taskId, "scheduled task");
 }
 
 export async function markRunFailedAdmin(
   runId: string,
   reason: string,
 ): Promise<void> {
-  const { error } = await tryWriteOne(
-    schedulerDb(supabase)
-      .schema("scheduler").from("sch_run")
-      .update({
-        status: "failed",
-        finished_at: new Date().toISOString(),
-        error_message: reason,
-        claim_token: null,
-      })
-      .eq("id", runId)
-      .select("id"),
-    { action: "update", noun: "scheduled run" },
+  const { data, error } = await schedulerDb(supabase).rpc(
+    "admin_mark_run_failed",
+    { p_run_id: runId, p_reason: reason },
   );
   if (error) throw pgErrorToError(error);
+  assertDoorAnswer(data, "run_id", runId, "scheduled run");
 }

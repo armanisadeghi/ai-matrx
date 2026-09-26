@@ -59,6 +59,7 @@ import {
   featureIntelligenceHref,
   featureOfMandateKey,
 } from "@/features/mandates/feature-intelligence/hrefs";
+import { targetDoorLabel } from "@/features/mandates/feature-intelligence/placement";
 import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 
 export interface SurfaceMandatesSectionProps {
@@ -255,7 +256,7 @@ export function SurfaceMandatesSection({
                 onClick={() => onOpened?.()}
                 className="inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:underline"
               >
-                Manage {feature.replace(/_/g, " ")} intelligence
+                Manage {targetDoorLabel(feature)} intelligence
                 <ArrowRight className="h-2.5 w-2.5" aria-hidden="true" />
               </Link>
             ),

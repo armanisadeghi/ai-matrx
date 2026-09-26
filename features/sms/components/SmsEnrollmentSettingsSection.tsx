@@ -1,7 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, MessageSquareText, Send, ShieldCheck, XCircle } from "lucide-react";
+import {
+  BellRing,
+  CheckCircle2,
+  MessageSquareText,
+  MessagesSquare,
+  Plus,
+  Send,
+  ShieldCheck,
+  XCircle,
+} from "lucide-react";
 import { SettingsButton } from "@/components/official/settings/primitives/SettingsButton";
 import { SettingsCheckbox } from "@/components/official/settings/primitives/SettingsCheckbox";
 import { SettingsTextInput } from "@/components/official/settings/primitives/SettingsTextInput";
@@ -10,10 +19,60 @@ import { SettingsSection } from "@/components/official/settings/layout/SettingsS
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import {
   SMS_CONSENT_DISCLOSURE,
+  SMS_OPT_IN_PATH,
+  SMS_PERSONAL_STAFF_CONSENT_DISCLOSURE,
+  SMS_PERSONAL_STAFF_OPT_IN_PATH,
+  SMS_PERSONAL_STAFF_PROGRAM_NAME,
   SMS_PRIVACY_PATH,
   SMS_TERMS_PATH,
 } from "@/features/sms/compliance";
-import { useSmsEnrollment } from "@/features/sms/hooks/useSmsEnrollment";
+import {
+  type SmsProgram,
+  useSmsEnrollment,
+} from "@/features/sms/hooks/useSmsEnrollment";
+
+/**
+ * One consent box per program, never one box for two (carrier rule; see
+ * features/sms/compliance.ts). Each box is unchecked by default and records its
+ * own consent row.
+ */
+const SMS_PROGRAMS: ReadonlyArray<{
+  key: SmsProgram;
+  label: string;
+  disclosure: string;
+  detailsPath: string;
+}> = [
+  {
+    key: "notifications",
+    label: "AI Matrx notifications",
+    disclosure: SMS_CONSENT_DISCLOSURE,
+    detailsPath: SMS_OPT_IN_PATH,
+  },
+  {
+    key: "personalStaff",
+    label: SMS_PERSONAL_STAFF_PROGRAM_NAME,
+    disclosure: SMS_PERSONAL_STAFF_CONSENT_DISCLOSURE,
+    detailsPath: SMS_PERSONAL_STAFF_OPT_IN_PATH,
+  },
+];
+
+function ProgramLinks({ detailsPath }: { detailsPath: string }) {
+  return (
+    <>
+      <Link className="underline" href={detailsPath} target="_blank">
+        Program details
+      </Link>{" "}
+      ·{" "}
+      <Link className="underline" href={SMS_TERMS_PATH} target="_blank">
+        Terms
+      </Link>{" "}
+      ·{" "}
+      <Link className="underline" href={SMS_PRIVACY_PATH} target="_blank">
+        Privacy
+      </Link>
+    </>
+  );
+}
 
 /** SMS enrollment composed from the official settings primitives. */
 export function SmsEnrollmentSettingsSection() {
@@ -23,20 +82,42 @@ export function SmsEnrollmentSettingsSection() {
     <>
       <SettingsSection
         title="Text messages"
-        description="Verify a mobile number and explicitly opt in to AI Matrx service and notification texts."
+        description="Verify a mobile number, then opt in to each text program you want. Each program has its own consent."
         icon={MessageSquareText}
       >
         {enrollment.step === "complete" ? (
           <>
             <SettingsReadOnlyValue
               label="Verified mobile number"
-              description="Recurring AI Matrx SMS notifications are enabled."
               value={enrollment.phoneNumber}
               icon={ShieldCheck}
             />
+            <SettingsReadOnlyValue
+              label="AI Matrx notifications"
+              description="Account and workplace notifications."
+              value={enrollment.enrolled.notifications ? "On" : "Off"}
+              icon={BellRing}
+            />
+            <SettingsReadOnlyValue
+              label={SMS_PERSONAL_STAFF_PROGRAM_NAME}
+              description="Replies and results from your Personal Staff."
+              value={enrollment.enrolled.personalStaff ? "On" : "Off"}
+              icon={MessagesSquare}
+            />
+            {!(enrollment.enrolled.notifications && enrollment.enrolled.personalStaff) && (
+              <SettingsButton
+                label="Add a text program"
+                description="Opt this number in to a program that is off. You will confirm with a new code."
+                actionLabel="Add program"
+                actionIcon={Plus}
+                kind="outline"
+                disabled={enrollment.loading}
+                onClick={enrollment.addProgram}
+              />
+            )}
             <SettingsButton
-              label="SMS notifications"
-              description="Disable texts here or reply STOP to any AI Matrx message."
+              label="Turn off all texts"
+              description="Stops every AI Matrx text program for this number. You can also reply STOP to any message."
               actionLabel="Disable"
               actionIcon={XCircle}
               kind="destructive"
@@ -58,7 +139,7 @@ export function SmsEnrollmentSettingsSection() {
             />
             <SettingsButton
               label="Confirm mobile number"
-              description="Verification records your consent and enables transactional SMS notifications."
+              description="Verifying records your consent for each program you checked and turns it on."
               actionLabel="Verify code"
               actionIcon={CheckCircle2}
               loading={enrollment.loading}
@@ -93,30 +174,28 @@ export function SmsEnrollmentSettingsSection() {
               type="tel"
               inputMode="tel"
             />
-            <SettingsCheckbox
-              label="SMS consent"
-              description={
-                <>
-                  {SMS_CONSENT_DISCLOSURE}{" "}
-                  <Link className="underline" href={SMS_TERMS_PATH} target="_blank">
-                    Terms
-                  </Link>{" "}
-                  ·{" "}
-                  <Link className="underline" href={SMS_PRIVACY_PATH} target="_blank">
-                    Privacy
-                  </Link>
-                </>
-              }
-              checked={enrollment.consentAccepted}
-              onCheckedChange={enrollment.setConsentAccepted}
-            />
+            {SMS_PROGRAMS.filter((program) => !enrollment.enrolled[program.key]).map(
+              (program) => (
+                <SettingsCheckbox
+                  key={program.key}
+                  label={program.label}
+                  description={
+                    <>
+                      {program.disclosure} <ProgramLinks detailsPath={program.detailsPath} />
+                    </>
+                  }
+                  checked={enrollment.consents[program.key]}
+                  onCheckedChange={(checked) => enrollment.setConsent(program.key, checked)}
+                />
+              ),
+            )}
             <SettingsButton
               label="Verify and enroll"
-              description="We will send a one-time verification code before enabling recurring messages."
+              description="Each program is optional and not required to use AI Matrx. We send a one-time code before any program starts."
               actionLabel="Send verification code"
               actionIcon={Send}
               loading={enrollment.loading}
-              disabled={!enrollment.phoneNumber.trim() || !enrollment.consentAccepted}
+              disabled={!enrollment.phoneNumber.trim() || !enrollment.anyConsent}
               onClick={enrollment.sendCode}
               last
             />

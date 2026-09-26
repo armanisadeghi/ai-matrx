@@ -39,6 +39,8 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
     prefix: "/agents/battle/model",
     surface: "matrx-user/agent-comparison-model",
   },
+  // Every other battle mode (and each saved battle's /<mode>/<id>).
+  { prefix: "/agents/battle", surface: "matrx-user/agent-battle" },
   { prefix: "/agents", surface: "matrx-user/agents" },
   // Real routes for the connections/apps hubs (old /agents/* paths were fiction).
   {

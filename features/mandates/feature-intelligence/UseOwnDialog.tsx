@@ -76,14 +76,16 @@ export function UseOwnDialog({
           }}
         >
           {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-          Use this for {whoFor}
+          Assign
         </Button>
       </div>
     </div>
   );
 
-  const title = `Use your own for “${row.shortName}”`;
-  const description = "Any agent or workflow you can open. Duplicates keep the original's inputs; your own receives them by name.";
+  const title = `${row.shortName} — for ${whoFor}`;
+  // No explanatory sentence (Arman, 2026-09-26: no novels); the dialog still
+  // needs an accessible description, so it names the choice in four words.
+  const description = "Choose an agent or workflow.";
 
   if (isMobile) {
     return (
@@ -102,7 +104,7 @@ export function UseOwnDialog({
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogDescription className="sr-only">{description}</DialogDescription>
         </DialogHeader>
         {body}
       </DialogContent>

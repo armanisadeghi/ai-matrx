@@ -1,5 +1,10 @@
+import { BattleSurfaceRuntime } from "@/features/agent-comparison/shared/BattleSurfaceRuntime";
 import { SettingsBattlePage } from "@/features/agent-comparison/modes/settings/components/SettingsBattlePage";
 
 export default function SettingsBattleRoute() {
-  return <SettingsBattlePage />;
+  return (
+    <BattleSurfaceRuntime>
+      <SettingsBattlePage />
+    </BattleSurfaceRuntime>
+  );
 }

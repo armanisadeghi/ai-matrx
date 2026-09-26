@@ -34,6 +34,7 @@ import OrganizationPeek from "./kinds/OrganizationPeek";
 import PartyPeek from "./kinds/PartyPeek";
 import SeoMapTopicPeek from "./kinds/SeoMapTopicPeek";
 import UserPeek from "./kinds/UserPeek";
+import MandatePeek from "./kinds/MandatePeek";
 import type { PeekProps } from "./types";
 import { PEEK_KINDS } from "./kinds-list";
 
@@ -67,6 +68,8 @@ export const PEEK_REGISTRY: Record<
   seo_map_topic: SeoMapTopicPeek,
   // A platform user (member) — visible when the viewer shares ANY organization with them.
   user: UserPeek,
+  // A mandate (definition id or key) — Arman 2026-09-26, the agents peek's bar.
+  mandate: MandatePeek,
   // Add new kinds here as their peek components land.
 };
 

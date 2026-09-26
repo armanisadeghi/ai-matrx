@@ -1,3 +1,4 @@
+import { BattleSurfaceRuntime } from "@/features/agent-comparison/shared/BattleSurfaceRuntime";
 import { VariationsBattlePage } from "@/features/agent-comparison/modes/variations/components/VariationsBattlePage";
 
 export default async function SavedVariationsBattleRoute({
@@ -6,5 +7,9 @@ export default async function SavedVariationsBattleRoute({
   params: Promise<{ setId: string }>;
 }) {
   const { setId } = await params;
-  return <VariationsBattlePage setId={setId} />;
+  return (
+    <BattleSurfaceRuntime>
+      <VariationsBattlePage setId={setId} />
+    </BattleSurfaceRuntime>
+  );
 }

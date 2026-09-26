@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useRef, useState } from "react";
+import { Fragment, useState } from "react";
 import { Loader2, MessagesSquare, Plus, RotateCcw, Split } from "lucide-react";
 import {
   ResizableHandle,
@@ -9,127 +9,239 @@ import {
 } from "@/components/ui/resizable";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { destroyInstance } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { forkConversationServer } from "@/features/agents/redux/execution-system/message-crud/server/fork-conversation-server.thunk";
 import { ConversationPickerWindow } from "@/features/agents/components/conversation-history/ConversationPickerWindow";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
-import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { BattleModeNav } from "@/features/agent-comparison/shared/ModePicker";
+import type { HeaderAction } from "@/features/shell/components/header/variants/types";
+import { BattleHeader } from "@/features/agent-comparison/shared/BattleHeader";
+import { ComparisonSetLoaderDialog } from "@/features/agent-comparison/components/ComparisonSetLoaderDialog";
+import {
+  BattleRouteNotice,
+  useBattleRoute,
+} from "@/features/agent-comparison/shared/useBattleRoute";
+import {
+  persistForRun,
+  type PersistedBattle,
+} from "@/features/agent-comparison/shared/battlePersistence";
 import { ConversationBattleColumn } from "./ConversationBattleColumn";
 import { createConversationBattleForks } from "../forkConversationBattle";
-import type {
-  ConversationBattleFork,
-  ConversationBattleSource,
-} from "../types";
+import {
+  addConversationForks,
+  removeConversationFork,
+  reserveForkNumbers,
+  setActiveConversationSet,
+  setConversationBattleSource,
+} from "../redux/slice";
+import {
+  clearConversationBattle,
+  loadConversationBattleSet,
+  persistConversationBattle,
+  renameConversationBattle,
+} from "../redux/thunks";
+import type { ConversationBattleFork } from "../types";
 
 const INITIAL_FORK_COUNT = 2;
 
-export function ConversationBattlePage() {
+export function ConversationBattlePage({
+  setId = null,
+}: {
+  setId?: string | null;
+}) {
   const dispatch = useAppDispatch();
-  const [source, setSource] = useState<ConversationBattleSource | null>(null);
-  const [forks, setForks] = useState<ConversationBattleFork[]>([]);
+  const source = useAppSelector((s) => s.agentComparisonConversation.source);
+  const forks = useAppSelector((s) => s.agentComparisonConversation.forks);
+  const activeSetId = useAppSelector(
+    (s) => s.agentComparisonConversation.activeSetId,
+  );
+  const activeSetName = useAppSelector(
+    (s) => s.agentComparisonConversation.activeSetName,
+  );
+  const nextForkNumber = useAppSelector(
+    (s) => s.agentComparisonConversation.nextForkNumber,
+  );
   const [pickerOpen, setPickerOpen] = useState(false);
   const [isForking, setIsForking] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
-  const nextForkNumberRef = useRef(1);
+  const [loaderOpen, setLoaderOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameBusy, setRenameBusy] = useState(false);
 
-  const selectSource = useCallback((conversation: ConversationListItem) => {
-    setSource({
-      conversationId: conversation.conversationId,
-      title: conversation.title,
-      updatedAt: conversation.updatedAt,
-    });
-  }, []);
+  const routeStatus = useBattleRoute({
+    mode: "conversation",
+    urlSetId: setId,
+    activeSetId,
+    load: (id) => dispatch(loadConversationBattleSet({ setId: id })).unwrap(),
+  });
 
-  const addForks = useCallback(
-    async (count: number) => {
-      if (!source || isForking) return;
-      setIsForking(true);
-      const firstForkNumber = nextForkNumberRef.current;
-      nextForkNumberRef.current += count;
-      const sourceTitle = source.title?.trim() || "Untitled chat";
+  /**
+   * Keep the saved battle in step with the forks on screen. The first save
+   * creates the battle (and its URL); a failure never undoes the forks — the
+   * forks are durable chats either way — it says so instead.
+   */
+  const saveForks = async () => {
+    const { cancelled, error } = await persistForRun(
+      (): Promise<PersistedBattle> =>
+        dispatch(persistConversationBattle()).unwrap(),
+    );
+    if (!cancelled && error) {
+      toast.warning("The forks are ready, but this battle could not be saved", {
+        description: `${error} It has no link yet; use Save battle to try again.`,
+      });
+    }
+  };
 
-      try {
-        const { created, failures } = await createConversationBattleForks({
-          count,
-          firstForkNumber,
-          sourceTitle,
-          forkConversation: (title) =>
-            dispatch(
-              forkConversationServer({
-                conversationId: source.conversationId,
-                title,
-                retainForkOnHydrationFailure: true,
-              }),
-            )
-              .unwrap()
-              .then((result) => ({
-                conversationId: result.conversationId,
-                loadError: result.hydrationError,
-              })),
-        });
-        const failed = failures.length;
-        if (created.length > 0) {
-          setForks((current) => [...current, ...created]);
-          const recovering = created.filter((fork) => fork.loadError).length;
-          if (recovering > 0) {
-            toast.warning(
-              `${created.length} fork${created.length === 1 ? "" : "s"} created · ${recovering} require${recovering === 1 ? "s" : ""} a loading retry`,
-            );
-          } else {
-            toast.success(
-              `${created.length} conversation fork${created.length === 1 ? "" : "s"} ready`,
-            );
-          }
-        }
-        if (failed > 0) {
-          toast.error(
-            `${failed} fork${failed === 1 ? "" : "s"} failed: ${formatError(failures[0])}`,
+  const selectSource = (conversation: ConversationListItem) => {
+    dispatch(
+      setConversationBattleSource({
+        conversationId: conversation.conversationId,
+        title: conversation.title,
+        updatedAt: conversation.updatedAt,
+        agentId: conversation.agentId ?? null,
+      }),
+    );
+  };
+
+  const addForks = async (count: number) => {
+    if (!source || isForking) return;
+    setIsForking(true);
+    const firstForkNumber = nextForkNumber;
+    dispatch(reserveForkNumbers(count));
+    const sourceTitle = source.title?.trim() || "Untitled chat";
+
+    try {
+      const { created, failures } = await createConversationBattleForks({
+        count,
+        firstForkNumber,
+        sourceTitle,
+        forkConversation: (title) =>
+          dispatch(
+            forkConversationServer({
+              conversationId: source.conversationId,
+              title,
+              retainForkOnHydrationFailure: true,
+            }),
+          )
+            .unwrap()
+            .then((result) => ({
+              conversationId: result.conversationId,
+              loadError: result.hydrationError,
+            })),
+      });
+      const failed = failures.length;
+      if (created.length > 0) {
+        dispatch(addConversationForks(created));
+        const recovering = created.filter((fork) => fork.loadError).length;
+        if (recovering > 0) {
+          toast.warning(
+            `${created.length} fork${created.length === 1 ? "" : "s"} created · ${recovering} require${recovering === 1 ? "s" : ""} a loading retry`,
+          );
+        } else {
+          toast.success(
+            `${created.length} conversation fork${created.length === 1 ? "" : "s"} ready`,
           );
         }
-      } finally {
-        setIsForking(false);
+        await saveForks();
       }
-    },
-    [dispatch, isForking, source],
-  );
-
-  const removeFork = useCallback(
-    (fork: ConversationBattleFork) => {
-      dispatch(destroyInstance(fork.conversationId));
-      setForks((current) =>
-        current.filter((item) => item.columnId !== fork.columnId),
-      );
-    },
-    [dispatch],
-  );
-
-  const resetBattle = useCallback(() => {
-    for (const fork of forks) {
-      dispatch(destroyInstance(fork.conversationId));
+      if (failed > 0) {
+        toast.error(
+          `${failed} fork${failed === 1 ? "" : "s"} failed: ${formatError(failures[0])}`,
+        );
+      }
+    } finally {
+      setIsForking(false);
     }
-    setForks([]);
-    setSource(null);
-    nextForkNumberRef.current = 1;
+  };
+
+  const removeFork = (fork: ConversationBattleFork) => {
+    dispatch(destroyInstance(fork.conversationId));
+    dispatch(removeConversationFork({ columnId: fork.columnId }));
+    // A saved battle forgets the fork too (the chat stays in history). The
+    // last fork cannot be removed from a saved battle's record — the save
+    // path refuses an empty battle — so the record keeps it until re-forked.
+    if (activeSetId && forks.length > 1) void saveForks();
+  };
+
+  const resetBattle = () => {
+    void dispatch(clearConversationBattle());
     setResetConfirmOpen(false);
-  }, [dispatch, forks]);
+  };
+
+  const handleSave = async () => {
+    try {
+      const saved = await dispatch(persistConversationBattle()).unwrap();
+      toast.success(saved.created ? "Battle saved" : "Changes saved");
+    } catch (err) {
+      toast.error(`Couldn't save: ${formatError(err)}`);
+    }
+  };
+
+  const handleRename = async (name: string) => {
+    setRenameBusy(true);
+    try {
+      await dispatch(renameConversationBattle({ name })).unwrap();
+      setRenameOpen(false);
+    } catch (err) {
+      toast.error(`Couldn't rename: ${formatError(err)}`);
+    } finally {
+      setRenameBusy(false);
+    }
+  };
+
+  const actions: HeaderAction[] = [
+    {
+      icon: "Library",
+      label: "Open a saved battle",
+      onPress: () => setLoaderOpen(true),
+    },
+    ...(forks.length > 0
+      ? [
+          {
+            icon: "Save",
+            label: activeSetId ? "Save changes" : "Save battle",
+            onPress: () => {
+              void handleSave();
+            },
+          },
+        ]
+      : []),
+    ...(activeSetId
+      ? [
+          {
+            icon: "Pencil",
+            label: "Rename battle…",
+            onPress: () => setRenameOpen(true),
+          },
+        ]
+      : []),
+    ...(source || forks.length > 0
+      ? [
+          {
+            icon: "SquarePlus",
+            label: "Start a new battle",
+            destructive: true,
+            onPress: () => setResetConfirmOpen(true),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <div
       className="matrx-touch-targets h-full flex flex-col overflow-hidden"
       style={{ paddingTop: "var(--shell-header-h)" }}
     >
-      <RouteHeader
-        left={
-          <span className="text-sm font-medium truncate max-sm:hidden">
-            Conversation battle
-          </span>
-        }
-        center={<BattleModeNav />}
+      <BattleHeader
+        battleName={activeSetName}
+        fallbackTitle="Conversation battle"
+        actions={actions}
       />
+
+      <BattleRouteNotice status={routeStatus} mode="conversation" />
 
       <div className="shrink-0 flex h-10 items-center gap-2 border-b border-border bg-card px-3">
         <div className="flex min-w-0 items-center gap-1.5">
@@ -239,10 +351,35 @@ export function ConversationBattlePage() {
         open={resetConfirmOpen}
         onOpenChange={setResetConfirmOpen}
         title="Start a new conversation battle?"
-        description="This clears the battle view so you can choose another source. The durable forks you already created stay available in chat history."
+        description={
+          activeSetId
+            ? "This clears the battle view so you can choose another source. This battle stays saved — reopen it from Open a saved battle — and its forks stay in chat history."
+            : "This clears the battle view so you can choose another source. The durable forks you already created stay available in chat history."
+        }
         confirmLabel="New battle"
         variant="destructive"
         onConfirm={resetBattle}
+      />
+
+      <ComparisonSetLoaderDialog
+        open={loaderOpen}
+        onOpenChange={setLoaderOpen}
+        mode="conversation"
+        activeSetId={activeSetId}
+        onDeleted={(id) => {
+          if (id === activeSetId) dispatch(setActiveConversationSet(null));
+        }}
+      />
+
+      <TextInputDialog
+        open={renameOpen}
+        onOpenChange={(o) => !renameBusy && setRenameOpen(o)}
+        title="Rename battle"
+        placeholder="Battle name"
+        defaultValue={activeSetName ?? ""}
+        confirmLabel="Rename"
+        busy={renameBusy}
+        onConfirm={handleRename}
       />
     </div>
   );

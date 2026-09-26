@@ -55,6 +55,7 @@ const selectSystemPrompt = (s: RootState) => s.agentComparisonSystemPrompt;
 const selectTools = (s: RootState) => s.agentComparisonTools;
 const selectRequestMod = (s: RootState) => s.agentComparisonRequestMod;
 const selectVariations = (s: RootState) => s.agentComparisonVariations;
+const selectConversation = (s: RootState) => s.agentComparisonConversation;
 
 interface LockedColumnSource {
   columns: { columnId: string; conversationId: string; label: string }[];
@@ -88,6 +89,7 @@ export const selectActiveBattleColumns = createSelector(
     selectTools,
     selectRequestMod,
     selectVariations,
+    selectConversation,
   ],
   (
     mounted,
@@ -99,6 +101,7 @@ export const selectActiveBattleColumns = createSelector(
     tools,
     rm,
     variations,
+    conversation,
   ): BattleColumnDescriptor[] => {
     switch (mounted) {
       case "settings":
@@ -115,6 +118,13 @@ export const selectActiveBattleColumns = createSelector(
         return lockedColumns(rm, rm.locked.agentId, rm.locked.agentVersion, "request-mod");
       case "variations":
         return lockedColumns(variations, variations.locked.sourceAgentId, variations.locked.agentVersion, "variations");
+      case "conversation":
+        return lockedColumns(
+          { columns: conversation.forks },
+          null,
+          null,
+          "conversation",
+        );
       case "open":
         if (open.columns.length === 0) return EMPTY;
         return open.columns.map((c) => ({
@@ -148,8 +158,20 @@ export const selectMountedBattleSetId = createSelector(
     selectTools,
     selectRequestMod,
     selectVariations,
+    selectConversation,
   ],
-  (mounted, open, settings, model, tuning, sp, tools, rm, variations) => {
+  (
+    mounted,
+    open,
+    settings,
+    model,
+    tuning,
+    sp,
+    tools,
+    rm,
+    variations,
+    conversation,
+  ) => {
     switch (mounted) {
       case "open":
         return open.activeSetId;
@@ -167,6 +189,8 @@ export const selectMountedBattleSetId = createSelector(
         return rm.activeSetId;
       case "variations":
         return variations.activeSetId;
+      case "conversation":
+        return conversation.activeSetId;
       default:
         return null;
     }

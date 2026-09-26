@@ -45,11 +45,16 @@ interface BattleHeaderProps {
   inlineCount?: number;
   /** Mode-specific control that cannot be expressed as a plain action (e.g. a preset menu). */
   extra?: ReactNode;
-  onSubmit: () => void;
-  submitting: boolean;
-  canSubmit: boolean;
+  /**
+   * Submit all. Omitted by a mode whose columns each send their own turn
+   * (Conversation): the button and Blind test (which starts on submit) are
+   * then absent rather than dead.
+   */
+  onSubmit?: () => void;
+  submitting?: boolean;
+  canSubmit?: boolean;
   /** Tooltip + accessible name for Submit all, stating what it runs. */
-  submitTitle: string;
+  submitTitle?: string;
 }
 
 export function BattleHeader({
@@ -59,10 +64,11 @@ export function BattleHeader({
   inlineCount = 1,
   extra,
   onSubmit,
-  submitting,
-  canSubmit,
-  submitTitle,
+  submitting = false,
+  canSubmit = false,
+  submitTitle = "Submit all",
 }: BattleHeaderProps) {
+  const hasSubmit = Boolean(onSubmit);
   const dispatch = useAppDispatch();
   const blindActive = useAppSelector(selectBlindActive);
   const blindEnabled = useAppSelector(selectBlindEnabled);
@@ -84,7 +90,7 @@ export function BattleHeader({
   const allActions: HeaderAction[] = isMobile
     ? [
         ...actions,
-        ...(blindSession
+        ...(blindSession || !hasSubmit
           ? []
           : [
               {
@@ -146,7 +152,7 @@ export function BattleHeader({
               sheetTitle={title}
             />
           )}
-          {!isMobile && (
+          {!isMobile && hasSubmit && (
             <span aria-label="Blind test">
               <BlindControls compact />
             </span>
@@ -158,24 +164,26 @@ export function BattleHeader({
           >
             <BattleAlchemy controllerRef={alchemyRef} />
           </span>
-          <Button
-            size="sm"
-            onClick={onSubmit}
-            // Never dead: when the battle is not ready the button stays
-            // clickable and the mode's handler says what is missing.
-            variant={canSubmit ? "default" : "outline"}
-            disabled={submitting}
-            aria-label={submitTitle}
-            title={submitTitle}
-            className="h-8 max-sm:h-11 max-sm:w-11 max-sm:p-0 shrink-0"
-          >
-            {submitting ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Play className="w-3.5 h-3.5" />
-            )}
-            <span className="max-sm:sr-only">Submit all</span>
-          </Button>
+          {hasSubmit && (
+            <Button
+              size="sm"
+              onClick={onSubmit}
+              // Never dead: when the battle is not ready the button stays
+              // clickable and the mode's handler says what is missing.
+              variant={canSubmit ? "default" : "outline"}
+              disabled={submitting}
+              aria-label={submitTitle}
+              title={submitTitle}
+              className="h-8 max-sm:h-11 max-sm:w-11 max-sm:p-0 shrink-0"
+            >
+              {submitting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Play className="w-3.5 h-3.5" />
+              )}
+              <span className="max-sm:sr-only">Submit all</span>
+            </Button>
+          )}
         </>
       }
     />

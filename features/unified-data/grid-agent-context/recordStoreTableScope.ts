@@ -12,7 +12,7 @@
  * `RecordStoreTableSurface.tsx`.
  */
 import type { Field } from "@ai-matrx/records";
-import type { GridContextSnapshot } from "@ai-matrx/records-ui";
+import type { RecordsUiHost } from "@ai-matrx/records-ui";
 
 import type {
   DataTableScopeField,
@@ -20,6 +20,9 @@ import type {
   DataTableScopeRow,
 } from "@/features/data-tables/agent-context/buildDataTablesScope";
 import type { RowAction } from "@/features/data-tables/row-actions";
+
+/** What the merged grid tells its host (`RecordsUiHost.onGridContext`), read off the port itself. */
+export type GridContextSnapshot = Parameters<NonNullable<RecordsUiHost["onGridContext"]>>[0];
 
 /** A column the store works out itself: an agent never writes it. */
 export function isWorkedOut(field: Field): boolean {
@@ -37,7 +40,7 @@ function scopeField(field: Field, order: number): DataTableScopeField {
   return {
     field_name: field.key,
     display_name: field.label?.trim() || field.key,
-    data_type: String(field.parity_type ?? field.type),
+    data_type: String((field as Field & { parity_type?: string }).parity_type ?? field.type),
     field_order: order,
     is_required: Boolean(field.required),
     ...(field.format ? { format: String(field.format) } : {}),

@@ -1,3 +1,4 @@
+import { BattleSurfaceRuntime } from "@/features/agent-comparison/shared/BattleSurfaceRuntime";
 import { RequestModBattlePage } from "@/features/agent-comparison/modes/request-mod/components/RequestModBattlePage";
 
 export default async function SavedRequestModBattleRoute({
@@ -6,5 +7,9 @@ export default async function SavedRequestModBattleRoute({
   params: Promise<{ setId: string }>;
 }) {
   const { setId } = await params;
-  return <RequestModBattlePage setId={setId} />;
+  return (
+    <BattleSurfaceRuntime>
+      <RequestModBattlePage setId={setId} />
+    </BattleSurfaceRuntime>
+  );
 }

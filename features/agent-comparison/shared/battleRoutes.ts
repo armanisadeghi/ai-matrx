@@ -14,7 +14,8 @@ export type BattleModeId =
   | "settings"
   | "tools"
   | "system-prompt"
-  | "request-mod";
+  | "request-mod"
+  | "conversation";
 
 const BASE: Record<BattleModeId, string> = {
   open: "/agents/battle",
@@ -25,6 +26,7 @@ const BASE: Record<BattleModeId, string> = {
   tools: "/agents/battle/tools",
   "system-prompt": "/agents/battle/system-prompt",
   "request-mod": "/agents/battle/request-mod",
+  conversation: "/agents/battle/conversation",
 };
 
 export function isBattleModeId(value: unknown): value is BattleModeId {

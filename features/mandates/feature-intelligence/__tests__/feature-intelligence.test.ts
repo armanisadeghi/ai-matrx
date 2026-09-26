@@ -1,6 +1,6 @@
 import { fillUrlPattern, keepVisibleJobs, mergePlaces, resolveDeclaredPlaces } from "../places";
 import { keyInFeature, lanesFor, shortMandateName } from "../service";
-import { featureIntelligenceHref } from "../hrefs";
+import { featureIntelligenceHref, featureOfMandateKey } from "../hrefs";
 import { effectiveRunOverride } from "../run-override";
 import type { FeatureIntelligenceRow, ResolvedPlace } from "../types";
 
@@ -57,7 +57,7 @@ describe("feature intelligence — rows", () => {
     expect(effectiveRunOverride(row, { ...choice, holderId: "agent-2" })).toEqual({ ...choice, holderId: "agent-2" });
   });
 
-  it("matches keys by first segment only", () => {
+  it("matches keys to a code feature by first segment only", () => {
     expect(keyInFeature("flashcards.generate_cards", "flashcards")).toBe(true);
     expect(keyInFeature("education.study_pack_flashcards", "flashcards")).toBe(false);
   });
@@ -118,35 +118,54 @@ describe("feature intelligence — hrefs", () => {
   });
 });
 
-describe("feature intelligence — features that own more than one prefix", () => {
-  it("routes an extra prefix to its owner's page", () => {
-    // Imported lazily so the module graph stays the one the page uses.
-    const { canonicalFeature, featureForKey, featurePrefixes } = jest.requireActual("../registry");
-    const { featureIntelligenceHref } = jest.requireActual("../hrefs");
-    expect(featurePrefixes("marketing")).toEqual(["marketing", "seo"]);
-    expect(canonicalFeature("seo")).toBe("marketing");
-    expect(featureForKey("podcast_client.topic_ideas")).toBe("podcast");
-    expect(featureForKey("notes.organizer")).toBe("notes");
-    expect(featureIntelligenceHref("seo")).toBe("/intelligence/marketing");
-    expect(keyInFeature("seo.map_author", "marketing")).toBe(true);
+describe("feature intelligence — registry pages and old ids", () => {
+  it("a focused job always opens on the page its key lands on", () => {
+    expect(featureIntelligenceHref("marketing", { mandateKey: "seo.finding_fixer" })).toBe(
+      "/intelligence/seo?mandate=seo.finding_fixer",
+    );
+    expect(featureIntelligenceHref("education", { mandateKey: "education.quiz_generate" })).toBe(
+      "/intelligence/quizzes-and-tests?mandate=education.quiz_generate",
+    );
+    expect(featureIntelligenceHref("x", { mandateKey: "education.page_guidance" })).toBe(
+      "/intelligence/education/unassigned?mandate=education.page_guidance",
+    );
   });
 
-  it("the index counts jobs under the owning feature and keeps undeclared features", () => {
-    const { buildIndexRows } = jest.requireActual("../IntelligenceIndex");
-    const rows = buildIndexRows(["seo.map_author", "marketing.page_image", "zzz_new.job"]);
-    expect(rows.find((row: { feature: string }) => row.feature === "marketing")).toMatchObject({ jobs: 2, declared: true });
-    expect(rows.find((row: { feature: string }) => row.feature === "zzz_new")).toMatchObject({ jobs: 1, declared: false });
+  it("an old id opens the one Feature its jobs moved to, or its Domain", () => {
+    expect(featureIntelligenceHref("podcast")).toBe("/intelligence/podcasts");
+    expect(featureIntelligenceHref("content_plan")).toBe("/intelligence/content-planning");
+    expect(featureIntelligenceHref("seo")).toBe("/intelligence/seo");
+    expect(featureIntelligenceHref("marketing")).toBe("/intelligence?domain=marketing");
+    expect(featureIntelligenceHref("education")).toBe("/intelligence?domain=education");
+    expect(featureIntelligenceHref("masterwork")).toBe("/intelligence?domain=masterwork");
+    expect(featureOfMandateKey("podcast_client.topic_ideas")).toBe("podcasts");
   });
 
-  it("never shows a raw prefix, and marks test fixtures", () => {
+  it("the directory groups by Domain, one card per registry Feature, gaps last", () => {
     const { buildIndexRows } = jest.requireActual("../IntelligenceIndex");
-    const rows = buildIndexRows(["ner.extract", "kg.link", "cms.page", "rag_kinds.x", "zzz.a", "wfparity.b"]);
-    const label = (feature: string) =>
-      rows.find((row: { feature: string }) => row.feature === feature)?.label;
-    expect(label("ner")).toBe("Entity extraction");
-    expect(label("kg")).toBe("Knowledge graph");
-    expect(label("cms")).toBe("Website content");
-    expect(label("rag_kinds")).toBe("Knowledge base types");
-    expect(rows.filter((row: { fixture: boolean }) => row.fixture).map((row: { feature: string }) => row.feature).sort()).toEqual(["wfparity", "zzz"]);
+    const rows = buildIndexRows([
+      "seo.map_author",
+      "seo.press_story_analyst",
+      "marketing.page_image",
+      "podcast_client.topic_ideas",
+      "zzz_new.job",
+      "zzz.a",
+    ]);
+    const row = (feature: string) => rows.find((entry: { feature: string }) => entry.feature === feature);
+    expect(row("seo")).toMatchObject({ label: "Seo", domain: "marketing", jobs: 1 });
+    expect(row("public-relations")).toMatchObject({ domain: "marketing", jobs: 1 });
+    expect(row("marketing/unassigned")).toMatchObject({
+      label: "Not yet assigned to a feature",
+      unassigned: true,
+      jobs: 1,
+    });
+    expect(row("podcasts")).toMatchObject({ domain: "media", jobs: 1 });
+    const orphans = rows.filter((entry: { domain: string | null }) => entry.domain === null);
+    expect(orphans.map((entry: { label: string; fixture: boolean }) => [entry.label, entry.fixture])).toEqual([
+      ["Not yet assigned to a domain", false],
+      ["Test fixtures", true],
+    ]);
+    const marketing = rows.filter((entry: { domain: string | null }) => entry.domain === "marketing");
+    expect(marketing[marketing.length - 1].unassigned).toBe(true);
   });
 });

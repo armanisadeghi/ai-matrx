@@ -12,7 +12,7 @@
  * `RecordStoreTableSurface` sits INSIDE it, so its write reaches the store as this person.
  */
 import { useRef, useState, type ReactNode } from "react";
-import type { GridContextSnapshot } from "@ai-matrx/records-ui";
+import type { GridContextSnapshot } from "./recordStoreTableScope";
 import { useRecordsClient } from "@ai-matrx/records/react";
 
 import { SurfaceRuntimeProvider, type SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";

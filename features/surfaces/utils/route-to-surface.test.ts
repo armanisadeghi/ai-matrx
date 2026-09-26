@@ -261,11 +261,23 @@ describe("Agent surface resolution (nested [id])", () => {
     );
   });
 
+  it("battle modes resolve to the battle surfaces, Model to its own", () => {
+    expect(surfaceFromPathname("/agents/battle")).toBe("matrx-user/agent-battle");
+    expect(surfaceFromPathname(`/agents/battle/open/${A}`)).toBe(
+      "matrx-user/agent-battle",
+    );
+    expect(surfaceFromPathname("/agents/battle/conversation")).toBe(
+      "matrx-user/agent-battle",
+    );
+    expect(surfaceFromPathname(`/agents/battle/model/${A}`)).toBe(
+      "matrx-user/agent-comparison-model",
+    );
+  });
+
   it("hub routes and unmapped sub-routes stay on the agents hub", () => {
     expect(surfaceFromPathname("/agents")).toBe("matrx-user/agents");
     expect(surfaceFromPathname("/agents/all")).toBe("matrx-user/agents");
     expect(surfaceFromPathname("/agents/new")).toBe("matrx-user/agents");
-    expect(surfaceFromPathname("/agents/battle")).toBe("matrx-user/agents");
     expect(surfaceFromPathname(`/agents/${A}`)).toBe("matrx-user/agents");
     expect(surfaceFromPathname(`/agents/${A}/surfaces`)).toBe(
       "matrx-user/agents",

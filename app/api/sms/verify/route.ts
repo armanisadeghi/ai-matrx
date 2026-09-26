@@ -20,6 +20,9 @@ import {
   SMS_CONSENT_DISCLOSURE,
   SMS_CONSENT_VERSION,
   SMS_OPT_IN_PATH,
+  SMS_PERSONAL_STAFF_CONSENT_DISCLOSURE,
+  SMS_PERSONAL_STAFF_CONSENT_VERSION,
+  SMS_PERSONAL_STAFF_OPT_IN_PATH,
   SMS_PRIVACY_PATH,
   SMS_TERMS_PATH,
 } from "@/features/sms/compliance";
@@ -44,11 +47,14 @@ export async function POST(request: NextRequest) {
       action: string;
       phoneNumber: string;
       code: string;
-      consentAccepted: boolean;
+      consents: Partial<{ notifications: boolean; personalStaff: boolean }>;
       source: string;
     }>;
     let { action, phoneNumber } = body;
-    const { code, consentAccepted, source } = body;
+    const { code, source } = body;
+    // One affirmative box per program — never one box for two (see compliance.ts).
+    const notificationsConsent = body.consents?.notifications === true;
+    const personalStaffConsent = body.consents?.personalStaff === true;
 
     if (!action || !phoneNumber) {
       return NextResponse.json(
@@ -75,11 +81,15 @@ export async function POST(request: NextRequest) {
     if (action === "start") action = "send";
     if (action === "verify") action = "check";
 
-    if ((action === "send" || action === "check") && consentAccepted !== true) {
+    if (
+      (action === "send" || action === "check") &&
+      !notificationsConsent &&
+      !personalStaffConsent
+    ) {
       return NextResponse.json(
         {
           success: false,
-          msg: "Explicit SMS consent is required before verification",
+          msg: "Check the consent box for at least one text message program before verification",
         },
         { status: 400 },
       );
@@ -152,38 +162,67 @@ export async function POST(request: NextRequest) {
         const ipAddress = forwardedFor?.split(",")[0]?.trim() || null;
 
         const consentRecordedAt = new Date().toISOString();
-        const consentMetadata = {
-          consent_version: SMS_CONSENT_VERSION,
-          disclosure: SMS_CONSENT_DISCLOSURE,
-          opt_in_path: SMS_OPT_IN_PATH,
-          privacy_path: SMS_PRIVACY_PATH,
-          terms_path: SMS_TERMS_PATH,
-          source: source === "sms-demo" ? "sms-demo" : "settings",
-          verification_channel: "sms",
-        };
+        const consentSource = source === "sms-demo" ? "sms-demo" : "settings";
+        const consentRow = (
+          consentType: string,
+          metadata: Record<string, string>,
+        ) => ({
+          phone_number: phoneNumber,
+          user_id: user.id,
+          organization_id: organizationId,
+          consent_type: consentType,
+          status: "opted_in",
+          opted_in_at: consentRecordedAt,
+          opted_out_at: null,
+          opt_in_method: "web_form",
+          ip_address: ipAddress,
+          metadata,
+        });
 
-        // One verification accepts the public disclosure for both account
-        // transactions and the separately gated notification lane. Persisting
-        // both purpose rows keeps legacy account SMS consent from silently
-        // authorizing workforce notifications.
+        // 🚨 ONE ROW PER PROGRAM, EACH WITH ITS OWN DISCLOSURE. Carriers reject a
+        // campaign whose consent is bundled with another program's (Twilio 30913,
+        // 2026-09-26), so a box the person did not check writes nothing.
+        //
+        // Program 1 — account + workplace notifications: the `transactional` and
+        // `notifications` purpose rows (the second keeps legacy account consent
+        // from silently authorizing workforce notifications).
+        // Program 2 — Personal Staff: the `ai_agent` row. The enrollment door
+        // below binds a Personal Staff text destination only when it exists.
+        const consentRows = [
+          ...(notificationsConsent
+            ? ["transactional", "notifications"].map((consentType) =>
+                consentRow(consentType, {
+                  program: "ai_matrx_notifications",
+                  consent_version: SMS_CONSENT_VERSION,
+                  disclosure: SMS_CONSENT_DISCLOSURE,
+                  opt_in_path: SMS_OPT_IN_PATH,
+                  privacy_path: SMS_PRIVACY_PATH,
+                  terms_path: SMS_TERMS_PATH,
+                  source: consentSource,
+                  verification_channel: "sms",
+                }),
+              )
+            : []),
+          ...(personalStaffConsent
+            ? [
+                consentRow("ai_agent", {
+                  program: "ai_matrx_personal_staff",
+                  consent_version: SMS_PERSONAL_STAFF_CONSENT_VERSION,
+                  disclosure: SMS_PERSONAL_STAFF_CONSENT_DISCLOSURE,
+                  opt_in_path: SMS_PERSONAL_STAFF_OPT_IN_PATH,
+                  privacy_path: SMS_PRIVACY_PATH,
+                  terms_path: SMS_TERMS_PATH,
+                  source: consentSource,
+                  verification_channel: "sms",
+                }),
+              ]
+            : []),
+        ];
+
         const { error: consentError } = await adminSupabase
           .schema("communication")
           .from("sms_consent")
-          .upsert(
-            ["transactional", "notifications"].map((consentType) => ({
-              phone_number: phoneNumber,
-              user_id: user.id,
-              organization_id: organizationId,
-              consent_type: consentType,
-              status: "opted_in",
-              opted_in_at: consentRecordedAt,
-              opted_out_at: null,
-              opt_in_method: "web_form",
-              ip_address: ipAddress,
-              metadata: consentMetadata,
-            })),
-            { onConflict: "phone_number,consent_type" },
-          );
+          .upsert(consentRows, { onConflict: "phone_number,consent_type" });
 
         if (consentError) {
           console.error("Failed to record verified SMS consent:", consentError);
@@ -260,7 +299,13 @@ export async function POST(request: NextRequest) {
           text_reachable?: boolean;
           voice_reachable?: boolean;
         } | null;
-        if (outcome && outcome.text_reachable !== true) {
+        // A person who did not opt in to Personal Staff is correctly not bound
+        // to it — that is their choice, not an operator gap.
+        if (
+          outcome &&
+          outcome.text_reachable !== true &&
+          outcome.assistant_binding !== "personal_staff_consent_missing"
+        ) {
           console.error(
             `[sms-enrollment] ${user.id} verified ${phoneNumber} but is NOT reachable by text: ` +
               `${outcome.assistant_binding ?? "unknown"}. Remedy: exactly one row in ` +
@@ -271,7 +316,12 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
           success: true,
-          msg: "Phone number verified and SMS notifications enabled",
+          msg: `Phone number verified. ${[
+            notificationsConsent ? "AI Matrx notifications" : null,
+            personalStaffConsent ? "Personal Staff" : null,
+          ]
+            .filter(Boolean)
+            .join(" and ")} text messages are on.`,
           data: {
             status: result.status,
             phoneNumber,

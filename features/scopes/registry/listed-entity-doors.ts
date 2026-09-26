@@ -156,7 +156,6 @@ const CENSUS = {
   interview_decision_interview: "UNMEASURED",
   interview_session: "UNMEASURED",
   // mandate.*
-  mandate: "KEYED_ON_A_KEY_NOT_AN_ID",
   mandate_binding: "UNMEASURED",
   // ops.*
   ops_proof_check: "UNMEASURED",
@@ -201,4 +200,4 @@ export const DOORLESS_LISTED_ENTITIES: Readonly<DoorlessCensus> = Object.freeze(
  * door — or someone must lower this number by giving an old one its door in the
  * same change.
  */
-export const DOORLESS_BASELINE = 80;
+export const DOORLESS_BASELINE = 79;

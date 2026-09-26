@@ -1,3 +1,4 @@
+import { BattleSurfaceRuntime } from "@/features/agent-comparison/shared/BattleSurfaceRuntime";
 import { SettingsBattlePage } from "@/features/agent-comparison/modes/settings/components/SettingsBattlePage";
 
 export default async function SavedSettingsBattleRoute({
@@ -6,5 +7,9 @@ export default async function SavedSettingsBattleRoute({
   params: Promise<{ setId: string }>;
 }) {
   const { setId } = await params;
-  return <SettingsBattlePage setId={setId} />;
+  return (
+    <BattleSurfaceRuntime>
+      <SettingsBattlePage setId={setId} />
+    </BattleSurfaceRuntime>
+  );
 }

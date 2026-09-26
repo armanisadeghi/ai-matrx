@@ -68,6 +68,7 @@ export async function GET(request: NextRequest) {
           max_messages_per_hour: 10,
           max_messages_per_day: 50,
           sms_consent_status: null,
+          personal_staff_consent_status: null,
         },
       });
     }
@@ -83,21 +84,30 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { data: consent } = data.phone_number
+    // Each SMS program has its own consent row (features/sms/compliance.ts):
+    // `notifications` for account + workplace notifications, `ai_agent` for
+    // Personal Staff. Both are reported so the settings pane shows each program
+    // on its own.
+    const { data: consents } = data.phone_number
       ? await adminSupabase
           .schema("communication")
           .from("sms_consent")
-          .select("status")
+          .select("consent_type, status")
           .eq("user_id", user.id)
           .eq("phone_number", data.phone_number)
-          .eq("consent_type", "notifications")
-          .maybeSingle()
+          .in("consent_type", ["notifications", "ai_agent"])
       : { data: null };
+    const consentStatus = (consentType: string) =>
+      consents?.find((row) => row.consent_type === consentType)?.status ?? null;
 
     return NextResponse.json({
       success: true,
       msg: "Preferences fetched",
-      data: { ...data, sms_consent_status: consent?.status ?? null },
+      data: {
+        ...data,
+        sms_consent_status: consentStatus("notifications"),
+        personal_staff_consent_status: consentStatus("ai_agent"),
+      },
     });
   } catch (err) {
     console.error("Error in preferences GET:", err);
@@ -390,7 +400,7 @@ export async function PUT(request: NextRequest) {
         })
         .eq("user_id", user.id)
         .eq("phone_number", effectivePhone)
-        .in("consent_type", ["transactional", "notifications"]);
+        .in("consent_type", ["transactional", "notifications", "ai_agent"]);
 
       if (optOutError) {
         console.error("Failed to record SMS web-form opt-out:", optOutError);

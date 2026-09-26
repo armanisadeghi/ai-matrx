@@ -16,10 +16,11 @@ import {
 } from "../member-list/rpc";
 import type { MandateMemberRow } from "../member-list/types";
 import { featurePrefixes } from "./registry";
+import { keyInTarget, targetPrefixes } from "./placement";
 import type { FeatureIntelligenceRow, IntelligenceLevel } from "./types";
 
 export interface FeatureIntelligenceQuery {
-  /** Mandate-key prefix (`flashcards`, `research`). */
+  /** The registry target (`seo`, `education/unassigned`) — see `placement.ts`. */
   feature: string;
   level: IntelligenceLevel;
   /** Organization level: the organization being managed. Person level: the
@@ -31,7 +32,7 @@ export interface FeatureIntelligenceQuery {
 
 const PAGE = 200;
 
-/** A key belongs to a feature when its first segment is the feature. */
+/** A key belongs to a CODE feature (`podcast`) when its first segment is one of its prefixes. */
 export function keyInFeature(mandateKey: string, feature: string): boolean {
   return featurePrefixes(feature).some((prefix) => mandateKey.startsWith(`${prefix}.`));
 }
@@ -107,24 +108,28 @@ export function lanesFor(
 export async function fetchFeatureIntelligence(
   query: FeatureIntelligenceQuery,
 ): Promise<FeatureIntelligenceRow[]> {
-  // The feature's definitions the viewer can see (RLS), read first: they say
-  // which lanes to ask and carry the output kind the list row does not.
-  // A feature may own more than one key prefix (podcasts: `podcast` and
-  // `podcast_client`) — all of them are read in ONE query.
-  const prefixes = featurePrefixes(query.feature);
+  // The target's definitions the viewer can see (RLS), read first: they say
+  // which lanes to ask and carry the output kind the list row does not. A
+  // target's jobs can start with several prefixes (Study Kit: `education.`
+  // and `media.`) — all of them are read in ONE query, then kept to the keys
+  // that land on this target.
+  const prefixes = targetPrefixes(query.feature);
   const [defsAll, systemOrgId] = await Promise.all([
     readAllRows(
-      ({ from, to }) => mandateDefinitions(createClient())
-        .select("mandate_key, output_kind, description, organization_id, created_by", { count: "exact" })
-        .or(prefixes.map((prefix) => `mandate_key.like."${prefix}.%"`).join(","))
-        .is("deleted_at", null)
-        .order("mandate_key", { ascending: true })
-        .range(from, to),
-      { label: `mandate definitions for ${prefixes.join(" + ")}` },
+      ({ from, to }) => {
+        let request = mandateDefinitions(createClient())
+          .select("mandate_key, output_kind, description, organization_id, created_by", { count: "exact" })
+          .is("deleted_at", null);
+        if (prefixes) {
+          request = request.or(prefixes.map((prefix) => `mandate_key.like."${prefix}.%"`).join(","));
+        }
+        return request.order("mandate_key", { ascending: true }).range(from, to);
+      },
+      { label: `mandate definitions for ${query.feature}` },
     ),
     resolveSystemOrgId(),
   ]);
-  const featureDefs = defsAll.filter((row) => keyInFeature(row.mandate_key, query.feature));
+  const featureDefs = defsAll.filter((row) => keyInTarget(row.mandate_key, query.feature));
   if (featureDefs.length === 0) return [];
   const defs = new Map(
     featureDefs.map((row) => [
@@ -140,7 +145,7 @@ export async function fetchFeatureIntelligence(
   );
   const byId = new Map<string, MandateMemberRow>();
   for (const row of pages.flat()) {
-    if (keyInFeature(row.mandateKey, query.feature)) byId.set(row.id, row);
+    if (keyInTarget(row.mandateKey, query.feature)) byId.set(row.id, row);
   }
 
   return [...byId.values()]

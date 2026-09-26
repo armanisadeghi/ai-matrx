@@ -9,7 +9,17 @@ type SmsPreferences = {
   phone_number?: string | null;
   sms_enabled?: boolean;
   sms_consent_status?: string | null;
+  personal_staff_consent_status?: string | null;
 };
+
+/**
+ * The SMS programs a person can opt in to. Each has its OWN unchecked consent
+ * box and its own consent row — carriers reject bundled consent (see
+ * features/sms/compliance.ts).
+ */
+export type SmsProgram = "notifications" | "personalStaff";
+export type SmsProgramFlags = Record<SmsProgram, boolean>;
+const NO_PROGRAMS: SmsProgramFlags = { notifications: false, personalStaff: false };
 
 type SmsApiResponse = {
   success?: boolean;
@@ -52,7 +62,8 @@ async function recordBrowserTimezone(): Promise<void> {
 export function useSmsEnrollment(source: "settings" | "sms-demo") {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
-  const [consentAccepted, setConsentAccepted] = useState(false);
+  const [consents, setConsents] = useState<SmsProgramFlags>(NO_PROGRAMS);
+  const [enrolled, setEnrolled] = useState<SmsProgramFlags>(NO_PROGRAMS);
   const [step, setStep] = useState<EnrollmentStep>("phone");
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<SmsEnrollmentResult | null>(null);
@@ -67,14 +78,18 @@ export function useSmsEnrollment(source: "settings" | "sms-demo") {
         if (!active) return;
 
         const preferences = payload.data;
+        const current: SmsProgramFlags = {
+          notifications: preferences?.sms_consent_status === "opted_in",
+          personalStaff: preferences?.personal_staff_consent_status === "opted_in",
+        };
         if (
           response.ok &&
           preferences?.sms_enabled &&
-          preferences.sms_consent_status === "opted_in" &&
+          (current.notifications || current.personalStaff) &&
           preferences.phone_number
         ) {
           setPhoneNumber(preferences.phone_number);
-          setConsentAccepted(true);
+          setEnrolled(current);
           setStep("complete");
         } else if (!response.ok && response.status !== 401) {
           setResult({
@@ -107,7 +122,7 @@ export function useSmsEnrollment(source: "settings" | "sms-demo") {
         action,
         phoneNumber,
         code: action === "verify" ? verificationCode : undefined,
-        consentAccepted,
+        consents,
         source,
       }),
     });
@@ -125,10 +140,10 @@ export function useSmsEnrollment(source: "settings" | "sms-demo") {
       setResult({ success: false, message: "Phone number is required." });
       return;
     }
-    if (!consentAccepted) {
+    if (!consents.notifications && !consents.personalStaff) {
       setResult({
         success: false,
-        message: "Accept the SMS disclosure before requesting a verification code.",
+        message: "Check the consent box for at least one program before requesting a code.",
       });
       return;
     }
@@ -178,6 +193,11 @@ export function useSmsEnrollment(source: "settings" | "sms-demo") {
       void recordBrowserTimezone();
       setPhoneNumber(payload.data?.phoneNumber || phoneNumber);
       setVerificationCode("");
+      setEnrolled((previous) => ({
+        notifications: previous.notifications || consents.notifications,
+        personalStaff: previous.personalStaff || consents.personalStaff,
+      }));
+      setConsents(NO_PROGRAMS);
       setStep("complete");
       setResult({
         success: true,
@@ -207,10 +227,11 @@ export function useSmsEnrollment(source: "settings" | "sms-demo") {
         throw new Error(payload.msg || payload.error || "Unable to disable SMS notifications.");
       }
 
-      setConsentAccepted(false);
+      setConsents(NO_PROGRAMS);
+      setEnrolled(NO_PROGRAMS);
       setVerificationCode("");
       setStep("phone");
-      setResult({ success: true, message: "SMS notifications disabled." });
+      setResult({ success: true, message: "All AI Matrx text messages are off for this number." });
     } catch (error) {
       setResult({
         success: false,
@@ -231,6 +252,20 @@ export function useSmsEnrollment(source: "settings" | "sms-demo") {
     setResult(null);
   };
 
+  const setConsent = (program: SmsProgram, value: boolean) => {
+    setConsents((previous) => ({ ...previous, [program]: value }));
+    setResult(null);
+  };
+
+  /** Opt a verified number in to a program it is not yet in: back to the
+   *  number step with the number kept and every box unchecked. */
+  const addProgram = () => {
+    setConsents(NO_PROGRAMS);
+    setVerificationCode("");
+    setResult(null);
+    setStep("phone");
+  };
+
   const reset = () => {
     setStep("phone");
     setVerificationCode("");
@@ -240,11 +275,14 @@ export function useSmsEnrollment(source: "settings" | "sms-demo") {
   return {
     phoneNumber,
     verificationCode,
-    consentAccepted,
+    consents,
+    anyConsent: consents.notifications || consents.personalStaff,
+    enrolled,
     step,
     loading,
     result,
-    setConsentAccepted,
+    setConsent,
+    addProgram,
     changePhoneNumber,
     changeVerificationCode,
     sendCode,

@@ -184,8 +184,11 @@ export function humanizeBackendError(
   // Otherwise drop a leading `SomeError:` prefix and everything from the first
   // developer-facing section onward.
   const withoutClass = clean.replace(/^\s*\w*(?:Error|Exception)\s*:\s*/i, "");
+  // A section is a HEADER (`DETAIL:`, `Query:`, `Traceback (…`), never the
+  // word inside a sentence: "readAllRows(x): query failed — …" was cut to
+  // "readAllRows(x):" and the person saw no reason at all (RC-B12 round 5).
   const cut = withoutClass.split(
-    /\s+(?:DETAIL|Hint|Query|Args|Operation|Traceback)\b/i,
+    /\s+(?:(?:DETAIL|Detail|Hint|HINT|Query|QUERY|Args|ARGS|Operation|OPERATION)\s*:|Traceback\b)/,
   )[0];
   return clampSentence(cut || withoutClass, fallback);
 }

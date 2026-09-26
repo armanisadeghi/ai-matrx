@@ -5,6 +5,8 @@ import {
   SMS_CONSENT_DISCLOSURE,
   SMS_FIRST_PARTY_SENDER_PHONE,
   SMS_HR_SENDER_PHONE,
+  SMS_PERSONAL_STAFF_OPT_IN_PATH,
+  SMS_PERSONAL_STAFF_PROGRAM_NAME,
   SMS_PERSONAL_STAFF_SENDER_PHONE,
   SMS_PRIVACY_PATH,
   SMS_PROGRAM_NAME,
@@ -15,9 +17,9 @@ import {
 } from "@/features/sms/compliance";
 
 export const metadata = createRouteMetadata("/sms", {
-  title: "SMS Notifications",
+  title: "SMS Programs",
   description:
-    "How users opt in to AI Matrx SMS notifications and manage consent.",
+    "The AI Matrx text message programs, how to opt in to each one separately, and how to stop.",
   canonicalPath: "/sms",
 });
 
@@ -27,17 +29,37 @@ export default function SmsProgramPage() {
   return (
     <div className="bg-background">
       <article className="prose prose-neutral mx-auto max-w-3xl px-4 py-8 dark:prose-invert sm:px-6 sm:py-12">
-        <h1>{SMS_PROGRAM_NAME}</h1>
+        <h1>AI Matrx text message programs</h1>
+        <p>
+          AI Matrx runs two separate text message programs. Each has its own
+          consent: a separate checkbox, unchecked by default, that covers that
+          program only. Opting in to one never opts you in to the other, and
+          neither is required to create or use an AI Matrx account. AI Matrx
+          does not send marketing text messages.
+        </p>
+        <ul>
+          <li>
+            <a href="#notifications">{SMS_PROGRAM_NAME}</a> — account and
+            workplace notifications (this page).
+          </li>
+          <li>
+            <Link href={SMS_PERSONAL_STAFF_OPT_IN_PATH}>
+              {SMS_PERSONAL_STAFF_PROGRAM_NAME}
+            </Link>{" "}
+            — replies from the AI assistants you direct by text (its own page).
+          </li>
+        </ul>
+
+        <h2 id="notifications">{SMS_PROGRAM_NAME}</h2>
         <p>
           AI Matrx account holders can choose to receive transactional and
           service-related text messages, including task reminders,
-          job-completion alerts, direct-message notifications, system alerts,
-          and requested AI-agent responses. When AI Matrx is used through an
-          employer, users may also choose workforce notifications such as shift
-          assignments and reminders, schedule changes, timekeeping and
-          missing-punch alerts, leave decisions, training and credential
-          reminders, onboarding tasks, and other non-marketing workplace
-          updates.
+          job-completion alerts, direct-message notifications, and system
+          alerts. When AI Matrx is used through an employer, this program also
+          covers workforce notifications such as shift assignments and
+          reminders, schedule changes, timekeeping and missing-punch alerts,
+          leave decisions, training and credential reminders, onboarding tasks,
+          and other non-marketing workplace updates.
         </p>
         <p>
           <strong>Legal operator:</strong> AI Matrx is a technology service
@@ -53,7 +75,7 @@ export default function SmsProgramPage() {
           .
         </p>
 
-        <h2>How to opt in</h2>
+        <h3>How to opt in</h3>
         <ol>
           <li>
             <Link href={signInHref}>Sign in to AI Matrx</Link> and open{" "}
@@ -64,9 +86,9 @@ export default function SmsProgramPage() {
           </li>
           <li>Enter the mobile number that should receive messages.</li>
           <li>
-            Read and affirmatively check the SMS consent box. The box is
-            unchecked by default and SMS consent is not required to create or
-            use an AI Matrx account.
+            Check the box labeled <strong>AI Matrx notifications</strong>. It
+            is unchecked by default, separate from the Personal Staff box, and
+            not required to create or use an AI Matrx account.
           </li>
           <li>
             Select <strong>Send verification code</strong>, then enter the
@@ -85,18 +107,17 @@ export default function SmsProgramPage() {
           directly.
         </p>
 
-        <h2>Consent disclosure</h2>
+        <h3>Consent disclosure</h3>
         <blockquote>{SMS_CONSENT_DISCLOSURE}</blockquote>
 
-        <h2>Program details</h2>
+        <h3>Program details</h3>
         <ul>
           <li>
             <strong>Sender:</strong> {siteConfig.legalOperatorName}, using the
             AI Matrx product name
           </li>
           <li>
-            <strong>AI Matrx account and assistant number:</strong>{" "}
-            {SMS_SENDER_PHONE}
+            <strong>AI Matrx account number:</strong> {SMS_SENDER_PHONE}
           </li>
           <li>
             <strong>Employer and workforce notification number:</strong>{" "}
@@ -107,12 +128,8 @@ export default function SmsProgramPage() {
             {SMS_FIRST_PARTY_SENDER_PHONE}
           </li>
           <li>
-            <strong>Personal Staff assistant number:</strong>{" "}
-            {SMS_PERSONAL_STAFF_SENDER_PHONE}
-          </li>
-          <li>
             <strong>Message frequency:</strong> Varies based on the
-            notifications and agent interactions the user enables.
+            notifications the user enables.
           </li>
           <li>
             <strong>Cost:</strong> Message and data rates may apply.
@@ -126,6 +143,17 @@ export default function SmsProgramPage() {
             <a href={`mailto:${SMS_SUPPORT_EMAIL}`}>{SMS_SUPPORT_EMAIL}</a>.
           </li>
         </ul>
+
+        <h2>{SMS_PERSONAL_STAFF_PROGRAM_NAME}</h2>
+        <p>
+          A separate program with its own consent, sent from{" "}
+          {SMS_PERSONAL_STAFF_SENDER_PHONE}. How to opt in, the exact consent
+          text, sample messages, and how to stop are on the{" "}
+          <Link href={SMS_PERSONAL_STAFF_OPT_IN_PATH}>
+            Personal Staff text messages page
+          </Link>
+          .
+        </p>
 
         <p>
           Review the <Link href={SMS_TERMS_PATH}>SMS Terms and Conditions</Link>{" "}

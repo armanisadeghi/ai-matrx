@@ -30,7 +30,7 @@ import { rungFor, useIntelligenceActions } from "./useIntelligenceActions";
 import { IntelligenceJobCard, type RunOverride } from "./IntelligenceJobCard";
 import { PlacesMap } from "./PlacesMap";
 import { UseOwnDialog } from "./UseOwnDialog";
-import { declaredPlacesFor } from "./places";
+import { targetLabel } from "./placement";
 import { effectiveRunOverride } from "./run-override";
 import type {
   FeatureIntelligenceRow,
@@ -40,7 +40,7 @@ import type {
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface FeatureIntelligenceProps {
-  /** Mandate-key prefix of the feature (`flashcards`, `research`). */
+  /** The registry target (`research`, `seo`, `education/unassigned`) — `placement.ts`. */
   feature: string;
   /** Values the feature's place links need (`topicId`, `setId`, …). */
   context?: IntelligenceContext;
@@ -56,13 +56,6 @@ export interface FeatureIntelligenceProps {
   /** False when the route's header already names the page. */
   showTitle?: boolean;
   className?: string;
-}
-
-function titleCase(feature: string): string {
-  return feature
-    .split(/[_-]/)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
 }
 
 export function FeatureIntelligence({
@@ -112,8 +105,7 @@ export function FeatureIntelligence({
   const [hoverPlace, setHoverPlace] = useState<string | null>(null);
   const [ownFor, setOwnFor] = useState<FeatureIntelligenceRow | null>(null);
 
-  const featureLabel =
-    declaredPlacesFor(feature)?.label ?? state.rows[0]?.featureLabel ?? titleCase(feature);
+  const featureLabel = targetLabel(feature);
   const whoFor = orgLevel ? (activeOrgName ?? "your organization") : "you";
 
   // Bring the focused job into view once the rows are on screen.
