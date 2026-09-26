@@ -89,6 +89,12 @@
       "file": "features/tool-registry/bundles/components/BundlesAdminPage.tsx",
       "justification": "Admin-only surface, hedged ('and explicit shares'); lowest priority of the D106b set.",
       "date": "2026-08-08"
+    },
+    {
+      "file": "features/tool-call-visualization/renderers/ask-person/AskPersonInline.test.tsx",
+      "justification": "Test fixture: the vault_item subtitle is a server-sent string the test feeds the renderer; vault items are owner-only, so the claim is true and this is not a UI surface.",
+      "addedBy": "admin@admin.com",
+      "date": "2026-09-26"
     }
   ]
 }
