@@ -10,7 +10,6 @@
 
 import { AgentAppRenderer } from "@/features/agent-apps/components/AgentAppRenderer";
 import type { AgentApp } from "@/features/agent-apps/types";
-import { RecordOrganizationSwitchOffer } from "@/features/organizations/components/RecordOrganizationSwitchOffer";
 
 interface AgentAppRunWithHistoryProps {
   app: AgentApp;
@@ -27,14 +26,6 @@ export function AgentAppRunWithHistory({
         className="flex-1 min-w-0 relative flex flex-col"
         style={{ paddingTop: "var(--shell-header-h)" }}
       >
-        {/* Running the app lands its work and cost in an organization: the one
-            offer names the APP'S own organization when it is not the selected
-            one (or none is selected). Renders nothing otherwise. */}
-        <RecordOrganizationSwitchOffer
-          organizationId={app.organization_id}
-          what="app"
-          className="mx-3 mt-2 shrink-0"
-        />
         <div className="relative min-h-0 flex-1">
           <AgentAppRenderer app={app} slug={slug} />
         </div>
