@@ -50,3 +50,23 @@ it("the model has no fold-into-More… step and the table asks for none", () => 
   ] as MatrxTableMenuSection[];
   expect(toContextMenuExtraSections(sections).some((s) => "foldSiteMenu" in s)).toBe(false);
 });
+
+it("the package's heading check passes on the grid's real model and fails on the removed fold", async () => {
+  const { buildMenuModel, unapprovedHeadings } = await import("@ai-matrx/alchemy/menu");
+  const approved = new Set(["Cell", "Row", "History"]);
+  const target = createClickTarget({ host: { contextMenu: { kind: "context-menu", instanceId: "g2" } } });
+  const resolve = async (model: MenuModel) => {
+    const registry = createActionRegistry({ ports: { diagnostics: { capture: jest.fn() } } });
+    registry.register({ id: "context-menu:g2", tier: "T1", actions: () => contextMenuActionsFromModel(model, "g2") });
+    return buildMenuModel(target, await registry.resolve(target));
+  };
+  expect(unapprovedHeadings(await resolve(gridCellMenu()), approved)).toEqual([]);
+  // The fold a lane added: every site row under one "More…".
+  const folded = gridCellMenu();
+  const rest = folded.sections.filter((s) => s.group !== "surface");
+  folded.sections = [
+    ...folded.sections.filter((s) => s.group === "surface"),
+    { id: "site-more", group: "tools", nodes: [{ kind: "submenu", id: "site-more", label: "More…", children: rest.flatMap((s) => s.nodes) } as MenuNode] },
+  ];
+  expect(unapprovedHeadings(await resolve(folded), approved)).toEqual(["More…"]);
+});
