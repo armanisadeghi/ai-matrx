@@ -26,6 +26,13 @@
 --      pnpm db:apply migrations/alchemy_declare_columns_and_item_key.sql
 --   4. pnpm db-types; flip SYNC_SCHEMA.itemType/valueContract/contentHash in
 --      features/surfaces/services/surface-sync-schema.ts.
+-- REHEARSED 2026-09-26 on the dev clone jxhgzalwckuarngvsdyq (pnpm db:rehearse, rule 27):
+--   up 10.2 s -> inverse 8.0 s -> up 9.3 s, all ledgered rehearsal_on. Then steps 2 and 3 rehearsed
+--   the same way (up/inverse/up each), and the package plan with SYNC_SCHEMA all-true EXPLAINed
+--   clean (8/8 statements) against the re-keyed clone (PK (surface_name, item_type, name), no twin).
+--   LOCKS OUTSIDE THIS FILE: the item-type table's canonical provisioning (FKs to auth.users and
+--   iam.organizations, iam.apply_rls) takes ACCESS EXCLUSIVE on auth.users and iam.organizations
+--   for the transaction (~seconds) — the reason this is a 1–4 AM PT apply, never a daytime one.
 -- Inverse: migrations/inverse/alchemy_declare_columns_and_item_key_down.sql
 
 -- ── ui_surface_value: sensitivity, kind, live slot, role, item scope ───────────
