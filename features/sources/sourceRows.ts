@@ -74,12 +74,13 @@ export interface SourceAttachment {
 export interface SourceFacts {
   /** Chunks on the listed row itself. */
   chunkCount: number;
-  entityCount: number;
+  /** Entities were found on the listed row's chunks. */
+  hasEntities: boolean;
   attachments: SourceAttachment[];
   /** The version people read: the live edit, else the listed row. */
   currentDocumentId: string;
   currentChunkCount: number;
-  currentEntityCount: number;
+  currentHasEntities: boolean;
   /** Chunks still held by this Source's OTHER versions — old text answering searches. */
   staleChunkCount: number;
   /** An intelligence job for the current version is pending or running. */
@@ -89,11 +90,11 @@ export interface SourceFacts {
 export interface SourceFactsRow {
   processed_document_id: string;
   chunk_count: number | null;
-  entity_count: number | null;
+  has_entities: boolean | null;
   attachments: unknown;
   current_document_id?: string | null;
   current_chunk_count?: number | null;
-  current_entity_count?: number | null;
+  current_has_entities?: boolean | null;
   stale_chunk_count?: number | null;
   indexing?: boolean | null;
 }
@@ -126,16 +127,17 @@ export function sourceFactsFromRow(r: SourceFactsRow): SourceFacts | null {
     typeof r.current_document_id !== "string" ||
     typeof r.current_chunk_count !== "number" ||
     typeof r.stale_chunk_count !== "number" ||
-    typeof r.indexing !== "boolean"
+    typeof r.indexing !== "boolean" ||
+    typeof r.current_has_entities !== "boolean"
   )
     return null;
   return {
     chunkCount: r.chunk_count ?? 0,
-    entityCount: r.entity_count ?? 0,
+    hasEntities: r.has_entities ?? false,
     attachments: asAttachments(r.attachments),
     currentDocumentId: r.current_document_id,
     currentChunkCount: r.current_chunk_count,
-    currentEntityCount: r.current_entity_count ?? 0,
+    currentHasEntities: r.current_has_entities ?? false,
     staleChunkCount: r.stale_chunk_count,
     indexing: r.indexing,
   };
@@ -263,12 +265,12 @@ export const SOURCE_STAGE_LABEL: Record<SourceStage, string> = {
 export function sourceStage(
   facts: Pick<
     SourceFacts,
-    "currentChunkCount" | "currentEntityCount" | "staleChunkCount" | "indexing"
+    "currentChunkCount" | "currentHasEntities" | "staleChunkCount" | "indexing"
   >,
 ): SourceStage {
   if (facts.indexing) return "indexing";
   if (facts.currentChunkCount > 0)
-    return facts.currentEntityCount > 0 ? "entities" : "searchable";
+    return facts.currentHasEntities ? "entities" : "searchable";
   if (facts.staleChunkCount > 0) return "stale";
   return "not_searchable";
 }

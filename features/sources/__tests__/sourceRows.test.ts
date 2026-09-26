@@ -78,11 +78,11 @@ describe("one row per Source", () => {
 function facts(over: Partial<SourceFacts>): SourceFacts {
   return {
     chunkCount: 0,
-    entityCount: 0,
+    hasEntities: false,
     attachments: [],
     currentDocumentId: "id",
     currentChunkCount: 0,
-    currentEntityCount: 0,
+    currentHasEntities: false,
     staleChunkCount: 0,
     indexing: false,
     ...over,
@@ -109,7 +109,7 @@ describe("stage — read from the version people read", () => {
 
   it("is searchable only when the current version has chunks", () => {
     expect(sourceStage(facts({ currentChunkCount: 3 }))).toBe("searchable");
-    expect(sourceStage(facts({ currentChunkCount: 3, currentEntityCount: 2 }))).toBe("entities");
+    expect(sourceStage(facts({ currentChunkCount: 3, currentHasEntities: true }))).toBe("entities");
     expect(SOURCE_STAGE_LABEL.searchable).toBe("Searchable");
   });
 
@@ -125,11 +125,11 @@ describe("reading the facts row", () => {
       sourceFactsFromRow({
         processed_document_id: "h",
         chunk_count: 2,
-        entity_count: 0,
+        has_entities: false,
         attachments: [],
         current_document_id: "e",
         current_chunk_count: 0,
-        current_entity_count: 0,
+        current_has_entities: false,
         stale_chunk_count: 2,
         indexing: false,
       }),
@@ -143,7 +143,7 @@ describe("reading the facts row", () => {
       sourceFactsFromRow({
         processed_document_id: "h",
         chunk_count: 2,
-        entity_count: 0,
+        has_entities: false,
         attachments: [],
       }),
     ).toBeNull();
