@@ -194,6 +194,7 @@ $a$  -- RC-A2c: a token that points at another record carries the restrictive re
 end
 $patch$;
 
--- Regenerate both gated tables through the generator (no hand-written policy).
+-- Regenerate workspace.threads with the function changes it depends on. The second target is
+-- deliberately in rca2c_c: `iam.apply_rls` holds the policy-lock footprint until transaction
+-- commit, so a migration may regenerate only one target.
 select iam.apply_rls('workspace', 'threads', 'thread', 'entity');
-select iam.apply_rls('workspace', 'war_rooms', 'war_room', 'entity');
