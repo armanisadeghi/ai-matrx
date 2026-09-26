@@ -51,13 +51,31 @@ function inferType(value: unknown): ContextObjectType {
  * says what it is, so the entry takes its type and label from it instead of
  * reporting "json" and the bare key.
  */
+const RICH_ENVELOPE_KEYS = new Set([
+  "content",
+  "mutable",
+  "persist",
+  "source",
+  "type",
+  "label",
+  "description",
+  "max_inline_chars",
+  "summary_agent_id",
+]);
+
 function envelopeFacts(value: unknown): {
   type?: ContextObjectType;
   label?: string;
 } {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const v = value as Record<string, unknown>;
-  if (!("content" in v)) return {};
+  // Same test as the server's `_split_rich_context_value`: a `content` key AND
+  // nothing but envelope keys — `{content, author}` is plain JSON data.
+  if (
+    !("content" in v) ||
+    !Object.keys(v).every((k) => RICH_ENVELOPE_KEYS.has(k))
+  )
+    return {};
   return {
     type:
       typeof v.type === "string"

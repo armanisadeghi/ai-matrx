@@ -481,6 +481,9 @@ export const fetchAgentExecutionMinimal = createAsyncThunk<
         id: row.id,
         variableDefinitions: row.variable_definitions,
         contextPolicies: row.context_policies ?? [],
+        // Both RPCs return it; without it every execution-loaded record read
+        // "injection allowed" even for an agent that refuses ad-hoc context.
+        autoContextDisabled: row.auto_context_disabled === true,
       }),
     );
     dispatch(setAgentFetchStatus({ id: row.id, status: "execution" }));
@@ -525,6 +528,7 @@ export const fetchAgentExecutionFull = createAsyncThunk<void, string, ThunkApi>(
         customTools: row.custom_tools,
         modelId: row.model_id,
         uiGates: row.ui_gates ?? {},
+        autoContextDisabled: row.auto_context_disabled === true,
       }),
     );
     dispatch(setAgentFetchStatus({ id: row.id, status: "customExecution" }));

@@ -32,7 +32,8 @@ export type SendToAgentDestination =
   | { kind: "important-context" }
   | { kind: "user-text" }
   | { kind: "variable"; name: string }
-  | { kind: "context-slot"; key: string };
+  /** `label` is the slot's own — sent back so the sender never overwrites it. */
+  | { kind: "context-slot"; key: string; label?: string };
 
 export interface SendToAgentDestinationOption {
   /** Stable id for the radio group. */
@@ -57,20 +58,32 @@ export function destinationId(d: SendToAgentDestination): string {
   }
 }
 
-/** Every destination the picked agent offers, default first. */
+/**
+ * Every destination the picked agent offers, default first.
+ *
+ * - A variable that is a MODEL CONTROL (`control`) or is filled at run time
+ *   (`binding`) is not a place for text — it is never offered.
+ * - An agent with automatic context injection OFF (`auto_context_disabled`)
+ *   accepts only its declared slots; the server drops any other key, so
+ *   "Important context" is not offered for it rather than silently vanishing.
+ */
 export function buildDestinationOptions(
   variables: readonly VariableDefinition[] | null | undefined,
   contextSlots: readonly ContextPolicy[] | null | undefined,
+  opts: { autoContextDisabled?: boolean } = {},
 ): SendToAgentDestinationOption[] {
-  const options: SendToAgentDestinationOption[] = [
-    {
+  const options: SendToAgentDestinationOption[] = [];
+  if (!opts.autoContextDisabled) {
+    options.push({
       id: DEFAULT_DESTINATION_ID,
       destination: { kind: "important-context" },
       label: "Important context",
       description:
         "Attached for the agent to review, tagged as important. You type your own message.",
       group: "general",
-    },
+    });
+  }
+  options.push(
     {
       id: "user-text",
       destination: { kind: "user-text" },
@@ -79,9 +92,9 @@ export function buildDestinationOptions(
         "Placed in the message box as your own words, so you can edit it before sending.",
       group: "general",
     },
-  ];
+  );
   for (const v of variables ?? []) {
-    if (!v?.name) continue;
+    if (!v?.name || v.control || v.binding) continue;
     const destination: SendToAgentDestination = { kind: "variable", name: v.name };
     options.push({
       id: destinationId(destination),
@@ -93,11 +106,16 @@ export function buildDestinationOptions(
   }
   for (const slot of contextSlots ?? []) {
     if (!slot?.key || slot.key === IMPORTANT_CONTEXT_KEY) continue;
-    const destination: SendToAgentDestination = { kind: "context-slot", key: slot.key };
+    const label = slot.label?.trim() || slot.key;
+    const destination: SendToAgentDestination = {
+      kind: "context-slot",
+      key: slot.key,
+      ...(slot.label?.trim() ? { label: slot.label.trim() } : {}),
+    };
     options.push({
       id: destinationId(destination),
       destination,
-      label: slot.label?.trim() || slot.key,
+      label,
       description:
         slot.description?.trim() || "Context this agent knows how to use.",
       group: "context",
@@ -164,7 +182,18 @@ function buildDestinationRuntime(
       };
     case "context-slot":
       return {
-        runtime: { context: { [destination.key]: content } },
+        runtime: {
+          context: {
+            // Envelope with NO type/description: the server keeps the slot's
+            // own declared type and description, and the label is the slot's
+            // own — a bare value would be re-sent as {type:"text", label:key}
+            // and overwrite both (sender values win server-side).
+            [destination.key]: {
+              content,
+              ...(destination.label ? { label: destination.label } : {}),
+            },
+          },
+        },
         showVariablePanel: false,
       };
   }

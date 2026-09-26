@@ -23,6 +23,23 @@ describe("buildDestinationOptions", () => {
     expect(options[3]).toMatchObject({ label: "Client brief", description: "The brief", group: "context" });
   });
 
+  it("never offers a model control or a run-time-bound variable as a place for text", () => {
+    const options = buildDestinationOptions(
+      [
+        { name: "temperature", defaultValue: 0.7, control: {} as never },
+        { name: "client", defaultValue: "", binding: {} as never },
+        { name: "topic", defaultValue: "" },
+      ],
+      [],
+    );
+    expect(options.filter((o) => o.group === "variables").map((o) => o.id)).toEqual(["variable:topic"]);
+  });
+
+  it("an agent that refuses ad-hoc context is not offered Important context (the server would drop it)", () => {
+    const options = buildDestinationOptions([], [{ key: "brief", type: "text" }], { autoContextDisabled: true });
+    expect(options.map((o) => o.id)).toEqual(["user-text", "context:brief"]);
+  });
+
   it("an agent with no inputs or slots still offers the two general destinations", () => {
     expect(buildDestinationOptions(null, undefined).map((o) => o.id)).toEqual([
       DEFAULT_DESTINATION_ID,
@@ -68,9 +85,11 @@ describe("buildLaunchPlan", () => {
     expect(plan.showVariablePanel).toBe(true);
   });
 
-  it("a context-slot destination fills that slot by key", () => {
-    expect(buildLaunchPlan({ kind: "context-slot", key: "brief" }, content).runtime).toEqual({
-      context: { brief: content },
+  it("a context-slot destination fills that slot by key, keeping the slot's own label and type", () => {
+    expect(
+      buildLaunchPlan({ kind: "context-slot", key: "brief", label: "Client brief" }, content).runtime,
+    ).toEqual({
+      context: { brief: { content, label: "Client brief" } },
       surfaceName: null,
     });
   });
