@@ -32,10 +32,11 @@ import {
   ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/utils/supabase/client";
-import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import Link from "next/link";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import {
   classifyExposures,
   type ClassifiedExposure,
@@ -77,16 +78,30 @@ export function PublicExposureConsole() {
     void load();
   }, [load]);
 
+  // A report is not a record: there is no row for the access resolver to answer about, so the
+  // refusal or failure is shown as the server said it (RC-A2, 2026-09-26 — the AccessGate this
+  // replaced asked the resolver about token `admin_report`, id `public-exposure`, which it cannot
+  // answer, so the screen showed a resolver error instead of the report's own refusal).
   if (error) {
     return (
-      <AccessGate
-        token="admin_report"
-        id="public-exposure"
-        error={error}
-        onRetry={() => void load()}
-        fallbackHref="/administration/reporting"
-        fallbackLabel="All reports"
-      />
+      <div className="flex h-full min-h-0 flex-col items-center justify-center bg-textured p-4">
+        <ErrorNotice
+          className="w-full max-w-lg"
+          title="Could not load the public exposure report"
+          error={error}
+          operation="Load the public exposure report (admin_public_exposure_report)"
+          actions={
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => void load()}>
+                <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Try again
+              </Button>
+              <Link href="/administration/reporting" className={buttonVariants({ size: "sm", variant: "ghost" })}>
+                All reports
+              </Link>
+            </div>
+          }
+        />
+      </div>
     );
   }
 
