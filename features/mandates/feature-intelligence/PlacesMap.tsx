@@ -15,22 +15,13 @@ export function PlacesMap({
   activeMandateKey,
   activePlaceId,
   onHoverPlace,
-  unrecordedCount,
 }: {
   places: readonly ResolvedPlace[];
   activeMandateKey: string | null;
   activePlaceId: string | null;
   onHoverPlace: (placeId: string | null) => void;
-  /** Jobs no place names — said once, briefly. */
-  unrecordedCount: number;
 }) {
-  if (places.length === 0) {
-    return (
-      <p className="text-xs text-muted-foreground">
-        Where these jobs run in the app is not recorded yet.
-      </p>
-    );
-  }
+  if (places.length === 0) return null;
   return (
     <div>
       <ol
@@ -39,14 +30,18 @@ export function PlacesMap({
       >
         {places.map((place) => {
           const lit =
-            (activeMandateKey !== null && place.mandateKeys.includes(activeMandateKey)) ||
+            (activeMandateKey !== null &&
+              place.mandateKeys.includes(activeMandateKey)) ||
             activePlaceId === place.id;
           const dim = activeMandateKey !== null && !lit;
           const inner = (
             <>
               <span className="flex items-center gap-1 text-[12px] font-medium text-foreground">
                 <MapPin
-                  className={cn("h-3 w-3 shrink-0", lit ? "text-primary" : "text-muted-foreground")}
+                  className={cn(
+                    "h-3 w-3 shrink-0",
+                    lit ? "text-primary" : "text-muted-foreground",
+                  )}
                   aria-hidden
                 />
                 <span className="truncate">{place.label}</span>
@@ -80,7 +75,11 @@ export function PlacesMap({
               ) : (
                 <span
                   className={className}
-                  title={place.urlPattern ? "Open it from a specific record" : undefined}
+                  title={
+                    place.urlPattern
+                      ? "Open it from a specific record"
+                      : undefined
+                  }
                 >
                   {inner}
                 </span>
@@ -89,13 +88,6 @@ export function PlacesMap({
           );
         })}
       </ol>
-      {unrecordedCount > 0 ? (
-        <p className="mt-1.5 text-[11px] text-muted-foreground">
-          {unrecordedCount === 1
-            ? "1 job runs behind the scenes with no recorded place."
-            : `${unrecordedCount} jobs run behind the scenes with no recorded place.`}
-        </p>
-      ) : null}
     </div>
   );
 }

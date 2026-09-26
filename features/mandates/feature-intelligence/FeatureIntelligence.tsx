@@ -125,8 +125,6 @@ export function FeatureIntelligence({
       ?.scrollIntoView({ block: "center", behavior: "smooth" });
   }, [focusMandateKey, focusReady]);
 
-  const placeKeys = new Set(state.places.flatMap((place) => place.mandateKeys));
-  const unrecorded = state.rows.filter((row) => !placeKeys.has(row.mandateKey)).length;
   const hoveredPlaceKeys = hoverPlace
     ? new Set(state.places.find((place) => place.id === hoverPlace)?.mandateKeys ?? [])
     : null;
@@ -134,24 +132,18 @@ export function FeatureIntelligence({
 
   return (
     <div className={cn("mx-auto w-full max-w-5xl px-3 py-5 sm:px-6 lg:px-8 lg:py-7", className)}>
-      <header className="mb-5 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
-        <div className="min-w-0">
-          {showTitle ? (
-            <h1 className="mb-1 flex items-center gap-2 text-[22px] font-semibold tracking-[-0.015em] text-foreground">
-              <INTELLIGENCE_ICON className="h-5 w-5 text-primary" aria-hidden />
-              {featureLabel} intelligence
-            </h1>
-          ) : null}
-          <p className="max-w-2xl text-[13.5px] leading-relaxed text-muted-foreground">
-            The AI jobs in {featureLabel}, what runs each one for {whoFor}, and where it
-            runs. Duplicate one to change it, or use your own.
-          </p>
-        </div>
+      {showTitle || canManageOrg ? <header className="mb-4 flex min-w-0 items-center justify-between gap-3">
+        {showTitle ? (
+          <h1 className="flex min-w-0 items-center gap-2 text-[18px] font-semibold tracking-[-0.01em] text-foreground">
+            <INTELLIGENCE_ICON className="h-[18px] w-[18px] shrink-0 text-primary" aria-hidden />
+            <span className="truncate">{featureLabel} intelligence</span>
+          </h1>
+        ) : null}
         {canManageOrg ? (
           <div
             role="radiogroup"
             aria-label="Manage for"
-            className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5"
+            className="ml-auto inline-flex min-w-0 shrink rounded-lg border border-border bg-muted/40 p-0.5"
           >
             {(
               [
@@ -166,7 +158,7 @@ export function FeatureIntelligence({
                 aria-checked={level === value}
                 onClick={() => setLevel(value)}
                 className={cn(
-                  "max-w-[14rem] truncate rounded-md px-3 py-1 text-[13px] transition-colors",
+                  "max-w-[10rem] truncate rounded-md px-2.5 py-1 text-[13px] transition-colors sm:max-w-[14rem] sm:px-3",
                   level === value
                     ? "bg-card font-medium text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
@@ -177,15 +169,9 @@ export function FeatureIntelligence({
             ))}
           </div>
         ) : null}
-      </header>
+      </header> : null}
 
-      <section className="mb-5" aria-labelledby="intelligence-places">
-        <h2
-          id="intelligence-places"
-          className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
-        >
-          Where it runs
-        </h2>
+      <section className="mb-5 empty:hidden" aria-label="Where it runs">
         {state.loading ? (
           <div className="flex gap-1.5">
             {[0, 1, 2, 3].map((n) => (
@@ -198,7 +184,6 @@ export function FeatureIntelligence({
             activeMandateKey={activeKey}
             activePlaceId={hoverPlace}
             onHoverPlace={setHoverPlace}
-            unrecordedCount={unrecorded}
           />
         )}
         {state.placesError ? (
