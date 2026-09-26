@@ -289,7 +289,7 @@ export const INTEGRITY_CHECKS: IntegrityCheckDef[] = [
       "Archive the orphaned document (text is preserved) or restore the source " +
       "file if it exists elsewhere.",
     sql: `
-      select p.id, p.name, p.owner_id, p.source_id,
+      select p.id, p.name, p.created_by as owner_id, p.source_id,
              count(*) over() as _total
       from docproc.processed_documents p
       where p.source_kind = 'cld_file'
@@ -313,7 +313,7 @@ export const INTEGRITY_CHECKS: IntegrityCheckDef[] = [
     remediation:
       "Archive the document alongside its deleted source, or undelete the file.",
     sql: `
-      select p.id, p.name, p.owner_id, p.source_id,
+      select p.id, p.name, p.created_by as owner_id, p.source_id,
              count(*) over() as _total
       from docproc.processed_documents p
       where p.source_kind = 'cld_file'

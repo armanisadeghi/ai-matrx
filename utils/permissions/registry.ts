@@ -1485,9 +1485,9 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     tableName: "processed_documents",
     schemaName: "docproc",
     idColumn: "id",
-    // This table predates the canonical `created_by` column; the DB registry
-    // row names `owner_id` and the DB is the authority.
-    ownerColumn: "owner_id",
+    // The DB registry names `created_by` (aidream 1211; the legacy owner_id
+    // retires) and the DB is the authority.
+    ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Processed document",
     // Empty in the DB registry: no signed-in per-record destination exists.
@@ -2763,7 +2763,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     tableName: "page_extraction_jobs",
     schemaName: "docproc",
     idColumn: "id",
-    ownerColumn: "owner_id",
+    ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Page Extraction Job",
     urlPathTemplate: "",
