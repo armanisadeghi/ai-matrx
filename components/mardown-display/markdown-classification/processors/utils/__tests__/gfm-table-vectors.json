@@ -1,0 +1,340 @@
+{
+  "rows": [
+    {
+      "line": "a | b",
+      "cells": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "line": "| a | b |",
+      "cells": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "line": "| a \\| b | c |",
+      "cells": [
+        "a \\| b",
+        "c"
+      ]
+    },
+    {
+      "line": "| `x\\|y` | z |",
+      "cells": [
+        "`x\\|y`",
+        "z"
+      ]
+    },
+    {
+      "line": "a \\\\| b",
+      "cells": [
+        "a \\\\",
+        "b"
+      ]
+    },
+    {
+      "line": "a \\\\\\| b | c",
+      "cells": [
+        "a \\\\\\| b",
+        "c"
+      ]
+    },
+    {
+      "line": "|x|",
+      "cells": [
+        "x"
+      ]
+    },
+    {
+      "line": "| a | b",
+      "cells": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "line": "--- | :-: | --:",
+      "cells": [
+        "---",
+        ":-:",
+        "--:"
+      ]
+    },
+    {
+      "line": "",
+      "cells": []
+    },
+    {
+      "line": "|",
+      "cells": []
+    },
+    {
+      "line": "| | |",
+      "cells": [
+        "",
+        ""
+      ]
+    }
+  ],
+  "cellPipes": [
+    {
+      "cell": "`err\\|warn`",
+      "display": "`err|warn`"
+    },
+    {
+      "cell": "a \\| b",
+      "display": "a | b"
+    },
+    {
+      "cell": "plain",
+      "display": "plain"
+    },
+    {
+      "cell": "\\\\\\|",
+      "display": "\\\\|"
+    },
+    {
+      "cell": "`a \\| b` and err\\|warn",
+      "display": "`a | b` and err|warn"
+    }
+  ],
+  "tables": [
+    {
+      "table": "Step | Task | Who\n--- | --- | ---\n1 | Drain the print queue | Tom\n2 | Swap the label printer | Ines",
+      "headers": [
+        "Step",
+        "Task",
+        "Who"
+      ],
+      "rows": [
+        [
+          "1",
+          "Drain the print queue",
+          "Tom"
+        ],
+        [
+          "2",
+          "Swap the label printer",
+          "Ines"
+        ]
+      ]
+    },
+    {
+      "table": "Bay | Status\n:--- | ---:\nB3 | re-scan\nB4 | clear",
+      "headers": [
+        "Bay",
+        "Status"
+      ],
+      "rows": [
+        [
+          "B3",
+          "re-scan"
+        ],
+        [
+          "B4",
+          "clear"
+        ]
+      ]
+    },
+    {
+      "table": "Rule | Pattern\n--- | ---\nalerts | `err\\|warn`",
+      "headers": [
+        "Rule",
+        "Pattern"
+      ],
+      "rows": [
+        [
+          "alerts",
+          "`err\\|warn`"
+        ]
+      ]
+    },
+    {
+      "table": "| Rule | Pattern |\n| --- | --- |\n| alerts | `err\\|warn` |\n| audit | a \\| b |",
+      "headers": [
+        "Rule",
+        "Pattern"
+      ],
+      "rows": [
+        [
+          "alerts",
+          "`err\\|warn`"
+        ],
+        [
+          "audit",
+          "a \\| b"
+        ]
+      ]
+    },
+    {
+      "table": "Bay | Status\n--- | ---\n | \nB4 | clear",
+      "headers": [
+        "Bay",
+        "Status"
+      ],
+      "rows": [
+        [
+          "B4",
+          "clear"
+        ]
+      ]
+    }
+  ],
+  "documents": [
+    {
+      "name": "pipe-less, three columns",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\nStep | Task | Who\n--- | --- | ---\n1 | Drain the print queue | Tom\n2 | Swap the label printer | Ines\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "table",
+          "Step | Task | Who\n--- | --- | ---\n1 | Drain the print queue | Tom\n2 | Swap the label printer | Ines"
+        ],
+        [
+          "text",
+          "Omar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "pipe-less, two columns, aligned",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\nBay | Status\n:--- | ---:\nB3 | re-scan\nB4 | clear\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "table",
+          "Bay | Status\n:--- | ---:\nB3 | re-scan\nB4 | clear"
+        ],
+        [
+          "text",
+          "Omar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "pipe-less, escaped pipe in code",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\nRule | Pattern\n--- | ---\nalerts | `err\\|warn`\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "table",
+          "Rule | Pattern\n--- | ---\nalerts | `err\\|warn`"
+        ],
+        [
+          "text",
+          "Omar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "pipe-less, right after a prose line",
+      "text": "Here is tonight's handover for the Harbor warehouse.\nStep | Task | Who\n--- | --- | ---\n1 | Drain the print queue | Tom\n2 | Swap the label printer | Ines\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "table",
+          "Step | Task | Who\n--- | --- | ---\n1 | Drain the print queue | Tom\n2 | Swap the label printer | Ines"
+        ],
+        [
+          "text",
+          "Omar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "pipe-less, table opens the message",
+      "text": "Bay | Status\n:--- | ---:\nB3 | re-scan\nB4 | clear\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "table",
+          "Bay | Status\n:--- | ---:\nB3 | re-scan\nB4 | clear"
+        ],
+        [
+          "text",
+          "Omar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "pipe-led table (unchanged rule)",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\n| Rule | Pattern |\n| --- | --- |\n| alerts | `err\\|warn` |\n| audit | a \\| b |\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "table",
+          "| Rule | Pattern |\n| --- | --- |\n| alerts | `err\\|warn` |\n| audit | a \\| b |"
+        ],
+        [
+          "text",
+          "Omar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "a list item ends a pipe-less table (verify-RC-B4 R5-1 shape)",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\nStep | Task | Who\n--- | --- | ---\n1 | Drain the print queue | Tom\n- | Re-scan bay B3 | Omar\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse."
+        ],
+        [
+          "table",
+          "Step | Task | Who\n--- | --- | ---\n1 | Drain the print queue | Tom"
+        ],
+        [
+          "text",
+          "- | Re-scan bay B3 | Omar\n\nOmar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "prose with a pipe and no delimiter row",
+      "text": "Here is tonight's handover for the Harbor warehouse.\nUse a | b for either.\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse.\nUse a | b for either.\n\nOmar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "header wider than its delimiter row",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\nBay | Status | Crew\n--- | ---\nB3 | re-scan | Omar\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse.\n\nBay | Status | Crew\n--- | ---\nB3 | re-scan | Omar\n\nOmar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    },
+    {
+      "name": "list item with a pipe over a rule",
+      "text": "Here is tonight's handover for the Harbor warehouse.\n\n- keep a | b\n--- | ---\n\nOmar signs off once bay B3 is re-scanned.",
+      "blocks": [
+        [
+          "text",
+          "Here is tonight's handover for the Harbor warehouse.\n\n- keep a | b\n--- | ---\n\nOmar signs off once bay B3 is re-scanned."
+        ]
+      ]
+    }
+  ]
+}
