@@ -58,18 +58,23 @@ export const PLACEMENT_RULES: readonly PlacementRule[] = [
     "shortcut.simple_system_message_generator",
     "shortcut.system_prompt_enhancer_*",
   ),
-  ...rule("agents", "agent-memory", "memory.*"),
+
   ...rule("platform", "agent-tools", "tools.*", "content_gate.*"),
+
+  ...rule("platform", "execution-runtime", "orchestration.*"),
+  ...rule("workflows", "orchestras", "orchestras.*"),
+
+  // ── Chat (Arman, 2026-09-26: "Chat is chat" — its own Domain, the same
+  // registry row that was the Chat feature; its own jobs sit on the Domain) ──
   ...rule(
-    "agents",
     "chat",
+    null,
     "chat.*",
     "conversation.*",
     "shortcut.matrx_custom_chat",
   ),
-  ...rule("platform", "execution-runtime", "orchestration.*"),
-  ...rule("workflows", "orchestras", "orchestras.*"),
-  ...rule("agents", "voice", "voice.*"),
+  ...rule("chat", "agent-memory", "memory.*"),
+  ...rule("chat", "voice", "voice.*"),
   // Every other shortcut sits with the feature it serves (below); the rest,
   // and the scroll assistant (`ambient.*`), have no Domain yet.
 
@@ -360,6 +365,14 @@ function firstSegment(key: string): string {
   return dot === -1 ? key : key.slice(0, dot);
 }
 
+/** The page a rule's jobs land on. */
+function ruleTarget(rule: PlacementRule): string {
+  if (rule.feature) return rule.feature;
+  return DOMAINS_HOLDING_OWN_JOBS.has(rule.domain)
+    ? rule.domain
+    : unassignedTarget(rule.domain);
+}
+
 function matches(pattern: string, key: string): boolean {
   return pattern.endsWith("*")
     ? key.startsWith(pattern.slice(0, -1))
@@ -397,6 +410,13 @@ export function placementForKey(mandateKey: string): Placement {
 
 export const NO_DOMAIN_TARGET = "unassigned";
 
+/**
+ * Domains whose own registry row holds jobs directly (Chat was a Feature and
+ * was promoted in place, 2026-09-26): their jobs are the Domain's own, never
+ * "not yet assigned", and the page id is the Domain id.
+ */
+export const DOMAINS_HOLDING_OWN_JOBS: ReadonlySet<string> = new Set(["chat"]);
+
 export function unassignedTarget(domain: string): string {
   return `${domain}/unassigned`;
 }
@@ -404,6 +424,8 @@ export function unassignedTarget(domain: string): string {
 export function targetForKey(mandateKey: string): string {
   const placed = placementForKey(mandateKey);
   if (placed.feature) return placed.feature;
+  if (placed.domain && DOMAINS_HOLDING_OWN_JOBS.has(placed.domain))
+    return placed.domain;
   if (placed.domain) return unassignedTarget(placed.domain);
   return NO_DOMAIN_TARGET;
 }
@@ -414,7 +436,8 @@ export function keyInTarget(mandateKey: string, target: string): boolean {
 
 /** Is this a page id the directory can open? */
 export function isTarget(target: string): boolean {
-  if (target === NO_DOMAIN_TARGET) return true;
+  if (target === NO_DOMAIN_TARGET || DOMAINS_HOLDING_OWN_JOBS.has(target))
+    return true;
   if (target.endsWith("/unassigned")) {
     return registryDomain(target.slice(0, -"/unassigned".length)) !== null;
   }
@@ -424,6 +447,7 @@ export function isTarget(target: string): boolean {
 /** The Domain a target sits under (null for jobs with no Domain). */
 export function targetDomain(target: string): string | null {
   if (target === NO_DOMAIN_TARGET) return null;
+  if (DOMAINS_HOLDING_OWN_JOBS.has(target)) return target;
   if (target.endsWith("/unassigned"))
     return target.slice(0, -"/unassigned".length);
   return registryFeature(target)?.domain ?? null;
@@ -435,6 +459,8 @@ export const NOT_ASSIGNED_TO_DOMAIN = "Not yet assigned to a domain";
 /** The name a person reads for a target — the registry's own words. */
 export function targetLabel(target: string): string {
   if (target === NO_DOMAIN_TARGET) return NOT_ASSIGNED_TO_DOMAIN;
+  if (DOMAINS_HOLDING_OWN_JOBS.has(target))
+    return registryDomain(target)?.name ?? target;
   if (target.endsWith("/unassigned")) {
     const domain = registryDomain(targetDomain(target) ?? "");
     return domain
@@ -456,7 +482,9 @@ export function targetPrefixes(target: string): string[] | null {
     const lands =
       candidate.feature !== null
         ? candidate.feature === target
-        : unassignedTarget(candidate.domain) === target;
+        : unassignedTarget(candidate.domain) === target ||
+          (DOMAINS_HOLDING_OWN_JOBS.has(candidate.domain) &&
+            candidate.domain === target);
     if (!lands) continue;
     prefixes.add(firstSegment(candidate.pattern.replace(/\*$/, "")));
   }
@@ -486,7 +514,7 @@ export function legacyDestination(
   for (const candidate of PLACEMENT_RULES) {
     if (!prefixes.has(firstSegment(candidate.pattern.replace(/\*$/, ""))))
       continue;
-    targets.add(candidate.feature ?? unassignedTarget(candidate.domain));
+    targets.add(ruleTarget(candidate));
     domains.add(candidate.domain);
   }
   if (targets.size === 1) return { target: [...targets][0] };
@@ -494,7 +522,7 @@ export function legacyDestination(
   const whole = PLACEMENT_RULES.find(
     (candidate) => candidate.pattern === `${oldId}.*`,
   );
-  if (whole) return { target: whole.feature ?? unassignedTarget(whole.domain) };
+  if (whole) return { target: ruleTarget(whole) };
   if (registryDomain(oldId)) return { domain: oldId };
   // Old pages whose leftover jobs have no Domain yet (the rest moved out by key).
   if (ORPHANED_OLD_IDS.has(oldId)) return { target: NO_DOMAIN_TARGET };

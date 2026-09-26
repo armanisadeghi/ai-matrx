@@ -29,7 +29,6 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
       { id: "agent-apps", name: "Agent Apps" },
       { id: "agent-context-binding", name: "Agent Context Binding" },
       { id: "agent-design", name: "Agent Design", proposed: true },
-      { id: "agent-memory", name: "Agent Memory" },
       { id: "agent-picker", name: "Agent Picker", proposed: true },
       { id: "agent-samples", name: "Agent Samples", proposed: true },
       { id: "agent-skills", name: "Agent Skills" },
@@ -41,7 +40,6 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
       },
       { id: "ai-models", name: "AI Models" },
       { id: "batch-runs", name: "Batch Runs" },
-      { id: "chat", name: "Chat" },
       {
         id: "conversation-start-contract",
         name: "Conversation Start Contract",
@@ -49,6 +47,13 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
       },
       { id: "prompts", name: "Prompts" },
       { id: "typed-messages", name: "Typed Messages", proposed: true },
+    ],
+  },
+  {
+    id: "chat",
+    name: "Chat",
+    features: [
+      { id: "agent-memory", name: "Agent Memory" },
       { id: "voice", name: "Voice" },
     ],
   },

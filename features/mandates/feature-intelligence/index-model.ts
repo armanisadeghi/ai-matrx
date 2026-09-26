@@ -13,6 +13,7 @@ import { declaredPlacesForTarget } from "./registry";
 import {
   NOT_ASSIGNED_TO_DOMAIN,
   NOT_ASSIGNED_TO_FEATURE,
+  DOMAINS_HOLDING_OWN_JOBS,
   NO_DOMAIN_TARGET,
   placementForKey,
   targetForKey,
@@ -89,12 +90,10 @@ function humanizeKeyTail(key: string): string {
 const FIXTURES = "fixtures";
 
 /** Directory section ids that are not registry Domains (Arman, 2026-09-26). */
-export const CHAT_SECTION = "chat";
 export const AGENT_APPS_SECTION = "agent-apps";
 export const UNASSIGNED_SECTION = "unassigned";
 
 const SECTION_LABELS: Readonly<Record<string, string>> = {
-  [CHAT_SECTION]: "Chat",
   [AGENT_APPS_SECTION]: "Agent Apps",
   [UNASSIGNED_SECTION]: "Not yet assigned",
 };
@@ -105,9 +104,6 @@ const SECTION_LABELS: Readonly<Record<string, string>> = {
  * they serve lives (Arman, 2026-09-26).
  */
 const SECTION_OF_FEATURE: Readonly<Record<string, string>> = {
-  chat: CHAT_SECTION,
-  voice: CHAT_SECTION, // talking to the AI: /chat/voice, /chat/talk
-  "agent-memory": CHAT_SECTION, // observational memory of conversations
   "agent-apps": AGENT_APPS_SECTION,
   "agent-iteration": "agents", // improving an agent is authoring it
 };
@@ -202,6 +198,11 @@ export function buildDomains(
       // node is not intelligence.
       if (row.jobs.length === 0 && row.places.length === 0) continue;
       push(SECTION_OF_FEATURE[feature.id] ?? domain.id, row);
+    }
+    // A Domain whose own row holds jobs (Chat) shows them as its own card.
+    if (DOMAINS_HOLDING_OWN_JOBS.has(domain.id)) {
+      const own = card(domain.id, domain.id);
+      if (own.jobs.length > 0) push(domain.id, own);
     }
     const gap = card(`${domain.id}/unassigned`, domain.id);
     if (gap.jobs.length > 0) gaps.push({ ...gap, label: domain.name });
