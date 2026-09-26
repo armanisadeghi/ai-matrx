@@ -750,7 +750,7 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
                             onClick={(e) => e.stopPropagation()}
                           />
                         ) : (
-                          <RichContent level="inline" source={header} isStreaming={false} />
+                          <RichContent level="inline" source={header} isStreaming={false} gfmCell />
                         )}
                       </div>
                       {isEditingEnabled && (
@@ -821,7 +821,7 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
                           onFocus={(e) => e.target.select()}
                         />
                       ) : (
-                        <RichContent level="inline" source={cell} isStreaming={false} />
+                        <RichContent level="inline" source={cell} isStreaming={false} gfmCell />
                       )}
                     </td>
                   ))}

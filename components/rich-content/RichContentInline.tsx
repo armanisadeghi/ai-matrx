@@ -24,7 +24,8 @@ import {
 } from "@ai-matrx/kit/delimiter-guard";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { cn } from "@/lib/utils";
-import { preprocessProse } from "./prose/prose-prepare";
+import { preprocessCellProse, preprocessProse } from "./prose/prose-prepare";
+import { unescapeCellPipes } from "@/components/markdown-core/syntax/gfm-cell-pipes";
 import {
   INLINE_LEVEL_ELEMENTS,
   INLINE_LEVEL_WRAPPER_CLASS,
@@ -56,6 +57,11 @@ export interface RichContentInlineProps {
    * with none anywhere, remote images wait for a click.
    */
   imagePolicy?: ImagePolicyDeclaration;
+  /**
+   * The source is ONE GFM table cell: inline constructs only (block syntax is
+   * text, as GFM reads a cell) and `\|` shows as `|`. verify-RC-B4 R6-1.
+   */
+  gfmCell?: boolean;
 }
 
 export function RichContentInline({
@@ -64,8 +70,9 @@ export function RichContentInline({
   links = "link",
   streaming,
   imagePolicy,
+  gfmCell = false,
 }: RichContentInlineProps) {
-  const { text, violations } = guardMarkdownDelimiters(preprocessProse(source));
+  const { text, violations } = guardMarkdownDelimiters(gfmCell ? preprocessCellProse(unescapeCellPipes(source)) : preprocessProse(source));
 
   // Loud recovery — same channel as every other level (never silent). The
   // React Compiler memoizes the guard result per source, so `violations`
@@ -86,7 +93,7 @@ export function RichContentInline({
         className={cn(INLINE_LEVEL_WRAPPER_CLASS, className)}
       >
         <MarkdownCore
-          preset="chat"
+          preset={gfmCell ? "chat-cell" : "chat"}
           components={inlineLevelElements(links)}
           streaming={streaming}
         >

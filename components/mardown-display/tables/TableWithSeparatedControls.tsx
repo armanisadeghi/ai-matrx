@@ -2,6 +2,7 @@
 import { rewriteTableSource } from "@/components/rich-editor/core/table-source";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { Button } from "@/components/ui/button";
 import {
   Download,
@@ -494,14 +495,9 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
     }
   }, [data]);
 
-  const renderMarkdown = useCallback((text: string) => {
-    let html = text
-      .replace(/\*\*([^*]+)\*\*/g, "$1")
-      .replace(/\*([^*]+)\*/g, "$1")
-      .replace(/(?<![A-Za-z0-9])_([^_\n]+?)_(?![A-Za-z0-9])/g, "$1");
-    html = html.replace(/([^<]+)<\/strong><\/em>/g, "$1");
-    return html;
-  }, []);
+  // Every cell renders through THE one core at the inline level, read as a GFM
+  // cell (verify-RC-B4 R6-1) — never a private regex renderer.
+  const renderMarkdown = (text: string) => <RichContent level="inline" source={text} isStreaming={false} gfmCell />;
 
   const toggleGlobalEditMode = useCallback(
     (notifyContentChange: () => boolean) => {

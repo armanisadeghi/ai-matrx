@@ -171,30 +171,12 @@ export function preserveIndentation(source: string): string {
 }
 
 /**
- * Massage raw model prose into the markdown the core parses: escape non-HTML
- * angle-bracket tokens, keep indentation, normalize list/bold spacing, turn
- * `===` into the thick rule sentinel and extra blank lines into spacers.
- * Math is NOT touched here — the core's math normalizer owns it.
+ * The INLINE part of prose preparation — what applies to text inside one line
+ * (asides, tag escaping); block-level massaging (bullets, indentation, setext,
+ * list spacing) is never part of it.
  */
-export function preprocessProse(rawContent: string): string {
-  // A leading byte-order mark is an encoding mark, not content: dropped for
-  // display so `\uFEFF---` front matter is hidden like `---` (RC-B3r round 3, C1).
-  if (rawContent.charCodeAt(0) === 0xfeff) return preprocessProse(rawContent.slice(1));
-  // Front matter (YAML/TOML properties at the very top) is data, not prose:
-  // it passes through byte for byte (the core hides it and exposes it as
-  // document properties) — indentation and `---` rules must not be massaged.
-  const frontmatter = splitFrontmatter(rawContent);
-  if (frontmatter) return frontmatter.raw + preprocessProse(frontmatter.body);
-
-  // Fenced code is code, not prose: it passes through byte for byte (spaces
-  // stay spaces, `<tags>` stay tags). A directive container keeps its fences
-  // inside the text block (markdown-core directive-container.ts), so they
-  // reach this pass.
-  const guarded = protectFencedCode(rawContent);
-  if (guarded) return guarded.restore(preprocessProse(guarded.text));
-
+function prepareInlineProse(rawContent: string): string {
   let processed = rawContent;
-
   // A reasoning aside INSIDE a sentence (`The planner writes a <thinking>
   // short note </thinking> and answers.`) is part of the sentence: the source
   // tokenizer reads it as an inline island and the splitters leave it in its
@@ -246,6 +228,56 @@ export function preprocessProse(rawContent: string): string {
     },
   );
 
+  return processed;
+}
+
+/** `[https://…]` → a real link, so a long URL never leaves a dangling bracket. */
+function linkBracketedUrls(processed: string): string {
+  // Convert bracketed bare URLs [https://...] into proper markdown links
+  // This prevents dangling brackets when long URLs wrap across lines
+  // Matches [URL] where URL starts with http(s):// and is not followed by () (which would be a standard markdown link)
+  return processed.replace(
+    /\[(https?:\/\/[^\]\s]+)\](?!\()/g,
+    "[$1]($1)",
+  );
+}
+
+/**
+ * Prose preparation for ONE GFM table cell (verify-RC-B4 R6-1): the inline
+ * steps only. A cell is inline content, so `* see note` stays `* see note`
+ * (the document pass rewrites a leading `* ` bullet to `- `).
+ */
+export function preprocessCellProse(rawContent: string): string {
+  return linkBracketedUrls(prepareInlineProse(rawContent));
+}
+
+/**
+ * Massage raw model prose into the markdown the core parses: escape non-HTML
+ * angle-bracket tokens, keep indentation, normalize list/bold spacing, turn
+ * `===` into the thick rule sentinel and extra blank lines into spacers.
+ * Math is NOT touched here — the core's math normalizer owns it.
+ */
+export function preprocessProse(rawContent: string): string {
+  // A leading byte-order mark is an encoding mark, not content: dropped for
+  // display so `\uFEFF---` front matter is hidden like `---` (RC-B3r round 3, C1).
+  if (rawContent.charCodeAt(0) === 0xfeff) return preprocessProse(rawContent.slice(1));
+  // Front matter (YAML/TOML properties at the very top) is data, not prose:
+  // it passes through byte for byte (the core hides it and exposes it as
+  // document properties) — indentation and `---` rules must not be massaged.
+  const frontmatter = splitFrontmatter(rawContent);
+  if (frontmatter) return frontmatter.raw + preprocessProse(frontmatter.body);
+
+  // Fenced code is code, not prose: it passes through byte for byte (spaces
+  // stay spaces, `<tags>` stay tags). A directive container keeps its fences
+  // inside the text block (markdown-core directive-container.ts), so they
+  // reach this pass.
+  const guarded = protectFencedCode(rawContent);
+  if (guarded) return guarded.restore(preprocessProse(guarded.text));
+
+  let processed = rawContent;
+
+  processed = prepareInlineProse(processed);
+
   // Replace leading spaces on each line with non-breaking spaces so HTML
   // doesn't collapse them — this preserves indentation visually.
   // EXCEPTION: never touch indented list items. Markdown relies on real
@@ -258,13 +290,7 @@ export function preprocessProse(rawContent: string): string {
   // __tests__/prose-prepare-nested-lists.test.ts).
   processed = preserveIndentation(processed);
 
-  // Convert bracketed bare URLs [https://...] into proper markdown links
-  // This prevents dangling brackets when long URLs wrap across lines
-  // Matches [URL] where URL starts with http(s):// and is not followed by () (which would be a standard markdown link)
-  processed = processed.replace(
-    /\[(https?:\/\/[^\]\s]+)\](?!\()/g,
-    "[$1]($1)",
-  );
+  processed = linkBracketedUrls(processed);
 
   // Math delimiters (\(…\), \[…\], $…$, bracket display) are NOT converted
   // here: the ONE math normalizer runs inside MarkdownCore for every

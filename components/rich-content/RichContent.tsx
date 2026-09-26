@@ -38,6 +38,7 @@ export function RichContent({
   links,
   headingAnchors = true,
   imagePolicy,
+  gfmCell,
 }: RichContentProps) {
   if (level === "inline") {
     return (
@@ -47,6 +48,7 @@ export function RichContent({
         links={links}
         streaming={isStreaming}
         imagePolicy={imagePolicy}
+        gfmCell={gfmCell}
       />
     );
   }

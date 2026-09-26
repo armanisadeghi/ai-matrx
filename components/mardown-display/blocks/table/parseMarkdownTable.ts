@@ -51,8 +51,11 @@ export function parseMarkdownTable(content: string): ParsedTable | null {
     const headers = parseRow(headerLine);
     if (headers.length === 0) return null;
 
+    // Every row GFM shows is kept — an all-empty row is a row, not noise (a
+    // hidden row is a screen that lies). Only a trailing line with no cells at
+    // all (a lone `|` still arriving) waits.
     const rows = lines.slice(2).map(parseRow);
-    const validRows = rows.filter((row) => row.some((cell) => cell.length > 0));
+    const validRows = rows.length && rows[rows.length - 1]!.length === 0 ? rows.slice(0, -1) : rows;
 
     const normalizedData = validRows.map((row) => {
       const rowData: { [key: string]: string } = {};

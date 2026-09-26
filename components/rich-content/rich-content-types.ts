@@ -73,4 +73,11 @@ export interface RichContentProps {
    * declaration anywhere remote images wait for a click.
    */
   imagePolicy?: "self" | "other" | "ai" | "inherit";
+  /**
+   * Inline only: the source is ONE GFM table cell. It is read the way GFM reads
+   * a cell — inline constructs only (`> 90%`, `- n/a`, `# 3` are text, never a
+   * quote/list/heading) and `\|` shows as `|` (the one cell-pipe rule). Pass the
+   * cell's source text as stored. verify-RC-B4 R6-1.
+   */
+  gfmCell?: boolean;
 }

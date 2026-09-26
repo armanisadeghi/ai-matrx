@@ -15,6 +15,7 @@ import type { DocumentNumbering } from "./syntax/document-numbering";
  * - gfm-math:   gfm + math
  * - rich:       gfm + breaks + math
  * - chat:       rich + matrx variables + matrx citations + safe raw HTML
+ * - chat-cell:  chat, INLINE constructs only — one GFM table cell (remark-inline-only)
  * - message:    gfm + math + breaks + rehype-raw
  *
  * "math" everywhere means the ONE dialect in math-normalizer.ts: the source
@@ -29,6 +30,7 @@ export type MarkdownPreset =
   | "gfm-math"
   | "rich"
   | "chat"
+  | "chat-cell"
   | "message";
 
 /** The element-override map a caller may pass to the core — import THIS, never react-markdown's own type. */

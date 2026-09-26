@@ -13,6 +13,7 @@
 
 import remarkGfm from "remark-gfm";
 import remarkTableCodePipes from "./syntax/remark-table-code-pipes";
+import remarkInlineOnly from "./syntax/remark-inline-only";
 import remarkBreaks from "remark-breaks";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -109,6 +110,23 @@ export const MARKDOWN_PRESETS: Record<MarkdownPreset, MarkdownPluginSet> = {
     // Parse + sanitize allow-listed raw HTML BEFORE KaTeX, so KaTeX's
     // rendered output is never sanitized and matrx-variable / math element
     // nodes are never touched.
+    rehype: [rehypeSafeRawHtml, ...SYNTAX_REHYPE, KATEX],
+    math: true,
+  },
+  // One GFM table cell: the chat preset with every block construct off
+  // (verify-RC-B4 R6-1) — `> 90%` / `- n/a` / `# 3` read as the text they are.
+  "chat-cell": {
+    remark: [
+      remarkInlineOnly,
+      GFM,
+      remarkBreaks,
+      MATH,
+      ...SYNTAX_PARSE,
+      remarkMatrxVariable,
+      remarkMatrxCite,
+      PAGE_BREAK,
+      ...SYNTAX_TRANSFORM,
+    ],
     rehype: [rehypeSafeRawHtml, ...SYNTAX_REHYPE, KATEX],
     math: true,
   },
