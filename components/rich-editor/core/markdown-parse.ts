@@ -17,7 +17,8 @@
 // CRLF line endings or Private Use characters is locked outright.
 
 import { splitRowSegments } from "./table-source";
-import { Lexer, type Token, type Tokens } from "marked";
+import { Lexer, Tokenizer, type Token, type Tokens } from "marked";
+import { findTableEnd, tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 import { isPageBreakLine } from "@ai-matrx/print/directives";
 import type { JSONContent } from "@tiptap/core";
 import type { Schema } from "@tiptap/pm/model";
@@ -62,6 +63,30 @@ interface ParseState {
 }
 
 const LEXER_OPTIONS = { gfm: true, breaks: false, pedantic: false } as const;
+
+/**
+ * marked's table tokenizer, held to THE GFM table rule (gfm-table-lines): a table
+ * opens only where `tableStartsAt` says (same-width delimiter, no list-item
+ * delimiter, no indented-code header) and runs exactly to `findTableEnd` — an
+ * HTML block start (`</artifact>`) or indented code after it is never a row.
+ * verify-RC-B4 round 9. (A table on a lazy list/quote line is still marked's
+ * reading: marked has already dedented the item's lines when it lexes them.)
+ */
+class RuleTableTokenizer extends Tokenizer {
+  // The rule judges the stored bytes: an inline island (`</artifact>`, a variable)
+  // stands in the lexed text as a placeholder, so each line is restored first.
+  constructor(private readonly islands: readonly SourceIsland[]) {
+    super();
+  }
+
+  override table(src: string): Tokens.Table | undefined {
+    const lines = src.split("\n");
+    const stored = lines.map((line) => restorePlaceholders(line, this.islands));
+    if (!tableStartsAt(stored, 0)) return undefined;
+    const end = findTableEnd(stored, 0);
+    return super.table(lines.slice(0, end).join("\n") + (end < lines.length ? "\n" : ""));
+  }
+}
 
 /** Reason string that marks a held-as-source page-break directive line. */
 export const PAGE_BREAK_REASON = "page break";
@@ -505,7 +530,7 @@ export function parseProseBlock(
   for (const segment of segments) {
     let tokens: Token[];
     try {
-      tokens = new Lexer({ ...LEXER_OPTIONS }).lex(segment.text);
+      tokens = new Lexer({ ...LEXER_OPTIONS, tokenizer: new RuleTableTokenizer(islands) }).lex(segment.text);
     } catch {
       return { children: [], lockedReason: "markdown the parser could not read" };
     }
