@@ -73,7 +73,19 @@ function TableContextMenuBoundary({ label, children, sections }: TableContextMen
     [sections],
   );
   if (insideMenu) return <>{children}</>;
-  return <NonEditableContextMenu sourceFeature="system" contextData={{ content: label }} enableFloatingIcon={false} {...(sections ? { resolveExtraSectionsOnOpen: resolveSections } : {})}><div className="contents">{children}</div></NonEditableContextMenu>;
+  // The heading is what was right-clicked, in the words on screen: a column heading's name
+  // ("Content: Route tag"), never the table's id or "Data table". A row or cell is headed by the
+  // row registry (its cell's words); anywhere else keeps the table's label.
+  return <NonEditableContextMenu sourceFeature="system" contextData={{ content: label }} resolveContextOnOpen={headingWords} enableFloatingIcon={false} {...(sections ? { resolveExtraSectionsOnOpen: resolveSections } : {})}><div className="contents">{children}</div></NonEditableContextMenu>;
+}
+function headingWords(target: HTMLElement | null) {
+  const heading = target?.closest<HTMLElement>("th, [role='columnheader']");
+  if (!heading) return null;
+  const copy = heading.cloneNode(true) as HTMLElement;
+  // Controls and marks carry their own labels (sort, options, resize, the fx mark); the name does not.
+  copy.querySelectorAll("[aria-label], [aria-hidden='true'], [role='separator']").forEach((node) => node.remove());
+  const words = (copy.textContent ?? "").replace(/\s+/g, " ").trim();
+  return words ? { content: words } : null;
 }
 function TableMenuIcon({ name, className }: TableMenuIconProps) {
   const Icon = TABLE_MENU_ICONS[name];
