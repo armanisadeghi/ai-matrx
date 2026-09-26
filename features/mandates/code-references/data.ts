@@ -98,10 +98,8 @@ async function readLatestReferences(filter: ReferenceFilter): Promise<LatestRefe
     }),
   );
   if (error) {
-    throw Object.assign(new Error(`Latest code references: ${error.message}`), {
-      code: error.code,
-      details: error.details,
-      hint: error.hint,
+    throw Object.assign(new Error(`Latest code references: ${error.message ?? "read failed"}`), {
+      code: error.code ?? undefined,
     });
   }
   if (!Array.isArray(data)) {
