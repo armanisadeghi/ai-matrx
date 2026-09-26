@@ -143,6 +143,16 @@ const ALLOW_RE = /personal-seat-ok:\s*\S+/;
 // bringing it back is the same defect.
 const TENANT_RE = /(["'`])platform_(?:orgs|users|all)\1|\bADMIN_(?:SUPPORT_)?LIST_SCOPES\b/;
 const SUPPORT_ONLY_RE = /admin-support-only:\s*\S+/;
+// A HAND-MADE tenant lane: a tab / lane / segment literal labelled
+// "Organizations" or "Users" (`{ id: "users", label: "Users" }`,
+// `<Tab>Organizations</Tab>`) — the shape the admin mandate window used before
+// it had any scope array to catch.
+// A navigation link labelled "Organizations" (to the org admin pages) is not a
+// lane, so a `label:` only counts when its object carries a scope id.
+const TENANT_LABEL_RE = /\blabel:\s*(["'`])(?:Organizations|Users)\1/;
+const TENANT_LANE_ID_RE = /\b(?:id|kind|scope|value):\s*(["'`])(?:orgs|users|platform_orgs|platform_users|platform_all)\1/;
+const TENANT_TAB_JSX_RE =
+  /role="tab"[^>]*>\s*(?:Organizations|Users)\s*<|>\s*(?:Organizations|Users)\s*<\/(?:TabsTrigger|Tab)>/;
 
 /**
  * Rule 3 — a file a MANAGEMENT route reaches never names a tenant lane, except
@@ -153,9 +163,14 @@ export function scanManagementText(file: string, text: string): Finding[] {
   const lines = text.split("\n");
   const allowed = (i: number) =>
     SUPPORT_ONLY_RE.test(lines[i]) || (i > 0 && SUPPORT_ONLY_RE.test(lines[i - 1]));
+  const strip = (line: string) => line.replace(/^\s*(\/\/|\*).*$/, "").replace(/\/\/.*$/, "");
   lines.forEach((line, i) => {
-    const code = line.replace(/^\s*(\/\/|\*).*$/, "").replace(/\/\/.*$/, "");
-    if (TENANT_RE.test(code) && !allowed(i)) {
+    const code = strip(line);
+    // The lane object may spread over a few lines: look at its neighbours.
+    const near = lines.slice(Math.max(0, i - 2), i + 3).map(strip).join("\n");
+    const handMadeLane =
+      (TENANT_LABEL_RE.test(code) && TENANT_LANE_ID_RE.test(near)) || TENANT_TAB_JSX_RE.test(code);
+    if ((TENANT_RE.test(code) || handMadeLane) && !allowed(i)) {
       findings.push({ file, line: i + 1, rule: "tenant-lane-on-management-page", text: line.trim() });
     }
   });
@@ -224,6 +239,24 @@ function selfTest(): void {
     {
       name: "a comment that merely mentions platform_all",
       findings: scanManagementText("x.tsx", '// "platform_all" is the support route\'s view'),
+      expectRed: false,
+    },
+    {
+      name: "management window with hand-made Organizations / Users tabs",
+      findings: scanManagementText(
+        "x.tsx",
+        'const ADMIN_SCOPES = [\n  { id: "system", label: "System" },\n  { id: "orgs", label: "Organizations" },\n  { id: "users", label: "Users" },\n];',
+      ),
+      expectRed: true,
+    },
+    {
+      name: "hand-made tenant tab in JSX",
+      findings: scanManagementText("x.tsx", '<button role="tab">Users</button>'),
+      expectRed: true,
+    },
+    {
+      name: "a navigation link labelled Organizations (not a lane)",
+      findings: scanManagementText("x.tsx", '  {\n    label: "Organizations",\n    href: "/administration/users/organizations",\n  },'),
       expectRed: false,
     },
     { name: "personal lane", findings: scanText("x.tsx", 'scopes: ["mine", "system"],'), expectRed: true },

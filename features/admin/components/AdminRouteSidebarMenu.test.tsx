@@ -138,6 +138,21 @@ describe("AdminRouteSidebarMenu", () => {
     expect(active[0]?.getAttribute("href")).toBe("/administration/intelligence/mandates");
   });
 
+  // Arman, 2026-09-26: the support lookup is its own entry; its literal
+  // `support` segment also matches the management entry's `[mandateKey]`.
+  it("lights ONLY Mandate support lookup on its pages, never the Mandates row too", () => {
+    for (const path of [
+      "/administration/intelligence/mandates/support",
+      "/administration/intelligence/mandates/support/2f0c7d3e-0000-4000-8000-000000000000",
+    ]) {
+      pathnameMock = path;
+      render();
+      const active = host.querySelectorAll<HTMLAnchorElement>(".shell-active-pill");
+      expect(active).toHaveLength(1);
+      expect(active[0]?.getAttribute("href")).toBe("/administration/intelligence/mandates/support");
+    }
+  });
+
   it("does not style Launchpad as selected away from its route", () => {
     pathnameMock = "/administration/ai/ai-models";
     render();

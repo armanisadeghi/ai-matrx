@@ -638,9 +638,22 @@ export const MANDATE_OWNER_COLUMN: Spec = facetColumn(
   ),
 );
 
+/**
+ * Columns the support lookup does NOT carry: each is filled by a server report
+ * that measures the SYSTEM mandates' holders only (grades, blockers, health,
+ * coverage). On a tenant's row it could only ever say "not measured" or show
+ * the system copy's verdict for the same key — neither is true of that row.
+ */
+export const SYSTEM_ONLY_REPORT_COLUMNS: readonly string[] = [
+  "impactGrade",
+  "impactBlocker",
+  "health",
+  "coverage",
+];
+
 /** Mandate support lookup: the management columns with the Owner column second. */
 export const SUPPORT_MANDATE_COLUMNS: Spec[] = [
   ADMIN_MANDATE_COLUMNS[0],
   MANDATE_OWNER_COLUMN,
-  ...ADMIN_MANDATE_COLUMNS.slice(1),
+  ...ADMIN_MANDATE_COLUMNS.slice(1).filter((spec) => !SYSTEM_ONLY_REPORT_COLUMNS.includes(spec.id)),
 ];

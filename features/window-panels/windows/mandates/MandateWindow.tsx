@@ -34,6 +34,8 @@
  *   • it records the surface it was opened from onto any note written here.
  */
 
+import { adminDoorOpen } from "@/lib/api/adminDoor";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { MandateStatusBadge } from "@/features/mandates/status/MandateStatusBadge";
 import { mandateStatusOfRow } from "@/features/mandates/status/mandate-status";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -106,6 +108,8 @@ function MandateWindowInner({
     initialMandateKey ?? null,
   );
   const [search, setSearch] = useState("");
+  // The PAGE decides the seat, exactly as every shared component does.
+  const [adminSeat] = useState(() => adminDoorOpen());
   const [view, setView] = useState<MandateWindowView>(
     initialView ?? "yours",
   );
@@ -167,11 +171,15 @@ function MandateWindowInner({
   const rows = useMemo<MandateRow[]>(() => {
     if (!data) return [];
     return data.mandates
+      // THE ADMIN SEAT (Arman, 2026-09-26): opened inside admin, this window
+      // manages SYSTEM mandates only — an organization's or a person's copy of
+      // a key never appears here (that is Mandate support lookup).
+      .filter((mandate) => !adminSeat || mandate.organization_id === SYSTEM_ORGANIZATION_ID)
       .map((mandate) =>
         buildRow(mandate, data, codeTruthByKey[mandate.mandate_key]),
       )
       .sort((a, b) => a.mandateKey.localeCompare(b.mandateKey));
-  }, [data, codeTruthByKey]);
+  }, [data, codeTruthByKey, adminSeat]);
 
   // THE STATUS per job (features/mandates/status/mandate-status.ts).
   const statusById = new Map(

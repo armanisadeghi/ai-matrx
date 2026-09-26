@@ -236,8 +236,10 @@ export function MandateAdminListPage({
           ...(support ? supportMandateListConfig : adminMandateListConfig),
           service,
           serviceKey: `${lane}:${userId ?? ""}:${listState.version}`,
-          bulkActions,
-          bulkSelection: {
+          // The batch actions work on grades, which measure system holders
+          // only — the support lookup is a read-only look into a tenant.
+          bulkActions: support ? [] : bulkActions,
+          bulkSelection: support ? undefined : {
             noun: "mandate",
             // Only a mandate with a pin (agent or workflow) has a rung to act on.
             isRowSelectable: (row) =>

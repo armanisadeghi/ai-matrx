@@ -19,7 +19,6 @@ import {
   adminDomainHref,
   adminMenuDomains,
   adminMenuPathname,
-  destinationOwnsPathname,
   findAdminNavigationDomainByPathname,
   findAdminNavigationLocation,
 } from "@/features/admin/constants/admin-navigation";
@@ -139,7 +138,10 @@ export default function AdminRouteSidebarMenu({
                 <div className="shell-admin-domain-children">
                   {domain.sections.flatMap((section) =>
                     section.destinations.map((item) => {
-                      const active = destinationOwnsPathname(item, menuPathname);
+                      // ONE active row: the destination that owns the path
+                      // most specifically (`/mandates/support` over
+                      // `/mandates/[mandateKey]`), never every pattern match.
+                      const active = activeLocation?.destination.link === item.link;
                       return (
                         <AppLink
                           key={item.link}
