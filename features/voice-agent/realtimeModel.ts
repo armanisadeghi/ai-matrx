@@ -92,6 +92,16 @@ export async function resolveHolderRealtimeModel(
       .unwrap()
       .catch(() => undefined);
   }
+  // The thunk declines to start while ANOTHER caller's fetch of the same model
+  // is in flight (its `condition`), and that decline returns immediately — so
+  // a page that resolves the model from two places at once (the flashcard
+  // tutor, 2026-09-26) read no name and refused a perfectly good model. Wait
+  // for the in-flight read to settle instead of judging mid-flight.
+  const inFlight = () =>
+    getState().modelRegistry.identityStatusById[modelId] === "loading";
+  for (let waited = 0; !readName() && inFlight() && waited < 8000; waited += 100) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
   const name = readName();
   const wireModel = xaiRealtimeWireModel(name);
   if (!wireModel) {
