@@ -16,6 +16,12 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { AgendaPanel } from "@/features/google-workspace/calendar/AgendaPanel";
 import { SelectedCalendarReview } from "@/features/google-workspace/calendar/SelectedCalendarReview";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectIsSuperAdmin,
+  selectUserEmail,
+} from "@/lib/redux/selectors/userSelectors";
+import { canUseGoogleOAuthInternalTest } from "@/features/marketing/google/internal-test-reviewer";
 
 export interface GoogleAgendaWindowProps {
   isOpen: boolean;
@@ -28,6 +34,12 @@ export function GoogleAgendaWindow({
   onClose,
   id = "google-agenda-window",
 }: GoogleAgendaWindowProps) {
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const email = useAppSelector(selectUserEmail);
+  const canReviewSelectedCalendar = canUseGoogleOAuthInternalTest(
+    isSuperAdmin,
+    email,
+  );
   const [view, setView] = useState("agenda");
   if (!isOpen) return null;
   return (
@@ -47,13 +59,17 @@ export function GoogleAgendaWindow({
         onValueChange={setView}
         className="flex min-h-0 flex-1 flex-col"
       >
-        <TabsList className="mx-2 mt-2 grid h-auto grid-cols-2">
+        <TabsList
+          className={`mx-2 mt-2 grid h-auto ${canReviewSelectedCalendar ? "grid-cols-2" : "grid-cols-1"}`}
+        >
           <TabsTrigger value="agenda" className="min-h-9 text-xs">
             Agenda
           </TabsTrigger>
-          <TabsTrigger value="selected" className="min-h-9 text-xs">
-            Selected calendar
-          </TabsTrigger>
+          {canReviewSelectedCalendar ? (
+            <TabsTrigger value="selected" className="min-h-9 text-xs">
+              Selected calendar
+            </TabsTrigger>
+          ) : null}
         </TabsList>
         <TabsContent
           value="agenda"
@@ -65,12 +81,14 @@ export function GoogleAgendaWindow({
             className="min-h-0 h-full"
           />
         </TabsContent>
-        <TabsContent
-          value="selected"
-          className="min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden"
-        >
-          <SelectedCalendarReview />
-        </TabsContent>
+        {canReviewSelectedCalendar ? (
+          <TabsContent
+            value="selected"
+            className="min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden"
+          >
+            <SelectedCalendarReview />
+          </TabsContent>
+        ) : null}
       </Tabs>
     </WindowPanel>
   );

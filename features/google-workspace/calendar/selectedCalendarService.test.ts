@@ -56,7 +56,7 @@ describe("selected calendar provider contract", () => {
             status: "confirmed",
             organizer_email: "organizer@example.com",
             attendees: [
-              { email: "person@example.com", responseStatus: "accepted" },
+              { email: "person@example.com", rsvp: "accepted" },
             ],
             meeting_url: "https://meet.google.com/abc-defg-hij",
             updated_at: "2026-09-26T01:00:00Z",
@@ -77,6 +77,7 @@ describe("selected calendar provider contract", () => {
     expect(window.events[0]).toMatchObject({
       detail_visible: false,
       title: "This must not render",
+      attendees: [{ email: "person@example.com", rsvp: "accepted" }],
     });
     expect(postGoogleBackend).toHaveBeenCalledWith(
       "/google-sync/calendar/selected-events",

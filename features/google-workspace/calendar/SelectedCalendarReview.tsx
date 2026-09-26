@@ -17,6 +17,8 @@ import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks"
 import { googleConnectionLabel } from "@/features/marketing/google/presentation";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
 import { extractErrorMessage } from "@/utils/errors";
+import { BackendApiError } from "@/lib/api/errors";
+import type { GoogleConnectionHealth } from "@/features/marketing/google/types";
 import {
   discoverSelectedCalendars,
   readSelectedCalendarEvents,
@@ -24,6 +26,35 @@ import {
   type SelectedEvent,
   type SelectedEventWindow,
 } from "./selectedCalendarService";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+
+export interface SelectedCalendarProblem {
+  message: string;
+  offerReconnect: boolean;
+}
+
+/** A reconnect can repair only a known Google authorization or connection failure. */
+export function selectedCalendarProblem(
+  error: unknown,
+  connectionHealth: GoogleConnectionHealth | undefined,
+): SelectedCalendarProblem {
+  if (connectionHealth === "needs_reauth" || connectionHealth === "revoked") {
+    return {
+      message: "This Google account needs reconnecting before its calendar can be reviewed.",
+      offerReconnect: true,
+    };
+  }
+  if (
+    error instanceof BackendApiError &&
+    error.code === "google_calendar_connection_unavailable"
+  ) {
+    return {
+      message: error.userMessage,
+      offerReconnect: true,
+    };
+  }
+  return { message: extractErrorMessage(error), offerReconnect: false };
+}
 
 function dateTime(value: string | null, timeZone: string | null): string {
   if (!value) return "Time not provided";
@@ -39,20 +70,10 @@ function dateTime(value: string | null, timeZone: string | null): string {
 function attendeeText(event: SelectedEvent): string {
   const names = event.attendees
     .map((value) => {
-      const name = value.displayName;
       const email = value.email;
-      const response = value.responseStatus;
-      const identity =
-        typeof name === "string" && name
-          ? name
-          : typeof email === "string"
-            ? email
-            : null;
-      return identity
-        ? `${identity}${typeof response === "string" ? ` (${response})` : ""}`
-        : null;
+      return `${email} (${value.rsvp})`;
     })
-    .filter((value): value is string => value !== null);
+    .filter(Boolean);
   return names.length ? names.join(", ") : "No attendees listed";
 }
 
@@ -158,7 +179,7 @@ export function SelectedCalendarReview() {
   const [calendarId, setCalendarId] = useState("");
   const [result, setResult] = useState<SelectedEventWindow | null>(null);
   const [busy, setBusy] = useState<"discover" | "read" | null>(null);
-  const [problem, setProblem] = useState<string | null>(null);
+  const [problem, setProblem] = useState<SelectedCalendarProblem | null>(null);
   const connections = inventory.data?.connections ?? [];
   const selectedConnection =
     connections.find((connection) => connection.id === connectionId) ?? null;
@@ -183,7 +204,7 @@ export function SelectedCalendarReview() {
         await discoverSelectedCalendars({ organizationId, connectionId }),
       );
     } catch (error: unknown) {
-      setProblem(extractErrorMessage(error));
+      setProblem(selectedCalendarProblem(error, selectedConnection?.health));
     } finally {
       setBusy(null);
     }
@@ -203,7 +224,7 @@ export function SelectedCalendarReview() {
         }),
       );
     } catch (error: unknown) {
-      setProblem(extractErrorMessage(error));
+      setProblem(selectedCalendarProblem(error, selectedConnection?.health));
     } finally {
       setBusy(null);
     }
@@ -229,6 +250,7 @@ export function SelectedCalendarReview() {
       <p className="m-3 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-foreground">
         Connected Google accounts could not be loaded. Try again from the Google
         connection screen.
+        <ErrorAlchemyMenu />
       </p>
     );
 
@@ -335,8 +357,8 @@ export function SelectedCalendarReview() {
           className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-foreground"
           data-selected-calendar-problem
         >
-          <p>{problem}</p>
-          {selectedConnection ? (
+          <p>{problem.message}</p>
+          {problem.offerReconnect && selectedConnection ? (
             <Button
               type="button"
               variant="outline"

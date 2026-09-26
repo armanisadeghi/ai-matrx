@@ -2,8 +2,12 @@
 
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { SelectedCalendarEventRow } from "./SelectedCalendarReview";
+import {
+  SelectedCalendarEventRow,
+  selectedCalendarProblem,
+} from "./SelectedCalendarReview";
 import type { SelectedEvent } from "./selectedCalendarService";
+import { BackendApiError } from "@/lib/api/errors";
 
 const ORGANIZER = "organizer@example.com";
 
@@ -29,7 +33,7 @@ const event: SelectedEvent = {
   time_zone: "America/Los_Angeles",
   status: "confirmed",
   organizer_email: ORGANIZER,
-  attendees: [{ email: "person@example.com", responseStatus: "accepted" }],
+  attendees: [{ email: "person@example.com", rsvp: "tentative" }],
   meeting_url: "https://meet.google.com/abc-defg-hij",
   updated_at: null,
   recurring_event_id: null,
@@ -59,5 +63,38 @@ describe("SelectedCalendarEventRow", () => {
     expect(host.textContent).not.toContain(ORGANIZER);
     expect(host.textContent).not.toContain("person@example.com");
     expect(host.querySelector("a")).toBeNull();
+  });
+
+  it("renders the RSVP returned by the selected-calendar contract", () => {
+    act(() =>
+      root.render(
+        <SelectedCalendarEventRow event={{ ...event, detail_visible: true }} />,
+      ),
+    );
+    expect(host.textContent).toContain("person@example.com (tentative)");
+  });
+
+  it("offers reconnection only for a known Google connection failure", () => {
+    expect(
+      selectedCalendarProblem(
+        new BackendApiError({
+          code: "google_calendar_connection_unavailable",
+          detail: "connection could not be read",
+          userMessage: "Reconnect that account or try again.",
+          status: 502,
+        }),
+        "connected",
+      ),
+    ).toEqual({
+      message: "Reconnect that account or try again.",
+      offerReconnect: true,
+    });
+
+    expect(
+      selectedCalendarProblem(new Error("Google rejected this calendar."), "connected"),
+    ).toEqual({
+      message: "Google rejected this calendar.",
+      offerReconnect: false,
+    });
   });
 });

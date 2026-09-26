@@ -8,8 +8,24 @@ import type { components } from "@/types/python-generated/api-types";
 import { postGoogleBackend } from "@/features/marketing/google/service";
 
 export type SelectedCalendar = components["schemas"]["SelectedCalendar"];
-export type SelectedEvent = components["schemas"]["SelectedEvent"];
-export type SelectedEventWindow = components["schemas"]["SelectedEventWindow"];
+export interface SelectedCalendarAttendee {
+  email: string;
+  rsvp: string;
+}
+
+/** The selected-calendar endpoint deliberately returns only attendee email and RSVP. */
+export type SelectedEvent = Omit<
+  components["schemas"]["SelectedEvent"],
+  "attendees"
+> & {
+  attendees: SelectedCalendarAttendee[];
+};
+export type SelectedEventWindow = Omit<
+  components["schemas"]["SelectedEventWindow"],
+  "events"
+> & {
+  events: SelectedEvent[];
+};
 
 const DISCOVER_PATH = "/google-sync/calendar/discover";
 const SELECTED_EVENTS_PATH = "/google-sync/calendar/selected-events";
@@ -51,10 +67,13 @@ function selectedCalendar(value: unknown): SelectedCalendar {
   };
 }
 
-function attendee(value: unknown): { [key: string]: unknown } {
+function attendee(value: unknown): SelectedCalendarAttendee {
   const record = recordOrNull(value);
   if (!record) throw new Error("Google returned an invalid event attendee.");
-  return record;
+  return {
+    email: requiredString(record.email, "event attendee email"),
+    rsvp: requiredString(record.rsvp, "event attendee RSVP"),
+  };
 }
 
 function originalStartTime(value: unknown): { [key: string]: string } | null {
