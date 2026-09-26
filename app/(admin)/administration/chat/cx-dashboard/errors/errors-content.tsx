@@ -427,6 +427,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
                         <pre className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">
                           {r.error}
                         </pre>
+                        <ErrorAlchemyMenu />
                       </div>
                     )}
                     <CxJsonViewer

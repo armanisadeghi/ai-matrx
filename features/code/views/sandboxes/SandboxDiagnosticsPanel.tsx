@@ -658,6 +658,7 @@ export const SandboxDiagnosticsPanel = forwardRef<
         <pre className="mt-2 text-xs whitespace-pre-wrap font-mono opacity-80">
           {error}
         </pre>
+        <ErrorAlchemyMenu />
       </div>
     );
   }
@@ -1338,6 +1339,7 @@ function FsTree({
         {node.error && (
           <span className="text-destructive text-[10px]" title={node.error}>
             (error)
+            <ErrorAlchemyMenu />
           </span>
         )}
         {!node.isDir && typeof node.size === "number" && (

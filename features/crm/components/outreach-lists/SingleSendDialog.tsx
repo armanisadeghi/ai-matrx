@@ -43,6 +43,7 @@ import type {
   OutreachListMemberWithParty,
   OutreachListRow,
 } from "../../outreach-lists/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SingleSendDialogProps {
   open: boolean;
@@ -269,6 +270,7 @@ export function SingleSendDialog({
                 {problem.unresolved.join(", ")}
               </p>
             )}
+            <ErrorAlchemyMenu error={problem.message} />
           </div>
         )}
 

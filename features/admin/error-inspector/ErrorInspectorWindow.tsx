@@ -51,6 +51,7 @@ import {
   capturedErrorsToInvestigationPrompt,
   sourceLabel,
 } from "@/lib/diagnostics/buildCapturedErrorPayload";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ErrorInspectorWindowProps {
   isOpen: boolean;
@@ -278,6 +279,7 @@ export default function ErrorInspectorWindow({
           {errors.length > 0 && (
             <span className="rounded-full bg-destructive/20 text-destructive px-1.5 text-[11px] font-semibold shrink-0">
               {errors.length}
+              <ErrorAlchemyMenu />
             </span>
           )}
         </span>

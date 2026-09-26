@@ -81,6 +81,14 @@ interface MediaBlockBase {
    * preserved for back-compat — new code should read `metadata.generation`.
    */
   metadata: Record<string, unknown> | null;
+
+  /**
+   * The reference role this media played as an INPUT (subject, style,
+   * first_frame, extend, …) and its `@name`, carried from the persisted
+   * part so a reload redisplays it. Absent for generated output.
+   */
+  referenceRole?: string | null;
+  referenceName?: string | null;
 }
 
 // ─── Origin halves (cross-cut every kind) ───────────────────────────────────

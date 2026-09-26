@@ -213,6 +213,7 @@ export function AcquisitionConsolePage() {
             {data.problems.map((problem) => (
               <li key={problem}>{problem}</li>
             ))}
+            <li className="list-none"><ErrorAlchemyMenu /></li>
           </ul>
         )}
 

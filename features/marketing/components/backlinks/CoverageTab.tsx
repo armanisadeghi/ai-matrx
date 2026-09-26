@@ -537,7 +537,7 @@ export function CoverageTab({ siteId }: { siteId: string }) {
           {incomplete.length === 1
             ? `“${incomplete[0].name}”: ${incomplete[0].last_error}`
             : `${incomplete.length} trackers could not see everything on their last pass, so this feed may be missing stories.`}
-          <ErrorAlchemyMenu />
+          {anyFailed ? <ErrorAlchemyMenu /> : null}
         </div>
       ) : null}
 

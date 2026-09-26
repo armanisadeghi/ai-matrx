@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface StructuredInputWarningBlockProps {
   blockType: string;
@@ -28,6 +29,7 @@ const StructuredInputWarningBlock: React.FC<
             {hasFailures && (
               <span className="text-xs px-1.5 py-0.5 rounded bg-warning/15 text-warning font-medium">
                 {failures.length} failure{failures.length !== 1 ? "s" : ""}
+                <ErrorAlchemyMenu />
               </span>
             )}
           </div>

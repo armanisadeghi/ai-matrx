@@ -113,6 +113,26 @@ export async function loadComparisonSet(
   };
 }
 
+/**
+ * Whether a saved battle is readable, and the mode it was built in
+ * (`metadata.mode`). Lets a battle URL opened on the wrong mode page go to the
+ * page that can rebuild it, and lets a missing battle say so plainly.
+ */
+export async function getComparisonSetMode(
+  setId: string,
+): Promise<{ found: boolean; mode: string | null }> {
+  const { data, error } = await supabase()
+    .schema("agent").from("cmp_comparison_sets")
+    .select("metadata")
+    .is("deleted_at", null)
+    .eq("id", setId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return { found: false, mode: null };
+  const mode = (data.metadata as { mode?: unknown } | null)?.mode;
+  return { found: true, mode: typeof mode === "string" ? mode : null };
+}
+
 export async function deleteComparisonSet(setId: string): Promise<void> {
   // Soft delete, never a hard one (owner ruling 2026-09-20; db-rules §8):
   // `listComparisonSets` and `loadComparisonSet` both filter `deleted_at`.
@@ -142,8 +162,33 @@ export async function deleteComparisonSet(setId: string): Promise<void> {
 }
 
 /**
- * Replace all entries in a set with the provided list. Used on every save —
- * we wipe + re-insert rather than diff (small N, simpler invariants).
+ * Rewrite a set's locked setup (`metadata`). Every mode stores what it holds
+ * constant across columns here — the agent, version, shared request and
+ * variables — so a re-save that only rewrote the entries used to drop every
+ * change made to that setup after the first save.
+ */
+export async function updateComparisonSetMetadata(
+  setId: string,
+  metadata: Record<string, unknown>,
+): Promise<void> {
+  await writeOne(
+    supabase()
+      .schema("agent").from("cmp_comparison_sets")
+      .update({ metadata })
+      .eq("id", setId)
+      .select("id"),
+    { action: "save", noun: "comparison" },
+  );
+}
+
+/**
+ * Make a set's entries exactly the provided list. Used on every save.
+ *
+ * Upsert first, then remove the entries that are no longer in the list: a
+ * failed write therefore leaves the previous columns in place instead of an
+ * empty battle (the old wipe-then-insert lost every column whenever the
+ * insert failed). Entries stay a hard delete — they are never a record a
+ * person manages on their own (see `deleteComparisonSet`).
  */
 export async function replaceEntries(
   setId: string,
@@ -151,38 +196,45 @@ export async function replaceEntries(
 ): Promise<ComparisonEntryRow[]> {
   const client = supabase();
 
-  const { error: delErr } = await client
+  let written: ComparisonEntryRow[] = [];
+  if (entries.length > 0) {
+    // organization_id is NOT NULL on entries — inherit it from the owning set.
+    const { data: setRow, error: setErr } = await client
+      .schema("agent").from("cmp_comparison_sets")
+      .select("organization_id")
+      .eq("id", setId)
+      .single();
+    if (setErr) throw setErr;
+
+    const rows = entries.map((e) => ({
+      comparison_set_id: setId,
+      organization_id: setRow.organization_id,
+      conversation_id: e.conversationId,
+      display_order: e.displayOrder,
+      agent_id: e.agentId,
+      agent_version: e.agentVersion,
+      agent_version_snapshot_id: e.agentVersionSnapshotId,
+      metadata: e.metadata ?? {},
+    }));
+
+    const { data, error } = await client
+      .schema("agent").from("cmp_comparison_entries")
+      .upsert(rows, { onConflict: "comparison_set_id,conversation_id" })
+      .select("*");
+    if (error) throw error;
+    written = (data ?? []) as ComparisonEntryRow[];
+  }
+
+  let stale = client
     .schema("agent").from("cmp_comparison_entries")
     .delete()
     .eq("comparison_set_id", setId);
+  if (entries.length > 0) {
+    const keep = entries.map((e) => e.conversationId).join(",");
+    stale = stale.not("conversation_id", "in", `(${keep})`);
+  }
+  const { error: delErr } = await stale;
   if (delErr) throw delErr;
 
-  if (entries.length === 0) return [];
-
-  // organization_id is NOT NULL on entries — inherit it from the owning set.
-  const { data: setRow, error: setErr } = await client
-    .schema("agent").from("cmp_comparison_sets")
-    .select("organization_id")
-    .eq("id", setId)
-    .single();
-  if (setErr) throw setErr;
-
-  const rows = entries.map((e) => ({
-    comparison_set_id: setId,
-    organization_id: setRow.organization_id,
-    conversation_id: e.conversationId,
-    display_order: e.displayOrder,
-    agent_id: e.agentId,
-    agent_version: e.agentVersion,
-    agent_version_snapshot_id: e.agentVersionSnapshotId,
-    metadata: e.metadata ?? {},
-  }));
-
-  const { data, error } = await client
-    .schema("agent").from("cmp_comparison_entries")
-    .insert(rows)
-    .select("*");
-
-  if (error) throw error;
-  return (data ?? []) as ComparisonEntryRow[];
+  return written;
 }

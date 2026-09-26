@@ -36,6 +36,7 @@ import { lanesFor } from "./service";
 import {
   buildDirectory,
   matchFeature,
+  matchStrength,
   summarize,
   type DirectoryDefinition,
   type DirectoryFeature,
@@ -65,6 +66,7 @@ function jobsLine(feature: DirectoryFeature): string {
 }
 
 function reasonText(reason: MatchReason): string | null {
+  if (reason.kind === "name" && reason.partial) return null;
   switch (reason.kind) {
     case "job":
       return `Job: ${reason.text}`;
@@ -269,6 +271,9 @@ export function IntelligenceIndex() {
     const reason = matchFeature(feature, query);
     if (reason) matched.push({ feature, reason });
   }
+  // While searching, the strongest matches lead (the sort is stable, so the
+  // directory's own order holds inside each strength).
+  if (query.trim()) matched.sort((a, b) => matchStrength(b.reason) - matchStrength(a.reason));
 
   const searching = query.trim().length > 0;
   const declared = matched.filter((item) => item.feature.declared);
@@ -281,7 +286,7 @@ export function IntelligenceIndex() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-8 sm:px-6">
-      <div className="sticky top-[var(--shell-header-h)] z-10 -mx-4 bg-background/95 px-4 pb-3 pt-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:-mx-6 sm:px-6">
+      <div className="sticky top-0 z-10 -mx-4 bg-background/95 px-4 pb-3 pt-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:-mx-6 sm:px-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
           <SearchInput
             value={query}

@@ -493,19 +493,19 @@ export function ToolEditPage({ tool }: Props) {
                   <TabsTrigger value="parameters">
                     Parameters
                     {jsonErrors.parameters && (
-                      <span className="ml-1 text-destructive">!</span>
+                      <span className="ml-1 text-destructive">! <ErrorAlchemyMenu /></span>
                     )}
                   </TabsTrigger>
                   <TabsTrigger value="output">
                     Output Schema
                     {jsonErrors.output_schema && (
-                      <span className="ml-1 text-destructive">!</span>
+                      <span className="ml-1 text-destructive">! <ErrorAlchemyMenu /></span>
                     )}
                   </TabsTrigger>
                   <TabsTrigger value="advanced">
                     Advanced
                     {jsonErrors.annotations && (
-                      <span className="ml-1 text-destructive">!</span>
+                      <span className="ml-1 text-destructive">! <ErrorAlchemyMenu /></span>
                     )}
                   </TabsTrigger>
                 </TabsList>

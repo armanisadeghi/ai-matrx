@@ -267,6 +267,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { SheetWithheldCell, withheldCellOf, type WithheldCells } from "@/features/data-tables/withheld-cells";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface TableDataRow {
   id: string;
   data: Record<string, unknown>;
@@ -3360,6 +3361,7 @@ const UserTableViewer = ({
         <p className="text-sm mt-1 text-red-400 dark:text-red-300">
           Please try again or contact support if the issue persists.
         </p>
+        <ErrorAlchemyMenu />
       </div>
     );
   if (!tableInfo)
@@ -4416,6 +4418,7 @@ const UserTableViewer = ({
           <div className="min-w-0">
             <p className="font-medium text-destructive">
               This filter couldn&rsquo;t be applied
+              <ErrorAlchemyMenu />
             </p>
             <p className="text-muted-foreground">
               {fullDatasetError} The rows below are unfiltered — clear the
@@ -4444,6 +4447,7 @@ const UserTableViewer = ({
             <span className="font-medium text-amber-700 dark:text-amber-300">
               Filtering the first {filterTruncatedAt.toLocaleString()} rows
               only.
+              <ErrorAlchemyMenu />
             </span>{" "}
             This table has {totalCount.toLocaleString()}, so the count below is
             not the whole table. Narrow it with the search box first for an
@@ -5160,6 +5164,7 @@ const UserTableViewer = ({
                         title={formulaError}
                       >
                         #ERROR
+                        <ErrorAlchemyMenu />
                       </span>
                     ) : hasCustomFormat || validationByField.has(field.field_name) ? (
                       <FormattedFieldValue

@@ -27,10 +27,14 @@ import {
   type VideoMediaPart,
   type DocumentMediaPart,
   type YouTubeMediaPart,
+  type RenderBlockPayload,
 } from "@/types/python-generated/stream-events";
+import { normalizeContentBlocks } from "../utils/normalize-content-blocks";
+import { isAttachmentMessagePart } from "@/features/agents/components/context-items/normalize";
 import {
   messagePartsFromPersistedContent,
   parsePersistedMessageContent,
+  unknownPersistedPartBlock,
 } from "./persisted-content-boundary";
 import { fromCxMediaPart } from "@/features/files/blocks/image/adapters/from-cx-media-part";
 import {
@@ -535,6 +539,44 @@ export function extractRecordError(
  * from the python-generated module so new Python variants flow through here
  * automatically.
  */
+/**
+ * The message BODY blocks of a persisted record, as canonical render blocks:
+ * every part the transcript does not draw itself (text, reasoning, tool
+ * calls — `isSelfRendered`) and that is not an attachment chip. Open by
+ * default: decision_questions, decision_answers, speech_script and any kind
+ * this build does not know (the honest Unknown Data Event block) all land
+ * here. The user bubble and the assistant's server-block path both read this
+ * — one rule, never a per-surface allowlist.
+ */
+export function persistedBodyBlocks(
+  record: MessageRecord | undefined,
+  options: {
+    isSelfRendered: (part: MessagePart) => boolean;
+    /** An attachment part that should still render inline (assistant media). */
+    keepAttachmentInline?: (part: MessagePart) => boolean;
+  },
+): RenderBlockPayload[] {
+  if (!record) return [];
+  const out: RenderBlockPayload[] = [];
+  for (const entry of parsePersistedMessageContent(contentForDisplay(record))) {
+    if (entry.kind === "unknown_part") {
+      out.push(unknownPersistedPartBlock(entry));
+      continue;
+    }
+    if (entry.kind !== "message_part") continue;
+    const part = entry.part;
+    if (options.isSelfRendered(part)) continue;
+    if (
+      isAttachmentMessagePart(part) &&
+      !(options.keepAttachmentInline?.(part) ?? false)
+    ) {
+      continue;
+    }
+    out.push(...normalizeContentBlocks([part]));
+  }
+  return out.map((block, blockIndex) => ({ ...block, blockIndex }));
+}
+
 export function extractContentBlocks(
   record: MessageRecord | undefined,
 ): MessagePart[] {
@@ -663,6 +705,18 @@ export const selectMessageInterleavedContent = (
       const segments: ContentSegment[] = [];
       let partIndex = 0;
       for (const entry of entries) {
+        if (entry.kind === "unknown_part") {
+          // A kind this build does not know: shown honestly, never dropped.
+          const block = unknownPersistedPartBlock(entry);
+          segments.push({
+            type: "render_block",
+            blockType: block.type,
+            content: null,
+            data: block.data ?? null,
+            metadata: block.metadata,
+          } satisfies ContentSegmentRenderBlock);
+          continue;
+        }
         if (entry.kind === "legacy_render_block") {
           const { block } = entry;
           segments.push({
@@ -840,8 +894,29 @@ export const selectMessageInterleavedContent = (
             break;
           }
           case "tool_result":
-          default:
+            // Joined onto its tool_call segment via the observability record.
             break;
+          default: {
+            // OPEN BY DEFAULT. Every other part — decision_questions,
+            // decision_answers, speech_script, web_search, and any kind added
+            // later — renders through the ONE persisted-part normalizer
+            // (normalize-content-blocks.ts, compile-time exhaustive, honest
+            // Unknown Data Event fallback). The old bare `default: break`
+            // dropped the decision + speech kinds on every reload.
+            // Attachments are the one exception: the strip owns them.
+            if (isAttachmentMessagePart(part)) break;
+            const [block] = normalizeContentBlocks([part]);
+            if (block) {
+              segments.push({
+                type: "render_block",
+                blockType: block.type,
+                content: block.content ?? null,
+                data: (block.data as Record<string, unknown> | null) ?? null,
+                metadata: block.metadata,
+              } satisfies ContentSegmentRenderBlock);
+            }
+            break;
+          }
         }
         partIndex += 1;
       }

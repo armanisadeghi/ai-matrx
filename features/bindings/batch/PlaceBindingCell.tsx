@@ -36,6 +36,7 @@ import {
 import { offeredValuesToSurfaceValues } from "../offered-adapter";
 import { sourceLabelsFor } from "../words";
 import type { PlaceOfferState } from "./batch-model";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const NOTHING_AUTO_BOUND: ReadonlySet<string> = new Set<string>();
 
@@ -74,6 +75,7 @@ export function PlaceBindingCell({
       <div className="flex h-7 items-center gap-1.5 px-1 text-[11px] text-destructive">
         <AlertTriangle className="h-3 w-3 shrink-0" />
         Unreadable — the row says why.
+        <ErrorAlchemyMenu />
       </div>
     );
   }

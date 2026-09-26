@@ -917,6 +917,7 @@ export const RandomWheelInline: React.FC<ToolRendererProps> = ({
         <div className="min-w-0">
           <p className="text-sm font-medium text-destructive">
             Wheel spin failed
+            <ErrorAlchemyMenu />
           </p>
           {entry.errorMessage && (
             <p className="text-xs text-muted-foreground break-words mt-0.5">

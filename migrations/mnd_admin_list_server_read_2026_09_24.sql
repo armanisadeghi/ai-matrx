@@ -22,7 +22,7 @@
 -- the ceiling (SECURITY INVOKER); the function is for platform admins only and
 -- says so in words otherwise.
 --
--- SCOPES (creator, per the owner's ruling in common-docs/systems/intelligence/mandates/UI-REGISTER.md):
+-- SCOPES (creator, per the owner's ruling in common-docs/systems/mandates/UI-REGISTER.md):
 --   mine    created by the caller
 --   orgs    homed in one of the caller's organizations (not the system one),
 --           narrowable to one organization with p_org_id

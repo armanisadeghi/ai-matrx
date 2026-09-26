@@ -644,7 +644,7 @@ function OverridesBody({
 
       {load.status === "error" ? (
         <div className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm">
-          <span className="text-destructive">{load.message}</span>
+          <span className="text-destructive">{load.message} <ErrorAlchemyMenu error={load.message} /></span>
           <Button
             size="sm"
             variant="outline"

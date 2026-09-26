@@ -185,7 +185,7 @@ and enqueue retroactive rechecks; old ledger evidence is never relabeled.
 
 ## S13 · UI standards — CLAUDE.md "UI / UX standards" + shared application UI hierarchy + `ui-sharp`/`ui-dense` + `compact-nav-menus` + `no-emojis-in-ui` + `copy-everywhere` (P5)
 
-- MUST: Lucide only, no emojis, no Sparkles-for-AI (→ `BrainCircuit`); semantic tokens; no wrapper-on-wrapper chrome; browser dialogs banned (`confirm()`/`toast` from `@/lib/toast`); `router.back()` for back; `useTransition` for nav with loading on the active element.
+- MUST: Lucide only, no emojis, no Sparkles-for-AI; `BrainCircuit` only via `INTELLIGENCE_ICON` for Intelligence, `AGENT_ICON` for Agents; semantic tokens; no wrapper-on-wrapper chrome; browser dialogs banned (`confirm()`/`toast` from `@/lib/toast`); `router.back()` for back; `useTransition` for nav with loading on the active element.
 - MUST: read `.claude/ui-skills/shared/application-ui-copy-and-hierarchy.md`; app routes have one title authority, no duplicated body hero, no generic introductory prose, and meaningful work above the fold.
 - MUST: sidebars/list panels follow `compact-nav-menus` sizes; lists use `EntityListPage` + `useListViewPrefs`; tables = `MatrxDataTable` with sort+filter on every column and the canonical Copy / Copy-for-AI.
 - DECIDE: the surface's density posture (`ui-sharp` default; `ui-dense` for all-day power surfaces) — name the real product benchmarked.

@@ -33,7 +33,6 @@ import {
 } from "@/components/ui/resizable";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { SharedRunsWindow } from "@/features/agent-comparison/components/SharedRunsWindow";
-import { ModePicker } from "@/features/agent-comparison/shared/ModePicker";
 import {
   reorderSystemPromptColumns,
   setSystemPromptColumnCollapsed,
@@ -42,8 +41,16 @@ import {
   selectSourceAgentId,
   selectSystemPromptColumnIds,
   selectSystemPromptColumns,
+  selectActiveSystemPromptSetId,
 } from "../redux/selectors";
-import { addColumnToSystemPromptBattle } from "../redux/thunks";
+import {
+  addColumnToSystemPromptBattle,
+  loadSystemPromptBattleSet,
+} from "../redux/thunks";
+import {
+  BattleRouteNotice,
+  useBattleRoute,
+} from "@/features/agent-comparison/shared/useBattleRoute";
 import { LockedInputSection } from "./LockedInputSection";
 import { SystemPromptColumn } from "./SystemPromptColumn";
 import { SystemPromptToolbar } from "./SystemPromptToolbar";
@@ -51,8 +58,15 @@ import type { SystemPromptColumn as SystemPromptColumnType } from "../types";
 
 const RUNS_WINDOW_ID = "agent-comparison-system-prompt-runs";
 
-export function SystemPromptBattlePage() {
+export function SystemPromptBattlePage({ setId = null }: { setId?: string | null }) {
   const dispatch = useAppDispatch();
+  const activeSetId = useAppSelector(selectActiveSystemPromptSetId);
+  const routeStatus = useBattleRoute({
+    mode: "system-prompt",
+    urlSetId: setId,
+    activeSetId,
+    load: (id) => dispatch(loadSystemPromptBattleSet({ setId: id })).unwrap(),
+  });
   const columns = useAppSelector(selectSystemPromptColumns);
   const columnIds = useAppSelector(selectSystemPromptColumnIds);
   const sourceAgentId = useAppSelector(selectSourceAgentId);
@@ -77,11 +91,12 @@ export function SystemPromptBattlePage() {
       className="h-full flex flex-col overflow-hidden"
       style={{ paddingTop: "var(--shell-header-h)" }}
     >
-      <ModePicker />
       <SystemPromptToolbar
         runsWindowOpen={runsWindowOpen}
         onToggleRunsWindow={() => setRunsWindowOpen((v) => !v)}
       />
+
+      <BattleRouteNotice status={routeStatus} mode="system-prompt" />
 
       <LockedInputSection />
 

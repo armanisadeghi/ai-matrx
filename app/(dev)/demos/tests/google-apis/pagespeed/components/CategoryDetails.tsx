@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import type { LighthouseCategoryV5, LighthouseAuditResultV5 } from "../types";
 import { CheckCircle2, XCircle, AlertCircle, Info, ChevronRight } from "lucide-react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CategoryDetailsProps {
     category: LighthouseCategoryV5;
@@ -126,6 +127,7 @@ export function CategoryDetails({ category, audits }: CategoryDetailsProps) {
                                 </span>
                                 <Badge className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-none">
                                     {failed.length}
+                                  <ErrorAlchemyMenu />
                                 </Badge>
                             </div>
                         </AccordionTrigger>

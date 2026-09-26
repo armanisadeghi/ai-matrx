@@ -58,10 +58,12 @@ import {
   type FeedbackRating,
 } from "../service/responseFeedbackService";
 import {
-  selectActiveBattleSetId,
   selectBlindActive,
 } from "../redux/selectors";
-import { selectActiveBattleColumns } from "../shared/activeBattleColumns";
+import {
+  selectActiveBattleColumns,
+  selectMountedBattleSetId,
+} from "../shared/activeBattleColumns";
 import { setFeedbackRank, setFeedbackSnapshot } from "../redux/battleSlice";
 import type { FeedbackSnapshot } from "../types";
 import {
@@ -139,7 +141,7 @@ interface InnerProps {
 function ResponseFeedbackBarInner({ conversationId, requestId }: InnerProps) {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
-  const setId = useAppSelector(selectActiveBattleSetId);
+  const setId = useAppSelector(selectMountedBattleSetId);
   const columns = useAppSelector(selectActiveBattleColumns);
   const blindActive = useAppSelector(selectBlindActive);
 
@@ -674,7 +676,11 @@ function ResponseUsageStrip({ requestId }: { requestId: string }) {
       tokensOutput: totals.output || null,
       tokensTotal: totals.total || null,
       cost: totals.cost || null,
-      serverDurationMs: result?.timing_stats?.total_duration ?? null,
+      // timing_stats durations are SECONDS on the wire.
+      serverDurationMs:
+        result?.timing_stats?.total_duration != null
+          ? result.timing_stats.total_duration * 1000
+          : null,
       ttftMs: req.clientMetrics?.ttftMs ?? null,
       totalClientMs: req.clientMetrics?.totalClientDurationMs ?? null,
     };

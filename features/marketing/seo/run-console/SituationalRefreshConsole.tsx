@@ -211,6 +211,7 @@ export function SituationalRefreshConsole({
           return (
             <span className="inline-flex items-center gap-1 text-[10px] text-warning">
               <AlertTriangle className="h-3 w-3" /> unreadable
+              <ErrorAlchemyMenu />
             </span>
           );
         return (
@@ -535,6 +536,7 @@ export function SituationalRefreshConsole({
                 {outcome.error ? (
                   <p className="mt-0.5 text-[10px] text-destructive">
                     {outcome.error}
+                    <ErrorAlchemyMenu error={outcome.error} />
                   </p>
                 ) : null}
                 {outcome.segments.length > 0 ? (
@@ -565,7 +567,6 @@ export function SituationalRefreshConsole({
                     ))}
                   </ul>
                 ) : null}
-                <ErrorAlchemyMenu error={outcome.error} />
               </li>
             ))}
           </ul>

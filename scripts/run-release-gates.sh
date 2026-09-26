@@ -722,6 +722,9 @@ if $STRICT; then
         # HARDCODED AGENT IDS — the same law spelled as a raw UUID (ROLLOUT.md
         # row X4). Baseline ratchet: exits 1 only on a NEW site; advisory here.
         "Hardcoded agent ids (raw agent UUIDs in code)|pnpm check:hardcoded-agents"
+        # RESERVED ICONS — BrainCircuit is the Intelligence icon only (Arman,
+        # 2026-09-26). Baseline ratchet: exits 1 only on a NEW use; advisory here.
+        "Reserved icon used outside its domain (BrainCircuit = Intelligence)|pnpm check:reserved-icons"
         # HAND-TYPED MANDATE KEYS — the same law spelled as a string literal.
         # @ai-matrx/agents 0.10.0 publishes the key set; a literal is a mirror of
         # it, and a rename or retirement on the server becomes a 404 nobody sees.
@@ -1245,6 +1248,9 @@ else
         # HARDCODED AGENT IDS — the same law spelled as a raw UUID (ROLLOUT.md
         # row X4). Baseline ratchet: exits 1 only on a NEW site; advisory here.
         "Hardcoded agent ids (raw agent UUIDs in code)|pnpm check:hardcoded-agents"
+        # RESERVED ICONS — BrainCircuit is the Intelligence icon only (Arman,
+        # 2026-09-26). Baseline ratchet: exits 1 only on a NEW use; advisory here.
+        "Reserved icon used outside its domain (BrainCircuit = Intelligence)|pnpm check:reserved-icons"
         # HAND-TYPED MANDATE KEYS — the same law spelled as a string literal.
         # @ai-matrx/agents 0.10.0 publishes the key set; a literal is a mirror of
         # it, and a rename or retirement on the server becomes a 404 nobody sees.

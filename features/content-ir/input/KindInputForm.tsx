@@ -361,6 +361,7 @@ export default function KindInputForm({
                   >
                     <X className="mt-0.5 h-3 w-3 shrink-0" />
                     {message}
+                    <ErrorAlchemyMenu error={message} />
                   </p>
                 ))}
               </div>
@@ -411,6 +412,7 @@ export default function KindInputForm({
               className="font-mono text-[11px] text-red-700 dark:text-red-300"
             >
               {message}
+              <ErrorAlchemyMenu error={message} />
             </p>
           ))}
         </div>

@@ -3,6 +3,7 @@
 import React from 'react';
 import { CheckCircle2, XCircle, AlertTriangle, Zap, Settings2, FileText } from 'lucide-react';
 import type { AuditCategory, ModelAuditResult } from './auditTypes';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CategoryStat {
     category: AuditCategory;
@@ -74,6 +75,7 @@ export default function AuditSummaryBar({ results, activeCategory, onCategoryCli
                         <span className="flex items-center gap-0.5 text-destructive text-xs font-medium whitespace-nowrap">
                             <XCircle className="h-3.5 w-3.5 shrink-0" />
                             {totalFail}
+                          <ErrorAlchemyMenu />
                         </span>
                     ) : (
                         <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />

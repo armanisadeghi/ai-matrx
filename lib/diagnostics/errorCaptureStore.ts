@@ -52,6 +52,8 @@ export type CapturedErrorSource =
   | "api-http"
   /** A Python-backend call failed at the network layer (timeout, DNS, abort). */
   | "api-network"
+  /** A same-origin Next.js `/api/*` route answered non-2xx or was unreachable (captureAppApiFetch). */
+  | "app-api-http"
   /** A React component threw during render and an error boundary caught it. */
   | "react-render"
   // ── Server-origin structured stream events (the agent execution stream) ───

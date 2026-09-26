@@ -30,8 +30,16 @@ import {
   selectLockedAgentId,
   selectModelColumnIds,
   selectModelColumns,
+  selectActiveModelSetId,
 } from "../redux/selectors";
-import { addColumnToModelBattle } from "../redux/thunks";
+import {
+  addColumnToModelBattle,
+  loadModelBattleSet,
+} from "../redux/thunks";
+import {
+  BattleRouteNotice,
+  useBattleRoute,
+} from "@/features/agent-comparison/shared/useBattleRoute";
 import { LockedInputSection } from "./LockedInputSection";
 import { ModelColumn } from "./ModelColumn";
 import { ModelToolbar } from "./ModelToolbar";
@@ -40,11 +48,18 @@ import type { ModelColumn as ModelColumnType } from "../types";
 
 const RUNS_WINDOW_ID = "agent-comparison-model-runs";
 
-export function ModelBattlePage() {
+export function ModelBattlePage({ setId = null }: { setId?: string | null }) {
   const dispatch = useAppDispatch();
   const columns = useAppSelector(selectModelColumns);
   const columnIds = useAppSelector(selectModelColumnIds);
   const lockedAgentId = useAppSelector(selectLockedAgentId);
+  const activeSetId = useAppSelector(selectActiveModelSetId);
+  const routeStatus = useBattleRoute({
+    mode: "model",
+    urlSetId: setId,
+    activeSetId,
+    load: (id) => dispatch(loadModelBattleSet({ setId: id })).unwrap(),
+  });
 
   const [runsWindowOpen, setRunsWindowOpen] = useState(false);
 
@@ -71,6 +86,8 @@ export function ModelBattlePage() {
           runsWindowOpen={runsWindowOpen}
           onToggleRunsWindow={() => setRunsWindowOpen((v) => !v)}
         />
+
+        <BattleRouteNotice status={routeStatus} mode="model" />
 
         <LockedInputSection />
 

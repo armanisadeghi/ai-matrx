@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "f68455002a80";
+export const KIND_REGISTRY_FINGERPRINT = "d79e95ebda8b";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -53,6 +53,10 @@ export interface AgentDefinitionContextPolicy {
   key: string;
   type: string;
   label?: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
   source?: AgentDefinitionContextPolicySource | null;
   mutable?: boolean;
   persist?: string;
@@ -66,6 +70,10 @@ export interface AgentDefinitionContextPolicy {
  */
 export interface AgentDefinitionContextPolicySource {
   kind: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
 }
 
 /**
@@ -75,7 +83,30 @@ export interface AgentDefinitionContextPolicySource {
  */
 export interface AgentDefinitionMessage {
   role: "system" | "user" | "assistant";
+  flags?: AgentDefinitionMessageFlags | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
   content: AgentDefinitionTextBlock[];
+}
+
+/**
+ * Instructions to the translator about a message — never content
+ * (typed-messages FEATURE.md, Flag row). ``prefill``: the last assistant turn
+ * the reply continues from. ``cache_boundary``: cache everything up to here.
+ * ``example``: a few-shot user/assistant turn.
+ *  *
+ *  * From kind `agent_definition`.
+ */
+export interface AgentDefinitionMessageFlags {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  example?: boolean | null;
+  prefill?: boolean | null;
+  cache_boundary?: boolean | null;
 }
 
 /**
@@ -87,6 +118,10 @@ export interface AgentDefinitionMessage {
  */
 export interface AgentDefinitionSettings {
   top_p?: number | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
   stream?: boolean;
   temperature?: number | null;
   reasoning_effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | null;
@@ -105,6 +140,10 @@ export interface AgentDefinitionSettings {
 export interface AgentDefinitionTextBlock {
   text: string;
   type?: "text";
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
 }
 
 /**
@@ -114,6 +153,10 @@ export interface AgentDefinitionTextBlock {
  */
 export interface AgentDefinitionVariable {
   name: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
   helpText?: string | null;
   required?: boolean;
   defaultValue?: string;
@@ -130,6 +173,10 @@ export interface AgentDefinitionVariableComponent {
   min?: number | null;
   step?: number | null;
   type: "textarea" | "toggle" | "radio" | "checkbox" | "select" | "number";
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
   options?: string[] | null;
   allowOther?: boolean | null;
   toggleValues?: string[] | null;
@@ -6622,7 +6669,7 @@ export interface AgentAssignmentBatchResult {
  * live ``agent.definition`` row (with its v1 snapshot); rendered, it is the
  * agent a person is watching being built.
  *  *
- *  * Kind `agent_definition` (registry v5).
+ *  * Kind `agent_definition` (registry v6).
  */
 export interface AgentDefinition {
   name: string;

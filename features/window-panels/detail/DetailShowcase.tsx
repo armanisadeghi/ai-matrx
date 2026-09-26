@@ -205,7 +205,7 @@ export function DetailShowcase() {
               <Skeleton className="h-6 w-5/6" />
             </div>
           ) : load.status === "error" ? (
-            <p className="text-xs text-destructive">Could not list your files: {load.message}</p>
+            <p className="text-xs text-destructive">Could not list your files: {load.message} <ErrorAlchemyMenu error={load.message} /></p>
           ) : rows.length === 0 ? (
             <p className="text-xs text-muted-foreground">
               You have no files yet. Upload one from the Files area, then come back — this page

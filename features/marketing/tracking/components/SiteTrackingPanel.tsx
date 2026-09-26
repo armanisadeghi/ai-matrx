@@ -74,6 +74,7 @@ import {
   type TrackingVerdict,
 } from "@/features/marketing/tracking/types";
 import type { MarketingSite } from "@/features/marketing/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const TAG_MANAGER_PRODUCT_KEY = "tag_manager";
 
@@ -382,6 +383,7 @@ export function SiteTrackingPanel({
             The tracking check did not run
           </p>
           <p className="text-[11px] leading-4 text-muted-foreground">{checkError}</p>
+          <ErrorAlchemyMenu />
         </div>
       ) : null}
 

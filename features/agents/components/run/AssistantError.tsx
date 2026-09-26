@@ -18,6 +18,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { AlertCircle, RotateCw, Loader2, ArrowRight } from "lucide-react";
 import { bindingUnresolvedFailure } from "./friendlyStreamError";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Structured backend refusals that have a ONE-CLICK way forward. A failure the
@@ -138,6 +139,7 @@ export function AssistantError({
         <span className="inline-flex items-center gap-1.5 text-destructive/90">
           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
           {shownMessage}
+          <ErrorAlchemyMenu error={shownMessage} />
         </span>
 
         {errorType && RECOVERY_DOORS[errorType] && (

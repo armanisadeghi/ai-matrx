@@ -58,6 +58,7 @@ import {
   probeAudioDurationSeconds,
 } from "@/features/audio/transcriptionSpendGate";
 import { overDurationMessage, uploadLimits } from "@/features/audio/limits";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CreateTranscriptModalProps {
   isOpen: boolean;
@@ -763,6 +764,7 @@ export function CreateTranscriptModal({
                   <div>
                     <h3 className="text-lg font-semibold text-red-600 dark:text-red-400">
                       Transcription Failed
+                      <ErrorAlchemyMenu />
                     </h3>
                     <p className="text-sm text-gray-500 mt-2">
                       {transcribeError}

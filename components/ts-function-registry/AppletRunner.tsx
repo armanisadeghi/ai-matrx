@@ -118,9 +118,9 @@ export default function AppletRunner({
           {isFailed && error && (
             <div className="mt-2 text-sm text-red-600 dark:text-red-400">
               Error: {error}
+              <ErrorAlchemyMenu error={error} />
             </div>
           )}
-          <ErrorAlchemyMenu error={error} />
         </div>
       );
     });
@@ -161,6 +161,7 @@ export default function AppletRunner({
               <li key={index}>{err}</li>
             ))}
           </ul>
+          <ErrorAlchemyMenu />
         </div>
       )}
       

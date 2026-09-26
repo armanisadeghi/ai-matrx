@@ -222,7 +222,7 @@ export function SiteCommandFeed({
           )}
         >
           {run.error ? humanizeBackendError(run.error) : run.message}
-          <ErrorAlchemyMenu />
+          {run.status === "failed" ? <ErrorAlchemyMenu error={run.error} /> : null}
         </p>
       </div>
 

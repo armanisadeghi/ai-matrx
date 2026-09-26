@@ -248,6 +248,7 @@ function AiCallCard({ call, index }: { call: RunAiCall; index: number }) {
               <p className="text-[11px] text-destructive">
                 This call failed before the model returned an answer, so there
                 is nothing it generated. The reason is below.
+                <ErrorAlchemyMenu />
               </p>
             ) : (
               <p className="text-[11px] text-muted-foreground">
@@ -260,6 +261,7 @@ function AiCallCard({ call, index }: { call: RunAiCall; index: number }) {
             <div>
               <p className="mb-0.5 text-[10px] font-medium uppercase tracking-wide text-destructive">
                 Error
+                <ErrorAlchemyMenu />
               </p>
               {/* 🚨 A pretty-printed JSON error object is not an answer for
                   the business owner who pressed Run (2026-08-30). This console
@@ -651,6 +653,7 @@ function QuietGroups({
               {Number(g.failed_count) > 0 ? (
                 <span className="text-[10px] tabular-nums text-destructive">
                   {formatCount(Number(g.failed_count))} failed or interrupted
+                  <ErrorAlchemyMenu />
                 </span>
               ) : null}
               <span className="ml-auto flex items-center gap-1 text-[10px] tabular-nums text-muted-foreground">

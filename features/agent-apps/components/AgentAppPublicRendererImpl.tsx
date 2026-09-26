@@ -714,6 +714,7 @@ function CustomComponentRenderer({
                   <div className="flex-1">
                     <p className="text-sm font-medium text-destructive mb-1">
                       Error
+                      <ErrorAlchemyMenu />
                     </p>
                     <p className="text-sm text-destructive/80">
                       {error.message}

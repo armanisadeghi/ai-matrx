@@ -16,6 +16,7 @@ import { usePageCaptureContribution } from "@/components/agent-copy/page-capture
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { pressSeam, readSeamBoard, type Seam, type SeamBoard, type SeamState } from "./seamSwitches";
 import { CHECKS_COPY_AGAIN_CLEARS, copyAgain } from "./copyAgain";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Pending = { seam: Seam; to: SeamState } | null;
 
@@ -106,7 +107,7 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
   if (problem && !board) {
     return (
       <div className="flex flex-col gap-2 text-sm">
-        <p className="text-destructive">{problem}</p>
+        <p className="text-destructive">{problem} <ErrorAlchemyMenu error={problem} /></p>
         <div>
           <Button variant="outline" size="sm" onClick={() => void load()}>
             Try again

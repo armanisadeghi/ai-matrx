@@ -1038,6 +1038,67 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/decision-review/items/{item_id}/label": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Item Label
+         * @description Record the true answer for one decision answer.
+         */
+        post: operations["post_item_label_decision_review_items__item_id__label_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/decision-review/conversations/label": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Conversation Labels
+         * @description Record one true answer against the latest answer to a question in each
+         *     conversation — the battle verdict column's write.
+         */
+        post: operations["post_conversation_labels_decision_review_conversations_label_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/decision-review/agents/{agent_id}/calibration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Agent Calibration
+         * @description Reliability curve, Brier, kappa and a recommended threshold per version × question.
+         */
+        get: operations["get_agent_calibration_decision_review_agents__agent_id__calibration_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai-tools": {
         parameters: {
             query?: never;
@@ -62581,6 +62642,24 @@ export interface components {
              */
             run_enrich?: boolean;
         };
+        /** ConversationLabelBody */
+        ConversationLabelBody: {
+            /** Conversation Ids */
+            conversation_ids: string[];
+            /** Question */
+            question: string;
+            /** Answer */
+            answer: string;
+        };
+        /** ConversationLabels */
+        ConversationLabels: {
+            /** Labeled */
+            labeled?: components["schemas"]["LabeledItem"][];
+            /** Skipped */
+            skipped?: {
+                [key: string]: string;
+            };
+        };
         /**
          * ConversationRecord
          * @description Conversation row as returned by ``CxConversation.to_dict()``.
@@ -65387,6 +65466,22 @@ export interface components {
             usage: components["schemas"]["DecisionUsage-Input"];
             /** Cost Usd */
             cost_usd: number;
+        };
+        /** DecisionCalibrationReport */
+        DecisionCalibrationReport: {
+            /** Agent Id */
+            agent_id: string;
+            /** Min Labels */
+            min_labels: number;
+            /** Target Precision */
+            target_precision: number;
+            /**
+             * Bins
+             * @default 10
+             */
+            bins?: number;
+            /** Groups */
+            groups?: components["schemas"]["GroupCalibration"][];
         };
         /**
          * DecisionQuestion
@@ -77362,6 +77457,31 @@ export interface components {
              */
             status_page?: "https://status.groovehq.com";
         };
+        /**
+         * GroupCalibration
+         * @description One agent version × one question (optionally narrowed to a model/method).
+         */
+        GroupCalibration: {
+            /** Version */
+            version: number;
+            /** Question */
+            question: string;
+            /** Answer Type */
+            answer_type?: string | null;
+            /**
+             * Items
+             * @default 0
+             */
+            items?: number;
+            /**
+             * Labeled
+             * @default 0
+             */
+            labeled?: number;
+            agreement: components["schemas"]["Calibration"];
+            probability: components["schemas"]["ProbabilityCalibration"];
+            confidence: components["schemas"]["ProbabilityCalibration"];
+        };
         /** GscDailyPoint */
         GscDailyPoint: {
             /**
@@ -84861,6 +84981,14 @@ export interface components {
              */
             duration?: number | null;
         };
+        /** LabelBody */
+        LabelBody: {
+            /**
+             * Answer
+             * @description The true answer, in the question's vocabulary.
+             */
+            answer: string;
+        };
         /** LabelCatalogEntry */
         LabelCatalogEntry: {
             /** Id */
@@ -84949,6 +85077,19 @@ export interface components {
              * @default false
              */
             debug?: boolean;
+        };
+        /** LabeledItem */
+        LabeledItem: {
+            /** Id */
+            id: string;
+            /** Question */
+            question: string;
+            /** Verdict */
+            verdict: string;
+            /** Authority Verdict */
+            authority_verdict: string;
+            /** Agreed */
+            agreed: boolean;
         };
         /**
          * LandedSource
@@ -102576,6 +102717,28 @@ export interface components {
             status_page?: "https://status.prismic.io/";
         };
         /**
+         * ProbabilityCalibration
+         * @description Reliability curve + Brier + expected calibration error + threshold.
+         */
+        ProbabilityCalibration: {
+            /**
+             * Cases
+             * @default 0
+             */
+            cases?: number;
+            /** Accuracy */
+            accuracy?: number | null;
+            /** Mean Predicted */
+            mean_predicted?: number | null;
+            /** Brier Score */
+            brier_score?: number | null;
+            /** Expected Calibration Error */
+            expected_calibration_error?: number | null;
+            /** Bins */
+            bins?: components["schemas"]["ReliabilityBin"][];
+            recommended_threshold?: components["schemas"]["ThresholdRecommendation"] | null;
+        };
+        /**
          * ProbeRound
          * @description ONE round of the Bad Example probe, as the client holds it.
          *
@@ -107540,6 +107703,24 @@ export interface components {
             run_id: string;
             /** Controller Kind */
             controller_kind: string;
+        };
+        /**
+         * ReliabilityBin
+         * @description One bin of the reliability curve. Empty bins are omitted, never zero-filled.
+         */
+        ReliabilityBin: {
+            /** Lower */
+            lower: number;
+            /** Upper */
+            upper: number;
+            /** Count */
+            count: number;
+            /** Mean Predicted */
+            mean_predicted: number;
+            /** Observed Accuracy */
+            observed_accuracy: number;
+            /** Gap */
+            gap: number;
         };
         /** RemoveEdgeOp */
         RemoveEdgeOp: {
@@ -123284,6 +123465,30 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /**
+         * ThresholdRecommendation
+         * @description The lowest cut whose answers at or above it met the target precision.
+         */
+        ThresholdRecommendation: {
+            /** Target Precision */
+            target_precision: number;
+            /** Threshold */
+            threshold?: number | null;
+            /** Precision */
+            precision?: number | null;
+            /** Coverage */
+            coverage?: number | null;
+            /**
+             * Answers At Or Above
+             * @default 0
+             */
+            answers_at_or_above?: number;
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+        };
         /** TidioServiceStatus */
         TidioServiceStatus: {
             /**
@@ -137892,6 +138097,110 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_item_label_decision_review_items__item_id__label_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabelBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabeledItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_conversation_labels_decision_review_conversations_label_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConversationLabelBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationLabels"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_agent_calibration_decision_review_agents__agent_id__calibration_get: {
+        parameters: {
+            query?: {
+                /** @description Only answers from this model. */
+                model?: string | null;
+                /** @description native | verbalized | verbalized_calibrated */
+                method?: string | null;
+            };
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionCalibrationReport"];
                 };
             };
             /** @description Validation Error */

@@ -81,7 +81,7 @@ importers:
         version: 0.58.19(react@19.3.0)
       '@ai-matrx/records-ui':
         specifier: latest
-        version: 0.86.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
+        version: 0.88.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/tap-target':
         specifier: latest
         version: 0.2.14(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1131,6 +1131,18 @@ packages:
       react-dom:
         optional: true
 
+  '@ai-matrx/print@0.8.8':
+    resolution: {integrity: sha512-RBsd0dudXgPdlDWrWz5aBbhd1VmKzPGrV1UNXXkoKbrHBa/jT7IfK96JIYl2zo3EAqxMMAe4wIkCPdQBEswBGw==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+
   '@ai-matrx/realtime@0.8.7':
     resolution: {integrity: sha512-pzGwojb/uLBlYL9d60sq2lR+tdN3gAJA0ZnS2KdIh31z6glIzDbwyP9oub7DXFYn/LlhC/dKfoT0qcwl5l9GKw==}
     engines: {node: '>=20'}
@@ -1143,8 +1155,8 @@ packages:
       react-native:
         optional: true
 
-  '@ai-matrx/records-ui@0.86.0':
-    resolution: {integrity: sha512-246281DPH+L2huDKOCWhxLVpF6SEsVWdh22dcTjf3+K5CpuNnbjUzIcKbH1TP81MU468vRCHFDZRUkctPZgw5Q==}
+  '@ai-matrx/records-ui@0.88.0':
+    resolution: {integrity: sha512-K25de+JwKy20zjZJBVK2jom3swSvmjqa80DZdzFkZNJqa/N3Bb/4y/OREYr504btvevoXSMKJy7algxsuGYjxg==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -12932,15 +12944,50 @@ snapshots:
       - '@types/react-dom'
       - supports-color
 
+  '@ai-matrx/print@0.8.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+    dependencies:
+      '@ai-matrx/content-ir': 0.19.0
+      '@ai-matrx/kit': 0.16.6(react@19.3.0)
+      '@radix-ui/react-dialog': 1.1.23(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      bidi-js: 1.1.0
+      bwip-js: 4.11.4
+      citeproc: 2.4.63
+      docx: 9.7.2
+      fontkit: 2.0.4
+      hast-util-from-html: 2.0.3
+      hast-util-sanitize: 5.0.2
+      hast-util-to-html: 9.0.5
+      html2canvas: 1.4.1
+      hyphen: 1.14.1
+      jspdf: 4.2.1
+      jszip: 3.10.2
+      mathjax-full: 3.2.2
+      mdast-util-from-markdown: 2.0.3
+      mdast-util-gfm: 3.1.0
+      micromark-extension-gfm: 3.0.0
+      pdfmake: 0.3.11
+      qr-code-styling: 1.9.2
+      qrcode: 1.5.4
+      tailwind-merge: 3.7.0
+      vaul: 1.1.2(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      yaml: 2.9.1
+    optionalDependencies:
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
+    transitivePeerDependencies:
+      - '@types/react'
+      - '@types/react-dom'
+      - supports-color
+
   '@ai-matrx/realtime@0.8.7(react@19.3.0)':
     optionalDependencies:
       react: 19.3.0
 
-  '@ai-matrx/records-ui@0.86.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))':
+  '@ai-matrx/records-ui@0.88.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))':
     dependencies:
       '@ai-matrx/alchemy': 0.6.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/design-system': 0.43.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@ai-matrx/print': 0.8.7(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@ai-matrx/print': 0.8.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/records': 0.58.19(react@19.3.0)
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)

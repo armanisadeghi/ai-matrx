@@ -21,8 +21,10 @@ import { AlertTriangle, Check, Loader2 } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectActiveBattleColumns } from "../shared/activeBattleColumns";
-import { selectActiveBattleSetId } from "../redux/selectors";
+import {
+  selectActiveBattleColumns,
+  selectMountedBattleSetId,
+} from "../shared/activeBattleColumns";
 import { readAnswersFromContent } from "../decisions/readColumnAnswers";
 import {
   loadDecisionVerdicts,
@@ -104,7 +106,7 @@ function ColumnAnswerCell({
 
 export function DecisionComparisonTable() {
   const columns = useAppSelector(selectActiveBattleColumns);
-  const setId = useAppSelector(selectActiveBattleSetId);
+  const setId = useAppSelector(selectMountedBattleSetId);
 
   // One subscription to the message map (a stable reference between message
   // writes), then the matrix is derived. Mapping inside the selector would

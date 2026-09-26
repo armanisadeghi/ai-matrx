@@ -11,6 +11,7 @@ import { BookMarked, DatabaseZap, TextCursorInput, type LucideIcon } from "lucid
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { FlagVerdict, MessageFlagKey, MessageFlags } from "./flags";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface FlagToggleState {
   /** Absent (not rendered) — e.g. Prefill on a user message. */
@@ -97,7 +98,7 @@ export function MessageFlagToggles({ flags, states, onToggle, className }: Messa
               <p className="text-muted-foreground">{what}</p>
               <p className="mt-1">{state.verdict.reason}</p>
               {state.placementProblem && (
-                <p className="mt-1 text-amber-600 dark:text-amber-400">{state.placementProblem}</p>
+                <p className="mt-1 text-amber-600 dark:text-amber-400">{state.placementProblem} <ErrorAlchemyMenu error={state.placementProblem} /></p>
               )}
             </TooltipContent>
           </Tooltip>

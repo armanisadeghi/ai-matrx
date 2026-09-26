@@ -37,10 +37,14 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   createComparisonSet,
   loadComparisonSet,
-  renameComparisonSet,
   replaceEntries,
   type UpsertEntryInput,
 } from "@/features/agent-comparison/service/comparisonSetsService";
+import {
+  createBattlePersistence,
+  persistForRun,
+  type BattleSubmitResult,
+} from "@/features/agent-comparison/shared/battlePersistence";
 import {
   addSettingsColumn,
   removeSettingsColumn,
@@ -308,7 +312,7 @@ export const removeColumnFromSettingsBattle = createAsyncThunk<
  * input is the constant, the settings are the varied dimension.
  */
 export const submitAllSettings = createAsyncThunk<
-  { launched: number; failed: number; skipped: number },
+  BattleSubmitResult,
   void,
   ThunkApi
 >("agentComparisonSettings/submitAll", async (_arg, { dispatch, getState }) => {
@@ -333,6 +337,16 @@ export const submitAllSettings = createAsyncThunk<
       );
     }
 
+    // The battle gets (or keeps) its identity BEFORE the runs start, so the
+    // URL names it while the answers stream in. Nothing in a saved entry
+    // changes during a run, so there is no second save afterwards.
+    const persisted = await persistForRun(() =>
+      dispatch(persistSettingsBattle()).unwrap(),
+    );
+    if (persisted.cancelled) {
+      return { launched: 0, failed: 0, skipped: columns.length, cancelled: true };
+    }
+
     const results = await Promise.allSettled(
       columns.map((col) =>
         dispatch(
@@ -348,24 +362,7 @@ export const submitAllSettings = createAsyncThunk<
     const launched = results.length - failed;
 
     // Persist entries when a set is active.
-    const post = getState();
-    const activeSetId = post.agentComparisonSettings.activeSetId;
-    if (activeSetId) {
-      const entries = buildSettingsEntries(post);
-      try {
-        await replaceEntries(activeSetId, entries);
-        // Update set metadata with the latest locked snapshot.
-        await renameComparisonSet(
-          activeSetId,
-          post.agentComparisonSettings.activeSetName ?? "Untitled comparison",
-        );
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error("[settings] failed to persist comparison entries:", err);
-      }
-    }
-
-    return { launched, failed, skipped: 0 };
+    return { launched, failed, skipped: 0, persistError: persisted.error };
   } finally {
     dispatch(submitAllFinished());
   }
@@ -519,16 +516,20 @@ export const saveSettingsBattleAs = createAsyncThunk<
   },
 );
 
-export const saveSettingsBattle = createAsyncThunk<void, void, ThunkApi>(
-  "agentComparisonSettings/save",
-  async (_arg, { getState }) => {
-    const state = getState();
-    const setId = state.agentComparisonSettings.activeSetId;
-    if (!setId) throw new Error("No active comparison set");
-    const entries = buildSettingsEntries(state);
-    await replaceEntries(setId, entries);
-  },
-);
+const settingsPersistence = createBattlePersistence({
+  typePrefix: "agentComparisonSettings",
+  modeLabel: "Settings battle",
+  selectActiveSetId: (state) => state.agentComparisonSettings.activeSetId,
+  selectActiveSetName: (state) => state.agentComparisonSettings.activeSetName,
+  selectNamingAgentId: (state) => state.agentComparisonSettings.locked.agentId,
+  buildMetadata: buildSetMetadata,
+  buildEntries: buildSettingsEntries,
+  setActive: setActiveSettingsSet,
+});
+
+/** Create this battle on first call; afterwards keep its setup and columns current. */
+export const persistSettingsBattle = settingsPersistence.persist;
+export const renameSettingsBattle = settingsPersistence.rename;
 
 interface LoadedLockedSpec {
   agent_id: string | null;

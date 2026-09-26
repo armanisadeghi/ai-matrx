@@ -15,7 +15,7 @@ import {
   StatRow,
   StatSection,
   fmtCost,
-  fmtMs,
+  fmtServerSeconds,
   fmtTokens,
   getUserRequestResult,
   makeSelectLastConversationRequest,
@@ -101,9 +101,9 @@ export function RequestStatsPanel({
 
       <StatSection title="Cost & duration">
         <StatRow label="Cost" value={fmtCost(usage?.total_cost)} />
-        <StatRow label="Total" value={fmtMs(timing?.total_duration)} />
-        <StatRow label="API" value={fmtMs(timing?.api_duration)} />
-        <StatRow label="Tools" value={fmtMs(timing?.tool_duration)} />
+        <StatRow label="Total" value={fmtServerSeconds(timing?.total_duration)} />
+        <StatRow label="API" value={fmtServerSeconds(timing?.api_duration)} />
+        <StatRow label="Tools" value={fmtServerSeconds(timing?.tool_duration)} />
       </StatSection>
 
       <StatSection title="Tools">

@@ -89,6 +89,7 @@ import {
   type SortCase,
   type SortPile,
 } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Phase = "setup" | "sorting" | "boundary" | "done";
 type CaseDoor = "paste" | "sheet" | "records" | "write";
@@ -620,6 +621,7 @@ export function SortingTablePage({
           <p className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-400">
             <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
             {knobs.problem}
+            <ErrorAlchemyMenu error={knobs.problem} />
           </p>
         ) : null}
 
@@ -857,6 +859,7 @@ export function SortingTablePage({
           <p className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-400">
             <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
             {problem}
+            <ErrorAlchemyMenu error={problem} />
           </p>
         ) : null}
 
@@ -917,6 +920,7 @@ export function SortingTablePage({
             <p className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-400">
               <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
               {problem}
+              <ErrorAlchemyMenu error={problem} />
             </p>
           ) : null}
           <div className="flex flex-col gap-2 sm:flex-row-reverse">
@@ -1107,6 +1111,7 @@ export function SortingTablePage({
               save. Nothing of yours was written for{" "}
               {failures.length === 1 ? "it" : "them"} — sort another round and
               say it again.
+              <ErrorAlchemyMenu />
             </p>
           ) : null}
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -1334,6 +1339,7 @@ function LastAnswerStatus({ state }: { state: SaveState | undefined }) {
       <span className="flex items-center gap-1.5 text-sm text-amber-700 dark:text-amber-400">
         <TriangleAlert className="h-4 w-4" />
         Last one didn't save
+        <ErrorAlchemyMenu />
       </span>
     );
   }

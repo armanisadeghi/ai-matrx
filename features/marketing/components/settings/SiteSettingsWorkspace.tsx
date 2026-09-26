@@ -58,6 +58,7 @@ import {
 } from "@/features/marketing/data/collection-status";
 import { buildCrawlPolicyWriteHandlers } from "@/features/marketing/components/settings/crawl-policy-writes";
 import { Textarea } from "@/components/ui/textarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // crawl_defaults round-trips ONLY through features/marketing/crawler/crawl-defaults.ts.
 
@@ -619,6 +620,7 @@ function PatternSetting({
           {problems
             .map((problem) => `${problem.pattern}: ${problem.error}`)
             .join(" · ")}
+          <ErrorAlchemyMenu />
         </p>
       ) : (
         <p className="text-[10px] leading-4 text-muted-foreground">{detail}</p>

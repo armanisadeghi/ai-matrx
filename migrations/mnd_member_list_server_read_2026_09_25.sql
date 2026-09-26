@@ -21,7 +21,7 @@
 --   'counts'  → { mine, orgs, system, orgs_narrow: [{ id, label, count }] }
 --   'facets'  → { <column id>: [{ value, count }] }
 --
--- SCOPES (creator/home, per common-docs/systems/intelligence/mandates/UI-REGISTER.md):
+-- SCOPES (creator/home, per common-docs/systems/mandates/UI-REGISTER.md):
 --   person:        mine    created by me
 --                  orgs    homed in one of my (non-personal) organizations,
 --                          narrowable to one with p_org_id

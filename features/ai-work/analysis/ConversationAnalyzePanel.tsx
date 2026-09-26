@@ -31,6 +31,7 @@ import {
   CONVERSATION_ANALYSIS_KINDS,
   type ConversationAnalysisKind,
 } from "./catalog";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type RunState =
   | { phase: "idle" }
@@ -160,6 +161,7 @@ export function ConversationAnalyzePanel({
                 <p className="mt-2 flex items-start gap-1.5 border-t border-border pt-2 text-xs text-destructive">
                   <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   {state.message}
+                  <ErrorAlchemyMenu error={state.message} />
                 </p>
               ) : null}
             </li>

@@ -1327,6 +1327,7 @@ function SearchTab({
                   >
                     {" "}
                     · rerank failed — fusion order
+                    <ErrorAlchemyMenu />
                   </span>
                 )}
               </div>

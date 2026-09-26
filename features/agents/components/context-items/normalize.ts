@@ -18,7 +18,8 @@ import {
   webpageTitle,
   webpageUrl,
 } from "@/features/resource-manager/webpage/webpage-snapshot";
-import { resolveContextItemDef } from "./registry";
+import { hasContextItemDef, resolveContextItemDef } from "./registry";
+import { referenceRoleCaption } from "@/features/agents/image-roles/roles";
 import type { FileIdentityHint, Visibility } from "@/features/files/types";
 import type {
   ContextBookmark,
@@ -431,25 +432,33 @@ export function normalizeResource(
   });
 }
 
-const NON_ATTACHMENT_PART_TYPES = new Set([
-  "text",
-  "thinking",
-  "tool_call",
-  "tool_result",
-  "code_exec",
-  "code_result",
-  "web_search",
-  // The decision modality. The ANSWERS are the turn's whole content — a
-  // decision holder writes no text — and the QUESTIONS are what was asked, not
-  // a file. Both render through the content-IR kind pipeline
-  // (normalize-content-blocks.ts). Leaving them here gave the person a chip
-  // reading "Attachment" over a real verdict with probabilities.
-  "decision_answers",
-  "decision_questions",
-]);
+/**
+ * The context-item block type a persisted part would render as — a media part
+ * is keyed by its `kind` (YouTube by `youtube_video`), every other part by its
+ * own `type`.
+ */
+export function attachmentBlockTypeOf(part: MessagePart): string | null {
+  const partType = (part as { type?: unknown }).type;
+  if (typeof partType !== "string" || !partType) return null;
+  if (partType !== "media") return partType;
+  const kind = (part as { kind?: unknown }).kind;
+  if (kind === "youtube") return "youtube_video";
+  return typeof kind === "string" && kind ? kind : "media";
+}
 
+/**
+ * A persisted part is an ATTACHMENT (a chip on the strip) exactly when the
+ * context-item registry has a def for its block type. Everything else — text,
+ * reasoning, tool calls, the decision kinds, speech_script, and any kind the
+ * server adds tomorrow — is message BODY and renders through the content
+ * pipeline (`persistedBodyBlocks` → BlockRenderer), where an unregistered kind
+ * lands on the honest Unknown Data Event block instead of a fake chip.
+ * `text` has a def (for editor snippets) but is never an attachment.
+ */
 export function isAttachmentMessagePart(part: MessagePart): boolean {
-  return !!part.type && !NON_ATTACHMENT_PART_TYPES.has(part.type);
+  const blockType = attachmentBlockTypeOf(part);
+  if (!blockType || blockType === "text") return false;
+  return hasContextItemDef(blockType);
 }
 
 /** Media kinds that an assistant turn renders INLINE (player / lightbox), not
@@ -488,7 +497,7 @@ export function normalizeMessagePart(
         : (part.kind ?? "media")
       : partType;
   const def = resolveContextItemDef(blockType);
-  return expand(blockType, isRecord(part) ? part : null, {
+  const items = expand(blockType, isRecord(part) ? part : null, {
     baseId: `part-${index}`,
     blockType,
     typeLabel: def.typeLabel,
@@ -499,4 +508,15 @@ export function normalizeMessagePart(
     editable: false,
     raw: part,
   });
+  // A media reference keeps its role + `@name` on the chip after reload
+  // ("Subject reference · shoe.png"). Both are top-level part fields.
+  const caption =
+    partType === "media"
+      ? referenceRoleCaption(
+          (part as { role?: unknown }).role,
+          (part as { name?: unknown }).name,
+        )
+      : null;
+  if (!caption) return items;
+  return items.map((item) => ({ ...item, title: `${caption} · ${item.title}` }));
 }

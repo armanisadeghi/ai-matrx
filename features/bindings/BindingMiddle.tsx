@@ -80,6 +80,7 @@ import {
   sourcesFor,
 } from "./consumption-writer";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface BindingMiddleProps {
   /** Agent or workflow — only the wording of the "own default" source differs. */
@@ -278,6 +279,7 @@ export function BindingMiddleRow({
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               Source selection: Missing — pick the offered value that should
               feed this input, or remove the source.
+              <ErrorAlchemyMenu />
             </p>
           ) : null}
 

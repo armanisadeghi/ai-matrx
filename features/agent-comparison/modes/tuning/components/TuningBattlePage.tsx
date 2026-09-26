@@ -33,7 +33,6 @@ import {
 } from "@/components/ui/resizable";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { SharedRunsWindow } from "@/features/agent-comparison/components/SharedRunsWindow";
-import { ModePicker } from "@/features/agent-comparison/shared/ModePicker";
 import {
   reorderTuningColumns,
   setTuningColumnCollapsed,
@@ -42,8 +41,16 @@ import {
   selectSourceAgentId,
   selectTuningColumnIds,
   selectTuningColumns,
+  selectActiveTuningSetId,
 } from "../redux/selectors";
-import { addColumnToTuningBattle } from "../redux/thunks";
+import {
+  addColumnToTuningBattle,
+  loadTuningBattleSet,
+} from "../redux/thunks";
+import {
+  BattleRouteNotice,
+  useBattleRoute,
+} from "@/features/agent-comparison/shared/useBattleRoute";
 import { LockedInputSection } from "./LockedInputSection";
 import { TuningColumn } from "./TuningColumn";
 import { TuningToolbar } from "./TuningToolbar";
@@ -51,8 +58,15 @@ import type { TuningColumn as TuningColumnType } from "../types";
 
 const RUNS_WINDOW_ID = "agent-comparison-tuning-runs";
 
-export function TuningBattlePage() {
+export function TuningBattlePage({ setId = null }: { setId?: string | null }) {
   const dispatch = useAppDispatch();
+  const activeSetId = useAppSelector(selectActiveTuningSetId);
+  const routeStatus = useBattleRoute({
+    mode: "tuning",
+    urlSetId: setId,
+    activeSetId,
+    load: (id) => dispatch(loadTuningBattleSet({ setId: id })).unwrap(),
+  });
   const columns = useAppSelector(selectTuningColumns);
   const columnIds = useAppSelector(selectTuningColumnIds);
   const sourceAgentId = useAppSelector(selectSourceAgentId);
@@ -77,11 +91,12 @@ export function TuningBattlePage() {
       className="h-full flex flex-col overflow-hidden"
       style={{ paddingTop: "var(--shell-header-h)" }}
     >
-      <ModePicker />
       <TuningToolbar
         runsWindowOpen={runsWindowOpen}
         onToggleRunsWindow={() => setRunsWindowOpen((v) => !v)}
       />
+
+      <BattleRouteNotice status={routeStatus} mode="tuning" />
 
       <LockedInputSection />
 

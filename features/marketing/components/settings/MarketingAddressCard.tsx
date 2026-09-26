@@ -27,6 +27,7 @@ import {
   marketingKeyProblem,
   pathWithMarketingSegment,
 } from "@/features/marketing/lib/keys";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface MarketingAddressCardProps {
   /** Card heading — "Brand address" / "Website address". */
@@ -172,7 +173,7 @@ export function MarketingAddressCard({
               </Button>
             </div>
             {problem ? (
-              <p className="text-[11px] text-destructive">{problem}</p>
+              <p className="text-[11px] text-destructive">{problem} <ErrorAlchemyMenu error={problem} /></p>
             ) : (
               <p className="text-[11px] text-muted-foreground">
                 Lowercase letters, numbers and hyphens. The old address keeps

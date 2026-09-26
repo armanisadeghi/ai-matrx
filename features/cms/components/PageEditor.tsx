@@ -735,6 +735,7 @@ export default function PageEditor({
                 <span className="text-xs text-destructive flex items-center gap-1">
                   <AlertCircle className="h-3 w-3" />
                   Error
+                  <ErrorAlchemyMenu />
                 </span>
               )}
 

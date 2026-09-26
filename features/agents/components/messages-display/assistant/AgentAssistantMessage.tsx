@@ -61,8 +61,8 @@ import {
   isFailedRecord,
   extractRecordError,
   selectIsLatestAssistantMessage,
+  persistedBodyBlocks,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
-import { normalizeContentBlocks } from "@/features/agents/redux/execution-system/utils/normalize-content-blocks";
 import {
   isAttachmentMessagePart,
   isInlineAssistantMedia,
@@ -307,13 +307,11 @@ export function AgentAssistantMessage({
       "tool_call",
       "tool_result",
     ]);
-    const mediaBlocks = extractContentBlocks(record).filter(
-      (b) =>
-        !EXCLUDED.has(b.type ?? "") &&
-        (!isAttachmentMessagePart(b) || isInlineAssistantMedia(b)),
-    );
-    if (mediaBlocks.length === 0) return undefined;
-    return normalizeContentBlocks(mediaBlocks);
+    const blocks = persistedBodyBlocks(record, {
+      isSelfRendered: (part) => EXCLUDED.has(part.type ?? ""),
+      keepAttachmentInline: isInlineAssistantMedia,
+    });
+    return blocks.length === 0 ? undefined : blocks;
   }, [record]);
 
   // Inline edits inside the body (inline-decision resolve, code-block save,

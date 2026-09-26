@@ -243,10 +243,12 @@ function buildHydratedResult(row: HydratedRequestRow): Record<string, unknown> {
         total_requests: 0,
       },
     },
+    // The wire's timing_stats are SECONDS; the stored row is milliseconds.
+    // Writing ms here made a reloaded run read 1000x longer than a live one.
     timing_stats: {
-      total_duration: row.totalDurationMs ?? 0,
-      api_duration: row.apiDurationMs ?? 0,
-      tool_duration: row.toolDurationMs ?? 0,
+      total_duration: (row.totalDurationMs ?? 0) / 1000,
+      api_duration: (row.apiDurationMs ?? 0) / 1000,
+      tool_duration: (row.toolDurationMs ?? 0) / 1000,
     },
     tool_call_stats: {
       total_tool_calls: row.totalToolCalls,

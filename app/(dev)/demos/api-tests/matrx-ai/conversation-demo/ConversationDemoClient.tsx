@@ -37,6 +37,7 @@ import { toast } from "@/lib/toast";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { useServerConfig } from "../_shared/useServerConfig";
 import { ServerBar } from "../_shared/ServerBar";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -150,6 +151,7 @@ function TurnBubble({ turn }: { turn: ConvTurn }) {
           </p>
           <div className="bg-destructive/10 border border-destructive/20 rounded p-2 text-xs text-destructive font-mono">
             {turn.content}
+            <ErrorAlchemyMenu />
           </div>
         </div>
       </div>

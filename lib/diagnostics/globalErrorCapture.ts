@@ -22,6 +22,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { isKnownThirdPartyNoise } from "@/lib/console-noise";
 import { isChunkLoadError } from "@/components/errors/chunk-load-recovery";
 import { isStructuredConsoleMirrorActive } from "./structuredConsoleMirror";
+import { installAppApiFetchCapture } from "@/lib/diagnostics/captureAppApiFetch";
 
 let installed = false;
 /** Guards against capturing a console.error that fires from inside capture. */
@@ -177,6 +178,7 @@ export function isOpaqueCrossOriginScriptError(event: {
 export function installGlobalErrorCapture(): void {
   if (installed || typeof window === "undefined") return;
   installed = true;
+  installAppApiFetchCapture();
 
   // ── Uncaught runtime exceptions ──────────────────────────────────────────
   window.addEventListener("error", (event: ErrorEvent) => {

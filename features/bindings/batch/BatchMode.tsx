@@ -73,6 +73,7 @@ import { PlacesBatchGrid } from "./PlacesBatchGrid";
 import { PlacesSelector, type SelectablePlace } from "./PlacesSelector";
 import { usePlaceOffers } from "./usePlaceOffers";
 import { offeredValuesToSurfaceValues } from "../offered-adapter";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface BatchModeProps {
   rung: BindingRung;
@@ -621,6 +622,7 @@ export function BatchMode({
       <p className="flex items-start gap-1.5 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-[12px] text-destructive">
         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         {console_.message}
+        <ErrorAlchemyMenu error={console_.message} />
       </p>
     );
   }

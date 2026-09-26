@@ -15,6 +15,7 @@ import { ImageIcon, Clapperboard, FileText, AudioLines, ExternalLink, BrainCircu
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import type { MediaSlot, PodcastRunState } from "@/features/podcasts/generator/types";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function StreamingResults({ state }: { state: PodcastRunState }) {
   const hasMeta = !!state.title || !!state.description;
@@ -195,6 +196,7 @@ function AssetSlot({ slot, aspect }: { slot: MediaSlot; aspect: string }) {
           <span className="text-xs font-medium text-destructive/80">
             Couldn&apos;t render
           </span>
+          <ErrorAlchemyMenu />
         </div>
       ) : (
         // pending / running — a shimmering placeholder with the prompt teased.

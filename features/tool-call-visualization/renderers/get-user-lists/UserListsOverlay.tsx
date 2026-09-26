@@ -24,6 +24,7 @@ import { useOpenStructuredListManagerV2Window } from "@/features/overlays/opener
 import { EntityOpenActions } from "../_shared-entity/EntityOpenActions";
 import { getArg, resultAsObject } from "../_shared";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface UserList {
     id: string;
@@ -162,7 +163,7 @@ export const UserListsOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
         return (
             <div className="p-8 text-center">
                 <List className="w-12 h-12 mx-auto text-destructive mb-3" />
-                <p className="text-destructive font-medium">Failed to retrieve lists</p>
+                <p className="text-destructive font-medium">Failed to retrieve lists <ErrorAlchemyMenu /></p>
             </div>
         );
     }

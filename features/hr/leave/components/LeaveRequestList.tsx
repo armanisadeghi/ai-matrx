@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils";
 import { cancelLeaveRequest, discardLeaveRequest } from "../api/service";
 import type { LeaveRequestState, MyLeaveRequest } from "../api/types";
 import { formatHours } from "./LeaveBalanceBlock";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The frozen enum, said in words. §12 LAW 3a: no cell prints a type name. */
 const STATE_WORDS: Record<LeaveRequestState, string> = {
@@ -282,6 +283,7 @@ export function LeaveRequestList({ requests, onChanged }: LeaveRequestListProps)
                         {hard.map((f, i) => (
                           <li key={f.code ?? i} className="text-sm text-destructive/90">
                             {f.message ?? "No detail was recorded for this finding."}
+                            <ErrorAlchemyMenu error={f.message} />
                           </li>
                         ))}
                       </ul>

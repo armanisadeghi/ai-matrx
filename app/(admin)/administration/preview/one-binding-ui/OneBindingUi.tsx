@@ -51,6 +51,7 @@ import {
   type HolderInput,
   type SourceMode,
 } from "./mock";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const MODES: { id: SourceMode; label: string; icon: typeof Rocket }[] = [
   { id: "holder_default", label: "Mandate Holder Default", icon: Rocket },
@@ -497,6 +498,7 @@ function MappingRow({ input }: { input: HolderInput }) {
               <p className="flex items-start gap-1 text-[10px] leading-snug text-destructive">
                 <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
                 {input.problem}
+                <ErrorAlchemyMenu error={input.problem} />
               </p>
             )}
           </div>

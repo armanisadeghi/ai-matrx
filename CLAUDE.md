@@ -155,7 +155,7 @@ Non-obvious homes: live `/chat` → [`features/agents/components/chat/FEATURE.md
 
 ## UI / UX standards
 
-- **Icons:** Lucide only. **No emojis** anywhere a user can see. 🚨 **No Sparkles for AI** — use `BrainCircuit`; existing Sparkles are fix-on-sight in files you touch.
+- **Icons:** Lucide only. **No emojis** anywhere a user can see. 🚨 **No Sparkles for AI**; existing Sparkles are fix-on-sight in files you touch. 🚨 **Domain icons are reserved** ([`components/icons/domain-icons.ts`](./components/icons/domain-icons.ts)): `INTELLIGENCE_ICON` (lucide `BrainCircuit`) means Intelligence/Mandates ONLY — never generic "AI" (guard `pnpm check:reserved-icons`); Agents use `AGENT_ICON` (lucide `Webhook`).
 - **Colors:** semantic tokens only (`bg-card`, `text-muted-foreground`, `border-border`, …; `bg-textured` for main backgrounds); tokens/elevations/gradients in `app/globals.css`; mapping in `.claude/skills/ui-dense/data-dense-rules.md` §1. Loading: component-library loading states, never plain "Loading…".
 - **Don't wrap a component in wrappers** — a host frame either IS the chrome or has none; no second border/background/padding around a component that carries its own (exemplar: `LiveRunDisplay` `variant="bare"`).
 - **Scroll chains:** `flex-1 min-h-0` bounds a scroll area only if EVERY ancestor is `flex flex-col` (the breaking wrapper is usually in another file). Guards: `pnpm check:scroll-chain` + `useClippedContentGuard` (`lib/layout/`) — every new scroll surface consumes the runtime guard.

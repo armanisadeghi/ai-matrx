@@ -34,6 +34,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { ADMIN_KIND_REGISTRY_SURFACE_NAME } from "@/features/surfaces/manifests/admin-kind-registry.manifest";
 import { buildAdminKindDetailScope } from "@/features/content-ir/admin/kind-registry-scope";
 import SandboxAuthoringRules from "@/features/content-ir/studio/components/SandboxAuthoringRules";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface KindComponentCodeTabProps {
   detail: KindDetailData;
@@ -115,6 +116,7 @@ export default function KindComponentCodeTab({
     return (
       <div className="mx-auto max-w-4xl rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
         {loadState.message}
+        <ErrorAlchemyMenu error={loadState.message} />
       </div>
     );
   }

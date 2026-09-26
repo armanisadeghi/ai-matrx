@@ -47,10 +47,14 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   createComparisonSet,
   loadComparisonSet,
-  renameComparisonSet,
   replaceEntries,
   type UpsertEntryInput,
 } from "@/features/agent-comparison/service/comparisonSetsService";
+import {
+  createBattlePersistence,
+  persistForRun,
+  type BattleSubmitResult,
+} from "@/features/agent-comparison/shared/battlePersistence";
 import { forkAgentForVariant } from "@/features/agent-comparison/shared/forkAgentForVariant";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import {
@@ -458,7 +462,7 @@ export const promoteVariationToAgent = createAsyncThunk<
 // =============================================================================
 
 export const submitAllVariations = createAsyncThunk<
-  { launched: number; failed: number; skipped: number },
+  BattleSubmitResult,
   void,
   ThunkApi
 >(
@@ -488,6 +492,16 @@ export const submitAllVariations = createAsyncThunk<
         );
       }
 
+      // The battle gets (or keeps) its identity BEFORE the runs start, so the
+      // URL names it while the answers stream in. Nothing in a saved entry
+      // changes during a run, so there is no second save afterwards.
+      const persisted = await persistForRun(() =>
+        dispatch(persistVariationsBattle()).unwrap(),
+      );
+      if (persisted.cancelled) {
+        return { launched: 0, failed: 0, skipped: allColumns.length, cancelled: true };
+      }
+
       const results = await Promise.allSettled(
         columns.map((col) =>
           dispatch(
@@ -502,22 +516,7 @@ export const submitAllVariations = createAsyncThunk<
       const failed = results.filter((r) => r.status === "rejected").length;
       const launched = results.length - failed;
 
-      const post = getState();
-      const activeSetId = post.agentComparisonVariations.activeSetId;
-      if (activeSetId) {
-        try {
-          await replaceEntries(activeSetId, buildVariationEntries(post));
-          await renameComparisonSet(
-            activeSetId,
-            post.agentComparisonVariations.activeSetName ??
-              "Untitled comparison",
-          );
-        } catch (err) {
-          console.error("[variations] failed to persist entries:", err);
-        }
-      }
-
-      return { launched, failed, skipped: pausedSkipped };
+      return { launched, failed, skipped: pausedSkipped, persistError: persisted.error };
     } finally {
       dispatch(submitAllFinished());
     }
@@ -679,15 +678,20 @@ export const saveVariationsBattleAs = createAsyncThunk<
   },
 );
 
-export const saveVariationsBattle = createAsyncThunk<void, void, ThunkApi>(
-  "agentComparisonVariations/save",
-  async (_arg, { getState }) => {
-    const state = getState();
-    const setId = state.agentComparisonVariations.activeSetId;
-    if (!setId) throw new Error("No active comparison set");
-    await replaceEntries(setId, buildVariationEntries(state));
-  },
-);
+const variationsPersistence = createBattlePersistence({
+  typePrefix: "agentComparisonVariations",
+  modeLabel: "Variations battle",
+  selectActiveSetId: (state) => state.agentComparisonVariations.activeSetId,
+  selectActiveSetName: (state) => state.agentComparisonVariations.activeSetName,
+  selectNamingAgentId: (state) => state.agentComparisonVariations.locked.sourceAgentId,
+  buildMetadata: buildSetMetadata,
+  buildEntries: buildVariationEntries,
+  setActive: setActiveVariationsSet,
+});
+
+/** Create this battle on first call; afterwards keep its setup and columns current. */
+export const persistVariationsBattle = variationsPersistence.persist;
+export const renameVariationsBattle = variationsPersistence.rename;
 
 interface LoadedLockedSpec {
   source_agent_id: string | null;

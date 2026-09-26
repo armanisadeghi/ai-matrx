@@ -42,6 +42,7 @@ import { discussFinding, discussReview, getReviewThread } from "../api";
 import type { DiscussResult } from "../types";
 import { ThreadMessageRow } from "./ThreadMessageRow";
 import { fmtCost, fmtElapsed } from "./tokens";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function Elapsed({ startedAt }: { startedAt: number }) {
   const [elapsed, setElapsed] = useState(0);
@@ -163,6 +164,7 @@ export function DiscussPanel({
         <div className="rounded-md border border-red-500/40 bg-red-500/10 p-2 text-xs text-red-600 dark:text-red-400">
           {lastResult.reason ?? "The reviewer could not answer that."} Your
           message is still below — edit it and try again.
+          <ErrorAlchemyMenu />
         </div>
       )}
 

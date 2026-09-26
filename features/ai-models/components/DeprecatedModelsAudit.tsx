@@ -786,6 +786,7 @@ export default function DeprecatedModelsAudit({
                     className="text-[11px] font-medium text-destructive"
                   >
                     Couldn&apos;t replace
+                    <ErrorAlchemyMenu />
                   </span>
                 )}
                 <Button

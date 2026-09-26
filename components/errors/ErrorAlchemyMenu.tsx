@@ -37,6 +37,8 @@ export type ErrorAlchemyMenuProps = {
   unsavedInput?: unknown;
   error?: unknown;
   details?: Record<string, unknown>;
+  /** The tables / RPCs this box's failed call used — pins the captured request. */
+  calls?: readonly string[];
   size?: "xs" | "icon" | "sm";
   className?: string;
   /** The toast/alert label; defaults to the error's title. */
@@ -99,6 +101,7 @@ export function ErrorAlchemyMenu({
   unsavedInput,
   error,
   details,
+  calls,
 }: ErrorAlchemyMenuProps) {
   const surface = useErrorSurfaceSnapshot();
   const self = useRef<HTMLSpanElement | null>(null);
@@ -113,6 +116,10 @@ export function ErrorAlchemyMenu({
       ...(error !== undefined ? { error } : {}),
       ...(details ? { details } : {}),
     }));
+  const withCalls = (base: ErrorAlchemyInput): ErrorAlchemyInput =>
+    calls && !base.calls ? { ...base, calls } : base;
+  const resolved: NonNullable<ErrorAlchemyMenuProps["input"]> = () =>
+    withCalls(typeof input === "function" ? input() : input);
   const staticTitle = typeof input === "function" ? undefined : input.title;
   return (
     <span
@@ -126,9 +133,9 @@ export function ErrorAlchemyMenu({
         size={size}
         stopPropagation
         label={label ?? staticTitle ?? "Error"}
-        human={() => buildErrorHumanText(resolve(input))}
-        json={() => buildErrorAlchemyPayload(resolve(input), surface.read()).data}
-        agent={() => buildErrorAlchemyPayload(resolve(input), surface.read())}
+        human={() => buildErrorHumanText(resolve(resolved))}
+        json={() => buildErrorAlchemyPayload(resolve(resolved), surface.read()).data}
+        agent={() => buildErrorAlchemyPayload(resolve(resolved), surface.read())}
         agentVariant={{
           id: "error",
           label: "Error for AI",
@@ -142,7 +149,7 @@ export function ErrorAlchemyMenu({
             hint: "The same error report wrapped in a diagnose-and-fix instruction",
             section: "ai",
             build: () =>
-              buildErrorFixPrompt(resolve(input), surface.read(), {
+              buildErrorFixPrompt(resolve(resolved), surface.read(), {
                 url: typeof window !== "undefined" ? window.location.href : undefined,
                 route: typeof window !== "undefined" ? window.location.pathname : undefined,
               }),
@@ -158,6 +165,51 @@ export function ErrorAlchemyMenu({
  * pass their words as children (a destructive `Alert`). The menu's own text is
  * excluded; a `[data-error-title]` / heading child becomes the title.
  */
+const BLOCK_TAGS = new Set([
+  "P", "DIV", "LI", "UL", "OL", "SECTION", "ARTICLE", "HEADER", "FOOTER", "PRE",
+  "BLOCKQUOTE", "DD", "DT", "DL", "TR", "TABLE", "H1", "H2", "H3", "H4", "H5", "H6",
+]);
+
+/**
+ * The words of a subtree, one entry per block element — `textContent` runs
+ * sibling paragraphs together ("couldn't loadYour workspace…", RC-B12 R2-3).
+ */
+function blockTexts(root: Node): string[] {
+  const blocks: string[] = [];
+  let current = "";
+  const flush = () => {
+    const text = current.replace(/\s+/g, " ").trim();
+    if (text) blocks.push(text);
+    current = "";
+  };
+  const walk = (node: Node) => {
+    if (node.nodeType === 3) {
+      current += node.textContent ?? "";
+      return;
+    }
+    if (node.nodeType !== 1) return;
+    const tag = (node as Element).tagName;
+    if (tag === "BR") {
+      flush();
+      return;
+    }
+    const block = BLOCK_TAGS.has(tag);
+    if (block) flush();
+    node.childNodes.forEach(walk);
+    if (block) flush();
+  };
+  walk(root);
+  flush();
+  return blocks;
+}
+
+/** Blocks joined as sentences: a block that ends without punctuation gets a period. */
+function joinBlocks(blocks: string[]): string {
+  return blocks
+    .map((text, i) => (i < blocks.length - 1 && !/[.!?:;…]$/.test(text) ? `${text}.` : text))
+    .join(" ");
+}
+
 export function readRenderedError(root: Element | null): ErrorAlchemyInput {
   if (!root) return { message: "An error is shown on this page.", source: "alert" };
   const clone = root.cloneNode(true) as Element;
@@ -166,11 +218,14 @@ export function readRenderedError(root: Element | null): ErrorAlchemyInput {
     .querySelectorAll("[data-error-alchemy-menu], button, [role=button]")
     .forEach((n) => n.remove());
   const titleEl = clone.querySelector("[data-error-title], h1, h2, h3, h4, h5, h6");
-  const title = titleEl?.textContent?.trim() || undefined;
+  let title = titleEl ? joinBlocks(blockTexts(titleEl)) || undefined : undefined;
   titleEl?.remove();
-  const message =
-    (clone.textContent ?? "").replace(/\s+/g, " ").trim() ||
-    title ||
-    "An error is shown on this page.";
+  let blocks = blockTexts(clone);
+  // No heading: a short first block followed by more is the box's title.
+  if (!title && blocks.length > 1 && blocks[0].length <= 100) {
+    title = blocks[0];
+    blocks = blocks.slice(1);
+  }
+  const message = joinBlocks(blocks) || title || "An error is shown on this page.";
   return { title: message === title ? undefined : title, message, source: "alert" };
 }

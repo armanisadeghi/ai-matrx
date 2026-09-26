@@ -349,6 +349,7 @@ export function AiMatrxReplyComposer({
           <span className="min-w-0">
             <span className="block font-medium text-destructive">
               {send.message}
+              <ErrorAlchemyMenu error={send.message} />
             </span>
             <span className="mt-0.5 block text-foreground">
               {send.nextStep}

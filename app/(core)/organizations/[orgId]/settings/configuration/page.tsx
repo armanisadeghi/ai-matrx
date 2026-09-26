@@ -13,6 +13,7 @@ import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { UniversalSettingsProvider, useUniversalSettings } from "@/features/settings/universal/UniversalSettingsContext";
 import { UniversalSettingsRows } from "@/features/settings/universal/UniversalSettingsPane";
 import { Skeleton } from "@ai-matrx/design-system";
+import { ConfigurationExport } from "@/features/settings/universal/ConfigurationExport";
 
 function OrganizationConfigurationRows() {
   const settings = useUniversalSettings();
@@ -55,6 +56,7 @@ export default function OrgConfigurationPage() {
           HR settings live on <Link className="underline" href={hrSettingsHref(null, { org: organizationId })}>their own page</Link>.
         </p>
         {!canEdit && <p className="mt-2 text-muted-foreground">You can view this organization&rsquo;s configuration; changing it is owner/admin only.</p>}
+        <div className="mt-3"><ConfigurationExport organizationId={organizationId} organizationName={organization.name} /></div>
       </div>
       <UniversalSettingsProvider key={`organization:${organizationId}`} target="organization" organizationId={organizationId} organizationName={organization.name} canManageOrganization={canEdit}>
         <SettingsDesignProvider variant="compact">

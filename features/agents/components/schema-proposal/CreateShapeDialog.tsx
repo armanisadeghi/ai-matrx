@@ -61,6 +61,7 @@ import {
   RESERVED_SHAPE_SLUGS,
   shapeDetailHref,
 } from "@/features/content-ir/studio/constants";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type SlugStatus =
   | "idle"
@@ -472,6 +473,7 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
                   </p>
                 ))}
               </div>
+              <ErrorAlchemyMenu />
             </div>
           )}
         </div>

@@ -60,6 +60,7 @@ import { useEntitlementGuard } from "@/features/entitlements/components/useEntit
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface TargetMeta {
   kind: TargetKind;
@@ -409,7 +410,7 @@ function TargetRow({
             {state.result.detail ?? "Created"}
           </p>
         ) : state.status === "error" ? (
-          <p className="truncate text-[11px] text-destructive">{state.message}</p>
+          <p className="truncate text-[11px] text-destructive">{state.message} <ErrorAlchemyMenu /></p>
         ) : (
           <div className="flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
             <span className="truncate">{meta.blurb}</span>

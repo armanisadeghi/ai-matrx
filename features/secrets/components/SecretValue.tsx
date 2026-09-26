@@ -64,6 +64,7 @@ import {
   type VaultItem,
 } from "../types";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Whether a human may see this field's value at all. `sealed` is false for
@@ -556,6 +557,7 @@ export function SecretValue({
           ) : field.handling === "visible" && visibleLoadFailedForField ? (
             <span className="font-sans text-xs text-destructive">
               Value unavailable
+              <ErrorAlchemyMenu />
             </span>
           ) : field.handling === "visible" && !secret.allowed ? (
             <span className="font-sans text-xs text-muted-foreground">

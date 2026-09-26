@@ -53,9 +53,10 @@ export function SessionStatsPanel({ conversationId }: SessionStatsPanelProps) {
       if (result) {
         addUsageTotals(totals, result.total_usage?.total);
         const timing = result.timing_stats;
-        totalDurationMs += timing?.total_duration ?? 0;
-        apiDurationMs += timing?.api_duration ?? 0;
-        toolDurationMs += timing?.tool_duration ?? 0;
+        // timing_stats durations are SECONDS on the wire.
+        totalDurationMs += (timing?.total_duration ?? 0) * 1000;
+        apiDurationMs += (timing?.api_duration ?? 0) * 1000;
+        toolDurationMs += (timing?.tool_duration ?? 0) * 1000;
         totalToolCalls += result.tool_call_stats?.total_tool_calls ?? 0;
         iterationsSum += result.iterations ?? 0;
       }

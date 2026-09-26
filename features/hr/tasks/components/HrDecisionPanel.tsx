@@ -51,6 +51,7 @@ import {
     isRefusal,
 } from "@/features/hr/tasks/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Row = Record<string, unknown>;
 
@@ -673,6 +674,7 @@ export function HrDecisionPanel({
                                             </Button>
                                         </li>
                                     ))}
+                                  <li className="list-none"><ErrorAlchemyMenu /></li>
                                 </ul>
                                 {hiddenOpenFailureCount > 0 ? (
                                     <Button

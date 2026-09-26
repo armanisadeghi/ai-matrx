@@ -1539,7 +1539,7 @@ function FillStatusSummary({ status }: { status: FillStatus }) {
           {status.costUsd !== null ? ` · spent ${money(status.costUsd)}` : null}
         </p>
       ) : null}
-      {status.error ? <p className="mt-0.5 text-warning">{status.error}</p> : null}
+      {status.error ? <p className="mt-0.5 text-warning">{status.error} <ErrorAlchemyMenu error={status.error} /></p> : null}
       {status.problems.slice(0, 30).map((problem) => (
         <p
           key={`${problem.route}-${problem.step}-${problem.status}`}
@@ -1556,7 +1556,6 @@ function FillStatusSummary({ status }: { status: FillStatus }) {
           …and {status.problems.length - 30} more rows with the same treatment.
         </p>
       ) : null}
-      <ErrorAlchemyMenu error={status.error} />
     </div>
   );
 }

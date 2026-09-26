@@ -148,6 +148,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------- Types ----------
 
@@ -1542,6 +1543,7 @@ function SaveIndicator({ status }: { status: SaveStatus }) {
     return (
       <span className="flex items-center gap-1 text-destructive">
         <X className="h-3 w-3" /> Save failed
+        <ErrorAlchemyMenu />
       </span>
     );
   }

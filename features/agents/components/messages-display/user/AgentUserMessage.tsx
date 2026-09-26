@@ -19,6 +19,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectMessageById,
   selectFirstMessageId,
+  persistedBodyBlocks,
   selectHasMoreOlderMessages,
   extractFlatText,
   extractInspectableText,
@@ -43,7 +44,10 @@ import MarkdownStream from "@/components/MarkdownStream";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import type { RootState } from "@/lib/redux/store";
 import { buildVariableDisplayLines } from "@/features/agents/utils/variable-display-lines";
-import type { MessagePart } from "@/types/python-generated/stream-events";
+import type {
+  MessagePart,
+  RenderBlockPayload,
+} from "@/types/python-generated/stream-events";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import {
   recordTranscriptEvent,
@@ -54,17 +58,26 @@ export function AgentUserMessageContent({
   conversationId,
   text,
   attachmentParts,
+  bodyBlocks,
   variables,
 }: {
   conversationId: string;
   text: string;
   attachmentParts: MessagePart[];
+  /**
+   * Typed parts that are neither text nor an attachment chip — the decision
+   * questions that were put, a speech script, any kind this build does not
+   * know — as canonical render blocks (`persistedBodyBlocks`).
+   */
+  bodyBlocks?: RenderBlockPayload[];
   variables?: Record<string, unknown>;
 }) {
   const trimmedText = text.trim();
+  const hasBodyBlocks = !!bodyBlocks && bodyBlocks.length > 0;
 
   if (
     !trimmedText &&
+    !hasBodyBlocks &&
     attachmentParts.length === 0 &&
     (!variables || buildVariableDisplayLines(variables).length === 0)
   ) {
@@ -78,9 +91,10 @@ export function AgentUserMessageContent({
         conversationId={conversationId}
         parts={attachmentParts}
       />
-      {trimmedText ? (
+      {trimmedText || hasBodyBlocks ? (
         <MarkdownStream imagePolicy="other"
           content={trimmedText}
+          serverProcessedBlocks={hasBodyBlocks ? bodyBlocks : undefined}
           className="text-xs text-foreground"
           hideCopyButton
           allowFullScreenEditor={false}
@@ -117,6 +131,15 @@ const ATTACHMENT_BLOCK_TYPES = new Set([
   "audio",
   "video",
   "youtube_video",
+]);
+
+/** Parts a user bubble draws itself: its text. Thinking/tool parts never
+ * belong to a person's turn and stay out of the bubble. */
+const USER_SELF_RENDERED_PART_TYPES = new Set([
+  "text",
+  "thinking",
+  "tool_call",
+  "tool_result",
 ]);
 
 function isAmbientContextEntry(entry: InstanceContextEntry): boolean {
@@ -183,6 +206,15 @@ export function AgentUserMessage({
   const attachmentParts = extractContentBlocks(record).filter(
     isAttachmentMessagePart,
   );
+  // Every other typed part (decision questions, speech script, unknown kinds)
+  // is message body — rendered, never dropped. useMemo: normalization mints ids.
+  const bodyBlocks = useMemo(
+    () =>
+      persistedBodyBlocks(record, {
+        isSelfRendered: (part) => USER_SELF_RENDERED_PART_TYPES.has(part.type ?? ""),
+      }),
+    [record],
+  );
 
   const trimmedText = content.trim();
   const metadata =
@@ -247,6 +279,7 @@ export function AgentUserMessage({
     buildVariableDisplayLines(userVariableValues).length > 0;
   const hasOwnContent = Boolean(
     trimmedText ||
+    bodyBlocks.length > 0 ||
     attachmentParts.length > 0 ||
     hasVisibleVariables ||
     (contextSnapshot && contextSnapshot.length > 0),
@@ -285,12 +318,14 @@ export function AgentUserMessage({
     const attachmentSig = attachmentParts
       .map((part, index) => `${part.type}:${index}`)
       .join("|");
-    return `${variableSig}\u0000${contextSig}\u0000${attachmentSig}\u0000${trimmedText}`;
+    const bodySig = bodyBlocks.map((block) => block.type).join("|");
+    return `${variableSig}\u0000${contextSig}\u0000${attachmentSig}\u0000${bodySig}\u0000${trimmedText}`;
   }, [
     isFirstTurnMessage,
     userVariableValues,
     contextSnapshot,
     attachmentParts,
+    bodyBlocks,
     trimmedText,
   ]);
 
@@ -471,6 +506,7 @@ export function AgentUserMessage({
               conversationId={conversationId}
               text={trimmedText}
               attachmentParts={attachmentParts}
+              bodyBlocks={bodyBlocks}
             />
           </div>
 

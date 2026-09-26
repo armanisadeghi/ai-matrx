@@ -42,6 +42,7 @@ import {
   streamingEnrichmentDetails,
 } from "../../data/cardEnrichmentEnvelope";
 import type { BulkEnrichCardState } from "./bulkEnrichRun";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function EnrichingCardTile({ card }: { card: BulkEnrichCardState }) {
   // Subscribe ONLY while this card owns a live request — a settled tile reads
@@ -127,6 +128,7 @@ function StatusChip({
     return (
       <Chip className="border-destructive/30 bg-destructive/10 text-destructive">
         <AlertTriangle className="h-3 w-3" /> Failed
+        <ErrorAlchemyMenu />
       </Chip>
     );
   }

@@ -207,6 +207,7 @@ export function TableImpactPanel() {
           <AlertTriangle className="h-4 w-4 shrink-0" />
           {brokenCount} dependent function{brokenCount === 1 ? "" : "s"}{" "}
           currently broken — fix these before or as part of this migration.
+          <ErrorAlchemyMenu />
         </div>
       ) : null}
 

@@ -29,6 +29,7 @@ import {
   type PageAnalysisBatchSummary,
   type PageAnalysisQueueState,
 } from "@/features/marketing/data/page-analysis-batch";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const QUEUE_REFRESH_MS = 60_000;
 
@@ -156,6 +157,7 @@ export function AnalyzeAllPagesControl({
           title={extractErrorMessage(queue.error)}
         >
           Analysis queue status unavailable
+          <ErrorAlchemyMenu />
         </span>
       ) : null}
       <Button

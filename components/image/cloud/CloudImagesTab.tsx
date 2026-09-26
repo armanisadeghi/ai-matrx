@@ -134,6 +134,7 @@ import {
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { toast } from "@/lib/toast";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const RECENTS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -711,6 +712,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
                       buttonText="Try again"
                       onButtonClick={handleRetryTree}
                     />
+                    <ErrorAlchemyMenu />
                   </div>
                 ) : isLoading && allFiles.length === 0 ? (
                   <CloudLoadingState />

@@ -70,6 +70,7 @@ import {
   type FoldSource,
 } from "../../outreach-start/service";
 import type { PartyRow } from "../../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** What made this organization worth writing to — carried all the way to the draft. */
 export type OutreachMotivation =
@@ -302,6 +303,7 @@ export function StartOutreachDialog({
             {problem.message}
           </p>
           <p className="mt-1 pl-6 text-muted-foreground">Fix: {problem.fix}</p>
+          <ErrorAlchemyMenu error={problem.message} />
         </div>
       )}
 

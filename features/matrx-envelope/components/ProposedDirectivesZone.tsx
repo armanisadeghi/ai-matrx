@@ -164,6 +164,7 @@ export function ProposedDirectivesZone({
           size="compact"
           message={message}
           records={[{ type: "conversation", id: conversationId }]}
+          calls={message === loadError ? ["matrx_action_ledger"] : ["message"]}
           operation={
             message === loadError
               ? "Load what this conversation's actions did"

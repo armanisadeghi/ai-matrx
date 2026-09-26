@@ -29,7 +29,7 @@ import {
 } from "../redux/selectors";
 import { revealBlind, setBlindEnabled } from "../redux/battleSlice";
 
-export function BlindControls() {
+export function BlindControls({ compact = false }: { compact?: boolean } = {}) {
   const dispatch = useAppDispatch();
   const enabled = useAppSelector(selectBlindEnabled);
   const sessionExists = useAppSelector(selectBlindSessionExists);
@@ -39,10 +39,12 @@ export function BlindControls() {
   if (sessionExists && !revealed) {
     return (
       <div className="flex items-center gap-1.5">
-        <span className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-violet-500/15 text-violet-500 border border-violet-500/30 text-[11px] font-semibold uppercase tracking-wider">
-          <EyeOff className="w-3 h-3" />
-          Blind
-        </span>
+        {!compact && (
+          <span className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-violet-500/15 text-violet-500 border border-violet-500/30 text-[11px] font-semibold uppercase tracking-wider">
+            <EyeOff className="w-3 h-3" />
+            Blind
+          </span>
+        )}
         <Button
           size="sm"
           variant="outline"
@@ -60,9 +62,12 @@ export function BlindControls() {
   // Revealed → subtle indicator (run stays revealed until clear / re-submit).
   if (sessionExists && revealed) {
     return (
-      <span className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-muted text-muted-foreground text-[11px] font-medium">
+      <span
+        className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-muted text-muted-foreground text-[11px] font-medium"
+        title="This blind comparison has been revealed"
+      >
         <Eye className="w-3 h-3" />
-        Revealed
+        {compact ? <span className="sr-only">Revealed</span> : "Revealed"}
       </span>
     );
   }
@@ -83,9 +88,11 @@ export function BlindControls() {
           ? "Blind test ON — on Submit, columns shuffle and all identifying info (model, settings, prompt, tokens, cost, speed) hides until you Reveal"
           : "Blind test: shuffle + hide everything identifying so you evaluate responses without bias. Reveal when done."
       }
+      aria-pressed={enabled}
+      aria-label="Blind test"
     >
       <EyeOff className="w-3.5 h-3.5" />
-      Blind test
+      {compact ? null : "Blind test"}
       <span
         className={cn(
           "ml-0.5 w-3 h-3 rounded-sm border flex items-center justify-center",

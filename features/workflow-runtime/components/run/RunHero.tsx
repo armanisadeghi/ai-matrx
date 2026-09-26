@@ -250,7 +250,6 @@ export function RunHero({
             : live && current
               ? headline
               : (workflowDescription ?? (terminal ? "" : headline))}
-        <ErrorAlchemyMenu error={readFailure} />
       </p>
 
       <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">

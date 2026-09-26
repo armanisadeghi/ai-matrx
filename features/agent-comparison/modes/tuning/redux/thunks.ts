@@ -39,10 +39,14 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   createComparisonSet,
   loadComparisonSet,
-  renameComparisonSet,
   replaceEntries,
   type UpsertEntryInput,
 } from "@/features/agent-comparison/service/comparisonSetsService";
+import {
+  createBattlePersistence,
+  persistForRun,
+  type BattleSubmitResult,
+} from "@/features/agent-comparison/shared/battlePersistence";
 import { forkAgentForVariant } from "@/features/agent-comparison/shared/forkAgentForVariant";
 import { isSyntheticAgentId } from "@/features/agents/redux/agent-definition/synthetic-id";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
@@ -355,7 +359,7 @@ export const removeColumnFromTuningBattle = createAsyncThunk<
 // =============================================================================
 
 export const submitAllTuning = createAsyncThunk<
-  { launched: number; failed: number; skipped: number },
+  BattleSubmitResult,
   void,
   ThunkApi
 >("agentComparisonTuning/submitAll", async (_arg, { dispatch, getState }) => {
@@ -381,6 +385,16 @@ export const submitAllTuning = createAsyncThunk<
       );
     }
 
+    // The battle gets (or keeps) its identity BEFORE the runs start, so the
+    // URL names it while the answers stream in. Nothing in a saved entry
+    // changes during a run, so there is no second save afterwards.
+    const persisted = await persistForRun(() =>
+      dispatch(persistTuningBattle()).unwrap(),
+    );
+    if (persisted.cancelled) {
+      return { launched: 0, failed: 0, skipped: columns.length, cancelled: true };
+    }
+
     const results = await Promise.allSettled(
       columns.map((col) =>
         dispatch(
@@ -395,23 +409,7 @@ export const submitAllTuning = createAsyncThunk<
     const failed = results.filter((r) => r.status === "rejected").length;
     const launched = results.length - failed;
 
-    const post = getState();
-    const activeSetId = post.agentComparisonTuning.activeSetId;
-    if (activeSetId) {
-      const entries = buildTuningEntries(post);
-      try {
-        await replaceEntries(activeSetId, entries);
-        await renameComparisonSet(
-          activeSetId,
-          post.agentComparisonTuning.activeSetName ?? "Untitled comparison",
-        );
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error("[tuning] failed to persist comparison entries:", err);
-      }
-    }
-
-    return { launched, failed, skipped: 0 };
+    return { launched, failed, skipped: 0, persistError: persisted.error };
   } finally {
     dispatch(submitAllFinished());
   }
@@ -570,16 +568,20 @@ export const saveTuningBattleAs = createAsyncThunk<
   return { id: set.id, name: set.name };
 });
 
-export const saveTuningBattle = createAsyncThunk<void, void, ThunkApi>(
-  "agentComparisonTuning/save",
-  async (_arg, { getState }) => {
-    const state = getState();
-    const setId = state.agentComparisonTuning.activeSetId;
-    if (!setId) throw new Error("No active comparison set");
-    const entries = buildTuningEntries(state);
-    await replaceEntries(setId, entries);
-  },
-);
+const tuningPersistence = createBattlePersistence({
+  typePrefix: "agentComparisonTuning",
+  modeLabel: "Tuning battle",
+  selectActiveSetId: (state) => state.agentComparisonTuning.activeSetId,
+  selectActiveSetName: (state) => state.agentComparisonTuning.activeSetName,
+  selectNamingAgentId: (state) => state.agentComparisonTuning.locked.sourceAgentId,
+  buildMetadata: buildSetMetadata,
+  buildEntries: buildTuningEntries,
+  setActive: setActiveTuningSet,
+});
+
+/** Create this battle on first call; afterwards keep its setup and columns current. */
+export const persistTuningBattle = tuningPersistence.persist;
+export const renameTuningBattle = tuningPersistence.rename;
 
 interface LoadedLockedSpec {
   source_agent_id: string | null;

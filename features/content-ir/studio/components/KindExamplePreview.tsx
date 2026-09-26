@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import KindRenderPaths from "@/features/content-ir/render-paths/KindRenderPaths";
 import type { ExamplesState } from "@/features/content-ir/studio/kind-examples";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface KindExamplePreviewProps {
   kind: string;
@@ -65,6 +66,7 @@ export default function KindExamplePreview({
       <div className="flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-700 dark:text-red-300">
         <CircleAlert className="h-4 w-4 shrink-0" />
         {examples.message}
+        <ErrorAlchemyMenu error={examples.message} />
       </div>
     );
   }

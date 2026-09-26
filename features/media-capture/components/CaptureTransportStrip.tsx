@@ -33,6 +33,7 @@ import {
   subscribeMediaCaptureDiagnostics,
 } from "@/features/media-capture/runtime/mediaCaptureDiagnostics";
 import { useCaptureUploadFeed } from "@/features/media-capture/hooks/useCaptureUploadFeed";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function CaptureTransportStrip() {
   const uploads = useCaptureUploadFeed();
@@ -105,6 +106,7 @@ export function CaptureTransportStrip() {
           <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-destructive" />
           <span className="min-w-0 flex-1 truncate text-muted-foreground">
             Upload failed — {f.message}
+            <ErrorAlchemyMenu error={f.message} />
           </span>
           <Button
             size="sm"

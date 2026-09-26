@@ -77,6 +77,16 @@ export function fmtMs(ms: number | null | undefined): string {
   return formatDurationMs(ms, { style: "compact" });
 }
 
+/**
+ * A server `timing_stats` duration. The server reports these in SECONDS
+ * (`total_duration`, `api_duration`, `tool_duration`); formatting them with
+ * `fmtMs` printed a 6-second run as "6ms".
+ */
+export function fmtServerSeconds(seconds: number | null | undefined): string {
+  if (seconds == null) return fmtMs(seconds);
+  return fmtMs(seconds * 1000);
+}
+
 export function fmtTokens(n: number | null | undefined): string {
   if (n == null) return "—";
   return n.toLocaleString();

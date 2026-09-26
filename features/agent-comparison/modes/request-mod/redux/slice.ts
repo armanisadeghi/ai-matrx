@@ -2,6 +2,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   RequestModBattleState,
   RequestModColumn,
+  RequestModColumnRequest,
   RequestModLockedSetup,
 } from "../types";
 
@@ -68,6 +69,18 @@ const slice = createSlice({
         (c) => c.columnId === action.payload.columnId,
       );
       if (col) col.label = action.payload.label;
+    },
+    setRequestModColumnLastRequest(
+      state,
+      action: PayloadAction<{
+        columnId: string;
+        request: RequestModColumnRequest | null;
+      }>,
+    ) {
+      const col = state.columns.find(
+        (c) => c.columnId === action.payload.columnId,
+      );
+      if (col) col.lastRequest = action.payload.request;
     },
     setRequestModColumnCollapsed(
       state,
@@ -139,6 +152,7 @@ export const {
   setRequestModColumns,
   renameRequestModColumn,
   setRequestModColumnCollapsed,
+  setRequestModColumnLastRequest,
   reorderRequestModColumns,
   setLocked,
   submitAllStarted,

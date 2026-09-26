@@ -38,6 +38,7 @@ import {
   type ProvisionOffer,
 } from "@/features/mandates/provisions";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const KindInputForm = dynamic(
   () => import("@/features/content-ir/input/KindInputForm"),
@@ -135,6 +136,7 @@ export function ProvisionOfferComposer({
       <p className="flex items-start gap-1.5 text-[11px] text-destructive">
         <CircleAlert className="mt-0.5 h-3 w-3 shrink-0" />
         Couldn&apos;t load provision &quot;{provisionKey}&quot;: {state.message}
+        <ErrorAlchemyMenu error={state.message} />
       </p>
     );
   }

@@ -1,29 +1,21 @@
 /**
  * activeBattleColumns
  *
- * Cross-mode column resolver. Every comparison mode owns its own slice
- * (`agentComparison`, `agentComparisonSettings`, `agentComparisonSystemPrompt`,
- * `agentComparisonTools`, `agentComparisonRequestMod`) — but the shared
- * surfaces (ResponseFeedbackBar, RunsComparisonTable, SharedRunsWindow)
- * need a uniform column list to operate on regardless of which mode is
- * currently mounted.
+ * Cross-mode column resolver for the shared surfaces (ResponseFeedbackBar,
+ * RunsComparisonTable, SharedRunsWindow, DecisionComparisonTable).
  *
- * `selectActiveBattleColumns` returns the active mode's columns as a
- * generic `BattleColumnDescriptor[]`. It picks the first non-empty
- * slice in mode-priority order, falling back to the Open-mode columns.
- * Since only one comparison route is mounted at a time, the picked
- * slice is always the one the user is looking at.
- *
- * Why a single shared selector and not a per-mode prop:
- *   - keeps the shared surfaces drop-in across every mode (`<RunsComparisonTable />`
- *     just works) without each page wiring its own column list
- *   - avoids a "battle-context" React context with provider plumbing
- *   - resolves bugs where the old code hard-coded the Open-mode selector
- *     and silently rendered empty in the other modes
+ * Every mode owns its own slice, and every slice stays alive across
+ * navigation. The resolver therefore reads `agentComparison.mountedMode` —
+ * the mode whose page is on screen, set by that page — and returns THAT
+ * mode's columns. It used to return "the first slice with columns in a
+ * priority order", so after using Settings, the Model page's runs table and
+ * rating bars showed Settings' columns; and Variations was missing from the
+ * order entirely, so its runs table showed another mode's columns or none.
  */
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
+import type { BattleModeId } from "./battleRoutes";
 
 export interface BattleColumnDescriptor {
   columnId: string;
@@ -49,18 +41,12 @@ export interface BattleColumnDescriptor {
    * downstream rendering (e.g. tools-mode could surface tools chips in
    * the Runs header). Not used today but kept for symmetry.
    */
-  mode:
-    | "open"
-    | "settings"
-    | "model"
-    | "tuning"
-    | "system-prompt"
-    | "tools"
-    | "request-mod";
+  mode: BattleModeId;
 }
 
 const EMPTY: BattleColumnDescriptor[] = [];
 
+const selectMountedMode = (s: RootState) => s.agentComparison.mountedMode;
 const selectOpen = (s: RootState) => s.agentComparison;
 const selectSettings = (s: RootState) => s.agentComparisonSettings;
 const selectModel = (s: RootState) => s.agentComparisonModel;
@@ -68,9 +54,32 @@ const selectTuning = (s: RootState) => s.agentComparisonTuning;
 const selectSystemPrompt = (s: RootState) => s.agentComparisonSystemPrompt;
 const selectTools = (s: RootState) => s.agentComparisonTools;
 const selectRequestMod = (s: RootState) => s.agentComparisonRequestMod;
+const selectVariations = (s: RootState) => s.agentComparisonVariations;
+
+interface LockedColumnSource {
+  columns: { columnId: string; conversationId: string; label: string }[];
+}
+
+function lockedColumns(
+  source: LockedColumnSource,
+  agentId: string | null,
+  agentVersion: "current" | number | null,
+  mode: BattleModeId,
+): BattleColumnDescriptor[] {
+  if (source.columns.length === 0) return EMPTY;
+  return source.columns.map((c) => ({
+    columnId: c.columnId,
+    conversationId: c.conversationId,
+    label: c.label,
+    agentId,
+    agentVersion,
+    mode,
+  }));
+}
 
 export const selectActiveBattleColumns = createSelector(
   [
+    selectMountedMode,
     selectOpen,
     selectSettings,
     selectModel,
@@ -78,84 +87,88 @@ export const selectActiveBattleColumns = createSelector(
     selectSystemPrompt,
     selectTools,
     selectRequestMod,
+    selectVariations,
   ],
-  (open, settings, model, tuning, sp, tools, rm): BattleColumnDescriptor[] => {
-    if (settings?.columns?.length) {
-      const locked = settings.locked;
-      return settings.columns.map((c) => ({
-        columnId: c.columnId,
-        conversationId: c.conversationId,
-        label: c.label,
-        agentId: locked?.agentId ?? null,
-        agentVersion: locked?.agentVersion ?? null,
-        mode: "settings" as const,
-      }));
+  (
+    mounted,
+    open,
+    settings,
+    model,
+    tuning,
+    sp,
+    tools,
+    rm,
+    variations,
+  ): BattleColumnDescriptor[] => {
+    switch (mounted) {
+      case "settings":
+        return lockedColumns(settings, settings.locked.agentId, settings.locked.agentVersion, "settings");
+      case "model":
+        return lockedColumns(model, model.locked.agentId, model.locked.agentVersion, "model");
+      case "tuning":
+        return lockedColumns(tuning, tuning.locked.sourceAgentId, tuning.locked.agentVersion, "tuning");
+      case "system-prompt":
+        return lockedColumns(sp, sp.locked.sourceAgentId, sp.locked.agentVersion, "system-prompt");
+      case "tools":
+        return lockedColumns(tools, tools.locked.sourceAgentId, tools.locked.agentVersion, "tools");
+      case "request-mod":
+        return lockedColumns(rm, rm.locked.agentId, rm.locked.agentVersion, "request-mod");
+      case "variations":
+        return lockedColumns(variations, variations.locked.sourceAgentId, variations.locked.agentVersion, "variations");
+      case "open":
+        if (open.columns.length === 0) return EMPTY;
+        return open.columns.map((c) => ({
+          columnId: c.columnId,
+          conversationId: c.conversationId,
+          label: undefined,
+          agentId: c.agentId ?? null,
+          agentVersion: c.agentVersion ?? null,
+          mode: "open" as const,
+        }));
+      default:
+        return EMPTY;
     }
-    if (model?.columns?.length) {
-      const locked = model.locked;
-      return model.columns.map((c) => ({
-        columnId: c.columnId,
-        conversationId: c.conversationId,
-        label: c.label,
-        agentId: locked?.agentId ?? null,
-        agentVersion: locked?.agentVersion ?? null,
-        mode: "model" as const,
-      }));
+  },
+);
+
+/**
+ * The saved battle of the mode on screen. Ratings are filed under it and read
+ * back by it, so it must be the mounted mode's — it used to be Open mode's id
+ * on every page, which filed every other mode's ratings under the wrong
+ * battle (or none) and read them back empty.
+ */
+export const selectMountedBattleSetId = createSelector(
+  [
+    selectMountedMode,
+    selectOpen,
+    selectSettings,
+    selectModel,
+    selectTuning,
+    selectSystemPrompt,
+    selectTools,
+    selectRequestMod,
+    selectVariations,
+  ],
+  (mounted, open, settings, model, tuning, sp, tools, rm, variations) => {
+    switch (mounted) {
+      case "open":
+        return open.activeSetId;
+      case "settings":
+        return settings.activeSetId;
+      case "model":
+        return model.activeSetId;
+      case "tuning":
+        return tuning.activeSetId;
+      case "system-prompt":
+        return sp.activeSetId;
+      case "tools":
+        return tools.activeSetId;
+      case "request-mod":
+        return rm.activeSetId;
+      case "variations":
+        return variations.activeSetId;
+      default:
+        return null;
     }
-    if (tuning?.columns?.length) {
-      const locked = tuning.locked;
-      return tuning.columns.map((c) => ({
-        columnId: c.columnId,
-        conversationId: c.conversationId,
-        label: c.label,
-        agentId: locked?.sourceAgentId ?? null,
-        agentVersion: locked?.agentVersion ?? null,
-        mode: "tuning" as const,
-      }));
-    }
-    if (sp?.columns?.length) {
-      const locked = sp.locked;
-      return sp.columns.map((c) => ({
-        columnId: c.columnId,
-        conversationId: c.conversationId,
-        label: c.label,
-        agentId: locked?.sourceAgentId ?? null,
-        agentVersion: locked?.agentVersion ?? null,
-        mode: "system-prompt" as const,
-      }));
-    }
-    if (tools?.columns?.length) {
-      const locked = tools.locked;
-      return tools.columns.map((c) => ({
-        columnId: c.columnId,
-        conversationId: c.conversationId,
-        label: c.label,
-        agentId: locked?.sourceAgentId ?? null,
-        agentVersion: locked?.agentVersion ?? null,
-        mode: "tools" as const,
-      }));
-    }
-    if (rm?.columns?.length) {
-      const locked = rm.locked;
-      return rm.columns.map((c) => ({
-        columnId: c.columnId,
-        conversationId: c.conversationId,
-        label: c.label,
-        agentId: locked?.agentId ?? null,
-        agentVersion: locked?.agentVersion ?? null,
-        mode: "request-mod" as const,
-      }));
-    }
-    if (open?.columns?.length) {
-      return open.columns.map((c) => ({
-        columnId: c.columnId,
-        conversationId: c.conversationId,
-        label: undefined,
-        agentId: c.agentId ?? null,
-        agentVersion: c.agentVersion ?? null,
-        mode: "open" as const,
-      }));
-    }
-    return EMPTY;
   },
 );

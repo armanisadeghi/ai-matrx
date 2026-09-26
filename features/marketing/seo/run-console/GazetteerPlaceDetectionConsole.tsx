@@ -364,9 +364,9 @@ export function GazetteerPlaceDetectionConsole({
                 {outcome.error ? (
                   <p className="mt-0.5 text-[10px] text-destructive">
                     {outcome.error}
+                    <ErrorAlchemyMenu error={outcome.error} />
                   </p>
                 ) : null}
-                <ErrorAlchemyMenu error={outcome.error} />
               </li>
             ))}
           </ul>

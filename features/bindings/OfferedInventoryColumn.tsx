@@ -22,6 +22,7 @@ import {
   type OfferedValue,
 } from "@/features/mandates/provision-shapes";
 import { RAIL_MAX_HEIGHT, scrollHint } from "./rail-height";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface OfferedInventoryColumnProps {
   values: readonly OfferedValue[];
@@ -128,6 +129,7 @@ export function OfferedInventoryColumn({
           className="px-3 py-6 text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400"
         >
           {sourceLine}
+          <ErrorAlchemyMenu />
         </p>
       ) : status === "loading" ? (
         <p className="px-3 py-6 text-[11.5px] text-muted-foreground">

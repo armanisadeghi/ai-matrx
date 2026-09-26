@@ -76,6 +76,7 @@ import {
 import { useWizardDraft } from "@/lib/wizard-draft/useWizardDraft";
 import { WizardDraftRestored } from "@/lib/wizard-draft/WizardDraftRestored";
 import { RunStages } from "../components/RunStages";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface KnobState {
   rounds: number;
@@ -427,6 +428,7 @@ export function TeachBack({
       {knobs.problem ? (
         <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
           {knobs.problem}
+          <ErrorAlchemyMenu error={knobs.problem} />
         </p>
       ) : null}
 
@@ -584,6 +586,7 @@ export function TeachBack({
       {signatureProblem ? (
         <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {signatureProblem}
+          <ErrorAlchemyMenu error={signatureProblem} />
         </p>
       ) : null}
 

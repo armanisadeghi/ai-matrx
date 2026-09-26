@@ -557,6 +557,7 @@ export function NewCrawlWorkspace() {
                               `${problem.pattern}: ${problem.error}`,
                           )
                           .join(" · ")}
+                        <ErrorAlchemyMenu />
                       </p>
                     ) : (
                       <p className="text-[10px] leading-4 text-muted-foreground">

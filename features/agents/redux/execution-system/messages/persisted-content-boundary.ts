@@ -11,7 +11,73 @@ export type PersistedContentEntry =
       kind: "legacy_render_block";
       block: RenderBlockPayload;
       sourceIndex: number;
+    }
+  | {
+      /**
+       * A well-formed part whose `type` this build does not know yet — a kind
+       * the server started persisting after this client was generated. It is
+       * never dropped and never crashes the transcript: every renderer shows
+       * it as the honest Unknown Data Event block (`unknownPersistedPartBlock`).
+       */
+      kind: "unknown_part";
+      partType: string;
+      raw: Record<string, unknown>;
+      sourceIndex: number;
     };
+
+/**
+ * Every `MessagePart` discriminator this build was generated with. `satisfies
+ * Record<MessagePart["type"], true>` makes it exhaustive at compile time: a
+ * regenerated union with a new kind fails type-check here until it is listed.
+ * Used ONLY to tell "unknown future kind" (render honestly) from "malformed
+ * known kind" (still throws — a broken row must never be disguised).
+ */
+const KNOWN_MESSAGE_PART_TYPES = {
+  text: true,
+  thinking: true,
+  tool_call: true,
+  tool_result: true,
+  media: true,
+  code_exec: true,
+  code_result: true,
+  web_search: true,
+  input_webpage: true,
+  input_notes: true,
+  input_task: true,
+  input_agent: true,
+  input_project: true,
+  input_agent_app: true,
+  input_transcript: true,
+  input_transcript_session: true,
+  input_workbook: true,
+  input_document: true,
+  input_table: true,
+  input_list: true,
+  input_data: true,
+  input_context: true,
+  decision_questions: true,
+  decision_answers: true,
+  speech_script: true,
+} as const satisfies Record<MessagePart["type"], true>;
+
+export function isKnownMessagePartType(type: string): boolean {
+  return Object.prototype.hasOwnProperty.call(KNOWN_MESSAGE_PART_TYPES, type);
+}
+
+/** The honest render block for a part kind this build cannot draw. */
+export function unknownPersistedPartBlock(
+  entry: Extract<PersistedContentEntry, { kind: "unknown_part" }>,
+): RenderBlockPayload {
+  return {
+    blockId: `db_unknown_${entry.sourceIndex}_${entry.partType}`,
+    blockIndex: entry.sourceIndex,
+    type: "unknown_data_event",
+    status: "complete",
+    content: null,
+    data: { ...entry.raw, _dataType: entry.partType },
+    metadata: optionalRecord(entry.raw.metadata),
+  };
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -148,6 +214,26 @@ export function parsePersistedMessageContent(
     const recoveredMedia = recoverMediaWithInlineBytes(value, sourceIndex);
     if (recoveredMedia) {
       return { kind: "message_part", part: recoveredMedia, sourceIndex };
+    }
+
+    if (
+      isRecord(value) &&
+      typeof value.type === "string" &&
+      value.type.trim().length > 0 &&
+      !isKnownMessagePartType(value.type)
+    ) {
+      // Loud, never silent: a kind the server persists that this build does
+      // not know. It still renders (as the Unknown Data Event block).
+      console.error(
+        "[parsePersistedMessageContent] unknown message part kind — rendering the honest fallback",
+        { sourceIndex, shape: persistedPartShape(value) },
+      );
+      return {
+        kind: "unknown_part",
+        partType: value.type,
+        raw: value,
+        sourceIndex,
+      };
     }
 
     try {

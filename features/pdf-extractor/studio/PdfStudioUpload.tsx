@@ -390,6 +390,7 @@ export function PdfStudioUpload({
               {t.status === "error" && t.error && (
                 <span className="text-[10px] text-destructive/80 shrink-0 truncate max-w-[160px]">
                   {t.error}
+                  <ErrorAlchemyMenu error={t.error} />
                 </span>
               )}
               {t.status === "done" && (
@@ -397,7 +398,6 @@ export function PdfStudioUpload({
                   ready
                 </span>
               )}
-              <ErrorAlchemyMenu error={t.error} />
             </div>
           ))}
         </div>

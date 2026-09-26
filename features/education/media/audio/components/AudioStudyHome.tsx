@@ -192,6 +192,7 @@ function StatusChip({ status }: { status: string }) {
     return (
       <span className="flex items-center gap-1 text-[11px] text-destructive">
         <AlertCircle className="h-3.5 w-3.5" /> Failed
+        <ErrorAlchemyMenu />
       </span>
     );
   }

@@ -16,6 +16,7 @@ import {
 } from "@/features/agents/services/variable-binding-preview.service";
 import { isCompleteBinding } from "./customDataBinding";
 import { useCustomDataOrganizationId } from "./CustomDataRecordsScope";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Quiet time before the preview re-asks the server after an edit. */
 const PREVIEW_DEBOUNCE_MS = 500;
@@ -126,7 +127,7 @@ export function CustomDataBindingPreview({
           saved and will be read at run time.
         </p>
       ) : state.state === "error" ? (
-        <p className="text-[11px] text-destructive">{state.message}</p>
+        <p className="text-[11px] text-destructive">{state.message} <ErrorAlchemyMenu error={state.message} /></p>
       ) : (
         <>
           {state.outcome === "absent" && (

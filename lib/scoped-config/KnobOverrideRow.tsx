@@ -60,6 +60,8 @@ import {
 } from "@/components/ui/select";
 import type { KnobScopeKindName, ScopedKnob } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { databaseConsumersOf } from "@/features/settings/universal/knobDatabaseConsumers.generated";
+import { KnobHistoryPopover } from "./KnobHistoryPopover";
 
 /**
  * The text a row's editor STARTS IN. An absent value is an EMPTY box, never a
@@ -557,6 +559,33 @@ export function KnobOverrideRow(props: {
       </>
     ) : undefined;
 
+  // 🚨 PREVIEW BEFORE SAVE (settings history, 2026-09-26). What a change here
+  // reaches, said in one sentence while the person is changing it: the blast
+  // radius, what it overrides, and — where the live census knows — how many
+  // database functions read this key. Shown while the control has focus and
+  // whenever a typed draft differs from what is saved.
+  const readers = databaseConsumersOf(knob.full_key);
+  const readerSentence = readers
+    ? ` Read by ${readers.length} database function${readers.length === 1 ? "" : "s"} (${readers.slice(0, 3).join(", ")}${readers.length > 3 ? ", …" : ""}).`
+    : "";
+  const impactSentence = system
+    ? `Changes the platform value every organization inherits${
+        typeof overrideCount === "number"
+          ? overrideCount > 0
+            ? ` (${overrideCount} organization${overrideCount === 1 ? " has" : "s have"} its own value and ${overrideCount === 1 ? "is" : "are"} unaffected)`
+            : " (no organization has its own value)"
+          : ""
+      }; currently ${displayValue(knob.platform_default)}.${readerSentence}`
+    : `${blastRadius}${blastRadius.trim().endsWith(".") ? "" : "."} ${
+        isSetHere ? "Replaces the value set here" : `Overrides ${inheritedFrom}`
+      }, which is ${displayValue(isSetHere ? overrideValue : inheritedValue)} today.${readerSentence}`;
+  const draftDirty =
+    !fieldLadder &&
+    !stateOnly &&
+    !lockedForMe &&
+    draft.trim() !== "" &&
+    !sameKnobValue(parseDraft(knob, draft).value, editableValue);
+
   const usesLabelledGroup =
     Boolean(stateOnly) ||
     lockedForMe ||
@@ -591,12 +620,12 @@ export function KnobOverrideRow(props: {
       controlLayout="wide"
       variant="inline"
     >
-      <div className="flex w-full min-w-0 max-w-[calc(20rem+2.5rem)] items-start gap-1">
+      <div className="flex w-full min-w-0 max-w-[calc(20rem+5rem)] items-start gap-1">
         <div
           className={
             scopeKind === "user"
-              ? "w-[20rem] max-w-full min-w-0"
-              : "w-[20rem] min-w-0 max-w-[calc(100%-2.25rem)]"
+              ? "group/knobrow w-[20rem] min-w-0 max-w-[calc(100%-2.25rem)]"
+              : "group/knobrow w-[20rem] min-w-0 max-w-[calc(100%-4.5rem)]"
           }
         >
           {stateOnly ? (
@@ -678,7 +707,25 @@ export function KnobOverrideRow(props: {
               </Button>
             </div>
           )}
+          {!stateOnly && canWrite && (
+            <p
+              className={`${draftDirty ? "block" : "hidden group-focus-within/knobrow:block"} mt-1 text-xs leading-snug text-muted-foreground`}
+            >
+              {impactSentence}
+            </p>
+          )}
         </div>
+        <KnobHistoryPopover
+          feature={knob.feature}
+          key_={knob.key}
+          label={scopeLabel ? `${knob.label} — ${scopeLabel}` : knob.label}
+          organizationId={system ? null : organizationId}
+          scopeKind={system ? "platform" : scopeKind}
+          scopeId={system ? null : scopeId}
+          canRevert={canWrite && !stateOnly}
+          displayValue={displayValue}
+          onRevert={(value) => write(value)}
+        />
         {scopeKind !== "user" && (
           <Popover>
             <PopoverTrigger asChild>

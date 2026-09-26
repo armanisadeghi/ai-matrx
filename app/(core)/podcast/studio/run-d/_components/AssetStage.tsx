@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MediaSlot, PodcastRunState } from "@/features/podcasts/generator/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AssetStageProps {
   state: PodcastRunState;
@@ -117,6 +118,7 @@ function AssetSlot({ slot }: { slot: MediaSlot }) {
       <div className="flex aspect-video flex-col items-center justify-center gap-1 rounded-xl border border-destructive/30 bg-destructive/5 text-center">
         <AlertTriangle className="h-5 w-5 text-destructive" />
         <span className="text-[11px] text-destructive">Couldn&apos;t render</span>
+        <ErrorAlchemyMenu />
       </div>
     );
   }

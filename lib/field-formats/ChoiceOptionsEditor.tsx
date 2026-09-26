@@ -49,6 +49,7 @@ import {
   inlineChoices,
 } from "./choices";
 import type { FieldChoice, FieldFormatOptions } from "@ai-matrx/design-system/field-formats";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** One observed value of the column, and how many rows carry it. */
 export type ChoiceSuggestion = {
@@ -169,6 +170,7 @@ export function ChoiceOptionsEditor({
             {listsFailed ? (
               <p className="text-xs text-amber-600 dark:text-amber-400">
                 Your pick lists couldn&rsquo;t be loaded. Try again in a moment.
+                <ErrorAlchemyMenu />
               </p>
             ) : (
               <Select

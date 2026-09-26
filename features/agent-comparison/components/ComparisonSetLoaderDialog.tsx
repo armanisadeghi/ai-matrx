@@ -1,23 +1,16 @@
 "use client";
 
 /**
- * ComparisonSetLoaderDialog
+ * ComparisonSetLoaderDialog — "Open a saved battle".
  *
- * Lists the current user's saved comparison sets and loads the selected
- * one into the current page (replacing whatever's currently there).
- *
- * The actual "load" semantics differ per mode — Mode 1 calls
- * `loadBattleSet`, Mode 2 calls `loadSettingsBattleSet`, etc. The
- * dialog stays mode-agnostic by accepting an explicit `loadFn`; if not
- * provided it defaults to the Mode 1 (open) loader so legacy callers
- * keep working.
- *
- * `modeFilter` optionally narrows the listed sets to those whose
- * metadata.mode matches. Useful so the Settings page doesn't show
- * Open-mode sets it can't actually load (and vice versa).
+ * Every saved battle has its own URL (`battleUrl`), so each row here is a
+ * real link: a click opens it in place, cmd/ctrl-click opens it in a new tab,
+ * and the battle page loads it from that URL through its own mode's loader.
+ * The list starts on the current mode; "All modes" shows the rest, and a
+ * battle from another mode opens on that mode's page.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, Trash2 } from "lucide-react";
 import {
   Dialog,
@@ -29,50 +22,54 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import AppLink from "@/components/navigation/AppLink";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
-import { listMyBattleSets, loadBattleSet } from "../redux/thunks";
+import { cn } from "@/lib/utils";
+import { listMyBattleSets } from "../redux/thunks";
 import { deleteComparisonSet } from "../service/comparisonSetsService";
+import {
+  battleUrl,
+  isBattleModeId,
+  type BattleModeId,
+} from "../shared/battleRoutes";
 import type { ComparisonSetRow } from "../types";
+
+const LIST_LIMIT = 100;
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /**
-   * Custom loader. Receives the chosen set id and is expected to dispatch
-   * whatever mode-specific load thunk applies. Defaults to Mode 1.
-   */
-  loadFn?: (setId: string) => Promise<void> | void;
-  /**
-   * Optional mode tag to filter the listed sets by `metadata.mode`. When
-   * provided, sets whose metadata.mode !== this value are hidden. Pass
-   * `"open"` for Mode 1, `"settings"` for Mode 2, etc. When omitted, all
-   * sets show — useful for cross-mode browsing surfaces.
-   */
-  modeFilter?: string;
+  /** The mode of the page the dialog opens from; its battles are listed first. */
+  mode: BattleModeId;
+  /** The battle on screen, marked in the list. */
+  activeSetId: string | null;
+  /** Called after a battle is deleted, so the page can let go of it if it is on screen. */
+  onDeleted?: (setId: string) => void;
+}
+
+function modeOf(row: ComparisonSetRow): string {
+  const meta = (row.metadata ?? {}) as { mode?: string };
+  // A row without a mode predates modes: it is an Open battle.
+  return meta.mode ?? "open";
 }
 
 export function ComparisonSetLoaderDialog({
   open,
   onOpenChange,
-  loadFn,
-  modeFilter,
+  mode,
+  activeSetId,
+  onDeleted,
 }: Props) {
   const dispatch = useAppDispatch();
   const [sets, setSets] = useState<ComparisonSetRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [allModes, setAllModes] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  const visibleSets = useMemo(() => {
-    if (!modeFilter) return sets;
-    return sets.filter((s) => {
-      const meta = (s.metadata ?? {}) as { mode?: string };
-      // Treat "no mode" as "open" so legacy Mode 1 sets show on the open page.
-      const mode = meta.mode ?? "open";
-      return mode === modeFilter;
-    });
-  }, [sets, modeFilter]);
+  const visibleSets = allModes
+    ? sets
+    : sets.filter((s) => modeOf(s) === mode);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -85,7 +82,7 @@ export function ComparisonSetLoaderDialog({
       })
       .catch((err) => {
         toast.error(
-          `Couldn't list comparison sets: ${err instanceof Error ? err.message : err}`,
+          `Couldn't list your saved battles: ${err instanceof Error ? err.message : err}`,
         );
       })
       .finally(() => {
@@ -96,25 +93,6 @@ export function ComparisonSetLoaderDialog({
     };
   }, [open, dispatch]);
 
-  const handleLoad = async (setId: string) => {
-    setLoadingId(setId);
-    try {
-      if (loadFn) {
-        await loadFn(setId);
-      } else {
-        await dispatch(loadBattleSet({ setId })).unwrap();
-      }
-      toast.success("Comparison set loaded");
-      onOpenChange(false);
-    } catch (err) {
-      toast.error(
-        `Couldn't load set: ${err instanceof Error ? err.message : err}`,
-      );
-    } finally {
-      setLoadingId(null);
-    }
-  };
-
   const handleConfirmDelete = async () => {
     if (!confirmDeleteId) return;
     const id = confirmDeleteId;
@@ -122,10 +100,11 @@ export function ComparisonSetLoaderDialog({
     try {
       await deleteComparisonSet(id);
       setSets((curr) => curr.filter((s) => s.id !== id));
-      toast.success("Comparison set deleted");
+      onDeleted?.(id);
+      toast.success("Battle deleted");
     } catch (err) {
       toast.error(
-        `Couldn't delete set: ${err instanceof Error ? err.message : err}`,
+        `Couldn't delete the battle: ${err instanceof Error ? err.message : err}`,
       );
     }
   };
@@ -135,67 +114,120 @@ export function ComparisonSetLoaderDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Open comparison set</DialogTitle>
+            <DialogTitle>Open a saved battle</DialogTitle>
             <DialogDescription>
-              Load a previously-saved comparison. Replaces the current set of
-              columns.
+              Every battle is saved when you first run it. Opening one replaces
+              the battle on this page; it stays saved either way.
             </DialogDescription>
           </DialogHeader>
+
+          <div className="flex items-center gap-1 text-xs">
+            <button
+              type="button"
+              onClick={() => setAllModes(false)}
+              aria-pressed={!allModes}
+              className={cn(
+                "h-7 px-2 rounded-md border",
+                !allModes
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border text-muted-foreground hover:bg-muted",
+              )}
+            >
+              This mode
+            </button>
+            <button
+              type="button"
+              onClick={() => setAllModes(true)}
+              aria-pressed={allModes}
+              className={cn(
+                "h-7 px-2 rounded-md border",
+                allModes
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border text-muted-foreground hover:bg-muted",
+              )}
+            >
+              All modes
+            </button>
+            {sets.length >= LIST_LIMIT && (
+              <span className="ml-auto text-muted-foreground">
+                Your {LIST_LIMIT} most recent
+              </span>
+            )}
+          </div>
 
           <div className="max-h-[60dvh] overflow-y-auto -mx-2 px-2">
             {loading ? (
               <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">Loading...</span>
+                <span className="text-sm">Reading your saved battles…</span>
               </div>
             ) : visibleSets.length === 0 ? (
               <div className="text-center py-8 text-sm text-muted-foreground">
-                {modeFilter
-                  ? `No saved ${modeFilter}-mode comparison sets yet.`
-                  : "No saved comparison sets yet."}
+                {allModes
+                  ? "You have no saved battles yet."
+                  : "No saved battles in this mode yet. Try All modes."}
               </div>
             ) : (
               <ul className="divide-y divide-border border border-border rounded-md">
                 {visibleSets.map((s) => {
-                  const meta = (s.metadata ?? {}) as { mode?: string };
-                  const mode = meta.mode ?? "open";
+                  const setMode = modeOf(s);
+                  const href = isBattleModeId(setMode)
+                    ? battleUrl(setMode, s.id)
+                    : null;
+                  const isActive = s.id === activeSetId;
                   return (
-                  <li
-                    key={s.id}
-                    className="flex items-center gap-2 px-3 py-2 hover:bg-muted/40 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <ModeBadge mode={mode} />
-                        <div className="text-sm font-medium truncate">
-                          {s.name}
+                    <li
+                      key={s.id}
+                      className="flex items-center gap-2 px-3 py-2 hover:bg-muted/40 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <ModeBadge mode={setMode} />
+                          {href ? (
+                            <AppLink
+                              href={href}
+                              onClick={() => onOpenChange(false)}
+                              className="text-sm font-medium truncate hover:underline"
+                            >
+                              {s.name}
+                            </AppLink>
+                          ) : (
+                            <span className="text-sm font-medium truncate">
+                              {s.name}
+                            </span>
+                          )}
+                          {isActive && (
+                            <span className="text-[10px] text-muted-foreground shrink-0">
+                              on screen
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                          {href
+                            ? new Date(s.updated_at).toLocaleString()
+                            : `Saved in an unknown mode ("${setMode}"); it cannot be opened here.`}
                         </div>
                       </div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">
-                        {new Date(s.updated_at).toLocaleString()}
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleLoad(s.id)}
-                      disabled={loadingId === s.id}
-                    >
-                      {loadingId === s.id ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        "Open"
+                      {href && (
+                        <Button size="sm" variant="outline" asChild>
+                          <AppLink
+                            href={href}
+                            onClick={() => onOpenChange(false)}
+                          >
+                            Open
+                          </AppLink>
+                        </Button>
                       )}
-                    </Button>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmDeleteId(s.id)}
-                      className="p-1 text-muted-foreground hover:text-destructive"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </li>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteId(s.id)}
+                        className="p-1 text-muted-foreground hover:text-destructive"
+                        title="Delete this battle"
+                        aria-label={`Delete ${s.name}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </li>
                   );
                 })}
               </ul>
@@ -215,8 +247,12 @@ export function ComparisonSetLoaderDialog({
         onOpenChange={(o) => {
           if (!o) setConfirmDeleteId(null);
         }}
-        title="Delete comparison set?"
-        description="The underlying conversation records are not deleted — only this saved grouping."
+        title="Delete this battle?"
+        description={
+          confirmDeleteId && confirmDeleteId === activeSetId
+            ? "This is the battle on screen. It leaves your saved battles and its link stops working; the page keeps what is on screen as a new, unsaved battle. The conversations stay in your chat history."
+            : "It leaves your saved battles and its link stops working. The conversations stay in your chat history."
+        }
         confirmLabel="Delete"
         variant="destructive"
         onConfirm={handleConfirmDelete}
@@ -231,6 +267,9 @@ const MODE_BADGE_STYLES: Record<string, string> = {
   tools: "bg-amber-500/15 text-amber-500 border-amber-500/30",
   "system-prompt": "bg-purple-500/15 text-purple-500 border-purple-500/30",
   "request-mod": "bg-rose-500/15 text-rose-500 border-rose-500/30",
+  model: "bg-sky-500/15 text-sky-500 border-sky-500/30",
+  tuning: "bg-orange-500/15 text-orange-500 border-orange-500/30",
+  variations: "bg-teal-500/15 text-teal-500 border-teal-500/30",
 };
 
 function ModeBadge({ mode }: { mode: string }) {
@@ -239,7 +278,7 @@ function ModeBadge({ mode }: { mode: string }) {
     "bg-muted text-muted-foreground border-border";
   return (
     <span
-      className={`inline-flex items-center px-1.5 py-0 text-[9px] font-mono font-medium uppercase tracking-wider rounded border ${className}`}
+      className={`inline-flex items-center px-1.5 py-0 text-[9px] font-mono font-medium uppercase tracking-wider rounded border shrink-0 ${className}`}
     >
       {mode}
     </span>

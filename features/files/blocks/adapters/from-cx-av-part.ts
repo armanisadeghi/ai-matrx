@@ -60,10 +60,17 @@ export function fromCxAudioPart(part: AudioMediaPart): AudioOutputData & {
   };
 }
 
-export function fromCxVideoPart(part: VideoMediaPart): VideoOutputData {
+export function fromCxVideoPart(part: VideoMediaPart): VideoOutputData & {
+  reference_role: string | null;
+  reference_name: string | null;
+} {
   return {
     type: "video_output",
     ...liftUrls(part),
     mime_type: part.mime_type ?? "video/*",
+    // A video reference's role (extend / restyle) and its `@name` — carried so
+    // a reload redisplays them (see ReferenceRoleCaption).
+    reference_role: part.role ?? null,
+    reference_name: part.name ?? null,
   };
 }

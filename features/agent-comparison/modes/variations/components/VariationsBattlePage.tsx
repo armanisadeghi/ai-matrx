@@ -9,7 +9,7 @@
  * against every variation via the manual endpoint; nothing persists to the
  * agents table.
  *
- * Layout mirrors the other locked-axis modes: ModePicker + toolbar +
+ * Layout mirrors the other locked-axis modes: shared header +
  * template/test-input strip + dnd-reorderable run columns + shared runs
  * window. The mode-specific piece is the tabbed editor window.
  */
@@ -35,7 +35,6 @@ import {
 } from "@/components/ui/resizable";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { SharedRunsWindow } from "@/features/agent-comparison/components/SharedRunsWindow";
-import { ModePicker } from "@/features/agent-comparison/shared/ModePicker";
 import {
   reorderVariationColumns,
   setVariationColumnCollapsed,
@@ -44,11 +43,17 @@ import {
   selectSourceAgentId,
   selectVariationColumnIds,
   selectVariationColumns,
+  selectActiveVariationsSetId,
 } from "../redux/selectors";
 import {
   addColumnToVariationsBattle,
   addVariationColumns,
+  loadVariationsBattleSet,
 } from "../redux/thunks";
+import {
+  BattleRouteNotice,
+  useBattleRoute,
+} from "@/features/agent-comparison/shared/useBattleRoute";
 import { LockedInputSection } from "./LockedInputSection";
 import { VariationsColumn } from "./VariationsColumn";
 import { VariationsToolbar } from "./VariationsToolbar";
@@ -58,8 +63,15 @@ import type { VariationColumn as VariationColumnType } from "../types";
 const RUNS_WINDOW_ID = "agent-comparison-variations-runs";
 const EDITOR_WINDOW_ID = "agent-comparison-variations-editor";
 
-export function VariationsBattlePage() {
+export function VariationsBattlePage({ setId = null }: { setId?: string | null }) {
   const dispatch = useAppDispatch();
+  const activeSetId = useAppSelector(selectActiveVariationsSetId);
+  const routeStatus = useBattleRoute({
+    mode: "variations",
+    urlSetId: setId,
+    activeSetId,
+    load: (id) => dispatch(loadVariationsBattleSet({ setId: id })).unwrap(),
+  });
   const columns = useAppSelector(selectVariationColumns);
   const columnIds = useAppSelector(selectVariationColumnIds);
   const sourceAgentId = useAppSelector(selectSourceAgentId);
@@ -100,13 +112,14 @@ export function VariationsBattlePage() {
       className="h-full flex flex-col overflow-hidden"
       style={{ paddingTop: "var(--shell-header-h)" }}
     >
-      <ModePicker />
       <VariationsToolbar
         runsWindowOpen={runsWindowOpen}
         onToggleRunsWindow={() => setRunsWindowOpen((v) => !v)}
         editorOpen={editorOpen}
         onToggleEditor={toggleEditor}
       />
+
+      <BattleRouteNotice status={routeStatus} mode="variations" />
 
       <LockedInputSection />
 

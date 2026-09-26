@@ -400,7 +400,7 @@ function DefaultFallback({
         <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-md flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-destructive mb-1">Error</p>
+            <p className="text-sm font-medium text-destructive mb-1">Error <ErrorAlchemyMenu /></p>
             <p className="text-sm text-destructive/80">{error} <ErrorAlchemyMenu error={error} /></p>
           </div>
         </div>

@@ -56455,6 +56455,7 @@ export type Database = {
         }[]
       }
       door_identity_args: { Args: { p_oid: unknown }; Returns: string }
+      doors_only_refusals: { Args: { p_tbl: unknown }; Returns: string[] }
       drop_governance_guard: {
         Args: { p_schema: string; p_table: string }
         Returns: undefined
@@ -56727,6 +56728,17 @@ export type Database = {
             }
             Returns: boolean
           }
+      is_doors_only_refusal: {
+        Args: {
+          p_cmd: unknown
+          p_name: string
+          p_permissive: boolean
+          p_qual: string
+          p_roles: unknown[]
+          p_withcheck: string
+        }
+        Returns: boolean
+      }
       is_external_principal: { Args: { p_user_id?: string }; Returns: boolean }
       is_last_organization: {
         Args: { p_org_id: string; p_user_id: string }
@@ -67339,6 +67351,7 @@ export type Database = {
           action: string
           actor: string | null
           at: string
+          door: string | null
           feature: string
           id: number
           key: string
@@ -67353,6 +67366,7 @@ export type Database = {
           action: string
           actor?: string | null
           at?: string
+          door?: string | null
           feature: string
           id?: never
           key: string
@@ -67367,6 +67381,7 @@ export type Database = {
           action?: string
           actor?: string | null
           at?: string
+          door?: string | null
           feature?: string
           id?: never
           key?: string
@@ -71882,6 +71897,10 @@ export type Database = {
         Returns: Json
       }
       build_lifecycle_reference_map: { Args: never; Returns: Json }
+      capture_decision_items: {
+        Args: { p_message_id: string }
+        Returns: number
+      }
       carrying_cycle_is_declared: {
         Args: {
           p_a_id: string
@@ -72410,6 +72429,21 @@ export type Database = {
         }
         Returns: Json
       }
+      knob_configuration: {
+        Args: { p_as_of?: string; p_organization_id?: string }
+        Returns: Json
+      }
+      knob_history: {
+        Args: {
+          p_feature: string
+          p_key: string
+          p_limit?: number
+          p_organization_id?: string
+          p_scope_id?: string
+          p_scope_kind?: string
+        }
+        Returns: Json
+      }
       knob_history_row_id: {
         Args: {
           p_feature: string
@@ -72508,6 +72542,7 @@ export type Database = {
         Args: { p_key: string; p_organization_id?: string }
         Returns: Json
       }
+      knob_write_door_label: { Args: never; Returns: string }
       lifecycle_archive_candidates: {
         Args: {
           p_entity_token: string
@@ -75574,6 +75609,15 @@ export type Database = {
           ok: boolean
           severity: string
         }[]
+      }
+      _access_request_file: {
+        Args: {
+          p_level?: string
+          p_message?: string
+          p_resource_id: string
+          p_resource_type: string
+        }
+        Returns: Json
       }
       _category_json: {
         Args: { p_row: Database["platform"]["Tables"]["categories"]["Row"] }

@@ -75,6 +75,7 @@ import {
 import type { InteractionRow } from "@/features/crm/types";
 import type { ChaseboxRow } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * What the reviewer currently has in front of them, lifted to the page so the
@@ -713,6 +714,7 @@ export function ChaseboxDraftDialog({
                 {problem.unresolved.join(", ")}
               </p>
             )}
+            <ErrorAlchemyMenu error={problem.message} />
           </div>
         )}
 

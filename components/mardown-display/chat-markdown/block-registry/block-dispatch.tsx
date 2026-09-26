@@ -43,7 +43,8 @@
  */
 
 import { NestedRichContent } from "@/components/rich-content/standard/NestedRichContent";
-import React from "react";
+import React, { Fragment } from "react";
+import { ReferenceRoleCaption } from "@/features/agents/image-roles/ReferenceRoleCaption";
 import { BlockComponents } from "./BlockComponentRegistry";
 import { looksLikeDiff } from "../diff-blocks/diff-style-registry";
 import { InlineCodeSnippet } from "../InlineCodeSnippet";
@@ -1678,8 +1679,12 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
     // `Record<string, unknown>` — anything that doesn't pass the guard is
     // a stale entry from before the migration and gets silently skipped.
     if (!isUnifiedImageBlock(block.serverData)) return null;
+    const image = block.serverData;
     return (
-      <BlockComponents.ImageOutputBlock key={index} block={block.serverData} />
+      <Fragment key={index}>
+        <ReferenceRoleCaption role={image.referenceRole} name={image.referenceName} />
+        <BlockComponents.ImageOutputBlock block={image} />
+      </Fragment>
     );
   },
 
@@ -1692,7 +1697,12 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
     // never leaks a raw signed S3 URL. The renderer also resolves the
     // Phase-1c `posterUrl` the same way. See the renderer for the rationale.
     const sd = (block.serverData ?? {}) as Record<string, unknown>;
-    return <VideoOutputBlockRenderer key={index} data={sd} />;
+    return (
+      <Fragment key={index}>
+        <ReferenceRoleCaption role={sd.reference_role} name={sd.reference_name} />
+        <VideoOutputBlockRenderer data={sd} />
+      </Fragment>
+    );
   },
 
   youtube: ({ block, index }) => {

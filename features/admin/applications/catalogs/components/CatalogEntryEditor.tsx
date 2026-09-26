@@ -947,6 +947,7 @@ export function CatalogEntryEditor({
                       UNREACHABLE — {artifactProbe.detail}. Activating anyway
                       ships a broken download to every client. Override only if
                       you know the URL works outside the browser.
+                      <ErrorAlchemyMenu />
                     </p>
                   ) : null}
                   {artifactProbe.status === "cors" ? (

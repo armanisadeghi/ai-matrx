@@ -11,6 +11,7 @@ import { pgErrorToError } from "@ai-matrx/data";
 import { sanitizeAgentToolIds } from "@/features/agents/redux/agent-definition/sanitize-tool-ids";
 import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
+import { agentNameTaken } from "@/features/agents/redux/agent-definition/agentNameTaken";
 
 type AgentInsert = Omit<
   Database["agent"]["Tables"]["definition"]["Insert"],
@@ -78,6 +79,41 @@ function seedToInsertPayload(
  * the store and passes it; with nothing selected this refuses and writes
  * nothing.
  */
+
+/**
+ * Insert a SEEDED agent (blank / template), taking the free name the database
+ * offers when the seed's name is already used in the organization.
+ *
+ * A seed's name ("Untitled Agent", a template's title) is not something the
+ * person typed, so `agent._refuse_duplicate_agent_name`'s offer ("Name this
+ * one "Untitled Agent (2)"") is applied here instead of shown as a dead-end
+ * refusal on an empty page (felt 2026-09-26 on /agents/new/manual: every
+ * second blank agent in an organization failed to create).
+ */
+async function insertSeededDefinition(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  row: AgentInsert,
+) {
+  let attempt = row;
+  for (let tries = 0; tries < 3; tries += 1) {
+    const result = await supabase
+      .schema("agent")
+      .from("definition")
+      .insert(attempt)
+      .select("id")
+      .single();
+    const taken = result.error ? agentNameTaken(result.error) : null;
+    if (!taken) return result;
+    attempt = { ...attempt, name: taken.suggestion };
+  }
+  return supabase
+    .schema("agent")
+    .from("definition")
+    .insert(attempt)
+    .select("id")
+    .single();
+}
+
 export async function createAgentFromSeed(
   seed: Omit<Partial<AgentDefinition>, "id">,
   organizationId: string,
@@ -103,15 +139,10 @@ export async function createAgentFromSeed(
     redirect(await currentRequestLoginHref("/agents/new"));
   }
 
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("definition")
-    .insert({
-      ...seedToInsertPayload(seed, trimmedOrganizationId),
-      created_by: user.id,
-    })
-    .select("id")
-    .single();
+  const { data, error } = await insertSeededDefinition(supabase, {
+    ...seedToInsertPayload(seed, trimmedOrganizationId),
+    created_by: user.id,
+  });
 
   if (error) throw pgErrorToError(error);
   // agent-link-ok: this action just created the agent for this user
@@ -152,10 +183,7 @@ export async function createSystemAgentFromSeed(
     throw new Error("Forbidden: admin privileges required");
   }
 
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("definition")
-    .insert({
+  const { data, error } = await insertSeededDefinition(supabase, {
       ...seedToInsertPayload(seed),
       // org-fallback-deliberate: a builtin agent is platform catalog content owned by the system organization; the builtin guard forces the same id
       organization_id: SYSTEM_ORGANIZATION_ID,
@@ -163,9 +191,7 @@ export async function createSystemAgentFromSeed(
       is_active: true,
       created_by: user.id,
       task_id: null,
-    })
-    .select("id")
-    .single();
+    });
 
   if (error) throw pgErrorToError(error);
   redirect(`/administration/agents/system-agents/agents/${data.id}/build`);

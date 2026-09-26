@@ -8,6 +8,7 @@ import {
   formatYouTubeDuration,
 } from "@/features/marketing/discovery/youtube/formatters";
 import type { YouTubeVideoIdentity } from "../../service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The compact video-identity line for GENERIC research surfaces: channel,
@@ -93,6 +94,7 @@ export function VideoProcessingChip({
       <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-px text-[10px] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 whitespace-nowrap">
         <AlertTriangle className="h-2.5 w-2.5" />
         Processing failed
+        <ErrorAlchemyMenu />
       </span>
     );
   }

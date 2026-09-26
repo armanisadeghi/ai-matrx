@@ -17,6 +17,7 @@
 
 import { useId, useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * How finished a section is. The word the person reads is the one we can prove.
@@ -273,7 +274,7 @@ export function StatusFact({
             {problem ? (
                 // NOTHING FAILS SILENTLY. A number we could not read is never
                 // drawn as a zero, a dash or a spinner that never ends.
-                <div className="mt-0.5 text-sm text-amber-700 dark:text-amber-300">{problem}</div>
+                <div className="mt-0.5 text-sm text-amber-700 dark:text-amber-300">{problem} <ErrorAlchemyMenu error={problem} /></div>
             ) : value === undefined ? (
                 <div className="mt-0.5 text-sm text-muted-foreground">Reading…</div>
             ) : (

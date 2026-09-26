@@ -23,6 +23,7 @@ import { feedSentence, isFed } from "./words";
 import { hasHolderDefault } from "./consumption-writer";
 import { RAIL_MAX_HEIGHT } from "./rail-height";
 import type { HolderInputs } from "./useHolderInputs";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface HolderInputsColumnProps {
   inputs: HolderInputs;
@@ -83,6 +84,7 @@ export function HolderInputsColumn({
         <p className="flex items-start gap-1.5 px-3 py-6 text-[11.5px] leading-relaxed text-destructive">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           {inputs.message}
+          <ErrorAlchemyMenu error={inputs.message} />
         </p>
       ) : inputs.targets.length === 0 ? (
         <p className="px-3 py-6 text-[11.5px] leading-relaxed text-muted-foreground">

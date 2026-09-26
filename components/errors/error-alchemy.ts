@@ -66,6 +66,12 @@ export interface ErrorAlchemyInput {
    * the code, HTTP status, relation and request id.
    */
   captured?: readonly CapturedErrorLike[];
+  /**
+   * The table / RPC / endpoint names THIS render reads or writes. A captured
+   * error is pinned as the cause only when its relation is one of these —
+   * never because the sentence happens to contain a table's name.
+   */
+  calls?: readonly string[];
 }
 
 /** The fields of a `lib/diagnostics` captured error the payload uses. */
@@ -94,44 +100,29 @@ function overlaps(sentence: string, message: string): boolean {
 }
 
 /**
- * The captured errors that explain THIS sentence: same route, within the last
- * two minutes, newest first; when any of them says the same words as the
- * sentence, only those. Never another page's error, never an old one.
+ * The errors captured on this route in the last two minutes, newest first —
+ * candidates only. Which one (if any) caused the box is decided by the box's
+ * declared `calls`, never by words in its sentence.
  */
 export function matchCapturedErrors(
-  sentence: string,
+  _sentence: string,
   route: string | null,
   captured: readonly CapturedErrorLike[],
   now: number = Date.now(),
 ): CapturedErrorLike[] {
-  const lower = sentence.toLowerCase();
-  const scored = captured
+  return captured
     .filter((c) => route !== null && c.route === route && now - c.lastAt <= CAPTURE_WINDOW_MS)
-    .map((c) => ({
-      c,
-      score:
-        (c.relation && lower.includes(c.relation.toLowerCase()) ? 2 : 0) +
-        (overlaps(sentence, c.message) || (c.userMessage ? overlaps(sentence, c.userMessage) : false) ? 1 : 0),
-    }))
-    .sort((a, b) => b.score - a.score || b.c.lastAt - a.c.lastAt);
-  const best = scored[0]?.score ?? 0;
-  return (best > 0 ? scored.filter((s) => s.score === best) : scored).slice(0, 3).map((s) => s.c);
+    .sort((a, b) => b.lastAt - a.lastAt)
+    .slice(0, 5);
 }
 
-/**
- * The one captured error that certainly belongs to the sentence: the only
- * candidate, or the only one whose relation the sentence names. Several
- * equally likely errors are listed, never pinned on the sentence.
- */
-function certainCapture(
-  sentence: string,
-  captured: readonly CapturedErrorLike[] | undefined,
-): CapturedErrorLike | undefined {
-  if (!captured || captured.length === 0) return undefined;
-  if (captured.length === 1) return captured[0];
-  const lower = sentence.toLowerCase();
-  const named = captured.filter((c) => c.relation && lower.includes(c.relation.toLowerCase()));
-  return named.length === 1 ? named[0] : undefined;
+function isOwnCall(c: CapturedErrorLike, calls: readonly string[] | undefined): boolean {
+  if (!calls || calls.length === 0 || !c.relation) return false;
+  const relation = c.relation.toLowerCase();
+  return calls.some((call) => {
+    const name = call.toLowerCase();
+    return relation === name || relation.endsWith(`.${name}`) || name.endsWith(`.${relation}`);
+  });
 }
 
 function capturedFields(c: CapturedErrorLike): Record<string, unknown> {
@@ -307,7 +298,9 @@ function hasInput(value: unknown): boolean {
 
 /** The sentence the person saw, as plain text (the Copy action). */
 export function buildErrorHumanText(input: ErrorAlchemyInput): string {
-  const head = input.title ? `${input.title}: ${input.message}` : input.message;
+  const repeats =
+    input.title && input.message.trim().toLowerCase().startsWith(input.title.trim().toLowerCase());
+  const head = input.title && !repeats ? `${input.title}: ${input.message}` : input.message;
   return input.operation ? `${head}\nWhile: ${input.operation}` : head;
 }
 
@@ -317,7 +310,9 @@ export function buildErrorAlchemyPayload(
   surface: ErrorSurfaceSnapshot,
 ): AgentPayloadInput {
   const described = describeError(input.error);
-  const best = certainCapture(input.message, input.captured);
+  const own = (input.captured ?? []).filter((c) => isOwnCall(c, input.calls));
+  const others = (input.captured ?? []).filter((c) => !isOwnCall(c, input.calls));
+  const best = own[0];
   const code = input.code ?? described.code ?? best?.code;
   const status = input.status ?? described.status ?? best?.status;
   const error: DescribedError & { relation?: string; request_id?: string } = {
@@ -352,8 +347,13 @@ export function buildErrorAlchemyPayload(
       records: input.records ? [...input.records] : [],
       unsaved_input: unsaved ? input.unsavedInput : null,
       ...(input.details ? { details: input.details } : {}),
-      ...(input.captured && input.captured.length > 0
-        ? { captured_errors: input.captured.map(capturedFields) }
+      ...(own.length > 0 ? { captured_errors: own.map(capturedFields) } : {}),
+      ...(others.length > 0
+        ? {
+            recent_unmatched_errors: others.map(capturedFields),
+            recent_unmatched_note:
+              "Requests that failed on this page in the last two minutes. None is known to be this box's own call; any may be unrelated.",
+          }
         : {}),
       surface: surfaceBlock(surface),
     },

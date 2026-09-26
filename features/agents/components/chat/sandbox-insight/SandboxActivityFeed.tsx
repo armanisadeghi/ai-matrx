@@ -77,6 +77,7 @@ const ActivityRow: React.FC<{ row: SandboxActivityRow }> = ({ row }) => {
             {failed && row.exitCode === null && (
               <span className="font-medium text-red-600 dark:text-red-400">
                 failed
+                <ErrorAlchemyMenu />
               </span>
             )}
             {duration && <span className="tabular-nums">{duration}</span>}

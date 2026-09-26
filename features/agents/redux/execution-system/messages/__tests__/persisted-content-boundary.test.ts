@@ -63,8 +63,11 @@ describe("persisted message content boundary", () => {
   });
 
   it("does not disguise malformed current or malformed legacy content", () => {
+    // A malformed KNOWN kind still throws. (An unknown kind is not malformed:
+    // it surfaces as an `unknown_part` entry and renders honestly — see
+    // persisted-typed-parts-survive-reload.test.ts.)
     expect(() =>
-      parsePersistedMessageContent([{ type: "not_a_message_part" }]),
+      parsePersistedMessageContent([{ type: "text", text: 42 }]),
     ).toThrow();
     expect(() =>
       parsePersistedMessageContent([

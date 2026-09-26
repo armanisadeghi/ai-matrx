@@ -57,6 +57,7 @@ import {
 } from "@/features/content-ir/input/kind-input-values";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type SchemaState =
   | { status: "loading" }
@@ -186,6 +187,7 @@ export default function KindInputsTab({
       <div className="mx-auto flex max-w-4xl items-center gap-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-700 dark:text-red-300">
         <CircleAlert className="h-3.5 w-3.5 shrink-0" />
         Failed to reconstruct the kind schema: {schemaState.message}
+        <ErrorAlchemyMenu error={schemaState.message} />
       </div>
     );
   }
@@ -336,6 +338,7 @@ export default function KindInputsTab({
                     >
                       <X className="mt-0.5 h-3 w-3 shrink-0" />
                       {message}
+                      <ErrorAlchemyMenu error={message} />
                     </p>
                   ))}
                 </div>
@@ -477,6 +480,7 @@ export default function KindInputsTab({
                   {Object.keys(assembled.coercionErrors).length} field(s) could
                   not be coerced into kind space and were omitted from the
                   instance — see the form.
+                  <ErrorAlchemyMenu />
                 </p>
               )}
 
@@ -503,6 +507,7 @@ export default function KindInputsTab({
                       className="font-mono text-[11px] text-red-700 dark:text-red-300"
                     >
                       {message}
+                      <ErrorAlchemyMenu error={message} />
                     </li>
                   ))}
                 </ul>

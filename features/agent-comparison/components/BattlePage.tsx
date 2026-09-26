@@ -36,8 +36,19 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { addBattleColumn } from "../redux/thunks";
-import { selectBattleColumnIds, selectBattleColumns } from "../redux/selectors";
+import {
+  addBattleColumn,
+  loadBattleSet,
+} from "../redux/thunks";
+import {
+  selectActiveBattleSetId,
+  selectBattleColumnIds,
+  selectBattleColumns,
+} from "../redux/selectors";
+import {
+  BattleRouteNotice,
+  useBattleRoute,
+} from "../shared/useBattleRoute";
 import { reorderColumns, setColumnCollapsed } from "../redux/battleSlice";
 import { BattleToolbar } from "./BattleToolbar";
 import { BattleColumn } from "./BattleColumn";
@@ -47,7 +58,6 @@ import { SharedRunsWindow } from "./SharedRunsWindow";
 import { DecisionComparisonWindow } from "./DecisionComparisonWindow";
 import { SharedRunSettingsWindow } from "./SharedRunSettingsWindow";
 import { MasterInputWindow } from "./MasterInputWindow";
-import { ModePicker } from "../shared/ModePicker";
 import type { BattleColumn as BattleColumnType } from "../types";
 
 const SHARED_CONTEXT_WINDOW_ID = "agent-comparison-shared-context";
@@ -56,8 +66,15 @@ const SHARED_RUN_SETTINGS_WINDOW_ID = "agent-comparison-shared-run-settings";
 const MASTER_INPUT_WINDOW_ID = "agent-comparison-master-input";
 const DECISIONS_WINDOW_ID = "agent-comparison-decisions";
 
-export function BattlePage() {
+export function BattlePage({ setId = null }: { setId?: string | null }) {
   const dispatch = useAppDispatch();
+  const activeSetId = useAppSelector(selectActiveBattleSetId);
+  const routeStatus = useBattleRoute({
+    mode: "open",
+    urlSetId: setId,
+    activeSetId,
+    load: (id) => dispatch(loadBattleSet({ setId: id })).unwrap(),
+  });
   const store = useAppStore();
   const columns = useAppSelector(selectBattleColumns);
   const columnIds = useAppSelector(selectBattleColumnIds);
@@ -99,7 +116,6 @@ export function BattlePage() {
       className="h-full flex flex-col overflow-hidden"
       style={{ paddingTop: "var(--shell-header-h)" }}
     >
-      <ModePicker />
       <BattleToolbar
         contextWindowOpen={contextWindowOpen}
         onToggleContextWindow={() => setContextWindowOpen((v) => !v)}
@@ -112,6 +128,8 @@ export function BattlePage() {
         decisionsWindowOpen={decisionsWindowOpen}
         onToggleDecisionsWindow={() => setDecisionsWindowOpen((v) => !v)}
       />
+
+      <BattleRouteNotice status={routeStatus} mode="open" />
 
       <div className="flex-1 min-h-0 flex">
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>

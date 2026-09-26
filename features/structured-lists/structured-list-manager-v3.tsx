@@ -159,6 +159,7 @@ import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------- Types ----------
 
@@ -1638,6 +1639,7 @@ function SaveIndicator({ status }: { status: SaveStatus }) {
     return (
       <span className="flex items-center gap-1 text-destructive">
         <X className="h-3 w-3" /> Save failed
+        <ErrorAlchemyMenu />
       </span>
     );
   }

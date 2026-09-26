@@ -93,6 +93,7 @@ import type {
   LuluShippingOption,
   LuluTrimOption,
 } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------------------------------------------------------------------------
 // Demo destinations — a cost calculation needs a real deliverable address.
@@ -1011,6 +1012,7 @@ export default function LuluPricingDemoPage() {
                   <p className="flex items-center gap-1.5 text-xs text-destructive">
                     <Info className="size-3.5" />
                     {shippingState.headline}
+                    <ErrorAlchemyMenu />
                   </p>
                 ) : null}
               </Section>

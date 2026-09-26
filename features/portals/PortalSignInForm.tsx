@@ -15,6 +15,7 @@ import { Loader2, Mail } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 
 import { Button } from "@/components/ui/button";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function PortalSignInForm({ slug }: { slug: string }) {
   const [email, setEmail] = useState("");
@@ -102,6 +103,7 @@ export function PortalSignInForm({ slug }: { slug: string }) {
       {problem ? (
         <p id="portal-email-problem" className="text-sm text-destructive">
           {problem}
+          <ErrorAlchemyMenu error={problem} />
         </p>
       ) : (
         <p className="text-sm text-muted-foreground">

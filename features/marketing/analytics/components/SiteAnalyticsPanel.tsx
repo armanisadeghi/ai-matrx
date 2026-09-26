@@ -91,6 +91,7 @@ import {
   type BackendFailureExplanation,
 } from "@/lib/api/errors";
 import type { MarketingSite } from "@/features/marketing/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function integer(value: number): string {
   return Intl.NumberFormat().format(Math.round(value));
@@ -505,6 +506,7 @@ export function SiteAnalyticsPanel({
                           the copy payload print this same string. */}
                       <p className="text-[11px] font-medium text-warning">
                         {data.comparison.caveat}
+                        <ErrorAlchemyMenu />
                       </p>
                       {nowRate !== null && thenRate !== null ? (
                         <p className="text-[11px] text-muted-foreground">

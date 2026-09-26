@@ -1956,6 +1956,7 @@ export function SetupView() {
           <div className="border-b border-warning/40 bg-warning/10 px-3 py-1.5 text-xs text-foreground">
             {library.data.problems.length} site shape definition(s) had a
             problem: {library.data.problems[0]}
+            <ErrorAlchemyMenu />
           </div>
         ) : null}
 

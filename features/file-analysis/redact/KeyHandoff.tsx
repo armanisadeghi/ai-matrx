@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { downloadSessionKey, type StoredSession } from "./session-keys";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** null = escrow not attempted (e.g. non-reversible mode). */
 export type EscrowStatus = "escrowed" | "failed" | null;
@@ -129,6 +130,7 @@ export function KeyHandoff({
               browser. Clearing site data makes the originals permanently
               unrecoverable. Download the key file now and report the escrow
               failure to your administrator.
+              <ErrorAlchemyMenu />
             </div>
           ) : null}
 

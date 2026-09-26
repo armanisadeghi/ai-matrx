@@ -22,6 +22,7 @@ import {
   diagnosticsRepairPrompt,
   type DiagnosticsCopyInput,
 } from '../utils/diagnostics-copy';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface VoiceDiagnosticsDisplayProps {
   error?: string | null;
@@ -167,7 +168,7 @@ export function VoiceDiagnosticsDisplay({
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="font-medium text-destructive mb-1">Error Occurred</p>
+              <p className="font-medium text-destructive mb-1">Error Occurred <ErrorAlchemyMenu /></p>
               <p className="text-sm text-muted-foreground">{error}</p>
               {errorCode && (
                 <p className="text-xs text-muted-foreground mt-1">Code: {errorCode}</p>

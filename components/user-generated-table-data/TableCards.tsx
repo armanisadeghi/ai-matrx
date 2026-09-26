@@ -652,6 +652,7 @@ export default function TableCards() {
         message={error}
         error={errorCause}
         operation="Load your tables"
+        calls={["get_user_tables"]}
         actions={
           <Button onClick={fetchUserTables} variant="outline" size="sm">
             Try again

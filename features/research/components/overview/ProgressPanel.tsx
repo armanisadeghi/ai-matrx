@@ -128,7 +128,7 @@ export function ProgressPanel({ isStreaming, currentStep, messages, error, liveS
                             <Brain className="h-3 w-3 text-purple-400" />
                             <span className="tabular-nums font-medium text-foreground">{liveStats.analyzed}</span> analyzed
                             {liveStats.analysisFailed > 0 && (
-                                <span className="text-destructive/70">({liveStats.analysisFailed} failed)</span>
+                                <span className="text-destructive/70">({liveStats.analysisFailed} failed) <ErrorAlchemyMenu /></span>
                             )}
                         </span>
                     )}

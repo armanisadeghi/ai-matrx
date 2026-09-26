@@ -16,7 +16,8 @@ import { destroyInstance } from "@/features/agents/redux/execution-system/conver
 import { forkConversationServer } from "@/features/agents/redux/execution-system/message-crud/server/fork-conversation-server.thunk";
 import { ConversationPickerWindow } from "@/features/agents/components/conversation-history/ConversationPickerWindow";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
-import { ModePicker } from "@/features/agent-comparison/shared/ModePicker";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { BattleModeNav } from "@/features/agent-comparison/shared/ModePicker";
 import { ConversationBattleColumn } from "./ConversationBattleColumn";
 import { createConversationBattleForks } from "../forkConversationBattle";
 import type {
@@ -121,7 +122,14 @@ export function ConversationBattlePage() {
       className="matrx-touch-targets h-full flex flex-col overflow-hidden"
       style={{ paddingTop: "var(--shell-header-h)" }}
     >
-      <ModePicker />
+      <RouteHeader
+        left={
+          <span className="text-sm font-medium truncate">
+            Conversation battle
+          </span>
+        }
+        center={<BattleModeNav />}
+      />
 
       <div className="shrink-0 flex h-10 items-center gap-2 border-b border-border bg-card px-3">
         <div className="flex min-w-0 items-center gap-1.5">

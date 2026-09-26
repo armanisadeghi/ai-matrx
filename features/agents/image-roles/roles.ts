@@ -311,3 +311,21 @@ export function variableRunHint(variable: {
 function isMediaComponent(type: string | undefined): boolean {
   return type === "image" || type === "video" || type === "audio";
 }
+
+/**
+ * The one-line caption a REDISPLAYED reference shows — "Subject reference",
+ * "Style reference · @brand". Shared by the attachment chip and the inline
+ * image/video block so a role set in the builder is never lost on reload. An
+ * unrecognised role string is shown as-is (honest) rather than dropped.
+ */
+export function referenceRoleCaption(role: unknown, name: unknown): string | null {
+  const roleLabel =
+    typeof role === "string" && role
+      ? isReferenceRole(role)
+        ? IMAGE_ROLE_META[role].ask
+        : role
+      : null;
+  const refName = typeof name === "string" ? normalizeReferenceName(name) : null;
+  if (!roleLabel && !refName) return null;
+  return [roleLabel, refName ? `@${refName}` : null].filter(Boolean).join(" · ");
+}

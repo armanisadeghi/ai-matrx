@@ -275,6 +275,7 @@ export function SkillIngestPanel({
                       <li key={i} className="break-all">{e}</li>
                     ))}
                   </ul>
+                  <ErrorAlchemyMenu />
                 </div>
               )}
 

@@ -37,6 +37,7 @@ import {
 } from "./agent-import-validation";
 import { ImportQuickFixes } from "./ImportQuickFixes";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -235,6 +236,7 @@ function ImportAnalysisPanel({
               <XCircle className="h-3.5 w-3.5 shrink-0" />
               Fix {errors.length} error{errors.length === 1 ? "" : "s"} before
               converting.
+              <ErrorAlchemyMenu />
             </p>
           ) : null}
 
@@ -242,6 +244,7 @@ function ImportAnalysisPanel({
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wide text-red-700/80 dark:text-red-300/80 mb-1">
                 Errors
+                <ErrorAlchemyMenu />
               </p>
               <ul className="space-y-1.5">
                 {errors.map((issue, i) => (

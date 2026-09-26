@@ -61,6 +61,7 @@ import {
   isOrganizationSelectionCancelled,
 } from "@/lib/organization/organization-gate";
 import { extractErrorMessage } from "@/utils/errors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The one line shown when the only thing missing is a chosen workspace. */
 export const CHOOSE_WORKSPACE_LINE = "Choose a workspace to use this.";
@@ -254,6 +255,7 @@ export function AutomationButton({
             fourth law's silent failure. The reason renders inline again. */}
         <span className="text-[11px] leading-snug text-amber-700 dark:text-amber-400">
           {unavailableAutomationMandateLine(mandateKey, refusedReason)}
+          <ErrorAlchemyMenu />
         </span>
       </div>
     );

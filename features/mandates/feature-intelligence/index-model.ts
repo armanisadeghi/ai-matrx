@@ -146,8 +146,8 @@ export function summarize(feature: DirectoryFeature): DirectorySummary {
 
 /** Why a card matched a search that its name alone does not explain. */
 export type MatchReason =
-  | { kind: "name" }
-  | { kind: "job"; text: string }
+  | { kind: "name"; partial?: boolean }
+  | { kind: "job"; text: string; partial?: boolean }
   | { kind: "place"; text: string }
   | { kind: "holder"; text: string };
 
@@ -185,7 +185,22 @@ export function matchFeature(feature: DirectoryFeature, query: string): MatchRea
   if (place) return { kind: "place", text: place.label };
   const held = feature.jobs.find((row) => row.holderName && hasAll(row.holderName, tokens));
   if (held?.holderName) return { kind: "holder", text: held.holderName };
-  // Words spread across several things: the best single hit still explains it.
-  const partial = feature.jobs.find((row) => tokens.some((t) => jobText(row).toLowerCase().includes(t)));
-  return partial ? { kind: "job", text: partial.name } : { kind: "name" };
+  // Words spread across several things: the job holding the most of them explains it.
+  let best: DirectoryJob | null = null;
+  let bestHits = 0;
+  for (const row of feature.jobs) {
+    const text = jobText(row).toLowerCase();
+    const hits = tokens.filter((t) => text.includes(t)).length;
+    if (hits > bestHits) {
+      best = row;
+      bestHits = hits;
+    }
+  }
+  return best ? { kind: "job", text: best.name, partial: true } : { kind: "name", partial: true };
+}
+
+/** Sort key: the name itself, then one thing holding every word, then words spread out. */
+export function matchStrength(reason: MatchReason): number {
+  if ("partial" in reason && reason.partial) return 0;
+  return reason.kind === "name" ? 2 : 1;
 }

@@ -36,6 +36,7 @@ import {
   type DriftMessageInput,
 } from "./driftMessageTemplate";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface NotifyTarget {
   recipientIds: string[];
@@ -187,6 +188,7 @@ export function NotifyOwnerDialog({ open, target, onClose }: NotifyOwnerDialogPr
             <p className="text-xs text-destructive">
               Failed for {failed.length} recipient{failed.length !== 1 ? "s" : ""}. Press send to
               retry.
+              <ErrorAlchemyMenu />
             </p>
           )}
         </div>

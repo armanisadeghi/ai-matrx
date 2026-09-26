@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import type { RunStatus } from "@/features/podcasts/generator/types";
 import type { UseStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";
 import { humanizeGenerationError } from "@/features/podcasts/generator/errorMessages";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface RunRecoveryBannerProps {
   status: RunStatus;
@@ -175,6 +176,7 @@ export function RunRecoveryBanner({
                 (canReconnect
                   ? "Resume picks up from the failed step — finished work isn't redone."
                   : "Re-run starts fresh from your saved source.")}
+              <ErrorAlchemyMenu />
             </p>
             {h.detail && (
               <details className="mt-1 text-xs text-destructive/60">

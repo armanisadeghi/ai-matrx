@@ -67,6 +67,7 @@ import {
   type ApprovalScope,
   type ApprovalSource,
 } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Decision = "accept" | "reject";
 
@@ -841,6 +842,7 @@ export function ApprovalQueue({
                                 {item.lastAttempt?.state === "failed" ? (
                                   <p className="break-words text-[11px] font-medium text-destructive">
                                     {item.lastAttempt.sentence}
+                                    <ErrorAlchemyMenu />
                                   </p>
                                 ) : null}
                                 {/* 🚨 THE WRITE REACHED GOOGLE AND THE ANSWER

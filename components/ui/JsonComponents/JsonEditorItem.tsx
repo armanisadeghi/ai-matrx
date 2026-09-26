@@ -233,7 +233,7 @@ const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
             </div>
 
             {error && (
-                <div className="text-destructive text-xs mt-0.5 ml-4">{error.message}</div>
+                <div className="text-destructive text-xs mt-0.5 ml-4">{error.message} <ErrorAlchemyMenu /></div>
             )}
 
             {isObject && isExpanded && (
@@ -264,7 +264,6 @@ const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
                     </motion.div>
                 </AnimatePresence>
             )}
-          <ErrorAlchemyMenu />
         </div>
     );
 };

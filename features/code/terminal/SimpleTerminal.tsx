@@ -27,6 +27,7 @@ import { Copy, Check, Trash2, Square as StopIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type LineKind = "command" | "stdout" | "stderr" | "info" | "error";
 
@@ -295,6 +296,7 @@ export const SimpleTerminal: React.FC<SimpleTerminalProps> = ({
               ) : line.kind === "error" ? (
                 <span className="text-red-600 dark:text-red-400">
                   {line.text}
+                  <ErrorAlchemyMenu />
                 </span>
               ) : line.kind === "stderr" ? (
                 // stderr is a stream, not a failure signal — git/npm progress

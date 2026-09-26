@@ -711,6 +711,7 @@ function UnresolvedPinPanel({
         <div className="space-y-1">
           <p className="text-rose-600">
             The server lookup also failed: <TextWithDoors text={error} />
+            <ErrorAlchemyMenu />
           </p>
           {row.agentId && (
             <div className="flex items-center gap-1.5">

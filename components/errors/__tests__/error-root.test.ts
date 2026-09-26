@@ -33,3 +33,12 @@ it("reads a title together with the sentence of the small card it heads", () => 
   const read = readRenderedError(errorRootFor(document.querySelector("[data-error-alchemy-menu]")));
   expect(read.message).toContain("saved content was not available");
 });
+
+it("keeps block elements apart when it reads a box's words (RC-B12 round 2, R2-3)", () => {
+  document.body.innerHTML =
+    '<div class="card"><p>Dashboard metrics couldn\'t load</p><p>Your workspace is still available.</p><span data-error-alchemy-menu=""></span></div>';
+  const read = readRenderedError(errorRootFor(document.querySelector("[data-error-alchemy-menu]")));
+  expect(`${read.title ?? ""} ${read.message}`).not.toMatch(/loadYour/);
+  expect(read.title).toBe("Dashboard metrics couldn't load");
+  expect(read.message).toBe("Your workspace is still available.");
+});

@@ -57,6 +57,7 @@ import {
 } from "./context";
 import { CODE_STATE_LABEL, FIELDS, NONE_FOUND } from "./fields";
 import type { MandateAdminRow } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Spec = EntityColumnSpec<MandateAdminRow>;
 
@@ -307,6 +308,7 @@ function SourceCell({
     return (
       <span className="text-xs text-amber-700 dark:text-amber-300" title="The code scan read failed — see the notice above the list.">
         Unavailable
+        <ErrorAlchemyMenu />
       </span>
     );
   }

@@ -88,6 +88,7 @@ import {
   slugifyVocabValue,
   toDraftRows,
 } from "./lib";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const KIND_COPY: Record<
   VocabKind,
@@ -560,6 +561,7 @@ export function BandVocabularyEditor({
                     >
                       <TriangleAlert className="mt-px h-3 w-3 shrink-0" />
                       {issue.message}
+                      <ErrorAlchemyMenu error={issue.message} />
                     </p>
                   ))}
                 </div>
@@ -745,6 +747,7 @@ export function BandVocabularyEditor({
                 >
                   <TriangleAlert className="mt-px h-3 w-3 shrink-0" />
                   {issue.message}
+                  <ErrorAlchemyMenu error={issue.message} />
                 </p>
               ))}
           </aside>

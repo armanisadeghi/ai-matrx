@@ -124,6 +124,7 @@ export function AdapterCatalog({ className }: { className?: string }) {
           <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
             The server described this list in a way this screen did not expect,
             so part of it is worked out here instead of reported:
+            <ErrorAlchemyMenu />
           </p>
           <ul className="mt-1 space-y-1">
             {problems.map((problem) => (

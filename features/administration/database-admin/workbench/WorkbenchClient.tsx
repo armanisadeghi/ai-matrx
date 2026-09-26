@@ -15,6 +15,7 @@ import { extractVariableNames } from "./utils/interpolate";
 import { VariablesPanel } from "./VariablesPanel";
 import { QueryBlock } from "./QueryBlock";
 import { MergePanel } from "./MergePanel";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function WorkbenchClient() {
   const wb = useQueryWorkbench();
@@ -65,6 +66,7 @@ export function WorkbenchClient() {
             <span className="shrink-0 flex items-center gap-1 text-red-600 dark:text-red-400">
               <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
               <span className="font-mono">{wb.totals.failed}</span> failed
+              <ErrorAlchemyMenu />
             </span>
           )}
           {wb.totals.running > 0 && (

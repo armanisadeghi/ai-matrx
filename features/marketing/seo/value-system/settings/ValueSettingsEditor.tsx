@@ -39,6 +39,7 @@ import {
   isReservedValueLevel,
   mayRemoveValueLevel,
 } from "./lib";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SCOPE_WORD: Record<SettingsScope, string> = {
   platform: "the platform defaults",
@@ -366,6 +367,7 @@ export function ValueSettingsEditor({
         {levelIssues.length > 0 && levels !== null ? (
           <p className="mt-2 text-[11px] text-destructive">
             {levelIssues[0].message}
+            <ErrorAlchemyMenu />
           </p>
         ) : null}
 

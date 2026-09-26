@@ -33,22 +33,29 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   createComparisonSet,
   loadComparisonSet,
-  renameComparisonSet,
   replaceEntries,
   type UpsertEntryInput,
 } from "@/features/agent-comparison/service/comparisonSetsService";
+import {
+  createBattlePersistence,
+  persistForRun,
+  type BattleSubmitResult,
+} from "@/features/agent-comparison/shared/battlePersistence";
+import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import {
   addRequestModColumn,
   removeRequestModColumn,
   replaceRequestModColumn,
   resetRequestMod,
   setActiveRequestModSet,
+  setRequestModColumnLastRequest,
   setLocked,
   setRequestModColumns,
   submitAllFinished,
   submitAllStarted,
 } from "./slice";
-import type { RequestModColumn } from "../types";
+import type { RequestModColumn, RequestModColumnRequest } from "../types";
+import { columnRequestToSave, readLiveColumnRequest } from "../columnRequest";
 
 // =============================================================================
 // Page-wide constants
@@ -230,7 +237,7 @@ export const removeColumnFromRequestModBattle = createAsyncThunk<
 // =============================================================================
 
 export const submitAllRequestMod = createAsyncThunk<
-  { launched: number; failed: number; skipped: number },
+  BattleSubmitResult,
   void,
   ThunkApi
 >(
@@ -244,6 +251,27 @@ export const submitAllRequestMod = createAsyncThunk<
 
       if (!agentId || columns.length === 0) {
         return { launched: 0, failed: 0, skipped: columns.length };
+      }
+
+      // Each column sends its OWN request, and its composer empties the moment it
+      // sends. Keep what each column is about to send, so the saved battle holds
+      // the requests that actually ran — never the emptied composers.
+      for (const col of columns) {
+        dispatch(
+          setRequestModColumnLastRequest({
+            columnId: col.columnId,
+            request: readLiveColumnRequest(state, col.conversationId),
+          }),
+        );
+      }
+
+      // The battle gets (or keeps) its identity BEFORE the runs start, so the
+      // URL names it while the answers stream in.
+      const persisted = await persistForRun(() =>
+        dispatch(persistRequestModBattle()).unwrap(),
+      );
+      if (persisted.cancelled) {
+        return { launched: 0, failed: 0, skipped: columns.length, cancelled: true };
       }
 
       const results = await Promise.allSettled(
@@ -260,27 +288,7 @@ export const submitAllRequestMod = createAsyncThunk<
       const failed = results.filter((r) => r.status === "rejected").length;
       const launched = results.length - failed;
 
-      const post = getState();
-      const activeSetId = post.agentComparisonRequestMod.activeSetId;
-      if (activeSetId) {
-        const entries = buildRequestModEntries(post);
-        try {
-          await replaceEntries(activeSetId, entries);
-          await renameComparisonSet(
-            activeSetId,
-            post.agentComparisonRequestMod.activeSetName ??
-              "Untitled comparison",
-          );
-        } catch (err) {
-          // eslint-disable-next-line no-console
-          console.error(
-            "[request-mod] failed to persist comparison entries:",
-            err,
-          );
-        }
-      }
-
-      return { launched, failed, skipped: 0 };
+      return { launched, failed, skipped: 0, persistError: persisted.error };
     } finally {
       dispatch(submitAllFinished());
     }
@@ -369,15 +377,11 @@ function buildRequestModEntries(state: RootState): UpsertEntryInput[] {
     state.agentComparisonRequestMod.locked;
   if (!agentId) return out;
   state.agentComparisonRequestMod.columns.forEach((col, idx) => {
-    const userInput =
-      state.instanceUserInput.byConversationId[col.conversationId];
-    const variables =
-      state.instanceVariableValues.byConversationId[col.conversationId]
-        ?.userValues ?? {};
+    const request = columnRequestToSave(state, col);
     const meta: PersistedRequestModEntryMeta = {
       label: col.label,
-      user_message: userInput?.text ?? "",
-      variables,
+      user_message: request.user_message,
+      variables: request.variables,
     };
     out.push({
       conversationId: col.conversationId,
@@ -432,16 +436,20 @@ export const saveRequestModBattleAs = createAsyncThunk<
   },
 );
 
-export const saveRequestModBattle = createAsyncThunk<void, void, ThunkApi>(
-  "agentComparisonRequestMod/save",
-  async (_arg, { getState }) => {
-    const state = getState();
-    const setId = state.agentComparisonRequestMod.activeSetId;
-    if (!setId) throw new Error("No active comparison set");
-    const entries = buildRequestModEntries(state);
-    await replaceEntries(setId, entries);
-  },
-);
+const requestModPersistence = createBattlePersistence({
+  typePrefix: "agentComparisonRequestMod",
+  modeLabel: "Request mod battle",
+  selectActiveSetId: (state) => state.agentComparisonRequestMod.activeSetId,
+  selectActiveSetName: (state) => state.agentComparisonRequestMod.activeSetName,
+  selectNamingAgentId: (state) => state.agentComparisonRequestMod.locked.agentId,
+  buildMetadata: buildSetMetadata,
+  buildEntries: buildRequestModEntries,
+  setActive: setActiveRequestModSet,
+});
+
+/** Create this battle on first call; afterwards keep its setup and columns current. */
+export const persistRequestModBattle = requestModPersistence.persist;
+export const renameRequestModBattle = requestModPersistence.rename;
 
 interface LoadedLockedSpec {
   agent_id: string | null;
@@ -523,22 +531,14 @@ export const loadRequestModBattleSet = createAsyncThunk<
       const entryMeta = (entry.metadata ?? {}) as
         | Partial<PersistedRequestModEntryMeta>
         | undefined;
-      if (entryMeta?.user_message) {
-        dispatch(
-          setUserInputText({
-            conversationId: entry.conversation_id,
-            text: entryMeta.user_message,
-          }),
-        );
-      }
-      if (entryMeta?.variables && Object.keys(entryMeta.variables).length > 0) {
-        dispatch(
-          setUserVariableValues({
-            conversationId: entry.conversation_id,
-            values: entryMeta.variables,
-          }),
-        );
-      }
+      const savedRequest: RequestModColumnRequest | null =
+        entryMeta?.user_message ||
+        (entryMeta?.variables && Object.keys(entryMeta.variables).length > 0)
+          ? {
+              user_message: entryMeta?.user_message ?? "",
+              variables: entryMeta?.variables ?? {},
+            }
+          : null;
 
       try {
         await dispatch(
@@ -552,11 +552,36 @@ export const loadRequestModBattleSet = createAsyncThunk<
         console.warn("[request-mod] loadConversation failed:", err);
       }
 
+      // A column that already ran shows its request in its history; putting
+      // it back in the composer would send it a second time on Submit all.
+      // Only a column that never ran gets its saved request back as a draft.
+      const alreadyRan =
+        selectMessageCount(entry.conversation_id)(getState()) > 0;
+      if (savedRequest && !alreadyRan) {
+        if (savedRequest.user_message) {
+          dispatch(
+            setUserInputText({
+              conversationId: entry.conversation_id,
+              text: savedRequest.user_message,
+            }),
+          );
+        }
+        if (Object.keys(savedRequest.variables).length > 0) {
+          dispatch(
+            setUserVariableValues({
+              conversationId: entry.conversation_id,
+              values: savedRequest.variables,
+            }),
+          );
+        }
+      }
+
       nextColumns.push({
         columnId,
         conversationId: entry.conversation_id,
         label: entryMeta?.label ?? `Request ${nextColumns.length + 1}`,
         collapsed: false,
+        lastRequest: savedRequest,
       });
     }
 

@@ -19,7 +19,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { uncarriedErrorDisplays } from "./error-display-census";
+import { findOrphanMenus, uncarriedErrorDisplays } from "./error-display-census";
 
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 const SCANNED_DIRS = ["app", "components", "features", "lib"];
@@ -29,6 +29,9 @@ const BASELINE_FILE = path.join(__dirname, "error-render-census.baseline.json");
 const PRIMITIVES = new Set([
   "components/errors/ErrorNotice.tsx",
   "components/errors/ErrorAlchemyMenu.tsx",
+  // The package error slot and the toast decorator render only for an error.
+  "components/errors/PackageErrorActions.tsx",
+  "components/errors/errorToastAlchemy.tsx",
   "components/errors/ErrorBoundaryView.tsx",
   "lib/error-boundary/ErrorBoundaryWithCapture.tsx",
 ]);
@@ -115,6 +118,67 @@ describe("the error-display detector (self-test — each RC-B12 verify hole, red
     expect(count('<Button variant="destructive">Delete</Button>')).toBe(0);
     expect(count("<Badge>Not published</Badge>")).toBe(0);
     expect(count('{/* role="alert" used to live here */}<p>ok</p>')).toBe(0);
+  });
+});
+
+describe("round-2 holes (RC-B12 verify R2-1), red then green", () => {
+  it("red or rose text rendering a message-like value counts", () => {
+    expect(count('<p className="text-red-600">{msg}</p>')).toBe(1);
+    expect(count('<span className="text-rose-600">{problem}</span>')).toBe(1);
+    expect(count('<p className="text-destructive">{load.message}</p>')).toBe(1);
+  });
+  it("any red/rose/amber render inside an error branch counts", () => {
+    expect(count('{load.status === "error" ? <p className="text-xs text-destructive">{load.detail}</p> : null}')).toBe(1);
+    expect(count('{failed && <span className="text-amber-700">{text}</span>}')).toBe(1);
+  });
+  it("more failure phrasings count in any colour", () => {
+    expect(count('<p className="text-sm">Unable to load your projects.</p>')).toBe(1);
+    expect(count("<p>Error loading data</p>")).toBe(1);
+    expect(count('<span className="text-xs">Save failed — {err}</span>')).toBe(1);
+  });
+  it("an inline red colour counts", () => {
+    expect(count('<p style={{ color: "red" }}>{error}</p>')).toBe(1);
+  });
+  it("a row that is red only under a condition is not the error box (its menu would show on every row)", () => {
+    expect(
+      count('<div className={cn("group", error && "bg-destructive/10")}><span>{key}</span>{error && <div className="text-destructive">{error.message}</div>}<ErrorAlchemyMenu /></div>'),
+    ).toBe(1);
+    expect(
+      count('<div className={cn("group", error && "bg-destructive/10")}><span>{key}</span>{error && <div className="text-destructive">{error.message}<ErrorAlchemyMenu /></div>}</div>'),
+    ).toBe(0);
+  });
+  it("a hidden menu does not carry", () => {
+    expect(count('<p role="alert">{error}<ErrorAlchemyMenu className="hidden" /></p>')).toBe(1);
+  });
+  it("red text that is not an error still does not count", () => {
+    expect(count('<span className="text-destructive">{count} overdue</span>')).toBe(0);
+    expect(count('<span className="text-red-600">{formatMoney(total)}</span>')).toBe(0);
+  });
+});
+
+describe("a menu never shows when nothing failed", () => {
+  const orphans = (jsx: string) =>
+    findOrphanMenus(`export function C({ error }: any) { return (<>${jsx}</>); }`).length;
+  it("self-test: a bare menu on a healthy row is an orphan; inside a box or branch it is not", () => {
+    expect(orphans('<div className={cn("row", error && "bg-destructive/10")}><span>k</span><ErrorAlchemyMenu /></div>')).toBe(1);
+    expect(orphans('<p className="text-destructive">{error}<ErrorAlchemyMenu /></p>')).toBe(0);
+    expect(orphans('{error && <p className="text-sm">{error}<ErrorAlchemyMenu /></p>}')).toBe(0);
+    expect(orphans('<ErrorAlchemyMenu input={{ message: "x" }} />')).toBe(0);
+  });
+
+  it("no file has an orphan menu", () => {
+    const files: string[] = [];
+    for (const dir of SCANNED_DIRS) walk(path.join(REPO_ROOT, dir), files);
+    const found: string[] = [];
+    for (const file of files) {
+      const rel = path.relative(REPO_ROOT, file).split(path.sep).join("/");
+      if (!isScannable(rel)) continue;
+      const source = fs.readFileSync(file, "utf8");
+      if (!source.includes("ErrorAlchemyMenu")) continue;
+      for (const line of findOrphanMenus(source, rel)) found.push(`${rel}:${line}`);
+    }
+    if (process.env.ERROR_CENSUS_PRINT === "1") console.log("ORPHANS " + JSON.stringify(found));
+    expect(found).toEqual([]);
   });
 });
 

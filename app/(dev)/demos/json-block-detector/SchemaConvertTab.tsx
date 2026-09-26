@@ -31,6 +31,7 @@ import {
   type SavePlanEntry,
   type SchemaConversionResult,
 } from "@ai-matrx/content-ir";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type PanelId = "input" | "blockSchemas" | "agentSchema";
 
@@ -288,6 +289,7 @@ export function SchemaConvertTab({
             {conversion.parseErrors.map((message) => (
               <li key={message} className="text-[10px] text-destructive">
                 {message}
+                <ErrorAlchemyMenu error={message} />
               </li>
             ))}
           </ul>
@@ -392,6 +394,7 @@ export function SchemaConvertTab({
             {savePlan.errors.map((message) => (
               <li key={message} className="text-[10px] text-destructive">
                 {message}
+                <ErrorAlchemyMenu error={message} />
               </li>
             ))}
           </ul>

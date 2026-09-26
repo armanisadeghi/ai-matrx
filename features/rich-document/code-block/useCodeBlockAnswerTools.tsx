@@ -20,6 +20,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { TableChartPanel } from "@/components/mardown-display/blocks/chart/TableChart";
 import { parseDelimitedTable } from "@/components/mardown-display/blocks/chart/table-chart";
 import type { CodeRunState } from "./code-block-context";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Bridge = typeof import("./code-block-registry-bridge");
 
@@ -122,7 +123,7 @@ function CodeRunOutput({ state, onClose }: { state: CodeRunState; onClose: () =>
           </button>
         )}
       </div>
-      {state.status === "error" && <p className="px-3 py-2 text-xs text-destructive">{state.message}</p>}
+      {state.status === "error" && <p className="px-3 py-2 text-xs text-destructive">{state.message} <ErrorAlchemyMenu error={state.message} /></p>}
       {state.status === "done" && (
         <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words px-3 py-2 font-mono text-xs text-foreground">
           {state.result.stdout}

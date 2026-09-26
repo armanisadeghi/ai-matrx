@@ -199,6 +199,7 @@ function buildBrandColumns({
           return (
             <span className="inline-flex items-center gap-1 text-[10px] text-warning">
               <AlertTriangle className="h-3 w-3" /> unreadable
+              <ErrorAlchemyMenu />
             </span>
           );
         if (!r.status) return null;
@@ -262,6 +263,7 @@ function buildBrandColumns({
             title={r.status.last_error ?? undefined}
           >
             {formatCount(r.status.queue_failed)}
+            <ErrorAlchemyMenu />
           </span>
         ) : (
           <span className="tabular-nums text-muted-foreground">0</span>
@@ -1096,6 +1098,7 @@ function TopicPlacementConsole({
                       {outcome.error ? (
                         <p className="mt-0.5 text-[10px] text-destructive">
                           {outcome.error}
+                          <ErrorAlchemyMenu error={outcome.error} />
                         </p>
                       ) : null}
                       {/* The counts are the headline; THIS is the run. Nothing
@@ -1114,7 +1117,6 @@ function TopicPlacementConsole({
                           />
                         </div>
                       ) : null}
-                      <ErrorAlchemyMenu error={outcome.error} />
                     </li>
                   ))}
                 </ul>

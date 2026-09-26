@@ -445,6 +445,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                                     aria-hidden
                                 />
                                 {problem}
+                              <ErrorAlchemyMenu error={problem} />
                             </p>
                         ))}
 

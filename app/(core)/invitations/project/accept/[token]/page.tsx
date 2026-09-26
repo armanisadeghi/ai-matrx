@@ -197,7 +197,7 @@ export default function AcceptProjectInvitationPage() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-800 mb-2">
                 <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-300" />
               </div>
-              <h2 className="text-2xl font-bold text-red-900 dark:text-red-100">Invalid Invitation</h2>
+              <h2 className="text-2xl font-bold text-red-900 dark:text-red-100">Invalid Invitation <ErrorAlchemyMenu /></h2>
               <p className="text-red-700 dark:text-red-300">{error} <ErrorAlchemyMenu error={error} /></p>
               <div className="flex gap-3 justify-center pt-4">
                 <Button onClick={() => router.push('/settings/projects')} variant="outline">

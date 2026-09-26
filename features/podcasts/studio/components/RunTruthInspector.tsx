@@ -199,6 +199,7 @@ function StageCard({ stage }: { stage: Row }) {
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-[10px] font-semibold uppercase text-red-600 dark:text-red-400">
                   Error
+                  <ErrorAlchemyMenu />
                 </span>
                 <CopyButton text={pretty(stage.error)} label="Stage error" />
               </div>

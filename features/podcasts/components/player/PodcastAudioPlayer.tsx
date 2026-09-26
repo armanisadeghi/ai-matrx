@@ -29,6 +29,7 @@ import {
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The transport a surrounding surface can drive. Deliberately one verb: a
@@ -441,7 +442,7 @@ export function PodcastAudioPlayer({
           className="hidden"
         />
         <Music className="h-10 w-10 opacity-40" />
-        <p className="text-sm">Unable to load audio.</p>
+        <p className="text-sm">Unable to load audio. <ErrorAlchemyMenu /></p>
         <button
           type="button"
           onClick={retryNow}

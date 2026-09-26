@@ -79,6 +79,7 @@ export function CodeEditErrorCanvas({
           <div className="space-y-2">
             <h4 className="text-xs font-semibold text-destructive uppercase tracking-wide">
               Errors ({errors.length})
+              <ErrorAlchemyMenu />
             </h4>
             <div className="space-y-2">
               {errors.map((error, i) => (

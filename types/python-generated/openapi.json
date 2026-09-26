@@ -2029,6 +2029,180 @@
         }
       }
     },
+    "/decision-review/items/{item_id}/label": {
+      "post": {
+        "tags": [
+          "Decision Review"
+        ],
+        "summary": "Post Item Label",
+        "description": "Record the true answer for one decision answer.",
+        "operationId": "post_item_label_decision_review_items__item_id__label_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabelBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabeledItem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/decision-review/conversations/label": {
+      "post": {
+        "tags": [
+          "Decision Review"
+        ],
+        "summary": "Post Conversation Labels",
+        "description": "Record one true answer against the latest answer to a question in each\nconversation — the battle verdict column's write.",
+        "operationId": "post_conversation_labels_decision_review_conversations_label_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationLabelBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationLabels"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/decision-review/agents/{agent_id}/calibration": {
+      "get": {
+        "tags": [
+          "Decision Review"
+        ],
+        "summary": "Get Agent Calibration",
+        "description": "Reliability curve, Brier, kappa and a recommended threshold per version × question.",
+        "operationId": "get_agent_calibration_decision_review_agents__agent_id__calibration_get",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only answers from this model.",
+              "title": "Model"
+            },
+            "description": "Only answers from this model."
+          },
+          {
+            "name": "method",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "native | verbalized | verbalized_calibrated",
+              "title": "Method"
+            },
+            "description": "native | verbalized | verbalized_calibrated"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionCalibrationReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai-tools": {
       "get": {
         "tags": [
@@ -143891,6 +144065,60 @@
         "type": "object",
         "title": "ConversationIngestRequest"
       },
+      "ConversationLabelBody": {
+        "properties": {
+          "conversation_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Conversation Ids"
+          },
+          "question": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Question"
+          },
+          "answer": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Answer"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "conversation_ids",
+          "question",
+          "answer"
+        ],
+        "title": "ConversationLabelBody"
+      },
+      "ConversationLabels": {
+        "properties": {
+          "labeled": {
+            "items": {
+              "$ref": "#/components/schemas/LabeledItem"
+            },
+            "type": "array",
+            "title": "Labeled"
+          },
+          "skipped": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Skipped"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ConversationLabels"
+      },
       "ConversationRecord": {
         "properties": {
           "id": {
@@ -150596,6 +150824,42 @@
           "type"
         ],
         "title": "DecisionAnswersPart"
+      },
+      "DecisionCalibrationReport": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "min_labels": {
+            "type": "integer",
+            "title": "Min Labels"
+          },
+          "target_precision": {
+            "type": "number",
+            "title": "Target Precision"
+          },
+          "bins": {
+            "type": "integer",
+            "title": "Bins",
+            "default": 10
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/GroupCalibration"
+            },
+            "type": "array",
+            "title": "Groups"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "agent_id",
+          "min_labels",
+          "target_precision"
+        ],
+        "title": "DecisionCalibrationReport"
       },
       "DecisionQuestion": {
         "properties": {
@@ -177940,6 +178204,59 @@
         ],
         "title": "GrooveServiceStatus"
       },
+      "GroupCalibration": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "answer_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer Type"
+          },
+          "items": {
+            "type": "integer",
+            "title": "Items",
+            "default": 0
+          },
+          "labeled": {
+            "type": "integer",
+            "title": "Labeled",
+            "default": 0
+          },
+          "agreement": {
+            "$ref": "#/components/schemas/Calibration"
+          },
+          "probability": {
+            "$ref": "#/components/schemas/ProbabilityCalibration"
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/ProbabilityCalibration"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "question",
+          "agreement",
+          "probability",
+          "confidence"
+        ],
+        "title": "GroupCalibration",
+        "description": "One agent version × one question (optionally narrowed to a model/method)."
+      },
       "GscDailyPoint": {
         "properties": {
           "date": {
@@ -193982,6 +194299,23 @@
         "type": "object",
         "title": "LLMParams"
       },
+      "LabelBody": {
+        "properties": {
+          "answer": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Answer",
+            "description": "The true answer, in the question's vocabulary."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "answer"
+        ],
+        "title": "LabelBody"
+      },
       "LabelCatalogEntry": {
         "properties": {
           "id": {
@@ -194226,6 +194560,40 @@
         },
         "type": "object",
         "title": "LabelRequest"
+      },
+      "LabeledItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "verdict": {
+            "type": "string",
+            "title": "Verdict"
+          },
+          "authority_verdict": {
+            "type": "string",
+            "title": "Authority Verdict"
+          },
+          "agreed": {
+            "type": "boolean",
+            "title": "Agreed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "question",
+          "verdict",
+          "authority_verdict",
+          "agreed"
+        ],
+        "title": "LabeledItem"
       },
       "LandedSource": {
         "properties": {
@@ -232872,6 +233240,80 @@
         "title": "PrismicServiceStatus",
         "description": "Safe aggregate status projection for Prismic's fixed status page."
       },
+      "ProbabilityCalibration": {
+        "properties": {
+          "cases": {
+            "type": "integer",
+            "title": "Cases",
+            "default": 0
+          },
+          "accuracy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accuracy"
+          },
+          "mean_predicted": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean Predicted"
+          },
+          "brier_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brier Score"
+          },
+          "expected_calibration_error": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Calibration Error"
+          },
+          "bins": {
+            "items": {
+              "$ref": "#/components/schemas/ReliabilityBin"
+            },
+            "type": "array",
+            "title": "Bins"
+          },
+          "recommended_threshold": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThresholdRecommendation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ProbabilityCalibration",
+        "description": "Reliability curve + Brier + expected calibration error + threshold."
+      },
       "ProbeRound": {
         "properties": {
           "example_title": {
@@ -244017,6 +244459,46 @@
           "controller_kind"
         ],
         "title": "ReleaseControlResponse"
+      },
+      "ReliabilityBin": {
+        "properties": {
+          "lower": {
+            "type": "number",
+            "title": "Lower"
+          },
+          "upper": {
+            "type": "number",
+            "title": "Upper"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "mean_predicted": {
+            "type": "number",
+            "title": "Mean Predicted"
+          },
+          "observed_accuracy": {
+            "type": "number",
+            "title": "Observed Accuracy"
+          },
+          "gap": {
+            "type": "number",
+            "title": "Gap"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "lower",
+          "upper",
+          "count",
+          "mean_predicted",
+          "observed_accuracy",
+          "gap"
+        ],
+        "title": "ReliabilityBin",
+        "description": "One bin of the reliability curve. Empty bins are omitted, never zero-filled."
       },
       "RemoveEdgeOp": {
         "properties": {
@@ -279686,6 +280168,64 @@
           "operational"
         ],
         "title": "ThreeSixtyLearningServiceStatus"
+      },
+      "ThresholdRecommendation": {
+        "properties": {
+          "target_precision": {
+            "type": "number",
+            "title": "Target Precision"
+          },
+          "threshold": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threshold"
+          },
+          "precision": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Precision"
+          },
+          "coverage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage"
+          },
+          "answers_at_or_above": {
+            "type": "integer",
+            "title": "Answers At Or Above",
+            "default": 0
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "target_precision"
+        ],
+        "title": "ThresholdRecommendation",
+        "description": "The lowest cut whose answers at or above it met the target precision."
       },
       "TidioServiceStatus": {
         "properties": {

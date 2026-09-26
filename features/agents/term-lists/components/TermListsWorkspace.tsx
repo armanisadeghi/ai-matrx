@@ -36,6 +36,7 @@ import {
 } from "../types";
 import { TermEntriesTable } from "./TermEntriesTable";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function draftOf(list: TermList): TermListDraft {
   return {
@@ -348,6 +349,7 @@ export function TermListEditor({
               Row {p.row}: {p.message}
             </li>
           ))}
+          <li className="list-none"><ErrorAlchemyMenu /></li>
         </ul>
       ) : null}
     </div>

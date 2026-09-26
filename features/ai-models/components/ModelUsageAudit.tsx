@@ -217,6 +217,7 @@ export default function ModelUsageAudit({
             >
               <AlertTriangle className="h-3 w-3" aria-hidden />
               Couldn&apos;t replace
+              <ErrorAlchemyMenu />
             </p>
           )}
           {selectedReplacement && (

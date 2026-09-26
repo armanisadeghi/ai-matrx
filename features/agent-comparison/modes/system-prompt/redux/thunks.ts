@@ -41,10 +41,14 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   createComparisonSet,
   loadComparisonSet,
-  renameComparisonSet,
   replaceEntries,
   type UpsertEntryInput,
 } from "@/features/agent-comparison/service/comparisonSetsService";
+import {
+  createBattlePersistence,
+  persistForRun,
+  type BattleSubmitResult,
+} from "@/features/agent-comparison/shared/battlePersistence";
 import { forkAgentForVariant } from "@/features/agent-comparison/shared/forkAgentForVariant";
 import { isSyntheticAgentId } from "@/features/agents/redux/agent-definition/synthetic-id";
 import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
@@ -380,7 +384,7 @@ export const removeColumnFromSystemPromptBattle = createAsyncThunk<
 // =============================================================================
 
 export const submitAllSystemPrompt = createAsyncThunk<
-  { launched: number; failed: number; skipped: number },
+  BattleSubmitResult,
   void,
   ThunkApi
 >(
@@ -407,6 +411,16 @@ export const submitAllSystemPrompt = createAsyncThunk<
         );
       }
 
+      // The battle gets (or keeps) its identity BEFORE the runs start, so the
+      // URL names it while the answers stream in. Nothing in a saved entry
+      // changes during a run, so there is no second save afterwards.
+      const persisted = await persistForRun(() =>
+        dispatch(persistSystemPromptBattle()).unwrap(),
+      );
+      if (persisted.cancelled) {
+        return { launched: 0, failed: 0, skipped: columns.length, cancelled: true };
+      }
+
       const results = await Promise.allSettled(
         columns.map((col) =>
           dispatch(
@@ -421,27 +435,7 @@ export const submitAllSystemPrompt = createAsyncThunk<
       const failed = results.filter((r) => r.status === "rejected").length;
       const launched = results.length - failed;
 
-      const post = getState();
-      const activeSetId = post.agentComparisonSystemPrompt.activeSetId;
-      if (activeSetId) {
-        const entries = buildSystemPromptEntries(post);
-        try {
-          await replaceEntries(activeSetId, entries);
-          await renameComparisonSet(
-            activeSetId,
-            post.agentComparisonSystemPrompt.activeSetName ??
-              "Untitled comparison",
-          );
-        } catch (err) {
-          // eslint-disable-next-line no-console
-          console.error(
-            "[system-prompt] failed to persist comparison entries:",
-            err,
-          );
-        }
-      }
-
-      return { launched, failed, skipped: 0 };
+      return { launched, failed, skipped: 0, persistError: persisted.error };
     } finally {
       dispatch(submitAllFinished());
     }
@@ -601,16 +595,20 @@ export const saveSystemPromptBattleAs = createAsyncThunk<
   },
 );
 
-export const saveSystemPromptBattle = createAsyncThunk<void, void, ThunkApi>(
-  "agentComparisonSystemPrompt/save",
-  async (_arg, { getState }) => {
-    const state = getState();
-    const setId = state.agentComparisonSystemPrompt.activeSetId;
-    if (!setId) throw new Error("No active comparison set");
-    const entries = buildSystemPromptEntries(state);
-    await replaceEntries(setId, entries);
-  },
-);
+const systemPromptPersistence = createBattlePersistence({
+  typePrefix: "agentComparisonSystemPrompt",
+  modeLabel: "System prompt battle",
+  selectActiveSetId: (state) => state.agentComparisonSystemPrompt.activeSetId,
+  selectActiveSetName: (state) => state.agentComparisonSystemPrompt.activeSetName,
+  selectNamingAgentId: (state) => state.agentComparisonSystemPrompt.locked.sourceAgentId,
+  buildMetadata: buildSetMetadata,
+  buildEntries: buildSystemPromptEntries,
+  setActive: setActiveSystemPromptSet,
+});
+
+/** Create this battle on first call; afterwards keep its setup and columns current. */
+export const persistSystemPromptBattle = systemPromptPersistence.persist;
+export const renameSystemPromptBattle = systemPromptPersistence.rename;
 
 interface LoadedLockedSpec {
   source_agent_id: string | null;

@@ -563,6 +563,7 @@ function ActionForm(props: {
               : preview && !preview.ok && problems[0].message.endsWith(preview.error.replace(/^"[^"]*": /, ""))
                 ? "Fix the change marked above to save."
                 : problems[0].message}
+            <ErrorAlchemyMenu />
           </p>
         )}
         <Button type="button" size="sm" variant="ghost" onClick={props.onCancel} disabled={props.saving}>Cancel</Button>

@@ -39,6 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatCount } from "../format";
 import type { LibraryRow } from "../types";
 import { LIBRARY_LIST_SCOPES, createLibraryListService } from "./service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function libraryHref(row: LibraryRow): string {
     return `/libraries/${row.id}`;
@@ -120,6 +121,7 @@ const LIBRARY_COLUMNS: EntityColumnSpec<LibraryRow>[] = [
                     >
                         <CircleAlert className="size-3.5 shrink-0" />
                         {SYNC_STATUS_WORDS.failed}
+                      <ErrorAlchemyMenu />
                     </span>
                 ) : (
                     <Badge variant="outline" className="py-0 text-[11px]">

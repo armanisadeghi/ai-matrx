@@ -452,6 +452,7 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
               {consoleErrors.length > 0 && (
                 <span className="text-[10px] font-semibold text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded-full">
                   {consoleErrors.length}
+                  <ErrorAlchemyMenu />
                 </span>
               )}
               <ChevronRight

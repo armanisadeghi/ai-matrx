@@ -70,6 +70,7 @@ import {
 import { useOutlineEdits } from "./outline/useOutlineEdits";
 import { useOutlineRows } from "./outline/useOutlineRows";
 import { useTopicPages } from "./outline/useTopicPages";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * What `map_tree` is asked for. Identical to every other tree view's list so
@@ -179,7 +180,7 @@ function OutlineBody({ mapId, siteId, readOnly, knobs }: OutlineBodyProps) {
           hasChildren: false,
           expanded: false,
           selected: false,
-          trailing: <span className="text-[11px] text-destructive">could not list pages</span>,
+          trailing: <span className="text-[11px] text-destructive">could not list pages <ErrorAlchemyMenu /></span>,
         },
       ];
     }

@@ -47,6 +47,7 @@ import {
   type BundleMembership,
   type ToolGateEntry,
 } from "@/features/tool-registry/tools-admin/services/dimensions.service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   toolId: string;
@@ -187,6 +188,7 @@ function ErrorBox({ msg }: { msg: string }) {
     <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
       <AlertCircle className="h-3.5 w-3.5" />
       {msg}
+      <ErrorAlchemyMenu error={msg} />
     </div>
   );
 }

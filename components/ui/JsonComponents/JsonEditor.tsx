@@ -288,6 +288,7 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
         <div className="mb-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-sm">
           <div className="text-xs text-yellow-800 dark:text-yellow-200">
             Original Value:
+            <ErrorAlchemyMenu />
           </div>
           <pre className="mt-1 text-xs overflow-auto">
             {typeof originalValue === "string"

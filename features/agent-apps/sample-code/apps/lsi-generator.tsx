@@ -476,6 +476,7 @@ export default function LSIMarkdownGenerator({
             <CardContent className="py-4 px-4">
               <p className="text-sm text-destructive">
                 Could not parse the response. Please retry.
+                <ErrorAlchemyMenu />
               </p>
             </CardContent>
           </Card>

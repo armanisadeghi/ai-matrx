@@ -268,7 +268,7 @@ export default function ShapeStreamTab({
 
         <div className="rounded-lg border border-border bg-card p-4">
           {examples.status === "error" && (
-            <p className="text-sm text-destructive">{examples.message}</p>
+            <p className="text-sm text-destructive">{examples.message} <ErrorAlchemyMenu error={examples.message} /></p>
           )}
           {examples.status === "ready" && !canonical && (
             <p className="text-sm text-muted-foreground">

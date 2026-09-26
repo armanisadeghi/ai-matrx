@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/resizable";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { SharedRunsWindow } from "@/features/agent-comparison/components/SharedRunsWindow";
-import { ModePicker } from "@/features/agent-comparison/shared/ModePicker";
 import {
   reorderRequestModColumns,
   setRequestModColumnCollapsed,
@@ -34,8 +33,16 @@ import {
   selectLockedAgentId,
   selectRequestModColumnIds,
   selectRequestModColumns,
+  selectActiveRequestModSetId,
 } from "../redux/selectors";
-import { addColumnToRequestModBattle } from "../redux/thunks";
+import {
+  addColumnToRequestModBattle,
+  loadRequestModBattleSet,
+} from "../redux/thunks";
+import {
+  BattleRouteNotice,
+  useBattleRoute,
+} from "@/features/agent-comparison/shared/useBattleRoute";
 import { LockedAgentSection } from "./LockedAgentSection";
 import { RequestModColumn } from "./RequestModColumn";
 import { RequestModToolbar } from "./RequestModToolbar";
@@ -43,8 +50,15 @@ import type { RequestModColumn as RequestModColumnType } from "../types";
 
 const RUNS_WINDOW_ID = "agent-comparison-request-mod-runs";
 
-export function RequestModBattlePage() {
+export function RequestModBattlePage({ setId = null }: { setId?: string | null }) {
   const dispatch = useAppDispatch();
+  const activeSetId = useAppSelector(selectActiveRequestModSetId);
+  const routeStatus = useBattleRoute({
+    mode: "request-mod",
+    urlSetId: setId,
+    activeSetId,
+    load: (id) => dispatch(loadRequestModBattleSet({ setId: id })).unwrap(),
+  });
   const columns = useAppSelector(selectRequestModColumns);
   const columnIds = useAppSelector(selectRequestModColumnIds);
   const agentId = useAppSelector(selectLockedAgentId);
@@ -69,11 +83,12 @@ export function RequestModBattlePage() {
       className="h-full flex flex-col overflow-hidden"
       style={{ paddingTop: "var(--shell-header-h)" }}
     >
-      <ModePicker />
       <RequestModToolbar
         runsWindowOpen={runsWindowOpen}
         onToggleRunsWindow={() => setRunsWindowOpen((v) => !v)}
       />
+
+      <BattleRouteNotice status={routeStatus} mode="request-mod" />
 
       <LockedAgentSection />
 

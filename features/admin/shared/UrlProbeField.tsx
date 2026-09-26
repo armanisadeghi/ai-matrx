@@ -161,6 +161,7 @@ export function UrlProbeField({
       {probe.status === "fail" ? (
         <p className="flex items-center gap-1 text-xs text-destructive">
           <XCircle className="h-3.5 w-3.5" /> Probe failed — {probe.detail}
+          <ErrorAlchemyMenu />
         </p>
       ) : null}
       {probe.status === "cors" ? (

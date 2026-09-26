@@ -59,6 +59,7 @@ import {
   revokeOutside,
   type OutsideShareState,
 } from "./outsideShareService";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The one sentence a shut lane gets. Exported so the test asserts the words. */
 export const LANE_CLOSED_SAY =
@@ -186,10 +187,12 @@ export function OutsideSharePanel({
           <div className="min-w-0">
             <p className="text-sm font-medium text-destructive">
               We could not check who outside this organization can see {tableName}
+              <ErrorAlchemyMenu />
             </p>
             <p className="mt-0.5 text-xs text-destructive/80">
               Nobody was added or removed. This does not mean sharing outside is switched
               off — we simply could not look.
+              <ErrorAlchemyMenu />
             </p>
             <p className="mt-1 break-words text-xs text-muted-foreground">{loadError}</p>
           </div>

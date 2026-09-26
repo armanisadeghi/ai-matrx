@@ -240,6 +240,7 @@ export function StudioFileCard({
                     {hasError && (
                         <span className="rounded-full bg-destructive/10 border border-destructive/30 text-destructive px-2 py-0.5 text-[11px] font-medium flex items-center gap-1">
                             <AlertCircle className="h-3 w-3" /> Error
+                          <ErrorAlchemyMenu />
                         </span>
                     )}
                     {onPreviewRequested && (

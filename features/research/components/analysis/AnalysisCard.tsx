@@ -21,6 +21,7 @@ import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
 import { humanizeAgentType } from "../../labels";
 import { type ResearchAnalysis, tokenUsageFromJson } from "../../types";
 import { CostValue } from "@/components/processing-units/CostValue";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AnalysisCardProps {
   analysis: ResearchAnalysis | null;
@@ -142,6 +143,7 @@ export function AnalysisCard({
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm font-medium text-destructive">
                   Analysis failed
+                  <ErrorAlchemyMenu />
                 </span>
                 <Badge variant="secondary" className="text-[10px]">
                   {humanizeAgentType(analysis.agent_type)}

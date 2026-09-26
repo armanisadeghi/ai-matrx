@@ -30,6 +30,7 @@ import type { MarketingPage, PageSnapshot } from "@/features/marketing/types";
 import { isJsonRecord } from "@/features/marketing/types";
 import { formatText } from "@ai-matrx/kit/text-case";
 import type { Json } from "@/types/database.types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function primaryBlockLabel(data: Record<string, Json>): string | null {
   for (const key of ["name", "headline", "title", "url", "@id"]) {
@@ -413,6 +414,7 @@ export function StructuredDataCard({
               <p className="mt-2 text-[11px] text-amber-600 dark:text-amber-400">
                 {structured.parseErrors.length} structured-data block(s) could
                 not be parsed; their original script text remains in raw data.
+                <ErrorAlchemyMenu />
               </p>
             ) : null}
             {structured.blocksTruncated ? (

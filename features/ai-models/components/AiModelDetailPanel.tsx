@@ -661,6 +661,7 @@ function RawJsonIssuePanel({
                   )}
                   <p className="text-red-600 dark:text-red-400 mt-0.5 break-words">
                     {issue.message}
+                    <ErrorAlchemyMenu error={issue.message} />
                   </p>
                 </div>
               </div>
@@ -811,6 +812,7 @@ function RawModelJsonTab({
           {hasErrors && (
             <span className="text-[10px] font-medium text-red-600 dark:text-red-400">
               · syntax error
+              <ErrorAlchemyMenu />
             </span>
           )}
           {!hasErrors && hasWarnings && (

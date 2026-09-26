@@ -713,6 +713,7 @@ function AgentRunnerBody({
           <div className="min-w-0">
             <p className="text-xs font-medium text-destructive">
               This output has no agent bound
+              <ErrorAlchemyMenu />
             </p>
             <p className="text-[11px] text-muted-foreground break-words">
               {mandate.error}

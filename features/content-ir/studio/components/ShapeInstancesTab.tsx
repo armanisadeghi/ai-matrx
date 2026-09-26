@@ -58,6 +58,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
 import { getKindInputContractBySlug } from "@/features/content-ir/registry/schema-source-kind-tables";
 import type { KindSchema } from "@ai-matrx/content-ir";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ShapeInstancesTabProps {
   kind: string;
@@ -401,6 +402,7 @@ export default function ShapeInstancesTab({
       <div className="flex items-start gap-2 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-700 dark:text-red-300">
         <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         {list.message}
+        <ErrorAlchemyMenu error={list.message} />
       </div>
     );
   }

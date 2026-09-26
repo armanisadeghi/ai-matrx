@@ -36,6 +36,7 @@ import {
   rulebookIdForMasterwork,
   type SealedCase,
 } from "./sealedCases";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type SealedCasesState =
   | { status: "idle" }
@@ -122,6 +123,7 @@ export function SealedCasePicker({
         data-masterwork-sealed-case="error"
       >
         {state.message}
+        <ErrorAlchemyMenu error={state.message} />
       </p>
     );
   }

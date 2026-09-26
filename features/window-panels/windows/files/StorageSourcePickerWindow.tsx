@@ -43,6 +43,7 @@ import {
   disposeStorageSourcePickerCallbackGroup,
 } from "@/features/overlays/callbacks/storageSourcePicker";
 import { extractErrorMessage } from "@/utils/errors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const OVERLAY_ID = "storageSourcePicker" as const;
 const WINDOW_ID = "storage-source-picker";
@@ -575,6 +576,7 @@ export function StorageSourcePickerWindow({
                   </div>
                 ))}
                 <Button size="sm" className="mt-2" disabled={importBusy} onClick={retryFailures}>Retry failed imports</Button>
+                <ErrorAlchemyMenu />
               </div>
             ) : null}
 

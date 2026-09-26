@@ -62,6 +62,7 @@ import {
   validatePayload,
 } from "@/features/admin/applications/catalogs/schemas";
 import type { CatalogEntryRow } from "@/features/admin/applications/catalogs/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CatalogKindTableProps {
   app: string;
@@ -569,6 +570,7 @@ export function CatalogKindTable({
                       UNREACHABLE — {probe.detail}. Activating anyway ships a
                       broken download to every client. Override only if you know
                       the URL works outside the browser.
+                      <ErrorAlchemyMenu />
                     </p>
                   ) : null}
                   {probe.status === "cors" ? (

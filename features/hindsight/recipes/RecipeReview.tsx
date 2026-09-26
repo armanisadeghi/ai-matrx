@@ -200,7 +200,7 @@ export function RecipeReview({ id }: { id: string }) {
 
   if (isLoading)
     return <p className="text-sm text-muted-foreground">Loading recipe…</p>;
-  if (!recipe) return <p className="text-sm text-destructive">{message}</p>;
+  if (!recipe) return <p className="text-sm text-destructive">{message} <ErrorAlchemyMenu error={message} /></p>;
 
   const canActivate = !refusal && !isActivating;
   return (

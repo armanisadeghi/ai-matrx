@@ -56,6 +56,7 @@ import type {
   WritePolicyMap,
 } from "@/features/surfaces/types";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const BLANK = "blank";
 
@@ -515,6 +516,7 @@ export function SurfaceBindingsBatchEditor({
                 {result.failed.length > 0 && (
                   <span className="text-amber-600">
                     · {result.failed.length} failed
+                    <ErrorAlchemyMenu />
                   </span>
                 )}
                 <Link

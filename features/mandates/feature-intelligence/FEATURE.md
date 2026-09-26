@@ -7,7 +7,7 @@ The page and the icon people use to manage the AI jobs of the part of the app th
 ## Routes
 | Route | File |
 |---|---|
-| `/intelligence` — every feature with its job and place counts (nav: Intelligence → By feature) | `app/(core)/intelligence/page.tsx` → `IntelligenceIndex.tsx` |
+| `/intelligence` — directory of every feature: icon, jobs, agents/workflows, places, running status; search across names, jobs, what they do, screens, holders (nav: Intelligence → By feature; user menu: Intelligence) | `app/(core)/intelligence/page.tsx` → `IntelligenceIndex.tsx` (+ `index-model.ts`, `feature-icons.ts`) |
 | `/intelligence/[feature]` (`?mandate=<key>` focuses; other params fill place links; an extra prefix like `seo` redirects to its owner `marketing`) | `app/(core)/intelligence/[feature]/page.tsx` |
 | `/research/topics/[topicId]/intelligence` | `app/(core)/research/topics/[topicId]/intelligence/page.tsx` → `features/research/components/intelligence/TopicIntelligencePage.tsx` |
 
@@ -26,6 +26,7 @@ The page and the icon people use to manage the AI jobs of the part of the app th
 Write `<feature>/…/intelligence-places.ts` (a `FeaturePlaces`: places with `sources`, plus `roots` to scan and `aliases` for key maps/constants the code reads jobs through) beside the code that runs the jobs, and list it in `registry.ts`. `__tests__/declared-places.test.ts` proves it: every place job is named in its sources, every source names one, and every component under `roots` that names a job is mapped. Keep the map's imports light — it loads with every Intelligence icon (never import a hook module for an alias; name the key instead).
 
 ## Landmines
+- The Intelligence icon is `INTELLIGENCE_ICON` from `components/icons/domain-icons.ts` (lucide BrainCircuit, reserved — `pnpm check:reserved-icons`); an agent holder shows `AGENT_ICON`.
 - The member list names `holderId` for workflows as the workflow definition id; agent pins come from the ladder (`fetchMandateLadder`) at duplicate time.
 - A pinned workflow copy duplicates the selected workflow version; an unpinned workflow copy duplicates the live definition.
 - An organization-level copy is created by the admin; members can use it only if they can open it (the server's answer is shown).
@@ -33,6 +34,7 @@ Write `<feature>/…/intelligence-places.ts` (a `FeaturePlaces`: places with `so
 - The Intelligence icon is an owner-approved exception to "disclosure adds no visible content" (Arman 2026-09-25); it is a management door, not a disclosure roster.
 
 ## Change Log
+- 2026-09-26 — `/intelligence` directory: richer cards (feature icon, job names, agents and workflows, places, running status), search across everything inside a feature, phone and dark verified; Intelligence in the user menu; `INTELLIGENCE_ICON` / `AGENT_ICON` constants and the reserved-icon guard.
 - 2026-09-25 — round 3: Workflow Studio places (7 places, 17 jobs) proved against the studio's call sites; studio door; member-list key pushdown (2.07 s → 0.52 s) and one read per load; Meetings header icon; empty doors fall back to the places map.
 - 2026-09-25 — round 2: 30 more features declare places (Masterwork, workflow runs, Growth Loop, RAG, PDF, vision interview, hindsight, meetings…); indicators beside their AI controls; Masterwork header doors carry `rulebookId`; `MandateDoorLink` takes `context`; `RouteHeader` actions no longer shrink (a phone title crushed the door to 8px); member-list and definition reads batched.
 - 2026-09-25 — rollout: 13 more features declare places (one generic guard); `/intelligence` index + nav "By feature"; multi-prefix features; every `MandateDoorLink` and `/mandates?feature=` door lands here; a topic pin to the resolved agent now shows as "This topic: Same agent" instead of disappearing.

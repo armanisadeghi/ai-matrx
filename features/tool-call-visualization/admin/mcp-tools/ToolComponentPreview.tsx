@@ -397,6 +397,7 @@ export function ToolComponentPreview({
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="w-5 h-5" />
               Revision Save Failed — Your Work Is Safe
+              <ErrorAlchemyMenu />
             </DialogTitle>
             <DialogDescription>
               The revision could not be saved. The generated code is still

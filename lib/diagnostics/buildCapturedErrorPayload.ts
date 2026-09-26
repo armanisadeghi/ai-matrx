@@ -69,6 +69,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "shell-navigation": "Shell navigation contract violation",
   "api-http": "Backend HTTP error",
   "api-network": "Backend network error",
+  "app-api-http": "App API route error",
   "react-render": "React render error",
   "agent-stream-error": "Server stream error",
   "agent-stream-warning": "Server stream warning",

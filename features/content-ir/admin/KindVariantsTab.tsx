@@ -40,6 +40,7 @@ import {
   variantToCustomComponent,
   type KindPresentationVariant,
 } from "@/features/content-ir/variants/kind-variants";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type LoadState =
   | { status: "loading" }
@@ -198,6 +199,7 @@ export default function KindVariantsTab({ detail }: KindVariantsTabProps) {
     return (
       <div className="mx-auto max-w-4xl rounded-md border border-red-500/40 bg-red-500/5 px-3 py-2.5 text-sm text-red-700 dark:text-red-300">
         {state.message}
+        <ErrorAlchemyMenu error={state.message} />
       </div>
     );
   }
@@ -299,6 +301,7 @@ export default function KindVariantsTab({ detail }: KindVariantsTabProps) {
                         >
                           <X className="mt-0.5 h-3 w-3 shrink-0" />
                           {message}
+                          <ErrorAlchemyMenu error={message} />
                         </li>
                       ))}
                       {validation.warnings.map((message) => (
@@ -381,6 +384,7 @@ export default function KindVariantsTab({ detail }: KindVariantsTabProps) {
                   >
                     <X className="mt-0.5 h-3 w-3 shrink-0" />
                     {message}
+                    <ErrorAlchemyMenu error={message} />
                   </li>
                 ))}
               </ul>

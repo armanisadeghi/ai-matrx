@@ -169,16 +169,14 @@ describe("the network error behind the sentence (RC-B12 verify F7)", () => {
     { source: "supabase", lastAt: now - 2_000, route: "/notes", relation: "notes", code: "X", status: 400, message: "other page" },
   ];
 
-  it("fills code/status/relation from the error captured on this page just before", () => {
-    const matched = matchCapturedErrors(
-      "readAllRows(scheduler.sch_task user schedule roster): query failed — forced failure (RC-B12 verify)",
-      "/schedules",
-      captured,
-      now,
-    );
-    expect(matched.map((m) => m.relation)).toEqual(["sch_task"]);
+  it("offers only this route's recent captures, newest first", () => {
+    expect(matchCapturedErrors("anything", "/schedules", captured, now).map((c) => c.relation)).toEqual(["sch_task"]);
+    expect(matchCapturedErrors("anything", "/elsewhere", captured, now)).toEqual([]);
+  });
+
+  it("fills code/status/relation from the box's own declared call", () => {
     const payload = buildErrorAlchemyPayload(
-      { message: "Couldn't load schedules", captured: matched },
+      { message: "Couldn't load schedules", calls: ["sch_task"], captured: matchCapturedErrors("x", "/schedules", captured, now) },
       surface,
     );
     const data = payload.data as { error: Record<string, unknown>; captured_errors: unknown[] };
@@ -186,42 +184,58 @@ describe("the network error behind the sentence (RC-B12 verify F7)", () => {
     expect(data.captured_errors).toHaveLength(1);
   });
 
-  it("never borrows an error from another page or from long ago", () => {
-    expect(matchCapturedErrors("anything", "/elsewhere", captured, now)).toEqual([]);
-  });
-
   it("keeps the caller's own error fields over the captured ones", () => {
     const payload = buildErrorAlchemyPayload(
-      { message: "x", error: { code: "OWN", status: 409 }, captured: matchCapturedErrors("x", "/schedules", captured, now) },
+      { message: "x", error: { code: "OWN", status: 409 }, calls: ["sch_task"], captured: matchCapturedErrors("x", "/schedules", captured, now) },
       surface,
     );
     expect((payload.data as { error: Record<string, unknown> }).error).toMatchObject({ code: "OWN", status: 409 });
   });
+
+  it("with no declared call, lists captures as recent and unmatched, and pins none", () => {
+    const data = buildErrorAlchemyPayload(
+      { message: "Couldn't load", captured: matchCapturedErrors("x", "/schedules", captured, now) },
+      surface,
+    ).data as { error: Record<string, unknown>; recent_unmatched_errors: unknown[] };
+    expect(data.error.relation).toBeUndefined();
+    expect(data.recent_unmatched_errors).toHaveLength(1);
+  });
 });
 
-describe("choosing the captured error when several failed at once", () => {
-  const now = 2_000_000;
-  const same = "forced failure";
+describe("pin only the box's own call (RC-B12 round 2, R2-2)", () => {
+  const now = 3_000_000;
   const captured = [
-    { source: "supabase", lastAt: now - 1_000, route: "/schedules", relation: "user_preferences", code: "XX500", status: 500, message: same },
-    { source: "supabase", lastAt: now - 3_000, route: "/schedules", relation: "sch_task", code: "XX500", status: 500, message: same },
+    { source: "supabase", lastAt: now - 1_000, route: "/chat/x", relation: "conversation", code: "XX500", status: 500, message: "forced failure" },
+    { source: "supabase", lastAt: now - 2_000, route: "/chat/x", relation: "matrx_action_ledger", code: "XX500", status: 500, message: "forced failure" },
   ];
+  const sentence = "Could not load what this conversation's actions did (forced failure).";
 
-  it("prefers the one whose relation the sentence names", () => {
-    const matched = matchCapturedErrors(`readAllRows(scheduler.sch_task roster): query failed — ${same}`, "/schedules", captured, now);
-    expect(matched[0].relation).toBe("sch_task");
-    const data = buildErrorAlchemyPayload({ message: "x", captured: matched }, surface).data as { error: Record<string, unknown> };
-    expect(data.error.relation).toBe("sch_task");
-  });
-
-  it("does not pin one of several equally-likely errors on the sentence", () => {
-    const matched = matchCapturedErrors(`Couldn't load: ${same}`, "/schedules", captured, now);
-    expect(matched).toHaveLength(2);
-    const data = buildErrorAlchemyPayload({ message: `Couldn't load: ${same}`, captured: matched }, surface).data as {
+  it("never pins a capture because the sentence happens to contain its table's name", () => {
+    const recent = matchCapturedErrors(sentence, "/chat/x", captured, now);
+    const data = buildErrorAlchemyPayload({ message: sentence, captured: recent }, surface).data as {
       error: Record<string, unknown>;
-      captured_errors: unknown[];
+      recent_unmatched_errors: Array<Record<string, unknown>>;
     };
     expect(data.error.relation).toBeUndefined();
-    expect(data.captured_errors).toHaveLength(2);
+    expect(data.recent_unmatched_errors.map((c) => c.relation)).toEqual(["conversation", "matrx_action_ledger"]);
   });
+
+  it("pins the capture of the call the box declared", () => {
+    const recent = matchCapturedErrors(sentence, "/chat/x", captured, now);
+    const data = buildErrorAlchemyPayload(
+      { message: sentence, captured: recent, calls: ["matrx_action_ledger"] },
+      surface,
+    ).data as { error: Record<string, unknown>; captured_errors: Array<Record<string, unknown>> };
+    expect(data.error).toMatchObject({ relation: "matrx_action_ledger", code: "XX500", status: 500 });
+    expect(data.captured_errors.map((c) => c.relation)).toEqual(["matrx_action_ledger"]);
+  });
+});
+
+it("never repeats a title the sentence already starts with", () => {
+  expect(
+    buildErrorHumanText({
+      title: "Couldn't load this conversation",
+      message: "Couldn't load this conversation: forced failure.",
+    }),
+  ).toBe("Couldn't load this conversation: forced failure.");
 });

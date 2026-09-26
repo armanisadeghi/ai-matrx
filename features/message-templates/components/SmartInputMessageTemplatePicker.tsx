@@ -14,6 +14,7 @@ import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorC
 import { fetchMessageTemplates } from "@/features/message-templates/services/message-templates-service";
 import type { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SmartInputMessageTemplatePickerProps {
   onSelect: (templateContent: string) => void;
@@ -82,6 +83,7 @@ export function SmartInputMessageTemplatePicker({
           <div className="flex h-32 flex-col items-center justify-center gap-2 text-center">
             <p className="text-xs text-destructive">
               Message templates couldn&apos;t be loaded.
+              <ErrorAlchemyMenu />
             </p>
             <button
               type="button"

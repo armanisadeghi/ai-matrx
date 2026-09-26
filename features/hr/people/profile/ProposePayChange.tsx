@@ -43,6 +43,7 @@ import { cn } from "@/lib/utils";
 import { upsertHrCompensation } from "../../service";
 import { hrTasksHref, type HrOrgRef } from "../../routes";
 import type { HrEmployeeProfile } from "../../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** `hr.compensation_component_kind_check`, verbatim. */
 const COMPONENT_KINDS = [
@@ -416,9 +417,10 @@ function OutcomeLine({ outcome, org }: { outcome: Outcome; org: HrOrgRef }) {
             .
           </>
         ) : null}
+        <ErrorAlchemyMenu />
       </p>
     );
   }
 
-  return <p className="text-sm text-destructive">{outcome.message}</p>;
+  return <p className="text-sm text-destructive">{outcome.message} <ErrorAlchemyMenu error={outcome.message} /></p>;
 }

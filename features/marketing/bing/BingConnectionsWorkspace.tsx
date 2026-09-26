@@ -41,6 +41,7 @@ import { parseBingSiteBinding } from "@/features/marketing/bing/binding";
 import type { MarketingSite } from "@/features/marketing/types";
 import { BING_PROVIDER } from "@/features/marketing/lib/provider-names";
 import { humanizeBackendError } from "@/utils/errors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const BING_WEBMASTER_URL = "https://www.bing.com/webmasters";
 
@@ -294,6 +295,7 @@ export function BingConnectionsWorkspace() {
               <div className="flex items-center justify-between gap-3 p-3">
                 <p className="text-xs text-destructive">
                   We couldn&apos;t check your Bing connection.
+                  <ErrorAlchemyMenu />
                 </p>
                 <Button
                   size="sm"

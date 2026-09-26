@@ -14,6 +14,7 @@ import { cn } from "@/utils/cn";
 import { formatMoney, parseMoney } from "./lulu-api";
 import { PriceSkeleton } from "./LuluStateCards";
 import type { BulkTier, LuluFetchState, LuluPriceResult } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------------------------------------------------------------------------
 // Derivations from a price response
@@ -438,7 +439,7 @@ function TierCell({
     return <Loader2 className="ml-auto size-3.5 animate-spin text-muted-foreground" />;
   }
   if (state.status === "error") {
-    return <span className="text-xs text-destructive">Failed</span>;
+    return <span className="text-xs text-destructive">Failed <ErrorAlchemyMenu /></span>;
   }
   if (state.status === "awaiting_credentials") {
     return <span className="text-xs text-muted-foreground">Pending</span>;

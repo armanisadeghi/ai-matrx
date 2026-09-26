@@ -80,6 +80,7 @@ import {
 import { useConnectMcpServer } from "@/features/connectors/useConnectMcpServer";
 import { AttachedResourcesSection } from "@/features/connectors/AttachedResourcesSection";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function RunToolPicker({ conversationId }: { conversationId: string }) {
   const dispatch = useAppDispatch();
@@ -396,6 +397,7 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
               <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
               Live connection health is unavailable right now — the states
               below come from your saved connections and may be out of date.
+              <ErrorAlchemyMenu />
             </p>
           )}
           <div className="flex max-h-28 flex-wrap gap-1 overflow-y-auto">

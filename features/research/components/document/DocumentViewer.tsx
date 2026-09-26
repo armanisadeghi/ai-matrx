@@ -44,6 +44,7 @@ import {
 // lazy-loads on first open.
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CostValue } from "@/components/processing-units/CostValue";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function DocumentViewer() {
   const { topicId, topic, progress, refresh } = useTopicContext();
@@ -226,6 +227,7 @@ export default function DocumentViewer() {
         <div>
           <p className="text-xs font-medium text-destructive/80">
             Generation failed
+            <ErrorAlchemyMenu />
           </p>
           {document.error && (
             <p className="text-[10px] text-muted-foreground mt-1 max-w-[280px]">

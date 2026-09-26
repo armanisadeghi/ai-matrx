@@ -36,6 +36,7 @@ import {
   type ColumnFacets,
   type ServiceResult,
 } from "@/features/data-tables/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ColumnHeaderMenuProps {
   /**
@@ -381,6 +382,7 @@ const ColumnHeaderMenu = ({
             <p className="mb-1.5 text-[11px] leading-snug text-amber-600 dark:text-amber-400">
               Couldn&rsquo;t read this column&rsquo;s values, so there&rsquo;s no
               list to pick from. Text matching still works.
+              <ErrorAlchemyMenu />
             </p>
           )}
 

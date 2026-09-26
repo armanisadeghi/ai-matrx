@@ -1017,7 +1017,7 @@ function BuildAllProgress({
         <span className="tabular-nums text-muted-foreground">
           {done + failed} / {total}
           {failed > 0 && (
-            <span className="text-destructive"> · {failed} failed</span>
+            <span className="text-destructive"> · {failed} failed <ErrorAlchemyMenu /></span>
           )}
         </span>
       </div>
@@ -1107,6 +1107,7 @@ function DocSummaryLine({
             <span className="text-amber-600 dark:text-amber-400">
               {" "}
               · scope estimate unavailable
+              <ErrorAlchemyMenu />
             </span>
           )}
         </p>

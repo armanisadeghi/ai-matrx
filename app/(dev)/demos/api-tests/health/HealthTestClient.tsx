@@ -285,7 +285,7 @@ export default function HealthTestClient() {
                                     <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
                                         <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
                                         <div>
-                                            <h4 className="font-semibold text-destructive mb-1">Health Check Failed</h4>
+                                            <h4 className="font-semibold text-destructive mb-1">Health Check Failed <ErrorAlchemyMenu /></h4>
                                             <p className="text-sm text-destructive/80">{basicError} <ErrorAlchemyMenu error={basicError} /></p>
                                         </div>
                                     </div>
@@ -325,7 +325,7 @@ export default function HealthTestClient() {
                                     <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
                                         <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
                                         <div>
-                                            <h4 className="font-semibold text-destructive mb-1">Detailed Health Check Failed</h4>
+                                            <h4 className="font-semibold text-destructive mb-1">Detailed Health Check Failed <ErrorAlchemyMenu /></h4>
                                             <p className="text-sm text-destructive/80">{detailedError} <ErrorAlchemyMenu error={detailedError} /></p>
                                         </div>
                                     </div>

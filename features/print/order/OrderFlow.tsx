@@ -538,7 +538,7 @@ export function OrderFlow({
         ) : null}
 
         {ordersState.status === "error" ? (
-          <p className="mt-3 text-sm text-destructive">{ordersState.headline}</p>
+          <p className="mt-3 text-sm text-destructive">{ordersState.headline} <ErrorAlchemyMenu /></p>
         ) : null}
 
         {ordersState.status === "ready" && ordersState.data.length > 0 ? (

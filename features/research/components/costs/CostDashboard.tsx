@@ -36,6 +36,7 @@ import {
   type PhaseRollup,
 } from "../../costs";
 import type { NormalizedUsageModel } from "@/lib/token-usage/normalize";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const PHASE_ICON: Record<CostPhase, typeof Brain> = {
   page_analyses: Brain,
@@ -121,6 +122,7 @@ const PHASE_COLUMNS: MatrxColumnDef<PhaseRollup>[] = [
           {phase.failed_calls > 0 && (
             <span className="text-[10px] text-destructive/80">
               {phase.failed_calls} failed
+              <ErrorAlchemyMenu />
             </span>
           )}
         </div>

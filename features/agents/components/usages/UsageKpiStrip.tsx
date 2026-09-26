@@ -20,6 +20,7 @@ import { fetchUsageHistoryCounts } from "@/features/agents/redux/usages/usages.t
 import type { AgentUsageHistoryCount } from "@/features/agents/redux/usages/usages.types";
 import { DIMENSION_ORDER, HISTORY_TILE, dimensionMeta, type UsageDimension } from "./dimensions";
 import type { DimensionCount } from "./unified-rows";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type DimensionReadState = "loading" | "failed" | "ready";
 
@@ -130,7 +131,7 @@ export function UsageKpiStrip({
             {state === "loading" ? (
               <Loader2 className="h-3 w-3 animate-spin" aria-label="loading" />
             ) : state === "failed" ? (
-              <span className="font-semibold text-destructive">?</span>
+              <span className="font-semibold text-destructive">? <ErrorAlchemyMenu /></span>
             ) : (
               <span className="font-semibold tabular-nums">{count.total}</span>
             )}
@@ -171,7 +172,7 @@ export function UsageKpiStrip({
         {history.status === "loading" ? (
           <Loader2 className="h-3 w-3 animate-spin" aria-label="loading" />
         ) : history.status === "failed" ? (
-          <span className="font-semibold text-destructive">?</span>
+          <span className="font-semibold text-destructive">? <ErrorAlchemyMenu /></span>
         ) : (
           <span className="font-semibold tabular-nums">{historyTotal}</span>
         )}

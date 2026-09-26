@@ -77,9 +77,10 @@ export function ModelColumnHeader({
       : null;
   const overrideModel =
     typeof overrides.model === "string" ? overrides.model : null;
-  const displayModel = isBaseline
-    ? (overrideModel ?? baseModel)
-    : overrideModel;
+  // A column with no pick of its own runs on the agent's model, so it SAYS so —
+  // it used to read "Pick a model..." while answering with the agent default.
+  const displayModel = overrideModel ?? baseModel;
+  const usingAgentDefault = !overrideModel && Boolean(baseModel);
 
   const commitLabel = () => {
     const trimmed = labelDraft.trim();
@@ -228,6 +229,14 @@ export function ModelColumnHeader({
         <span className="text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">
           Model
         </span>
+        {usingAgentDefault && !isBaseline && (
+          <span
+            className="text-[10px] text-muted-foreground shrink-0"
+            title="No model picked for this column, so it runs on the agent's own model. Pick one to compare."
+          >
+            agent default
+          </span>
+        )}
         <div className="flex-1 min-w-0">
           <ModelListDropdown
             value={displayModel}

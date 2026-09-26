@@ -346,7 +346,7 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
       </header>
 
       {refused ? (
-        <p className="rounded border border-destructive px-3 py-2 text-sm text-destructive">{refused}</p>
+        <p className="rounded border border-destructive px-3 py-2 text-sm text-destructive">{refused} <ErrorAlchemyMenu /></p>
       ) : null}
 
       {days.length === 0 ? (

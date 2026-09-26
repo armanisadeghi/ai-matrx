@@ -75,6 +75,7 @@ import { SharpPlanSpine } from "./SharpPlanSpine";
 import { SharpScreen, type SharpTab } from "./SharpScreen";
 import { SharpActivityRail } from "./SharpActivityRail";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface LoadedDefinition {
   id: string;
@@ -235,6 +236,7 @@ function SharpOffer({
                 <p className="text-[11px] text-amber-700 dark:text-amber-400">
                   This workflow&apos;s declared result no longer matches its
                   steps — showing what the steps actually make.
+                  <ErrorAlchemyMenu />
                 </p>
               ) : null}
               {declared.deliverables.map((promise) => (

@@ -24,6 +24,7 @@ import {
   Cpu,
   Gauge,
   Boxes,
+  GitFork,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -95,6 +96,13 @@ const MODES: ModeEntry[] = [
     href: "/agents/battle/request-mod",
     icon: Workflow,
     hint: "Lock the agent; vary per-column variables and user message",
+  },
+  {
+    id: "conversation",
+    label: "Conversation",
+    href: "/agents/battle/conversation",
+    icon: GitFork,
+    hint: "Fork one existing conversation into independent side-by-side continuations",
   },
 ];
 
@@ -168,7 +176,8 @@ export function BattleModeNav() {
         href: mode.href,
         icon: mode.icon,
         description: mode.hint,
-        exact: mode.id === "open",
+        // Not exact: a saved Open battle lives at /agents/battle/open/<id>,
+        // and every other mode's href is longer, so the most specific wins.
       }))}
     />
   );

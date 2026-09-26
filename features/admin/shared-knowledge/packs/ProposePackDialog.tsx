@@ -239,7 +239,7 @@ export function ProposePackDialog({
         {stage !== "idle" ? (
           <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs">
             {busy ? <Loader2 className="size-3.5 animate-spin text-primary" /> : null}
-            <span className={stage === "error" ? "text-destructive" : "text-muted-foreground"}>{stage === "error" ? (error ?? STAGE_LABEL.error) : STAGE_LABEL[stage]} <ErrorAlchemyMenu error={error} /></span>
+            <span className={stage === "error" ? "text-destructive" : "text-muted-foreground"}>{stage === "error" ? (error ?? STAGE_LABEL.error) : STAGE_LABEL[stage]} {stage === "error" ? <ErrorAlchemyMenu error={error} operation="Propose a knowledge pack" /> : null}</span>
           </div>
         ) : null}
 

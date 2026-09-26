@@ -1038,6 +1038,7 @@ export function ToolUiComponentGenerator({
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="w-5 h-5" />
               Save Failed — Your Work Is Safe
+              <ErrorAlchemyMenu />
             </DialogTitle>
             <DialogDescription>
               The component could not be saved to the database. Your draft is

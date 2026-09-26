@@ -151,6 +151,7 @@ export default function ModelAuditDashboard() {
                 {failCount > 0 && (
                   <span className="text-xs text-destructive font-medium">
                     · {failCount} failing
+                    <ErrorAlchemyMenu />
                   </span>
                 )}
               </>

@@ -394,7 +394,7 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
           <div className="flex items-start gap-2 p-3 rounded border border-red-500/30 bg-red-500/5">
             <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-medium text-red-500">Error</p>
+              <p className="text-xs font-medium text-red-500">Error <ErrorAlchemyMenu /></p>
               <pre className="text-xs text-muted-foreground whitespace-pre-wrap mt-1">
                 {ur.error}
               </pre>

@@ -25,6 +25,7 @@ import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
 import { fetchTypeItems } from "@/features/scopes/components/context-assignment/data";
 import type { ContextItemRow } from "@/features/scopes/types";
 import { previewWrite, type PickerData, type SelectionApi } from "./engine";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CompactTreeProps {
   data: PickerData;
@@ -358,6 +359,7 @@ export function CompactTree({
                                           ) : typeItems === "error" ? (
                                             <div className="flex h-6 items-center pl-1 text-[11px] text-destructive">
                                               Couldn&apos;t load fields.
+                                              <ErrorAlchemyMenu />
                                             </div>
                                           ) : (typeItems ?? []).length === 0 ? (
                                             <div className="flex h-6 items-center pl-1 text-[11px] text-muted-foreground/70">

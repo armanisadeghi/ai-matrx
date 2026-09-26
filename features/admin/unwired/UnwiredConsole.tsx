@@ -23,6 +23,7 @@ import {
   unwiredFindingContent,
 } from "./copy";
 import { useNow } from "@/hooks/useNow";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function findingKey(finding: UnwiredFinding): string {
   return `${finding.repository}:${finding.file}:${finding.line}:${finding.symbol}`;
@@ -139,6 +140,7 @@ export function UnwiredConsole({ report, history, problems }: UnwiredConsoleProp
           {problems.map((problem) => <p key={problem} className="mt-1">{problem}</p>)}
           {report.partial.map((note) => <p key={note} className="mt-1">Partial scan: {note}</p>)}
           {scanAge !== null && scanAge > UNWIRED_STALE_AFTER_DAYS && <p className="mt-1">Snapshot is {scanAge} days old. Refresh it with <code>pnpm check:unwired:write</code>.</p>}
+          <ErrorAlchemyMenu />
         </div>
       )}
 

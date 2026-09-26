@@ -31,6 +31,7 @@ import {
   OUTPUT_QUALITY_BOUNDS,
   OUTPUT_QUALITY_STEP,
 } from "../constants/conversion-options";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The format vocabulary and the quality bounds live in
@@ -458,6 +459,7 @@ export function ExportPanel({
                         {" "}
                         <span className="text-destructive">
                           ({lastSaveResult.failedFilenames.length} failed)
+                          <ErrorAlchemyMenu />
                         </span>
                       </>
                     )}

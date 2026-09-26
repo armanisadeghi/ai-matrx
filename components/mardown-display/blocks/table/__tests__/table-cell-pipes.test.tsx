@@ -163,3 +163,12 @@ it("every table in the shared vectors renders cell-for-cell as GFM does", async 
     expect({ table, cells: got.slice(0, want.length).map((row, r) => row.slice(0, want[r]?.length)) }).toEqual({ table, cells: want });
   }
 });
+
+// ── verify-RC-B4 R6-2: no column is hidden by its NAME ───────────────────────
+// A column called "Action" is real content (a follow-up per row); hiding it by
+// default is a screen that lies. Only the person hides a column.
+it.each(["Action", "Actions", "**Action**"])("a column named %j is shown by default", async (name) => {
+  const table = `| Bay | ${name} |\n| --- | --- |\n| B3 | Re-scan before 6am |`;
+  const got = await renderedCells(table);
+  expect(got[1]).toContain("Re-scan before 6am");
+});

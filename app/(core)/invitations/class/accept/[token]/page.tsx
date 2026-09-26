@@ -167,6 +167,7 @@ export default function AcceptClassInvitationPage() {
             </div>
             <h2 className="mb-2 text-lg font-semibold text-foreground">
               Unable to open this invitation
+              <ErrorAlchemyMenu />
             </h2>
             <p className="mb-6 text-sm text-muted-foreground">
               {error ??

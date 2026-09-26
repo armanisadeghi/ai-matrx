@@ -142,6 +142,7 @@ export function ChunkCard({ chunk, pageRun, onJumpToPage }: ChunkCardProps) {
         <div className="mx-2 mb-1.5 px-2 py-1 rounded bg-destructive/10 border border-destructive/30 text-destructive text-[10px] leading-snug">
           <AlertTriangle className="w-3 h-3 inline-block mr-1" />
           {pageRun.error}
+          <ErrorAlchemyMenu error={pageRun.error} />
         </div>
       )}
 
@@ -215,7 +216,6 @@ export function ChunkCard({ chunk, pageRun, onJumpToPage }: ChunkCardProps) {
           </Section>
         )}
       </div>
-      <ErrorAlchemyMenu error={pageRun?.error} />
     </div>
   );
 }

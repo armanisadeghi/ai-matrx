@@ -68,6 +68,7 @@ import {
   type GoogleProposalCopy,
   type GoogleProposalPayload,
 } from "./google-proposal";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const KIND_ID = "contact_import";
 const PAYLOAD_KIND = "contact_import_dry_run";
@@ -326,6 +327,7 @@ function ContactFieldMap({ payload }: { payload: GoogleProposalPayload }) {
         <p className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
           {refused.length} field{refused.length === 1 ? "" : "s"} would not be written at all
           — see the row{refused.length === 1 ? "" : "s"} above for why.
+          <ErrorAlchemyMenu />
         </p>
       )}
       {reimportPolicy && (

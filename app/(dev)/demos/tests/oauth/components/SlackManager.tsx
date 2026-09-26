@@ -220,6 +220,7 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
         <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded relative">
           <p className="font-bold">Error loading Slack data</p>
           <p>{error}</p>
+          <ErrorAlchemyMenu />
         </div>
     );
   }

@@ -42,6 +42,7 @@ import { ProductCaptureHeader } from "./ProductCaptureHeader";
 import { MediaPager } from "./MediaPager";
 import { useLongPress } from "../hooks/useLongPress";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const NOTES_AUTOSAVE_MS = 800;
 
@@ -401,6 +402,7 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
                       )}
                       <span className="line-clamp-2 break-all text-[10px]">
                         {p.status === "error" ? "Upload failed" : p.fileName}
+                        <ErrorAlchemyMenu />
                       </span>
                     </div>
                   ))}

@@ -10,6 +10,7 @@
 import { Check, Loader2, CircleDot, AlertCircle } from "lucide-react";
 import type { AutosaveStatus } from "@ai-matrx/kit/autosave";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function AutosaveIndicator({
   status,
@@ -45,6 +46,7 @@ export function AutosaveIndicator({
       <span className={cn(base, "text-red-600 dark:text-red-400", className)}>
         <AlertCircle className="h-3 w-3" />
         Save failed — retrying
+        <ErrorAlchemyMenu />
       </span>
     );
   }

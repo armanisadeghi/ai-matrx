@@ -51,6 +51,7 @@ import {
   fmtStamp,
   fmtUsd,
 } from "./presentation";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ANY = "__any__";
 
@@ -654,6 +655,7 @@ function WorkItemDetail({
             Delivery error (handler_error)
           </p>
           <JsonTreeViewer data={row.handler_error} />
+          <ErrorAlchemyMenu />
         </div>
       ) : null}
 
@@ -661,6 +663,7 @@ function WorkItemDetail({
         <div className="rounded border border-warning/40 bg-warning/5 p-2">
           <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-warning">
             Provider error (error)
+            <ErrorAlchemyMenu />
           </p>
           <JsonTreeViewer data={row.error} />
         </div>

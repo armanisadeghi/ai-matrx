@@ -472,13 +472,13 @@ export function ToolCreatePage() {
                   <TabsTrigger value="parameters">
                     Parameters
                     {jsonErrors.parameters && (
-                      <span className="ml-1 text-destructive">!</span>
+                      <span className="ml-1 text-destructive">! <ErrorAlchemyMenu /></span>
                     )}
                   </TabsTrigger>
                   <TabsTrigger value="output">
                     Output Schema
                     {jsonErrors.output_schema && (
-                      <span className="ml-1 text-destructive">!</span>
+                      <span className="ml-1 text-destructive">! <ErrorAlchemyMenu /></span>
                     )}
                   </TabsTrigger>
                 </TabsList>

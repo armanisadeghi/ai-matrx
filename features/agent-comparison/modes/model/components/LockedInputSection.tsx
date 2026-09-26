@@ -25,10 +25,7 @@ import { SharedBattleInput } from "@/features/agent-comparison/shared/SharedBatt
 import SearchableSelect from "@/components/matrx/SearchableSelect";
 import type { Option } from "@/components/matrx/SearchableSelect";
 import { cn } from "@/lib/utils";
-import { BlindControls } from "@/features/agent-comparison/shared/BlindControls";
-import { selectBlindActive } from "@/features/agent-comparison/redux/selectors";
 import {
-  selectActiveModelSetName,
   selectModelColumns,
 } from "../redux/selectors";
 import {
@@ -60,8 +57,6 @@ export function LockedInputSection() {
   >(null);
   const [collapsed, setCollapsed] = useState(false);
   const [showIdInput, setShowIdInput] = useState(false);
-  const setName = useAppSelector(selectActiveModelSetName);
-  const blindActive = useAppSelector(selectBlindActive);
   const columns = useAppSelector(selectModelColumns);
   const [idInput, setIdInput] = useState("");
   const [idLoading, setIdLoading] = useState(false);
@@ -189,10 +184,8 @@ export function LockedInputSection() {
           </span>
         </button>
         <span className="text-xs text-muted-foreground truncate flex-1">
-          {(!blindActive ? setName : null) ??
-            `${columns.length} model${columns.length === 1 ? "" : "s"}`}
+          {`${columns.length} model${columns.length === 1 ? "" : "s"}`}
         </span>
-        <BlindControls />
       </div>
 
       <div

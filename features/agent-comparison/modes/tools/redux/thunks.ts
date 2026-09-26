@@ -39,10 +39,14 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   createComparisonSet,
   loadComparisonSet,
-  renameComparisonSet,
   replaceEntries,
   type UpsertEntryInput,
 } from "@/features/agent-comparison/service/comparisonSetsService";
+import {
+  createBattlePersistence,
+  persistForRun,
+  type BattleSubmitResult,
+} from "@/features/agent-comparison/shared/battlePersistence";
 import { forkAgentForVariant } from "@/features/agent-comparison/shared/forkAgentForVariant";
 import { isSyntheticAgentId } from "@/features/agents/redux/agent-definition/synthetic-id";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
@@ -329,7 +333,7 @@ export const removeColumnFromToolsBattle = createAsyncThunk<
 // =============================================================================
 
 export const submitAllTools = createAsyncThunk<
-  { launched: number; failed: number; skipped: number },
+  BattleSubmitResult,
   void,
   ThunkApi
 >("agentComparisonTools/submitAll", async (_arg, { dispatch, getState }) => {
@@ -353,6 +357,16 @@ export const submitAllTools = createAsyncThunk<
       );
     }
 
+    // The battle gets (or keeps) its identity BEFORE the runs start, so the
+    // URL names it while the answers stream in. Nothing in a saved entry
+    // changes during a run, so there is no second save afterwards.
+    const persisted = await persistForRun(() =>
+      dispatch(persistToolsBattle()).unwrap(),
+    );
+    if (persisted.cancelled) {
+      return { launched: 0, failed: 0, skipped: columns.length, cancelled: true };
+    }
+
     const results = await Promise.allSettled(
       columns.map((col) =>
         dispatch(
@@ -367,23 +381,7 @@ export const submitAllTools = createAsyncThunk<
     const failed = results.filter((r) => r.status === "rejected").length;
     const launched = results.length - failed;
 
-    const post = getState();
-    const activeSetId = post.agentComparisonTools.activeSetId;
-    if (activeSetId) {
-      const entries = buildToolsEntries(post);
-      try {
-        await replaceEntries(activeSetId, entries);
-        await renameComparisonSet(
-          activeSetId,
-          post.agentComparisonTools.activeSetName ?? "Untitled comparison",
-        );
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error("[tools] failed to persist comparison entries:", err);
-      }
-    }
-
-    return { launched, failed, skipped: 0 };
+    return { launched, failed, skipped: 0, persistError: persisted.error };
   } finally {
     dispatch(submitAllFinished());
   }
@@ -537,16 +535,20 @@ export const saveToolsBattleAs = createAsyncThunk<
   return { id: set.id, name: set.name };
 });
 
-export const saveToolsBattle = createAsyncThunk<void, void, ThunkApi>(
-  "agentComparisonTools/save",
-  async (_arg, { getState }) => {
-    const state = getState();
-    const setId = state.agentComparisonTools.activeSetId;
-    if (!setId) throw new Error("No active comparison set");
-    const entries = buildToolsEntries(state);
-    await replaceEntries(setId, entries);
-  },
-);
+const toolsPersistence = createBattlePersistence({
+  typePrefix: "agentComparisonTools",
+  modeLabel: "Tools battle",
+  selectActiveSetId: (state) => state.agentComparisonTools.activeSetId,
+  selectActiveSetName: (state) => state.agentComparisonTools.activeSetName,
+  selectNamingAgentId: (state) => state.agentComparisonTools.locked.sourceAgentId,
+  buildMetadata: buildSetMetadata,
+  buildEntries: buildToolsEntries,
+  setActive: setActiveToolsSet,
+});
+
+/** Create this battle on first call; afterwards keep its setup and columns current. */
+export const persistToolsBattle = toolsPersistence.persist;
+export const renameToolsBattle = toolsPersistence.rename;
 
 interface LoadedLockedSpec {
   source_agent_id: string | null;

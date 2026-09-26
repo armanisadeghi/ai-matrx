@@ -2743,6 +2743,7 @@ function MiddleBody({
       <p className="flex items-start justify-center gap-1.5 py-8 text-[12px] leading-relaxed text-destructive">
         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         {holderMessage}
+        <ErrorAlchemyMenu error={holderMessage} />
       </p>
     );
   }
@@ -2769,6 +2770,7 @@ function MiddleBody({
       <p className="flex items-start justify-center gap-1.5 py-8 text-[12px] leading-relaxed text-amber-700 dark:text-amber-400">
         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         {offerMessage}
+        <ErrorAlchemyMenu error={offerMessage} />
       </p>
     );
   }

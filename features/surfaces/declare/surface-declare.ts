@@ -204,23 +204,25 @@ export const SURFACE_DECLARATION_EXTENSIONS = [
 ] as const;
 
 /**
- * The app registry's resolved manifests, in the package's resolved shape
- * (defaults-filled sensitivity + content hash). Transitional: once
- * `manifests/registry.ts` resolves through `createDeclarationRegistry`, this
- * adapter is deleted.
+ * The registry's resolved manifests typed as the package's resolved shape.
+ * `manifests/registry.ts` resolves through `createDeclarationRegistry`, so
+ * every manifest already carries `contentHash` and per-value
+ * `resolvedSensitivity`; a caller holding a hand-built manifest (tests,
+ * fixtures) gets both filled here.
  */
 export function toPackageResolved(
   manifests: readonly ResolvedSurfaceManifest[],
   raw: (surfaceName: string) => SurfaceManifest | undefined,
 ): Resolved<Manifest>[] {
-  return manifests.map(
-    (m) =>
-      ({
-        ...m,
-        contentHash: declarationHash(raw(m.surfaceName) ?? m),
-        values: m.values.map((v) => ({ ...v, resolvedSensitivity: resolveSensitivity(v) })),
-      }) as unknown as Resolved<Manifest>,
-  );
+  return manifests.map((m) => {
+    const resolved = m as ResolvedSurfaceManifest & { contentHash?: string };
+    if (typeof resolved.contentHash === "string") return m as unknown as Resolved<Manifest>;
+    return {
+      ...m,
+      contentHash: declarationHash(raw(m.surfaceName) ?? m),
+      values: m.values.map((v) => ({ ...v, resolvedSensitivity: resolveSensitivity(v) })),
+    } as unknown as Resolved<Manifest>;
+  });
 }
 
 export function validateSurfaceManifests(

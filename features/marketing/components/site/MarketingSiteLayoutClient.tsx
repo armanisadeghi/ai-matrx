@@ -37,6 +37,7 @@ import {
   useMarketingBrandOptional,
   useMarketingSiteOptional as useResolvedSiteOptional,
 } from "@/features/marketing/lib/brand-context";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * A site reached through the wrong brand's URL is a broken link, not a locked
@@ -248,6 +249,7 @@ export function MarketingSiteLayoutClient({
               title={crawlActivity.error.message}
             >
               Crawl status unavailable
+              <ErrorAlchemyMenu />
             </span>
           ) : undefined
         }

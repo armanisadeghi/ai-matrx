@@ -151,6 +151,7 @@ function ErrorBox({ message }: { message: string }) {
     <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
       <AlertCircle className="h-3.5 w-3.5" />
       {message}
+      <ErrorAlchemyMenu error={message} />
     </div>
   );
 }

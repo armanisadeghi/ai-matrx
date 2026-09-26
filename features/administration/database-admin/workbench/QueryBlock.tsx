@@ -278,6 +278,7 @@ export function QueryBlock({
             {block.status === "error" && (
               <span className="text-red-600 dark:text-red-400 shrink-0">
                 Failed
+                <ErrorAlchemyMenu />
               </span>
             )}
             {hasUsed && (

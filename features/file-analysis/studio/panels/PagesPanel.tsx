@@ -307,6 +307,7 @@ export function PagesPanel({ fileId, activePageNumber, onSelectPage }: Props) {
           >
             Retry
           </button>
+          <ErrorAlchemyMenu />
         </div>
       ) : null}
 

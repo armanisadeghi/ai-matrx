@@ -482,6 +482,7 @@ export function TriadGamePage({
             Deal again and play {failures.length === 1 ? "it" : "them"} once
             more — nothing of yours was written for{" "}
             {failures.length === 1 ? "it" : "them"}.
+            <ErrorAlchemyMenu />
           </p>
         ) : null}
         <div className="flex flex-col gap-2 sm:flex-row">

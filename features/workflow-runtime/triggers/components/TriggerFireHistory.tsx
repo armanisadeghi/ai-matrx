@@ -59,6 +59,7 @@ export function TriggerFireHistory({
           <AlertTriangle className="mt-px h-3 w-3 shrink-0" />
           We couldn&apos;t read this one&apos;s history just now. That says
           nothing about whether it ran — try again in a moment.
+          <ErrorAlchemyMenu />
         </p>
         {lastRunId ? (
           <Link

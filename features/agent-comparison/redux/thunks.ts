@@ -52,10 +52,14 @@ import {
   createComparisonSet,
   listComparisonSets,
   loadComparisonSet as fetchComparisonSet,
-  renameComparisonSet,
   replaceEntries,
   type UpsertEntryInput,
 } from "../service/comparisonSetsService";
+import {
+  createBattlePersistence,
+  persistForRun,
+  type BattleSubmitResult,
+} from "../shared/battlePersistence";
 import type { BattleAgentVersion, BattleColumn } from "../types";
 
 // =============================================================================
@@ -329,7 +333,7 @@ export const broadcastRunSettings = createAsyncThunk<
 // =============================================================================
 
 export const submitAllBattleColumns = createAsyncThunk<
-  { launched: number; skipped: number; failed: number },
+  BattleSubmitResult,
   void,
   ThunkApi
 >("agentComparison/submitAll", async (_arg, { dispatch, getState }) => {
@@ -345,6 +349,22 @@ export const submitAllBattleColumns = createAsyncThunk<
     // slices (autoclear etc.) so we don't want re-reads partway through.
     const targets = state.agentComparison.columns.filter((col) => col.agentId);
     const skipped = state.agentComparison.columns.length - targets.length;
+
+    // The battle gets (or keeps) its identity BEFORE the runs start, so the
+    // URL names it while the answers stream in. Nothing in a saved entry
+    // changes during a run, so there is no second save afterwards.
+    const persisted =
+      targets.length > 0
+        ? await persistForRun(() => dispatch(persistBattle()).unwrap())
+        : { cancelled: false, error: null };
+    if (persisted.cancelled) {
+      return {
+        launched: 0,
+        skipped: state.agentComparison.columns.length,
+        failed: 0,
+        cancelled: true,
+      };
+    }
 
     // Fire smartExecute on each column's existing instance — same path
     // the per-column Send button uses. Each smartExecute returns
@@ -364,26 +384,7 @@ export const submitAllBattleColumns = createAsyncThunk<
     const failed = results.filter((r) => r.status === "rejected").length;
     const launched = results.length - failed;
 
-    // If a set is active, persist the entries now that everything was
-    // launched (their cx_conversation rows exist server-side).
-    const post = getState();
-    const activeSetId = post.agentComparison.activeSetId;
-    if (activeSetId) {
-      const entries = buildPersistEntries(post.agentComparison.columns, post);
-      if (entries.length > 0) {
-        try {
-          await replaceEntries(activeSetId, entries);
-        } catch (err) {
-          // eslint-disable-next-line no-console
-          console.error(
-            "[agentComparison] failed to persist comparison entries:",
-            err,
-          );
-        }
-      }
-    }
-
-    return { launched, skipped, failed };
+    return { launched, skipped, failed, persistError: persisted.error };
   } finally {
     dispatch(submitAllFinished());
   }
@@ -447,35 +448,23 @@ export const saveBattleAs = createAsyncThunk<
   return { id: set.id, name: set.name };
 });
 
-export const saveBattle = createAsyncThunk<void, void, ThunkApi>(
-  "agentComparison/save",
-  async (_arg, { getState }) => {
-    const state = getState();
-    const setId = state.agentComparison.activeSetId;
-    if (!setId) throw new Error("No active comparison set");
-    const entries = buildPersistEntries(state.agentComparison.columns, state);
-    if (entries.length === 0) {
-      // Saving an empty column list would WIPE the saved set's entries and
-      // report success. Refuse loudly instead.
-      throw new Error(
-        "pick an agent in at least one column first — saving now would empty this comparison",
-      );
-    }
-    await replaceEntries(setId, entries);
-  },
-);
-
-export const renameActiveBattleSet = createAsyncThunk<
-  void,
-  { name: string },
-  ThunkApi
->("agentComparison/rename", async ({ name }, { dispatch, getState }) => {
-  const state = getState();
-  const setId = state.agentComparison.activeSetId;
-  if (!setId) throw new Error("No active comparison set");
-  await renameComparisonSet(setId, name);
-  dispatch(setActiveSet({ id: setId, name }));
+const openPersistence = createBattlePersistence({
+  typePrefix: "agentComparison",
+  modeLabel: "Open battle",
+  selectActiveSetId: (state) => state.agentComparison.activeSetId,
+  selectActiveSetName: (state) => state.agentComparison.activeSetName,
+  // Open mode compares different agents; the name carries no single agent.
+  selectNamingAgentId: () => null,
+  buildMetadata: () => ({ mode: "open" }),
+  buildEntries: (state) =>
+    buildPersistEntries(state.agentComparison.columns, state),
+  setActive: setActiveSet,
 });
+
+/** Create this battle on first call; afterwards keep its columns current. */
+export const persistBattle = openPersistence.persist;
+
+export const renameActiveBattleSet = openPersistence.rename;
 
 export const listMyBattleSets = createAsyncThunk<
   Awaited<ReturnType<typeof listComparisonSets>>,

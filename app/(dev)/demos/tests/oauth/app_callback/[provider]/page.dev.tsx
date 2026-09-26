@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SlackManager from "../../components/SlackManager";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function OAuthCallback() {
   const router = useRouter();
@@ -51,6 +52,7 @@ export default function OAuthCallback() {
           <div className="text-center">
             <h1 className="text-xl font-medium text-red-600">
               Authentication Error
+              <ErrorAlchemyMenu />
             </h1>
             <p className="text-gray-500 mt-2">{error}</p>
           </div>

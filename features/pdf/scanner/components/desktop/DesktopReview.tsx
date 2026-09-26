@@ -479,6 +479,7 @@ function ListRow({
             ? ` · ${ENHANCE_LABELS[item.enhance].toLowerCase()}`
             : ""}
           {item.status === "error" ? " · upload failed" : ""}
+          <ErrorAlchemyMenu />
         </p>
       </div>
       <SourceChip item={item} />

@@ -95,6 +95,7 @@ class AgentJsonErrorBoundary extends Component<
           <div>
             <p className="text-sm font-semibold text-red-700 dark:text-red-300">
               Display error
+              <ErrorAlchemyMenu />
             </p>
             <p className="text-xs text-red-600 dark:text-red-400 mt-1">
               {this.state.error?.message ?? "Failed to render agent JSON"}

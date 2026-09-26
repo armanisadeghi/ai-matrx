@@ -203,11 +203,13 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
           <span className="text-xs text-destructive">
             failing — the last {patrol.failing_streak} run
             {patrol.failing_streak === 1 ? "" : "s"} failed
+            <ErrorAlchemyMenu />
           </span>
         ) : (patrol.recent_runs_failed ?? 0) > 0 ? (
           <span className="text-xs text-amber-700 dark:text-amber-400">
             passing now — {patrol.recent_runs_failed} of the last{" "}
             {patrol.recent_runs_counted} failed
+            <ErrorAlchemyMenu />
           </span>
         ) : null}
         {patrol.runs_failed > 0 ? (

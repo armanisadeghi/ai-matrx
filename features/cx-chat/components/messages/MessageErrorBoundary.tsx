@@ -3,6 +3,7 @@
 import React from 'react';
 import { TriangleAlert } from 'lucide-react';
 import { captureReactRenderError } from '@/lib/diagnostics/captureReactError';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface MessageErrorBoundaryProps {
     children: React.ReactNode;
@@ -44,6 +45,7 @@ export class MessageErrorBoundary extends React.Component<MessageErrorBoundaryPr
                     <TriangleAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                     <p className="text-xs text-amber-700 dark:text-amber-300">
                         This message could not be displayed. The data may be in an unexpected format.
+                      <ErrorAlchemyMenu />
                     </p>
                 </div>
             );

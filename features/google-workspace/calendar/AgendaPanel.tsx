@@ -51,6 +51,7 @@ import { OpenItemsCount } from "./OpenItemsCount";
 import { createNoteAboutEvent } from "./service";
 import { useAgenda, type AgendaValue } from "./useAgenda";
 import type { AttendeePerson, CalendarEventRow } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface AgendaPanelProps {
   /** The heading. Absent on a surface whose own chrome already names it. */
@@ -174,6 +175,7 @@ function AgendaBody({
           className="rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-xs text-foreground"
         >
           {problem}
+          <ErrorAlchemyMenu error={problem} />
         </p>
       ))}
 

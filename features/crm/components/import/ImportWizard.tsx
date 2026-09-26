@@ -61,6 +61,7 @@ import type {
 import { IMPORT_FIELD_LABELS } from "../../import/types";
 import { persistConnectorCursor } from "../../import/connectors/service";
 import { ConnectorSources } from "./ConnectorSources";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Step = "source" | "map" | "preview" | "done";
 
@@ -937,6 +938,7 @@ export function ImportWizard() {
                     ): {f.error}
                   </p>
                 ))}
+                <ErrorAlchemyMenu />
               </div>
             )}
             <div className="flex gap-1.5">

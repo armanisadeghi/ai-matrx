@@ -255,6 +255,7 @@ export function DetailPresentationPane({ core }: { core: DetailCore }) {
       {state.status === "refused" ? (
         <p className="text-xs text-destructive" data-detail-presentation-refusal>
           {state.reason}
+          <ErrorAlchemyMenu />
         </p>
       ) : null}
       {setting.error ? (

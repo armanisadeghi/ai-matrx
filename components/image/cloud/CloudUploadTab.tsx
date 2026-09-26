@@ -48,6 +48,7 @@ import type { Visibility } from "@/features/files/types";
 import { Base64DecoderShell } from "@/features/image-studio/components/Base64DecoderShell";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface CloudUploadTabProps {
   /** Logical folder path (slash-delimited) for uploads. Default: `Images/Uploads`. */
@@ -261,6 +262,7 @@ export function CloudUploadTab({
             {resolveError ? (
               <span className="text-destructive truncate" title={resolveError}>
                 · couldn't prepare folder, uploads go to root
+                <ErrorAlchemyMenu />
               </span>
             ) : null}
           </div>

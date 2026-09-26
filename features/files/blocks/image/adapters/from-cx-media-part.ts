@@ -61,9 +61,18 @@ export function fromCxMediaPart(part: ImageMediaPart): UnifiedImageBlock {
     },
   );
 
+  // The reference role + `@name` the person gave this image as an input.
+  // Top-level fields on the part (never in metadata); dropping them here was
+  // why a role set in the builder never showed again after reload.
+  const withRole: UnifiedImageBlock = {
+    ...block,
+    referenceRole: part.role ?? null,
+    referenceName: part.name ?? null,
+  };
+
   // Base64 inline payload (rare but allowed by the on-disk shape).
   if (typeof metadata?.base64_data === "string") {
-    return { ...block, base64: metadata.base64_data };
+    return { ...withRole, base64: metadata.base64_data };
   }
-  return block;
+  return withRole;
 }

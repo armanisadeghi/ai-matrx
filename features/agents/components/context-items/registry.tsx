@@ -347,6 +347,17 @@ const FALLBACK_DEF: ContextItemTypeDef = {
   Body: GenericBody,
 };
 
+/**
+ * True when a block type has a REGISTERED context-item def. This is the one
+ * rule for "is this persisted part an attachment chip": the registry decides,
+ * never a hand-kept list of the types that are NOT attachments (that closed
+ * list turned every new part kind — speech_script, any future kind — into a
+ * chip reading "Attachment", and kept decision_questions out of the bubble).
+ */
+export function hasContextItemDef(blockType: string): boolean {
+  return BY_BLOCK_TYPE.has(blockType);
+}
+
 /** Resolve the registered def for a block type, or a graceful fallback. */
 export function resolveContextItemDef(blockType: string): ContextItemTypeDef {
   return BY_BLOCK_TYPE.get(blockType) ?? FALLBACK_DEF;

@@ -40,6 +40,7 @@ import type { CmsLink } from "../setup/readiness";
 import { AgentPayloadButton } from "./AgentPayloadSheet";
 import { ResearchTopicSelect } from "./ResearchTopicSelect";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** A small icon button whose disabled state IS information. */
 function StatusActionButton({
@@ -227,6 +228,7 @@ export function PlanToolbar({
         >
           <X className="h-3 w-3" />
         </Button>
+        <ErrorAlchemyMenu error={run.error} />
       </span>
     ) : null;
 

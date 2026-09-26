@@ -12,11 +12,22 @@
  * batch of distinct cases side-by-side; demoing an agent's range.
  */
 
+/**
+ * The request a column last sent (or was saved with). The column's composer
+ * empties the moment it sends, so the saved battle keeps THIS, never the
+ * emptied composer.
+ */
+export interface RequestModColumnRequest {
+  user_message: string;
+  variables: Record<string, unknown>;
+}
+
 export interface RequestModColumn {
   columnId: string;
   conversationId: string;
   label: string;
   collapsed: boolean;
+  lastRequest?: RequestModColumnRequest | null;
 }
 
 export interface RequestModLockedSetup {

@@ -264,6 +264,7 @@ function ProductRow({
             <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-warning/15 px-1.5 text-[10px] font-medium text-warning">
               <AlertTriangle className="h-2.5 w-2.5" aria-hidden />
               Not working
+              <ErrorAlchemyMenu />
             </span>
           ) : /* 🚨 THE TWO STATES THIS ROW RENDERED AS "never connected" (V17-3,
                 V17-1). A product the account HOLDS and cannot use is not a blank
@@ -309,6 +310,7 @@ function ProductRow({
             {selected && health.remedy
               ? ` Approving ${provider.name} again renews it — nothing new is asked for.`
               : ""}
+            <ErrorAlchemyMenu />
           </p>
         ) : health.state === "account_unusable" ? (
           /* The account's own sentence, on the row it broke, with what the press

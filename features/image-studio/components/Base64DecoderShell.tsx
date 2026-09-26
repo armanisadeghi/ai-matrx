@@ -40,6 +40,7 @@ import { cn } from "@/lib/utils";
 import { useBase64Decoder } from "../hooks/useBase64Decoder";
 import { mimeTypeLabel } from "../utils/decode-base64";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Base64DecoderShellProps {
   defaultFolder?: string;
@@ -310,6 +311,7 @@ function DecodeStatus({
       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-destructive">
         <AlertCircle className="h-3 w-3" />
         Invalid input
+        <ErrorAlchemyMenu />
       </span>
     );
   }

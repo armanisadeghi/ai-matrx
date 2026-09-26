@@ -85,6 +85,7 @@ import {
 // read-only scraped-results region → NonEditableContextMenu.
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ScrapeItemState {
   loading: boolean;
@@ -538,6 +539,7 @@ export function ScraperFloatingWorkspace({
             <AlertCircle className="w-3 h-3 text-destructive" />
             <span className="text-[10px] text-destructive/90 truncate max-w-[160px]">
               Error
+              <ErrorAlchemyMenu />
             </span>
           </>
         ) : (

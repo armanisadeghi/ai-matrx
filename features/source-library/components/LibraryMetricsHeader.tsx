@@ -604,6 +604,7 @@ function SyncProblems({ problems }: { problems: string[] }): ReactNode {
             {problems.map((problem) => (
                 <li key={problem} className="text-[11px] text-amber-700 dark:text-amber-400">
                     {problem}
+                  <ErrorAlchemyMenu error={problem} />
                 </li>
             ))}
         </ul>

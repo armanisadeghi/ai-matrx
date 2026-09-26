@@ -19,6 +19,7 @@ import type {
   PodcastRunState,
   MediaSlot,
 } from "@/features/podcasts/generator/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function EpisodeReveal({ state }: { state: PodcastRunState }) {
   const hasTitle = !!state.title;
@@ -169,6 +170,7 @@ function AssetStrip({
             ) : slot.status === "failed" ? (
               <div className="flex h-full w-full items-center justify-center px-2 text-center text-[11px] text-destructive/80">
                 Couldn&apos;t render
+                <ErrorAlchemyMenu />
               </div>
             ) : (
               <Shimmer />

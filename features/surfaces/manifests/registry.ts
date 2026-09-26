@@ -17,14 +17,12 @@
  * destruction.
  */
 
+import { createDeclarationRegistry } from "@ai-matrx/alchemy/declare";
 import type {
   ResolvedSurfaceManifest,
-  ResolvedSurfaceValue,
   SurfaceManifest,
-  SurfaceValueGroup,
-  SurfaceValueProvenance,
 } from "@/features/surfaces/types";
-import { RESERVED_GROUP_KEYS } from "@/features/surfaces/types";
+import { agentRolesExtension } from "@/features/surfaces/declare/surface-declare";
 import { BASELINE_VALUES, PLATFORM_RESERVED_NAMES } from "./_baseline.manifest";
 import { notesEditorManifest } from "./notes-editor.manifest";
 import { agentShortcutsManifest } from "./agent-shortcuts.manifest";
@@ -497,46 +495,6 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
 
 const MAX_INHERITANCE_DEPTH = 3;
 
-const RAW_INDEX: ReadonlyMap<string, SurfaceManifest> = new Map(
-  RAW_MANIFESTS.map((m) => [m.surfaceName, m] as const),
-);
-
-/**
- * Parent chain for a surface, ROOT FIRST (e.g. child of a child returns
- * `[grandparent, parent]`). Unknown surfaces return `[]`. Throws on cycles
- * and on chains deeper than MAX_INHERITANCE_DEPTH.
- */
-export function getSurfaceAncestry(surfaceName: string): string[] {
-  const chain: string[] = [];
-  const seen = new Set<string>([surfaceName]);
-  let cur = RAW_INDEX.get(surfaceName)?.inheritsFrom;
-  while (cur) {
-    if (seen.has(cur)) {
-      throw new Error(
-        `[surfaces] inheritsFrom CYCLE detected at "${cur}" (from "${surfaceName}"). ` +
-          `Fix the manifest chain: ${[...seen].join(" → ")} → ${cur}`,
-      );
-    }
-    const parent = RAW_INDEX.get(cur);
-    if (!parent) {
-      throw new Error(
-        `[surfaces] "${surfaceName}" inheritsFrom unknown surface "${cur}" — ` +
-          `the parent must be a registered manifest in registry.ts`,
-      );
-    }
-    seen.add(cur);
-    chain.unshift(cur);
-    if (chain.length > MAX_INHERITANCE_DEPTH) {
-      throw new Error(
-        `[surfaces] inheritance chain for "${surfaceName}" exceeds depth ${MAX_INHERITANCE_DEPTH}: ` +
-          chain.join(" → "),
-      );
-    }
-    cur = parent.inheritsFrom;
-  }
-  return chain;
-}
-
 /**
  * Platform-written names (`surface-chain.ts` / `window-forms.ts`): a surface
  * claiming one would be silently shadowed by the platform at run time, so a
@@ -563,201 +521,47 @@ export function assertNoPlatformReservedNames(
   }
 }
 
-const BASELINE_NAME_SET = new Set(Object.keys(BASELINE_VALUES));
-
-/** Group sortOrder bands. Curated groups author 0–899; the rest is reserved. */
-const GENERAL_GROUP_ORDER = 850;
-const INHERITED_GROUP_ORDER_BASE = 9000;
-const BASELINE_GROUP_ORDER = 9900;
-
 /**
- * Decide the canonical group key for a resolved value.
- * A baseline-named value with no explicit group ALWAYS lands in `baseline`
- * (regardless of which layer authored it) so generic values sink to the
- * bottom by construction. Inherited values ALWAYS collapse into their
- * supplying parent's `inherited:<parent>` group — a parent-declared `group`
- * key only applies on the parent's own surface (children don't declare it, so
- * honoring it here would orphan the value into an unresolvable group). Own
- * ungrouped values go to `general`.
- */
-function groupKeyFor(
-  value: SurfaceManifest["values"][number],
-  provenance: SurfaceValueProvenance,
-): string {
-  if (provenance.kind === "own" && value.group) return value.group;
-  if (BASELINE_NAME_SET.has(value.name)) return RESERVED_GROUP_KEYS.baseline;
-  if (provenance.kind === "inherited") {
-    return `${RESERVED_GROUP_KEYS.inheritedPrefix}${provenance.from}`;
-  }
-  if (provenance.kind === "baseline") return RESERVED_GROUP_KEYS.baseline;
-  return RESERVED_GROUP_KEYS.general;
-}
-
-/**
- * Resolve one manifest: merge inheritance (child wins per key), inject the
- * generic baselines, stamp provenance + groupKey on every value, synthesize
- * the auto groups, and sort values by (group order, value sortOrder).
+ * THE REGISTRY is `@ai-matrx/alchemy/declare`'s (ALC-14): inheritance (child
+ * wins per key), baseline injection, provenance, group synthesis and the loud
+ * guards (unknown parent, cycle, depth > MAX_INHERITANCE_DEPTH, reserved or
+ * duplicate group keys, undeclared groups) all run in the package. The app
+ * supplies its manifests, its baselines and the agent-owned extension slots
+ * (agent roles inherit per name, like values).
  *
  * Baseline injection is the platform half of the "generic values are always
  * available" contract: an agent author can bind a variable to a generic value
- * on ANY surface, even one whose manifest forgot to spread the baselines —
- * the regression that dropped `text_before`/`text_after` from ~14 surfaces
- * during the v2 transition, made structurally impossible here. A surface with
- * genuinely no text/content concept opts out via `skipBaselineValues`.
- *
- * Guards are LOUD by design: a curated group with a reserved key, or a value
- * referencing an undeclared group, throws at module init.
+ * on ANY surface; a surface with genuinely no text/content concept opts out
+ * via `skipBaselineValues`.
  */
-function resolveManifest(m: SurfaceManifest): ResolvedSurfaceManifest {
-  const ancestry = getSurfaceAncestry(m.surfaceName);
-  const lineage: Array<{ layer: SurfaceManifest; from: string | null }> = [
-    ...ancestry.map((name) => {
-      const layer = RAW_INDEX.get(name);
-      if (!layer) {
-        throw new Error(`[surfaces] missing inherited manifest "${name}"`);
-      }
-      return { layer, from: name };
-    }),
-    { layer: m, from: null },
-  ];
+const REGISTRY = createDeclarationRegistry<SurfaceManifest>({
+  baselineValues: Object.values(BASELINE_VALUES),
+  maxInheritanceDepth: MAX_INHERITANCE_DEPTH,
+});
+REGISTRY.registerExtension(agentRolesExtension);
+for (const manifest of RAW_MANIFESTS) {
+  assertNoPlatformReservedNames(manifest);
+  REGISTRY.register(manifest);
+}
 
-  // Validate curated groups.
-  const curatedKeys = new Set<string>();
-  for (const g of m.groups ?? []) {
-    if (
-      g.key === RESERVED_GROUP_KEYS.general ||
-      g.key === RESERVED_GROUP_KEYS.baseline ||
-      g.key.startsWith(RESERVED_GROUP_KEYS.inheritedPrefix)
-    ) {
-      throw new Error(
-        `[surfaces] "${m.surfaceName}" declares reserved group key "${g.key}" — ` +
-          `general/baseline/inherited:* are synthesized by the registry`,
-      );
-    }
-    if (curatedKeys.has(g.key)) {
-      throw new Error(
-        `[surfaces] "${m.surfaceName}" declares duplicate group key "${g.key}"`,
-      );
-    }
-    curatedKeys.add(g.key);
-  }
-  assertNoPlatformReservedNames(m);
-  for (const v of m.values) {
-    if (v.group && !curatedKeys.has(v.group)) {
-      throw new Error(
-        `[surfaces] "${m.surfaceName}" value "${v.name}" references undeclared ` +
-          `group "${v.group}" — declare it in the manifest's \`groups\``,
-      );
-    }
-  }
-
-  const valuesByName = new Map<string, ResolvedSurfaceValue>();
-  const rolesByName = new Map<
-    string,
-    NonNullable<SurfaceManifest["agentRoles"]>[number]
-  >();
-  const nsByName = new Map<
-    string,
-    NonNullable<SurfaceManifest["configNamespaces"]>[number]
-  >();
-  const evidenceByIdentity = new Map<
-    string,
-    NonNullable<SurfaceManifest["evidenceSources"]>[number]
-  >();
-  for (const { layer, from } of lineage) {
-    for (const v of layer.values) {
-      const provenance: SurfaceValueProvenance = from
-        ? { kind: "inherited", from }
-        : { kind: "own" };
-      valuesByName.set(v.name, {
-        ...v,
-        provenance,
-        groupKey: groupKeyFor(v, provenance),
-      });
-    }
-    for (const r of layer.agentRoles ?? []) rolesByName.set(r.name, r);
-    for (const n of layer.configNamespaces ?? []) nsByName.set(n.namespace, n);
-    for (const source of layer.evidenceSources ?? []) {
-      evidenceByIdentity.set(`${source.kind}:${source.idValue}`, source);
-    }
-  }
-
-  if (!m.skipBaselineValues) {
-    for (const baseline of Object.values(BASELINE_VALUES)) {
-      if (valuesByName.has(baseline.name)) continue;
-      valuesByName.set(baseline.name, {
-        ...baseline,
-        provenance: { kind: "baseline" },
-        groupKey: RESERVED_GROUP_KEYS.baseline,
-      });
-    }
-  }
-
-  // Synthesize the group list: curated + general + inherited (nearest parent
-  // first) + baseline, sorted by sortOrder.
-  const usedGroupKeys = new Set(
-    Array.from(valuesByName.values(), (v) => v.groupKey),
-  );
-  const groups: SurfaceValueGroup[] = [...(m.groups ?? [])];
-  if (usedGroupKeys.has(RESERVED_GROUP_KEYS.general)) {
-    groups.push({
-      key: RESERVED_GROUP_KEYS.general,
-      label: "General",
-      sortOrder: GENERAL_GROUP_ORDER,
-    });
-  }
-  for (let i = ancestry.length - 1, distance = 0; i >= 0; i--, distance++) {
-    const parentName = ancestry[i];
-    const key = `${RESERVED_GROUP_KEYS.inheritedPrefix}${parentName}`;
-    if (!usedGroupKeys.has(key)) continue;
-    const parentLabel = RAW_INDEX.get(parentName)?.label ?? parentName;
-    groups.push({
-      key,
-      label: `Inherited from ${parentLabel}`,
-      sortOrder: INHERITED_GROUP_ORDER_BASE + distance * 10,
-    });
-  }
-  if (usedGroupKeys.has(RESERVED_GROUP_KEYS.baseline)) {
-    groups.push({
-      key: RESERVED_GROUP_KEYS.baseline,
-      label: "Generic baselines",
-      sortOrder: BASELINE_GROUP_ORDER,
-    });
-  }
-  groups.sort((a, b) => a.sortOrder - b.sortOrder);
-
-  const groupOrder = new Map(groups.map((g) => [g.key, g.sortOrder] as const));
-  const values = Array.from(valuesByName.values()).sort((a, b) => {
-    const ga = groupOrder.get(a.groupKey) ?? GENERAL_GROUP_ORDER;
-    const gb = groupOrder.get(b.groupKey) ?? GENERAL_GROUP_ORDER;
-    if (ga !== gb) return ga - gb;
-    return (a.sortOrder ?? 1000) - (b.sortOrder ?? 1000);
-  });
-
-  return {
-    ...m,
-    values,
-    groups,
-    ...(rolesByName.size > 0
-      ? { agentRoles: Array.from(rolesByName.values()) }
-      : {}),
-    ...(nsByName.size > 0
-      ? { configNamespaces: Array.from(nsByName.values()) }
-      : {}),
-    ...(evidenceByIdentity.size > 0
-      ? { evidenceSources: Array.from(evidenceByIdentity.values()) }
-      : {}),
-  };
+/**
+ * Parent chain for a surface, ROOT FIRST (e.g. child of a child returns
+ * `[grandparent, parent]`). Unknown surfaces return `[]`. Throws on cycles
+ * and on chains deeper than MAX_INHERITANCE_DEPTH.
+ */
+export function getSurfaceAncestry(surfaceName: string): string[] {
+  return REGISTRY.ancestry(surfaceName);
 }
 
 /**
  * All registered surface manifests, fully resolved: inheritance merged
  * (child wins per key), generic baselines guaranteed, provenance + canonical
  * group stamped on every value, groups synthesized and ordered
- * curated → general → inherited → baseline.
+ * curated → general → inherited → baseline. Each also carries its
+ * `contentHash` and defaults-filled `resolvedSensitivity` per value.
  */
 export const ALL_MANIFESTS: readonly ResolvedSurfaceManifest[] =
-  RAW_MANIFESTS.map(resolveManifest);
+  REGISTRY.all() as unknown as readonly ResolvedSurfaceManifest[];
 
 /** Map of `surfaceName → manifest` for O(1) lookup. */
 const MANIFEST_INDEX: ReadonlyMap<string, ResolvedSurfaceManifest> = new Map(
@@ -786,9 +590,7 @@ export function surfaceAcceptsAgentBindings(surfaceName: string): boolean {
  * hierarchy source for UI chrome.
  */
 export function getSurfaceChildren(surfaceName: string): string[] {
-  return RAW_MANIFESTS.filter((m) => m.inheritsFrom === surfaceName).map(
-    (m) => m.surfaceName,
-  );
+  return REGISTRY.children(surfaceName);
 }
 
 /**
@@ -800,7 +602,7 @@ export function getSurfaceChildren(surfaceName: string): string[] {
 export function getRawManifest(
   surfaceName: string,
 ): SurfaceManifest | undefined {
-  return RAW_INDEX.get(surfaceName);
+  return REGISTRY.getRaw(surfaceName);
 }
 
 /** All known manifests, in declaration order. */

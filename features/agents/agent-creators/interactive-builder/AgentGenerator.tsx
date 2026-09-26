@@ -827,6 +827,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
                       <span className="text-xs text-amber-700 dark:text-amber-300">
                         <strong>JSON Extraction Failed:</strong> Could not
                         extract structured agent config from the response.
+                        <ErrorAlchemyMenu />
                       </span>
                     </div>
                   )}
@@ -877,6 +878,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
             <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
               <AlertTriangle className="h-3 w-3" />
               Check response manually
+              <ErrorAlchemyMenu />
             </span>
           )}
         </div>

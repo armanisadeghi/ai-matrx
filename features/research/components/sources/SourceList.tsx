@@ -109,6 +109,7 @@ import {
 } from "../../constants";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { setSourceNavOrder } from "../../utils/sourceNavOrder";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function formatPageAge(pageAge: string | null): {
   display: string;
@@ -264,6 +265,7 @@ function AnalysisOutcomeCell({ source }: { source: ResearchSource }) {
       <span className="inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-amber-600/90 dark:text-amber-400/90">
         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500/80" />
         Failed
+        <ErrorAlchemyMenu />
       </span>
     );
   }

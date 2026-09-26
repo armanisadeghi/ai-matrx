@@ -40,7 +40,6 @@ import {
 } from "@/components/ui/resizable";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { SharedRunsWindow } from "@/features/agent-comparison/components/SharedRunsWindow";
-import { ModePicker } from "@/features/agent-comparison/shared/ModePicker";
 import {
   reorderSettingsColumns,
   setSettingsColumnCollapsed,
@@ -49,8 +48,16 @@ import {
   selectLockedAgentId,
   selectSettingsColumnIds,
   selectSettingsColumns,
+  selectActiveSettingsSetId,
 } from "../redux/selectors";
-import { addColumnToSettingsBattle } from "../redux/thunks";
+import {
+  addColumnToSettingsBattle,
+  loadSettingsBattleSet,
+} from "../redux/thunks";
+import {
+  BattleRouteNotice,
+  useBattleRoute,
+} from "@/features/agent-comparison/shared/useBattleRoute";
 import { LockedInputSection } from "./LockedInputSection";
 import { SettingsColumn } from "./SettingsColumn";
 import { SettingsToolbar } from "./SettingsToolbar";
@@ -58,8 +65,15 @@ import type { SettingsColumn as SettingsColumnType } from "../types";
 
 const RUNS_WINDOW_ID = "agent-comparison-settings-runs";
 
-export function SettingsBattlePage() {
+export function SettingsBattlePage({ setId = null }: { setId?: string | null }) {
   const dispatch = useAppDispatch();
+  const activeSetId = useAppSelector(selectActiveSettingsSetId);
+  const routeStatus = useBattleRoute({
+    mode: "settings",
+    urlSetId: setId,
+    activeSetId,
+    load: (id) => dispatch(loadSettingsBattleSet({ setId: id })).unwrap(),
+  });
   const columns = useAppSelector(selectSettingsColumns);
   const columnIds = useAppSelector(selectSettingsColumnIds);
   const lockedAgentId = useAppSelector(selectLockedAgentId);
@@ -84,11 +98,12 @@ export function SettingsBattlePage() {
       className="h-full flex flex-col overflow-hidden"
       style={{ paddingTop: "var(--shell-header-h)" }}
     >
-      <ModePicker />
       <SettingsToolbar
         runsWindowOpen={runsWindowOpen}
         onToggleRunsWindow={() => setRunsWindowOpen((v) => !v)}
       />
+
+      <BattleRouteNotice status={routeStatus} mode="settings" />
 
       <LockedInputSection />
 

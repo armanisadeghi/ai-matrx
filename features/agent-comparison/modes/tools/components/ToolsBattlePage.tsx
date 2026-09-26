@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/resizable";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { SharedRunsWindow } from "@/features/agent-comparison/components/SharedRunsWindow";
-import { ModePicker } from "@/features/agent-comparison/shared/ModePicker";
 import {
   reorderToolsColumns,
   setToolsColumnCollapsed,
@@ -40,8 +39,16 @@ import {
   selectSourceAgentId,
   selectToolsColumnIds,
   selectToolsColumns,
+  selectActiveToolsSetId,
 } from "../redux/selectors";
-import { addColumnToToolsBattle } from "../redux/thunks";
+import {
+  addColumnToToolsBattle,
+  loadToolsBattleSet,
+} from "../redux/thunks";
+import {
+  BattleRouteNotice,
+  useBattleRoute,
+} from "@/features/agent-comparison/shared/useBattleRoute";
 import { LockedInputSection } from "./LockedInputSection";
 import { ToolsColumn } from "./ToolsColumn";
 import { ToolsToolbar } from "./ToolsToolbar";
@@ -49,8 +56,15 @@ import type { ToolsColumn as ToolsColumnType } from "../types";
 
 const RUNS_WINDOW_ID = "agent-comparison-tools-runs";
 
-export function ToolsBattlePage() {
+export function ToolsBattlePage({ setId = null }: { setId?: string | null }) {
   const dispatch = useAppDispatch();
+  const activeSetId = useAppSelector(selectActiveToolsSetId);
+  const routeStatus = useBattleRoute({
+    mode: "tools",
+    urlSetId: setId,
+    activeSetId,
+    load: (id) => dispatch(loadToolsBattleSet({ setId: id })).unwrap(),
+  });
   const columns = useAppSelector(selectToolsColumns);
   const columnIds = useAppSelector(selectToolsColumnIds);
   const sourceAgentId = useAppSelector(selectSourceAgentId);
@@ -75,11 +89,12 @@ export function ToolsBattlePage() {
       className="h-full flex flex-col overflow-hidden"
       style={{ paddingTop: "var(--shell-header-h)" }}
     >
-      <ModePicker />
       <ToolsToolbar
         runsWindowOpen={runsWindowOpen}
         onToggleRunsWindow={() => setRunsWindowOpen((v) => !v)}
       />
+
+      <BattleRouteNotice status={routeStatus} mode="tools" />
 
       <LockedInputSection />
 

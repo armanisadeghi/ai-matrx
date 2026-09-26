@@ -128,6 +128,17 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "app-api-route-failure-is-a-dot",
+    tier: "orange",
+    persist: false,
+    reason:
+      "RC-B12 (2026-09-26): failed calls to our own /api routes are captured so an error box's Copy-for-AI can name the request behind it. The screen already shows the failure; the capture is its evidence, not a new incident — a dot, client-only, until a route is known to fail silently.",
+    addedAt: "2026-09-26",
+    match: {
+      source: "app-api-http",
+    },
+  },
+  {
     id: "handled-auth-token-refusal",
     tier: "yellow",
     persist: false,

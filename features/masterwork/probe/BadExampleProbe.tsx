@@ -56,6 +56,7 @@ import {
   type ProbeRound,
   type ProbeRoundResult,
 } from "./service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface KnobState {
   rounds: number;
@@ -319,6 +320,7 @@ export function BadExampleProbe({
       {knobs.problem ? (
         <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
           {knobs.problem}
+          <ErrorAlchemyMenu error={knobs.problem} />
         </p>
       ) : null}
 
@@ -356,6 +358,7 @@ export function BadExampleProbe({
             This probe is still going, but we couldn&apos;t bring back what you
             said it was about. Say it again here and carry on — your answers so
             far are saved on the Rulebook.
+            <ErrorAlchemyMenu />
           </p>
         ) : null}
       </section>

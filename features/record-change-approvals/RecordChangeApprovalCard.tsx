@@ -37,6 +37,7 @@ import {
   tableNameFor,
   type ApplyApprovedOutcome,
 } from "./applyRecordChange";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface RecordChangeApprovalCardProps {
   wait: RecordChangeWait;
@@ -191,6 +192,7 @@ export function RecordChangeApprovalCard({
       {decision.state === "failed" && (
         <p className="rounded-md bg-destructive/10 px-2.5 py-2 text-xs leading-relaxed text-destructive">
           {decision.sentence}
+          <ErrorAlchemyMenu />
         </p>
       )}
     </div>

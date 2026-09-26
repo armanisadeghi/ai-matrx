@@ -156,6 +156,7 @@ export function ReviewRow({
             <div>
               <div className="text-xs font-medium uppercase text-red-600 dark:text-red-400">
                 Why it failed
+                <ErrorAlchemyMenu />
               </div>
               <pre className="mt-1 max-h-40 overflow-auto rounded-md bg-red-500/10 p-2 text-xs text-red-600 dark:text-red-400">
                 {JSON.stringify(review.error, null, 2)}

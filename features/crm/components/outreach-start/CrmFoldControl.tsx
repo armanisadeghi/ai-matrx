@@ -299,6 +299,7 @@ export function CrmFoldControl({
               <p className="flex gap-1.5 font-medium text-destructive">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 {(report.errors ?? []).length} could not be resolved
+                <ErrorAlchemyMenu />
               </p>
               <ul className="mt-1 space-y-0.5 text-muted-foreground">
                 {(report.errors ?? []).map((line) => (

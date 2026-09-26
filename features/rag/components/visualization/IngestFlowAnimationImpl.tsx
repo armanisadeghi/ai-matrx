@@ -67,6 +67,7 @@ import {
 } from "./edges/FlowEdge";
 import type { IngestHandle, IngestFlowAnimationProps } from "./IngestFlowAnimation";
 import type { IngestProgress, IngestResponse } from "@/features/rag/api/ingest";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -631,6 +632,7 @@ export function IngestFlowAnimation({
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-semibold text-destructive">
                     Processing failed
+                    <ErrorAlchemyMenu />
                   </div>
                   <div className="mt-0.5 text-xs text-muted-foreground break-words">
                     {ingest.error ?? "The server returned an error."}

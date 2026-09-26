@@ -46,6 +46,7 @@ import {
 } from "../../types";
 import type { SourceImportance } from "../../ranking";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** A string with real (non-whitespace) content. */
 const hasText = (s: string | null | undefined): s is string =>
@@ -103,6 +104,7 @@ function StatsBar({
             {failed > 0 && (
               <span className="text-destructive/60 text-[10px] font-medium ml-1">
                 ({failed} failed)
+                <ErrorAlchemyMenu />
               </span>
             )}
           </p>
@@ -388,6 +390,7 @@ function DetailPanel({
             <div className="space-y-1 max-w-md">
               <p className="text-sm font-medium text-destructive">
                 Analysis Failed
+                <ErrorAlchemyMenu />
               </p>
               {analysis.error && (
                 <p className="text-xs text-muted-foreground leading-relaxed">

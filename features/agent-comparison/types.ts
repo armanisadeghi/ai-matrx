@@ -6,6 +6,8 @@
  * already lives in the execution-system slices keyed by conversationId.
  */
 
+import type { BattleModeId } from "./shared/battleRoutes";
+
 export type BattleAgentVersion = "current" | number;
 
 export interface BattleColumn {
@@ -82,6 +84,14 @@ export interface BattleState {
    * BlindColumnHeader. See `shared/blind.ts`.
    */
   blind: BlindState;
+  /**
+   * The battle mode whose page is on screen right now, or null when no
+   * battle page is mounted. Every mode keeps its own slice alive across
+   * navigation, so the shared surfaces (runs table, feedback bar, decisions)
+   * read THIS to know whose columns and whose saved battle they belong to —
+   * never "the first slice that happens to have columns".
+   */
+  mountedMode: BattleModeId | null;
 }
 
 /**

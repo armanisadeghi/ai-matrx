@@ -264,7 +264,7 @@ export function MandateTryPanel({
           <p className="text-xs text-muted-foreground">Reading what this job takes…</p>
         ) : null}
         {surfaceState.status === "error" ? (
-          <p className="text-xs text-destructive">{surfaceState.message}</p>
+          <p className="text-xs text-destructive">{surfaceState.message} <ErrorAlchemyMenu error={surfaceState.message} /></p>
         ) : null}
         {surface ? <ServerNotes heading="About these inputs" notes={surface.notes} /> : null}
         {fields.map((field) => {

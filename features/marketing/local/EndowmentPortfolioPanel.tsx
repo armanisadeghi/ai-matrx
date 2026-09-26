@@ -56,6 +56,7 @@ import {
   type ListingPublisher,
 } from "@/features/marketing/types";
 import { toast } from "@/lib/toast";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const VERDICT_CLASS: Record<EndowmentVerdict, string> = {
   strong: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
@@ -580,6 +581,7 @@ function PlatformAction({
       {state.kind === "failed" ? (
         <span className="max-w-[16rem] text-right text-[11px] text-destructive">
           {state.message}
+          <ErrorAlchemyMenu error={state.message} />
         </span>
       ) : null}
     </div>
@@ -613,6 +615,7 @@ function ArtifactAction({ state, onQueue }: { state: RowState; onQueue: () => vo
       {state.kind === "failed" ? (
         <span className="max-w-[16rem] text-right text-[11px] text-destructive">
           {state.message}
+          <ErrorAlchemyMenu error={state.message} />
         </span>
       ) : null}
     </div>

@@ -121,16 +121,8 @@ interface StreamingTableRendererProps {
   expanded?: boolean;
 }
 
-/**
- * Header keys treated as "actions" columns — hidden by default so they don't
- * eat horizontal space in the small inline UI. The user can re-show them from
- * the Columns menu.
- */
-const ACTION_COLUMN_KEYS = new Set(["actions", "action"]);
-
-function isActionColumn(header: string): boolean {
-  return ACTION_COLUMN_KEYS.has(cleanTableHeaderKey(header).toLowerCase());
-}
+/** Nothing is hidden until the person hides it (module-scope: a stable identity). */
+const NO_HIDDEN_COLUMNS = new Set<number>();
 
 // ============================================================================
 // EXPORT DROPDOWN COMPONENT
@@ -362,19 +354,14 @@ const StreamingTableRendererCore: React.FC<
   const { headers, rows } = tableData;
 
   // ── Column visibility ─────────────────────────────────────────────────────
-  // Hidden columns are tracked by index. By default we hide any "actions"
-  // column so it doesn't eat space in the small UI. A hidden column leaves a
-  // thin "trace" stub in the table (one narrow cell per row) so it's never
-  // forgotten — clicking the stub or toggling it back in the Columns menu
-  // restores it. Edit mode forces every column visible (you can't edit a
+  // Hidden columns are tracked by index. Every column is shown until the
+  // PERSON hides it — never by its name (a column called "Action" is content;
+  // hiding it by default was a screen that lies, verify-RC-B4 R6-2). A hidden
+  // column leaves a thin "trace" stub in the table (one narrow cell per row) so
+  // it's never forgotten — clicking the stub or toggling it back in the Columns
+  // menu restores it. Edit mode forces every column visible (you can't edit a
   // column you can't see).
-  const defaultHiddenCols = useMemo(() => {
-    const hidden = new Set<number>();
-    headers.forEach((h, i) => {
-      if (isActionColumn(h)) hidden.add(i);
-    });
-    return hidden;
-  }, [JSON.stringify(headers)]);
+  const defaultHiddenCols = NO_HIDDEN_COLUMNS;
 
   const [hiddenColsOverride, setHiddenColsOverride] =
     useState<Set<number> | null>(null);

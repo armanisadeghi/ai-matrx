@@ -399,6 +399,7 @@ export function FullPromptOptimizer({
               <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
                 <X className="h-3 w-3" />
                 Extraction failed
+                <ErrorAlchemyMenu />
               </span>
             )}
           </div>

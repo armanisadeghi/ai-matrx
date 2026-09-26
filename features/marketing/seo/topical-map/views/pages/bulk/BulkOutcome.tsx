@@ -113,6 +113,7 @@ export function BulkOutcome({ outcome, sentence, onDismiss }: BulkOutcomeProps) 
             <div className="flex flex-col gap-0.5">
               <p className="text-[11px] font-medium uppercase tracking-wide text-destructive">
                 Failed
+                <ErrorAlchemyMenu />
               </p>
               <ul className="flex flex-col gap-0.5">
                 {outcome.failedRows.map((row, index) => (

@@ -10,27 +10,28 @@
  */
 
 import { useState } from "react";
-import { Loader2, Play } from "lucide-react";
-import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import HeaderActions from "@/features/shell/components/header/variants/shared/HeaderActions";
 import type { HeaderAction } from "@/features/shell/components/header/variants/types";
-import { BattleModeNav } from "@/features/agent-comparison/shared/ModePicker";
 import { recordToast, toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { ComparisonSetLoaderDialog } from "@/features/agent-comparison/components/ComparisonSetLoaderDialog";
+import { BattleHeader } from "@/features/agent-comparison/shared/BattleHeader";
+import { reportBattleSubmit } from "@/features/agent-comparison/shared/reportBattleSubmit";
 import { useBlindShuffle } from "@/features/agent-comparison/shared/useBlindShuffle";
 import { resetBlind } from "@/features/agent-comparison/redux/battleSlice";
 import { selectBlindActive } from "@/features/agent-comparison/redux/selectors";
-import { setModelColumnCollapsed, setModelColumns } from "../redux/slice";
+import {
+  setActiveModelSet,
+  setModelColumnCollapsed,
+  setModelColumns,
+} from "../redux/slice";
 import {
   addColumnToModelBattle,
   clearModelBattle,
-  loadModelBattleSet,
+  persistModelBattle,
+  renameModelBattle,
   resetAllModelConversations,
-  saveModelBattle,
   saveModelBattleAs,
   submitAllModel,
 } from "../redux/thunks";
@@ -64,6 +65,8 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
 
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [saveAsBusy, setSaveAsBusy] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameBusy, setRenameBusy] = useState(false);
   const [loaderOpen, setLoaderOpen] = useState(false);
   const [clearConfirm, setClearConfirm] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
@@ -75,24 +78,13 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
       return;
     }
     if (columns.length === 0) {
-      toast.error(
-        "Add at least one model variant. Click 'Add model' to start.",
-      );
+      toast.error("Add at least one model. Use Add model to start.");
       return;
     }
     // Blind test: shuffle + activate masking BEFORE firing the run.
     maybeShuffleForBlind(columns, setModelColumns);
     try {
-      const res = await dispatch(submitAllModel()).unwrap();
-      const parts: string[] = [];
-      if (res.launched > 0) parts.push(`${res.launched} launched`);
-      if (res.skipped > 0) parts.push(`${res.skipped} skipped`);
-      if (res.failed > 0) parts.push(`${res.failed} failed`);
-      if (res.failed > 0) {
-        toast.error(parts.join(" · "));
-      } else {
-        toast.success(parts.join(" · ") || "Done");
-      }
+      reportBattleSubmit(await dispatch(submitAllModel()).unwrap());
     } catch (err) {
       toast.error(
         `Submit all failed: ${err instanceof Error ? err.message : err}`,
@@ -101,19 +93,15 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
   };
 
   const handleSave = async () => {
-    if (!activeSetId) {
-      setSaveAsOpen(true);
-      return;
-    }
     try {
-      await dispatch(saveModelBattle()).unwrap();
+      const saved = await dispatch(persistModelBattle()).unwrap();
       recordToast.success(
         {
           type: "agent_comparison_battle",
-          id: activeSetId,
-          title: blindActive ? "Model comparison" : activeSetName,
+          id: saved.id,
+          title: blindActive ? "Model comparison" : saved.name,
         },
-        blindActive ? "Comparison saved" : `Saved "${activeSetName}"`,
+        saved.created ? "Battle saved" : "Changes saved",
       );
     } catch (err) {
       toast.error(`Couldn't save: ${err instanceof Error ? err.message : err}`);
@@ -125,11 +113,25 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
     try {
       await dispatch(saveModelBattleAs({ name })).unwrap();
       setSaveAsOpen(false);
-      toast.success(blindActive ? "Comparison saved" : `Saved as "${name}"`);
+      toast.success(blindActive ? "Copy saved" : `Saved a copy as "${name}"`);
     } catch (err) {
       toast.error(`Couldn't save: ${err instanceof Error ? err.message : err}`);
     } finally {
       setSaveAsBusy(false);
+    }
+  };
+
+  const handleRenameConfirm = async (name: string) => {
+    setRenameBusy(true);
+    try {
+      await dispatch(renameModelBattle({ name })).unwrap();
+      setRenameOpen(false);
+    } catch (err) {
+      toast.error(
+        `Couldn't rename: ${err instanceof Error ? err.message : err}`,
+      );
+    } finally {
+      setRenameBusy(false);
     }
   };
 
@@ -151,7 +153,7 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
       await dispatch(
         resetAllModelConversations({ preserveInputs: false }),
       ).unwrap();
-      toast.success("Variants reset (model overrides cleared)");
+      toast.success("Models reset (model picks cleared)");
     } catch (err) {
       toast.error(
         `Couldn't reset: ${err instanceof Error ? err.message : err}`,
@@ -165,9 +167,7 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
       await dispatch(
         resetAllModelConversations({ preserveInputs: true }),
       ).unwrap();
-      toast.success(
-        "Responses cleared · per-column models + locked input preserved",
-      );
+      toast.success("Responses cleared · model picks + shared request kept");
     } catch (err) {
       toast.error(
         `Couldn't clear: ${err instanceof Error ? err.message : err}`,
@@ -190,14 +190,14 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
 
   const actions: HeaderAction[] = [
     {
-      icon: "Library",
-      label: "Open comparison",
-      onPress: () => setLoaderOpen(true),
+      icon: "Activity",
+      label: runsWindowOpen ? "Close runs comparison" : "Compare runs",
+      onPress: onToggleRunsWindow,
     },
     {
-      icon: "Activity",
-      label: runsWindowOpen ? "Close runs" : "Compare runs",
-      onPress: onToggleRunsWindow,
+      icon: "Library",
+      label: "Open a saved battle",
+      onPress: () => setLoaderOpen(true),
     },
     ...(lockedAgentId
       ? [
@@ -214,13 +214,18 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
       ? [
           {
             icon: "Save",
-            label: activeSetId ? "Save comparison" : "Save comparison as…",
+            label: activeSetId ? "Save changes" : "Save battle",
             onPress: () => {
               void handleSave();
             },
           },
           ...(activeSetId
             ? [
+                {
+                  icon: "Pencil",
+                  label: "Rename battle…",
+                  onPress: () => setRenameOpen(true),
+                },
                 {
                   icon: "Copy",
                   label: "Save a copy…",
@@ -235,7 +240,7 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
           },
           {
             icon: "RotateCcw",
-            label: "Reset model variants",
+            label: "Reset models",
             onPress: () => setResetConfirm(true),
           },
         ]
@@ -252,8 +257,8 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
     ...(lockedAgentId || columns.length > 0
       ? [
           {
-            icon: "Eraser",
-            label: "Clear comparison",
+            icon: "SquarePlus",
+            label: "Start a new battle",
             destructive: true,
             onPress: () => setClearConfirm(true),
           },
@@ -263,57 +268,47 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
 
   return (
     <>
-      <RouteHeader
-        center={<BattleModeNav />}
-        right={
-          // Siblings, not one wrapper: RouteHeader expands HeaderActions into its own
-          // named actions and folds them; Submit all is the primary (lane V25-UI-FIXES).
-          <>
-            <HeaderActions
-              actions={actions}
-              maxInline={1}
-              sheetTitle={
-                blindActive
-                  ? "Model comparison"
-                  : (activeSetName ?? "Model comparison")
-              }
-            />
-            <Button
-              size="sm"
-              onClick={handleSubmitAll}
-              disabled={isSubmittingAll || !canSubmit}
-              aria-label="Submit all models"
-              title="Run the shared request against every model"
-              className="h-8 max-sm:h-11 max-sm:w-11 max-sm:p-0 shrink-0"
-            >
-              {isSubmittingAll ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Play className="w-3.5 h-3.5" />
-              )}
-              <span className="max-sm:sr-only">Submit all</span>
-            </Button>
-          </>
-        }
+      <BattleHeader
+        battleName={activeSetName}
+        fallbackTitle="Model battle"
+        actions={actions}
+        onSubmit={() => {
+          void handleSubmitAll();
+        }}
+        submitting={isSubmittingAll}
+        canSubmit={canSubmit}
+        submitTitle="Run the shared request against every model"
       />
 
       <TextInputDialog
         open={saveAsOpen}
         onOpenChange={(o) => !saveAsBusy && setSaveAsOpen(o)}
-        title="Save model comparison"
-        description="Give this comparison a name. The locked agent + variables + user message are saved as part of the set; per-column model picks are saved per entry."
+        title="Save a copy of this battle"
+        description="The copy keeps the same agent, shared request and model picks, and opens as its own battle."
         placeholder="My model comparison"
-        confirmLabel="Save"
+        confirmLabel="Save copy"
         busy={saveAsBusy}
         onConfirm={handleSaveAsConfirm}
+      />
+
+      <TextInputDialog
+        open={renameOpen}
+        onOpenChange={(o) => !renameBusy && setRenameOpen(o)}
+        title="Rename battle"
+        placeholder="Battle name"
+        defaultValue={activeSetName ?? ""}
+        confirmLabel="Rename"
+        busy={renameBusy}
+        onConfirm={handleRenameConfirm}
       />
 
       <ComparisonSetLoaderDialog
         open={loaderOpen}
         onOpenChange={setLoaderOpen}
-        modeFilter="model"
-        loadFn={async (setId) => {
-          await dispatch(loadModelBattleSet({ setId })).unwrap();
+        mode="model"
+        activeSetId={activeSetId}
+        onDeleted={(id) => {
+          if (id === activeSetId) dispatch(setActiveModelSet(null));
         }}
       />
 
@@ -322,9 +317,13 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
         onOpenChange={(o) => {
           if (!o) setClearConfirm(false);
         }}
-        title="Clear all?"
-        description="Empties the page entirely — variants, locked agent, locked inputs. Conversations remain in your chat history."
-        confirmLabel="Clear"
+        title="Start a new battle?"
+        description={
+          activeSetId
+            ? "Empties the page — models, agent and shared request. This battle stays saved; reopen it from Open a saved battle. Its conversations stay in your chat history."
+            : "Empties the page — models, agent and shared request. This battle was never saved; its conversations stay in your chat history."
+        }
+        confirmLabel="Start new"
         variant="destructive"
         onConfirm={handleClear}
       />
@@ -334,8 +333,8 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
         onOpenChange={(o) => {
           if (!o) setResetConfirm(false);
         }}
-        title="Reset all variants?"
-        description="Drops every variant's per-column model pick and streamed responses. The locked agent + variables + user message are preserved."
+        title="Reset all models?"
+        description="Drops every column's model pick and streamed responses. The agent, variables and shared request are kept."
         confirmLabel="Reset"
         variant="destructive"
         onConfirm={handleResetConversations}
@@ -347,7 +346,7 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
           if (!o) setResetKeepInputsConfirm(false);
         }}
         title="Clear responses, keep everything else?"
-        description="Discards streamed responses on every variant, but preserves the per-column model picks AND the locked input."
+        description="Discards streamed responses in every column, but keeps each column's model pick and the shared request."
         confirmLabel="Clear responses"
         variant="destructive"
         onConfirm={handleClearResponsesKeepInputs}

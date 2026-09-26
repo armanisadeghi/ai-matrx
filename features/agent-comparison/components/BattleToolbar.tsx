@@ -1,54 +1,28 @@
 "use client";
 
 /**
- * BattleToolbar
+ * BattleToolbar — Open mode's actions, drawn by the shared BattleHeader.
  *
- * Single bar at the top of the battle page.
- *  - Active set name + Save / Save As
- *  - Open shared Context window
- *  - Open shared Runs window
- *  - Submit All
- *  - Load a saved set
- *  - Clear page
+ * Open mode is the only mode with a per-column agent, so it alone carries the
+ * Master input, shared Context, Run settings and Decisions windows.
  */
 
 import { useState } from "react";
-import {
-  Loader2,
-  Play,
-  Plus,
-  Save,
-  Library,
-  Zap,
-  Activity,
-  Scale,
-  Eraser,
-  RotateCcw,
-  ChevronDown,
-  SlidersHorizontal,
-  EyeOff
-} from "lucide-react";
+import type { HeaderAction } from "@/features/shell/components/header/variants/types";
 import { recordToast, toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import {
   addBattleColumn,
   clearBattle,
   expandAllBattleColumns,
+  persistBattle,
+  renameActiveBattleSet,
   resetAllBattleConversations,
-  saveBattle,
   saveBattleAs,
   submitAllBattleColumns,
 } from "../redux/thunks";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 import {
   selectActiveBattleSetId,
   selectActiveBattleSetName,
@@ -58,9 +32,10 @@ import {
   selectSubmittableBattleColumns,
 } from "../redux/selectors";
 import { ComparisonSetLoaderDialog } from "./ComparisonSetLoaderDialog";
-import { BlindControls } from "../shared/BlindControls";
+import { BattleHeader } from "../shared/BattleHeader";
+import { reportBattleSubmit } from "../shared/reportBattleSubmit";
 import { useBlindShuffle } from "../shared/useBlindShuffle";
-import { resetBlind, setColumns } from "../redux/battleSlice";
+import { resetBlind, setActiveSet, setColumns } from "../redux/battleSlice";
 
 interface BattleToolbarProps {
   contextWindowOpen: boolean;
@@ -99,6 +74,8 @@ export function BattleToolbar({
 
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [saveAsBusy, setSaveAsBusy] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameBusy, setRenameBusy] = useState(false);
   const [loaderOpen, setLoaderOpen] = useState(false);
   const [clearConfirm, setClearConfirm] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
@@ -108,16 +85,7 @@ export function BattleToolbar({
     // Blind test: shuffle + activate masking before firing the run.
     maybeShuffleForBlind(columns, setColumns);
     try {
-      const res = await dispatch(submitAllBattleColumns()).unwrap();
-      const parts: string[] = [];
-      if (res.launched > 0) parts.push(`${res.launched} launched`);
-      if (res.skipped > 0) parts.push(`${res.skipped} skipped`);
-      if (res.failed > 0) parts.push(`${res.failed} failed`);
-      if (res.failed > 0) {
-        toast.error(parts.join(" · "));
-      } else {
-        toast.success(parts.join(" · ") || "Done");
-      }
+      reportBattleSubmit(await dispatch(submitAllBattleColumns()).unwrap());
     } catch (err) {
       toast.error(
         `Submit all failed: ${err instanceof Error ? err.message : err}`,
@@ -127,32 +95,22 @@ export function BattleToolbar({
 
   const handleSubmitAll = () => {
     if (submittable.length === 0) {
-      toast.info("Pick at least one agent before submitting.");
+      toast.info("Pick an agent in at least one column before submitting.");
       return;
     }
     void runSubmit();
   };
 
   const handleSave = async () => {
-    // A control is absent or honest, never dead: the button used to be
-    // `disabled` with nothing to read when there was nothing to save.
-    if (columns.length === 0) {
-      toast.info("Add an agent column before saving a comparison.");
-      return;
-    }
-    if (!activeSetId) {
-      setSaveAsOpen(true);
-      return;
-    }
     try {
-      await dispatch(saveBattle()).unwrap();
+      const saved = await dispatch(persistBattle()).unwrap();
       recordToast.success(
         {
           type: "agent_comparison_battle",
-          id: activeSetId,
-          title: activeSetName,
+          id: saved.id,
+          title: saved.name,
         },
-        `Saved "${activeSetName}"`,
+        saved.created ? "Battle saved" : "Changes saved",
       );
     } catch (err) {
       toast.error(
@@ -166,13 +124,27 @@ export function BattleToolbar({
     try {
       await dispatch(saveBattleAs({ name })).unwrap();
       setSaveAsOpen(false);
-      toast.success(`Saved as "${name}"`);
+      toast.success(`Saved a copy as "${name}"`);
     } catch (err) {
       toast.error(
         `Couldn't save: ${err instanceof Error ? err.message : err}`,
       );
     } finally {
       setSaveAsBusy(false);
+    }
+  };
+
+  const handleRenameConfirm = async (name: string) => {
+    setRenameBusy(true);
+    try {
+      await dispatch(renameActiveBattleSet({ name })).unwrap();
+      setRenameOpen(false);
+    } catch (err) {
+      toast.error(
+        `Couldn't rename: ${err instanceof Error ? err.message : err}`,
+      );
+    } finally {
+      setRenameBusy(false);
     }
   };
 
@@ -214,209 +186,153 @@ export function BattleToolbar({
     }
   };
 
+  const actions: HeaderAction[] = [
+    {
+      icon: "Plus",
+      label: "Add agent",
+      onPress: () => {
+        void dispatch(addBattleColumn());
+      },
+    },
+    {
+      icon: "Zap",
+      label: masterInputWindowOpen ? "Close master input" : "Master input",
+      onPress: onToggleMasterInputWindow,
+    },
+    {
+      icon: "Layers",
+      label: contextWindowOpen ? "Close shared context" : "Shared context",
+      onPress: onToggleContextWindow,
+    },
+    {
+      icon: "SlidersHorizontal",
+      label: runSettingsWindowOpen ? "Close run settings" : "Run settings",
+      onPress: onToggleRunSettingsWindow,
+    },
+    {
+      icon: "Activity",
+      label: runsWindowOpen ? "Close runs comparison" : "Compare runs",
+      onPress: onToggleRunsWindow,
+    },
+    ...(onToggleDecisionsWindow
+      ? [
+          {
+            icon: "Scale",
+            label: decisionsWindowOpen ? "Close decisions" : "Compare decisions",
+            onPress: onToggleDecisionsWindow,
+          },
+        ]
+      : []),
+    {
+      icon: "Library",
+      label: "Open a saved battle",
+      onPress: () => setLoaderOpen(true),
+    },
+    ...(submittable.length > 0
+      ? [
+          {
+            icon: "Save",
+            label: activeSetId ? "Save changes" : "Save battle",
+            onPress: () => {
+              void handleSave();
+            },
+          },
+        ]
+      : []),
+    ...(activeSetId
+      ? [
+          {
+            icon: "Pencil",
+            label: "Rename battle…",
+            onPress: () => setRenameOpen(true),
+          },
+          {
+            icon: "Copy",
+            label: "Save a copy…",
+            onPress: () => setSaveAsOpen(true),
+          },
+        ]
+      : []),
+    ...(columns.length > 0
+      ? [
+          {
+            icon: "RotateCcw",
+            label: "Clear responses only",
+            onPress: () => setResetKeepInputsConfirm(true),
+          },
+          {
+            icon: "RotateCcw",
+            label: "Reset conversations",
+            onPress: () => setResetConfirm(true),
+          },
+        ]
+      : []),
+    ...(collapsedCount > 0
+      ? [
+          {
+            icon: "Expand",
+            label: `Show ${collapsedCount} hidden columns`,
+            onPress: () => {
+              void dispatch(expandAllBattleColumns());
+            },
+          },
+        ]
+      : []),
+    ...(columns.length > 0
+      ? [
+          {
+            icon: "SquarePlus",
+            label: "Start a new battle",
+            destructive: true,
+            onPress: () => setClearConfirm(true),
+          },
+        ]
+      : []),
+  ];
+
   return (
     <>
-      <div className="flex items-center gap-2 px-2 py-1.5 border-b border-border bg-card shrink-0">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Battle
-          </span>
-          {activeSetName && (
-            <span className="text-xs text-foreground truncate max-w-[200px]">
-              · {activeSetName}
-            </span>
-          )}
-          <span className="text-[11px] text-muted-foreground/70 shrink-0">
-            ({columns.length} column{columns.length === 1 ? "" : "s"})
-          </span>
-          {collapsedCount > 0 && (
-            <button
-              type="button"
-              onClick={() => dispatch(expandAllBattleColumns())}
-              title={`Click to expand all ${collapsedCount} collapsed column${
-                collapsedCount === 1 ? "" : "s"
-              }`}
-              className="inline-flex items-center gap-1 h-6 px-2 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30 text-[10px] font-semibold uppercase tracking-wider hover:bg-amber-500/25 transition-colors shrink-0"
-            >
-              <EyeOff className="w-3 h-3" />
-              {collapsedCount} hidden
-              <span className="text-[9px] font-normal opacity-70 ml-0.5">
-                · click to show
-              </span>
-            </button>
-          )}
-        </div>
-
-        <Button
-          size="sm"
-          variant="default"
-          onClick={() => dispatch(addBattleColumn())}
-          className="h-7 ml-1"
-          title="Add a new column"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Add agent
-        </Button>
-
-        <div className="flex-1" />
-
-        <Button
-          size="sm"
-          variant={masterInputWindowOpen ? "default" : "outline"}
-          onClick={onToggleMasterInputWindow}
-          className="h-7"
-        >
-          <Zap className="w-3.5 h-3.5" />
-          Master input
-        </Button>
-
-        <Button
-          size="sm"
-          variant={contextWindowOpen ? "default" : "outline"}
-          onClick={onToggleContextWindow}
-          className="h-7"
-        >
-          <Zap className="w-3.5 h-3.5" />
-          Context
-        </Button>
-
-        <Button
-          size="sm"
-          variant={runSettingsWindowOpen ? "default" : "outline"}
-          onClick={onToggleRunSettingsWindow}
-          className="h-7"
-          title="Server-side run caps + flags applied to every column"
-        >
-          <SlidersHorizontal className="w-3.5 h-3.5" />
-          Run settings
-        </Button>
-
-        <Button
-          size="sm"
-          variant={runsWindowOpen ? "default" : "outline"}
-          onClick={onToggleRunsWindow}
-          className="h-7"
-        >
-          <Activity className="w-3.5 h-3.5" />
-          Runs
-        </Button>
-
-        {onToggleDecisionsWindow && (
-          <Button
-            size="sm"
-            variant={decisionsWindowOpen ? "default" : "outline"}
-            onClick={onToggleDecisionsWindow}
-            className="h-7"
-            title="Every column's typed answers side by side, with the true answer per question"
-          >
-            <Scale className="w-3.5 h-3.5" />
-            Decisions
-          </Button>
-        )}
-
-        <div className="w-px h-5 bg-border mx-1" />
-
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setLoaderOpen(true)}
-          className="h-7"
-        >
-          <Library className="w-3.5 h-3.5" />
-          Open
-        </Button>
-
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={handleSave}
-          className="h-7"
-        >
-          <Save className="w-3.5 h-3.5" />
-          {activeSetId ? "Save" : "Save as..."}
-        </Button>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7"
-              disabled={columns.length === 0}
-            >
-              <Eraser className="w-3.5 h-3.5" />
-              Clear
-              <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-72">
-            <DropdownMenuItem onClick={() => setResetKeepInputsConfirm(true)}>
-              <RotateCcw className="w-3.5 h-3.5" />
-              <div className="flex flex-col">
-                <span>Clear responses only</span>
-                <span className="text-[10px] text-muted-foreground">
-                  Wipe responses + context; keep agents AND inputs.
-                </span>
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setResetConfirm(true)}>
-              <RotateCcw className="w-3.5 h-3.5" />
-              <div className="flex flex-col">
-                <span>Reset conversations</span>
-                <span className="text-[10px] text-muted-foreground">
-                  Clear responses + inputs; keep agents.
-                </span>
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setClearConfirm(true)}>
-              <Eraser className="w-3.5 h-3.5" />
-              <div className="flex flex-col">
-                <span>Clear all columns</span>
-                <span className="text-[10px] text-muted-foreground">
-                  Empty the page; remove agents too.
-                </span>
-              </div>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <div className="w-px h-5 bg-border mx-1" />
-
-        <BlindControls />
-
-        <Button
-          size="sm"
-          variant="default"
-          onClick={handleSubmitAll}
-          disabled={isSubmittingAll || submittable.length === 0}
-          className="h-7"
-        >
-          {isSubmittingAll ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Play className="w-3.5 h-3.5" />
-          )}
-          Submit all
-        </Button>
-      </div>
+      <BattleHeader
+        battleName={activeSetName}
+        fallbackTitle="Open battle"
+        actions={actions}
+        inlineCount={2}
+        onSubmit={handleSubmitAll}
+        submitting={isSubmittingAll}
+        canSubmit={submittable.length > 0}
+        submitTitle="Run every column that has an agent"
+      />
 
       <TextInputDialog
         open={saveAsOpen}
         onOpenChange={(o) => !saveAsBusy && setSaveAsOpen(o)}
-        title="Save comparison set"
-        description="Give this comparison a name. The underlying conversations are saved automatically as part of normal chat history."
+        title="Save a copy of this battle"
+        description="The copy keeps the same agents and columns, and opens as its own battle. The conversations are shared with the original."
         placeholder="My comparison"
-        confirmLabel="Save"
+        confirmLabel="Save copy"
         busy={saveAsBusy}
         onConfirm={handleSaveAsConfirm}
+      />
+
+      <TextInputDialog
+        open={renameOpen}
+        onOpenChange={(o) => !renameBusy && setRenameOpen(o)}
+        title="Rename battle"
+        placeholder="Battle name"
+        defaultValue={activeSetName ?? ""}
+        confirmLabel="Rename"
+        busy={renameBusy}
+        onConfirm={handleRenameConfirm}
       />
 
       <ComparisonSetLoaderDialog
         open={loaderOpen}
         onOpenChange={setLoaderOpen}
-        modeFilter="open"
+        mode="open"
+        activeSetId={activeSetId}
+        onDeleted={(id) => {
+          if (id === activeSetId) dispatch(setActiveSet(null));
+        }}
       />
 
       <ConfirmDialog
@@ -424,9 +340,13 @@ export function BattleToolbar({
         onOpenChange={(o) => {
           if (!o) setClearConfirm(false);
         }}
-        title="Clear all columns?"
-        description="This empties the page. The underlying conversations are not deleted; reopen them via your chat history. If a comparison set is active, the link to it will be cleared."
-        confirmLabel="Clear"
+        title="Start a new battle?"
+        description={
+          activeSetId
+            ? "Empties the page. This battle stays saved; reopen it from Open a saved battle. Its conversations stay in your chat history."
+            : "Empties the page. This battle was never saved; its conversations stay in your chat history."
+        }
+        confirmLabel="Start new"
         variant="destructive"
         onConfirm={handleClear}
       />
@@ -454,7 +374,6 @@ export function BattleToolbar({
         variant="destructive"
         onConfirm={handleClearResponsesKeepInputs}
       />
-
     </>
   );
 }

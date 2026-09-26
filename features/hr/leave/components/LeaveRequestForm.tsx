@@ -451,7 +451,7 @@ export function LeaveRequestForm({
               ))}
           </div>
           {incrementProblem ? (
-            <p className="text-sm text-destructive">{incrementProblem}</p>
+            <p className="text-sm text-destructive">{incrementProblem} <ErrorAlchemyMenu error={incrementProblem} /></p>
           ) : null}
         </div>
       ) : null}
@@ -682,6 +682,7 @@ export function LeaveRequestForm({
               <li key={f.code ?? i} className="text-sm text-destructive/90">
                 {f.message ??
                   "The check that stopped this did not say what it found. Ask an administrator to look at it."}
+                <ErrorAlchemyMenu error={f.message} />
               </li>
             ))}
           </ul>

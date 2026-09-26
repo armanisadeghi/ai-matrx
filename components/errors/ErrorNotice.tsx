@@ -42,6 +42,8 @@ export type ErrorNoticeProps = {
   details?: Record<string, unknown>;
   code?: string | number;
   status?: number;
+  /** The tables / RPCs the failed call used — pins its captured request as the cause. */
+  calls?: readonly string[];
   /** Retry / Discard / other controls, rendered under the sentence. */
   actions?: ReactNode;
   /** Extra content under the sentence. */
@@ -67,6 +69,7 @@ export function ErrorNotice({
   details,
   code,
   status,
+  calls,
   actions,
   children,
   size = "default",
@@ -87,6 +90,7 @@ export function ErrorNotice({
     details,
     code,
     status,
+    ...(calls ? { calls } : {}),
     source: "inline",
   };
   if (size === "inline") {

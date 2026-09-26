@@ -36,6 +36,7 @@ import {
   fetchMemberPersonalTables,
   transferTableOwner,
 } from "@/features/sharing/service/tableTransfer";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface TransferPerson {
   id: string;
@@ -204,6 +205,7 @@ export function TransferTableOwnership({
             {refused.map((s, i) => (
               <li key={i}>{s}</li>
             ))}
+            <li className="list-none"><ErrorAlchemyMenu /></li>
           </ul>
         )}
 

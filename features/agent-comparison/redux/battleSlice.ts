@@ -16,6 +16,7 @@ import type {
   MasterField,
 } from "../types";
 import { MASTER_INPUT_TARGET } from "../types";
+import type { BattleModeId } from "../shared/battleRoutes";
 
 const initialState: BattleState = {
   columns: [],
@@ -39,6 +40,7 @@ const initialState: BattleState = {
     revealed: false,
     order: [],
   },
+  mountedMode: null,
 };
 
 const battleSlice = createSlice({
@@ -141,6 +143,11 @@ const battleSlice = createSlice({
         revealed: false,
         order: [],
       };
+    },
+
+    // ── Which battle page is on screen ───────────────────────────
+    setMountedBattleMode(state, action: PayloadAction<BattleModeId | null>) {
+      state.mountedMode = action.payload;
     },
 
     // ── Submit-all guard ─────────────────────────────────────────
@@ -294,6 +301,7 @@ export const {
   submitAllStarted,
   submitAllFinished,
   setActiveSet,
+  setMountedBattleMode,
   addMasterField,
   removeMasterField,
   setMasterFieldValue,
