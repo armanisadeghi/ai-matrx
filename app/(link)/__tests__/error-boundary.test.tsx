@@ -215,8 +215,13 @@ describe("the public link group has its own honest error boundary", () => {
     const reset = jest.fn();
     const rendered = renderBoundary(Boundary, statementTimeout(), reset);
     try {
-      expect(rendered.buttons).toHaveLength(1);
-      const button = rendered.buttons[0];
+      // Every error display carries the Alchemy menu (its trigger is a button
+      // too — 4b355b083c); besides the menus, the only control is the retry.
+      const menus = rendered.buttons.filter((b) => b.hasAttribute("data-alchemy-trigger"));
+      expect(menus.length).toBeGreaterThan(0);
+      const controls = rendered.buttons.filter((b) => !b.hasAttribute("data-alchemy-trigger"));
+      expect(controls).toHaveLength(1);
+      const button = controls[0];
       expect(button.disabled).toBe(false);
       expect(button.textContent).toContain("Try again");
       act(() => {
