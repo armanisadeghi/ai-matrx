@@ -11,6 +11,7 @@ import {
 } from "./chat-quick-actions.config";
 import { useMandate } from "@/features/mandates/useMandate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 /**
  * `/chat/new` — landing surface.
@@ -63,7 +64,7 @@ export function ChatMandateUnavailable({ error }: { error?: string | null }) {
           </p>
           <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
             The default chat agent could not be resolved
-            {error ? ` — ${error}` : ""}. Check your chat settings, or try
+            {asClause(error ? ` — ${error}` : "")}. Check your chat settings, or try
             again shortly.
             <ErrorAlchemyMenu />
           </p>

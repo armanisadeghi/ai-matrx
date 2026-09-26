@@ -80,6 +80,7 @@ import {
 } from "./service";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 const SOURCE_FEATURE = "masterwork" as const;
 
@@ -599,7 +600,7 @@ export function ConductorContent({
     return (
       <div className="px-4 py-6 text-sm text-muted-foreground">
         The Masterwork system isn&apos;t available right now
-        {error ? ` (${error})` : ""}. An administrator can bind an agent to the
+        {asClause(error ? ` (${error})` : "")}. An administrator can bind an agent to the
         `masterwork.conductor` Mandate.
         <ErrorAlchemyMenu />
       </div>

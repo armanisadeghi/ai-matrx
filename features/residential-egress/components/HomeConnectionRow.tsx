@@ -40,6 +40,7 @@ import {
   type HomeConnectionStatus,
 } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 const STATUS_CLASS: Record<HomeConnectionStatus, string> = {
   connected: "border-primary/40 text-primary",
@@ -89,7 +90,7 @@ export function HomeConnectionRow({
       >
         <HouseWifi className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         <span>
-          Home connection status could not be read: {readError}. Nothing has
+          Home connection status could not be read: {asClause(readError)}. Nothing has
           changed on this computer.
           <ErrorAlchemyMenu error={readError} />
         </span>

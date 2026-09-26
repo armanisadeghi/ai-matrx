@@ -44,6 +44,7 @@ import {
   type LocalDraft,
 } from "@ai-matrx/kit/drafts";
 import { formatRelativeTime } from "@/utils/datetime";
+import { asClause } from "@/lib/text/asClause";
 
 function whenLabel(at: number): string {
   return formatRelativeTime(at, { style: "long", fallback: "moments ago" });
@@ -246,7 +247,7 @@ export function NoteDraftRecoveryBanner({
         <LifeBuoy className="h-4 w-4 shrink-0 text-primary" />
         <p className="min-w-0 flex-1 text-xs leading-relaxed text-foreground/90">
           <span className="font-medium">Unsaved text found.</span> From{" "}
-          {whenLabel(draft.capturedAt)}, when {reason}. It is not in the saved
+          {whenLabel(draft.capturedAt)}, when {asClause(reason)}. It is not in the saved
           note.
         </p>
         <div className="flex shrink-0 flex-wrap items-center gap-1.5">

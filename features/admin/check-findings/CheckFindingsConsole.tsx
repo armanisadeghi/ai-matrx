@@ -610,21 +610,6 @@ function CheckDetail({
       hidden: true,
     },
     {
-      id: "state",
-      header: "State",
-      accessorKey: "state",
-      filter: "select",
-      width: 100,
-      cell: (item) => (
-        <div className="flex flex-col items-start gap-0.5">
-          <Badge variant="outline" className="text-[11px]">
-            {item.state.replace("_", " ")}
-          </Badge>
-          <PendingAcceptBadge view={pendingAcceptView(item.state, item.pending_accept, run?.started_at ?? null, now)} />
-        </div>
-      ),
-    },
-    {
       id: "title",
       header: "Finding",
       accessorFn: (item) => item.title ?? item.item_key,
@@ -640,6 +625,28 @@ function CheckDetail({
           </div>
         </div>
       ),
+    },
+    // State sits right after the identity column and carries the item's one decision
+    // (Mark OK) with it, so the control is on screen at every width without scrolling
+    // sideways — a trailing Actions column fell off the right edge below ~1500px.
+    {
+      id: "state",
+      header: "State",
+      accessorKey: "state",
+      filter: "select",
+      width: 130,
+      cell: (item) => {
+        const view = pendingAcceptView(item.state, item.pending_accept, run?.started_at ?? null, now);
+        return (
+          <div className="flex flex-col items-start gap-1">
+            <Badge variant="outline" className="text-[11px]">
+              {item.state.replace("_", " ")}
+            </Badge>
+            <PendingAcceptBadge view={view} />
+            <ItemDecision item={item} view={view} acceptable={acceptable} onAccept={onAccept} />
+          </div>
+        );
+      },
     },
     {
       id: "location",
@@ -906,7 +913,7 @@ function CheckDetail({
               emptyLabel: "(no unit)",
               order: "count-desc",
               renderLabel: (group) => (
-                <span className="block max-w-[60vw] truncate font-mono text-[11px]" title={group.label}>
+                <span className="block max-w-[20rem] truncate font-mono text-[11px]" title={group.label}>
                   {unitLabel(group.label)}
                 </span>
               ),
@@ -928,35 +935,6 @@ function CheckDetail({
                 },
               ],
             }}
-            rowActions={(item) =>
-              item.state === "open" || item.state === "handed_off" ? (
-                isReservedKey(item.item_key) ? (
-                  <span className="px-2 text-[11px] text-muted-foreground" title="A record about the check itself — fix the check; it closes on the next whole run.">
-                    fix the check
-                  </span>
-                ) : acceptable &&
-                  ["landing", "committing"].includes(
-                    pendingAcceptView(item.state, item.pending_accept, run?.started_at ?? null, now).kind,
-                  ) ? (
-                  <span className="px-2 text-[11px] text-muted-foreground">Marked OK — landing</span>
-                ) : acceptable ? (
-                  <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={() => onAccept(item)}>
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    Mark OK
-                  </Button>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 gap-1 px-2 text-xs text-muted-foreground"
-                    onClick={() => onAccept(item)}
-                  >
-                    <CircleSlash className="h-3.5 w-3.5" />
-                    No accept — why?
-                  </Button>
-                )
-              ) : null
-            }
             emptyState={{
               icon: <CheckCircle2 className="h-5 w-5" />,
               title: `No ${STATE_FILTER_LABELS[stateFilter].toLowerCase()} findings for this check`,
@@ -971,6 +949,66 @@ function CheckDetail({
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * The one decision an open finding offers, drawn inside the State cell (never a trailing
+ * column a narrow window scrolls away). While a Mark OK is committing or landing the State
+ * cell's PendingAcceptBadge already says so, so no control is drawn.
+ */
+function ItemDecision({
+  item,
+  view,
+  acceptable,
+  onAccept,
+}: {
+  item: CheckItem;
+  view: PendingAcceptView;
+  acceptable: boolean;
+  onAccept: (item: CheckItem) => void;
+}) {
+  if (item.state !== "open" && item.state !== "handed_off") return null;
+  if (isReservedKey(item.item_key)) {
+    return (
+      <span
+        className="text-[11px] text-muted-foreground"
+        title="A record about the check itself — fix the check; it closes on the next whole run."
+      >
+        fix the check
+      </span>
+    );
+  }
+  if (acceptable && (view.kind === "landing" || view.kind === "committing")) return null;
+  if (acceptable) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-7 gap-1 px-2 text-xs"
+        onClick={(event) => {
+          event.stopPropagation();
+          onAccept(item);
+        }}
+      >
+        <CheckCircle2 className="h-3.5 w-3.5" />
+        Mark OK
+      </Button>
+    );
+  }
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+      onClick={(event) => {
+        event.stopPropagation();
+        onAccept(item);
+      }}
+    >
+      <CircleSlash className="h-3.5 w-3.5" />
+      No accept — why?
+    </Button>
   );
 }
 
@@ -1013,6 +1051,7 @@ function PendingAcceptBadge({ view }: { view: PendingAcceptView }) {
       return (
         <span className="text-[10px] text-destructive" title={view.pending.error ?? undefined}>
           Mark OK failed
+          <ErrorAlchemyMenu error={view.pending.error ?? "Mark OK failed"} operation="Mark this finding OK" />
         </span>
       );
     case "interrupted":
@@ -1095,7 +1134,10 @@ function AcceptDialog({
       {pending?.kind === "failed" ? (
         <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2">
           <p className="font-medium text-destructive">The last Mark OK for this finding failed.</p>
-          <p className="break-words text-muted-foreground">{pending.pending.error}</p>
+          <p className="break-words text-muted-foreground">
+            {pending.pending.error}
+            <ErrorAlchemyMenu error={pending.pending.error} operation="Mark this finding OK" />
+          </p>
           {pending.pending.remedy ? <p className="text-muted-foreground">{pending.pending.remedy}</p> : null}
         </div>
       ) : null}
@@ -1141,7 +1183,10 @@ function AcceptDialog({
           {result.kind === "error" ? (
             <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2">
               <p className="font-medium text-destructive">{result.title}</p>
-              <p className="break-words text-muted-foreground">{result.message}</p>
+              <p className="break-words text-muted-foreground">
+                {result.message}
+                <ErrorAlchemyMenu error={result.message} input={{ title: result.title, message: result.message, source: "alert" }} />
+              </p>
               {result.remedy ? <p className="text-muted-foreground">{result.remedy}</p> : null}
             </div>
           ) : null}

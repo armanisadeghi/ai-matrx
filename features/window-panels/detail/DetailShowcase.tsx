@@ -48,6 +48,7 @@ import {
 } from "@/lib/detail/types";
 import { detailPageHref } from "@/features/window-panels/detail/DetailHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 type FileRow = { id: string; file_name: string; mime_type: string | null };
 
@@ -182,7 +183,7 @@ export function DetailShowcase() {
               </span>
             ) : setting.error ? (
               <span className="text-destructive">
-                could not be read: {setting.error}. Openers fall back to the window and say so.
+                could not be read: {asClause(setting.error)}. Openers fall back to the window and say so.
                 <ErrorAlchemyMenu error={setting.error} />
               </span>
             ) : (

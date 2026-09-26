@@ -33,6 +33,7 @@ import {
 import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 interface QuickChatSheetProps {
   className?: string;
@@ -127,7 +128,7 @@ export function QuickChatSheet({
         </p>
         <p className="max-w-sm text-xs text-muted-foreground">
           The default chat agent could not be resolved
-          {error ? ` — ${error}` : ""}. Check your override on the Mandates
+          {asClause(error ? ` — ${error}` : "")}. Check your override on the Mandates
           page, or try again shortly.
           <ErrorAlchemyMenu />
         </p>

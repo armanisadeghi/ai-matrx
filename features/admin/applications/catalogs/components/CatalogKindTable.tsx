@@ -63,6 +63,7 @@ import {
 } from "@/features/admin/applications/catalogs/schemas";
 import type { CatalogEntryRow } from "@/features/admin/applications/catalogs/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 interface CatalogKindTableProps {
   app: string;
@@ -568,7 +569,7 @@ export function CatalogKindTable({
                   {probe.status === "fail" ? (
                     <p className="flex items-center gap-1 font-medium text-destructive">
                       <AlertTriangle className="h-3.5 w-3.5" /> <span>ARTIFACT
-                      UNREACHABLE — {probe.detail}. Activating anyway ships a
+                      UNREACHABLE — {asClause(probe.detail)}. Activating anyway ships a
                       broken download to every client. Override only if you know
                       the URL works outside the browser.
                       <ErrorAlchemyMenu /></span>

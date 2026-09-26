@@ -31,6 +31,7 @@ import {
 } from "../useFailedPrinterGate";
 import { formatCertificationStatus } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 const CONFIG_PATH = "settings/configuration";
 
@@ -112,7 +113,7 @@ export function PrinterCertificationNotice({
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Could not check printer certifications <ErrorAlchemyMenu /></AlertTitle>
           <AlertDescription>
-            {gate.listError}. Printing is still available — nothing is blocked
+            {asClause(gate.listError)}. Printing is still available — nothing is blocked
             — but this organization&apos;s record of which printers work with{" "}
             {stockName} could not be read. Reload the page to try again.
             <ErrorAlchemyMenu error={gate.listError} />

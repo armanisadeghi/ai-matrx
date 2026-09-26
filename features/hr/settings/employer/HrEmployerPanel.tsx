@@ -75,6 +75,7 @@ import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 // ── Applicability derivation ────────────────────────────────────────────────
 
@@ -581,7 +582,7 @@ function ApplicabilityRow({
         {flag.isDeclared ? (
           <>
             Declared by {flag.declaredBy ?? "an administrator"}
-            {flag.declaredReason ? ` — ${flag.declaredReason}` : ""}.
+            {asClause(flag.declaredReason ? ` — ${flag.declaredReason}` : "")}.
           </>
         ) : flag.derivation ? (
           flag.derivation

@@ -28,6 +28,7 @@ import {
 } from "./useVoiceRelaySession";
 import type { QuestionPacing } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 export interface VoiceRelayDockProps {
   /** The brain — the agent this conversation belongs to. */
@@ -107,7 +108,7 @@ export function VoiceRelayDock(props: VoiceRelayDockProps) {
       <div className="mb-2 rounded-xl border border-destructive/40 bg-card px-3 py-2 text-xs text-destructive">
         Voice is unavailable: the Communicator ({VOICE_COMMUNICATOR_MANDATE_KEY})
         did not resolve
-        {communicator.error ? ` — ${communicator.error}` : ""}. Typing works as
+        {asClause(communicator.error ? ` — ${communicator.error}` : "")}. Typing works as
         normal.
         <ErrorAlchemyMenu />
       </div>

@@ -25,6 +25,7 @@ import {
   type HealthFinding,
 } from "@/features/mandates/code-references/health";
 import { plainFailureReason } from "@/lib/entity-list/failure";
+import { asClause } from "@/lib/text/asClause";
 
 const SEVERITY_CLASS: Record<HealthFinding["severity"], string> = {
   high: "border-red-500/40 text-red-700 dark:text-red-400",
@@ -83,7 +84,7 @@ export function MandateHealthSummary({ mandateKey }: { mandateKey: string }) {
   if (state.status === "error") {
     return (
       <div role="alert" className="flex items-center gap-2 text-sm text-destructive">
-        <span>Open problems could not be checked: the check {state.message}. Reload the page to try again.
+        <span>Open problems could not be checked: the check {asClause(state.message)}. Reload the page to try again.
         <ErrorAlchemyMenu className="ml-auto" /></span>
       </div>
     );

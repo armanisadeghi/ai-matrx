@@ -63,6 +63,7 @@ import type {
   LeaveSaveRefusal,
 } from "../manager/api/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 /** The jurisdictions named by a set of findings, in the order they were returned. */
 function jurisdictionsOf(findings: LeaveConfigViolation[]): string[] {
@@ -376,7 +377,7 @@ export function UnlawfulConfigDialog({
           */}
           {refusal.validation?.jurisdictionsChecked.length ? (
             <p className="text-xs text-muted-foreground">
-              Checked against {joinNames(refusal.validation.jurisdictionsChecked)}.
+              Checked against {asClause(joinNames(refusal.validation.jurisdictionsChecked))}.
               <ErrorAlchemyMenu />
             </p>
           ) : null}

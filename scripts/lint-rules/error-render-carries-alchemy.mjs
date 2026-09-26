@@ -107,6 +107,8 @@ export const errorRenderCarriesAlchemy = {
     },
     schema: [],
     messages: {
+      doubledStop:
+        "A message value is followed by its own full stop here — messages usually end in one, so the screen shows \"try again.. \". Wrap the value: {asClause(value)} from @/lib/text/asClause.",
       uncarried:
         "This {{what}} shows an error without the Alchemy Menu ({{reason}}). Render it through <ErrorNotice …/>, or put <ErrorAlchemyMenu error={…} /> inside this box, on the error's line — never a row of its own. See components/errors/FEATURE.md.",
     },
@@ -129,6 +131,12 @@ export const errorRenderCarriesAlchemy = {
           hits = census.uncarriedErrorDisplays(source, rel);
         } finally {
           census.setCarryingComponentsResolver(null);
+        }
+        for (const line of census.findDoubledStops(source, rel)) {
+          context.report({
+            loc: { start: { line, column: 0 }, end: { line, column: 0 } },
+            messageId: "doubledStop",
+          });
         }
         for (const hit of hits) {
           context.report({

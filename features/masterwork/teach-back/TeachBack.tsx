@@ -77,6 +77,7 @@ import { useWizardDraft } from "@/lib/wizard-draft/useWizardDraft";
 import { WizardDraftRestored } from "@/lib/wizard-draft/WizardDraftRestored";
 import { RunStages } from "../components/RunStages";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 interface KnobState {
   rounds: number;
@@ -759,7 +760,7 @@ export function TeachBack({
               number is real; when this device genuinely does not hold the
               whole session, the screen says that instead of counting. */}
           <p className="mt-1 text-sm text-muted-foreground">
-            It stopped because {finished.doneReason || "it ran out of rounds"}.{" "}
+            It stopped because {asClause(finished.doneReason || "it ran out of rounds")}.{" "}
             {correctedRounds === null ? (
               <>
                 Part of this teach-back happened somewhere else — another device,

@@ -91,6 +91,7 @@ import { TutorLanding } from "./TutorLanding";
 import { TutorTrustStrip } from "./TutorTrustStrip";
 import { TutorTurnTrust } from "./TutorTurnTrust";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 const SOURCE_FEATURE = "education-tutor" as const;
 const BASE_PATH = "/education/tutor/[conversationId]";
@@ -150,7 +151,7 @@ export function EducationTutorClient(props: EducationTutorClientProps) {
           The AI Tutor is unavailable
         </p>
         <p className="max-w-md text-xs text-muted-foreground">
-          The {TUTOR_MANDATE_KEY} mandate could not resolve: {error}. Fix its
+          The {TUTOR_MANDATE_KEY} mandate could not resolve: {asClause(error)}. Fix its
           binding at /mandates.
           <ErrorAlchemyMenu error={error} />
         </p>

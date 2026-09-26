@@ -36,6 +36,7 @@ import { CalloutBanner } from "@/components/official/CalloutBanner";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { humanizeRelative } from "../../utils/triggerHumanize";
 import type { AgendaTask, AutoSuspendedBlock } from "../../types";
+import { asClause } from "@/lib/text/asClause";
 
 interface Props {
   task: AgendaTask;
@@ -107,9 +108,9 @@ export function SuspensionCard({ task, onRestore, restoring }: Props) {
                 {typeof suspended.consecutive_failures === "number"
                   ? ` after ${suspended.consecutive_failures} consecutive failures`
                   : ""}
-                {suspended.failure_signature
+                {asClause(suspended.failure_signature
                   ? ` (signature ${suspended.failure_signature})`
-                  : ""}
+                  : "")}
                 .
               </p>
               {suspended.reason && (
@@ -142,7 +143,7 @@ export function SuspensionCard({ task, onRestore, restoring }: Props) {
                 <p data-surface-value="schedule_alarm_mute">
                   Its alarm is muted until {formatWhen(alarmMute.until)}
                   {alarmMute.by ? ` by ${alarmMute.by}` : ""}
-                  {alarmMute.reason ? ` — ${alarmMute.reason}` : ""}. It leaves
+                  {asClause(alarmMute.reason ? ` — ${alarmMute.reason}` : "")}. It leaves
                   the super-admin attention dock until then and returns on its
                   own.
                 </p>

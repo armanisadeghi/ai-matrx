@@ -45,6 +45,7 @@ import { cn } from "@/lib/utils";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
+import { asClause } from "@/lib/text/asClause";
 
 export const BINDING_MAPPER_MANDATE_KEY = MANDATE_KEYS.surfaces_client__binding_mapper;
 
@@ -239,7 +240,7 @@ export function BindingSuggestionsTab({
     return (
       <p className="rounded-md border border-dashed border-border px-3 py-4 text-xs text-muted-foreground">
         The AI mapping helper is not available right now
-        {mandateError ? ` (${mandateError})` : ""}. Map values manually
+        {asClause(mandateError ? ` (${mandateError})` : "")}. Map values manually
         instead — nothing here is blocked by it.
       </p>
     );

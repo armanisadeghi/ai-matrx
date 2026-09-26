@@ -44,6 +44,7 @@ import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 const RECENT_COUNT = 2;
 /**
@@ -257,7 +258,7 @@ export function SurfaceConversationsSection({
             </div>
           ) : status === "failed" ? (
             <p className="px-2 py-2 text-xs text-destructive">
-              Could not load conversations{error ? ` — ${error}` : ""}.
+              Could not load conversations{asClause(error ? ` — ${error}` : "")}.
               <ErrorAlchemyMenu />
             </p>
           ) : visible.length === 0 ? (
@@ -312,7 +313,7 @@ export function SurfaceConversationsSection({
         </div>
       ) : feature && status === "failed" ? (
         <p className="px-2 py-1 text-xs text-destructive">
-          Could not load recent conversations{error ? ` — ${error}` : ""}.
+          Could not load recent conversations{asClause(error ? ` — ${error}` : "")}.
           <ErrorAlchemyMenu />
         </p>
       ) : visible.length > 0 ? (

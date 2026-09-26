@@ -108,6 +108,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { humanizeBackendError } from "@/utils/errors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { asClause } from "@/lib/text/asClause";
 
 const BACKLINKS_SURFACE_NAME = "matrx-user/marketing-backlinks";
 const KEYWORD_EXPANDER_ROLE = "keyword_expander";
@@ -1235,9 +1236,9 @@ export function SerpProspectsTab({
           Last run: {prospects.foldReport.created} created,{" "}
           {prospects.foldReport.matched} matched,{" "}
           {prospects.foldReport.already_linked} already had a record
-          {prospects.foldReport.skipped?.length
+          {asClause(prospects.foldReport.skipped?.length
             ? ` · ${prospects.foldReport.skipped.length} skipped (${prospects.foldReport.skipped[0].reason})`
-            : ""}
+            : "")}
           .
         </p>
       ) : null}

@@ -40,6 +40,7 @@ import {
 } from "../utils/noteLiveContent";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 function sinceLabel(from: number | null): string | null {
   if (!from) return null;
@@ -117,7 +118,7 @@ export function NoteSaveFailureBanner({ noteId }: NoteSaveFailureBannerProps) {
           </p>
           <p className="text-xs leading-relaxed text-foreground/90">
             {failureCount} save attempts in a row have failed
-            {elapsed ? ` over the last ${elapsed}` : ""}. This note exists only
+            {asClause(elapsed ? ` over the last ${elapsed}` : "")}. This note exists only
             in this browser tab right now — copy or download it before closing
             or reloading. A local backup was kept in this browser and will be
             offered back if the tab reloads.

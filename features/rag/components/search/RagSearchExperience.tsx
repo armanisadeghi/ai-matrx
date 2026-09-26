@@ -135,6 +135,7 @@ import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextM
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 // ===========================================================================
 // Agent Chat surface — the "Agent Chat" tab embeds the canonical agent system
@@ -2341,7 +2342,7 @@ function AgentChatTab({ scope }: { scope: Scope }) {
         </p>
         <p className="max-w-sm text-xs text-muted-foreground">
           The default chat agent could not be resolved
-          {error ? ` — ${error}` : ""}. Check your override on the Mandates
+          {asClause(error ? ` — ${error}` : "")}. Check your override on the Mandates
           page, or try again shortly.
           <ErrorAlchemyMenu />
         </p>

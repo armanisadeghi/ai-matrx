@@ -869,3 +869,46 @@ export function isCensusScannable(rel: string): boolean {
   );
 }
 
+/**
+ * "`{error}. Dropping a file…`" — a render that writes its own full stop after
+ * a message value. Messages usually end in one already, so the screen shows
+ * "try again.. Dropping". The value goes through `asClause(…)`
+ * (lib/text/asClause.ts), which drops its closing punctuation, or the period
+ * moves into the value. Returns the lines of every such join (RC-B12 round 9).
+ */
+export function findDoubledStops(source: string, fileName = "file.tsx"): number[] {
+  const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const lines: number[] = [];
+  const isMessage = (e: ts.Expression): boolean => {
+    let x: ts.Expression = e;
+    while (ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x)) x = x.expression;
+    // asClause(value) is the fix.
+    if (ts.isCallExpression(x) && /(^|\.)asClause$/.test(x.expression.getText())) return false;
+    const leaves: ts.Expression[] = [];
+    renderedLeaves(x, leaves);
+    return leaves.some(
+      (leaf) =>
+        (isErrorLeaf(leaf, ERROR_NAME_NO_E) || isErrorLeaf(leaf, MESSAGE_NAME)) &&
+        !ts.isStringLiteral(leaf) &&
+        !ts.isNoSubstitutionTemplateLiteral(leaf),
+    );
+  };
+  const visit = (n: ts.Node) => {
+    if (ts.isJsxElement(n) || ts.isJsxFragment(n)) {
+      const kids = n.children;
+      for (let i = 0; i < kids.length - 1; i += 1) {
+        const kid = kids[i];
+        const next = kids[i + 1];
+        if (!ts.isJsxExpression(kid) || !kid.expression || !ts.isJsxText(next)) continue;
+        const text = decodeJsxEntities(next.getText());
+        // A full stop right after the value — not an ellipsis.
+        if (/^\.(?!\.)/.test(text) && isMessage(kid.expression)) {
+          lines.push(sf.getLineAndCharacterOfPosition(kid.getStart()).line + 1);
+        }
+      }
+    }
+    n.forEachChild(visit);
+  };
+  visit(sf);
+  return lines;
+}

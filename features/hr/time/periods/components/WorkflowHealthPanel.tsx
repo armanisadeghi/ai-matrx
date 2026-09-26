@@ -47,6 +47,7 @@ import {
   unreachableWords,
   isNotAttestedTerminal,
 } from "../workflowHealth";
+import { asClause } from "@/lib/text/asClause";
 
 const HEALTH_TONE: Record<RowHealth, string> = {
   awaiting: "bg-primary/10 text-primary border-primary/30",
@@ -347,7 +348,7 @@ export function WorkflowHealthPanel({ workflow, hrefForEmployment }: WorkflowHea
                   )}
                 >
                   {row.health === "stuck" ? "This has failed because " : "Unresolved: "}
-                  {words}.
+                  {asClause(words)}.
                 </p>
               ) : null}
             </li>

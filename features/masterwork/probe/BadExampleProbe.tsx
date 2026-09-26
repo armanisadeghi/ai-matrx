@@ -57,6 +57,7 @@ import {
   type ProbeRoundResult,
 } from "./service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 interface KnobState {
   rounds: number;
@@ -582,7 +583,7 @@ export function BadExampleProbe({
         <section className="rounded-lg border border-border bg-card p-4">
           <h2 className="text-base font-semibold">That&apos;s the probe done</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            It stopped because {finished.doneReason || "the probe ran out of rounds"}.
+            It stopped because {asClause(finished.doneReason || "the probe ran out of rounds")}.
             You answered {finished.answeredRounds}{" "}
             {finished.answeredRounds === 1 ? "round" : "rounds"}.
           </p>

@@ -77,6 +77,7 @@ import { agentDefinitionSummary } from "@/features/agents/format";
 import { agentHref } from "@/features/agents/browse/agentPaths";
 import { buildSystemAgentAiPayload } from "@/features/agents/route/buildSystemAgentAiPayload";
 import { useAgentAddressViewer } from "@/features/agents/addressing/useAgentHref";
+import { asClause } from "@/lib/text/asClause";
 
 function extractTextContent(msg: AgentDefinitionMessage): string {
   if (!msg.content || !Array.isArray(msg.content)) return "";
@@ -512,7 +513,7 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                       {issue.field}
                     </span>
                     {": "}
-                    {issue.message}. {issue.recovery}
+                    {asClause(issue.message)}. {issue.recovery}
                   </li>
                 ))}
               </ul>

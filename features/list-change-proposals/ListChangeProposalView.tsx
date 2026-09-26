@@ -64,6 +64,7 @@ import {
   type ProposalDecisions,
 } from "./decisions";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 export interface ListChangeProposalViewProps {
   proposal: ListChangeProposalValue;
@@ -274,7 +275,7 @@ export function ListChangeProposalView({
         >
           {unreadable.map((u, __i, __all) => (
             <li key={u.index}>
-              Proposal {u.index + 1} was not shown because {u.why}.
+              Proposal {u.index + 1} was not shown because {asClause(u.why)}.
             {__i === __all.length - 1 && <ErrorAlchemyMenu />}</li>
           ))}
         </ul>

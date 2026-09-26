@@ -72,6 +72,7 @@ import MarkdownStream from "@/components/MarkdownStream";
 import { AgentStreamingResponse } from "./AgentJsonDisplay";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 // =============================================================================
 // Error Boundary — crash-proof fallback to raw MarkdownStream
@@ -116,7 +117,7 @@ class GeneratorErrorBoundary extends Component<
             <AlertTriangle className="h-3.5 w-3.5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
             <span className="text-xs text-red-700 dark:text-red-300">
               <strong>Display Error:</strong>{" "}
-              {this.state.error?.message ?? "Unknown rendering error"}. Showing
+              {asClause(this.state.error?.message ?? "Unknown rendering error")}. Showing
               raw response below.
             </span>
             <ErrorAlchemyMenu error={this.state.error?.message} />

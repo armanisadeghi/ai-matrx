@@ -74,6 +74,7 @@ import {
 import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 const SOURCE_FEATURE = "masterwork" as const;
 /**
@@ -767,7 +768,7 @@ export function ScoutInterviewContent({
     return (
       <div className="px-4 py-6 text-sm text-muted-foreground">
         The interviewer isn&apos;t available right now
-        {error ? ` (${error})` : ""}. An administrator can bind one to the
+        {asClause(error ? ` (${error})` : "")}. An administrator can bind one to the
         `masterwork.scout` Mandate.
         <ErrorAlchemyMenu />
       </div>

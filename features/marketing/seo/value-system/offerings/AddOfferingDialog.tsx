@@ -31,6 +31,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { searchOfferingTemplates, type CatalogOffering, type OfferingTemplate } from "./data";
 import { OFFERING_KIND_META, offeringKindLabel, type OfferingKindValue } from "./vocabulary";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 export type AddOfferingChoice =
   | { mode: "template"; templateId: string; name: string; reason: string }
@@ -171,7 +172,7 @@ export function AddOfferingDialog({
                 </div>
               ) : suggestions.error ? (
                 <p className="rounded border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-                  Could not look up suggestions: {extractErrorMessage(suggestions.error)}. You can still
+                  Could not look up suggestions: {asClause(extractErrorMessage(suggestions.error))}. You can still
                   add “{typed}” above.
                   <ErrorAlchemyMenu />
                 </p>

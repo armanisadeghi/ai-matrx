@@ -50,6 +50,7 @@ import { useKindAgentLaunch } from "@/features/content-ir/studio/useKindAgentLau
 import type { Json } from "@/types/database.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { asClause } from "@/lib/text/asClause";
 
 interface ShapeRenderStatusStripProps {
   kind: string;
@@ -232,7 +233,7 @@ export default function ShapeRenderStatusStrip({
             ) : null}
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Why: {status.why}.
+            Why: {asClause(status.why)}.
           </p>
           {hasProblems && (
             <ul className="mt-1.5 space-y-1">

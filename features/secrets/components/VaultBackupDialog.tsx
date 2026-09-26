@@ -51,6 +51,7 @@ import {
   type VaultBackupRestoreResult,
 } from "../vault-backup-service";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { asClause } from "@/lib/text/asClause";
 
 const BACKUP_FILENAME = "matrx-vault-backup.matrxvault";
 
@@ -779,7 +780,7 @@ export function VaultBackupDialog({
                         Created {restoreResult.created}; replayed{" "}
                         {restoreResult.replayed}; refused{" "}
                         {restoreResult.refused}; retryable{" "}
-                        {restoreResult.retryable_failure}.
+                        {asClause(restoreResult.retryable_failure)}.
                       </p>
                       <ul className="max-h-28 space-y-1 overflow-y-auto text-xs text-muted-foreground">
                         {restoreResult.results.map((entry, index) => (

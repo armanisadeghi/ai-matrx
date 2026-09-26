@@ -86,6 +86,7 @@ import {
 import { cn } from "@/lib/utils";
 import { humanizeBackendError } from "@/utils/errors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 function scoreCell(row: LinkGapDomainRow) {
   return (
@@ -631,9 +632,9 @@ export function BacklinkProspectsTab({
           Last run: {prospects.foldReport.created} created,{" "}
           {prospects.foldReport.matched} matched,{" "}
           {prospects.foldReport.already_linked} already had a record
-          {prospects.foldReport.skipped?.length
+          {asClause(prospects.foldReport.skipped?.length
             ? ` · ${prospects.foldReport.skipped.length} skipped (${prospects.foldReport.skipped[0].reason})`
-            : ""}
+            : "")}
           .
         </p>
       ) : null}

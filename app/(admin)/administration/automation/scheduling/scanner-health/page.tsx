@@ -49,6 +49,7 @@ import {
 } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 export default function ScannerHealthPage() {
   const { organizationId, canLoad, organizationRequired, organizationState } =
@@ -316,7 +317,7 @@ export default function ScannerHealthPage() {
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Schedule alarms could not be read</AlertTitle>
           <AlertDescription className="text-xs">
-            {alarmError}. A suspended or failing schedule would not be visible
+            {asClause(alarmError)}. A suspended or failing schedule would not be visible
             here until this read works, so treat this as unknown, not healthy.
           </AlertDescription>
         </Alert>

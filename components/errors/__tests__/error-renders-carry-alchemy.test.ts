@@ -23,6 +23,7 @@ import path from "node:path";
 import { buildCarryingResolver } from "./error-census-carriers";
 import {
   findDoubleMenus,
+  findDoubledStops,
   findOrphanMenus,
   carriersFromFacts,
   componentFacts,
@@ -304,6 +305,31 @@ describe("round-8 probes (RC-B12 verify): JSX entities are decoded before matchi
     expect(count('<PageHeader title="Couldn&apos;t open this page" />')).toBe(1);
     expect(count("<span>This deal couldn&apos;t be refreshed just now.</span>")).toBe(1);
     expect(count("<p>This mind map couldn&apos;t be rendered — try regenerating it.</p>")).toBe(1);
+  });
+});
+
+describe("a message value is never followed by its own full stop (RC-B12 round 9)", () => {
+  const stops = (jsx: string) =>
+    findDoubledStops(`export function C({ error, message, reason, gate }: any) { return (<>${jsx}</>); }`).length;
+  it("self-test: `{error}. ` counts; asClause(error), an ellipsis and a non-message value do not", () => {
+    expect(stops("<span>It could not be read: {error}. Dropping a file still works.</span>")).toBe(1);
+    expect(stops("<p>{gate.listError}. Printing is still available.</p>")).toBe(1);
+    expect(stops("<p>Refused: {reason}.</p>")).toBe(1);
+    expect(stops("<span>It could not be read: {asClause(error)}. Dropping a file still works.</span>")).toBe(0);
+    expect(stops("<p>{message}... and more</p>")).toBe(0);
+    expect(stops("<p>{count}. items</p>")).toBe(0);
+  });
+  it("no file joins a message and a full stop", () => {
+    const files: string[] = [];
+    for (const dir of SCANNED_DIRS) walk(path.join(REPO_ROOT, dir), files);
+    const found: string[] = [];
+    for (const file of files) {
+      const rel = path.relative(REPO_ROOT, file).split(path.sep).join("/");
+      if (!isScannable(rel)) continue;
+      for (const line of findDoubledStops(fs.readFileSync(file, "utf8"), rel)) found.push(`${rel}:${line}`);
+    }
+    if (process.env.ERROR_CENSUS_PRINT === "1") console.log("DOUBLED_STOPS " + JSON.stringify(found));
+    expect(found).toEqual([]);
   });
 });
 

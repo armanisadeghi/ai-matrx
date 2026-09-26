@@ -21,6 +21,7 @@ import type {
   TypedStreamEvent,
 } from "@/types/python-generated/stream-events";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 export type BlockProcessingMode = "json" | "stream";
 
@@ -216,7 +217,7 @@ export function BlockProcessingPanel({
       )}
       {error && (
         <div className="rounded border border-destructive/20 bg-destructive/10 p-2 text-xs text-destructive">
-          The block processor refused this request: {error}. Check the server
+          The block processor refused this request: {asClause(error)}. Check the server
           selection in the API test config, then Re-run.
           <ErrorAlchemyMenu />
         </div>

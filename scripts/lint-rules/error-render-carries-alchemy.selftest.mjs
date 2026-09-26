@@ -29,6 +29,10 @@ tester.run("error-render-carries-alchemy", rule, {
   valid: [
     {
       filename: inFeatures,
+      code: `export function A({ error }: any) { return <div className="border-destructive"><span>It could not be read: {asClause(error)}. Dropping still works.<ErrorAlchemyMenu error={error} /></span></div>; }`,
+    },
+    {
+      filename: inFeatures,
       code: `export function A({ error }: any) { return <ErrorNotice title="Could not read tasks" error={error} />; }`,
     },
     {
@@ -42,6 +46,12 @@ tester.run("error-render-carries-alchemy", rule, {
     },
   ],
   invalid: [
+    {
+      // "{error}. " — the screen shows "try again.. Dropping" (AdapterCatalog before RC-B12 round 9).
+      filename: inFeatures,
+      code: `export function A({ error }: any) { return <div className="border-destructive"><span>It could not be read: {error}. Dropping still works.<ErrorAlchemyMenu error={error} /></span></div>; }`,
+      errors: [{ messageId: "doubledStop" }],
+    },
     {
       filename: inFeatures,
       code: `export function LoadError({ what, message }: any) { return (<div className="rounded-md border border-destructive/40 bg-destructive/5 p-3"><p className="font-medium text-destructive">Could not read {what}.</p><p>{message}</p></div>); }`,

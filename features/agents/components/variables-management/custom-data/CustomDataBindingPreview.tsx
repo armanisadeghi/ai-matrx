@@ -17,6 +17,7 @@ import {
 import { isCompleteBinding } from "./customDataBinding";
 import { useCustomDataOrganizationId } from "./CustomDataRecordsScope";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 /** Quiet time before the preview re-asks the server after an edit. */
 const PREVIEW_DEBOUNCE_MS = 500;
@@ -133,7 +134,7 @@ export function CustomDataBindingPreview({
           {state.outcome === "absent" && (
             <p className="text-[11px] text-warning">
               No data right now
-              {state.absentReason ? ` — ${state.absentReason}` : ""}. This is
+              {asClause(state.absentReason ? ` — ${state.absentReason}` : "")}. This is
               what the agent is told instead:
             </p>
           )}

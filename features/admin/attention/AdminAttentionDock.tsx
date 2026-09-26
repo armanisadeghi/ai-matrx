@@ -87,6 +87,7 @@ import { useProviderOutageSource } from "./sources/useProviderOutageSource";
 import { useScheduleAlarmSource } from "./sources/useScheduleAlarmSource";
 import type { AttentionAction, AttentionItem } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { asClause } from "@/lib/text/asClause";
 
 /** Every source's React Query key starts with this, so one invalidation wakes all. */
 export const ATTENTION_QUERY_PREFIX = ["admin-attention"] as const;
@@ -452,7 +453,7 @@ export default function AdminAttentionDock() {
             >
               <AlertTriangle className="h-3.5 w-3.5 text-warning" aria-hidden />
               <span className="min-w-0 flex-1">
-                {source.label} could not be read: {source.error ?? "unknown error"}. Treat this
+                {source.label} could not be read: {asClause(source.error ?? "unknown error")}. Treat this
                 as unknown, not healthy.
                 <ErrorAlchemyMenu error={source.error} />
               </span>
