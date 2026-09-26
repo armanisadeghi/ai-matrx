@@ -8,7 +8,6 @@
     "FullScreenMarkdownEditor :: components/mardown-display/chat-markdown/FullScreenMarkdownEditorBridge.tsx",
     "FullScreenMarkdownEditor :: features/agents/components/messages-display/message-options/userEditActions.ts",
     "FullScreenMarkdownEditor :: features/overlays/openers/fullScreenEditor.tsx",
-    "TuiEditorContent :: app/(dev)/demos/tests/markdown-tests/tui-tests/page.dev.tsx",
     "TuiEditorContent :: components/mardown-display/chat-markdown/FullScreenMarkdownEditor.tsx",
     "TuiEditorContent :: components/official/content-editor/ContentEditor.tsx",
     "TuiEditorContent :: features/html-pages/components/HtmlPreviewFullScreenEditor.tsx",

@@ -56,7 +56,6 @@ export interface LayoutWithSidebarProps {
 const FULL_SCREEN_PATHS = [
   "/chat",
   "/apps",
-  "/tests/markdown-tests",
   "/tests/workflows",
   "/workflows",
 ];

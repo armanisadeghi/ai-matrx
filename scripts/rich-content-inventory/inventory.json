@@ -267,17 +267,6 @@
    "replacement": "THE ONE EDITOR (Tiptap 3 visual + CodeMirror 6 source, save = splice) — rich-content-unification PLAN §3.5–3.6. Until it lands, add NO new consumer: extend the surface's existing editor call site instead of adding a new one.",
    "sites": [
     {
-     "file": "app/(dev)/demos/tests/markdown-tests/tui-tests/page.dev.tsx",
-     "line": 4,
-     "detail": "@/components/mardown-display/chat-markdown/tui/TuiEditorContent"
-    },
-    {
-     "file": "app/(dev)/demos/tests/markdown-tests/tui-tests/page.dev.tsx",
-     "line": 5,
-     "detail": "@/components/mardown-display/chat-markdown/tui/TuiEditorContent",
-     "typeOnly": true
-    },
-    {
      "file": "components/mardown-display/chat-markdown/FullScreenMarkdownEditor.tsx",
      "line": 28,
      "detail": "./tui/TuiEditorContent"
@@ -7344,7 +7333,6 @@
   "app/(dev)/demos/tests/google-apis/pagespeed/components/PageSpeedForm.tsx": {"shared":false,"surfaces":[]},
   "app/(dev)/demos/tests/integrations/option-two/BusinessIntegrations.tsx": {"shared":false,"surfaces":[]},
   "app/(dev)/demos/tests/integrations/simple/IntegrationPortal.tsx": {"shared":false,"surfaces":[]},
-  "app/(dev)/demos/tests/markdown-tests/tui-tests/page.dev.tsx": {"shared":false,"surfaces":[]},
   "app/(dev)/demos/tests/matrx-local/DownloadEndpointCard.tsx": {"shared":false,"surfaces":[]},
   "app/(dev)/demos/tests/matrx-local/EndpointCard.tsx": {"shared":false,"surfaces":[]},
   "app/(dev)/demos/tests/sms/components/ConversationsList.tsx": {"shared":false,"surfaces":[]},

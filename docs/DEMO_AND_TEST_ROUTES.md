@@ -191,8 +191,6 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/tests/integrations/option-two` — `app/(authenticated)/tests/integrations/option-two/page.tsx`
 - `/tests/integrations/simple` — `app/(authenticated)/tests/integrations/simple/page.tsx`
 - `/tests/markdown-tests` — `app/(authenticated)/tests/markdown-tests/page.tsx`
-- `/tests/markdown-tests/markdown-split-screen` — `app/(authenticated)/tests/markdown-tests/markdown-split-screen/page.tsx`
-- `/tests/markdown-tests/tui-tests` — `app/(authenticated)/tests/markdown-tests/tui-tests/page.tsx`
 - `/tests/matrx-local` — `app/(authenticated)/tests/matrx-local/page.tsx`
 - `/tests/matrx-table` — `app/(authenticated)/tests/matrx-table/page.tsx`
 - `/tests/modals` — `app/(authenticated)/tests/modals/page.tsx`
@@ -764,8 +762,6 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/tests/integrations/option-two`
 - `/tests/integrations/simple`
 - `/tests/markdown-tests`
-- `/tests/markdown-tests/markdown-split-screen`
-- `/tests/markdown-tests/tui-tests`
 - `/tests/matrx-local`
 - `/tests/matrx-table`
 - `/tests/modals`

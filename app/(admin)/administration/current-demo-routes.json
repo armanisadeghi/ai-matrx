@@ -957,24 +957,6 @@
         ]
       }
     },
-    "markdown-tests": {
-      "_files": [
-        "config.ts",
-        "layout.tsx",
-        "page.tsx"
-      ],
-      "markdown-split-screen": {
-        "_files": [
-          "page.tsx"
-        ]
-      },
-      "tui-tests": {
-        "_files": [
-          "constants.ts",
-          "page.tsx"
-        ]
-      }
-    },
     "matrx-local": {
       "_files": [
         "ConnectionStatus.tsx",

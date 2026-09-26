@@ -227,7 +227,6 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/admin" },
   { href: "/tests/forms/entity-final-test" },
   { href: "/tests/socket-tests/redux-form-test" },
-  { href: "/tests/markdown-tests" },
   { href: "/admin/socketio" },
   { href: "/demo/many-to-many-ui/claude" },
   { href: "/demo/workflows" },

@@ -4462,8 +4462,6 @@ No route, overlay or opener imports these (dead code, test-only, or loaded by a 
 - [ ] `app/(dev)/demos/tests/google-apis/pagespeed/components/PageSpeedForm.tsx:143` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{category.description}`
 - [ ] `app/(dev)/demos/tests/integrations/option-two/BusinessIntegrations.tsx:257` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{integration.description}`
 - [ ] `app/(dev)/demos/tests/integrations/simple/IntegrationPortal.tsx:220` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{integration.description}`
-- [ ] `app/(dev)/demos/tests/markdown-tests/tui-tests/page.dev.tsx:4` — **TuiEditorContent** (BANNED) — `@/components/mardown-display/chat-markdown/tui/TuiEditorContent`
-- [ ] `app/(dev)/demos/tests/markdown-tests/tui-tests/page.dev.tsx:5` — **TuiEditorContent** (BANNED) — `@/components/mardown-display/chat-markdown/tui/TuiEditorContent` (type-only)
 - [ ] `app/(dev)/demos/tests/matrx-local/DownloadEndpointCard.tsx:117` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{endpoint.description}`
 - [ ] `app/(dev)/demos/tests/matrx-local/EndpointCard.tsx:33` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{endpoint.description}`
 - [ ] `app/(dev)/demos/tests/sms/components/ConversationsList.tsx:247` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{msg.body}`

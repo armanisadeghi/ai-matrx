@@ -20,10 +20,6 @@
     "name": "integrations"
   },
   {
-    "path": "/demos/tests/markdown-tests",
-    "name": "markdown-tests"
-  },
-  {
     "path": "/demos/tests/matrx-local",
     "name": "matrx-local"
   },
