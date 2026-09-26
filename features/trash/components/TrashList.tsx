@@ -32,9 +32,13 @@ import { getResourceIcon } from "@/features/sharing/resourceIcons";
 import Link from "next/link";
 import {
   isMovedOlderTable,
+  isOwnerOrAdminRole,
+  mayOfferSwitchBack,
+  MOVED_BY_ITS_ORGANIZATION,
   switchBackHrefFor,
   SWITCH_BACK_EXPLAINED,
 } from "@/features/trash/movedOlderTable";
+import { membershipsService } from "@/features/organizations/service/membershipsService";
 import {
   getOrgTrashCounts,
   getTrashCounts,
@@ -248,6 +252,36 @@ export function TrashList({
 
   const busyId = scope.mode === "personal" ? (scope.busyId ?? null) : null;
 
+  // WHO MAY BE SENT TO SWITCH BACK (lane SWITCH-BACK-CARRIES). Organization Trash is itself an
+  // owners-and-admins page for that one organization. Personal Trash can list moved older tables of
+  // any organization, so it asks once which organizations this person owns or administers.
+  const [managed, setManaged] = useState<ReadonlySet<string>>(new Set());
+  const hasMoved = !org && items.some(isMovedOlderTable);
+  useEffect(() => {
+    if (!hasMoved) return;
+    let live = true;
+    void (async () => {
+      try {
+        const res = await membershipsService.forUser("organization");
+        if (!live || !res.ok) return;
+        setManaged(
+          new Set(
+            res.data.memberships
+              .filter((m) => isOwnerOrAdminRole(m.role))
+              .map((m) => m.containerId),
+          ),
+        );
+      } catch {
+        // No link is the safe answer; the row still says where the table went.
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [hasMoved]);
+  const offersSwitchBack = (item: TrashListItem) =>
+    org ? item.organization_id === org.organizationId : mayOfferSwitchBack(item.organization_id, managed);
+
   return (
     <div data-trash-scope={scope.mode}>
       {org && (
@@ -349,7 +383,15 @@ export function TrashList({
                 <span className="text-muted-foreground w-16 shrink-0 text-right text-xs tabular-nums">
                   {whenDeleted(item.deleted_at)}
                 </span>
-                {isMovedOlderTable(item) ? (
+                {isMovedOlderTable(item) && !offersSwitchBack(item) ? (
+                  // Not an owner or admin of that organization: say where it went, offer no door.
+                  <span
+                    className="text-muted-foreground shrink-0 text-xs"
+                    data-testid="moved-older-table-moved-by-its-organization"
+                  >
+                    {MOVED_BY_ITS_ORGANIZATION}
+                  </span>
+                ) : isMovedOlderTable(item) ? (
                   // One restore would bring back ONE older table beside a switch that says the
                   // organization lives in the new system; the store refuses it. Switch back does all.
                   <Button size="sm" variant="ghost" asChild title={`${SWITCH_BACK_EXPLAINED}.`}>

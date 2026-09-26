@@ -21,3 +21,22 @@ export const SWITCH_BACK_EXPLAINED = "Switch back restores all of them together"
 export function switchBackHrefFor(organizationId: string | null | undefined): string {
   return organizationId ? `/organizations/${organizationId}/settings#data` : "/organizations";
 }
+
+/** What a person who is not an owner or admin of that organization reads instead of a link. */
+export const MOVED_BY_ITS_ORGANIZATION = "Moved to the new system by its organization";
+
+/**
+ * Lane SWITCH-BACK-CARRIES (VERIFIER-26 item 3): the Switch back link opens THAT organization's
+ * settings, so it is offered only to its owners and admins. Anyone else — a plain member, or a
+ * platform admin who is not in the organization — gets no door into a page they cannot act on.
+ */
+export function mayOfferSwitchBack(
+  organizationId: string | null | undefined,
+  managedOrganizationIds: ReadonlySet<string>,
+): boolean {
+  return !!organizationId && managedOrganizationIds.has(organizationId);
+}
+
+export function isOwnerOrAdminRole(role: string | null | undefined): boolean {
+  return role === "owner" || role === "admin";
+}
