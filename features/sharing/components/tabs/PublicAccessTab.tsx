@@ -58,6 +58,11 @@ interface PublicAccessTabProps {
   resourceId: string;
   resourceName: string;
   /**
+   * False when the thing lives in its owner's personal workspace: "My organization" is then not
+   * offered (nobody else is in it) — it is still shown when it is already the state. Default true.
+   */
+  offerOrganization?: boolean;
+  /**
    * Identity + the page's leading KPIs, mirrored into this tab's payloads so a
    * copied public-state answer is interpretable on its own.
    */
@@ -77,9 +82,9 @@ const VISIBILITY_CHOICES: {
 }[] = [
   {
     value: "personal",
-    label: "Only me",
+    label: "Only people I share it with",
     icon: Lock,
-    describe: (t) => `Just you. Nobody else can open this ${t}.`,
+    describe: (t) => `You and the people you name on the Users tab. Nobody else can open this ${t}.`,
   },
   {
     value: "internal",
@@ -123,6 +128,7 @@ export function PublicAccessTab({
   resourceId,
   resourceName,
   copy,
+  offerOrganization = true,
 }: PublicAccessTabProps) {
   const [loading, setLoading] = useState(false);
   const [caps, setCaps] = useState<ShareCapabilities>({
@@ -391,7 +397,12 @@ export function PublicAccessTab({
               >
                 <p className="text-xs font-medium">Who can reach this</p>
                 <div className="grid gap-1.5">
-                  {VISIBILITY_CHOICES.map((choice) => {
+                  {VISIBILITY_CHOICES.filter(
+                    (choice) =>
+                      offerOrganization ||
+                      choice.value !== "internal" ||
+                      visibility === "internal",
+                  ).map((choice) => {
                     const Icon = choice.icon;
                     const selected = visibility === choice.value;
                     return (

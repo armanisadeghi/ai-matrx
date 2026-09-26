@@ -557,6 +557,7 @@ export function ShareModal({
                   resourceType={resourceType}
                   resourceId={resourceId}
                   resourceName={resourceName}
+                  offerOrganization={!personalHome}
                 />
               </TabsContent>
             </div>
