@@ -60,7 +60,7 @@ describe("scheduleAlarmItems", () => {
     expect(item.record).toEqual({
       token: "sch_task",
       id: "a7c1e2d3-0000-4e5f-9a00-000000000544",
-      href: "/schedules/a7c1e2d3-0000-4e5f-9a00-000000000544",
+      href: "/administration/automation/scheduling/tasks/a7c1e2d3-0000-4e5f-9a00-000000000544",
     });
     expect(item.state).toMatch(/^switched off .* ago$/);
     expect(item.doors).toEqual([
@@ -94,7 +94,7 @@ describe("scheduleAlarmItems", () => {
     expect(item.doors).toEqual([
       {
         kind: "evidence",
-        href: "/schedules/a7c1e2d3-0000-4e5f-9a00-000000000544#run-8adb341a-7e60-4740-853d-e61af88e826e",
+        href: "/administration/automation/scheduling/tasks/a7c1e2d3-0000-4e5f-9a00-000000000544#run-8adb341a-7e60-4740-853d-e61af88e826e",
         label: "The run that failed",
         what: "lease expired",
       },

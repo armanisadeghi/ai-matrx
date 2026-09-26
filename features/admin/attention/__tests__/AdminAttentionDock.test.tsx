@@ -366,7 +366,7 @@ describe("AdminAttentionDock", () => {
     const row = rows()[0];
     const record = row.querySelector('[data-testid="entity-ref"]');
     expect(record?.textContent).toBe("Commerce eBay sync engine");
-    expect(record?.getAttribute("href")).toBe("/schedules/a7c1e2d3-0000-4e5f-9a00-000000000544");
+    expect(record?.getAttribute("href")).toBe("/administration/automation/scheduling/tasks/a7c1e2d3-0000-4e5f-9a00-000000000544");
     expect(row.textContent).toContain("Where it shows:");
     const impact = [...row.querySelectorAll("a")].find((a) => a.textContent?.includes("Connected stores"));
     expect(impact?.getAttribute("href")).toBe("/commerce/stores/connect");
