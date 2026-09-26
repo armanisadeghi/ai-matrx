@@ -47,7 +47,7 @@ importers:
         version: 0.5.17(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/content-ir':
         specifier: latest
-        version: 0.19.6
+        version: 0.19.7
       '@ai-matrx/content-ir-react':
         specifier: latest
         version: 0.11.11(react@19.3.0)
@@ -1046,8 +1046,8 @@ packages:
     peerDependencies:
       react: '>=19.0.0'
 
-  '@ai-matrx/content-ir@0.19.6':
-    resolution: {integrity: sha512-S24hionfVKmlWYedlSH3nJLDa/ICLpfK4YHQknm5VJCXpaAXJt+mDAlMfxz0oBwuCNoekGQdoIj6WyiDQyQiDQ==}
+  '@ai-matrx/content-ir@0.19.7':
+    resolution: {integrity: sha512-gzNIwtFTmat7oCr80zURdvBFDhTq50RucwuKVBunAzYwFnnJXrWGKb8dGrLHYSh3YSdqnZCIcvS/ZlXkEYJKPw==}
     engines: {node: '>=20'}
 
   '@ai-matrx/data@0.18.1':
@@ -11740,10 +11740,10 @@ snapshots:
 
   '@ai-matrx/content-ir-react@0.11.11(react@19.3.0)':
     dependencies:
-      '@ai-matrx/content-ir': 0.19.6
+      '@ai-matrx/content-ir': 0.19.7
       react: 19.3.0
 
-  '@ai-matrx/content-ir@0.19.6':
+  '@ai-matrx/content-ir@0.19.7':
     dependencies:
       ajv: 8.20.0
 
@@ -11814,7 +11814,7 @@ snapshots:
 
   '@ai-matrx/kit@0.16.7(react@19.3.0)':
     dependencies:
-      '@ai-matrx/content-ir': 0.19.6
+      '@ai-matrx/content-ir': 0.19.7
       dompurify: 3.4.16
       idb: 8.0.3
       json5: 2.2.3
@@ -11877,7 +11877,7 @@ snapshots:
 
   '@ai-matrx/print@0.8.12(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@ai-matrx/content-ir': 0.19.6
+      '@ai-matrx/content-ir': 0.19.7
       '@ai-matrx/kit': 0.16.7(react@19.3.0)
       '@radix-ui/react-dialog': 1.1.23(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       bidi-js: 1.1.0
@@ -21826,18 +21826,18 @@ snapshots:
       micromark-util-character: 2.1.1
       micromark-util-sanitize-uri: 2.0.1
       micromark-util-symbol: 2.0.1
-      micromark-util-types: 2.0.2
+      micromark-util-types: 2.0.3
 
   micromark-extension-gfm-footnote@2.1.0:
     dependencies:
       devlop: 1.1.0
-      micromark-core-commonmark: 2.0.3
-      micromark-factory-space: 2.0.1
+      micromark-core-commonmark: 2.0.4
+      micromark-factory-space: 2.1.0
       micromark-util-character: 2.1.1
       micromark-util-normalize-identifier: 2.0.1
       micromark-util-sanitize-uri: 2.0.1
       micromark-util-symbol: 2.0.1
-      micromark-util-types: 2.0.2
+      micromark-util-types: 2.0.3
 
   micromark-extension-gfm-strikethrough@2.1.0:
     dependencies:
@@ -21846,27 +21846,27 @@ snapshots:
       micromark-util-classify-character: 2.0.1
       micromark-util-resolve-all: 2.0.1
       micromark-util-symbol: 2.0.1
-      micromark-util-types: 2.0.2
+      micromark-util-types: 2.0.3
 
   micromark-extension-gfm-table@2.1.2:
     dependencies:
       devlop: 1.1.0
-      micromark-factory-space: 2.0.1
+      micromark-factory-space: 2.1.0
       micromark-util-character: 2.1.1
       micromark-util-symbol: 2.0.1
-      micromark-util-types: 2.0.2
+      micromark-util-types: 2.0.3
 
   micromark-extension-gfm-tagfilter@2.0.0:
     dependencies:
-      micromark-util-types: 2.0.2
+      micromark-util-types: 2.0.3
 
   micromark-extension-gfm-task-list-item@2.1.0:
     dependencies:
       devlop: 1.1.0
-      micromark-factory-space: 2.0.1
+      micromark-factory-space: 2.1.0
       micromark-util-character: 2.1.1
       micromark-util-symbol: 2.0.1
-      micromark-util-types: 2.0.2
+      micromark-util-types: 2.0.3
 
   micromark-extension-gfm@3.0.0:
     dependencies:
@@ -21877,7 +21877,7 @@ snapshots:
       micromark-extension-gfm-tagfilter: 2.0.0
       micromark-extension-gfm-task-list-item: 2.1.0
       micromark-util-combine-extensions: 2.0.1
-      micromark-util-types: 2.0.2
+      micromark-util-types: 2.0.3
 
   micromark-extension-math@3.1.0:
     dependencies:
@@ -21944,7 +21944,7 @@ snapshots:
   micromark-util-combine-extensions@2.0.1:
     dependencies:
       micromark-util-chunked: 2.0.1
-      micromark-util-types: 2.0.2
+      micromark-util-types: 2.0.3
 
   micromark-util-decode-numeric-character-reference@2.0.2:
     dependencies:
