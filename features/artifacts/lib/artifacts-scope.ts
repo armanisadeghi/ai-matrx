@@ -42,24 +42,25 @@ export function buildArtifactListScope(input: {
   visible: CxArtifactRecord[];
   fetchStatus: string;
   fetchError: string | null;
-  openCanvasItemId: string | null;
 }): SurfaceScopePayload {
-  const loaded =
-    input.fetchStatus === "succeeded" || input.fetchStatus === "failed";
+  // Only a SUCCESSFUL load may report a count or rows: a failed load is not
+  // "loaded, and empty", and says so through artifacts_load_status alone.
+  const loaded = input.fetchStatus === "succeeded";
   const rows = input.visible.map(toArtifactListRow);
   return createArtifactsScope({
     artifact_type_filter:
       input.typeFilter === "all" ? undefined : input.typeFilter,
     artifact_status_filter:
       input.statusFilter === "all" ? undefined : input.statusFilter,
-    artifact_search_query: input.search.trim() || undefined,
+    // Untrimmed: the page filters on the raw text, so a search of spaces
+    // (which empties the list) must show up as a search.
+    artifact_search_query: input.search.length > 0 ? input.search : undefined,
     visible_artifact_count: loaded ? rows.length : undefined,
     visible_artifacts: loaded ? rows : undefined,
     artifacts_load_status: {
       status: input.fetchStatus,
       error: input.fetchError,
     },
-    open_canvas_item_id: input.openCanvasItemId ?? undefined,
   });
 }
 

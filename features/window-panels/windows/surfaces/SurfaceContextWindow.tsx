@@ -43,6 +43,15 @@ function hasValue(value: unknown): boolean {
   return true;
 }
 
+/**
+ * Present but empty (`[]`, `{}`, `""`). A surface emits these on purpose to say
+ * "loaded, and there is nothing" — which must never read as "not supplied"
+ * (an omitted key). They still do not count toward "supplied".
+ */
+function isPresentEmpty(value: unknown): boolean {
+  return value !== undefined && value !== null && !hasValue(value);
+}
+
 function displayValue(value: unknown): string {
   if (value == null) return "";
   if (typeof value === "string") return value;
@@ -413,6 +422,7 @@ export default function SurfaceContextWindow({
                 </div>
                 {section.items.map((item) => {
                   const present = hasValue(live.scope[item.key]);
+                  const presentEmpty = isPresentEmpty(live.scope[item.key]);
                   const required = item.declaration?.alwaysAvailable === true;
                   return (
                     <button
@@ -428,13 +438,22 @@ export default function SurfaceContextWindow({
                       )}
                     >
                       <span
+                        title={
+                          present
+                            ? "Supplied"
+                            : presentEmpty
+                              ? "Supplied, empty"
+                              : "Not supplied"
+                        }
                         className={cn(
                           "mt-1 h-2 w-2 shrink-0 rounded-full",
                           present
                             ? "bg-emerald-500"
-                            : required
-                              ? "bg-destructive"
-                              : "bg-muted-foreground/30",
+                            : presentEmpty
+                              ? "border border-emerald-500 bg-transparent"
+                              : required
+                                ? "bg-destructive"
+                                : "bg-muted-foreground/30",
                         )}
                       />
                       <span className="min-w-0 flex-1">
@@ -669,10 +688,18 @@ export default function SurfaceContextWindow({
             )}
           </div>
           <div className="min-h-0 flex-1 overflow-auto bg-muted/15 p-4">
-            {hasValue(selectedRaw) ? (
+            {hasValue(selectedRaw) || isPresentEmpty(selectedRaw) ? (
+              <>
+              {isPresentEmpty(selectedRaw) && (
+                <p className="mb-2 text-xs text-muted-foreground">
+                  Supplied, empty — the page provided this value and it has
+                  nothing in it right now (not the same as not supplied).
+                </p>
+              )}
               <pre className="min-h-full whitespace-pre-wrap break-words rounded-lg border border-border bg-card p-4 font-mono text-xs leading-relaxed shadow-sm">
                 {selectedDisplay}
               </pre>
+              </>
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
                 <Braces className="h-10 w-10 text-muted-foreground/20" />

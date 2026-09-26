@@ -17,10 +17,22 @@
  * identified by its id. `artifact_external_url` is the page's own durable
  * public address (an HTML page's live site), not a signed asset link.
  *
- * Documented exclusions: the list's row-action affordances (open / edit /
- * archive / delete) are actions, not values; the side canvas's own content is
- * the canvas pane's, and only its identity (`open_canvas_item_id`) is emitted
- * here.
+ * Documented exclusions and known gaps:
+ * - The list's row actions (open / edit / archive / delete) are actions, not values.
+ * - The side canvas (a row click opens it at `?open=`) mounts its OWN surface
+ *   runtime, which replaces this one in the Agents chrome while it is open —
+ *   the platform's one-winner model. So nothing about the canvas is declared
+ *   here: a value that can only exist while another surface is winning could
+ *   never be observed.
+ * - PLATFORM GAP: `MatrxDataTable` applies its per-column filters and sort
+ *   internally and reports neither the resulting rows nor its query state to
+ *   the host. `visible_artifacts` / `visible_artifact_count` therefore reflect
+ *   the page's own type/status/search filters, not a column filter or sort a
+ *   user applied in the table header. The class fix belongs in the table
+ *   (a processed-rows callback), not in each list surface.
+ * - The access-gate screen distinguishes "no access" from "not found" and
+ *   shows the owner; the gate resolves that itself, so this surface reports
+ *   only artifact_load_state = "gate".
  *
  * Curated groups (band 0-899):
  *   listing    What the artifact list is showing
@@ -120,7 +132,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "visible_artifact_count",
     label: "Visible artifact count",
     description:
-      "How many artifacts the list shows after its filters. 0 when loaded and nothing matches. Absent until the list has loaded, and on the detail route.",
+      "How many artifacts match the page's type, status and search filters. 0 when loaded and nothing matches. Absent until the list has loaded successfully (a failed load reports only artifacts_load_status), and on the detail route. Does NOT reflect a filter applied from a table column header (a limitation of the shared data table).",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 4,
@@ -131,7 +143,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "visible_artifacts",
     label: "Visible artifacts",
     description:
-      "The rows the list shows, newest first, as { id, title, type, status, description, updated_at, conversation_id }. [] when loaded and nothing matches; absent until the list has loaded, and on the detail route. Bindable-only because a large library makes it big.",
+      "The rows the list shows, newest first, as { id, title, type, status, description, updated_at, conversation_id }. [] when loaded and nothing matches; absent until the list has loaded successfully, and on the detail route. Filtered by the page's type/status/search only and always newest first: the table's own per-column filters and sort are not reflected. Bindable-only because a large library makes it big.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 6000,
@@ -148,17 +160,6 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 60,
     sortOrder: 140,
-    group: "listing",
-  },
-  {
-    name: "open_canvas_item_id",
-    label: "Canvas item open beside the list",
-    description:
-      "canvas_items id of the artifact open in the side canvas on the list route (the ?open= address). Absent when the canvas is closed, the item was never saved, or on the detail route.",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 36,
-    sortOrder: 150,
     group: "listing",
   },
 
@@ -390,7 +391,7 @@ export const artifactsManifest: SurfaceManifest = {
   surfaceName: ARTIFACTS_SURFACE_NAME,
   readiness: "partial",
   readinessNote:
-    "Emitters wired 2026-09-25 on both routes (CmsArtifactList, CmsArtifactDetail) through features/artifacts/lib/artifacts-scope.ts, each inside the canonical NonEditableContextMenu; completeness pass redone from the components (vocabulary 11 -> 26 own values). Verified live in the Surface Context window: list 3/31 at the default view (4/31 with a search, filters appear when set), detail 14/31 on a data-table artifact including content from the preview, access-gate id reports artifact_load_state only; no undeclared keys; menu shows the Artifacts label. Not verified: no outside-helper binding has been exercised (non-matching-name + Matrx-vs-matrix), and no independent surface-check run.",
+    "Emitters wired 2026-09-25 on both routes (CmsArtifactList, CmsArtifactDetail) through features/artifacts/lib/artifacts-scope.ts, each inside the canonical NonEditableContextMenu; completeness pass redone from the components (vocabulary 11 -> 26 own values). Verified live in the Surface Context window: list 3/30 at the default view (4/30 with a search, filters appear when set), detail 14/30 on a data-table artifact including content from the preview, access-gate id reports artifact_load_state only; no undeclared keys; menu shows the Artifacts label. Independent review 2026-09-25 confirmed the above and found gaps, now fixed or documented: failed load no longer reports 0; whitespace search is reported; the unobservable canvas value was removed. Not verified: the table's own column filters/sort are not reflected (platform gap in MatrxDataTable, see header); gate reason (denied vs missing) not emitted; no outside-helper binding exercised (non-matching-name + Matrx-vs-matrix).",
   label: "Artifacts",
   urlPattern: "/artifacts",
   intro: `<surface_intro>
@@ -417,7 +418,6 @@ export function createArtifactsScope(values: {
   visible_artifact_count?: number;
   visible_artifacts?: ArtifactListRow[];
   artifacts_load_status?: { status: string; error: string | null };
-  open_canvas_item_id?: string;
   artifact_id?: string;
   artifact_load_state?: "loading" | "ready" | "canvas_item" | "gate";
   artifact_title?: string;
