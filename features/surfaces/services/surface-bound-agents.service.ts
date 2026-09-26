@@ -14,6 +14,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { DEFAULT_AGENT_CATALOG_LABELS } from "@ai-matrx/agents/catalog";
+import { adminDoorOpen } from "@/lib/api/adminDoor";
 
 export interface SurfaceBoundAgentEntry {
   agentId: string;
@@ -31,10 +32,11 @@ export interface SurfaceBoundAgentEntry {
 export interface SurfaceBoundAgentSection {
   /**
    * Stable section id for UI layout:
-   * `public` | `mine` | `shared` | `org:<uuid>`
+   * `public` | `mine` | `shared` | `org:<uuid>` — or `users` on the admin
+   * seat, which has no "mine" / "shared with me".
    */
-  key: "public" | "mine" | "shared" | `org:${string}`;
-  /** Display label, e.g. "Public", "Mine", org name, "Shared with me". */
+  key: "public" | "mine" | "shared" | "users" | `org:${string}`;
+  /** Display label, e.g. "Public", org name, "Users" — or the person seat's own words. */
   label: string;
   /** Stable sort key — lower renders first. */
   sortOrder: number;
@@ -419,11 +421,23 @@ function bucketBindingRows(
     });
   }
 
+  // THE ADMIN SEAT (Arman, 2026-09-26: "No one acts as themselves in admin"):
+  // inside the admin section there is no "Mine" and no "Shared with me" —
+  // every person-owned binding is one platform section, "Users".
+  if (adminDoorOpen()) {
+    const users = dedupeAgents([...mine, ...shared]);
+    mine.length = 0;
+    shared.length = 0;
+    if (users.length > 0) {
+      sections.push({ key: "users", label: "Users", sortOrder: 20, agents: users });
+    }
+  }
+
   const mineDeduped = dedupeAgents(mine);
   if (mineDeduped.length > 0) {
     sections.push({
       key: "mine",
-      label: "Mine",
+      label: "Mine", // personal-seat-ok: user pages only; the admin seat folds this into "Users" above
       sortOrder: 20,
       agents: mineDeduped,
     });

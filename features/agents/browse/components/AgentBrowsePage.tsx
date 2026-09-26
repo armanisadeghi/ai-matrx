@@ -36,6 +36,7 @@ import {
   AGENT_BROWSE_SURFACE_ADMIN,
 } from "../surface";
 import { AGENT_LIST_SCOPES, AGENT_LIST_SCOPES_ADMIN } from "../types";
+import { ADMIN_LIST_SCOPES } from "@/lib/list-scope/types";
 import type { AgentBrowseRow } from "../types";
 import { ClassicViewNotice } from "./ClassicViewNotice";
 
@@ -93,7 +94,16 @@ export function AgentBrowsePage({
   return (
     <EntityListPage
       config={agentListConfig}
-      scopes={isAdmin ? AGENT_LIST_SCOPES_ADMIN : AGENT_LIST_SCOPES}
+      // THE SCOPE COMES FROM THE PAGE (Arman, 2026-09-26: "No one acts as
+      // themselves in admin"): the admin route declares the PLATFORM scopes —
+      // System / Organizations / Users / All — never Mine / My Orgs / Shared.
+      scopes={
+        systemAdmin
+          ? ADMIN_LIST_SCOPES
+          : isAdmin
+            ? AGENT_LIST_SCOPES_ADMIN
+            : AGENT_LIST_SCOPES
+      }
       defaultScope={systemAdmin ? { kind: "system" } : undefined}
       clearsShellHeader={!systemAdmin}
       surface={

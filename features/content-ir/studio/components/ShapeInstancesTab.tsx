@@ -53,6 +53,7 @@ import {
   type KindInstanceListEntry,
 } from "@/features/content-ir/studio/instance-service";
 import { resolveListScope, type ListScopeWord } from "@/lib/list-scope";
+import { adminDoorOpen } from "@/lib/api/adminDoor";
 import { shapeTestHref } from "@/features/content-ir/studio/constants";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
@@ -156,7 +157,14 @@ export default function ShapeInstancesTab({
   // could read the whole time. `null` means "whatever the registry says";
   // clicking the toggle pins an explicit scope, which is always one click away
   // and never blocked.
-  const [scope, setScope] = useState<ListScopeWord | null>(null);
+  // THE ADMIN SEAT (Arman, 2026-09-26: "No one acts as themselves in admin"):
+  // inside the admin section there is no "Mine" — the list is every instance
+  // the platform holds (the unfiltered read; RLS on the admin lane is the
+  // whole platform), and the toggle is absent. The PAGE decides.
+  const [adminSeat] = useState(() => adminDoorOpen());
+  const [scope, setScope] = useState<ListScopeWord | null>(() =>
+    adminSeat ? "organization" : null,
+  );
   const [resolvedScope, setResolvedScope] = useState<ListScopeWord | null>(null);
 
   useEffect(() => {
@@ -435,7 +443,11 @@ export default function ShapeInstancesTab({
         <section className="min-w-0">
           <div className="mb-2 flex items-center gap-2">
             <span className="text-sm font-semibold text-foreground">
-              {effectiveScope === "mine" ? "My instances" : "Instances"}
+              {adminSeat
+                ? "All instances"
+                : effectiveScope === "mine"
+                  ? "My instances"
+                  : "Instances"}
             </span>
             <span className="text-xs text-muted-foreground">
               {entries.length}
@@ -444,7 +456,7 @@ export default function ShapeInstancesTab({
                 registry says, and the other scope is ONE CLICK away. The
                 control is absent until the registry has answered rather than
                 rendering a lie about which scope is active. */}
-            {effectiveScope !== null && (
+            {effectiveScope !== null && !adminSeat && (
               <div
                 className="flex items-center gap-0.5 rounded-md border border-border p-0.5"
                 role="group"
@@ -462,7 +474,7 @@ export default function ShapeInstancesTab({
                         : "rounded px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                     }
                   >
-                    {option === "mine" ? "Mine" : "Organization"}
+                    {option === "mine" ? "Mine" : "Organization"}{/* personal-seat-ok: absent on the admin seat (adminSeat above) */}
                   </button>
                 ))}
               </div>
