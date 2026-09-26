@@ -264,6 +264,14 @@ ONE component with three mounts.
   (`features/dashboard/components/DashboardClient.tsx`), on the Person record through
   `PersonUpcomingCard.tsx` (`features/crm/components/record/PartyRecordPage.tsx`), and as the
   `googleAgendaWindow` panel, which wraps it `variant="bare"` and holds no calendar logic.
+- `SelectedCalendarReview.tsx` + `selectedCalendarService.ts` — the internal-review tab in that
+  same Calendar window. It requires an explicit connected account and calendar before either
+  provider call, sends the selected organization/account/calendar to the generated
+  `/google-sync/calendar/discover` and `/selected-events` contracts, and persists nothing. A
+  private event (`detail_visible: false`) renders only **Busy** and its time; source account,
+  calendar, organizer, attendees/RSVP, meeting link, and timezone render only when Google made
+  them visible. A server refusal remains visible with the existing account-specific Reconnect
+  door; the tab never asks for consent or claims meeting preparation.
 - `CalendarEventSections.tsx` — the detail's attendees section, the read-only section, the
   Reconnect action (F-59/N11 — the Google connect window IN PLACE, plus the one honest line about
   why re-picking means nothing for a meeting), and (F-52)
@@ -414,6 +422,13 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 - The frontend and backend canonical scope registries must remain aligned with `common-docs/projects/google-oauth-verification/PLAN.md`.
 
 ## Change log
+
+- 2026-09-26 — Added the internal selected-calendar review tab beside the existing Agenda in the
+  Calendar window. Reviewers explicitly choose an account, discover its calendars, select one,
+  then read the server-bounded window without saving events or changing Google. The adapter uses
+  generated OpenAPI shapes plus runtime validation; malformed provider data is an error, never a
+  false successful review. Busy redaction is rendering-tested and the transport contract is
+  tested for exact organization, account, calendar, and endpoint values.
 
 - `2026-09-19` — **The agenda says when the ORGANIZATION read failed, instead of
   holding its skeleton forever (R37, the fourth state).** `useAgenda` forwarded

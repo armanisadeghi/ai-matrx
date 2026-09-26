@@ -5,6 +5,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { SelectedCalendarEventRow } from "./SelectedCalendarReview";
 import type { SelectedEvent } from "./selectedCalendarService";
 
+const ORGANIZER = "organizer@example.com";
+
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
@@ -26,7 +28,7 @@ const event: SelectedEvent = {
   ends_at: "2026-09-26T17:00:00Z",
   time_zone: "America/Los_Angeles",
   status: "confirmed",
-  organizer_email: "organizer@example.com",
+  organizer_email: ORGANIZER,
   attendees: [{ email: "person@example.com", responseStatus: "accepted" }],
   meeting_url: "https://meet.google.com/abc-defg-hij",
   updated_at: null,
@@ -54,7 +56,7 @@ describe("SelectedCalendarEventRow", () => {
     act(() => root.render(<SelectedCalendarEventRow event={event} />));
     expect(host.textContent).toContain("Busy");
     expect(host.textContent).not.toContain(event.title);
-    expect(host.textContent).not.toContain(event.organizer_email!);
+    expect(host.textContent).not.toContain(ORGANIZER);
     expect(host.textContent).not.toContain("person@example.com");
     expect(host.querySelector("a")).toBeNull();
   });
