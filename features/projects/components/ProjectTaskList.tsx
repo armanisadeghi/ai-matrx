@@ -58,6 +58,7 @@ import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorW
 import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
 import { isDateOnlyOverdue } from "@/utils/dateOnly";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const isDone = (t: DatabaseTask) => t.status === "completed";
 const isOverdue = (t: DatabaseTask) =>
@@ -76,6 +77,7 @@ export function ProjectTaskList({
   const [tasks, setTasks] = React.useState<DatabaseTask[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<unknown>(null);
   const [reloadTick, setReloadTick] = React.useState(0);
   const [busyId, setBusyId] = React.useState<string | null>(null);
   // `?done=1` opens with the Done group already expanded. A COUNT IS A DOOR:
@@ -111,10 +113,14 @@ export function ProjectTaskList({
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const rows = await getProjectTasks(projectId);
-      if (!cancelled) {
-        setTasks(rows);
-        setLoading(false);
+      setLoadError(null);
+      try {
+        const rows = await getProjectTasks(projectId);
+        if (!cancelled) setTasks(rows);
+      } catch (err) {
+        if (!cancelled) setLoadError(err ?? new Error("The read failed"));
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     })();
     return () => {
@@ -227,6 +233,10 @@ export function ProjectTaskList({
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
+  }
+
+  if (loadError && tasks.length === 0) {
+    return <ReadFailure error={loadError} what="this project's tasks" onRetry={reload} />;
   }
 
   const renderRows = (list: DatabaseTask[]) =>

@@ -213,24 +213,18 @@ export async function getUserTasks(scope?: ListScopeWord): Promise<DatabaseTask[
 export async function getProjectTasks(
   projectId: string,
 ): Promise<DatabaseTask[]> {
-  try {
-    const { data, error } = await workspaceDb(supabase)
-      .from("tasks")
-      .select("*")
-      .is("deleted_at", null)
-      .eq("project_id", projectId)
-      .order("created_at", { ascending: false });
+  // A failed read THROWS: `[]` would read as "this project has no tasks" in
+  // every list, picker and export built on it.
+  const { data, error } = await workspaceDb(supabase)
+    .from("tasks")
+    .select("*")
+    .is("deleted_at", null)
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching project tasks:", error.message);
-      return [];
-    }
+  if (error) throw new Error(`Couldn't load this project's tasks: ${error.message}`);
 
-    return data || [];
-  } catch (error) {
-    console.error("Exception fetching project tasks:", error);
-    return [];
-  }
+  return data || [];
 }
 
 /**

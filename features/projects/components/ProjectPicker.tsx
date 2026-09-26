@@ -27,6 +27,7 @@ import {
   PopoverContent,
 } from "@ai-matrx/design-system";
 import { useUserProjects } from "@/features/projects/hooks";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useOpenCreateProjectWindow } from "@/features/overlays/openers/createProjectWindow";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -56,7 +57,7 @@ export function ProjectPicker({
   organizationId,
   showCreateButton = false,
 }: ProjectPickerProps) {
-  const { projects, loading, refresh } = useUserProjects();
+  const { projects, loading, error: projectsError, refresh } = useUserProjects();
   const openCreateProject = useOpenCreateProjectWindow();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -161,6 +162,8 @@ export function ProjectPicker({
               <p className="px-3 py-2 text-xs text-muted-foreground">
                 Loading projects…
               </p>
+            ) : projectsError && availableProjects.length === 0 ? (
+              <ReadFailure error={projectsError} what="your projects" onRetry={refresh} className="m-2" />
             ) : filtered.length === 0 ? (
               <p className="px-3 py-2 text-xs text-muted-foreground">
                 {organizationId === null

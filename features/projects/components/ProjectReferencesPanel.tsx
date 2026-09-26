@@ -237,7 +237,7 @@ export function ProjectReferencesPanel({
           <p className="text-xs text-muted-foreground mt-0.5">
             Every table in the database that references this project.
           </p>
-          {!loading && references.length > 0 && (
+          {!loading && !error && references.length > 0 && (
             <p className="text-xs text-muted-foreground/80 mt-0.5">
               {populatedCount > 0
                 ? `${totalItems.toLocaleString()} item${totalItems !== 1 ? "s" : ""} across ${populatedCount} entity type${populatedCount !== 1 ? "s" : ""}`
