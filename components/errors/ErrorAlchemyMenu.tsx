@@ -295,7 +295,13 @@ function useInlinePlacement(
   useLayoutEffect(() => {
     const marker = markerRef.current;
     if (!marker || typeof getComputedStyle !== "function") return;
-    if (state.target && !state.target.isConnected) {
+    // The target LEFT the tree the marker lives in (React replaced that block).
+    // Never `isConnected`: a tree mounted in a detached container (a jsdom
+    // harness, an offscreen render) is never connected, so that test answered
+    // "gone" for a target that was right there and the effect set it, cleared
+    // it, and set it again until React stopped the loop (CloudImagesTab,
+    // "Maximum update depth exceeded", 2026-09-26).
+    if (state.target && state.target.getRootNode() !== marker.getRootNode()) {
       setState({ target: null, truncated: false });
       return;
     }
