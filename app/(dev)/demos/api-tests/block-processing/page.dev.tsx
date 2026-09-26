@@ -8,7 +8,7 @@ export const metadata = createRouteMetadata("/demos/api-tests/block-processing",
   description: "Interactive demo: Api Tests Block Processing. AI Matrx demo route.",
 });
 
-const BlockProcessingClient = lazy(() => import('./BlockProcessingClient'));
+const BlockProcessingClient = lazy(() => import('@/components/markdown-studio/lab/ServerEventInspector'));
 
 export default function BlockProcessingPage() {
     return (
