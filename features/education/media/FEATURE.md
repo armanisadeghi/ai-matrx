@@ -145,6 +145,13 @@ is the defect, not a deferral.
 
 ## Change log
 
+- **2026-09-26** — **Mind-map node panel and Sources panel were blocking layers, fixed.** Both
+  used `@ai-matrx/design-system` `Sheet`, which (unlike `Dialog`) defaults `modal` to `true` —
+  they rendered `aria-modal="true"`, trapping focus and dimming the page. `MindMapView`'s
+  node-click panel and `MindMapDetail`'s Sources panel now use `MatrxDynamicPanelHost` (docked,
+  non-blocking), the same fix pattern as the `/education/classes` class page. Live-verified:
+  clicking a node updates the docked panel's content while the diagram stays clickable
+  underneath; the map still renders and regenerates normally.
 - **2026-09-14** — **Audio Study now uses the canonical podcast transport.** `AudioPlayback`
   resolves both new `audio_file_id` studies and recovered `episode_id` studies through the media
   client before mounting `PodcastAudioPlayer`, so listeners receive the same waveform, speed,

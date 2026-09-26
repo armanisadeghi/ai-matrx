@@ -14,10 +14,17 @@ Additive study reader at `/education/study-guides` and `/education/study-guides/
 
 ## Checks
 
-Focused tests cover missing organization, partial-save retry, annotation ownership, paginated association results beyond 1,000 rows, later-page failure, and strict note-read errors. Local browser acceptance remains pending: independent panel scrolling/resizing/collapse, heading navigation, selection actions, annotation reload, and the flashcard window. On 2026-09-20 the managed preview timed out, its restart hit the 300-second no-progress watchdog, and the next start was refused because a different checkout held the machine-wide preview slot. Source review and automated tests do not replace this acceptance pass.
+Focused tests cover missing organization, partial-save retry, annotation ownership, paginated association results beyond 1,000 rows, later-page failure, and strict note-read errors. **2026-09-26 local browser acceptance pass (education fleet):** guide picker popover (search + select), heading/outline nav, Key Terms tab, and the flashcard-link panel (typing, attach, detach) verified live against real `admin@admin.com` data. Still not exercised in this pass: independent panel scrolling/resizing/collapse and annotation reload/selection actions on desktop, and the mobile Drawer presentation.
 
 ## Changelog
 
+- 2026-09-26: Local browser acceptance pass done (education fleet). `StudyFlashcardLinks`'s
+  "Manage linked flashcards" hosted its `UniversalAssociationPicker` in a blocking
+  `@ai-matrx/design-system` `Sheet` (default `modal=true`) — the same untypeable-picker class as
+  the `/education/classes` fix. Converted to `MatrxDynamicPanelHost` (docked, non-blocking);
+  live-verified typing into the picker's search box and attach/detach both land. List, new/topic
+  generation, detail reader, outline nav, Key Terms tab, and the guide picker popover all verified
+  live with real data (own admin@admin.com notes).
 - 2026-09-25: Adopted the canonical annotation sidecar (RC-B11); removed the transitional Notes annotation adapter and its tests.
 
 - 2026-09-20: Added the Education study reader alongside Notes, using existing content and association primitives.
