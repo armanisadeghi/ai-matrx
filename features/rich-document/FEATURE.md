@@ -40,7 +40,7 @@
 
 **Action registry**
 
-- `features/rich-document/actions/registry.ts` — module-scope `Map<string, RichDocumentAction>`. Populated by handler modules at import time (Phase 1).
+- `features/rich-document/actions/provider.ts` — the rich-document PROVIDER of the Alchemy action registry (ALC-15; the old `actions/registry.ts` is deleted). Handler modules call `registerAction` at import time; a duplicate id is refused; eligibility is the package's one pass (`computeEligibility`).
 
 ---
 

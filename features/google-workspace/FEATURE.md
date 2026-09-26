@@ -131,7 +131,7 @@ Two wires carry it almost everywhere:
 
 | Wire                                                                         | Reaches                                                                                                                                      |
 | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `components/content-actions/contentActionRegistry.ts` → "Send to Google Doc" | every `ContentActionBar` / `RichDocument` surface: the agent working-document panel, research outputs, transcripts, the Masterwork Record, … |
+| rich-document `send-google-doc` (the one action registry; `contentActionRegistry` was deleted in ALC-15) | every `RichDocumentActions` / `RichDocument` surface: the agent working-document panel, research outputs, transcripts, the Masterwork Record, … |
 | `components/agent-copy/ExportMenu.tsx` → optional `sheetRows`                | every surface that already exports rows. `MatrxDataTable` passes it, so every canonical list page can send the view it is showing.           |
 
 The Sheet's columns come from `rowsToRecordsFromColumns`, which shares the CSV
@@ -1105,7 +1105,7 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
   `export/sendToGoogle.ts` exports (new result variant `reason: "proposed"`,
   carrying the queue href), and the four surfaces downstream of those —
   `components/agent-copy/useExportActions.ts`,
-  `components/content-actions/contentActionRegistry.ts`,
+  `components/content-actions/contentActionRegistry.ts` (since deleted, ALC-15: its "Send to Google Doc" is rich-document `send-google-doc`),
   `components/mardown-display/tables/SendToGoogleSheetButton.tsx` and the message
   options registry. `features/approvals/mode.ts`, the dead client-side mode
   ladder, was deleted in the same commit: the server resolves the mode. Guard:

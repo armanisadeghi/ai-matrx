@@ -20,86 +20,37 @@
 
 99% of surface renders never open the menu. v2 still paid for the whole menu (MenuBody + react-icons + modals) on every mount; a static import of it once ballooned the prod build 15→24 min. v3 splits the cost by _engagement_:
 
-| Tier                        | File                               | Loads                                                                                                                                                                                                                                                      |
-| --------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **T0 — shell**              | `ContextMenuV3.tsx`                | every mount. Radix trigger, selection capture, floating-icon button, footer. **Imports nothing heavy.**                                                                                                                                                    |
-| **T1 — MenuContent**        | `components/MenuContent.tsx`       | first open only (`dynamic({ssr:false})`) on a desktop viewport. Pure presentation over the shared engine; react-icons + the whole tree.                                                                                                                    |
-| **T1m — MobileMenuContent** | `components/MobileMenuContent.tsx` | first open on a **mobile** viewport (`dynamic`). T1's twin: a 70dvh bottom-sheet drill-down over the SAME engine.                                                                                                                                          |
-| **T1e — engine**            | `hooks/useContextMenuActions.ts`   | with either renderer. ALL behavior, exactly once: the single deduped fetch, scope resolution, rich-document actions, every handler (clipboard / history / compare / launch / attach / share / admin). **Never add a handler to a renderer — add it here.** |
-| **OVL — overlays**          | OverlayController                  | on click. Find/Replace, Attach To, Share, Inspect, Compare, Quick Actions — **dispatched, never rendered by the menu.**                                                                                                                                    |
+| Tier | File | Loads |
+| --- | --- | --- |
+| **T0 — shell** | `ContextMenuV3.tsx` | every mount. Gesture trigger (right-click, long-press, ⌘/Ctrl+Shift+K via one page listener), selection capture, WidgetHandle, floating-icon button. **Imports nothing heavy.** |
+| **T1 + T1e — engine + renderer** | `components/AlchemyMenuContent.tsx` | first open only (`dynamic({ssr:false})`), one boundary for every gesture. Runs `useContextMenuActions` + `buildMenuModel`, registers the model as this instance's provider of the Alchemy action registry (`alchemy-provider.ts`), and renders the PACKAGE layout: `ContextMenuPanel` (desktop, ⋯), `ActionSheet` (phone), `ActionPalette` (palette) — `@ai-matrx/alchemy/react/*` (ALC-15 S3). |
+| **OVL — overlays** | OverlayController | on click. Find/Replace, Attach To, Share, Inspect, Compare, Quick Actions — **dispatched, never rendered by the menu.** |
 
-**Invariant:** `MenuContent` / `MobileMenuContent` are reachable ONLY via the shell's `dynamic()` import. Static-importing either is an eslint error (`contextMenuV3StaticImportBan`). The shell carries zero data, zero submenus, zero modal code.
+**Invariant:** `AlchemyMenuContent` is reachable ONLY via the shell's `dynamic()` import. Static-importing it is an eslint error (`contextMenuV3StaticImportBan`). The shell carries zero data, zero submenus, zero modal code. The old `MenuContent` / `MobileMenuContent` renderers and `model/layouts.ts` were deleted in ALC-15 S3.
 
-## Mobile — the 70dvh bottom-sheet drill-down
+## Mobile — the package bottom sheet
 
-On a mobile viewport (`useIsMobile()`) the shell renders a vaul `Drawer` instead of the Radix menus — a constant **70dvh** bottom sheet, one internal scroll area, iPhone-style **multi-tier drill-down** (tap a category → slide to its list with a Back button; the sheet height never changes). Triggered by **long-press** (480 ms, cancels on drag so text-selection/scroll still work) or the **floating selection icon**. `MobileMenuContent` reuses the EXACT same data hooks (`useUnifiedAgentContextMenu`, `useSurfaceBoundAgents`) and `useAgentLauncher`, resolving the SAME scope — so the agent menus (My / Org / System / Default) and the values that reach a launched agent are identical to desktop. Navigation is **path-based** (a list of submenu ids re-resolved against live `rootNodes` each render), so a page updates as agents finish loading or debug toggles, never a stale snapshot.
+On a mobile viewport (`useIsMobile()`) the gesture (long-press 480 ms, cancelled on drag; a right-click; the floating selection icon; a bar's ⋯) opens the Alchemy package's **bottom sheet** — the SAME model as desktop (`sheet(model)`), drill-down by path, so mobile can never drift from desktop (the old mobile renderer built its own list; ALC-15 ruling 6). Its verb strip is icon-only; a greyed verb explains itself on tap (touch has no tooltip).
 
-Both renderers consume ONE `useContextMenuActions` hook (extracted 2026-07-21), so a launch-path or handler change lands once. `MobileMenuContent` still arranges its own root list instead of consuming `buildMenuModel`; **every core verb id minted by the model must also exist in the mobile renderer**, enforced by `components/MobileMenuContent.core-verbs.test.ts`. Without that guard, desktop gained Insert reference, Speak, and Listen while mobile silently omitted them. **Nested desktop triggers let Radix mark the gesture handled, then outer shells yield to `defaultPrevented`, so the innermost eligible menu owns the gesture** (for example, a code-tree row inside its explorer pane). Mobile long-press triggers still stop propagation so only the innermost timer runs.
-
-**Both shells slot one child and wrap many.** Desktop (`ContextMenuTrigger asChild`) and mobile (`Slot`) merge onto a single non-Fragment child, composing its handlers and ref. A multi-child/Fragment payload first gets one `display:contents` `<div>` so Radix never receives an invalid multi-child slot. **A wrapper element is not always legal:** `display:contents` costs no layout box but is still a `<div>` in the DOM, and when the child is a `<tr>` (the canonical list shell wraps every row) that div sits between `<tbody>` and `<tr>` — which no element may do. The fallback is safe by construction: a Fragment or multi-child payload can never be a lone `<tr>`. Nested mobile triggers stop propagation after the native-text-menu guard, so the innermost row owns the long-press/contextmenu gesture instead of opening its surrounding list menu too.
+**The shell slots one child and wraps many.** Desktop and mobile both merge onto a single non-Fragment child via `Slot`, composing its handlers and ref. A multi-child/Fragment payload first gets one `display:contents` `<div>` so Radix never receives an invalid multi-child slot. **A wrapper element is not always legal:** `display:contents` costs no layout box but is still a `<div>` in the DOM, and when the child is a `<tr>` (the canonical list shell wraps every row) that div sits between `<tbody>` and `<tr>` — which no element may do. The fallback is safe by construction: a Fragment or multi-child payload can never be a lone `<tr>`. Nested mobile triggers stop propagation after the native-text-menu guard, so the innermost row owns the long-press/contextmenu gesture instead of opening its surrounding list menu too.
 
 ## Inline agent editing — the WidgetHandle wire
 
 Every **editable** surface gets streaming in-place agent edits with ZERO extra wiring. The shell (`ContextMenuV3.tsx`) derives a `WidgetHandle` from the SAME callbacks the surface already passes (`buildEditableWidgetHandle` in `utils/widget-handle.ts`: `onTextReplace` / `onTextInsertBefore|After` / `getTextarea`, reading current content from the field or `getApplicationScope().content`), registers it via `useOptionalWidgetHandle` (the null-tolerant variant of the canonical `useWidgetHandle`), and both launch handlers pass `runtime.widgetHandleId`. An agent launched from the menu can then stream `widget_text_replace / patch / insert_before|after / prepend / append` client-tool calls that edit the surface live (the same channel `SmartCodeEditor` uses — see `features/agents/types/widget-handle.types.ts` + `CLIENT_SIDE_TOOLS.md`).
 
-Rules: the handle registration lives in the SHELL, not MenuContent — MenuContent unmounts on close and the handle must outlive the menu for the whole stream. Only serviceable methods exist on the handle (`deriveClientToolsFromHandle` advertises exactly that subset per turn). Read-only surfaces register nothing. There is NO text-protocol (XML) edit path — the tool channel is the only one. Live proof: `/demos/context-menu/inline-edit`.
+Rules: the handle registration lives in the SHELL, not AlchemyMenuContent — that unmounts on close and the handle must outlive the menu for the whole stream. Only serviceable methods exist on the handle (`deriveClientToolsFromHandle` advertises exactly that subset per turn). Read-only surfaces register nothing. There is NO text-protocol (XML) edit path — the tool channel is the only one. Live proof: `/demos/context-menu/inline-edit`.
 
 ---
 
-## Layouts & density — ONE model, three arrangements
+## Layouts & density — ONE model, every layout (the Alchemy package)
 
-The desktop renderer is model-driven (2026-08-22): `useContextMenuActions` →
-**`model/menu-model.ts`** (`buildMenuModel` — WHAT exists, one declarative
-`MenuNode` tree with every handler already bound) → **`model/layouts.ts`**
-(`arrangeMenu` — HOW it is laid out) → `MenuContent.tsx` (draws nodes at a
-density). Behaviour never changes between layouts; a layout is a pure function
-over the model, never a second renderer.
+`useContextMenuActions` → `model/menu-model.ts` (`buildMenuModel` — WHAT exists, handlers bound) → `alchemy-provider.ts` (the model as registry `Action`s) → the package's model and pure layouts (`@ai-matrx/alchemy/menu`: `context` classic · tiered · command, `bar`, `overflow`, `sheet`, `palette`) → the package renderers. **Platform default is `command`** (Arman, 2026-08-22); `menuDensity` = `comfortable` | `compact`.
 
-| `menuLayout` | What the user sees                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `classic`    | The historical flat column — every section top-level (~30 rows on a full note).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `tiered`     | Compact one-line header (hover shows the text) + icon strip (Copy · Cut · Paste · Undo · Redo · Find). **Every other Classic row stays, by its own name:** Copy as / JSON / Select All · AI Actions / Agents / Content Blocks / My Items / Org Items · the surface's section folded under the surface's label (notes → "Note") · **History** (Undo / Redo / View History / Compare — the ONE approved grouping) · Export / Convert / Attach To / Share · Chat / Quick Actions · Save / Delete · Admin Tools. Greyed when unavailable exactly like Classic — never hidden. |
-| `command`    | Tiered + a type-to-filter box. Typing flattens EVERY leaf in the model (nested agents, shortcuts, content blocks, note ops, export formats…) into one ranked list with its breadcrumb; ↵ runs the first match. Printable keys typed while an item has focus are routed back into the box.                                                                                                                                                                                                                                                                                 |
+🚨 **THE LOSSLESS LAW (Arman, 2026-08-22), as the package enforces it:** every layout shows the identical row set AND the identical headings (`leafIds`; headings test in the package). A section folds only under its OWN declared name ("Save as", "Copy as", "History", a surface section's label); a group with no name is never folded and never gets a coined heading. Only the universal verb strip greys an unavailable verb, with its sentence (R1); every other unavailable row is absent.
 
-**Platform default is `command`** (Arman, 2026-08-22 — chosen on `/demos/context-menu/layouts`). `menuDensity` = `comfortable` (default) | `compact` (tighter rows / icons /
-labels). Both knobs are props on the wrappers (`ContextMenuV3CoreProps`); the
-defaults are CAPS constants in `types.ts` — flipping the platform default is a
-one-line change, and a per-user preference (settings-system) is the natural
-next step once a layout is chosen.
+**THE PRIMARY SECTION** (Arman, 2026-09-17): a pane with several targets (a grid's cell / row / column) marks the clicked target's section `primary`; every layout draws it first, inline, heading kept. Reference: `UserTableViewer` + `features/data-tables/grid-context-menu.ts`.
 
-Both density presets keep every menu item, checkbox, and submenu trigger at a
-44px minimum below `lg`; the compact/comfortable desktop row density resumes at
-`lg`. A tablet that still uses the desktop renderer is a touch surface, not an
-exception to the platform touch floor.
-
-🚨 **THE LOSSLESS LAW (Arman, 2026-08-22):** no layout may hide, rename, drop, or fold a Classic row under a coined heading. A new arrangement may only _group_ rows Arman has explicitly approved (today: History). Disabled = greyed, like Classic. Verify any new layout by diffing its leaf set against Classic's — it must be identical.
-
-**Surface sections stay "minor local changes":** in tiered/command a section
-with ≤ `INLINE_SURFACE_MAX` (3) rows renders inline; a longer one folds into
-ONE submenu named by its `label` with its optional `icon` (notes → "Note" with
-`StickyNote`). The surface never knows which layout is active.
-
-**THE PRIMARY SECTION — the thing the user right-clicked (Arman, 2026-09-17:
-"make it clear what section of actions are specific to the cell, the table or
-something else").** A pane with several targets (a grid's cell / row / column)
-marks the clicked target's section `primary: true` (`ContextMenuExtraSection`).
-Every layout then renders it FIRST — above the universal rows — INLINE, with
-its heading, never folded, however long; in tiered/command the pane's other
-sections follow it directly (inline ones keep their headings), so the pane's
-hierarchy reads as one block and the platform's rows as another. Lossless: it
-only MOVES rows (`layout-parity.test.ts` § primary section). The host decides
-which sections exist for a target — a column header has no cell and no row, so
-the grid offers neither there; that is not a layout hiding rows. A surface with
-one identity never needs `primary`. Reference: `UserTableViewer`
-(`gridMenuTargetKind`) + `features/data-tables/grid-context-menu.ts`.
-
-**Overflow law:** the desktop menus cap at the Radix available height and
-scroll (`max-h-[var(--radix-context-menu-content-available-height)] overflow-y-auto`) —
-the classic /notes menu measured 1136px in a 900px viewport and its tail was
-unreachable.
-
-Side-by-side proving ground: `/demos/context-menu/layouts` (the exact /notes
-menu, four ways).
+**Overflow law:** menus cap at the available height and scroll.
 
 ## The surface submenu — the page's identity, last in every menu
 
@@ -335,7 +286,7 @@ The menu is a thin consumer of existing platform systems. **Do not recreate any 
 
 ## A double fetch is impossible
 
-The unified-menu thunk (`fetchUnifiedMenu`) has a Redux `scopeLoaded` condition + a module-level inflight map. Bound agents (`fetchSurfaceBoundAgentsGrouped`) gained the same result-cache + inflight map. `MenuContent` remounts on every open and fires both — the guards collapse repeated opens to one network call per session. Routes that pre-fetch agents/shortcuts are a no-op for the menu.
+The unified-menu thunk (`fetchUnifiedMenu`) has a Redux `scopeLoaded` condition + a module-level inflight map. Bound agents (`fetchSurfaceBoundAgentsGrouped`) gained the same result-cache + inflight map. `AlchemyMenuContent` remounts on every open and fires both — the guards collapse repeated opens to one network call per session. Routes that pre-fetch agents/shortcuts are a no-op for the menu.
 
 ---
 

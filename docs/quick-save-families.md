@@ -14,7 +14,7 @@ Not about browsing workspaces (`QuickDataWindow`, `QuickTasksWindow`, `QuickNote
 | **Core** | Presentational UI — editor, picker, save controls, post-save actions | `*Core.tsx` |
 | **Shell** | Chrome only — overlay, dialog, drawer, window, popover | `*Overlay.tsx`, `*Dialog.tsx`, `*Window.tsx` |
 | **Opener** | `openOverlay({ overlayId, data })` + typed hook | `features/overlays/openers/*.tsx` |
-| **Trigger** | Button, menu item, bridge | `ContentActionBar`, message menus, `*Button.tsx` |
+| **Trigger** | Button, menu item, bridge | the one action registry (`RichDocumentActions` / right-click / ⋯), `*Button.tsx` |
 
 **Shared post-save primitive (reuse, not a family):** [`OpenDestinationDialog`](../features/page-extraction/data-review/OpenDestinationDialog.tsx) — Here / new tab / window after create.
 
@@ -33,7 +33,7 @@ Curated guides that already exist. Prefer **skills** for step-by-step; use **FEA
 | **Overlay system skill** | [`.claude/skills/overlay-system/SKILL.md`](../.claude/skills/overlay-system/SKILL.md) | Register overlay ID, write opener, wire `OverlayController`, debug render. **Start here.** |
 | **RichDocument actions skill** | [`.claude/skills/rich-document-actions/SKILL.md`](../.claude/skills/rich-document-actions/SKILL.md) | Add a “Save to X” menu action via `registerAction` + `openOverlay` (or stage Redux bridge like tasks). |
 | **Overlays FEATURE** | [`features/overlays/FEATURE.md`](../features/overlays/FEATURE.md) | Deep reference for overlay slice, catalogue, callback groups. |
-| **ContentActionBar registry** | [`components/content-actions/contentActionRegistry.ts`](../components/content-actions/contentActionRegistry.ts) | Copy an existing trigger (`save-notes`, `save-to-code`, `add-to-tasks`). |
+| **The one action registry** (ALC-15; `ContentActionBar` and `contentActionRegistry` were deleted) | [`features/rich-document/actions/handlers/save.ts`](../features/rich-document/actions/handlers/save.ts) | Copy an existing action (`save-to-notes`, `save-to-code`, `save-to-task`). |
 | **Code-splitting skill** | [`.claude/skills/code-splitting/SKILL.md`](../.claude/skills/code-splitting/SKILL.md) | Lazy-load Core/Shell in `OverlayController` via `lazyOverlay` — never stack `dynamic()` boundaries. |
 
 ### Domain-specific (partial families today)
@@ -56,7 +56,7 @@ Curated guides that already exist. Prefer **skills** for step-by-step; use **FEA
 1. **Hook + Core** — UI-agnostic save logic; shell does not own form state.
 2. **Shell** — Dialog/Drawer (mobile) or `WindowPanel` or `FullScreenOverlay`; all render the same Core.
 3. **Register** — `catalogue.ts` entry (its key is the `OverlayId`) → component + opener → gated block in `OverlayController.tsx`.
-4. **Trigger** — `contentActionRegistry` item and/or `registerAction` in rich-document handlers.
+4. **Trigger** — `registerAction` in the rich-document handlers (the one action registry; every bar, ⋯, right-click and palette shows it).
 5. **Post-save** — reuse [`OpenDestinationDialog`](../features/page-extraction/data-review/OpenDestinationDialog.tsx) where navigation choice matters.
 
 ### Stale or narrow — use with caution
@@ -81,7 +81,7 @@ Curated guides that already exist. Prefer **skills** for step-by-step; use **FEA
 | Shells | [`QuickNoteSaveOverlay.tsx`](../features/notes/actions/quick-save/QuickNoteSaveOverlay.tsx) (prod), [`QuickNoteSaveWindow.tsx`](../features/window-panels/windows/notes/QuickNoteSaveWindow.tsx), [`QuickNoteSaveDialog.tsx`](../features/notes/actions/quick-save/QuickNoteSaveDialog.tsx), [`QuickNoteSavePopover.tsx`](../features/notes/actions/quick-save/QuickNoteSavePopover.tsx) |
 | Overlay IDs | `saveToNotes`, `saveToNotesFullscreen`, `quickNoteSaveWindow` |
 | Opener | [`saveToNotes.tsx`](../features/overlays/openers/saveToNotes.tsx) |
-| **Usage example** | [`contentActionRegistry.ts` → `save-notes`](../components/content-actions/contentActionRegistry.ts) (opens `saveToNotes`) |
+| **Usage example** | [`save.ts` → `save-to-notes`](../features/rich-document/actions/handlers/save.ts) (opens `saveToNotes`) |
 
 ### 2. Code
 
@@ -93,7 +93,7 @@ Curated guides that already exist. Prefer **skills** for step-by-step; use **FEA
 | Overlay ID | `saveToCode` |
 | Opener | [`saveToCode.tsx`](../features/overlays/openers/saveToCode.tsx) |
 | Trigger | [`SaveToCodeButton.tsx`](../features/code-files/actions/SaveToCodeButton.tsx) |
-| **Usage example** | [`contentActionRegistry.ts` → `save-to-code`](../components/content-actions/contentActionRegistry.ts) |
+| **Usage example** | [`save.ts` → `save-to-code`](../features/rich-document/actions/handlers/save.ts) |
 
 ### 3. Tasks
 
@@ -105,7 +105,7 @@ Curated guides that already exist. Prefer **skills** for step-by-step; use **FEA
 | Bridge | [`CreateTaskFromSourceDialog.tsx`](../features/tasks/widgets/CreateTaskFromSourceDialog.tsx) (stages `setPendingSource` → opens window) |
 | Overlay ID | `taskQuickCreateWindow` |
 | Opener | [`taskQuickCreateWindow.tsx`](../features/overlays/openers/taskQuickCreateWindow.tsx) |
-| **Usage example** | [`contentActionRegistry.ts` → `add-to-tasks`](../components/content-actions/contentActionRegistry.ts) |
+| **Usage example** | [`save.ts` → `save-to-task`](../features/rich-document/actions/handlers/save.ts) |
 
 ---
 
@@ -120,7 +120,7 @@ Curated guides that already exist. Prefer **skills** for step-by-step; use **FEA
 | **Projects** | Peek + task project picker only; no quick-save family | [`ProjectPeek.tsx`](../features/organizations/peek/kinds/ProjectPeek.tsx) |
 | **Agent shortcuts** | Hook + window; create-in-place, not content capture | [`useShortcutQuickCreate.ts`](../features/agent-shortcuts/hooks/useShortcutQuickCreate.ts), [`AgentShortcutQuickCreateWindow.tsx`](../features/window-panels/windows/agents/AgentShortcutQuickCreateWindow.tsx) |
 
-**One-click shortcuts (no modal):** Notes [`SaveToScratchButton`](../features/notes/actions/SaveToScratchButton.tsx), Code scratch in [`contentActionRegistry.ts`](../components/content-actions/contentActionRegistry.ts).
+**One-click shortcuts (no modal):** Notes [`SaveToScratchButton`](../features/notes/actions/SaveToScratchButton.tsx), Code scratch in [`save.ts` → `save-code-to-scratch`](../features/rich-document/actions/handlers/save.ts).
 
 **Generic save orchestration:** [`rich-document/actions/handlers/save.ts`](../features/rich-document/actions/handlers/save.ts) dispatches to notes/code/task scratch flows.
 
@@ -142,7 +142,7 @@ Curated guides that already exist. Prefer **skills** for step-by-step; use **FEA
 - [ ] **Artifact / Canvas** — capture block or canvas state to artifact store
 - [ ] **Research document** — save synthesis / source bundle to research pipeline
 - [ ] **PDF derivative** — save extraction/redaction result as new PDF doc
-- [ ] **Generic file** — extend `save-file` in ContentActionBar to full Core+Hook (name, folder, format)
+- [ ] **Generic file** — extend `save-as-file` (rich-document `handlers/save.ts`) to full Core+Hook (name, folder, format)
 - [ ] **Scope / context item** — capture value into a scope dimension
 - [ ] **Dictionary term** — quick-add term + pronunciation from selection
 - [ ] **Podcast episode** — capture script/notes into episode draft
