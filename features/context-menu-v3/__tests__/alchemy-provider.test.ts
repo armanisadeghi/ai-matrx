@@ -139,6 +139,8 @@ describe("round 2 findings", () => {
     const actions = contextMenuActionsFromModel(current, "m1", { nextModel: next });
     const lib = actions.find((a) => a.id === "cm:placement:ai-action");
     expect(lib?.eligible(t(false))).toEqual({ status: "available" });
+    // …and says so: the row renders "Loading…" in every layout until it fills in.
+    expect(lib?.pending?.(t(false))).toBe(true);
     const rows = lib?.expand?.(t(false), new AbortController().signal);
     current = libraries(false);
     wake();

@@ -128,6 +128,8 @@ function toAction(node: MenuNode, place: Placement, instanceId: string, opts: Pr
     const inserts = INSERTS_CONTENT.has(node.id);
     return {
       ...base,
+      // Still loading at the source: every layout shows "Loading…" on the row.
+      pending: () => Boolean(node.loading),
       eligible: (t) => {
         if (!own(t)) return absent;
         if (inserts && t.readOnly) return absent;
