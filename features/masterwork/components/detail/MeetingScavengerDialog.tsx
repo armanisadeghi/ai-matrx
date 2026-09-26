@@ -45,6 +45,7 @@ import {
   DurableRunStopped,
 } from "@/lib/durable-run/DurableRunStop";
 import { durableRunDialogOnOpenChange } from "@/lib/durable-run/durableRunDialogClose";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /**
  * "The Meeting Scavenger" — the `meeting_scavenger` Distillation Approach.
@@ -152,7 +153,6 @@ import { createSittingStore, type SittingBase } from "../../sitting/sitting";
 import { useDialogSitting } from "../../sitting/useDialogSitting";
 import { SittingResumed } from "../../sitting/SittingResumed";
 import { IngestOutcome, RunStages } from "../RunStages";
-import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 interface MeetingSitting extends SittingBase {
   text: string;
