@@ -1,3 +1,4 @@
+-- chair-step: DELETES four platform.shareable_resource_registry rows this lane inserted minutes earlier (T-9b), each with zero grants; nothing else.
 -- lane: access-ladder T-9
 -- Access ladder T-9d (2026-09-26): take back four share-registry rows T-9b added too early.
 -- T-9b registered every personal-variant table whose rows have a uuid id so its owner could share a
