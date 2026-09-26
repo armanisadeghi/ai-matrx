@@ -3729,15 +3729,15 @@ const UserTableViewer = ({
     toolbarSlot === undefined ? node : toolbarSlot ? createPortal(node, toolbarSlot) : null;
   /**
    * THE SORT, AS ONE COMPACT CONTROL in the page's row — records-ui's `SortStateControl` (the
-   * grid's own), never a copy. It ships in the same records-ui release that hands the Sheet its
-   * `toolbarSlot`, so it is read off the package by name and is simply absent before it.
+   * grid's own), never a copy. It ships in records-ui 0.86.0, the release that hands the Sheet its
+   * `toolbarSlot` (installed; the page's row exists only with it).
    */
-  const SortControl = (RecordsUi as { SortStateControl?: React.ComponentType<Record<string, unknown>> }).SortStateControl;
+  const SortControl = RecordsUi.SortStateControl;
   const sortName = sortField
     ? fields.find((f) => f.field_name === sortField)?.display_name || sortField
     : null;
   const arrow = sortDirection === "asc" ? "↑" : "↓";
-  const sheetSortState: React.ReactNode = !inPageRow || !SortControl
+  const sheetSortState: React.ReactNode = !inPageRow
     ? null
     : rowOrderingEnabled
       ? !sortField
