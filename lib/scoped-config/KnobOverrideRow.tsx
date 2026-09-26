@@ -663,12 +663,9 @@ export function KnobOverrideRow(props: {
                     size="default"
                     className="w-full min-w-0"
                   >
-                    <SelectValue
-                      placeholder={formatKnobValue(
-                        knob.effective_value,
-                        knob.unit,
-                      )}
-                    />
+                    {/* The value in force, in the registry's WORDS ("Ask"), never
+                        its stored token ("ask") — same reader as every sentence. */}
+                    <SelectValue placeholder={displayValue(knob.effective_value)} />
                   </SelectTrigger>
                   <SelectContent>
                     {enumOptions.map((option) => (

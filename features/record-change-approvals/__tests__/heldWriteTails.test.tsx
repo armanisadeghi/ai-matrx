@@ -154,6 +154,8 @@ describe("1 — the approval setting is a choice, not a text box", () => {
     const picker = host.querySelector('[role="combobox"]');
     expect(picker).not.toBeNull();
     expect(picker!.getAttribute("aria-label")).toBe(knob.label);
+    // The closed select names the value in force in the registry's words, never the token.
+    expect(picker!.textContent?.trim()).toBe("Ask");
   });
 });
 
