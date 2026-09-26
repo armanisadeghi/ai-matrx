@@ -492,7 +492,10 @@ export function NoteVersionHistoryPanel({
 
         <TabsContent
           value="history"
-          className="mt-0 min-h-0 flex-1 overflow-y-auto"
+          className={cn(
+            "mt-0 min-h-0 flex-1 overflow-y-auto",
+            !isEmbedded && "scroll-page-end-space",
+          )}
         >
           <NoteHistoryTimeline
             versions={versions}

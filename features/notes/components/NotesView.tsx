@@ -623,7 +623,7 @@ export function NotesView({
             <NoteContentEditor noteId={activeTabId} />
           )
         ) : (
-          <FolderQuickPick instanceId={instanceId} />
+          <FolderQuickPick instanceId={instanceId} className="scroll-page-end-space" />
         )}
 
         {/* Layer 2: chrome (folder/context/tags) + stats footer (metrics only) */}

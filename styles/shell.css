@@ -1705,13 +1705,34 @@ body[style*="pointer-events: none"] .shell-header .pointer-events-auto {
 .education-scroll-boundary > .overflow-y-auto,
 .education-scroll-boundary > .overflow-auto {
   padding-block-end: max(
-    clamp(10rem, 22dvh, 15rem),
+    20rem,
+    40dvh,
     calc(var(--keyboard-inset-height, 0px) + 6rem)
   );
   scroll-padding-bottom: max(
-    clamp(10rem, 22dvh, 15rem),
+    20rem,
+    40dvh,
     calc(var(--keyboard-inset-height, 0px) + 6rem)
   );
+}
+
+/* The Education boundary is itself full-height. Padding on that fixed-height
+   box can be consumed before an overflowing article ends, so place its runway
+   after the article as a real flow item. */
+.education-scroll-boundary {
+  padding-block-end: 0;
+}
+
+.education-scroll-boundary::after {
+  content: "";
+  display: block;
+  flex: none;
+  block-size: max(
+    20rem,
+    40dvh,
+    calc(var(--keyboard-inset-height, 0px) + 6rem)
+  );
+  pointer-events: none;
 }
 
 /* Education contains both natural-height pages and full-height pages whose
@@ -1724,6 +1745,13 @@ body[style*="pointer-events: none"] .shell-header .pointer-events-auto {
 .education-scroll-boundary:has(.scroll-page-end-space) {
   padding-block-end: 0;
   scroll-padding-bottom: 0;
+}
+
+.education-scroll-boundary:has(> .overflow-y-auto)::after,
+.education-scroll-boundary:has(> .overflow-auto)::after,
+.education-scroll-boundary:has(> .h-full.overflow-hidden)::after,
+.education-scroll-boundary:has(.scroll-page-end-space)::after {
+  content: none;
 }
 
 /* Fixed ambient composers sit above keyboards that overlay rather than resize
