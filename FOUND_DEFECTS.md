@@ -28,13 +28,16 @@ Measured live 2026-09-26 01:5x UTC: `tool.mcp_user_conn` reads `certified = true
 FAILs (`base_org_not_null`, `base_org_fk`, `base_metadata`, `trg_touch_row`, `policies_canonical` — three
 bespoke vault policies). `scraper.scrape_parsed_page` likewise reads certified while live
 verify WARNs `legacy_is_public` (the column itself is D263). The canonical-first triage law
-(`common-docs/policies/canonical-first-triage.md`) and ratchet 2 (`scripts/canonical-ratchets`) both
-read the cache, so a regressed certified table is bucketed as clean.
+(`common-docs/policies/canonical-first-triage.md`) tells its reader to run `audit.refresh()` first, but
+ratchet 2 (`scripts/canonical-ratchets`), the admin canonicalization view, and any reader that skips that
+line see the cache, so a regressed certified table reads as clean.
 **Fix:** refresh `audit.refresh()` on a schedule (needs Arman's approval by name and interval) or after
 every DDL event on a registered table, or stamp `refreshed_at` and make readers refuse a stale cache;
 then finish `tool.mcp_user_conn` (org NOT NULL + FKs + `iam.apply_rls`) and `history.row_versions`. A census of certified-but-
 failing tables via `canonical_certify_ok` over all of `audit.summary` hits the statement timeout —
-run it per schema.
+run it per schema. The steward ran `audit.refresh()` at 2026-09-26 ~02:40 UTC (it completed): all three
+tables now read `certified = false`, so today's cache is honest — the defect is that it goes stale again
+with the next DDL and nothing refreshes it.
 
 ### D349 — Global `:has()` rules turn ordinary DOM changes into whole-document restyles (2026-09-25)
 
