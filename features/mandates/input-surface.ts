@@ -182,6 +182,16 @@ export function describeInputSurfaceFailure(
  * own override's Holder is the one that informs the form). */
 export function useMandateInputSurface(
   mandateKey: string | null,
+  /**
+   * The organization the page is ABOUT (an organization's own mandate page).
+   * Access follows the object: that page answers for its organization's rung
+   * whatever workspace the person has active, exactly as its run does
+   * (`runMandateTry`'s `scopeOverrides`). Omitted, the active workspace is the
+   * org rung, as before. (2026-09-26: an org page's Test tab said "no rung
+   * answers this job — this request names no organization" for a job its own
+   * organization had bound, because only the run carried the org.)
+   */
+  pageOrganizationId: string | null = null,
 ): MandateInputSurfaceState {
   const dispatch = useAppDispatch();
   // THE HYDRATION RACE — the same one the served run form hit: callApi refuses
@@ -209,6 +219,9 @@ export function useMandateInputSurface(
           path: "/mandates/{mandate_key}/input-surface",
           method: "GET",
           pathParams: { mandate_key: mandateKey },
+          ...(pageOrganizationId
+            ? { scopeOverrides: { organization_id: pageOrganizationId } }
+            : {}),
         }),
       );
       if (!live) return;
@@ -231,7 +244,7 @@ export function useMandateInputSurface(
     return () => {
       live = false;
     };
-  }, [dispatch, mandateKey, organizationId]);
+  }, [dispatch, mandateKey, organizationId, pageOrganizationId]);
 
   return state;
 }

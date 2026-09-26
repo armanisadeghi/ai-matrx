@@ -172,7 +172,7 @@ export function MandateTryPanel({
   organizationId: string | null;
 }) {
   const dispatch = useAppDispatch();
-  const surfaceState = useMandateInputSurface(mandateKey);
+  const surfaceState = useMandateInputSurface(mandateKey, organizationId);
   const surface = surfaceState.status === "ready" ? surfaceState.surface : null;
   const fields = surface?.inputs ?? [];
   const [mode, setMode] = useState<CandidateMode>("current");
