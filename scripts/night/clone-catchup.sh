@@ -176,6 +176,21 @@ direct_one() {  # direct_one <source> <filename> <repo> <relpath> direct|record
     "$PSQL" "${CLONE_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c "$ledger"
     return $?
   fi
+  # 🚨 AN AUTOCOMMIT FILE IS CARRIED IN AUTOCOMMIT (lane PROVISION-BATCH-FIX, 2026-09-26).
+  # `CREATE INDEX CONCURRENTLY` / `REINDEX ... CONCURRENTLY` cannot run inside a transaction
+  # block, so production ran those files statement by statement; wrapping them in `psql -1`
+  # refused both (storereadperf3_*, trash2_*: "cannot run inside a transaction block") and the
+  # clone stayed a file behind every night. Such a file runs WITHOUT -1, each statement its own
+  # transaction (no `set local` — it means nothing outside one, and the clone's pooler runs in
+  # transaction mode, so a session SET would not follow the next statement), and its ledger row
+  # is written only after every statement succeeded. Detection reads
+  # statements, not comments: a line that is not a `--` comment and carries CONCURRENTLY.
+  if grep -vE '^[[:space:]]*--' "$repo/$relpath" | grep -qiE '(^|[^a-z_])concurrently([^a-z_]|$)'; then
+    say "applying (direct, AUTOCOMMIT — the file carries CONCURRENTLY, as production ran it): $relpath"
+    "$PSQL" "${CLONE_ARGS[@]}" -q -v ON_ERROR_STOP=1 -f "$repo/$relpath" || return $?
+    "$PSQL" "${CLONE_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c "$ledger"
+    return $?
+  fi
   say "applying (direct, as production did): $relpath"
   { print -r -- "set local lock_timeout = '30s';"; cat "$repo/$relpath"; print; print -r -- "$ledger"; } > "$WORK/direct.sql"
   "$PSQL" "${CLONE_ARGS[@]}" -q -1 -v ON_ERROR_STOP=1 -f "$WORK/direct.sql"
