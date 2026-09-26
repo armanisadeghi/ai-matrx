@@ -6,6 +6,8 @@ import {
   flattenActions,
   foldCount,
   iconOnlyLabel,
+  OverflowMenuItem,
+  overflowItemLabel,
   toIconOnly,
 } from "./route-header-layout";
 
@@ -162,5 +164,41 @@ describe("toIconOnly — the caption survives as name and tooltip", () => {
     const node = <Tap label="All schedules" />;
     expect(iconOnlyLabel(node)).toBeNull();
     expect(toIconOnly(node)).toBe(node);
+  });
+});
+
+describe("overflowItemLabel / OverflowMenuItem — a control is absent or honest", () => {
+  function IconButton(_: { icon?: unknown; ariaLabel?: string; tooltip?: string | false; label?: string }) {
+    return <button>icon</button>;
+  }
+
+  it("prefers ariaLabel, falls back to a string tooltip, then to label", () => {
+    expect(overflowItemLabel(<IconButton ariaLabel="Refresh" />)).toBe("Refresh");
+    expect(overflowItemLabel(<IconButton tooltip="Matrix Alchemy" />)).toBe("Matrix Alchemy");
+    expect(overflowItemLabel(<IconButton label="All schedules" />)).toBe("All schedules");
+    // tooltip={false} opts a tooltip out — it is not a name.
+    expect(overflowItemLabel(<IconButton tooltip={false} label="All schedules" />)).toBe(
+      "All schedules",
+    );
+    expect(overflowItemLabel(<IconButton />)).toBeNull();
+  });
+
+  it("renders the icon action AND its name as visible text — the schedules header's two near-identical copy icons (2026-09-25)", () => {
+    const listCopy = { key: "list-copy", node: <IconButton ariaLabel="Copy list" /> };
+    const alchemy = { key: "alchemy", node: <IconButton ariaLabel="Matrix Alchemy" /> };
+    const listHtml = renderToStaticMarkup(<OverflowMenuItem action={listCopy} />);
+    const alchemyHtml = renderToStaticMarkup(<OverflowMenuItem action={alchemy} />);
+    expect(listHtml).toContain("Copy list");
+    expect(listHtml).toContain("<button>icon</button>");
+    expect(alchemyHtml).toContain("Matrix Alchemy");
+    // The two menu items are no longer textually identical.
+    expect(listHtml).not.toBe(alchemyHtml);
+  });
+
+  it("renders icon-only, unchanged, when an action carries no name", () => {
+    const action = { key: "mystery", node: <IconButton /> };
+    const html = renderToStaticMarkup(<OverflowMenuItem action={action} />);
+    expect(html).toContain("<button>icon</button>");
+    expect(html).not.toContain("<span");
   });
 });

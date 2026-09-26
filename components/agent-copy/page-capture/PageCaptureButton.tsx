@@ -25,9 +25,17 @@ import { getActivePageCapture, usePageCaptureVersion } from "./usePageCapture";
 export function PageCaptureButton({
   size = "sm",
   className,
+  /**
+   * The caller's name for THIS button, read by RouteHeader's overflow strip
+   * (`overflowItemLabel` — see route-header-layout.tsx) so it never folds into an
+   * unlabeled icon beside another icon-only action. Not passed to the underlying
+   * menu; it exists purely so a header can name this control when it folds.
+   */
+  ariaLabel,
 }: {
   size?: "xs" | "icon" | "sm" | "toolbar";
   className?: string;
+  ariaLabel?: string;
 }) {
   const version = usePageCaptureVersion();
   const capture = getActivePageCapture(version);
@@ -39,7 +47,7 @@ export function PageCaptureButton({
     return c;
   };
   return (
-    <span data-page-capture={capture.kind} className={className}>
+    <span data-page-capture={capture.kind} data-page-capture-name={ariaLabel} className={className}>
       <CopyButtons
         size={size}
         label={capture.title}

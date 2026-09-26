@@ -88,7 +88,7 @@ export default function SchedulesPage() {
                 list menu above copies the list, and this one hands over the page (the
                 schedules, counts, error and recent requests). Before, it existed only
                 when the list was empty (the ALCHEMY-2 walk found it unreachable). */}
-            <PageCaptureButton size="icon" />
+            <PageCaptureButton size="icon" ariaLabel="Matrix Alchemy" />
             <RefreshCwTapButton
               ariaLabel="Refresh"
               onClick={() => refetch()}

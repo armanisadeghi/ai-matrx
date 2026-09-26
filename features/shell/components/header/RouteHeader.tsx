@@ -57,6 +57,7 @@ import {
   fitActions,
   flattenActions,
   iconOnlyLabel,
+  OverflowMenuItem,
   toIconOnly,
 } from "./route-header-layout";
 
@@ -264,9 +265,7 @@ export default function RouteHeader({
                   className="flex flex-wrap items-center justify-end"
                 >
                   {overflowActions.map((a) => (
-                    <div key={a.key} className="flex shrink-0 items-center">
-                      {a.node}
-                    </div>
+                    <OverflowMenuItem key={a.key} action={a} />
                   ))}
                 </div>
               </PopoverContent>

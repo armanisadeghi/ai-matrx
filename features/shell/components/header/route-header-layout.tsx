@@ -125,6 +125,53 @@ export function iconOnlyLabel(node: ReactNode): string | null {
   return label;
 }
 
+interface OverflowLabelProps {
+  ariaLabel?: unknown;
+  tooltip?: unknown;
+  label?: unknown;
+}
+
+/**
+ * An action's name for the overflow strip: its `ariaLabel`, else its `tooltip`
+ * (when it is a string — `tooltip={false}` opts out and is not a name), else its
+ * `label`. Two icon-only actions inside the same menu — e.g. a list's copy button
+ * and the page's Alchemy button — read identically at a glance (2026-09-25); this
+ * is what lets `OverflowMenuItem` print the name every item already carries.
+ */
+export function overflowItemLabel(node: ReactNode): string | null {
+  if (!isValidElement(node)) return null;
+  const { ariaLabel, tooltip, label } = node.props as OverflowLabelProps;
+  if (typeof ariaLabel === "string" && ariaLabel.trim() !== "") return ariaLabel;
+  if (typeof tooltip === "string" && tooltip.trim() !== "") return tooltip;
+  if (typeof label === "string" && label.trim() !== "") return label;
+  return null;
+}
+
+/**
+ * ONE overflow-strip item, for every RouteHeader consumer: the action, plus its
+ * name printed as text whenever `overflowItemLabel` finds one. A control is
+ * absent or honest — inside a menu, an icon alone is neither: two copy-shaped
+ * icons (a list's copy button, the page's Alchemy button) read identically at a
+ * glance (2026-09-25). The label is never invented; an action with none renders
+ * icon-only exactly as before.
+ */
+export function OverflowMenuItem({ action }: { action: FlatAction }) {
+  const label = overflowItemLabel(action.node);
+  return (
+    <div
+      data-route-header-overflow-item
+      className="flex shrink-0 items-center gap-1.5 px-1"
+    >
+      {action.node}
+      {label ? (
+        <span className="whitespace-nowrap text-xs text-muted-foreground">
+          {label}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 /**
  * The same action without its caption. The caption survives as the accessible name
  * and the tooltip, so an icon-only primary is never an unlabeled icon.
