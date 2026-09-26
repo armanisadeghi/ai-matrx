@@ -1,4 +1,3 @@
--- draft: rc-a5d-deep shortcut batch of the definer-door census; remove when rehearsed + suite green
 -- RC-A5d census, batch 5 (agent shortcuts) — A SHORTCUT IS LISTED BY ITS OWN ACCESS, NOT BY WHO IS IN ITS ORGANIZATION.
 -- Register row RC-A5d. Census: aidream db/tests/test_definer_doors_ask_each_record.py (backlog).
 --
