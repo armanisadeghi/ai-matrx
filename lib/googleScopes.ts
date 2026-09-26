@@ -24,6 +24,11 @@ export const GOOGLE_SCOPE = {
   contactsReadonly: "https://www.googleapis.com/auth/contacts.readonly",
   calendarEventsOwnedReadonly:
     "https://www.googleapis.com/auth/calendar.events.owned.readonly",
+  // Pending selected shared-calendar read grants. No consent flow requests these yet.
+  calendarListReadonly:
+    "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
+  calendarEventsReadonly:
+    "https://www.googleapis.com/auth/calendar.events.readonly",
   tasksReadonly: "https://www.googleapis.com/auth/tasks.readonly",
   tagManagerReadonly: "https://www.googleapis.com/auth/tagmanager.readonly",
   googleAds: "https://www.googleapis.com/auth/adwords",
