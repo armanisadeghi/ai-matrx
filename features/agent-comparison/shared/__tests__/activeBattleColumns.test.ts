@@ -40,6 +40,14 @@ function multiModeState(mountedMode: RootState["agentComparison"]["mountedMode"]
       ],
       activeSetId: "set-model",
     },
+    agentComparisonConversation: {
+      ...baseState.agentComparisonConversation,
+      source: { conversationId: "src-conv", title: "Source", updatedAt: "2026-09-26", agentId: null },
+      forks: [
+        { columnId: "fork-col", conversationId: "fork-conv", label: "Fork 1" },
+      ],
+      activeSetId: "set-conversation",
+    },
     agentComparisonVariations: {
       ...baseState.agentComparisonVariations,
       locked: { sourceAgentId: "agent-variations", agentVersion: "current" },
@@ -137,5 +145,30 @@ describe("selectMountedBattleSetId", () => {
 
   it("returns null when no mode is mounted", () => {
     expect(selectMountedBattleSetId(multiModeState(null))).toBeNull();
+  });
+});
+
+describe("conversation mode", () => {
+  it("returns the forks as columns and the conversation battle's set only when Conversation is mounted", () => {
+    const state = multiModeState("conversation");
+    const cols = selectActiveBattleColumns(state);
+    expect(cols).toEqual([
+      {
+        columnId: "fork-col",
+        conversationId: "fork-conv",
+        label: "Fork 1",
+        agentId: null,
+        agentVersion: null,
+        mode: "conversation",
+      },
+    ]);
+    expect(selectMountedBattleSetId(state)).toBe("set-conversation");
+  });
+
+  it("never leaks the forks into another mode", () => {
+    const state = multiModeState("settings");
+    expect(
+      selectActiveBattleColumns(state).some((c) => c.conversationId === "fork-conv"),
+    ).toBe(false);
   });
 });

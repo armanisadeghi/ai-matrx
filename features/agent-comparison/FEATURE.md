@@ -10,6 +10,12 @@ later review or judging.
 
 ## Conversation Battle
 
+State lives in the `agentComparisonConversation` slice (source, forks, saved battle). The battle is
+saved as soon as forks exist (`mode: "conversation"`, entries = the forks, `metadata.source` = the
+forked conversation) and reopens at `/agents/battle/conversation/<id>`; reopening loads each fork
+as it is now and never re-forks. It is a mounted mode, so the rank picker compares its forks. It has
+no Submit all (each fork sends its own turn), so the header omits Submit all and Blind test.
+
 `/agents/battle/conversation` starts from one existing conversation and creates
 each contender with the canonical server-backed conversation fork. The source
 conversation is never used as a battle column and remains untouched. Every fork
@@ -160,15 +166,10 @@ and Runs floating windows.
 
 ### Known gaps (2026-09-26)
 
-- **Conversation mode** keeps its forks in page state, never `mountedMode`: its rating bars show no
-  rank buttons and it has no saved-battle URL or battle-wide Alchemy.
 - **Attachments on a shared request are not saved** — `metadata.locked` holds message and variables
   only; the files live in each column's conversation history.
 - **Six near-copies of `LockedInputSection`** (one per locked mode) remain; consolidating them is
   a separate, state-sensitive change.
-- **"Prepare this page"** in the per-answer Alchemy menu is battle-aware only in Model mode (the
-  only registered surface); the header's battle-wide Alchemy covers every mode.
-- The agent picker trigger (`AgentListDropdown`, `@ai-matrx/agents`) renders an unnamed button.
 
 ### Save / Load
 - **First Submit all** creates the battle (automatic name `<agent> · <Mode> battle · <date>`) and the
@@ -228,6 +229,11 @@ attributable to this page in analytics.
 ---
 
 ## Change Log
+
+- 2026-09-26 — **Conversation mode joins the battle system:** slice, saved battle + URL, mounted
+  mode (fork ranking works), shared header without Submit all. **Every non-Model mode is the
+  `matrx-user/agent-battle` surface** (`BattleSurfaceRuntime`, scope = `buildBattleSnapshot`), so
+  "Prepare this page" and header agents see the battle. `BattleHeader` makes Submit all optional.
 
 - 2026-09-26 — **Every battle has a URL and one header.** All nine modes mount `BattleHeader` (name
   left, mode nav center, actions in "…", blind test, battle-wide Alchemy, Submit all); Conversation mode
