@@ -56,6 +56,8 @@ import { availableVoices } from "@/lib/cartesia/voices";
 import { LANGUAGE_OPTIONS } from "@/features/settings/agent-writable-settings";
 import { TTS_DEFAULT_SPEED } from "@/lib/cartesia/config";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { SettingDoor } from "@/features/settings/doors/SettingDoor";
+import { VOICE_SETTING_DOORS } from "@/features/settings/tabs/voices/voiceSettingDoors";
 
 const SUMMARY_STYLE_DEFAULT = "Extremely Concise Summary";
 
@@ -462,10 +464,10 @@ function ListenVoiceSettings() {
 
   return (
     <div className="h-full min-h-0 overflow-y-auto px-4 py-3">
-      <SettingsSection title="Listening voice">
+      <SettingsSection title="Read-aloud voice">
         <SettingsSelect
           label="Voice"
-          description="Used everywhere speech plays, app-wide."
+          description="Reads this panel, the speaker on chat replies, and spoken replies. Live voice conversation has its own voice."
           value={effectiveVoiceId}
           onValueChange={(v) => void update({ voice: v })}
           options={VOICE_OPTIONS}
@@ -498,10 +500,13 @@ function ListenVoiceSettings() {
       </SettingsSection>
 
       <div className="mt-3 flex items-center justify-between gap-3">
-        <p className="text-[11px] leading-snug text-muted-foreground">
-          Saved as your personal default automatically — it wins over your
-          organization and system defaults. Applies from the next playback.
-        </p>
+        <div className="min-w-0">
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            Saved as your personal default automatically — it wins over your
+            organization and system defaults. Applies from the next playback.
+          </p>
+          <SettingDoor target={VOICE_SETTING_DOORS.readAloud} label="All voices" />
+        </div>
         <button
           type="button"
           onClick={handlePreview}

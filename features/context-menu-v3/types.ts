@@ -349,6 +349,16 @@ export interface ContextMenuV3CoreProps {
 
   // ── Surface passthrough ─────────────────────────────────────────────────
   extraSections?: ContextMenuExtraSection[];
+  /**
+   * Per-target sections, asked on EVERY open path with the right-clicked
+   * element — for one menu serving many targets whose sections depend on what
+   * was aimed at (the canonical table's cell / row / column header / table).
+   * Drawn together with a table row's own descriptor sections, never instead
+   * of them; replaces `extraSections` for that open when it answers.
+   */
+  resolveExtraSectionsOnOpen?: (
+    target: HTMLElement | null,
+  ) => ContextMenuExtraSection[] | undefined;
 
   // ── History (surface-provided) ──────────────────────────────────────────
   onUndo?: () => void;

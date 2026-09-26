@@ -50,7 +50,6 @@ import PersonalConfigTab from "./tabs/PersonalConfigTab";
 import PlanUsageTab from "./tabs/PlanUsageTab";
 import AppearanceTab from "./tabs/AppearanceTab";
 import VoiceTab from "./tabs/VoiceTab";
-import TextToSpeechTab from "./tabs/TextToSpeechTab";
 import VoicesTab from "./tabs/VoicesTab";
 import DictionaryTab from "./tabs/DictionaryTab";
 import AssistantTab from "./tabs/AssistantTab";
@@ -481,15 +480,6 @@ export const settingsRegistry: SettingsTabDef[] = [
     parentId: "voice",
     description: "Microphone, wake word, and how the assistant listens.",
     component: VoiceTab,
-    persistence: "synced",
-  },
-  {
-    id: "voice.tts",
-    label: "Text-to-speech",
-    icon: Volume2,
-    parentId: "voice",
-    description: "Auto-play and how replies are prepared for reading aloud.",
-    component: TextToSpeechTab,
     persistence: "synced",
   },
   {

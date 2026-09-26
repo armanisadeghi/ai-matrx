@@ -54,7 +54,8 @@ export function useRecordStoreTableRealtime(
       { organization_id: organizationId, table_id: tableId },
       {
         records(ids) {
-          invalidateRecordStoreTable(tableId);
+          // A ROW moved: the table's metadata did not, so it is kept (DOOR-SPEED) — re-reading
+          // the declaration for every row notice made a second browser's redraw take seconds.
           if (ids === null) {
             onChangeRef.current({ kind: "DELETE", rowId: null, row: null });
             return;

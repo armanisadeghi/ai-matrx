@@ -11,7 +11,7 @@
 // lookup until someone listens — and a click that finds no bound agent says
 // so instead of doing nothing.
 
-import { AudioLines, Headphones, Loader2, Pause, Play, Volume2 } from "lucide-react";
+import { AudioLines, Headphones, Loader2, Pause, Play, Settings2, Volume2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { primeAudioOutput } from "@/features/audio/unlock";
 import { openListenSummaryWindowAction } from "@/features/overlays/openers/listenSummaryWindow";
@@ -224,5 +224,35 @@ registerAction({
     // Queue identity is the FULL content (so the toggle can find it); a
     // selection plays as its own utterance.
     speak({ text: selectedText(ctx) ?? contentForDestination(ctx), label: "Read aloud" });
+  },
+});
+
+// ── Voice settings — the door to the voice this button speaks in ─────────────
+// Read-aloud has one icon on the bar, so its settings door lives here in the
+// overflow/Listen menu, never as a second icon. It opens the Voices screen at
+// the exact row that governs read-aloud.
+
+registerAction({
+  id: "tts-voice-settings",
+  label: "Read-aloud voice settings",
+  icon: Settings2,
+  category: "listen",
+  supportedSources: "*",
+  renderSlot: "overflow",
+  order: 2,
+  visible: (ctx) => ctx.content.trim().length > 0,
+  run: async (ctx) => {
+    ctx.onClose();
+    const [{ openOverlay }, { VOICE_SETTING_DOORS }] = await Promise.all([
+      import("@/lib/redux/slices/overlaySlice"),
+      import("@/features/settings/tabs/voices/voiceSettingDoors"),
+    ]);
+    const door = VOICE_SETTING_DOORS.readAloud;
+    ctx.dispatch(
+      openOverlay({
+        overlayId: "userPreferencesWindow",
+        data: { initialTabId: door.tabId, initialControlId: door.controlId },
+      }),
+    );
   },
 });

@@ -120,7 +120,7 @@ export const SETTINGS_TAB_IDS: readonly string[] = [
   "voice.diagnostics",
   "voice.dictionary",
   "voice.input",
-  "voice.tts",
+  "voice.voices",
 ];
 
 /**

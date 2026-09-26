@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-26T05:05:44.125Z",
+  "generated_at": "2026-09-26T05:43:26.063Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -1591,6 +1591,18 @@
       "filename": "doorsonly_platform_route_manifest_is_never_client_written.sql",
       "checksum": "a5a55c38642eff9680a1248ce41f5bb1f53ce019670e6c2bb0b783378923d10c",
       "applied_at": "2026-09-21 18:36:00.019896+00"
+    },
+    "migrations/campaign/doorspeed_a_page_is_sorted_searched_and_counted_and_a_batch_is_one_transaction.sql": {
+      "source": "campaign",
+      "filename": "doorspeed_a_page_is_sorted_searched_and_counted_and_a_batch_is_one_transaction.sql",
+      "checksum": "c864104ad9845878ab43473911437de05e1223a24f750a4c9a66247377cc385e",
+      "applied_at": "2026-09-26 05:12:36.804375+00"
+    },
+    "migrations/campaign/doorspeed_the_two_doors_can_be_reached.sql": {
+      "source": "campaign",
+      "filename": "doorspeed_the_two_doors_can_be_reached.sql",
+      "checksum": "8802e07534843f0e6bb95d655416de20f076dd86e4561cc8795ee42e06c309ae",
+      "applied_at": "2026-09-26 05:12:36.804375+00"
     },
     "migrations/campaign/doorstwo_the_document_and_cadence_doors.sql": {
       "source": "matrx-frontend",

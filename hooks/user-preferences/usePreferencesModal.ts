@@ -42,7 +42,7 @@ const LEGACY_TAB_MAP: Record<PreferenceTab, string> = {
   prompts: "ai.prompts",
   messaging: "communication.messaging",
   voice: "voice.input",
-  textToSpeech: "voice.tts",
+  textToSpeech: "voice.voices",
   assistant: "ai.assistants",
   aiModels: "ai.models",
   email: "communication.email",

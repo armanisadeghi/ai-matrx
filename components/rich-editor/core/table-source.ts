@@ -183,7 +183,8 @@ export function respliceRow(segs: unknown[] | null, stored: unknown[] | null, te
   // be read as the edge. A leading pipe removes both doors at once.
   const needLead = !first;
   const needTrail = !closed && lastIndex >= 0 && (cells[lastIndex] ?? "").trim() === "";
-  if (needLead && cells[0] === "") cells[0] = " ";
+  // The added pipe is followed by one space of padding (`| - x`, never `|- x`).
+  if (needLead && !/^\s/.test(cells[0] ?? "")) cells[0] = ` ${cells[0] ?? ""}`;
   if (needTrail && cells[lastIndex] === "") cells[lastIndex] = " ";
   const edge = first ? [parts[0] ?? ""] : needLead ? [""] : [];
   const tail = closed ? [parts[parts.length - 1] ?? ""] : needTrail || cells.length > end - first ? [""] : [];

@@ -67,7 +67,7 @@ import {
   type VisualPlan,
 } from "../components/rich-editor/core/visual-document";
 import { planSave } from "../components/rich-editor/core/save-plan";
-import { rewriteTableSource, splitRowSegments } from "../components/rich-editor/core/table-source";
+import { rewriteTableSource, splitRowSegments, TableWriteRefused } from "../components/rich-editor/core/table-source";
 import { parseMarkdownTable } from "../components/mardown-display/blocks/table/parseMarkdownTable";
 import { oracleTableGrid } from "./lib/gfm-table-oracle";
 
@@ -218,7 +218,12 @@ function blockAround(lines: readonly string[], at: number): string {
  * the splitter under test): read before and after as GFM tables; exactly one
  * cell may differ, and it must be the old cell plus " X".
  */
-function oracleJudge(before: string, after: string, prefix: string): string | null {
+function oracleJudge(
+  before: string,
+  after: string,
+  prefix: string,
+  expect: (was: string, now: string) => boolean = (was, now) => now === `${was} X`.trim(),
+): string | null {
   const g0 = oracleTableGrid(before);
   const g1 = oracleTableGrid(after);
   if (!g0) return null;
@@ -237,7 +242,7 @@ function oracleJudge(before: string, after: string, prefix: string): string | nu
   if (diffs.length === 0) return null;
   if (diffs.length !== 1) return `${prefix}_oracle_other_cells_changed`;
   const [was, now] = diffs[0] as [string, string];
-  if (now !== `${was} X`.trim()) return `${prefix}_oracle_wrong_cell_text`;
+  if (!expect(was, now)) return `${prefix}_oracle_wrong_cell_text`;
   return null;
 }
 
@@ -283,6 +288,62 @@ function judgeTableCells(editor: Editor, baseline: ReturnType<typeof captureBase
     const oracle = oracleJudge(blockAround(lines, changed[0] as number), blockAround(out, changed[0] as number), "table_cell_edit");
     if (oracle) return oracle;
   }
+  return judgeBlockSyntaxFirstCells(editor, baseline, text, stats);
+}
+
+/**
+ * verify-RC-B4 R5-1: a FIRST cell that starts like block syntax (`- `, `> `, `# `,
+ * `1. `) must never end a pipe-less table. Type each prefix at the start of the
+ * header's and the first body row's first cell; the oracle must still read one
+ * table with only that cell changed. A refusal here is a failure too — the writer
+ * must write these safely, not merely refuse them.
+ */
+const BLOCK_PREFIXES = ["- ", "> ", "# ", "1. "] as const;
+
+/**
+ * The cell now reads as the old cell with `prefix` typed at its first text position —
+ * which may sit inside a leading mark (`**- Name**`) or code span. Removing the one
+ * typed prefix must give back the old cell exactly.
+ */
+function typedPrefix(was: string, now: string, prefix: string): boolean {
+  const typed = was === "" ? prefix.trim() : prefix;
+  const at = now.indexOf(typed);
+  return at >= 0 && `${now.slice(0, at)}${now.slice(at + typed.length)}` === was;
+}
+
+function judgeBlockSyntaxFirstCells(editor: Editor, baseline: ReturnType<typeof captureBaseline>, text: string, stats: SourceStats): string | null {
+  const targets: number[] = [];
+  editor.state.doc.descendants((node, pos) => {
+    if (node.type.name !== "table") return true;
+    let rowPos = pos + 1;
+    node.forEach((row, _offset, rowIndex) => {
+      const cell = row.firstChild;
+      // Start of the first cell's paragraph content (row open + cell open + paragraph open).
+      if (rowIndex <= 1 && cell?.firstChild?.type.name === "paragraph") targets.push(rowPos + 3);
+      rowPos += row.nodeSize;
+    });
+    return false;
+  });
+  const lines = text.split("\n");
+  for (const target of targets.slice(0, MAX_CELL_EDITS)) {
+    for (const prefix of BLOCK_PREFIXES) {
+      stats.cellEdits += 1;
+      let edited: string;
+      try {
+        edited = serializeVisualDocument(editor.state.tr.insertText(prefix, target).doc, baseline);
+      } catch (error) {
+        if (error instanceof TableWriteRefused) return "table_block_edit_refused";
+        throw error;
+      }
+      const out = edited.split("\n");
+      if (out.length !== lines.length) return "table_block_edit_changed_line_count";
+      const changed = out.map((line, index) => (line === lines[index] ? -1 : index)).filter((index) => index >= 0);
+      if (changed.length !== 1) return "table_block_edit_changed_other_lines";
+      const at = changed[0] as number;
+      const oracle = oracleJudge(blockAround(lines, at), blockAround(out, at), "table_block_edit", (was, now) => typedPrefix(was, now, prefix));
+      if (oracle) return oracle;
+    }
+  }
   return null;
 }
 
@@ -327,6 +388,26 @@ function judgeAnswerTables(text: string, stats: SourceStats): string | null {
         if ((after[k] ?? "").trim() !== `${(before[k] ?? "").trim()} X`.trim()) return "answer_table_edit_wrong_cell_bytes";
         const oracle = oracleJudge(table, out.join("\n"), "answer_table_edit");
         if (oracle) return oracle;
+      }
+      // verify-RC-B4 R5-1 on the answer path: block syntax typed into a first cell.
+      for (const r of [0, 1].filter((index) => index < grid.rows.length + 1)) {
+        for (const prefix of BLOCK_PREFIXES) {
+          stats.answerCellEdits += 1;
+          const headers = [...grid.headers];
+          const rows = grid.rows.map((row) => [...row]);
+          if (r === 0) headers[0] = `${prefix}${headers[0] ?? ""}`;
+          else (rows[0] as string[])[0] = `${prefix}${(rows[0] as string[])[0] ?? ""}`;
+          let written: string;
+          try {
+            written = rewriteTableSource(table, { headers, rows });
+          } catch (error) {
+            if (error instanceof TableWriteRefused) return "answer_table_block_edit_refused";
+            throw error;
+          }
+          if (written.split("\n").length !== tableLines.length) return "answer_table_block_edit_changed_line_count";
+          const oracle = oracleJudge(table, written, "answer_table_block_edit", (was, now) => typedPrefix(was, now, prefix));
+          if (oracle) return oracle;
+        }
       }
     }
   }

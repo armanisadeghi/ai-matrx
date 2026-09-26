@@ -15,27 +15,27 @@
 // WHAT THE STORE CANNOT DO THAT THE OLDER DOORS DID, AND WHAT THIS FILE DOES
 // INSTEAD — each named once, here:
 //
-//   sort by a column / search   No such door. The page reads the table's rows
-//                               through the read door (every row this person may
-//                               see, in pages of the door's own size) and sorts
-//                               and searches them with the older door's exact
-//                               rules (`sortRowsLikeTheOlderStore`). A table past
-//                               READ_CEILING is refused by name, never cut short.
-//   count rows                  The read door counts nothing it has not read, so
-//                               the count is the length of the full read.
-//   a bulk write in one txn     There is no bulk UPDATE door (a batch would have
-//                               to drop per-row versions). Inserts go in one call
-//                               through `record_write_many`; updates and archives
-//                               go one record at a time, and each op's result is
-//                               reported in its own slot — a refused op never
-//                               hides behind the batch.
+//   sort / search / count       The store's page door, `custom.read_records_page`
+//                               (DOOR-SPEED, 2026-09-25): ONE call per page, sorted,
+//                               searched and counted by the store over what this
+//                               person may see — never the whole table in the
+//                               browser, and no row ceiling.
+//   a bulk write in one txn     The store's many-changes door,
+//                               `custom.record_change_many`: every insert, update and
+//                               archive of one grid action in ONE call and ONE
+//                               transaction. A refused change refuses the batch and
+//                               nothing is saved; the store's sentence names it.
+//
+// WHAT IS CACHED: the table's METADATA (declaration, fields, level, colours, row
+// actions, hand-set order) — until a write that changes it, or the realtime port
+// says the shape moved. Rows are never cached here: the grid holds its page, a
+// cell write patches it from the write's own answer, and nothing is re-read.
 
 import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
 import { actionRefusals } from "@ai-matrx/records";
 import type {
   DecorationPath,
   Field,
-  HiddenFieldNotice,
   RecordHistoryEntry,
   RecordsError,
   RowAction as StoreRowAction,
@@ -59,7 +59,18 @@ import type {
   TableMetadata,
 } from "../types";
 import type { RecordStoreHome } from "./table-home";
-import { handOrderAbsence, migrateRetype, readRecordsInViewOrder, viewRecordOrderSet } from "./record-store-grid";
+import {
+  handOrderAbsence,
+  migrateRetype,
+  readRecordsInViewOrder,
+  readRecordsPage,
+  recordChangeMany,
+  unfoldDocument,
+  viewRecordOrderSet,
+  type PageDoorRow,
+  type RecordPageSortSpec,
+  type StoreChange,
+} from "./record-store-grid";
 import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 import {
   choiceFromOption,
@@ -67,8 +78,6 @@ import {
   olderColumnFromField,
   olderRowData,
   olderRowOrdering,
-  searchRowsLikeTheOlderStore,
-  sortRowsLikeTheOlderStore,
   storeDefaultSort,
   storeFormatWrite,
   storeRulesFromOlder,
@@ -78,15 +87,17 @@ import {
 } from "./record-store-shape";
 
 /**
- * The most rows one grid read will pull through the read door to sort, search
- * and count. Above it the read is REFUSED with a sentence, never truncated: a
- * sorted page drawn from part of a table is a confident wrong answer.
+ * One page of a read that genuinely needs every row (export, the column filter's values): the
+ * store's page ceiling (PAGE-1: `custom.page_ceiling` answers 1000 unless an organization raised
+ * it). Every page is its own call; there is no row ceiling.
  */
-const READ_CEILING = 10_000;
-/** What the grid asks the read door for per call. The door clamps it to its own page size. */
-const READ_PAGE = 200;
-/** A metadata read followed by a page read is one question; they share one snapshot this long. */
-const SNAPSHOT_TTL_MS = 1_500;
+const READ_PAGE = 1_000;
+/**
+ * How long a table's METADATA is trusted without being told it moved. Every write that changes
+ * it drops it at once, and the realtime port drops it when another browser changes the shape, so
+ * this is only the backstop for a browser that is not listening.
+ */
+const META_TTL_MS = 5 * 60_000;
 /** The store's history page ceiling (PAGE-1 — custom.page_contract answers 500). */
 const HISTORY_PAGE = 500;
 
@@ -119,28 +130,34 @@ function plainFailure(message: string): ServiceErr {
 // ─── the snapshot: one table, read once per question ────────────────────────
 
 /** One row as the Sheet holds it; `withheld` = the columns the store masked for this reader, with its reason. */
-type ReadRowHidden = Record<string, HiddenFieldNotice>;
-
 type GridRow = { id: string; data: Record<string, unknown>; withheld?: WithheldCells };
 
 type Snapshot = {
   table: Dataset;
   fields: Field[];
   columns: DatasetField[];
-  rows: GridRow[];
+  /** How many records this person may see (`custom.table_capacity`) — never a length of a read. */
+  rowCount: number;
   /** The caller's level on the Table, from `custom.my_levels`. */
   level: string | null;
   /**
    * The hand-set order, when the Table's view keeps one (ORDER-FIX): it IS the Sheet's sort, so a
-   * page read with no column sort comes back in it — on every page, not only within one.
+   * page read with no column sort comes back in it — on every page, not only within one. The page
+   * door reads it from `handViewId` itself; the id list is what the grid's Reorder draws.
    */
   handOrder: string[] | null;
+  handViewId: string | null;
   at: number;
 };
 
 const snapshots = new Map<string, Promise<ServiceResult<Snapshot>>>();
 
-/** Drop what this browser holds for a table — after a write, or when the store says it moved. */
+/**
+ * Drop the METADATA this browser holds for a table — after a write that changes the table's
+ * shape, settings or order, or when the store says the shape moved. A row write never calls this:
+ * rows are not cached, and re-reading the table's declaration after every cell was the Sheet's
+ * three-second edit (v2 readiness audit, 2026-09-25).
+ */
 export function invalidateRecordStoreTable(tableId: string): void {
   snapshots.delete(tableId);
 }
@@ -201,26 +218,53 @@ async function choicesFor(client: RecordsClient, field: Field): Promise<FieldCho
     .filter((c): c is FieldChoice => c !== null);
 }
 
-async function readEveryRow(
-  client: RecordsClient,
-  tableId: string,
-): Promise<ServiceResult<Array<{ id: string; document: Record<string, unknown>; hidden?: ReadRowHidden }>>> {
-  const out: Array<{ id: string; document: Record<string, unknown>; hidden?: ReadRowHidden }> = [];
-  // Until an EMPTY page: the door clamps the page size to its own, so a short
-  // page is not proof of the end.
+/** The page door's sort for the grid's column sort (by machine name or header). */
+function pageSort(
+  columns: readonly DatasetField[],
+  sortField: string | null | undefined,
+  sortDirection: "asc" | "desc" | undefined,
+): RecordPageSortSpec[] {
+  if (!sortField) return [];
+  const column = columns.find((c) => c.field_name === sortField || c.display_name === sortField);
+  if (!column) return [];
+  const t = String(column.data_type);
+  const as = t === "number" || t === "integer" ? "number" : t === "date" || t === "datetime" ? "date" : "text";
+  return [{ field: column.field_name, direction: sortDirection === "desc" ? "desc" : "asc", as }];
+}
+
+function gridRowsOf(rows: readonly PageDoorRow[], snap: Snapshot): GridRow[] {
+  return rows.map((row) => {
+    const { document, hidden } = unfoldDocument(row.document);
+    const withheld = withheldCells(hidden, snap.fields);
+    return { id: row.id, data: olderRowData(document, snap.columns), ...(withheld ? { withheld } : {}) };
+  });
+}
+
+/**
+ * EVERY row this person may see, for the few reads whose question is about all of them (an
+ * export, the column filter's values, the table profile) — through the page door, a store page at
+ * a time, sorted and searched by the store. No ceiling: a table is read to its end.
+ */
+async function readAllRows(
+  home: RecordStoreHome,
+  snap: Snapshot,
+  args: { sortField?: string | null; sortDirection?: "asc" | "desc"; searchTerm?: string | null },
+): Promise<ServiceResult<GridRow[]>> {
+  const out: GridRow[] = [];
+  const sort = pageSort(snap.columns, args.sortField, args.sortDirection);
   for (let offset = 0; ; ) {
-    const page = await client.list({ table_id: tableId, limit: READ_PAGE, offset });
+    const page = await readRecordsPage(home, {
+      tableId: snap.table.id,
+      search: args.searchTerm ?? null,
+      sort,
+      viewId: sort.length === 0 ? snap.handViewId : null,
+      limit: READ_PAGE,
+      offset,
+    });
     if (!page.ok) return refused(page.error);
-    if (page.data.rows.length === 0) break;
-    for (const row of page.data.rows) {
-      out.push({ id: row.id, document: row.document as Record<string, unknown>, hidden: (row as { hidden?: ReadRowHidden }).hidden });
-    }
+    out.push(...gridRowsOf(page.data.rows, snap));
     offset += page.data.rows.length;
-    if (out.length > READ_CEILING) {
-      return plainFailure(
-        `This table has more than ${READ_CEILING.toLocaleString()} records, and this grid sorts, searches and counts them in your browser because the record store has no door that does it yet. Open it at /data-v2/${tableId}, which pages through the store instead.`,
-      );
-    }
+    if (page.data.rows.length === 0 || offset >= page.data.total) break;
   }
   return { success: true, data: out };
 }
@@ -294,7 +338,9 @@ async function readHandOrder(home: RecordStoreHome, client: RecordsClient, table
     if (page.data.length === 0) break;
     for (const row of page.data) if (row.position !== null && row.position !== undefined) order.push(row.id);
     offset += page.data.length;
-    if (offset > READ_CEILING) break;
+    // A short page is the end: the store's page doors REFUSE a page over their ceiling rather
+    // than shrink it (PAGE-1), so fewer rows than asked means there are no more.
+    if (page.data.length < READ_PAGE) break;
   }
   return { status: "served", enabled: true, order, viewId };
 }
@@ -332,22 +378,17 @@ export async function setRowOrdering(
 
 async function readSnapshot(home: RecordStoreHome, tableId: string): Promise<ServiceResult<Snapshot>> {
   const client = clientFor(home);
-  const [tableRead, fieldsRead, levelRead] = await Promise.all([
+  const [tableRead, fieldsRead, levelRead, capacity] = await Promise.all([
     client.recordRead({ record_id: tableId }),
     client.fields({ table_id: tableId }),
     client.myLevels({ ids: [tableId] }),
+    client.tableCapacity({ table_id: tableId }),
   ]);
   if (!tableRead.ok) return refused(tableRead.error);
   if (!fieldsRead.ok) return refused(fieldsRead.error);
   const fields = fieldsRead.data;
   const choiceSets = await Promise.all(fields.map((f) => choicesFor(client, f)));
   const columns = fields.map((f, i) => olderColumnFromField(f as Field & { expression?: unknown }, tableId, choiceSets[i] ?? null));
-  const rowsRead = await readEveryRow(client, tableId);
-  if (!rowsRead.success) return rowsRead;
-  const rows: GridRow[] = rowsRead.data.map((row) => {
-    const withheld = withheldCells(row.hidden, fields);
-    return { id: row.id, data: olderRowData(row.document, columns), ...(withheld ? { withheld } : {}) };
-  });
   const level = levelRead.ok ? (levelRead.data.find((l) => l.id === tableId)?.level ?? null) : null;
   const document = tableRead.data.document as Record<string, unknown>;
   const [decorations, actions] = await Promise.all([
@@ -380,9 +421,10 @@ async function readSnapshot(home: RecordStoreHome, tableId: string): Promise<Ser
       }),
       fields,
       columns,
-      rows,
+      rowCount: capacity.ok ? capacity.data.records : 0,
       level: level ? String(level) : null,
       handOrder: hand.status === "served" && hand.enabled ? hand.order : null,
+      handViewId: hand.status === "served" && hand.enabled ? hand.viewId : null,
       at: Date.now(),
     },
   };
@@ -392,7 +434,7 @@ async function snapshot(home: RecordStoreHome, tableId: string, fresh = false): 
   const held = snapshots.get(tableId);
   if (held && !fresh) {
     const answer = await held;
-    if (answer.success && Date.now() - answer.data.at < SNAPSHOT_TTL_MS) return answer;
+    if (answer.success && Date.now() - answer.data.at < META_TTL_MS) return answer;
   }
   const pending = readSnapshot(home, tableId);
   snapshots.set(tableId, pending);
@@ -411,36 +453,15 @@ export async function getTableMetadata(
   if (!snap.success) return snap;
   return {
     success: true,
-    data: { table: snap.data.table, columns: snap.data.columns, row_count: snap.data.rows.length },
+    data: { table: snap.data.table, columns: snap.data.columns, row_count: snap.data.rowCount },
   };
 }
 
-/** The placed rows first, in their order; the rest after them as the store read them. */
-function inHandOrder(rows: readonly GridRow[], order: readonly string[]): GridRow[] {
-  const place = new Map(order.map((id, i) => [id, i]));
-  return rows
-    .map((row, i) => ({ row, i, p: place.get(row.id) }))
-    .sort((a, b) => (a.p ?? Infinity) - (b.p ?? Infinity) || a.i - b.i)
-    .map((x) => x.row);
-}
-
-function pageRows(
-  snap: Snapshot,
-  args: { sortField?: string | null; sortDirection?: "asc" | "desc"; searchTerm?: string | null },
-): GridRow[] {
-  let rows: GridRow[] = snap.handOrder && !args.sortField ? inHandOrder(snap.rows, snap.handOrder) : snap.rows;
-  if (args.searchTerm) rows = searchRowsLikeTheOlderStore(rows, args.searchTerm);
-  if (args.sortField) {
-    const column = snap.columns.find(
-      (c) => c.field_name === args.sortField || c.display_name === args.sortField,
-    );
-    if (column) {
-      rows = sortRowsLikeTheOlderStore(rows, column.field_name, args.sortDirection ?? "asc", column.data_type);
-    }
-  }
-  return rows;
-}
-
+/**
+ * ONE PAGE, ONE CALL (DOOR-SPEED). The store sorts (a column sort, or the hand-set order when the
+ * Table's view keeps one and no column sort is asked), searches, pages and counts —
+ * `custom.read_records_page`, the twin of the older `get_user_table_data_paginated_v2`.
+ */
 export async function getTablePage(
   home: RecordStoreHome,
   args: {
@@ -454,16 +475,37 @@ export async function getTablePage(
 ): Promise<ServiceResult<{ rows: GridRow[]; pagination: { total_count: number; page_count: number; current_page: number } }>> {
   const snap = await snapshot(home, args.tableId);
   if (!snap.success) return snap;
-  const rows = pageRows(snap.data, args);
   const limit = Math.max(1, args.limit);
   const offset = Math.max(0, args.offset);
+  const sort = pageSort(snap.data.columns, args.sortField, args.sortDirection);
+  // A caller that asks for more than one store page (the filter cache, the cleanup pass, the
+  // reorder dialog ask for up to 10,000) is served store page by store page — never refused
+  // for asking, never cut short.
+  const rows: PageDoorRow[] = [];
+  let total = 0;
+  for (let at = offset; ; ) {
+    const want = Math.min(READ_PAGE, offset + limit - at);
+    const page = await readRecordsPage(home, {
+      tableId: args.tableId,
+      search: args.searchTerm ?? null,
+      sort,
+      viewId: sort.length === 0 ? snap.data.handViewId : null,
+      limit: want,
+      offset: at,
+    });
+    if (!page.ok) return refused(page.error);
+    total = page.data.total;
+    rows.push(...page.data.rows);
+    at += page.data.rows.length;
+    if (page.data.rows.length < want || at >= offset + limit || at >= total) break;
+  }
   return {
     success: true,
     data: {
-      rows: rows.slice(offset, offset + limit),
+      rows: gridRowsOf(rows, snap.data),
       pagination: {
-        total_count: rows.length,
-        page_count: Math.ceil(rows.length / limit),
+        total_count: total,
+        page_count: Math.ceil(total / limit),
         current_page: Math.floor(offset / limit) + 1,
       },
     },
@@ -482,12 +524,14 @@ export async function getCompleteTable(
 > {
   const snap = await snapshot(home, args.tableId, true);
   if (!snap.success) return snap;
+  const rows = await readAllRows(home, snap.data, { sortField: args.sortField, sortDirection: args.sortDirection });
+  if (!rows.success) return rows;
   return {
     success: true,
     data: {
       table: snap.data.table as unknown as Record<string, unknown>,
       fields: snap.data.columns as unknown as Array<Record<string, unknown> & { id: string; field_name: string; display_name: string }>,
-      rows: pageRows(snap.data, { sortField: args.sortField, sortDirection: args.sortDirection }),
+      rows: rows.data,
     },
   };
 }
@@ -543,7 +587,10 @@ export async function getColumnFacets(
     return plainFailure(`"${args.fieldName}" is not a column of this table.`);
   }
   const limit = Math.min(Math.max(args.limit ?? 50, 1), 500);
-  const rows = args.searchTerm ? searchRowsLikeTheOlderStore(snap.data.rows, args.searchTerm) : snap.data.rows;
+  // Every row this person may see that the search matches — searched by the store.
+  const read = await readAllRows(home, snap.data, { searchTerm: args.searchTerm ?? null });
+  if (!read.success) return read;
+  const rows = read.data;
   const counts = new Map<string, number>();
   let filled = 0;
   let blank = 0;
@@ -657,8 +704,9 @@ export async function upsertCell(
   const columns = await columnsOf(home, args.tableId);
   if (!columns.success) return columns;
   const patch = toStoreDocument(columns.data, { [args.fieldName]: args.value });
+  // ONE CELL, ONE CALL: the columns come from the held metadata, and nothing is re-read after —
+  // the grid patches its page from this answer (`patchLocalCell`).
   const written = await clientFor(home).recordUpdate({ record_id: args.rowId, patch });
-  invalidateRecordStoreTable(args.tableId);
   if (!written.ok) return refused(written.error);
   return { success: true, data: asDatasetRow(args.tableId, home, args.rowId, { [args.fieldName]: args.value }) };
 }
@@ -689,7 +737,6 @@ export async function upsertRow(
       table_id: args.tableId,
       data: toStoreDocument(columns.data, args.data) as never,
     });
-    invalidateRecordStoreTable(args.tableId);
     if (!made.ok) return refused(made.error);
     return { success: true, data: asDatasetRow(args.tableId, home, made.data, args.data) };
   }
@@ -697,7 +744,6 @@ export async function upsertRow(
     record_id: args.rowId,
     patch: toStoreDocument(columns.data, replacing(columns.data, args.data)),
   });
-  invalidateRecordStoreTable(args.tableId);
   if (!written.ok) return refused(written.error);
   return { success: true, data: asDatasetRow(args.tableId, home, args.rowId, args.data) };
 }
@@ -708,79 +754,45 @@ export async function deleteRow(
   args: { tableId: string; rowId: string },
 ): Promise<ServiceResult<{ row_id: string; archived_at: string }>> {
   const done = await clientFor(home).recordDelete({ record_id: args.rowId });
-  invalidateRecordStoreTable(args.tableId);
   if (!done.ok) return refused(done.error);
   return { success: true, data: { row_id: args.rowId, archived_at: String(done.data) } };
 }
 
+/**
+ * A paste, a fill, a bulk edit or clear, a bulk delete — ONE call to the store's many-changes door
+ * (`custom.record_change_many`), ONE transaction: every change lands or none does, and a refused
+ * one comes back with the store's own sentence naming its position. The older door's contract
+ * (`udt_bulk_write`), kept.
+ */
 export async function bulkWrite(
   home: RecordStoreHome,
   args: { tableId: string; operations: BulkOp[] },
 ): Promise<ServiceResult<BulkWriteResponse>> {
   const columns = await columnsOf(home, args.tableId);
   if (!columns.success) return columns;
-  const client = clientFor(home);
-  const results: BulkOpResult[] = new Array(args.operations.length);
-
-  // Inserts first, in ONE call, in their original order — `record_write_many`
-  // answers the new ids in the order the rows were handed in.
-  const insertAt: number[] = [];
-  const inserts: Record<string, unknown>[] = [];
-  args.operations.forEach((op, i) => {
+  if (args.operations.length === 0) {
+    return { success: true, data: { table_id: args.tableId, count: 0, results: [] } };
+  }
+  const written: Array<Record<string, unknown>> = [];
+  const changes: StoreChange[] = args.operations.map((op) => {
     if (op.op === "insert") {
-      insertAt.push(i);
-      inserts.push(toStoreDocument(columns.data, op.data));
+      written.push(op.data);
+      return { op: "insert", data: toStoreDocument(columns.data, op.data) };
     }
-  });
-  if (inserts.length > 0) {
-    const made = await client.recordWriteMany({ table_id: args.tableId, rows: inserts as never });
-    if (!made.ok) {
-      invalidateRecordStoreTable(args.tableId);
-      return refused(made.error);
-    }
-    made.data.forEach((id, n) => {
-      const at = insertAt[n]!;
-      const op = args.operations[at] as Extract<BulkOp, { op: "insert" }>;
-      results[at] = asDatasetRow(args.tableId, home, id, op.data);
-    });
-  }
-
-  // The rest, one record at a time. A refusal stops the batch there and names
-  // the op, because the older door's contract was one transaction: carrying on
-  // past a refused op would leave a half-written selection nobody asked for.
-  for (let i = 0; i < args.operations.length; i += 1) {
-    const op = args.operations[i]!;
-    if (op.op === "insert") continue;
-    let outcome: { ok: true } | { ok: false; error: RecordsError };
     if (op.op === "delete") {
-      const done = await client.recordDelete({ record_id: op.row_id });
-      outcome = done.ok ? { ok: true } : { ok: false, error: done.error };
-      if (done.ok) results[i] = asDatasetRow(args.tableId, home, op.row_id, {});
-    } else {
-      const data =
-        op.op === "cell"
-          ? { [op.field_name]: op.value }
-          : op.op === "update"
-            ? replacing(columns.data, op.data)
-            : op.data;
-      const done = await client.recordUpdate({ record_id: op.row_id, patch: toStoreDocument(columns.data, data) });
-      outcome = done.ok ? { ok: true } : { ok: false, error: done.error };
-      if (done.ok) results[i] = asDatasetRow(args.tableId, home, op.row_id, data);
+      written.push({});
+      return { op: "archive", record_id: op.row_id };
     }
-    if (!outcome.ok) {
-      invalidateRecordStoreTable(args.tableId);
-      const written = results.filter(Boolean).length;
-      const err = refused(outcome.error);
-      return {
-        ...err,
-        error:
-          written > 0
-            ? `${outcome.error.message} (${written} of ${args.operations.length} changes were saved before this one was refused; the rest were not attempted.)`
-            : outcome.error.message,
-      };
-    }
-  }
-  invalidateRecordStoreTable(args.tableId);
+    const data =
+      op.op === "cell" ? { [op.field_name]: op.value } : op.op === "update" ? replacing(columns.data, op.data) : op.data;
+    written.push(data);
+    return { op: "update", record_id: op.row_id, patch: toStoreDocument(columns.data, data) };
+  });
+  const done = await recordChangeMany(home, args.tableId, changes);
+  if (!done.ok) return refused(done.error);
+  const results: BulkOpResult[] = done.data.map((result, i) =>
+    asDatasetRow(args.tableId, home, result.id, written[i] ?? {}),
+  );
   return { success: true, data: { table_id: args.tableId, count: args.operations.length, results } };
 }
 
@@ -1221,6 +1233,9 @@ export async function getTableProfile(
 ): Promise<ServiceResult<{ table_id: string; total_rows: number; columns: unknown[] }>> {
   const snap = await snapshot(home, args.tableId);
   if (!snap.success) return snap;
+  const read = await readAllRows(home, snap.data, {});
+  if (!read.success) return read;
+  const allRows = read.data;
   const columns: unknown[] = [];
   for (const c of snap.data.columns) {
     const facets = await getColumnFacets(home, { tableId: args.tableId, fieldName: c.field_name, limit: args.previewValues ?? 12 });
@@ -1229,7 +1244,7 @@ export async function getTableProfile(
     let url = 0;
     let email = 0;
     let bool = 0;
-    for (const row of snap.data.rows) {
+    for (const row of allRows) {
       const raw = row.data[c.field_name];
       if (raw === null || raw === undefined) continue;
       const text = (typeof raw === "string" ? raw : jsonbText(raw)).trim();
@@ -1256,7 +1271,7 @@ export async function getTableProfile(
       top_values: facets.data.values,
     });
   }
-  return { success: true, data: { table_id: args.tableId, total_rows: snap.data.rows.length, columns } };
+  return { success: true, data: { table_id: args.tableId, total_rows: allRows.length, columns } };
 }
 
 /** Exactly these rows, read again through the store's id door (the same ladder as a page). */

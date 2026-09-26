@@ -2,7 +2,7 @@
 //
 // `@ai-matrx/records` 0.57.0 carries a typed method for every grid primitive (colors,
 // layout, row actions, autonumber, recordChangeTrigger) and `record-store.ts` calls them there.
-// Two doors are left here because the client has no method for them yet, called the way
+// The doors left here are the ones the installed client has no method for yet, called the way
 // `features/record-change-approvals/applyRecordChange.ts` calls `work_approval_*`: through
 // the SAME data source the records client uses, schema `custom`, with the store's refusal
 // mapped by the package's own `mapPgError`:
@@ -16,7 +16,8 @@
 // control that fails when pressed.
 
 import { mapPgError } from "@ai-matrx/records/core";
-import type { RecordsError } from "@ai-matrx/records";
+import { mintOpId } from "@ai-matrx/records";
+import type { HiddenFieldNotice, RecordsError } from "@ai-matrx/records";
 import { recordsDataSource } from "@ai-matrx/records-ui";
 
 import { createClient } from "@/utils/supabase/client";
@@ -112,6 +113,85 @@ export function viewRecordOrderSet(home: RecordStoreHome, viewId: string, record
   return callGridDoor<Record<string, unknown>>(home, "view_record_order_set", {
     p_view_id: viewId,
     p_record_ids: [...recordIds],
+  });
+}
+
+// ─── DOOR-SPEED: one page sorted/searched/counted; many changes, one transaction ─
+//
+// `custom.read_records_page` / `custom.record_change_many` (lane data-tables-grid-overhaul,
+// `migrations/campaign/doorspeed_a_page_is_sorted_searched_and_counted_and_a_batch_is_one_transaction.sql`,
+// applied to production 2026-09-26). `@ai-matrx/records` wraps them as `listPage` /
+// `recordChangeMany` from the release after 0.58.17; until this repo installs it they are called
+// by name here, through the same data source, with the same op-id echo contract.
+// 🚨 SWAP ON PUBLISH: `clientFor(home).listPage(...)` / `.recordChangeMany(...)`.
+
+export type RecordPageSortSpec = { field: string; direction: "asc" | "desc"; as: "text" | "number" | "date" };
+export type PageDoorRow = { id: string; document: unknown; level: string };
+
+/** A document as the read doors answer it: the values, and the masked fields' notices under `_hidden`. */
+export function unfoldDocument(document: unknown): {
+  document: Record<string, unknown>;
+  hidden: Record<string, HiddenFieldNotice>;
+} {
+  const raw = (document ?? {}) as Record<string, unknown>;
+  const hidden = (raw._hidden ?? {}) as Record<string, HiddenFieldNotice>;
+  const values: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (key !== "_hidden") values[key] = value;
+  }
+  return { document: values, hidden };
+}
+
+/** One page, sorted, searched, filtered and counted by the store. */
+export async function readRecordsPage(
+  home: RecordStoreHome,
+  args: {
+    tableId: string;
+    search?: string | null;
+    sort?: readonly RecordPageSortSpec[];
+    viewId?: string | null;
+    filter?: Record<string, unknown>;
+    limit: number;
+    offset: number;
+  },
+): Promise<DoorAnswer<{ rows: PageDoorRow[]; total: number }>> {
+  const answer = await callGridDoor<{ total: number | string; rows: PageDoorRow[] | null }>(home, "read_records_page", {
+    p_table_id: args.tableId,
+    p_filter: args.filter ?? {},
+    p_search: args.search && args.search.trim() !== "" ? args.search : null,
+    p_sort: args.sort ?? [],
+    p_view_id: args.viewId ?? null,
+    p_limit: args.limit,
+    p_offset: args.offset,
+  });
+  if (!answer.ok) return answer;
+  return { ok: true, data: { rows: answer.data?.rows ?? [], total: Number(answer.data?.total ?? 0) } };
+}
+
+export type StoreChange =
+  | { op: "insert"; data: Record<string, unknown> }
+  | { op: "update"; record_id: string; patch: Record<string, unknown> }
+  | { op: "archive"; record_id: string };
+export type StoreChangeResult =
+  | { op: "insert"; id: string }
+  | { op: "update"; id: string; version: number }
+  | { op: "archive"; id: string; archived_at: string };
+
+/**
+ * Many changes to one Table in ONE call and ONE transaction. One op id rides every insert and
+ * patch, so this browser's realtime port recognises the one notice as its own echo.
+ */
+export function recordChangeMany(home: RecordStoreHome, tableId: string, changes: readonly StoreChange[]) {
+  const opId = mintOpId();
+  return callGridDoor<StoreChangeResult[]>(home, "record_change_many", {
+    p_table_id: tableId,
+    p_changes: changes.map((c) =>
+      c.op === "insert"
+        ? { op: "insert", data: { ...c.data, _op_id: opId } }
+        : c.op === "update"
+          ? { op: "update", record_id: c.record_id, patch: { ...c.patch, _op_id: opId } }
+          : c,
+    ),
   });
 }
 

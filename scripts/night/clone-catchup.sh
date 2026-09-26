@@ -186,8 +186,42 @@ direct_one() {  # direct_one <source> <filename> <repo> <relpath> direct|record
   # is written only after every statement succeeded. Detection reads
   # statements, not comments: a line that is not a `--` comment and carries CONCURRENTLY.
   if grep -vE '^[[:space:]]*--' "$repo/$relpath" | grep -qiE '(^|[^a-z_])concurrently([^a-z_]|$)'; then
+    # 🚨 A CANCELLED CONCURRENTLY BUILD LEAVES AN INVALID INDEX, AND `if not exists` THEN SKIPS IT
+    # FOREVER (lane PROVISION-BATCH-FIX, 2026-09-26; the class invalid-indexes.sh names). The first
+    # autocommit run of trash2_* hit a lock timeout on the clone (peers holding transactions) and
+    # left files_trash_owner_deleted_idx / files_trash_org_deleted_idx INVALID; a retry would have
+    # "succeeded" over them and ledgered a file whose indexes the planner cannot use. So every index
+    # this file builds CONCURRENTLY is dropped first when the clone holds it INVALID, and judged
+    # again after the run: a file is carried only when every one of them is valid.
+    local -a cidx; local ix bad
+    cidx=("${(@f)$(grep -vE '^[[:space:]]*--' "$repo/$relpath" \
+      | grep -oiE 'create[[:space:]]+(unique[[:space:]]+)?index[[:space:]]+concurrently[[:space:]]+(if[[:space:]]+not[[:space:]]+exists[[:space:]]+)?[a-z_][a-z0-9_.]*' \
+      | awk '{print tolower($NF)}' | sort -u)}")
+    invalid_of() {  # invalid_of <index name, bare or schema-qualified> -> schema.name when INVALID
+      local s="${1%.*}" n="${1##*.}"; [ "$s" = "$1" ] && s=""
+      "$PSQL" "${CLONE_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c "select format('%I.%I', ns.nspname, c.relname)
+         from pg_index i join pg_class c on c.oid = i.indexrelid join pg_namespace ns on ns.oid = c.relnamespace
+        where c.relname = '$n' and ('$s' = '' or ns.nspname = '$s') and not (i.indisvalid and i.indisready)" 2>/dev/null
+    }
+    for ix in "${cidx[@]}"; do
+      [ -n "$ix" ] || continue
+      bad="$(invalid_of "$ix")"
+      [ -n "$bad" ] || continue
+      say "  the clone holds $bad INVALID (a cancelled earlier build); dropping it so this file rebuilds it"
+      "$PSQL" "${CLONE_ARGS[@]}" -q -v ON_ERROR_STOP=1 -c "drop index concurrently if exists $bad" || return $?
+    done
     say "applying (direct, AUTOCOMMIT — the file carries CONCURRENTLY, as production ran it): $relpath"
-    "$PSQL" "${CLONE_ARGS[@]}" -q -v ON_ERROR_STOP=1 -f "$repo/$relpath" || return $?
+    local arc=0
+    "$PSQL" "${CLONE_ARGS[@]}" -q -v ON_ERROR_STOP=1 -f "$repo/$relpath" || arc=$?
+    for ix in "${cidx[@]}"; do
+      [ -n "$ix" ] || continue
+      bad="$(invalid_of "$ix")"
+      [ -n "$bad" ] || continue
+      say "  $bad is INVALID after this run; dropping it (nothing half-built is left behind), the file is NOT carried"
+      "$PSQL" "${CLONE_ARGS[@]}" -q -v ON_ERROR_STOP=1 -c "drop index concurrently if exists $bad" || true
+      [ $arc -eq 0 ] && arc=1
+    done
+    [ $arc -eq 0 ] || return $arc
     "$PSQL" "${CLONE_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c "$ledger"
     return $?
   fi

@@ -79,7 +79,7 @@ const client = {
   fields: jest.fn(async () => ok(FIELDS)),
   myLevels: jest.fn(async () => ok([{ id: TABLE, level: "owner" }])),
   fieldOptions: jest.fn(async () => ok([])),
-  list: jest.fn(async ({ offset }: { offset: number }) => ok({ rows: offset === 0 ? ROWS : [] })),
+  tableCapacity: jest.fn(async () => ok({ records: ROWS.length })),
   tableDecorations: jest.fn(async () => ok({ rules: [] })),
   rowActions: jest.fn(async () => ok({ actions: [] })),
   views: jest.fn(async () => ok(store.views)),

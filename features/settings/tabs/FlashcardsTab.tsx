@@ -5,7 +5,10 @@ import { SettingsSelect } from "@/components/official/settings/primitives/Settin
 import { SettingsSlider } from "@/components/official/settings/primitives/SettingsSlider";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
+import { SettingsLink } from "@/components/official/settings/primitives/SettingsLink";
 import { useSetting } from "../hooks/useSetting";
+import { settingDoorHref } from "../doors/settingDoorTarget";
+import { VOICE_SETTING_DOORS } from "./voices/voiceSettingDoors";
 
 export default function FlashcardsTab() {
   const [educationLevel, setEducationLevel] = useSetting<string>(
@@ -16,9 +19,6 @@ export default function FlashcardsTab() {
   );
   const [language, setLanguage] = useSetting<string>(
     "userPreferences.flashcard.language",
-  );
-  const [audioVoice, setAudioVoice] = useSetting<string>(
-    "userPreferences.flashcard.primaryAudioVoice",
   );
   const [tutorPersona, setTutorPersona] = useSetting<string>(
     "userPreferences.flashcard.primaryTutorPersona",
@@ -87,17 +87,11 @@ export default function FlashcardsTab() {
         />
       </SettingsSection>
       <SettingsSection title="Tutor">
-        <SettingsSelect
-          label="Audio voice"
-          value={audioVoice}
-          onValueChange={setAudioVoice}
-          options={[
-            { value: "default", label: "Default" },
-            { value: "male1", label: "Male 1" },
-            { value: "male2", label: "Male 2" },
-            { value: "female1", label: "Female 1" },
-            { value: "female2", label: "Female 2" },
-          ]}
+        <SettingsLink
+          label="Tutor voice"
+          description="The voice tutor is one of AI Matrx's live assistants, so it speaks in your live conversation voice (Eve unless you pick one)."
+          href={settingDoorHref(VOICE_SETTING_DOORS.liveConversation)}
+          actionLabel="Voices"
         />
         <SettingsSelect
           label="Tutor persona"

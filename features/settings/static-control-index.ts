@@ -527,21 +527,39 @@ export const staticSettingsControlIndex = [
     "controlId": "settings-control-testing-tools-media-controls"
   },
   {
-    "tabId": "voice.input",
-    "label": "Voice",
-    "description": "Your default for all speech, app-wide. Wins over your organization and system defaults.",
-    "controlId": "settings-control-voice-voice"
+    "tabId": "voice.voices",
+    "label": "Read-aloud speed",
+    "description": "1.0 is the voice's natural pace. Our default is 1.2.",
+    "controlId": "settings-control-read-aloud-speed-and-language-read-aloud-speed"
+  },
+  {
+    "tabId": "voice.voices",
+    "label": "Read-aloud language",
+    "controlId": "settings-control-read-aloud-speed-and-language-read-aloud-language"
+  },
+  {
+    "tabId": "voice.voices",
+    "label": "Podcast hosts",
+    "description": "Each episode casts its hosts from the voice library below — Google voices for one or two hosts, ElevenLabs voices for three or more.",
+    "controlId": "settings-control-voices-for-what-you-build-podcast-hosts"
+  },
+  {
+    "tabId": "voice.voices",
+    "label": "Speakers in an agent's speech script",
+    "description": "Each speaker gets a voice from the library below, picked in the agent builder's speech script editor.",
+    "controlId": "settings-control-voices-for-what-you-build-speakers-in-an-agent-s-speech-script"
+  },
+  {
+    "tabId": "voice.voices",
+    "label": "Live voice agents you build",
+    "description": "Your voice agent speaks in one of the five live voices (Ara, Eve, Leo, Rex, Sal), set in the voice playground and saved on the agent.",
+    "controlId": "settings-control-voices-for-what-you-build-live-voice-agents-you-build"
   },
   {
     "tabId": "voice.input",
-    "label": "Language",
-    "controlId": "settings-control-voice-language"
-  },
-  {
-    "tabId": "voice.input",
-    "label": "Speech speed",
-    "description": "Playback speed (1.0 = original). Our default is 1.2.",
-    "controlId": "settings-control-voice-speech-speed"
+    "label": "Voices you hear",
+    "description": "Your read-aloud voice, your live conversation voice, and every other voice AI Matrx speaks with — each with a sample.",
+    "controlId": "settings-control-voice-voices-you-hear"
   },
   {
     "tabId": "voice.input",
@@ -570,24 +588,6 @@ export const staticSettingsControlIndex = [
     "label": "Voice playground",
     "description": "Preview voices and tune cadence.",
     "controlId": "settings-control-advanced-voice-playground"
-  },
-  {
-    "tabId": "voice.tts",
-    "label": "Voice",
-    "description": "Voice used by the catalog-selected speech model.",
-    "controlId": "settings-control-playback-voice"
-  },
-  {
-    "tabId": "voice.tts",
-    "label": "Auto-play",
-    "description": "Play audio automatically when a response finishes.",
-    "controlId": "settings-control-playback-auto-play"
-  },
-  {
-    "tabId": "voice.tts",
-    "label": "Process Markdown",
-    "description": "Strip markdown syntax before speaking so formatting isn't read aloud.",
-    "controlId": "settings-control-playback-process-markdown"
   },
   {
     "tabId": "communication.email",
@@ -747,8 +747,9 @@ export const staticSettingsControlIndex = [
   },
   {
     "tabId": "learning.flashcards",
-    "label": "Audio voice",
-    "controlId": "settings-control-tutor-audio-voice"
+    "label": "Tutor voice",
+    "description": "The voice tutor is one of AI Matrx's live assistants, so it speaks in your live conversation voice (Eve unless you pick one).",
+    "controlId": "settings-control-tutor-tutor-voice"
   },
   {
     "tabId": "learning.flashcards",

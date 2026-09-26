@@ -156,6 +156,7 @@ export function ContextMenuV3({
   richDocCtxExtras,
   placementMode,
   extraSections,
+  resolveExtraSectionsOnOpen,
   onUndo,
   onRedo,
   canUndo = false,
@@ -416,7 +417,12 @@ export function ContextMenuV3({
     setResolvedContext(
       rowMenu?.context ?? (resolveContextOnOpen ? resolveContextOnOpen(target) : null),
     );
-    setResolvedExtraSections(rowMenu?.extraSections);
+    const surfaceSections = resolveExtraSectionsOnOpen?.(target);
+    setResolvedExtraSections(
+      rowMenu?.extraSections && surfaceSections
+        ? [...rowMenu.extraSections, ...surfaceSections]
+        : (rowMenu?.extraSections ?? surfaceSections),
+    );
     setSniffedEntity(sniffEntityFromDom(target));
   };
 

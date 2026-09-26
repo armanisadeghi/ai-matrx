@@ -12,9 +12,11 @@
 // sheet trigger.
 
 import { useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Music2, Radio, Settings2 } from "lucide-react";
+import { Music2, Radio, Settings2 } from "lucide-react";
+import { TapTargetButton } from "@ai-matrx/tap-target";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
@@ -48,6 +50,7 @@ import { VoiceOrb } from "./VoiceOrb";
 import { VoiceEdgeRibbon } from "./VoiceEdgeRibbon";
 import { VoiceControlCluster } from "./VoiceControlCluster";
 import { VoiceStatusPill } from "./VoiceStatusPill";
+import { LiveVoiceDoor } from "./LiveVoiceDoor";
 import { VoiceTranscriptStream } from "./VoiceTranscriptStream";
 import { VoiceErrorBanner } from "./VoiceErrorBanner";
 import { PlaygroundSettingsSheet } from "./playground/PlaygroundSettingsSheet";
@@ -286,9 +289,54 @@ export function VoiceAgentSurface({
       surfaceName={VOICE_CHAT_SURFACE}
       getScope={getSurfaceScope}
     >
+      {/* ─── Route header — lives in the SHELL header row, never the body.
+        An in-body bar here sat under the shell's glass strip and was
+        invisible: no Back, no title, no playground Settings. */}
+      <RouteHeader
+        left={
+          <>
+            <ChevronLeftTapButton
+              onClick={() => router.back()}
+              ariaLabel="Back"
+            />
+            <h1 className="ml-1 text-sm font-medium text-foreground">
+              {preset === "intro" ? "AI Matrx" : "Voice Playground"}
+            </h1>
+          </>
+        }
+        right={
+          preset === "playground" ? (
+            <>
+              <TapTargetButton
+                href="/chat/voice/music"
+                icon={<Music2 className="h-4 w-4" />}
+                label="Music"
+              />
+              <TapTargetButton
+                href="/chat/voice/gemini"
+                icon={<Radio className="h-4 w-4" />}
+                label="Gemini Live"
+              />
+              <PlaygroundSettingsSheet
+                instanceId={instanceId}
+                disabled={liveStatus !== "idle" && liveStatus !== "error"}
+                trigger={
+                  <TapTargetButton
+                    icon={<Settings2 className="h-4 w-4" />}
+                    label="Settings"
+                    ariaLabel="Voice settings"
+                  />
+                }
+              />
+            </>
+          ) : undefined
+        }
+      />
       <div
         className={cn(
-          "relative h-dvh flex flex-col overflow-hidden bg-background text-foreground",
+          // h-full, never h-dvh: `.shell-main` already fills the viewport
+          // behind the glass header, so the stage must not re-add its height.
+          "relative h-full flex flex-col overflow-hidden bg-background text-foreground",
         )}
       >
         {/* ─── Edge ribbon — wraparound border that pulses on active turns ─
@@ -299,57 +347,6 @@ export function VoiceAgentSurface({
           is engaged. See VoiceEdgeRibbon.tsx for the design rationale. */}
         <VoiceEdgeRibbon status={liveStatus} />
 
-        {/* ─── Header ─────────────────────────────────────────────────── */}
-        {/* pr-14 clears the shell's user-menu avatar (44px) that's anchored to the viewport right edge */}
-        {/* `relative z-10` lifts all foreground UI above the ambient glow */}
-        <header className="relative z-10 shrink-0 flex items-center justify-between px-4 pr-14 py-3 border-b border-border/40">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Back"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            <span className="hidden sm:inline">Back</span>
-          </button>
-          <h1 className="text-sm font-medium tracking-wide text-muted-foreground">
-            {preset === "intro" ? "AI Matrx" : "Voice Playground"}
-          </h1>
-          {preset === "playground" ? (
-            <div className="flex items-center gap-2">
-              <Link
-                href="/chat/voice/gemini"
-                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <Radio className="h-4 w-4" />
-                <span className="hidden md:inline">Gemini Live</span>
-              </Link>
-              <Link
-                href="/chat/voice/music"
-                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <Music2 className="h-4 w-4" />
-                <span className="hidden md:inline">Music</span>
-              </Link>
-              <PlaygroundSettingsSheet
-                instanceId={instanceId}
-                disabled={liveStatus !== "idle" && liveStatus !== "error"}
-                trigger={
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label="Voice settings"
-                  >
-                    <Settings2 className="h-4 w-4" aria-hidden="true" />
-                    <span className="hidden sm:inline">Settings</span>
-                  </button>
-                }
-              />
-            </div>
-          ) : (
-            <span className="w-8" aria-hidden="true" />
-          )}
-        </header>
 
         {/* ─── Main stage: transcript behind, orb anchored mid-page ── */}
         <main className="relative flex-1 min-h-0">
@@ -378,8 +375,16 @@ export function VoiceAgentSurface({
               "-translate-y-1/2 flex flex-col items-center gap-5 px-4 pb-safe",
             )}
           >
-            <div data-surface-value="connection_status">
+            <div
+              data-surface-value="connection_status"
+              className="flex flex-col items-center gap-1"
+            >
               <VoiceStatusPill status={liveStatus} micMuted={micMuted} />
+              {preset === "intro" && (
+                <div className="pointer-events-auto">
+                  <LiveVoiceDoor voiceId={scopeVoiceId} agentId={agentId} />
+                </div>
+              )}
             </div>
             <div className="pointer-events-auto relative size-[260px]">
               <VoiceOrb status={liveStatus} />

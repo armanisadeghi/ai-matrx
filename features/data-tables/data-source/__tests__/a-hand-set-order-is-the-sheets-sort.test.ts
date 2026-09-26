@@ -54,6 +54,13 @@ function postgrest(fn: string, args: Record<string, unknown>) {
     const offset = Number(args.p_offset ?? 0);
     return { data: offset === 0 ? HAND_ORDER.map((id, i) => ({ id, position: (i + 1) * 1024 })) : [], error: null };
   }
+  if (fn === "read_records_page") {
+    // The store's page door: a hand-ordered view's positions are the order when no column sort
+    // is asked; otherwise the read door's own order.
+    const byId = new Map(ROWS.map((r) => [r.id, r]));
+    const ordered = args.p_view_id === HAND_VIEW ? HAND_ORDER.map((id) => byId.get(id)!) : ROWS;
+    return { data: { total: ROWS.length, limit: args.p_limit, offset: args.p_offset, rows: ordered.map((r) => ({ ...r, level: "owner" })) }, error: null };
+  }
   if (fn === "view_record_order_set") {
     return { data: { order: "manual", positioned: (args.p_record_ids as string[]).length, replaced_sorts: [] }, error: null };
   }
@@ -83,7 +90,7 @@ const client = {
   fields: jest.fn(async () => ok(FIELDS)),
   myLevels: jest.fn(async () => ok([{ id: TABLE, level: "owner" }])),
   fieldOptions: jest.fn(async () => ok([])),
-  list: jest.fn(async ({ offset }: { offset: number }) => ok({ rows: offset === 0 ? ROWS : [] })),
+  tableCapacity: jest.fn(async () => ok({ records: ROWS.length })),
   tableDecorations: jest.fn(async () => ok({ rules: [] })),
   rowActions: jest.fn(async () => ok({ actions: [] })),
   views: jest.fn(async () => ok(store.views)),

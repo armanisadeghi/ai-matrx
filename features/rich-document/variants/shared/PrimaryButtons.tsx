@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useActionStates } from "./useActionStates";
-import { resolveActionLabel } from "../../actions/utils";
 import type {
   RichDocumentAction,
   RichDocumentActionContext,
@@ -40,7 +39,7 @@ export function PrimaryButtons(props: PrimaryButtonsProps): React.ReactElement {
   });
 
   const ctxForLabels = getCtx();
-  const isActive = useActionStates(primary, ctxForLabels);
+  const stateOf = useActionStates(primary, ctxForLabels);
   if (primary.length === 0) return <></>;
   const buttonHeight = size === "xs" ? "h-7 w-7" : "h-8 w-8";
   const iconSize = size === "xs" ? "h-3.5 w-3.5" : "h-4 w-4";
@@ -48,19 +47,12 @@ export function PrimaryButtons(props: PrimaryButtonsProps): React.ReactElement {
   return (
     <div className={cn("inline-flex items-center gap-0.5", className)}>
       {primary.map((action) => {
-        const live = action.stateIcon?.(ctxForLabels) ?? null;
-        const Icon = live?.icon ?? action.icon;
-        const labelText = resolveActionLabel(action.label, ctxForLabels);
-        const disabledResult = action.disabled?.(ctxForLabels);
-        const isDisabled =
-          disabledResult === true ||
-          (typeof disabledResult === "object" && disabledResult !== null);
-        const disabledReason =
-          typeof disabledResult === "object" && disabledResult !== null
-            ? disabledResult.reason
-            : undefined;
-        const tooltipText = disabledReason ?? labelText;
-        const active = isActive(action);
+        const state = stateOf(action);
+        const Icon = state.icon;
+        const labelText = state.label;
+        const isDisabled = state.disabled;
+        const tooltipText = state.disabledReason ?? labelText;
+        const active = state.active;
 
         return (
           <Tooltip key={action.id}>
@@ -93,7 +85,7 @@ export function PrimaryButtons(props: PrimaryButtonsProps): React.ReactElement {
                 <Icon
                   className={cn(
                     iconSize,
-                    live?.spin && "animate-spin",
+                    state.spin && "animate-spin",
                     // A toggle is colored only while ON; muted otherwise.
                     active === false ? "text-muted-foreground" : action.iconColor,
                   )}

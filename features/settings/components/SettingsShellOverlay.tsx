@@ -85,7 +85,7 @@ const LEGACY_TAB_MAP: Record<string, string> = {
   prompts: "ai.prompts", // deprecated — routes to AI section anchor
   messaging: "communication.messaging",
   voice: "voice.input",
-  textToSpeech: "voice.tts",
+  textToSpeech: "voice.voices",
   assistant: "ai.assistants",
   aiModels: "ai.models",
   email: "communication.email",

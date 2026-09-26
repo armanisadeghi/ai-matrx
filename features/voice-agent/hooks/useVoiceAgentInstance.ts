@@ -38,7 +38,7 @@
 //   session running someone else's prompt.
 
 import { useEffect, useMemo, useRef } from "react";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { DEFAULT_INTRO_TOOLS, DEFAULT_INTRO_VOICE } from "../constants";
 import {
   applyAgentConfig,
@@ -56,7 +56,7 @@ import type { RootState } from "@/lib/redux/store";
 import { readInstructionsFromAgent } from "../agentInstructions";
 import { selectAgentReadyForBuilder } from "@/features/agents/redux/agent-definition/selectors";
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
-import { resolveSessionKnob } from "@/lib/scoped-config/sessionKnob";
+import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import { LIVE_CONVERSATION_VOICES } from "@/lib/voices/voiceSets";
 
 interface UseVoiceAgentInstanceOpts {
@@ -223,24 +223,10 @@ export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {
         // tools from this late agent-fetch would clobber the resolved set in a
         // resolve/seed race (M1). The synchronous builtin seed lives in
         // initInstance only — useRealtimeAgentConfig overwrites it once.
-        // The voice: a person's "Live conversation voice" (media.conversation.voice)
-        // applies to AI Matrx's OWN (builtin) voice agents — the assistant, the
-        // tutor, Scribe live. An agent somebody built speaks in the voice its
-        // builder chose; a consumer preference never rewrites a builder's work.
-        let voiceId = readVoiceIdFromAgent(agent!.settings);
-        if (agent!.agentType === "builtin") {
-          const personal = await resolveSessionKnob(LIVE_CONVERSATION_VOICE_KNOB).catch(
-            (error: unknown) => {
-              console.error(
-                `[voice-agent] ${LIVE_CONVERSATION_VOICE_KNOB} could not be resolved — the agent's own voice speaks:`,
-                error,
-              );
-              return undefined;
-            },
-          );
-          if (cancelled) return;
-          if (typeof personal === "string" && isVoiceId(personal)) voiceId = personal;
-        }
+        // The agent's own voice here; a person's "Live conversation voice" is
+        // layered on by the effect below (it resolves after the organization
+        // does, which can be later than this load).
+        const voiceId = readVoiceIdFromAgent(agent!.settings);
         dispatch(
           applyAgentConfig({
             instanceId,
@@ -259,6 +245,33 @@ export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {
     // applyAgentConfig actions, not by re-running this effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, instanceId, store]);
+
+  // ── The person's live conversation voice ─────────────────────────
+  // `media.conversation.voice` applies to AI Matrx's OWN (builtin) voice
+  // agents — the assistant, the tutor, Scribe live, the Communicator. An agent
+  // somebody built speaks in the voice its builder chose; a consumer
+  // preference never rewrites a builder's work. Reactive, not one-shot: the
+  // knob answers only once the organization is known, which can land after
+  // the agent loads. Never swapped mid-session.
+  const personalVoice = useSessionKnob(LIVE_CONVERSATION_VOICE_KNOB);
+  const agentType = useAppSelector((s) =>
+    opts.agentId ? (s.agentDefinition.agents?.[opts.agentId]?.agentType ?? null) : null,
+  );
+  const agentSettings = useAppSelector((s) =>
+    opts.agentId ? (s.agentDefinition.agents?.[opts.agentId]?.settings ?? null) : null,
+  );
+  const sessionIdle = useAppSelector((s) => {
+    const status = s.voiceAgent?.instances?.[instanceId]?.status;
+    return status === undefined || status === "idle" || status === "error";
+  });
+  useEffect(() => {
+    if (agentType !== "builtin" || !sessionIdle || !agentSettings) return;
+    const voiceId =
+      typeof personalVoice === "string" && isVoiceId(personalVoice)
+        ? personalVoice
+        : readVoiceIdFromAgent(agentSettings);
+    dispatch(applyAgentConfig({ instanceId, voiceId }));
+  }, [agentType, agentSettings, personalVoice, sessionIdle, dispatch, instanceId]);
 
   return instanceId;
 }

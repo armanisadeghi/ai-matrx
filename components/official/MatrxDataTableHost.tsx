@@ -5,10 +5,11 @@
 // Table UI feedback: /Users/armanisadeghi/code/common-docs/projects/npm-package-extraction/TABLE-UI-ISSUES.md
 // Read and update that checklist before fixing table UI feedback in any host.
 import { JsonViewer } from "@/components/ui/JsonComponents/JsonViewerComponent";
-import type { ReactNode } from "react";
+import { useCallback, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { MatrxDataTableProvider, type MatrxDataTableHost as TableHost, type TableWindowPanelProps } from "@ai-matrx/design-system/data-table/host";
+import { MatrxDataTableProvider, type MatrxDataTableHost as TableHost, type TableContextMenuBoundaryProps, type TableMenuIconProps, type TableWindowPanelProps } from "@ai-matrx/design-system/data-table/host";
+import { readMenuTarget } from "@ai-matrx/design-system/data-table/menu-targets";
 import type { MatrxDataTableDensity } from "@ai-matrx/design-system/data-table/types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -25,6 +26,7 @@ import { TableToolbarAction } from "./TableToolbarAction";
 import { createDefaultTableRowMenuDescriptor, registerTableRowContextResolver } from "@/features/context-menu-v3/table-row-context-registry";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { useIsInsideContextMenu } from "@/features/context-menu-v3/menu-presence";
+import { TABLE_MENU_ICONS, toContextMenuExtraSections } from "./table-menu-sections";
 
 export type TableDensity = MatrxDataTableDensity;
 export const TABLE_DENSITY_KNOB_KEY = "tables.density.mode";
@@ -54,10 +56,28 @@ export type {
 function TableWindowPanel(props: TableWindowPanelProps) {
   return <WindowPanel {...props} />;
 }
-function TableContextMenuBoundary({ label, children }: { label: string; children: ReactNode }) {
+// The table's neutral sections (`contextMenu.sections`) are asked per open with
+// the level read off the clicked element, and drawn beside the row's own
+// descriptor sections. A table that declares none passes no `sections`, and
+// this boundary is exactly what it was.
+function TableContextMenuBoundary({ label, children, sections }: TableContextMenuBoundaryProps) {
   const insideMenu = useIsInsideContextMenu();
+  const resolveSections = useCallback(
+    (target: HTMLElement | null) => {
+      if (!sections) return undefined;
+      const aimed = readMenuTarget(target);
+      if (!aimed) return undefined;
+      const answered = toContextMenuExtraSections(sections(aimed));
+      return answered.length > 0 ? answered : undefined;
+    },
+    [sections],
+  );
   if (insideMenu) return <>{children}</>;
-  return <NonEditableContextMenu sourceFeature="system" contextData={{ content: label }} enableFloatingIcon={false}><div className="contents">{children}</div></NonEditableContextMenu>;
+  return <NonEditableContextMenu sourceFeature="system" contextData={{ content: label }} enableFloatingIcon={false} {...(sections ? { resolveExtraSectionsOnOpen: resolveSections } : {})}><div className="contents">{children}</div></NonEditableContextMenu>;
+}
+function TableMenuIcon({ name, className }: TableMenuIconProps) {
+  const Icon = TABLE_MENU_ICONS[name];
+  return Icon ? <Icon className={className} aria-hidden /> : null;
 }
 const ports: TableHost = {
   JsonViewer,
@@ -77,6 +97,7 @@ const ports: TableHost = {
   rowContextRegistry: { register: registerTableRowContextResolver },
   createDefaultMenuContext: createDefaultTableRowMenuDescriptor,
   ContextMenuBoundary: TableContextMenuBoundary,
+  MenuIcon: TableMenuIcon,
 };
 export function MatrxDataTableHost({ children }: { children: ReactNode }) {
   const organizationId = useAppSelector(selectOrganizationId);

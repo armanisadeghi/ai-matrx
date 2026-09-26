@@ -36,9 +36,11 @@ import { updateConfig } from "@/features/voice-agent/state/voiceAgentSlice";
 import {
   selectVoiceTurns,
   selectVoiceError,
+  selectVoiceVoiceId,
 } from "@/features/voice-agent/state/selectors";
 import { VoiceMicButton } from "@/features/voice-agent/components/VoiceMicButton";
 import { VoiceStatusPill } from "@/features/voice-agent/components/VoiceStatusPill";
+import { LiveVoiceDoor } from "@/features/voice-agent/components/LiveVoiceDoor";
 import { VoiceTranscriptStream } from "@/features/voice-agent/components/VoiceTranscriptStream";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
@@ -124,6 +126,7 @@ export function VoiceTutorPanel({
 
   const turns = useAppSelector((s) => selectVoiceTurns(s, instanceId));
   const liveError = useAppSelector((s) => selectVoiceError(s, instanceId));
+  const voiceId = useAppSelector((s) => selectVoiceVoiceId(s, instanceId));
 
   // Keep the agent's instructions current: its own system message from the DB
   // plus THIS card as context. The orchestrator reads instructions from the
@@ -152,7 +155,10 @@ export function VoiceTutorPanel({
       <div className="flex items-center gap-3">
         <VoiceMicButton status={status} onToggle={toggle} size={48} />
         <div className="min-w-0 flex-1">
-          <VoiceStatusPill status={status} micMuted={micMuted} />
+          <div className="flex items-center justify-between gap-2">
+            <VoiceStatusPill status={status} micMuted={micMuted} />
+            <LiveVoiceDoor voiceId={voiceId} agentId={agentId} />
+          </div>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
             Talk this card through out loud — the tutor already knows which card
             you&apos;re on.

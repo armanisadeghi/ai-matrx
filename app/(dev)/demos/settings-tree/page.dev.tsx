@@ -128,7 +128,7 @@ const nodes: SettingsTreeNode[] = [
     icon: Mic,
     children: [
       { id: "voice.input", label: "Voice input", icon: Mic },
-      { id: "voice.tts", label: "Text-to-speech", icon: Volume2 },
+      { id: "voice.voices", label: "Voices", icon: Volume2 },
     ],
   },
   {

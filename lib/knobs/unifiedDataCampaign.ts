@@ -129,10 +129,47 @@ async function enabled(organizationId: string | null | undefined): Promise<boole
  * No organization picked yet is `off` and not `unavailable`: there is nothing to
  * check, which is a real answer, and the sidebar asks this on every boot.
  */
+/**
+ * ONE ANSWER PER ORGANIZATION, SHARED (DOOR-SPEED, 2026-09-25). Every screen of the record store
+ * asks this — the mount, the realtime port, each table page — and it was a network call on every
+ * page turn and every edit (three per load). An `on`/`off` answer is shared for
+ * `SWITCH_ANSWER_MS` and a question already in flight is joined, per browser client; `unavailable`
+ * is never kept, so the next caller asks again. A stale `on` can never write where the switch is
+ * off: every store door asks the switch itself (`custom.assert_store_door`) and refuses in words.
+ */
+const SWITCH_ANSWER_MS = 30_000;
+const switchAnswers = new WeakMap<object, Map<string, { at: number | null; answer: Promise<StoreSwitchAnswer> }>>();
+
 async function check(organizationId: string | null | undefined): Promise<StoreSwitchAnswer> {
     if (!organizationId) return { state: UNIFIED_DATA_CAMPAIGN_DEFAULT ? "on" : "off" };
+    const supabase = createClient();
+    if (!supabase || typeof supabase !== "object") return askSwitch(supabase, organizationId);
+    let held = switchAnswers.get(supabase);
+    if (!held) {
+        held = new Map();
+        switchAnswers.set(supabase, held);
+    }
+    const kept = held.get(organizationId);
+    if (kept && (kept.at === null || Date.now() - kept.at < SWITCH_ANSWER_MS)) return kept.answer;
+    const entry: { at: number | null; answer: Promise<StoreSwitchAnswer> } = {
+        at: null,
+        answer: askSwitch(supabase, organizationId),
+    };
+    held.set(organizationId, entry);
+    const answer = await entry.answer;
+    if (held.get(organizationId) === entry) {
+        if (answer.state === "unavailable") held.delete(organizationId);
+        else entry.at = Date.now();
+    }
+    return answer;
+}
+
+async function askSwitch(
+    supabase: ReturnType<typeof createClient>,
+    organizationId: string,
+): Promise<StoreSwitchAnswer> {
     try {
-        const { data, error } = await createClient()
+        const { data, error } = await supabase
             .schema("platform")
             .rpc(UNIFIED_DATA_STORE_DOOR, { p_organization_id: organizationId });
         if (error) throw new Error(error.message);

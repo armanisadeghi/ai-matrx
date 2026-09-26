@@ -14,6 +14,9 @@
 //
 // SoR: common-docs/systems/agents/voice/STATE.md
 
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectVoiceVoiceId } from "../state/selectors";
+import { LiveVoiceDoor } from "../components/LiveVoiceDoor";
 import { AudioLines } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMandate } from "@/features/mandates/useMandate";
@@ -54,6 +57,7 @@ function ActiveDock({
   });
 
   const live = relay.status !== "idle" && relay.status !== "error";
+  const voiceId = useAppSelector((s) => selectVoiceVoiceId(s, relay.instanceId));
 
   if (!live) {
     return (
@@ -63,6 +67,7 @@ function ActiveDock({
             ? relay.error.message
             : "Talk instead of typing — your agent answers out loud, and everything still shows up here as text."}
         </p>
+        <LiveVoiceDoor voiceId={voiceId} agentId={communicatorAgentId} />
         <Button
           type="button"
           size="sm"
