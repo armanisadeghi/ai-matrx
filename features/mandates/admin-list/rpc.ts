@@ -83,7 +83,19 @@ export type MandateAdminFacetsAnswer = Record<string, { value: string; count: nu
 export async function callMandateAdminList<T>(args: MandateAdminListArgs): Promise<T> {
   const { data, error } = await supabase.rpc("mnd_admin_list", args);
   if (error) {
-    throw new Error(`Mandate list (${args.p_mode ?? "page"}): ${error.message}`);
+    // A door's refusal is a sentence written for a person and is carried
+    // intact; a statement timeout is not, so it gets plain words. `code` rides
+    // along so the list shell can tell a refusal (no Retry) from a breakage.
+    const message =
+      error.code === "57014"
+        ? "The mandate list took too long to answer. Try again in a moment."
+        : `Mandate list (${args.p_mode ?? "page"}): ${error.message}`;
+    throw Object.assign(new Error(message), {
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      refused: error.code === "42501",
+    });
   }
   return data as Json as unknown as T;
 }

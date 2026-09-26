@@ -77,6 +77,15 @@ import {
 } from "@/utils/user-table-utls/field-name-sanitizer";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import {
+  SurfaceLayerBoundary,
+  SurfaceRuntimeProvider,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SURFACE_LAYER_ATTRIBUTE } from "@/features/surfaces/runtime/window-forms";
+import {
+  createTableSettingsScope,
+  TABLE_SETTINGS_SURFACE_NAME,
+} from "@/features/surfaces/manifests/table-settings.manifest";
 
 interface TableField {
   id: string;
@@ -162,6 +171,14 @@ export default function TableConfigModal({
   // (register ARE-033): row actions save as each is saved, the other tabs on
   // Save Changes.
   const [activeTab, setActiveTab] = useState<string>(defaultTab ?? "fields");
+  // The tab is controlled (an agent can switch it — `settings_tab`), and every
+  // open starts on `defaultTab`, exactly as the uncontrolled tabs did.
+  const openedAs = `${isOpen}:${defaultTab ?? "fields"}`;
+  const [lastOpenedAs, setLastOpenedAs] = useState(openedAs);
+  if (lastOpenedAs !== openedAs) {
+    setLastOpenedAs(openedAs);
+    setActiveTab(defaultTab ?? "fields");
+  }
   const onActionsTab = activeTab === "actions";
   // Which store holds this table (data seam) — decides the two controls a
   // record-store table does not have in the older form.
@@ -763,7 +780,52 @@ export default function TableConfigModal({
     // 0.38.0, register ARE-006): the grid, the Agents menu, the assist dock and
     // right-click AI stay usable while Table settings is open; the header drags it.
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="flex max-h-[92dvh] flex-col w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)] sm:max-w-6xl">
+      <DialogContent
+        {...{ [SURFACE_LAYER_ATTRIBUTE]: TABLE_SETTINGS_SURFACE_NAME }}
+        className="flex max-h-[92dvh] flex-col w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)] sm:max-w-6xl"
+      >
+        {/* A LAYER over the data table (register ARE-010): while open it is the
+            primary surface for the Agents menu, right-click AI and the assist
+            dock, and the table under it stays in the run as a page level of
+            the surface chain. Mounted inside the content, so it registers only
+            while the window is open. */}
+        <SurfaceLayerBoundary>
+        <SurfaceRuntimeProvider
+          surfaceName={TABLE_SETTINGS_SURFACE_NAME}
+          getScope={() => {
+            const nameOf = (fieldId: string) =>
+              fields.find((f) => f.id === fieldId)?.field_name ?? fieldId;
+            const byName = <T,>(changes: Record<string, T>) =>
+              Object.fromEntries(
+                Object.entries(changes).map(([id, change]) => [nameOf(id), change]),
+              );
+            const pending = {
+              ...(Object.keys(dataTypeChanges).length ? { type_changes: byName(dataTypeChanges) } : {}),
+              ...(Object.keys(formatChanges).length ? { format_changes: byName(formatChanges) } : {}),
+              ...(Object.keys(validationChanges).length
+                ? { validation_changes: byName(validationChanges) }
+                : {}),
+            };
+            return createTableSettingsScope({
+              settings_tab: activeTab,
+              has_unsaved_changes: hasChanges,
+              table_details_draft: {
+                table_name: tableInfo.table_name,
+                description: tableInfo.description,
+                validation_mode: toValidationMode(tableInfo.validation_mode),
+              },
+              ...(Object.keys(pending).length ? { pending_column_changes: pending } : {}),
+            });
+          }}
+          getWriteHandlers={() => ({
+            settings_tab: (value) => {
+              if (value !== "fields" && value !== "table" && value !== "actions") {
+                throw new Error('settings_tab expects "fields", "table" or "actions".');
+              }
+              setActiveTab(value);
+            },
+          })}
+        >
         <DialogHeader className="shrink-0 border-b px-4 py-3 pr-12 sm:px-5">
           <DialogTitle className="flex min-w-0 items-center gap-2">
             <Settings className="h-5 w-5" />
@@ -782,8 +844,7 @@ export default function TableConfigModal({
         </DialogHeader>
 
         <Tabs
-          key={defaultTab ?? "fields"}
-          defaultValue={defaultTab ?? "fields"}
+          value={activeTab}
           onValueChange={setActiveTab}
           className="flex min-h-0 flex-1 flex-col overflow-hidden"
         >
@@ -1269,6 +1330,8 @@ export default function TableConfigModal({
             </div>
           </div>
         </DialogFooter>
+        </SurfaceRuntimeProvider>
+        </SurfaceLayerBoundary>
       </DialogContent>
     </Dialog>
   );

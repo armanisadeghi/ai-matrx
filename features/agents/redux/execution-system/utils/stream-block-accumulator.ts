@@ -861,7 +861,8 @@ export class StreamBlockAccumulator {
     // for blocks: a `<artifact>` inside a YAML value must not open a card
     // that swallows the document (RC-B3r R1; same rule as the static
     // splitter and markdown-core `splitFrontmatter`).
-    const fenceLine = rawLine.replace(/\r$/, "");
+    // A leading byte-order mark is an encoding mark, not content (C1).
+    const fenceLine = rawLine.replace(/\r$/, "").replace(isFirstLine ? /^\uFEFF/ : /$^/, "");
     if (this.subState.kind === "none" && isFirstLine && (fenceLine === "---" || fenceLine === "+++")) {
       if (this.currentBlockType !== "text") {
         this.closeCurrentBlock(dispatch);

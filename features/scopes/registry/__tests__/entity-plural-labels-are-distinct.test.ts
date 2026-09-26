@@ -14,7 +14,6 @@ import { tryGetEntityInfo } from "../entityRegistry";
 const AWAITING_A_NAMING_RULING = new Set([
   "Access audits: hr_access_audit, iam_access_audit",
   "Analysis Results: analysis_result, web_result",
-  "Documents: document, udt_document",
   "Locations: hr_location, location",
   "YouTube Videos: web_youtube_video, youtube_video",
 ]);

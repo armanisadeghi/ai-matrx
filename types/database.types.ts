@@ -56283,6 +56283,10 @@ export type Database = {
         Args: { p_schema: string; p_table: string; p_variant?: string }
         Returns: undefined
       }
+      asks_about_caller: {
+        Args: { p_function?: string; p_user: string }
+        Returns: boolean
+      }
       assert_class_allows: {
         Args: { p_action: string; p_row_org?: string; p_token: string }
         Returns: undefined
@@ -56869,6 +56873,7 @@ export type Database = {
       }
       my_orgs: { Args: never; Returns: string[] }
       my_orgs_all: { Args: never; Returns: string[] }
+      org_access_ids: { Args: never; Returns: string[] }
       org_access_log: {
         Args: { p_limit?: number; p_organization_id: string }
         Returns: Json
@@ -60056,12 +60061,28 @@ export type Database = {
         Args: { p_label: string; p_surface: string }
         Returns: string
       }
+      latest_references: {
+        Args: {
+          p_exclude_type_ids?: string[]
+          p_keys?: string[]
+          p_problems_only?: boolean
+          p_type_ids?: string[]
+        }
+        Returns: Json
+      }
       mandate_references: { Args: { p_mandate_key: string }; Returns: Json }
       missing_output_keys: {
         Args: { p_output_schema: Json; p_required_output_keys: string[] }
         Returns: string[]
       }
       output_schema_keys: { Args: { p_output_schema: Json }; Returns: string[] }
+      reference_head: {
+        Args: never
+        Returns: {
+          identity_hash: string
+          reference_id: string
+        }[]
+      }
       resolve: {
         Args: { p_mandate_key: string; p_organization_id?: string }
         Returns: {
@@ -89584,6 +89605,7 @@ export type Database = {
       }
       global_meter_entry: {
         Row: {
+          conversation_id: string | null
           created_at: string
           custom_fields: Json
           execution_id: string
@@ -89595,6 +89617,7 @@ export type Database = {
           quantities: Json
         }
         Insert: {
+          conversation_id?: string | null
           created_at?: string
           custom_fields?: Json
           execution_id: string
@@ -89606,6 +89629,7 @@ export type Database = {
           quantities?: Json
         }
         Update: {
+          conversation_id?: string | null
           created_at?: string
           custom_fields?: Json
           execution_id?: string

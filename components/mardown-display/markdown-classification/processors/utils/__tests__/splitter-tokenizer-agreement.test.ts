@@ -83,6 +83,12 @@ const CASES = {
     `Save the notes:\n\ncat > "$HOME/.config/route-notes.md" <<'EOF_ID'\n# Route notes\n\nNorth Industrial runs Tuesday.\nEOF_ID\nchmod 644 "$HOME/.config/route-notes.md" || true\n\nDone.`,
   "R1 · artifact tag inside a YAML literal value in front matter":
     `---\ntitle: Kiln log\nnotes: |\n  use <artifact> sparingly\n  and <thinking> never\nsummary: >\n  folded <decision> text\n---\n\n${PROSE}`,
+  "C1 · JSON object as a front-matter value":
+    `---\ncard: {"__kind":"quiz","q":"x"}\n---\n\n${PROSE}`,
+  "C1 · front matter behind a byte-order mark":
+    `\uFEFF---\nnote: <artifact> x\n---\n\n${PROSE}`,
+  "C2 · inline think span, then a stray closer later":
+    "Dispatch plan for Tuesday. A <think>quick check</think> of the routes is done.\n\nMore detail follows here.\n</think>\n\nFinal answer: North Industrial first.",
   "5 · same-line thinking span after long prose":
     `${PROSE.repeat(30)}\nThe planner writes a <thinking> short scratch note about the Harbor route </thinking> and then answers.\n\n${PROSE}`,
 } as const;
@@ -97,6 +103,29 @@ describe("renderer splitter agrees with the source tokenizer", () => {
     expect(split(text).map((b) => b.type)).toEqual(["text"]);
     expect(streamed(text).map((b) => b.type)).toEqual(["text"]);
     expect(disagreements(text)).toEqual([]);
+  });
+
+  it.each([
+    CASES["C1 · JSON object as a front-matter value"],
+    CASES["C1 · front matter behind a byte-order mark"],
+  ])("C1 · front matter renders as one unit — static and live (%#)", (text) => {
+    expect(split(text).map((b) => b.type)).toEqual(["text"]);
+    expect(streamed(text).map((b) => b.type)).toEqual(["text"]);
+    expect(tokenizeSource(text)[0]?.islandType).toBe("front_matter");
+  });
+
+  it("C2 · an inline span pairs with its OWN closer; the stray closer later is an orphan (nearest-closer pairing)", () => {
+    const text = CASES["C2 · inline think span, then a stray closer later"];
+    const blocks = split(text);
+    // The orphan closer folds the text before it (the one documented rescue,
+    // as the tokenizer reads it) — and nothing is lost from that text.
+    expect(blocks.map((b) => b.type)).toEqual(["thinking", "text"]);
+    expect(blocks[0]?.content).toContain("of the routes is done.");
+    expect(blocks[0]?.content).toContain("More detail follows here.");
+    expect(blocks[1]?.content.trim()).toBe("Final answer: North Industrial first.");
+    const rescue = tokenizeSource(text).find((b) => b.islandType === "xml_region");
+    expect(rescue?.meta.continuation).toBe(true);
+    expect(rescue?.raw).toContain("of the routes is done.");
   });
 
   it("5 · a thinking span inside a sentence stays inside its sentence (RC-B3r R2)", () => {

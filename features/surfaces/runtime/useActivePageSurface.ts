@@ -18,6 +18,11 @@
  * chat's agents against the chat's scope, and the window's declared values and
  * `note_draft` write target were unreachable by construction.
  *
+ * The same holds for a runtime registered inside a `SurfaceLayerBoundary`
+ * (a dialog opened inside the page's own tree, such as Table settings): it is
+ * a layer too. Whichever layer wins, the page under it is NOT lost — it rides
+ * in the run's `surface_chain` (`surface-chain.ts`).
+ *
  * Otherwise the page's registered runtime surface wins when it matches the
  * route (or when the route has no mapping yet).
  */
@@ -43,8 +48,13 @@ export function useActivePageSurface(): ActivePageSurface {
   const pathname = usePathname();
   const runtime = useSurfaceRuntime();
   const routeSurface = surfaceFromPathname(pathname);
+  // A LAYER (a dialog, window, sheet or panel open over the page — overlay
+  // manifests, and any runtime inside a `SurfaceLayerBoundary`) is what the
+  // person is looking at while it is open. The route's page stays in the
+  // run's context as a level of the surface chain.
   const runtimeIsOverlay =
-    !!runtime?.surfaceName && !!getManifest(runtime.surfaceName)?.overlayId;
+    !!runtime?.surfaceName &&
+    (!!runtime.layer || !!getManifest(runtime.surfaceName)?.overlayId);
   const surfaceName =
     runtime?.surfaceName &&
     (runtimeIsOverlay || !routeSurface || runtime.surfaceName === routeSurface)

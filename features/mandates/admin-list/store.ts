@@ -160,6 +160,27 @@ export function ensureMandateSourceFacts(keys: readonly string[]): void {
   );
 }
 
+/**
+ * Ask every failed source again (the list notice's Try again). Reports are
+ * re-read from scratch; the code-scan facts forget which keys they checked, so
+ * the current page reads them again; the database half is re-asked.
+ */
+export function retryMandateAdminFailures(): void {
+  const failed = Object.keys(state.failures);
+  if (failed.length === 0) return;
+  const reports: readonly string[] = ["codeTruth", "coverage", "impact", "workflowImpact"];
+  const reloadReports = failed.some((source) => reports.includes(source));
+  dbEpoch += 1;
+  if (reloadReports) generation += 1;
+  publish({
+    failures: {},
+    ...(failed.includes("sources") ? { sourceChecked: new Set<string>() } : {}),
+    ...(reloadReports
+      ? { status: "idle" as const, settled: NOTHING_SETTLED, reports: EMPTY_REPORTS }
+      : {}),
+  });
+}
+
 export function recordMandateAdminFailure(source: string, message: string): void {
   if (state.failures[source] === message) return;
   publish({ failures: { ...state.failures, [source]: message } }, false);

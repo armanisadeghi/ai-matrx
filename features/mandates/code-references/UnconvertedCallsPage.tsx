@@ -20,6 +20,7 @@ import type {
 } from "@/lib/entity-list/config";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { createMemoryListService } from "@/lib/entity-list/memoryService";
+import { plainFailureReason } from "@/lib/entity-list/failure";
 import { toast } from "@/lib/toast";
 import { ADMIN_MANDATES_HEALTH, ADMIN_MANDATES_UNCONVERTED } from "@/features/mandates/admin-routes";
 import {
@@ -183,7 +184,18 @@ const CONFIG: EntityListConfig<UnconvertedCall> = {
     sourceFeature: "agents-other",
     scopes: ["system"],
     service: createMemoryListService<UnconvertedCall>({
-      load: fetchUnconvertedCalls,
+      load: () =>
+        fetchUnconvertedCalls().catch((error: unknown) => {
+          // Plain words on screen (the raw message stays in the console and
+          // keeps its code, so a refusal still offers no Retry).
+          console.error("[unconverted-calls] read failed", error);
+          throw Object.assign(
+            new Error(`The code scan's latest results ${plainFailureReason(error)}.`),
+            typeof error === "object" && error !== null && "code" in error
+              ? { code: (error as { code?: unknown }).code }
+              : {},
+          );
+        }),
       scope: "system",
       defaultSort: "file",
       fields: {

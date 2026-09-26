@@ -27,7 +27,14 @@ export interface HookHandle<T> {
   unmount: () => Promise<void>;
 }
 
-export async function renderHook<T>(hook: () => T): Promise<HookHandle<T>> {
+export async function renderHook<T>(
+  hook: () => T,
+  options: {
+    /** Wrap the probe — e.g. a Redux Provider for a hook that reads the store. */
+    wrapper?: (props: { children: React.ReactNode }) => React.ReactElement;
+  } = {},
+): Promise<HookHandle<T>> {
+  const Wrapper = options.wrapper;
   const container = document.createElement("div");
   document.body.appendChild(container);
   let root: Root;
@@ -40,7 +47,7 @@ export async function renderHook<T>(hook: () => T): Promise<HookHandle<T>> {
 
   await act(async () => {
     root = createRoot(container);
-    root.render(<Probe />);
+    root.render(Wrapper ? <Wrapper><Probe /></Wrapper> : <Probe />);
   });
 
   return {

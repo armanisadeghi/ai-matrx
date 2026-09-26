@@ -123,7 +123,14 @@ export const dispatchSurfaceWrite = createAsyncThunk<
           selectAgentById(state, agentId)?.name
         : undefined;
 
+      // Two open screens (the surface chain) may declare the same target
+      // name; the agent may name the one it means. Omitted = deepest wins.
+      const surfaceArg =
+        typeof args.surface === "string" && args.surface.trim()
+          ? { surfaceName: args.surface.trim() }
+          : {};
       const result = await applySurfaceWrite(target, args.value, {
+        ...surfaceArg,
         origin: "agent",
         actorLabel,
         requestApproval: async (proposal) => {

@@ -42,6 +42,12 @@ import {
   type SurfaceWritePatch,
 } from "@/features/surfaces/runtime/surface-write-patch";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import {
+  applyWindowFormChanges,
+  hasWindowForms,
+  WINDOW_FORM_TARGET,
+  WINDOW_FORM_TARGET_NAME,
+} from "./window-forms";
 import { toast } from "@/lib/toast";
 
 import type {
@@ -586,6 +592,9 @@ export async function applySurfaceWrite(
   rawValue: unknown,
   opts?: ApplySurfaceWriteOptions,
 ): Promise<SurfaceWriteResult> {
+  if (targetName === WINDOW_FORM_TARGET_NAME) {
+    return applyWindowFormWrite(rawValue, opts);
+  }
   const stack = getSurfaceRuntimeStack().filter(
     (entry) => !opts?.surfaceName || entry.surfaceName === opts.surfaceName,
   );
@@ -699,6 +708,46 @@ export async function applySurfaceWrite(
       mounted: stack.map((entry) => entry.surfaceName),
     },
   );
+}
+
+/**
+ * The PLATFORM write target `window_form_fields` — fields in an open window
+ * that no registered surface speaks for (`window-forms.ts`). It belongs to no
+ * manifest, so it is resolved here instead of on the stack; everything else is
+ * the same seam: the agent-write policy (`ask` — the person approves on the
+ * usual card), a refusal returned to the agent with its reason, and a loud
+ * failure for anything unexpected.
+ */
+async function applyWindowFormWrite(
+  rawValue: unknown,
+  opts?: ApplySurfaceWriteOptions,
+): Promise<SurfaceWriteResult> {
+  const target = WINDOW_FORM_TARGET;
+  const primary = getSurfaceRuntimeStack()[0];
+  const surfaceName = primary?.surfaceName ?? "";
+  if ((opts?.origin ?? "user") === "agent") {
+    const verdict = await agentWriteAllowed(
+      target,
+      surfaceName,
+      opts?.actorLabel,
+      rawValue,
+      opts?.requestApproval,
+      primary ?? { surfaceName, getScope: () => ({}) },
+    );
+    if (verdict !== true) return verdict;
+  }
+  try {
+    applyWindowFormChanges(rawValue);
+    if (!opts?.quiet) toast.success(`${target.label} — filled in. Review and save.`);
+    return { ok: true, surfaceName, target };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : `Applying "${target.label}" failed.`;
+    if (error instanceof SurfaceWriteRefusalError) {
+      return { ok: false, refused: true, error: message };
+    }
+    return fail(message, { targetName: target.name, surfaceName, error });
+  }
 }
 
 /**
@@ -834,6 +883,15 @@ export function listLiveWriteTargets(): ReadonlyArray<{
         hasHandler: Boolean(handlers[target.name]),
       });
     }
+  }
+  // The platform target for unregistered windows: offered only while one
+  // with fields is open, attributed to the primary surface.
+  if (hasWindowForms()) {
+    out.push({
+      surfaceName: getSurfaceRuntimeStack()[0]?.surfaceName ?? "",
+      target: WINDOW_FORM_TARGET,
+      hasHandler: true,
+    });
   }
   return out;
 }

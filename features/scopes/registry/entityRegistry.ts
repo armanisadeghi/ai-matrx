@@ -400,7 +400,9 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   },
   udt_document: {
     Icon: FileText,
-    labelPlural: "Documents",
+    // "Cloud documents", not "Documents": content.document (Markdown Studio) is also a document, and
+    // Trash showed two kinds both called Document (VERIFIER-25). The registry label is "Cloud document".
+    labelPlural: "Cloud documents",
     hrefFor: (id) => `/documents/${id}`,
   },
   working_document: {

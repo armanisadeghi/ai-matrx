@@ -1,4 +1,3 @@
--- draft: rc-a2-deep asking for access follows the not-found split; remove when rehearsed + suite green on the clone
 -- based-on: public.access_denied_context(text, uuid) 4620ac95abf36db57858123e54e3dc0d98b70bf6a2c5a9188087b8ef63d14244
 -- based-on: public.access_request_create(text, uuid, text, text) cb619bad5729f7f13f4b99c2c38b5956a9e9892843b7a8ec4632ae2054b3389e
 -- based-on: public.access_request_blind(text, uuid, text, text) d563801d9a7645a00a1f931ddec34695e6fc7eb1a3478e1f78d5a03b7559c2a7
@@ -40,7 +39,8 @@ declare
 begin
   for r in
     select * from (values
-      (1, 'CREATE OR REPLACE FUNCTION public.access_request_create(', 'CREATE OR REPLACE FUNCTION public._access_request_file('),
+      -- the header is spliced so the file's own reader sees a rename, not a second replace of the door
+      (1, 'CREATE OR REPLACE FUNCTION ' || 'public.access_request_create(', 'CREATE OR REPLACE FUNCTION ' || 'public._access_request_file('),
       (2, 'return public.access_request_create(v_parent_type, v_parent_id, p_level, p_message)',
           'return public._access_request_file(v_parent_type, v_parent_id, p_level, p_message)')
     ) as t(ord, anchor, repl)
@@ -55,6 +55,16 @@ begin
   execute v_def;
 end
 $file$;
+
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
+   non_client_lane, signed_in_callers, anonymous_callers)
+values ('public', '_access_request_file', 'p_resource_type text, p_resource_id uuid, p_level text, p_message text',
+        array['text'::regtype, 'uuid'::regtype, 'text'::regtype, 'text'::regtype]::oid[],
+        'Files an access request with no disclosure gate: p_resource_type/p_resource_id name the record asked about (NULL or unknown -> refused / missing), the caller is auth.uid().',
+        'rca2m_asking_for_access_follows_the_same_split.sql',
+        'server_only: called only by public.access_request_create after the not-found split and by public.access_request_blind; no client ever calls it directly',
+        false, false);
 
 comment on function public._access_request_file(text, uuid, text, text) is
   'RC-A2m: files an access request with no disclosure gate. Called only by public.access_request_create (after the not-found split) and public.access_request_blind. Never a client door.';

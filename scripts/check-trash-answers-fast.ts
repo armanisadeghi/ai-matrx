@@ -19,7 +19,7 @@
 import process from "node:process";
 import type pg from "pg";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
-import { judgeTrashTimings, type TrashTiming } from "./lib/trash-doors";
+import { judgeTrashTimings, STORE_TRASH_KINDS, type TrashTiming } from "./lib/trash-doors";
 
 const SEATS = ["admin@admin.com", "test@test.com"];
 
@@ -57,9 +57,14 @@ async function main(): Promise<number> {
   const db = await connectDirect(env, "check:trash-answers-fast");
   const rows: TrashTiming[] = [];
   try {
+    // The registry kinds plus the record store's (lane TRASH-TABLES: Tables and Records live in one
+    // physical table no registry row describes, so they are named here from the store branch).
     const { rows: kinds } = await db.query<{ kind: string }>(
-      `select user_artifact_kind as kind from platform.entity_types
-        where user_artifact_kind is not null and is_active order by 1`,
+      `select k as kind from (
+         select user_artifact_kind as k from platform.entity_types
+          where user_artifact_kind is not null and is_active
+         union select unnest($1::text[])) x order by 1`,
+      [Object.values(STORE_TRASH_KINDS)],
     );
     const { rows: seats } = await db.query<{ id: string; email: string }>(
       `select id::text, email::text from auth.users where email = any($1)`,

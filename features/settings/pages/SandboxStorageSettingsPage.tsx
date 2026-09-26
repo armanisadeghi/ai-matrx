@@ -82,6 +82,8 @@ export default function SandboxStoragePage() {
     setDeleteError(null);
     const result = await persistence.deleteVolume(pendingDelete);
     setDeleting(false);
+    // Closing the organization picker means "not now" — nothing happened.
+    if (result.cancelled) return;
     if (!result.ok) {
       setDeleteError(result.error ?? "Delete failed");
       return;

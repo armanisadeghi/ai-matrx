@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-26T05:46:11.103Z",
+  "generated_at": "2026-09-26T07:44:46.050Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -5041,6 +5041,12 @@
       "filename": "trashcoverage_every_archived_kind_is_restorable_from_trash.sql",
       "checksum": "56fee78a5a70db1195a7d7997f21fd8aaca056017d4154d0326ac6f43d6aae58",
       "applied_at": "2026-09-25 21:16:54.177863+00"
+    },
+    "migrations/campaign/trashtables_archived_tables_and_records_are_in_trash.sql": {
+      "source": "matrx-frontend",
+      "filename": "trashtables_archived_tables_and_records_are_in_trash.sql",
+      "checksum": "d231301ba14f00feb7362c06a7e0b499cd2f44a148839bf0702e8e55b1aa6065",
+      "applied_at": "2026-09-26 07:21:04.950851+00"
     },
     "migrations/campaign/uichamp_s1_a_signed_in_person_may_read_the_view_keys.sql": {
       "source": "campaign",

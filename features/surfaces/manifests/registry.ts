@@ -25,7 +25,7 @@ import type {
   SurfaceValueProvenance,
 } from "@/features/surfaces/types";
 import { RESERVED_GROUP_KEYS } from "@/features/surfaces/types";
-import { BASELINE_VALUES } from "./_baseline.manifest";
+import { BASELINE_VALUES, PLATFORM_RESERVED_NAMES } from "./_baseline.manifest";
 import { notesEditorManifest } from "./notes-editor.manifest";
 import { agentShortcutsManifest } from "./agent-shortcuts.manifest";
 import { aiWorkManifest } from "./ai-work.manifest";
@@ -158,6 +158,7 @@ import { taskCreateManifest } from "./task-create.manifest";
 import { quickNoteSaveManifest } from "./quick-note-save.manifest";
 import { filePreviewManifest } from "./file-preview.manifest";
 import { imageViewerManifest } from "./image-viewer.manifest";
+import { tableSettingsManifest } from "./table-settings.manifest";
 import { imageUploaderManifest } from "./image-uploader.manifest";
 import { imagesManifest } from "./images.manifest";
 import { imageStudioManifest } from "./image-studio.manifest";
@@ -395,6 +396,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   quickNoteSaveManifest,
   filePreviewManifest,
   imageViewerManifest,
+  tableSettingsManifest,
   imageUploaderManifest,
   imagesManifest,
   imageStudioManifest,
@@ -533,6 +535,32 @@ export function getSurfaceAncestry(surfaceName: string): string[] {
   return chain;
 }
 
+/**
+ * Platform-written names (`surface-chain.ts` / `window-forms.ts`): a surface
+ * claiming one would be silently shadowed by the platform at run time, so a
+ * manifest that declares one is refused at registry init.
+ */
+export function assertNoPlatformReservedNames(
+  m: Pick<SurfaceManifest, "surfaceName" | "values" | "writeTargets">,
+): void {
+  for (const v of m.values) {
+    if (PLATFORM_RESERVED_NAMES.values.includes(v.name)) {
+      throw new Error(
+        `[surfaces] "${m.surfaceName}" declares value "${v.name}" — that name is written by the platform ` +
+          `(the surface chain, _baseline.manifest.ts PLATFORM_CONTEXT_VALUES); choose another name`,
+      );
+    }
+  }
+  for (const t of m.writeTargets ?? []) {
+    if (PLATFORM_RESERVED_NAMES.writeTargets.includes(t.name)) {
+      throw new Error(
+        `[surfaces] "${m.surfaceName}" declares write target "${t.name}" — that name is the platform's ` +
+          `target for unregistered windows (window-forms.ts); choose another name`,
+      );
+    }
+  }
+}
+
 const BASELINE_NAME_SET = new Set(Object.keys(BASELINE_VALUES));
 
 /** Group sortOrder bands. Curated groups author 0–899; the rest is reserved. */
@@ -611,6 +639,7 @@ function resolveManifest(m: SurfaceManifest): ResolvedSurfaceManifest {
     }
     curatedKeys.add(g.key);
   }
+  assertNoPlatformReservedNames(m);
   for (const v of m.values) {
     if (v.group && !curatedKeys.has(v.group)) {
       throw new Error(

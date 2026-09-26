@@ -1,4 +1,8 @@
 -- chair-step: rehearsal inverse of rca2m — restores access_request_create's own body, blind/list/access_denied_context, drops public._access_request_file.
+-- based-on: public.access_request_create(text, uuid, text, text) fa3a983c642c90bd2e070425c59b0dfbf0123a2c6f037a039205a8e779f2cba2
+-- based-on: public.access_request_blind(text, uuid, text, text) 91ee4507d71cfb4ee0bb44562e9514c3fe20a1b82bbfebd2e98a92855b6aa1a6
+-- based-on: public.access_request_list(text) b900eb849465308877cd4e4e54a0f9fd5976dd25543b06944e703d9774f9f909
+-- based-on: public.access_denied_context(text, uuid) 143bea2914d264344db6044982d99883af57c550c3f2cf133485cab7200a05cb
 -- Inverse of migrations/rca2m_asking_for_access_follows_the_same_split.sql (rehearsal only).
 
 set local lock_timeout = '2s';
@@ -269,4 +273,5 @@ begin
 end;
 $function$;
 
+delete from platform.client_callable_door where schema_name = 'public' and function_name = '_access_request_file';
 drop function public._access_request_file(text, uuid, text, text);

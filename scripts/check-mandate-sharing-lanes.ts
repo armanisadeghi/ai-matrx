@@ -138,6 +138,15 @@ async function main(): Promise<void> {
         where not o.is_personal and o.archived_at is null order by o.name limit 1`,
       [creator, viewer],
     );
+    // An organization the viewer belongs to but does not administer (optional: the case is
+    // skipped, and says so, when the viewer administers every organization they are in).
+    const memberOnly = await client.query<{ id: string }>(
+      `select om.organization_id as id from iam.organization_member om
+        where om.user_id = $1 and om.role::text not in ('owner', 'admin') limit 1`,
+      [viewer],
+    );
+    const memberOnlyOrg = memberOnly.rows[0]?.id ?? null;
+    if (!memberOnlyOrg) console.log("[SKIP] the viewer administers every organization they are in — the plain-member case is not measured");
     const personalOrg = personal.rows[0]?.id;
     const sharedOrg = shared.rows[0]?.id;
     if (!personalOrg || !sharedOrg) fail("UNMEASURED: no personal org for the creator, or no organization both accounts share.");
@@ -189,8 +198,43 @@ async function main(): Promise<void> {
     expect(!r.keys.has(key), "granted to one person → a stranger still sees nothing");
     bind = await tryBind(client, { mandateId, principal: "user", orgId: sharedOrg, subject: viewer, actor: viewer });
     expect(bind === null, `granted to one person → that person can bind it for themselves${bind ? ` (${bind})` : ""}`);
+    // ORG DEFAULT FOR A SHARED MANDATE (Arman, 2026-09-25: "Org admins may set a mandate shared
+    // with the org as the org's default"). A share names a person (2026-09-23), so "shared with
+    // the org" is a share that reaches the owner or admin who decides for it: that person may
+    // set it org-wide for an organization they administer — never for one they merely belong to,
+    // and never when the mandate did not reach them.
     bind = await tryBind(client, { mandateId, principal: "org", orgId: sharedOrg, actor: viewer });
-    expect(/cannot bind mandate/.test(bind ?? ""), "granted to one person → still not bindable organization-wide");
+    expect(bind === null, `granted to an organization's admin → that admin can set it as the organization's default${bind ? ` (${bind})` : ""}`);
+    if (memberOnlyOrg) {
+      bind = await tryBind(client, { mandateId, principal: "org", orgId: memberOnlyOrg, actor: viewer });
+      expect(/cannot bind mandate/.test(bind ?? ""), "granted to a plain member of an organization → still not bindable for that organization");
+    }
+    bind = await tryBind(client, { mandateId, principal: "org", orgId: sharedOrg, actor: stranger });
+    expect(/cannot bind mandate/.test(bind ?? ""), "an actor the mandate never reached → still not bindable organization-wide");
+    // Once the organization adopts it, it is in the organization's own list — for the admin in
+    // the organization seat and for every member who can open it.
+    await asSeat(client, viewer);
+    await asOperator(client);
+    await client.query("savepoint adopt");
+    let adopted: string | null = null;
+    try {
+      await client.query(
+        `insert into mandate.binding (mandate_id, principal_type, organization_id, holder_type, holder_id,
+                                      config_overrides, created_by)
+         values ($1, 'org', $2, 'agent', null, '{"temperature": 0.2}'::jsonb, $3)`,
+        [mandateId, sharedOrg, viewer],
+      );
+      await client.query("release savepoint adopt");
+    } catch (error: unknown) {
+      await client.query("rollback to savepoint adopt");
+      adopted = error instanceof Error ? error.message : String(error);
+    }
+    await asSeat(client, viewer);
+    r = await listKeys(client, { level: "organization", scope: "orgs", orgId: sharedOrg });
+    expect(adopted === null && r.keys.has(key),
+      `adopted as an organization's default → in that organization seat's own list${adopted ? ` (could not adopt: ${adopted})` : ""}${r.error ? ` (${r.error})` : ""}`);
+    await asOperator(client);
+    await client.query(`delete from mandate.binding where mandate_id = $1`, [mandateId]);
     let own = await ownership();
     expect(own.created_by === creator && own.organization_id === personalOrg,
       "after a person share the creator still owns it and it stays in their personal organization");

@@ -43,7 +43,6 @@ import { buildBillingSpendDashboardScope } from "./spend-surface-scope";
 import { knobNumber } from "@/lib/knobs/featureKnobs";
 import { ADMIN_BILLING_SPEND_SURFACE_NAME } from "@/features/surfaces/manifests/admin-billing-spend.manifest";
 import {
-  getRegisteredSurfaceScopeContributions,
   SurfaceRuntimeProvider,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
@@ -330,9 +329,6 @@ export function SpendDashboard() {
           costSourcesExpanded,
           printOrdersExpanded,
         }),
-        ...getRegisteredSurfaceScopeContributions(
-          ADMIN_BILLING_SPEND_SURFACE_NAME,
-        ),
       })}
     >
       <div className="scroll-page-end-space flex w-full min-w-0 flex-col gap-4 p-4">

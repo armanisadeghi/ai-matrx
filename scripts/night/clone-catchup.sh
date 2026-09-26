@@ -474,9 +474,13 @@ verdict_after_failure() {  # verdict_after_failure <source> <filename> <checksum
   local source="$1" filename="$2" ck="$3" repo="$4" relpath="$5" verdict="$6" irc
   level_by_inspection "$repo" "$relpath"; irc=$?
   if [ $irc -eq 0 ]; then record_parity "$source" "$filename" "$ck" "$verdict" "$INSPECT_NOTE"; return $?; fi
-  if [ $irc -eq 2 ] && grep -qE 'P0001|raise_exception' "$APPLY_OUT" 2>/dev/null \
-     && grep -qiE '^[^-]*\braise\s+exception\b' "$repo/$relpath"; then
-    local why; why="$(grep -m1 -E 'ERROR' "$APPLY_OUT" | cut -c1-240)"
+  # The file's OWN raise: db:apply prints `SQLSTATE P0001` then the message; aidream prints
+  # `error: ERROR | <message> | context: … at RAISE`. Either way the message is the reason.
+  if [ $irc -eq 2 ] && grep -qE 'P0001|at RAISE' "$APPLY_OUT" 2>/dev/null \
+     && grep -qiE '^[^-]*\braise[[:space:]]+exception\b' "$repo/$relpath"; then
+    local why
+    why="$(sed 's/\x1b\[[0-9;]*m//g' "$APPLY_OUT" | awk '/SQLSTATE P0001/ { getline; print; exit } /error: ERROR \|/ { sub(/.*error: ERROR \| /, ""); sub(/ \| context:.*/, ""); print; exit }' | cut -c1-240)"
+    [ -n "$why" ] || why="(the runner printed no message)"
     record_parity "$source" "$filename" "$ck" "cannot run on the clone for a data reason — its own guard refused: ${why}" \
       "data-only file, no schema object to compare (nothing compared)"
     return $?

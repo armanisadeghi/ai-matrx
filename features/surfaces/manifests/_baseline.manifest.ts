@@ -93,6 +93,45 @@ export const AMBIENT_VALUES = {
   },
 } as const satisfies Record<string, SurfaceValue>;
 
+/**
+ * PLATFORM CONTEXT — what the platform adds to EVERY run about the screens
+ * around the primary surface (register ARE-010 / ARE-012,
+ * `features/surfaces/runtime/surface-chain.ts`). Written ONLY by the platform
+ * at launch and at every follow-up turn, never by a surface; no manifest may
+ * declare either name (the registry throws). Not surface values — no binding
+ * maps to them — so they are declared here once instead of injected into
+ * every manifest; the server (aidream `apply_surface_context`) expands them
+ * into one context object per value.
+ */
+export const PLATFORM_CONTEXT_VALUES = {
+  surface_chain: {
+    name: "surface_chain",
+    label: "Open screens around this one",
+    description:
+      "Every OTHER registered screen open right now, nearest first: the window over the page, the page under a window, and parent pages. Each level carries its surface name, its role (window / page / parent) and its declared values with their descriptions. The server shows each value as `<surface>::<value>`.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 2000,
+    sortOrder: 9996,
+  },
+  window_forms: {
+    name: "window_forms",
+    label: "Open windows with no registered surface",
+    description:
+      "Every open dialog or window no registered surface speaks for, read from the screen: its title and every field in it (label, type, current value, options, required, invalid). The agent changes them with the platform write target `window_form_fields`; the person approves.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 1000,
+    sortOrder: 9997,
+  },
+} as const satisfies Record<string, SurfaceValue>;
+
+/** Names only the platform writes — a manifest declaring one is refused. */
+export const PLATFORM_RESERVED_NAMES = {
+  values: Object.keys(PLATFORM_CONTEXT_VALUES) as ReadonlyArray<string>,
+  writeTargets: ["window_form_fields"] as ReadonlyArray<string>,
+};
+
 export type BaselineKey = keyof typeof BASELINE_VALUES;
 
 /** Pick a subset of baseline values by key. */

@@ -41,10 +41,10 @@
 --
 -- INVERSE: migrations/inverse/trashtables_archived_tables_and_records_are_in_trash_down.sql
 -- lane: TRASH-TABLES
--- based-on: public._trash_kind_rows(uuid, uuid, uuid, text[], integer, integer) PLACEHOLDER
--- based-on: public._trash_kind_counts(uuid, uuid, uuid) PLACEHOLDER
--- based-on: public.org_trash_restore(uuid, text, uuid) PLACEHOLDER
--- based-on: public.entity_undelete(text, uuid) PLACEHOLDER
+-- based-on: public._trash_kind_rows(uuid, uuid, uuid, text[], integer, integer) 05dc3b05ae81a364266e76024dcb699133a7685a3c47f780d3720535c57c5dde
+-- based-on: public._trash_kind_counts(uuid, uuid, uuid) ae22f4ba8fa1c71a7fe4bc60a1cb0760274a0a4eb5b55a8159ab553b73c1b2f3
+-- based-on: public.org_trash_restore(uuid, text, uuid) e48b83d8c68bd434cb8e03d8061997aff04decb24a7bca20195f582ac26f5274
+-- based-on: public.entity_undelete(text, uuid) ff42ea4b8bfebc474327ec9afe46130e698ae2ef0b31c5681242a95ff2242ef2
 
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
@@ -446,7 +446,6 @@ begin
                           coalesce(nullif(btrim(v_title), ''), 'it')));
     end;
     v_label := case when v_class = 'table' then 'Table' else 'Record' end;
-    e := null;
     select 'record'::text as token, v_label as label into e;
   else
     select t.token, t.user_artifact_kind, t.label, t.schema_name, t.table_name,

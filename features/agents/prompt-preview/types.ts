@@ -5,6 +5,12 @@
  */
 export interface PromptPreview {
   model: string | null;
+  /** One sentence, set when this turn asks decision questions: how the model
+   *  receives them (a text model gets them rendered as text in the last user
+   *  message, with the instruction inside and no system prompt or tools; a
+   *  native decision model gets the state and the typed questions). Null for
+   *  an ordinary chat turn. */
+  decision_notice?: string | null;
   /** The complete rendered system prompt — context, tools list, and the
    *  Matrx Directives guidance all already assembled. */
   system_prompt: string | null;

@@ -28,9 +28,8 @@ import { parseFirstMarkdownTable, tableToDelimited } from "../markdownTable";
 import type { RichDocumentActionContext } from "../../types";
 import {
   findTableEnd,
-  isGfmDelimiterRow,
-  opensTable,
   rowCells,
+  tableStartsAt,
   unescapeCellPipes,
 } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
@@ -70,7 +69,7 @@ function toPlainText(content: string): string {
   for (let i = 0; i < lines.length; i += 1) {
     // THE table rule (gfm-table-lines): a header — edge pipes optional — over
     // its delimiter row; `\|` stays in its cell and reads as `|`.
-    if (opensTable(lines, i) && isGfmDelimiterRow(lines[i + 1] ?? "")) {
+    if (tableStartsAt(lines, i)) {
       const end = findTableEnd(lines, i);
       for (let j = i; j < end; j += 1) {
         if (j === i + 1) continue; // the `|---|` rule

@@ -151,6 +151,17 @@ export interface ModelCapabilities {
   multilingual: boolean;
 }
 
+/**
+ * Provider-managed research agents (Google Deep Research) run as an agent's
+ * model through the normal agent run path — a long background interaction
+ * that streams its research and returns a cited report.
+ */
+export function isManagedAgentModelCapability(
+  capabilities: Pick<ModelCapabilities, "interaction">,
+): boolean {
+  return capabilities.interaction === "agent";
+}
+
 /** Decision models have a non-conversational wire contract. */
 export function isDecisionModelCapability(
   capabilities: Pick<ModelCapabilities, "interaction">,
@@ -164,9 +175,13 @@ export function isDecisionModelCapability(
  *   chat     — a conversational turn only (`/chat`, launchers, prompt runs).
  *   agent    — an AGENT's model. An agent is not necessarily a conversation:
  *              its message may carry a `decision_questions` part and be
- *              answered by a decision holder that emits no text at all. So
- *              this purpose admits BOTH contracts and the picker labels the
- *              decision rows for what they are. Ruled by
+ *              answered by a decision holder that emits no text at all, or it
+ *              may be a provider-managed research agent (Deep Research) that
+ *              runs for minutes and returns a cited report. So this purpose
+ *              admits all three contracts and the picker labels the rows for
+ *              what they are (Arman, 2026-09-26: "An agent can be a text
+ *              model, video, image, speech, live, decision, and now a research
+ *              model. It makes no difference."). Ruled by
  *              `common-docs/systems/agents/typed-messages/FEATURE.md`
  *              ("the picker shows only parts the selected model can consume"
  *              — the author chooses the model first, so the model list may
@@ -191,7 +206,8 @@ export function modelsForSelectionPurpose<
     if (purpose === "agent")
       return (
         isConversationalModelCapability(model) ||
-        isDecisionModelCapability(model)
+        isDecisionModelCapability(model) ||
+        isManagedAgentModelCapability(model)
       );
     return isConversationalModelCapability(model);
   });

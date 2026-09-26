@@ -1,5 +1,23 @@
+import type { ReactNode } from "react";
 import { useUserPersistence } from "@/hooks/sandbox/use-user-persistence";
 import { renderHook } from "@/test-utils/renderHook";
+import {
+  createSandboxTestStore,
+  SandboxStoreProvider,
+} from "@/test-utils/sandbox-store";
+
+/** The hook reads the selected organization (hosted homes are per organization). */
+function withStore() {
+  const store = createSandboxTestStore({
+    userId: "admin-user",
+    organizationId: "org-under-test",
+  });
+  return {
+    wrapper: ({ children }: { children: ReactNode }) => (
+      <SandboxStoreProvider store={store}>{children}</SandboxStoreProvider>
+    ),
+  };
+}
 import type { UserPersistenceResponse } from "@/types/sandbox";
 
 function response(body: unknown, status = 200) {
@@ -72,7 +90,7 @@ describe("useUserPersistence successful hosted delete", () => {
       writable: true,
     });
 
-    const hook = await renderHook(() => useUserPersistence({ skip: true }));
+    const hook = await renderHook(() => useUserPersistence({ skip: true }), withStore());
     await hook.act(async () => {
       await hook.current.refresh();
     });

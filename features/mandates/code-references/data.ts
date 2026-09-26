@@ -3,7 +3,7 @@
 // features/mandates/code-references/data.ts
 //
 // THE ONE CLIENT READER of the code scan's latest references
-// (`mandate.v_reference_latest` — one row per reference identity, latest
+// (`mandate.v_reference_latest` through `mandate.latest_references` — one row per reference identity, latest
 // deployed else latest candidate; the same collapse aidream's
 // `services/mandates/references.py` board uses). Direct supabase-js read,
 // admins only: the view is `security_invoker`, so `mandate.reference` RLS
@@ -19,13 +19,8 @@
 // this module adds is the plain-words sentence for each flag and the link to
 // the exact line on GitHub.
 
-import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import { runWithSessionRetry } from "@/lib/supabase/authRetry";
-
-/** The columns every reader here needs — never `*`. */
-const REFERENCE_COLUMNS =
-  "identity_hash,mandate_key,reference_type_id,repo_slug,package_name,language,file_path,symbol,line,revision,revision_kind,presence,flag";
 
 export interface LatestReference {
   identity_hash: string;
@@ -86,28 +81,60 @@ async function readLatestReferences(filter: ReferenceFilter): Promise<LatestRefe
       if (!id) throw new Error(`Reference type "${slug}" is not registered.`);
       return id;
     });
-  const include = filter.types ? idsFor(filter.types) : null;
-  const exclude = filter.excludeTypes ? idsFor(filter.excludeTypes) : null;
 
-  return readAllRows<LatestReference>(
-    ({ from, to }) =>
-      runWithSessionRetry(() => {
-        let query = supabase
-          .schema("mandate")
-          .from("v_reference_latest")
-          .select(REFERENCE_COLUMNS, { count: "exact" });
-        if (include) query = query.in("reference_type_id", include);
-        if (exclude) query = query.not("reference_type_id", "in", `(${exclude.join(",")})`);
-        if (filter.problemsOnly) query = query.or("flag.neq.ok,presence.neq.present");
-        if (filter.keys) query = query.in("mandate_key", filter.keys);
-        return query.order("identity_hash", { ascending: true }).range(from, to);
-      }).then((result) => ({
-        data: (result.data ?? null) as LatestReference[] | null,
-        count: "count" in result && typeof result.count === "number" ? result.count : null,
-        error: result.error ? { message: result.error.message ?? "read failed" } : null,
-      })),
-    { label: "mandate.v_reference_latest", pageSize: 1000, maxRows: 50_000 },
+  // ONE database evaluation per read (`mandate.latest_references`,
+  // migrations/mandate_latest_references_one_read_2026_09_26.sql): the filters
+  // run in the database and every matching row comes back as one JSON array —
+  // no 1,000-row pages, no count query, so there is no silent cap to guard
+  // against. It reads the view as the caller, so RLS decides every row exactly
+  // as a direct read did. (Paging the view through readAllRows re-walked the
+  // whole reference history on every page and timed out, 2026-09-26.)
+  const { data, error } = await runWithSessionRetry(() =>
+    supabase.schema("mandate").rpc("latest_references", {
+      ...(filter.types ? { p_type_ids: idsFor(filter.types) } : {}),
+      ...(filter.excludeTypes ? { p_exclude_type_ids: idsFor(filter.excludeTypes) } : {}),
+      ...(filter.problemsOnly ? { p_problems_only: true } : {}),
+      ...(filter.keys ? { p_keys: filter.keys } : {}),
+    }),
   );
+  if (error) {
+    throw Object.assign(new Error(`Latest code references: ${error.message}`), {
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    });
+  }
+  if (!Array.isArray(data)) {
+    throw new Error("Latest code references: the database answered with something other than a list.");
+  }
+  return data.map(toLatestReference);
+}
+
+const text = (value: unknown): string | null => (typeof value === "string" ? value : null);
+
+/** One element of `mandate.latest_references` — shape-checked, never cast. */
+function toLatestReference(value: unknown): LatestReference {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("Latest code references: a row is not an object.");
+  }
+  const row = value as Record<string, unknown>;
+  const identity = text(row.identity_hash);
+  if (!identity) throw new Error("Latest code references: a row has no identity.");
+  return {
+    identity_hash: identity,
+    mandate_key: text(row.mandate_key),
+    reference_type_id: text(row.reference_type_id),
+    repo_slug: text(row.repo_slug),
+    package_name: text(row.package_name),
+    language: text(row.language),
+    file_path: text(row.file_path),
+    symbol: text(row.symbol),
+    line: typeof row.line === "number" ? row.line : null,
+    revision: text(row.revision),
+    revision_kind: text(row.revision_kind),
+    presence: text(row.presence),
+    flag: text(row.flag),
+  };
 }
 
 // ── Repositories (for the GitHub link) ─────────────────────────────────────

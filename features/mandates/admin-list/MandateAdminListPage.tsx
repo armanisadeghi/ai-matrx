@@ -41,7 +41,8 @@ import {
   MandateAdminListActionsContext,
   useMandateAdminListState,
 } from "./context";
-import { invalidateMandateAdminList } from "./store";
+import { invalidateMandateAdminList, retryMandateAdminFailures } from "./store";
+import { EntitySourceFailures } from "@/lib/entity-list/components/EntitySourceFailures";
 import { createMandateAdminService } from "./service";
 import type { MandateAdminRow } from "./types";
 
@@ -54,6 +55,7 @@ const SOURCE_LABEL: Record<string, string> = {
   impact: "Grades",
   workflowImpact: "Workflow grades",
   inputs: "Inputs",
+  sources: "Where each mandate is declared and called",
 };
 
 export function MandateAdminListPage() {
@@ -226,16 +228,14 @@ export function MandateAdminListPage() {
         defaultScope={{ kind: "system" }}
         clearsShellHeader={false}
         notice={
-          Object.keys(listState.failures).length > 0 ? (
-            <div
-              role="status"
-              className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-xs text-amber-800 dark:text-amber-300"
-            >
-              {Object.entries(listState.failures)
-                .map(([source, message]) => `${SOURCE_LABEL[source] ?? source} unavailable: ${message}`)
-                .join(" · ")}
-            </div>
-          ) : null
+          <EntitySourceFailures
+            operation="Load the admin mandate list's columns"
+            failures={Object.entries(listState.failures).map(([source, message]) => ({
+              label: SOURCE_LABEL[source] ?? source,
+              error: message,
+            }))}
+            onRetry={retryMandateAdminFailures}
+          />
         }
         headerActions={<MandateAdminPagesNav />}
       />

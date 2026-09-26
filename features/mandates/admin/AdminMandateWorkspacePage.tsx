@@ -60,7 +60,6 @@ import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { pushAppHref } from "@/lib/deployment/navigate";
 import {
   SurfaceRuntimeProvider,
-  getRegisteredSurfaceScopeContributions,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   MANDATE_WORKSPACE_SURFACE_NAME,
@@ -92,11 +91,7 @@ export function AdminMandateWorkspacePage({
           selection: window.getSelection()?.toString() || undefined,
         }),
         // The goal editor publishes its own values from below
-        // (`useSurfaceScopeContribution`); contributions are merged HERE,
-        // by the provider owner — the registry never merges them for you.
-        ...getRegisteredSurfaceScopeContributions(
-          MANDATE_WORKSPACE_SURFACE_NAME,
-        ),
+        // (`useSurfaceScopeContribution`); the surface registry merges them.
       })}
     >
       <div className="h-full overflow-y-auto pb-safe">

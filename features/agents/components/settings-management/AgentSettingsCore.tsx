@@ -105,6 +105,13 @@ import {
 } from "@/features/agents/utils/control-variables";
 import { variableValueToDisplay } from "@/features/agents/utils/variable-utils";
 import {
+  buildSettingsDocument,
+  describeSetting,
+  parseSettingsDocument,
+  type SettingView,
+} from "./settings-document";
+import { toast } from "@/lib/toast";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -131,6 +138,13 @@ type SettingsTab =
 // the architecture. The AgentSettingMediaPicker component is kept as a
 // building block for the user-input side (where the engineer-overridable
 // equivalents will be configured), not used here.
+
+/** A catalog default as the person reads it ("On", "auto", "1024"). */
+function formatModelDefault(value: unknown): string {
+  if (typeof value === "boolean") return value ? "On" : "Off";
+  if (value !== null && typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
 
 // ── FallbackValueInput ───────────────────────────────────────────────────────
 // Used when the selected model has no control schema for a key but the key
@@ -334,36 +348,42 @@ function HighlightedJson({ value, highlightKeys = {} }: HighlightedJsonProps) {
   );
 }
 
-/** Tokenize a single JSON line into colored HTML spans. Works for both light and dark. */
+/**
+ * Tokenize a single JSON.stringify(…, null, 2) line into colored HTML spans.
+ * Works for both light and dark. The key and the value are split ONCE and each
+ * is colored whole — never pattern-replaced inside a string, which rewrote an
+ * aspect ratio "16:9" as "16: 9" in the Raw Settings view.
+ */
 function colorizeJsonLine(line: string): string {
   const esc = (s: string) =>
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-  return line
-    .replace(
-      /("(?:[^"\\]|\\.)*")\s*:/g, // key
-      (_, k) =>
-        `<span class="text-sky-700 dark:text-sky-400">${esc(k)}</span>:`,
-    )
-    .replace(
-      /:\s*("(?:[^"\\]|\\.)*")/g, // string value
-      (_, v) =>
-        `: <span class="text-emerald-700 dark:text-emerald-400">${esc(v)}</span>`,
-    )
-    .replace(
-      /:\s*(\btrue\b|\bfalse\b)/g, // boolean
-      (_, v) =>
-        `: <span class="text-violet-700 dark:text-violet-400">${v}</span>`,
-    )
-    .replace(
-      /:\s*(\bnull\b)/g, // null
-      (_, v) => `: <span class="text-zinc-500">${v}</span>`,
-    )
-    .replace(
-      /:\s*(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g, // number
-      (_, v) =>
-        `: <span class="text-amber-700 dark:text-amber-400">${v}</span>`,
-    );
+  const colorValue = (text: string): string => {
+    const m = text.match(/^(.*?)(,?)$/);
+    const body = m ? m[1] : text;
+    const comma = m ? m[2] : "";
+    let cls: string | null = null;
+    if (/^"(?:[^"\\]|\\.)*"$/.test(body)) {
+      cls = "text-emerald-700 dark:text-emerald-400";
+    } else if (body === "true" || body === "false") {
+      cls = "text-violet-700 dark:text-violet-400";
+    } else if (body === "null") {
+      cls = "text-zinc-500";
+    } else if (/^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$/.test(body)) {
+      cls = "text-amber-700 dark:text-amber-400";
+    }
+    return cls
+      ? `<span class="${cls}">${esc(body)}</span>${comma}`
+      : esc(text);
+  };
+
+  const keyed = line.match(/^(\s*)("(?:[^"\\]|\\.)*")(\s*:\s*)(.*)$/);
+  if (keyed) {
+    const [, indent, key, sep, rest] = keyed;
+    return `${indent}<span class="text-sky-700 dark:text-sky-400">${esc(key)}</span>${sep}${colorValue(rest)}`;
+  }
+  const indentMatch = line.match(/^(\s*)(.*)$/);
+  return `${indentMatch?.[1] ?? ""}${colorValue(indentMatch?.[2] ?? line)}`;
 }
 
 // ── IssueTable ────────────────────────────────────────────────────────────────
@@ -1103,29 +1123,13 @@ export function AgentSettingsCore({
     onUnappliedEditsChange?.(editorDirty);
   }, [editorDirty, onUnappliedEditsChange]);
 
-  // Track enabled settings (keys with non-null values). Reads `settings`
-  // directly (nullable pre-hydration) — these hooks must run unconditionally,
-  // before the hydration guard below.
-  const [enabledSettings, setEnabledSettings] = useState<Set<string>>(() => {
-    const enabled = new Set<string>();
-    // Pre-hydration (`settings === null`) → no enabled keys yet.
-    if (settings) {
-      Object.entries(settings).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) enabled.add(key);
-      });
-    }
-    return enabled;
-  });
-
-  useEffect(() => {
-    const enabled = new Set<string>();
-    if (settings) {
-      Object.entries(settings).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) enabled.add(key);
-      });
-    }
-    setEnabledSettings(enabled);
-  }, [settings]);
+  // A setting is "set" exactly when the stored settings hold a non-null value
+  // for it — derived on every render, never mirrored into local state (a
+  // mirror could show a checked box over a value nothing stored).
+  const isSettingSet = (key: string): boolean => {
+    const value = (settings as Record<string, unknown> | null)?.[key];
+    return value !== null && value !== undefined;
+  };
 
   const [jsonText, setJsonText] = useState("");
 
@@ -1246,10 +1250,6 @@ export function AgentSettingsCore({
   // honest type for this dynamic-key setter (was `any`).
   // MATRX-EXCEPTION: dynamic per-key settings setter; each render branch supplies the right shape.
   const handleSettingChange = (key: keyof FeLlmParams, value: unknown) => {
-    if (!enabledSettings.has(key)) {
-      setEnabledSettings(new Set(enabledSettings).add(key));
-    }
-
     if (key === "response_format" && typeof value === "string") {
       // Store EXACTLY what the user picked — including "text". Never drop a
       // selection on the user's behalf. The canonical { type: <value> } shape
@@ -1298,10 +1298,11 @@ export function AgentSettingsCore({
     ];
   };
 
+  // Checking a box stores the control's starting value; if nothing can be
+  // stored (no control, no usable default) the box stays unchecked rather than
+  // claiming a setting that does not exist.
   const handleToggleSetting = (key: keyof FeLlmParams, enabled: boolean) => {
-    const newEnabled = new Set(enabledSettings);
     if (enabled) {
-      newEnabled.add(key);
       const control = getControl(key);
       if (control) {
         let defaultValue: unknown = control.default;
@@ -1339,29 +1340,32 @@ export function AgentSettingsCore({
         }
       }
     } else {
-      newEnabled.delete(key);
       const cleaned = { ...currentSettings };
       delete (cleaned as Record<string, unknown>)[key];
       // When disabling tts_voice, also remove the coupled multi_speaker flag
       if (key === "tts_voice") {
         delete (cleaned as Record<string, unknown>).multi_speaker;
-        newEnabled.delete("multi_speaker");
       }
       dispatch(
         setAgentSettings({ id: agentId, settings: cleaned as LLMParams }),
       );
     }
-    setEnabledSettings(newEnabled);
   };
 
-  // Build composite JSON payload
-  const buildFullSettingsJson = () => {
-    const composite: Record<string, unknown> = {};
-    if (modelId) composite.model_id = modelId;
-    if (agentTools && agentTools.length > 0) composite.tools = agentTools;
-    Object.assign(composite, currentSettings);
-    return JSON.stringify(composite, null, 2);
-  };
+  // THE settings document — the one projection Raw Settings renders and Raw
+  // Editable edits (see ./settings-document.ts). Bound controls appear as
+  // `{ "$var": name, "default": value }`; `model_id` is always the agent's own.
+  const buildFullSettingsJson = () =>
+    JSON.stringify(
+      buildSettingsDocument({
+        modelId,
+        tools: agentTools,
+        settings: currentSettings as Record<string, unknown>,
+        variableDefinitions,
+      }),
+      null,
+      2,
+    );
 
   // Sync JSON text whenever tab changes to either raw tab
   useEffect(() => {
@@ -1537,6 +1541,8 @@ export function AgentSettingsCore({
       key={key}
       className="flex items-center gap-2 mb-2 rounded px-1 py-1 hover:bg-muted/20"
       data-bound-control={key}
+      data-setting-row={key}
+      data-setting-state="bound"
     >
       <span className="h-2 w-2 rounded-full shrink-0 bg-primary" aria-hidden />
       <div className="flex items-center gap-2 pt-0.5 flex-shrink-0">
@@ -1580,19 +1586,28 @@ export function AgentSettingsCore({
     label: string,
     control: ControlDefinition | null,
   ) => {
-    const boundVariable = findControlVariable(variableDefinitions, key);
-    if (boundVariable) {
+    // The same derivation the JSON views use (./settings-document.ts), so a
+    // row can never show a value the Raw tabs do not.
+    const view: SettingView = describeSetting(
+      key,
+      {
+        settings: currentSettings as Record<string, unknown>,
+        variableDefinitions,
+      },
+      control,
+    );
+    if (view.state === "bound") {
       return renderBoundControl(
         key,
         label,
         control,
-        boundVariable.name,
-        boundVariable.defaultValue,
+        view.variableName,
+        view.value,
       );
     }
     const canBind = !!control && isControlBindable(key, bindablePolicy);
-    const isEnabled = enabledSettings.has(key);
-    const valueRaw = (currentSettings as Record<string, unknown>)[key];
+    const isEnabled = view.state === "set";
+    const valueRaw = view.state === "set" ? view.value : undefined;
     const checkboxId = `setting-agent-${key}`;
     const keyIssues = validation.issuesByKey[key] ?? [];
     const hasIssue = keyIssues.length > 0;
@@ -1629,6 +1644,8 @@ export function AgentSettingsCore({
       <div
         key={key}
         className="flex items-start gap-2 mb-2 rounded px-1 py-1 hover:bg-muted/20"
+        data-setting-row={key}
+        data-setting-state={view.state}
       >
         {/* Validity dot */}
         <TooltipProvider delayDuration={200}>
@@ -1670,11 +1687,16 @@ export function AgentSettingsCore({
           </Label>
         </div>
 
-        {/* Control input (or fallback) */}
-        <div
-          className={`flex-1 min-w-0 ${!isEnabled ? "opacity-50 pointer-events-none" : ""}`}
-        >
-          {control ? (
+        {/* Control input (or fallback). An unset control shows no input and
+            no value — only what the model does when it is left unset. */}
+        <div className="flex-1 min-w-0">
+          {!isEnabled ? (
+            <span className="block pt-1 text-xs text-muted-foreground">
+              {view.state === "default"
+                ? `Not set \u00b7 Model default: ${formatModelDefault(view.value)}`
+                : "Not set"}
+            </span>
+          ) : control ? (
             renderControlInput(key, control, valueRaw, isEnabled)
           ) : (
             <FallbackValueInput
@@ -1773,12 +1795,17 @@ export function AgentSettingsCore({
       );
     }
     const voiceEnum = voiceControl.enum ?? [];
-    const ttsEnabled = enabledSettings.has("tts_voice");
+    const ttsEnabled = isSettingSet("tts_voice");
     const multiControl = getControl("multi_speaker");
     const multiAllowed = !!multiControl;
     const maxSpeakers = multiControl?.max;
     return (
-      <div className="mb-2" key="tts_voice">
+      <div
+        className="mb-2"
+        key="tts_voice"
+        data-setting-row="tts_voice"
+        data-setting-state={ttsEnabled ? "set" : "unset"}
+      >
         <div className="flex items-center gap-3 mb-1">
           <div
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
@@ -2008,7 +2035,9 @@ export function AgentSettingsCore({
         {activeTab === "raw" && (
           <div className="flex flex-col gap-2">
             <p className="text-[10px] text-muted-foreground">
-              Read-only view of the full effective payload.{" "}
+              Read-only view of this agent&apos;s stored settings. Run inputs
+              show as{" "}
+              <code>{'{ "$var": name, "default": value }'}</code>.{" "}
               {allIssues.length > 0 && (
                 <span className="text-yellow-600 dark:text-yellow-400">
                   Highlighted lines have issues.
@@ -2042,33 +2071,55 @@ export function AgentSettingsCore({
             <SettingsJsonEditor
               initialValue={jsonText}
               onApply={(parsed) => {
-                const { model_id, tools, ...llmParams } = parsed;
-                if (model_id !== undefined && typeof model_id === "string") {
+                const next = parseSettingsDocument(
+                  parsed,
+                  {
+                    settings: currentSettings as Record<string, unknown>,
+                    variableDefinitions,
+                  },
+                  (k) => getControl(k) ?? null,
+                );
+                if (next.errors.length > 0) {
+                  toast.error(
+                    `Settings not applied — ${next.errors.join(" ")}`,
+                  );
+                  return;
+                }
+                if (typeof next.modelId === "string" && next.modelId) {
                   dispatch(
                     setAgentField({
                       id: agentId,
                       field: "modelId",
-                      value: model_id,
+                      value: next.modelId,
                     }),
                   );
                 }
-                if (tools !== undefined && Array.isArray(tools)) {
+                if (Array.isArray(next.tools)) {
                   dispatch(
-                    setAgentTools({ id: agentId, tools: tools as string[] }),
+                    setAgentTools({
+                      id: agentId,
+                      tools: next.tools as string[],
+                    }),
                   );
                 }
-                dispatch(
-                  setAgentSettings({
-                    id: agentId,
-                    settings: llmParams as LLMParams,
-                  }),
-                );
-                const newEnabled = new Set<string>();
-                Object.entries(llmParams).forEach(([key, value]) => {
-                  if (value !== null && value !== undefined)
-                    newEnabled.add(key);
-                });
-                setEnabledSettings(newEnabled);
+                // Settings and bindings move together (one undo step) when a
+                // binding changed; otherwise only settings are written.
+                if (next.bindingsChanged) {
+                  dispatch(
+                    setAgentControlBinding({
+                      id: agentId,
+                      settings: next.settings as LLMParams,
+                      variableDefinitions: next.variableDefinitions,
+                    }),
+                  );
+                } else {
+                  dispatch(
+                    setAgentSettings({
+                      id: agentId,
+                      settings: next.settings as LLMParams,
+                    }),
+                  );
+                }
                 setActiveTab("settings");
               }}
               onReset={() => setJsonText(buildFullSettingsJson())}

@@ -21,6 +21,8 @@ import type {
 } from "@/lib/entity-list/config";
 import type { ItemMenuConfig, ItemMenuEntry } from "@/components/official/item/types";
 import { createMemoryListService } from "@/lib/entity-list/memoryService";
+import { EntitySourceFailures } from "@/lib/entity-list/components/EntitySourceFailures";
+import { plainFailureReason } from "@/lib/entity-list/failure";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { AppDispatch } from "@/lib/redux/store";
 import { toast } from "@/lib/toast";
@@ -242,7 +244,13 @@ function buildConfig(dispatch: AppDispatch, onLoad: (load: HealthLoad) => void):
         const load = await fetchMandateHealth(dispatch);
         onLoad(load);
         if (load.findings.length === 0 && load.failures.length > 0) {
-          throw new Error(load.failures.map((f) => `${SOURCE_LABEL[f.source]}: ${f.message}`).join(" · "));
+          // Plain words on screen; the raw messages stay in the console.
+          console.error("[mandate-health] every source failed", load.failures);
+          throw new Error(
+            load.failures
+              .map((f) => `${SOURCE_LABEL[f.source]} ${plainFailureReason(f.message)}.`)
+              .join(" "),
+          );
         }
         return load.findings;
       },
@@ -292,21 +300,27 @@ function buildConfig(dispatch: AppDispatch, onLoad: (load: HealthLoad) => void):
 export function MandateHealthPage() {
   const dispatch = useAppDispatch();
   const [failures, setFailures] = useState<HealthLoad["failures"]>([]);
-  const [config] = useState(() => buildConfig(dispatch, (load) => setFailures(load.failures)));
+  const [attempt, setAttempt] = useState(0);
+  const [config, setConfig] = useState(() => buildConfig(dispatch, (load) => setFailures(load.failures)));
+  // Try again = a fresh reader: the memory service holds its first answer.
+  const retry = () => {
+    setFailures([]);
+    setConfig(buildConfig(dispatch, (load) => setFailures(load.failures)));
+    setAttempt((n) => n + 1);
+  };
   return (
     <EntityListPage
+      key={attempt}
       config={config}
       defaultScope={{ kind: "system" }}
       clearsShellHeader={false}
       notice={
-        failures.length > 0 ? (
-          <div
-            role="status"
-            className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-xs text-amber-800 dark:text-amber-300"
-          >
-            {failures.map((f) => `${SOURCE_LABEL[f.source]} unavailable: ${f.message}`).join(" · ")}
-          </div>
-        ) : null
+        <EntitySourceFailures
+          operation="Load mandate health"
+          failures={failures.map((f) => ({ label: SOURCE_LABEL[f.source], error: f.message }))}
+          onRetry={retry}
+          consequence="The findings below come only from the sources that answered."
+        />
       }
       headerActions={
         <Link

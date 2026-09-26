@@ -90,7 +90,9 @@ export function RequestAccessPanel({
             currentUserId,
             href,
           });
-      if (result.already) {
+      if (result.blindAnswer) {
+        toast.success(result.blindAnswer);
+      } else if (result.already) {
         toast.success("You've already asked — they haven't answered yet.");
       } else if (result.delivered === 0) {
         // The request row landed, but nobody was actually reached. Saying

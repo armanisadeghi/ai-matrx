@@ -42,6 +42,7 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import { OverlayErrorBoundary } from "@/features/overlays/boundary/OverlayErrorBoundary";
 import { OverlayLoadingFallback } from "@/features/overlays/boundary/OverlayLoadingFallback";
+import { SurfaceLayerBoundary } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 /** How long an overlay's dynamic import may hang before we treat it as failed. */
 export const OVERLAY_LOAD_TIMEOUT_MS = 12_000;
@@ -158,7 +159,13 @@ export function lazyOverlay<P extends object = Record<string, never>>(
           setAttempt((a) => a + 1);
         }}
       >
-        <Lazy {...props} />
+        {/* Every overlay is a LAYER over the page: providers inside rank
+            above the page's, and the page stays in the run's surface chain
+            (register ARE-012 — layers mount at the app root, outside the
+            page's tree). */}
+        <SurfaceLayerBoundary>
+          <Lazy {...props} />
+        </SurfaceLayerBoundary>
       </OverlayErrorBoundary>
     );
   }

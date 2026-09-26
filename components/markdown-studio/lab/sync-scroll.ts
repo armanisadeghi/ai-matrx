@@ -1,5 +1,5 @@
 import { fenceLineKinds } from "@ai-matrx/content-ir/source";
-import { isGfmDelimiterRow, opensTable } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { continuesTable, tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 // components/markdown-studio/lab/sync-scroll.ts
 //
 // Block-paired scroll sync between a raw markdown textarea and its rendered
@@ -110,15 +110,10 @@ export function parseTextSegments(text: string): TextSegment[] {
 
     // Table (line with pipes)
     // THE GFM table rule (gfm-table-lines): a header over its delimiter row.
-    if (opensTable(lines, i) && isGfmDelimiterRow(lines[i + 1] ?? "")) {
+    if (tableStartsAt(lines, i)) {
       const start = i;
       i++;
-      while (
-        i < lines.length &&
-        lines[i].trim().includes("|") &&
-        lines[i].trim() !== ""
-      )
-        i++;
+      while (i < lines.length && continuesTable(lines[i])) i++;
       segments.push({ startLine: start, endLine: i, type: "table" });
       continue;
     }
@@ -135,7 +130,9 @@ export function parseTextSegments(text: string): TextSegment[] {
           kinds[i] === "open" ||
           /^(-{3,}|\*{3,}|_{3,})$/.test(lt) ||
           /^[-*+]\s|^\d+[.)]\s/.test(lt) ||
-          lt.startsWith(">")
+          lt.startsWith(">") ||
+          // A GFM table interrupts a paragraph (THE rule, gfm-table-lines).
+          (tableStartsAt(lines, i))
         )
           break;
         i++;

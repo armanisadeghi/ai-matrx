@@ -85,6 +85,8 @@ const TEXT_GROUP: CatalogueEntry[] = [
   { key: "thinking_level", label: "Thinking Level" },
   { key: "reasoning_effort", label: "Reasoning Effort" },
   { key: "reasoning_summary", label: "Reasoning Summary" },
+  // Deep Research agents: charts and images inside the report.
+  { key: "visualization", label: "Charts and Images" },
   { key: "verbosity", label: "Verbosity" },
   { key: "tool_choice", label: "Tool Choice" },
 ];

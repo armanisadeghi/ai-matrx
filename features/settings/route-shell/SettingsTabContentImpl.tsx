@@ -10,7 +10,6 @@ import { FIRST_SCREEN_TAB } from "@/features/settings/tabs/FirstScreenTab";
 import { flattenLeaves } from "@/components/official/settings/tree/types";
 import {
   SurfaceRuntimeProvider,
-  getRegisteredSurfaceScopeContributions,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { createSettingsScope } from "@/features/surfaces/manifests/settings.manifest";
@@ -115,17 +114,9 @@ export function SettingsTabContentImpl({ tabId, basePath }: Props) {
           }
         : {}),
     });
-    const contributedScope = getRegisteredSurfaceScopeContributions(
-      "matrx-user/settings",
-    );
-    for (const name of Object.keys(contributedScope)) {
-      if (name in baseScope) {
-        throw new Error(
-          `[settings] descendant scope contribution attempted to replace provider-owned value "${name}"`,
-        );
-      }
-    }
-    return { ...baseScope, ...contributedScope };
+    // Descendant contributions (`useSurfaceScopeContribution`) are merged by
+    // the surface registry, which refuses one that replaces a value owned here.
+    return baseScope;
   };
 
   // ── Agent write targets (matrx-user/settings) ──────────────────────────

@@ -103,6 +103,14 @@ export function PromptPreviewContent({
         </div>
       ) : preview ? (
         <div className="flex flex-1 flex-col gap-3 overflow-y-auto pr-1">
+          {/* A decision turn is reshaped before it reaches the model; the
+              server applies that same reshaping to this preview and says so
+              here, so an empty system prompt or tool list is never a mystery. */}
+          {preview.decision_notice ? (
+            <p className="rounded-md border border-border bg-card px-3 py-2 text-xs leading-snug text-muted-foreground">
+              {preview.decision_notice}
+            </p>
+          ) : null}
           {/* System prompt — the star of the show */}
           <Section
             title="System prompt"

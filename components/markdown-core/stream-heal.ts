@@ -237,9 +237,39 @@ const pendingTable: RemendHandler = {
   },
 };
 
+/**
+ * A reasoning span whose closer has not arrived (`… a <thinking> short scrat`)
+ * is held back as pending — never printed as a literal tag (verify-RC-B3
+ * round 3 B1). Prose prep has usually escaped the tag already (`&lt;thinking&gt;`),
+ * so both spellings count. Inside code it is code. Once the closer lands,
+ * prose prep turns the span into an italic aside.
+ */
+const REASONING_OPEN = /(?:<|&lt;)(thinking|think|reasoning)(?:>|&gt;)/g;
+const pendingReasoningSpan: RemendHandler = {
+  name: "matrx-pending-reasoning-span",
+  priority: 1,
+  handle: (text) => {
+    let cut = -1;
+    for (const match of text.matchAll(REASONING_OPEN)) {
+      const at = match.index ?? 0;
+      const tag = match[1] as string;
+      const rest = text.slice(at + match[0].length);
+      if (new RegExp(`(?:<|&lt;)/${tag}(?:>|&gt;)`).test(rest)) continue;
+      if (isWithinCodeBlock(text, at)) continue;
+      // Inside an inline code span on its line (an odd number of backticks before it).
+      const lineStart = text.lastIndexOf("\n", at - 1) + 1;
+      if (((text.slice(lineStart, at).match(/`/g) ?? []).length & 1) === 1) continue;
+      cut = at;
+      break;
+    }
+    return cut === -1 ? text : text.slice(0, cut).replace(/[ \t]+$/, "");
+  },
+};
+
 const REMEND_OPTIONS = {
   linkMode: "text-only" as const,
   handlers: [
+    pendingReasoningSpan,
     pendingBracketedTail,
     pendingInlineMath,
     pendingTable,

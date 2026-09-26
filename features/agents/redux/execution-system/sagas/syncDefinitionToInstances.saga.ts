@@ -44,6 +44,11 @@ import {
   setAgentSettings,
   setAgentField,
   setAgentUiGates,
+  setAgentControlBinding,
+  undoAgentEdit,
+  redoAgentEdit,
+  resetAgentField,
+  resetAllAgentFields,
 } from "../../agent-definition/slice";
 import { updateInstanceDefinitions } from "../instance-variable-values/instance-variable-values.slice";
 import { updateBaseSettings } from "../instance-model-overrides/instance-model-overrides.slice";
@@ -143,6 +148,51 @@ function* handleModelChanged(
   }
 }
 
+/**
+ * Edits that change settings and/or variable definitions WITHOUT going through
+ * the two dedicated actions above: binding a control to a run input (and
+ * back), undo / redo, field resets, and a generic setAgentField on either
+ * field. Each re-reads the record after the debounce and re-syncs BOTH the
+ * live instance's variable definitions and its base settings — before this,
+ * unbinding Quality left the builder's test run offering a "Quality" input the
+ * agent no longer had.
+ */
+const RESYNC_FIELDS = new Set(["settings", "variableDefinitions"]);
+
+export function* handleDefinitionResync(action: {
+  type: string;
+  payload: { id: string; field?: string };
+}): Generator {
+  if (
+    action.type === setAgentField.type &&
+    !RESYNC_FIELDS.has(String(action.payload.field))
+  ) {
+    return;
+  }
+  const agentId = action.payload.id;
+  const state = (yield select()) as RootState;
+  const agent = state.agentDefinition.agents?.[agentId];
+  if (!agent) return;
+  const allIds = state.conversations.allConversationIds;
+  const byId = state.conversations.byConversationId;
+
+  for (const conversationId of allIds) {
+    if (byId[conversationId]?.agentId !== agentId) continue;
+    yield put(
+      updateInstanceDefinitions({
+        conversationId,
+        definitions: agent.variableDefinitions ?? [],
+      }),
+    );
+    yield put(
+      updateBaseSettings({
+        conversationId,
+        baseSettings: buildInstanceBaseSettings(agent.settings, agent.modelId),
+      }),
+    );
+  }
+}
+
 function* handleUiGatesChanged(
   action: ReturnType<typeof setAgentUiGates>,
 ): Generator {
@@ -179,4 +229,16 @@ export function* watchDefinitionChanges(): Generator {
   // swap flows through it and must keep the instance base model in sync. The
   // handler early-returns for every non-model field, so this is cheap.
   yield takeEvery(setAgentField.type, handleModelChanged);
+  yield debounce(
+    DEBOUNCE_MS,
+    [
+      setAgentControlBinding.type,
+      undoAgentEdit.type,
+      redoAgentEdit.type,
+      resetAgentField.type,
+      resetAllAgentFields.type,
+      setAgentField.type,
+    ],
+    handleDefinitionResync,
+  );
 }

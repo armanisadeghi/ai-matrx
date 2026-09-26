@@ -42,6 +42,7 @@ export interface NormalizedControls {
   // Reasoning / thinking
   reasoning_effort?: ControlDefinition;
   reasoning_summary?: ControlDefinition;
+  visualization?: ControlDefinition; // Deep Research agents: charts/images in the report
   thinking_level?: ControlDefinition; // Google Gemini
   include_thoughts?: ControlDefinition;
   thinking_budget?: ControlDefinition; // Anthropic + legacy Gemini
@@ -50,7 +51,12 @@ export interface NormalizedControls {
 
   // Output control
   response_format?: ControlDefinition;
-  /** @deprecated DB models may still have output_format — remapped to response_format at parse time */
+  /**
+   * Two meanings, told apart by the control's own values (see
+   * `outputFormatControlKey`): a legacy text model's output_format IS the
+   * response format and is remapped to `response_format`; an image model's
+   * output_format (png / jpeg / webp) is the file format and stays here.
+   */
   output_format?: ControlDefinition;
   stop_sequences?: ControlDefinition;
   verbosity?: ControlDefinition;
@@ -220,6 +226,34 @@ export function supportsTools(
     rawToolsControl?.allowed !== false &&
     rawToolsControl?.default !== false
   );
+}
+
+/** The text response formats a legacy `output_format` control carries. */
+const TEXT_RESPONSE_FORMATS = new Set(["text", "json_object", "json_schema"]);
+
+/**
+ * The key a catalog control is read under. `output_format` is ambiguous in the
+ * catalog: on a legacy text model its values are text response formats and it
+ * means `response_format`; on an image model (GPT Image 2: png / jpeg / webp)
+ * it is the image file format — its own LLMParams field. Only the first is
+ * remapped; remapping the second showed an image model a "Response Format"
+ * row whose choices stored nothing.
+ */
+function outputFormatControlKey(key: string, control: unknown): string {
+  if (key !== "output_format") return key;
+  const options =
+    control && typeof control === "object" && "enum" in control
+      ? (control as { enum?: unknown }).enum
+      : undefined;
+  if (!Array.isArray(options) || options.length === 0) return "response_format";
+  const values = options.map((o) =>
+    o && typeof o === "object" && "type" in (o as Record<string, unknown>)
+      ? String((o as Record<string, unknown>).type)
+      : String(o),
+  );
+  return values.every((v) => TEXT_RESPONSE_FORMATS.has(v))
+    ? "response_format"
+    : "output_format";
 }
 
 /**
@@ -420,8 +454,9 @@ export function resolveModelControls(
       return;
     }
 
-    // Remap output_format -> response_format (backend uses response_format)
-    const normalizedKey = key === "output_format" ? "response_format" : key;
+    // A legacy text model's output_format is the response format; an image
+    // model's output_format is the file format (a real LLMParams field).
+    const normalizedKey = outputFormatControlKey(key, value);
 
     // Guard: skip primitive values — control definitions must be objects
     if (!isJsonObject(value)) {
@@ -537,8 +572,8 @@ export function getModelDefaults(model: unknown): Record<string, unknown> {
   const uiOnlyKeys = new Set(["tools"]);
 
   Object.entries(controls).forEach(([key, value]: [string, unknown]) => {
-    // Remap output_format -> response_format
-    const normalizedKey = key === "output_format" ? "response_format" : key;
+    // Same output_format rule as resolveModelControls.
+    const normalizedKey = outputFormatControlKey(key, value);
 
     // Guard: skip primitive values
     if (!isJsonObject(value)) {

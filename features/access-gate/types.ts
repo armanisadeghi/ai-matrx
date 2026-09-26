@@ -168,6 +168,12 @@ export interface AccessRequestCreated {
   entityTitle: string | null;
   recipients: AccessRequestRecipient[];
   /**
+   * Set when the server answered BLIND (RC-A2m): the not-found split hides this record from the
+   * asker, so the request was filed (or not, for a random id) without saying which. Show this
+   * sentence and nothing else — no recipient, no title, no "already asked".
+   */
+  blindAnswer?: string;
+  /**
    * How many recipients we actually reached. `undefined` when no delivery was
    * attempted (a duplicate ask). ZERO means the row exists but nobody was told —
    * the UI must not then claim "they've been messaged".

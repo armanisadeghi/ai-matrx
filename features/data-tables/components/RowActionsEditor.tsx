@@ -54,6 +54,16 @@ import { STYLE_COLORS, STYLE_COLOR_LABELS, type StyleColor } from "@ai-matrx/des
 import { isServiceFailure } from "../types";
 import { FormatAwareInput, formatHasOwnInput } from "./FormatAwareInput";
 import { FormulaExpressionEditor } from "./FormulaExpressionEditor";
+import { FORMULA_FUNCTIONS, parseFormula } from "@ai-matrx/design-system/formulas";
+import {
+  useSurfaceScopeContribution,
+  useSurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import {
+  createTableSettingsRowActionsScope,
+  TABLE_SETTINGS_SURFACE_NAME,
+} from "@/features/surfaces/manifests/table-settings.manifest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Field = RowActionField & RowLabelField & { metadata?: unknown };
@@ -118,6 +128,53 @@ export function RowActionsEditor({ tableId, metadata, fields, rows, disabled, on
     const next = exists ? stored.map((a) => (a.id === editing.id ? editing : a)) : [...stored, editing];
     if (await persist(next, `Saved "${editing.name.trim()}"`)) setEditing(null);
   };
+
+  // ── The Actions tab speaks for itself on the Table settings surface ──────
+  // Its values and both row-action write targets live HERE because the action
+  // being edited is this component's state (register ARE-010 / ARE-011). With
+  // no Table settings window mounted around it, nothing is registered.
+  useSurfaceScopeContribution(TABLE_SETTINGS_SURFACE_NAME, "RowActionsEditor", () =>
+    createTableSettingsRowActionsScope({
+      saved_row_actions: stored.map((action) => ({
+        id: action.id,
+        name: action.name,
+        kind: action.kind,
+        ...(action.kind === "agent" ? { prompt: action.prompt ?? "" } : { steps: action.steps ?? [] }),
+        sentence: describeRowAction(action, fields),
+      })),
+      ...(editing
+        ? {
+            editing_row_action: { ...editing, sentence: describeRowAction(editing, fields) },
+            editing_row_action_problems: validateRowActions([editing], fields).map((p) => p.message),
+            ...(editing.kind === "update" ? { formula_language: formulaLanguageText() } : {}),
+          }
+        : {}),
+    }),
+  );
+
+  useSurfaceWriteHandlers(TABLE_SETTINGS_SURFACE_NAME, {
+    editing_row_action: (value) => {
+      const next = rowActionFromAgent(value, editing?.id ?? newRowActionId(), fields);
+      setEditing(next);
+    },
+    row_action_step_formula: (value) => {
+      const { field, expression } = stepFormulaFromAgent(value, settable);
+      if (editing && editing.kind === "agent") {
+        refuseSurfaceWrite(
+          `"${editing.name || "The open action"}" is an agent action; it has no Calculate steps. Write the whole action with editing_row_action instead.`,
+        );
+      }
+      const base: RowAction =
+        editing ?? { id: newRowActionId(), name: "", kind: "update", steps: [], color: null, confirm: false };
+      const steps = base.steps ?? [];
+      const step: RowActionStep = { field: field.field_name, set: "formula", expression };
+      const at = steps.findIndex((s) => s.field === field.field_name);
+      setEditing({
+        ...base,
+        steps: at === -1 ? [...steps, step] : steps.map((s, i) => (i === at ? step : s)),
+      });
+    },
+  });
 
   const remove = async (action: RowAction) => {
     const ok = await confirmDialog({
@@ -218,6 +275,95 @@ export function RowActionsEditor({ tableId, metadata, fields, rows, disabled, on
       )}
     </div>
   );
+}
+
+// ─── agent writes (Table settings surface) ──────────────────────────────────
+
+/** The formula language as an agent reads it — the same list the editor shows. */
+function formulaLanguageText(): string {
+  return (
+    FORMULA_FUNCTIONS.map((fn) => `${fn.signature} — ${fn.description}`).join("\n") +
+    "\nOperators: + - * / % for numbers, & joins text, = != < <= > >= compare. Text goes in double quotes." +
+    "\nReference a column as {Display name}. An empty cell counts as 0 in arithmetic and is skipped by SUM / AVERAGE."
+  );
+}
+
+function findColumn(name: string, columns: readonly Field[]): Field | undefined {
+  const lower = name.trim().toLowerCase();
+  return (
+    columns.find((f) => f.field_name.toLowerCase() === lower) ??
+    columns.find((f) => f.display_name.toLowerCase() === lower)
+  );
+}
+
+/**
+ * An agent's `row_action_step_formula` value, checked the way the editor
+ * checks a person's typing: a settable column, a formula that parses, and only
+ * references to real columns. Throws (refusal) with the reason otherwise.
+ */
+export function stepFormulaFromAgent(
+  value: unknown,
+  settable: readonly Field[],
+): { field: Field; expression: string } {
+  const record = (value && typeof value === "object" ? value : {}) as Record<string, unknown>;
+  if (typeof record.field !== "string" || typeof record.expression !== "string") {
+    refuseSurfaceWrite(
+      'row_action_step_formula expects { "field": "<column machine name>", "expression": "<formula>" }.',
+    );
+  }
+  const field = findColumn(record.field as string, settable);
+  if (!field) {
+    refuseSurfaceWrite(
+      `No column "${record.field}" can take a calculated value here. Columns: ${settable.map((f) => `${f.field_name} ("${f.display_name}")`).join(", ")}.`,
+    );
+  }
+  const expression = (record.expression as string).trim();
+  const parsed = parseFormula(expression);
+  if (!parsed.ok) {
+    refuseSurfaceWrite(`The formula does not parse: ${parsed.error} (at character ${parsed.position + 1}).`);
+  }
+  return { field: field!, expression };
+}
+
+/**
+ * An agent's whole `editing_row_action` value, normalised and checked exactly
+ * as Save action checks it (`validateRowActions`). Throws with every problem.
+ */
+export function rowActionFromAgent(value: unknown, id: string, fields: readonly Field[]): RowAction {
+  const record = (value && typeof value === "object" ? value : null) as Record<string, unknown> | null;
+  if (!record || typeof record.name !== "string" || (record.kind !== "update" && record.kind !== "agent")) {
+    refuseSurfaceWrite(
+      'editing_row_action expects { "name": "<button label>", "kind": "update" | "agent", "steps": [...] or "prompt": "..." }.',
+    );
+  }
+  const common = {
+    id,
+    name: (record!.name as string).trim(),
+    color: (typeof record!.color === "string" ? record!.color : null) as StyleColor | null,
+    ...(typeof record!.icon === "string" && record!.icon ? { icon: record!.icon } : {}),
+    confirm: record!.confirm === true,
+  };
+  let action: RowAction;
+  if (record!.kind === "agent") {
+    action = { ...common, kind: "agent", prompt: typeof record!.prompt === "string" ? record!.prompt : "" };
+  } else {
+    if (!Array.isArray(record!.steps)) refuseSurfaceWrite('An update action needs "steps".');
+    const steps = (record!.steps as unknown[]).map((raw): RowActionStep => {
+      const step = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+      const column = typeof step.field === "string" ? findColumn(step.field, fields) : undefined;
+      const field = column?.field_name ?? String(step.field ?? "");
+      if (step.set === "clear") return { field, set: "clear" };
+      if (step.set === "formula") return { field, set: "formula", expression: String(step.expression ?? "").trim() };
+      if (step.set === "value") {
+        return { field, set: "value", value: column ? coerceForColumn(step.value, column.data_type) : step.value };
+      }
+      refuseSurfaceWrite(`Step for "${field}" needs "set": "value", "clear" or "formula".`);
+    });
+    action = { ...common, kind: "update", steps };
+  }
+  const problems = validateRowActions([action], fields).map((p) => p.message);
+  if (problems.length > 0) refuseSurfaceWrite(`Not staged: ${problems.join(" ")}`);
+  return action;
 }
 
 /** The action's icon: its picked icon, else a speech bubble for agent actions and a bolt for updates. */

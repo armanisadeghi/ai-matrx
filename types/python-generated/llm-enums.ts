@@ -23,6 +23,8 @@ export const REASONING_EFFORT_OPTIONS = ['auto', 'none', 'minimal', 'low', 'medi
 
 export const REASONING_SUMMARY_OPTIONS = ['concise', 'detailed', 'never', 'auto', 'always'] as const satisfies readonly NonNullable<LLMParams['reasoning_summary']>[];
 
+export const VISUALIZATION_OPTIONS = ['auto', 'off'] as const satisfies readonly NonNullable<LLMParams['visualization']>[];
+
 export const THINKING_LEVEL_OPTIONS = ['minimal', 'low', 'medium', 'high'] as const satisfies readonly NonNullable<LLMParams['thinking_level']>[];
 
 export const TASK_OPTIONS = ['text_to_video', 'image_to_video', 'reference_to_video', 'edit'] as const satisfies readonly NonNullable<LLMParams['task']>[];
@@ -68,6 +70,7 @@ export const LLM_PARAMS_KEYS = [
     'parallel_tool_calls',
     'reasoning_effort',
     'reasoning_summary',
+    'visualization',
     'thinking_level',
     'include_thoughts',
     'thinking_budget',

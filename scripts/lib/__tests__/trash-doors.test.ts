@@ -9,8 +9,11 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   isTrashListingDoorName,
+  judgeTrashCoverage,
   judgeTrashDoorBody,
   judgeTrashTimings,
+  STORE_TRASH_KINDS,
+  TRASH_COVERAGE_EXEMPT,
 } from "../trash-doors";
 
 const ROOT = resolve(__dirname, "..", "..", "..");
@@ -99,5 +102,49 @@ describe("Trash timing judgement (judgeTrashTimings)", () => {
     expect(judgeTrashTimings([{ label: "k", class: "kind", ms: 300.1 }])).toHaveLength(1);
     expect(judgeTrashTimings([{ label: "c", class: "counts", ms: 2000 }])).toEqual([]);
     expect(judgeTrashTimings([{ label: "c", class: "counts", ms: 2000.1 }])).toHaveLength(1);
+  });
+});
+
+
+/**
+ * Lane TRASH-TABLES — the coverage judgement. The live pass (pnpm check:trash-doors) was RED on the
+ * dev clone under the inverse (store:table, store:record, entity:platform_saved_view not in Trash)
+ * and GREEN after the up; these cases pin the judgement itself.
+ */
+describe("Trash coverage (judgeTrashCoverage)", () => {
+  test("RED: an archived data Table that no Trash lists fails, by name (VERIFIER-25 item 11)", () => {
+    const found = judgeTrashCoverage([{ thing: "store:table", covered: false, detail: "not in its owner's Trash" }], {});
+    expect(found).toHaveLength(1);
+    expect(found[0]!.door).toBe("store:table");
+    expect(found[0]!.problem).toContain("not in Trash");
+  });
+
+  test("RED: a brand-new soft-deletable Entity with archived rows and no Trash kind fails", () => {
+    const found = judgeTrashCoverage([{ thing: "entity:brand_new_kind", covered: false }]);
+    expect(found.map((f) => f.door)).toEqual(["entity:brand_new_kind"]);
+  });
+
+  test("GREEN: covered things and reasoned exemptions pass", () => {
+    expect(
+      judgeTrashCoverage([
+        { thing: "store:table", covered: true },
+        { thing: "store:record", covered: true },
+        { thing: "store:field", covered: false },
+        { thing: "entity:record", covered: false },
+      ]),
+    ).toEqual([]);
+  });
+
+  test("RED: an exemption for a thing Trash now covers is stale and fails (the list only shrinks)", () => {
+    const found = judgeTrashCoverage([{ thing: "entity:rulebook", covered: true }]);
+    expect(found).toHaveLength(1);
+    expect(found[0]!.problem).toContain("stale");
+  });
+
+  test("the store's Trash kinds are exactly Table and Record, and never exempted", () => {
+    expect(STORE_TRASH_KINDS).toEqual({ table: "table", record: "record" });
+    expect(TRASH_COVERAGE_EXEMPT["store:table"]).toBeUndefined();
+    expect(TRASH_COVERAGE_EXEMPT["store:record"]).toBeUndefined();
+    for (const why of Object.values(TRASH_COVERAGE_EXEMPT)) expect(why.length).toBeGreaterThan(40);
   });
 });

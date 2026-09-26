@@ -85,7 +85,9 @@ export function GovernedActionDialog({
               href,
             });
       setSent(choice);
-      if (result.already) {
+      if (result.blindAnswer) {
+        toast.success(result.blindAnswer);
+      } else if (result.already) {
         toast.success("Your request is already waiting for an answer.");
       } else if (result.delivered === 0) {
         toast.warning(

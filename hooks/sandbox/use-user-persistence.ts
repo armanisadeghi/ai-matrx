@@ -7,6 +7,7 @@ import type {
   UserPersistenceResponse,
 } from "@/types/sandbox";
 import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
@@ -24,7 +25,9 @@ export interface UseUserPersistenceResult extends UseUserPersistenceState {
    * `error` is populated. The orchestrator refuses while any sandbox remains
    * attached, including stopped retained-home containers.
    */
-  deleteVolume: (tier: "hosted") => Promise<{ ok: boolean; error?: string }>;
+  deleteVolume: (
+    tier: "hosted",
+  ) => Promise<{ ok: boolean; error?: string; cancelled?: boolean }>;
 }
 
 /**
@@ -87,6 +90,12 @@ export function useUserPersistence(
         setState({ info: data, loading: false, error: null });
       } catch (err) {
         if (reqId !== reqIdRef.current) return;
+        // Closing the organization picker is an answer ("not now"), not a
+        // failure: keep what was on screen, show no error.
+        if (isOrganizationSelectionCancelled(err)) {
+          setState((s) => ({ ...s, loading: false, error: null }));
+          return;
+        }
         setState({
           info: null,
           loading: false,
@@ -103,7 +112,9 @@ export function useUserPersistence(
   }, [skip, fetchOnce]);
 
   const deleteVolume = useCallback(
-    async (deleteTier: "hosted"): Promise<{ ok: boolean; error?: string }> => {
+    async (
+      deleteTier: "hosted",
+    ): Promise<{ ok: boolean; error?: string; cancelled?: boolean }> => {
       const qs = `?tier=${deleteTier}`;
       try {
         const resp = await fetchWithOrganization(`/api/sandbox/persistence${qs}`, {
@@ -134,6 +145,7 @@ export function useUserPersistence(
         await fetchOnce();
         return { ok: true };
       } catch (err) {
+        if (isOrganizationSelectionCancelled(err)) return { ok: false, cancelled: true };
         const message = err instanceof Error ? err.message : "Unknown error";
         setState((s) => ({ ...s, error: message }));
         return { ok: false, error: message };

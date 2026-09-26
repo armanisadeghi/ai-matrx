@@ -12,7 +12,7 @@
  */
 
 import { replaceFences } from "@/lib/markdown/code-ranges";
-import { isGfmDelimiterRow, opensTable } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 
 /** A bullet or ordered list item with real content. */
 const LIST_ITEM = /^\s*(?:[-*+]|\d{1,3}[.)])\s+\S/;
@@ -37,7 +37,7 @@ export function hasConvertibleContent(content: string): boolean {
     const line = lines[i];
     // A table by THE GFM rule (gfm-table-lines): a header — edge pipes
     // optional — over its delimiter row.
-    if (opensTable(lines, i) && isGfmDelimiterRow(lines[i + 1] ?? "")) {
+    if (tableStartsAt(lines, i)) {
       return true;
     }
     if (LIST_ITEM.test(line)) {

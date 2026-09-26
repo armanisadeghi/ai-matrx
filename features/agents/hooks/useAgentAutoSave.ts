@@ -6,21 +6,29 @@
  * Debounced localStorage backup for a specific agent.
  * Caller must provide agentId — there is no global "active agent" fallback.
  *
- * On mount: recovers any unsaved changes from localStorage and merges into Redux.
+ * On mount: reads any unsaved-changes backup from localStorage. Once the saved
+ *   agent has fully loaded, every backed-up field that differs from what is
+ *   saved is re-applied as an UNSAVED edit (dirty, undoable, announced) — never
+ *   merged in as if it were the saved value. Merging it clean showed values the
+ *   database never held beside "No unsaved changes", disabled Save, and then
+ *   deleted the backup; a backup applied before the fetch was overwritten.
  * While dirty: writes a snapshot every DEBOUNCE_MS milliseconds.
- * On clean (after save): removes the localStorage entry.
+ * On clean (after save or discard): removes the localStorage entry.
  */
 
 import { useEffect, useRef } from "react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import isEqual from "lodash/isEqual";
 import {
   selectAgentById,
+  selectAgentFetchStatus,
   selectAgentIsReadOnly,
   selectAgentAccessResolved,
 } from "@/features/agents/redux/agent-definition/selectors";
-import { mergePartialAgent } from "@/features/agents/redux/agent-definition/slice";
+import { setAgentField } from "@/features/agents/redux/agent-definition/slice";
 import { readField } from "@/features/agents/redux/shared/field-flags";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import { toast } from "@/lib/toast";
 
 const STORAGE_PREFIX = "agent-autosave:";
 const DEBOUNCE_MS = 2_000;
@@ -34,37 +42,68 @@ export function useAgentAutoSave(agentId: string) {
   const isReadOnly = useAppSelector((state) =>
     selectAgentIsReadOnly(state, agentId),
   );
+  const fetchStatus = useAppSelector((state) =>
+    selectAgentFetchStatus(state, agentId),
+  );
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Backed-up fields waiting for the saved record to load (null = none).
+  const pendingRecoveryRef = useRef<Record<string, unknown> | null>(null);
+  // Set once recovered edits were re-applied, so the clean-state effect of the
+  // same commit (which still sees the pre-dispatch record) keeps the backup.
+  const restoredRef = useRef(false);
   const skipPersistence = accessResolved && isReadOnly;
 
-  // Recovery on mount
+  // Read the backup on mount — before the clean-state effect below can clear it.
   useEffect(() => {
+    pendingRecoveryRef.current = null;
+    restoredRef.current = false;
     const storageKey = `${STORAGE_PREFIX}${agentId}`;
     try {
       const raw = localStorage.getItem(storageKey);
       if (raw) {
         const saved = JSON.parse(raw) as Record<string, unknown>;
         if (saved?._dirty) {
-          // Strip the `_dirty` marker — it's this hook's own bookkeeping key,
-          // not a real AgentDefinition field, and mergePartialAgent merges
-          // whatever keys are present onto the record.
+          // `_dirty` is this hook's own bookkeeping key, not an agent field.
           const { _dirty: _unused, ...fields } = saved;
-          dispatch(
-            mergePartialAgent({
-              id: agentId,
-              ...fields,
-            } as Partial<AgentDefinition> & { id: string }),
-          );
+          pendingRecoveryRef.current = fields;
         }
       }
     } catch {
       // Ignore parse errors / SSR
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentId]);
+
+  // Re-apply the backup as unsaved edits once the saved agent has loaded.
+  useEffect(() => {
+    const fields = pendingRecoveryRef.current;
+    if (!fields || !record || fetchStatus !== "full") return;
+    pendingRecoveryRef.current = null;
+    const restored: string[] = [];
+    for (const [field, value] of Object.entries(fields)) {
+      const key = field as keyof AgentDefinition;
+      if (isEqual(readField(record, key), value)) continue;
+      dispatch(
+        setAgentField({
+          id: agentId,
+          field: key,
+          value: value as AgentDefinition[keyof AgentDefinition],
+        }),
+      );
+      restored.push(field);
+    }
+    if (restored.length > 0) {
+      restoredRef.current = true;
+      toast.info(
+        `Restored unsaved changes to ${record.name || "this agent"} from this browser (${restored.join(", ")}). Save to keep them, or undo to discard.`,
+      );
+    }
+  }, [agentId, record, fetchStatus, dispatch]);
 
   // Debounced backup when dirty (skip for view-only shared agents)
   useEffect(() => {
+    // The re-applied edits have now reached the record (it is dirty), so the
+    // one-commit guard for the clean-state effect is no longer needed.
+    if (record?._dirty) restoredRef.current = false;
     if (skipPersistence || !record?._dirty) return undefined;
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
@@ -88,9 +127,14 @@ export function useAgentAutoSave(agentId: string) {
     };
   }, [agentId, record, skipPersistence]);
 
-  // Clear on successful save (clean state)
+  // Clear on successful save (clean state) — never while a backup is still
+  // waiting to be re-applied, or in the commit that just re-applied it.
   useEffect(() => {
     if (record?._dirty !== false) return;
+    if (pendingRecoveryRef.current || restoredRef.current) {
+      restoredRef.current = false;
+      return;
+    }
     const storageKey = `${STORAGE_PREFIX}${agentId}`;
     try {
       localStorage.removeItem(storageKey);

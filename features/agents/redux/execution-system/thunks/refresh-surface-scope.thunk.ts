@@ -19,6 +19,7 @@ import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { getSurfaceRuntimeForName } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
+import { withLiveSurfaceContext } from "@/features/surfaces/runtime/surface-chain";
 import { withSurfaceDocumentEvidence } from "@/features/surfaces/utils/document-evidence";
 import { replaceSurfaceVariableValues } from "../instance-variable-values/instance-variable-values.slice";
 import {
@@ -97,9 +98,11 @@ export const refreshSurfaceScope = createAsyncThunk<
     let applicationScope: ApplicationScope;
     try {
       const liveScope = await runtime.getScope();
+      // Each follow-up turn sees what is open NOW — the surface chain and
+      // any unregistered window (features/surfaces/runtime/surface-chain.ts).
       applicationScope = withSurfaceDocumentEvidence(
         surfaceName,
-        withBaselineScope(liveScope),
+        await withLiveSurfaceContext(surfaceName, withBaselineScope(liveScope)),
       );
     } catch (error) {
       const message = `Could not read the live ${surfaceName} values. Nothing was sent.`;

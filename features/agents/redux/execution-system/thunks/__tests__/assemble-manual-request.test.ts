@@ -644,3 +644,67 @@ describe("assembleManualRequest — live read contract", () => {
     ).resolves.toBeDefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// The builder's run sends exactly what the Model Settings views show.
+// Product Shot Studio: moderation fixed at "low"; aspect ratio and quality are
+// run inputs. Every literal in the settings document goes flat on the wire;
+// every `$var` marker goes as a variable (its default), never as a flat
+// setting and never as a marker object.
+// ---------------------------------------------------------------------------
+
+import { buildSettingsDocument } from "@/features/agents/components/settings-management/settings-document";
+
+describe("assembleManualRequest — sends what the settings views show", () => {
+  const variableDefinitions = [
+    { name: "subject", defaultValue: "a matte black pour-over dripper" },
+    { name: "aspect_ratio", control: { key: "aspect_ratio" }, defaultValue: "1:1" },
+    { name: "quality", control: { key: "quality" }, defaultValue: "medium" },
+  ];
+
+  test("literals go flat, bound controls go as variables", async () => {
+    const settings = { moderation: "low", count: 2 };
+    const state = makeState({
+      modelId: "gpt-image-2",
+      settings,
+      variableDefinitions,
+      userInput: "shoot it",
+    });
+    const request = (await assembleManualRequest(
+      state,
+      CONVERSATION_ID,
+    )) as unknown as Record<string, unknown>;
+    const doc = buildSettingsDocument({
+      modelId: "gpt-image-2",
+      settings,
+      variableDefinitions: variableDefinitions as never,
+    });
+
+    for (const [key, value] of Object.entries(doc)) {
+      if (key === "model_id" || key === "tools") continue;
+      if (value && typeof value === "object" && "$var" in value) {
+        const marker = value as { $var: string; default: string };
+        expect(request).not.toHaveProperty(key);
+        expect(
+          (request.variables as Record<string, unknown>)[marker.$var],
+        ).toBe(marker.default);
+      } else {
+        expect(request[key]).toEqual(value);
+      }
+    }
+    expect(request.ai_model_id).toBe(doc.model_id);
+  });
+
+  test("a legacy settings.model_id never reaches the wire as the model", async () => {
+    const state = makeState({
+      modelId: "gemini-image",
+      settings: { model_id: "gpt-image-2", aspect_ratio: "1:1" },
+    });
+    const request = (await assembleManualRequest(
+      state,
+      CONVERSATION_ID,
+    )) as unknown as Record<string, unknown>;
+    expect(request.ai_model_id).toBe("gemini-image");
+    expect(request).not.toHaveProperty("model_id");
+  });
+});

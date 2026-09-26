@@ -47,9 +47,8 @@ import { LocaleType } from "@univerjs/presets";
 import { defaultDocumentPageStyle } from "./document-page-style";
 import {
   findTableEnd,
-  isGfmDelimiterRow,
-  opensTable,
   rowCells,
+  tableStartsAt,
   unescapeCellPipes,
 } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
 import { codeSpanText, fenceLineKinds, mapCodeRanges } from "@ai-matrx/content-ir/source";
@@ -348,7 +347,7 @@ export function markdownToUniverDoc(
 
     // GFM table (THE rule, gfm-table-lines): a header — with or without edge
     // pipes — immediately followed by its delimiter row.
-    if (opensTable(lines, i) && isGfmDelimiterRow(lines[i + 1] ?? "")) {
+    if (tableStartsAt(lines, i)) {
       flushParagraph();
       const tableLines: string[] = [];
       const tableEnd = findTableEnd(lines, i);

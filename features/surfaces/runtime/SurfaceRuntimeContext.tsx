@@ -94,6 +94,16 @@ export interface SurfaceRuntimeValue {
    * `surface-writeback.ts` — never invoked directly by chrome or components.
    */
   getWriteHandlers?: () => SurfaceWriteHandlers;
+  /**
+   * True when this runtime sits inside a LAYER — a dialog, window, sheet,
+   * drawer or panel open over a page (`<SurfaceLayerBoundary>`, which every
+   * overlay-controller layer gets automatically). Set by the registry from
+   * the boundary, never by hand. A layer is what the person is looking at
+   * while it is open: it becomes the primary surface, and the page it sits on
+   * stays in the agent's context as a level of the surface chain
+   * (`surface-chain.ts`).
+   */
+  layer?: boolean;
 }
 
 type SurfaceScopeContribution = {
@@ -166,6 +176,37 @@ export function getRegisteredSurfaceScopeContributions(
     }
   }
   return merged;
+}
+
+/**
+ * The provider's own scope plus every descendant contribution, merged by the
+ * REGISTRY — so a component deep inside a page (a tab, a card, a dialog's
+ * editor) adds its values with `useSurfaceScopeContribution` and they reach
+ * every reader with zero wiring in the provider. A contribution may never
+ * replace a provider-owned value: two owners of one Surface Value is a loud
+ * contract error, never a silent override.
+ */
+export function withScopeContributions(
+  surfaceName: string,
+  getScope: () => SurfaceScopePayload | Promise<SurfaceScopePayload>,
+): () => SurfaceScopePayload | Promise<SurfaceScopePayload> {
+  const merge = (own: SurfaceScopePayload): SurfaceScopePayload => {
+    const contributed = getRegisteredSurfaceScopeContributions(surfaceName);
+    for (const name of Object.keys(contributed)) {
+      if (name in own) {
+        throw new Error(
+          `[surfaces] a descendant contribution to "${surfaceName}" tried to replace the provider-owned value "${name}"`,
+        );
+      }
+    }
+    return { ...own, ...contributed };
+  };
+  return () => {
+    const own = getScope();
+    return own && typeof (own as Promise<SurfaceScopePayload>).then === "function"
+      ? (own as Promise<SurfaceScopePayload>).then(merge)
+      : merge(own as SurfaceScopePayload);
+  };
 }
 
 /** Register a descendant's latest scope fragment without re-registering it. */
@@ -254,7 +295,11 @@ export function registerSurfaceRuntime(
   depth = 0,
 ): () => void {
   const id = ++nextId;
-  stack = [...stack, { id, depth, value }];
+  const registered: SurfaceRuntimeValue = {
+    ...value,
+    getScope: withScopeContributions(value.surfaceName, value.getScope),
+  };
+  stack = [...stack, { id, depth, value: registered }];
   emit();
   return () => {
     stack = stack.filter((e) => e.id !== id);
@@ -444,6 +489,38 @@ export function useSurfaceClientTools(
  */
 const SurfaceRuntimeDepthContext = createContext(0);
 
+/** True below a `<SurfaceLayerBoundary>`. */
+const SurfaceLayerContext = createContext(false);
+
+/**
+ * Depth every layer starts from. A page nests its providers a few deep (a
+ * layout provider, the page, a panel), so a layer mounted at the app root by
+ * the overlay controller — outside the page's tree, at provider depth 1 —
+ * used to LOSE to a depth-2 page and its surface never became primary while
+ * it was open (register ARE-012). Layers start far above any page.
+ */
+export const SURFACE_LAYER_DEPTH_BASE = 1000;
+
+/**
+ * Marks everything inside as a LAYER over the page: a dialog, window, sheet,
+ * drawer or panel. Providers below register as `layer: true` and rank above
+ * every page provider, wherever they mount. The overlay controller wraps
+ * every layer it opens in one (`lazyOverlay`); a dialog rendered inside a
+ * page's own tree wraps its content itself. Renders no DOM.
+ */
+export function SurfaceLayerBoundary({ children }: { children: ReactNode }) {
+  const parentDepth = useContext(SurfaceRuntimeDepthContext);
+  return (
+    <SurfaceLayerContext.Provider value={true}>
+      <SurfaceRuntimeDepthContext.Provider
+        value={Math.max(parentDepth, SURFACE_LAYER_DEPTH_BASE)}
+      >
+        {children}
+      </SurfaceRuntimeDepthContext.Provider>
+    </SurfaceLayerContext.Provider>
+  );
+}
+
 /**
  * Page-tree registration. Renders children unchanged aside from the depth
  * context. The registered getter is stable, while its scope-builder ref is
@@ -459,6 +536,7 @@ export function SurfaceRuntimeProvider({
   getWriteHandlers,
 }: SurfaceRuntimeValue & { children: ReactNode }) {
   const depth = useContext(SurfaceRuntimeDepthContext) + 1;
+  const layer = useContext(SurfaceLayerContext);
   const getScopeRef = useRef(getScope);
   // This is a local ref assignment, not a registry mutation. Registration
   // remains effect-owned, but its already-registered callback sees the current
@@ -468,6 +546,12 @@ export function SurfaceRuntimeProvider({
   // eslint-disable-next-line react-hooks/refs
   getScopeRef.current = getScope;
   const stableGetScope = useCallback(() => getScopeRef.current(), []);
+  // What every reader sees — the provider's scope plus descendant
+  // contributions — so an Alchemy transfer carries the same values an agent does.
+  const mergedGetScope = useCallback(
+    () => withScopeContributions(surfaceName, () => getScopeRef.current())(),
+    [surfaceName],
+  );
   const beforeExecuteRef = useRef(beforeExecute);
   const getWriteHandlersRef = useRef(getWriteHandlers);
   useEffect(() => {
@@ -480,17 +564,18 @@ export function SurfaceRuntimeProvider({
       {
         surfaceName,
         isEditable,
+        layer,
         getScope: stableGetScope,
         beforeExecute: (input) => beforeExecuteRef.current?.(input),
         getWriteHandlers: () => getWriteHandlersRef.current?.() ?? {},
       },
       depth,
     );
-  }, [surfaceName, isEditable, depth, stableGetScope]);
+  }, [surfaceName, isEditable, layer, depth, stableGetScope]);
 
   return (
     <SurfaceRuntimeDepthContext.Provider value={depth}>
-      <AlchemySurfaceBridge surfaceName={surfaceName} getScope={stableGetScope}>
+      <AlchemySurfaceBridge surfaceName={surfaceName} getScope={mergedGetScope}>
         {children}
       </AlchemySurfaceBridge>
     </SurfaceRuntimeDepthContext.Provider>
@@ -519,6 +604,7 @@ export function useSurfaceRuntimeRegistration(
   value: SurfaceRuntimeValue | null,
 ): SurfaceHandle | null {
   const depth = useContext(SurfaceRuntimeDepthContext) + 1;
+  const layer = useContext(SurfaceLayerContext);
   const valueRef = useRef(value);
   useEffect(() => {
     valueRef.current = value;
@@ -544,6 +630,7 @@ export function useSurfaceRuntimeRegistration(
       {
         surfaceName,
         isEditable,
+        layer,
         getScope: () => {
           const current = valueRef.current;
           if (!current) {
@@ -561,6 +648,6 @@ export function useSurfaceRuntimeRegistration(
       },
       depth,
     );
-  }, [surfaceName, isEditable, depth]);
+  }, [surfaceName, isEditable, layer, depth]);
   return surfaceName ? transferHandle : null;
 }

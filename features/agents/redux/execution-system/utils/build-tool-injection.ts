@@ -197,7 +197,7 @@ async function buildSurfaceWriteInlineSpec(
     }),
   );
 
-  const lines = writable.map(({ target, policy }) => {
+  const lines = writable.map(({ surfaceName, target, policy }) => {
     const applied =
       policy === "auto" ? "applied immediately" : "the user is asked first";
     const landing =
@@ -216,7 +216,11 @@ async function buildSurfaceWriteInlineSpec(
     // in the description above; per-target it only needs the flag, because a
     // model scanning for "can I edit this in place?" reads the target line.
     const patch = target.patchable ? " [patchable]" : "";
-    return `- ${target.name} (type=${target.valueType}, ${landing}, ${applied})${contract}${patch}: ${target.description}`;
+    // Which open screen the target lives on — the page, a parent page, or a
+    // window over them (the surface chain): the agent reads that level's
+    // values under `<surface>::<value>` and writes it here.
+    const where = surfaceName ? `on ${surfaceName}, ` : "";
+    return `- ${target.name} (${where}type=${target.valueType}, ${landing}, ${applied})${contract}${patch}: ${target.description}`;
   });
 
   return {
@@ -243,7 +247,13 @@ async function buildSurfaceWriteInlineSpec(
         target: {
           type: "string",
           description: "The declared write target to apply.",
-          enum: writable.map(({ target }) => target.name),
+          enum: [...new Set(writable.map(({ target }) => target.name))],
+        },
+        surface: {
+          type: "string",
+          description:
+            "Optional: the surface the target is on (the name after `on` in " +
+            "its line). Only needed when two open screens list the same target.",
         },
         value: {
           type: ["string", "number", "boolean", "array", "object", "null"],

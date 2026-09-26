@@ -38,6 +38,7 @@ import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { toast } from "@/lib/toast";
 import type { ValueMappingMap } from "@/features/surfaces/types";
 import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
+import { withLiveSurfaceContext } from "@/features/surfaces/runtime/surface-chain";
 import {
   resolveEffectiveAutoRun,
   unresolvedRequiredVariables,
@@ -293,9 +294,19 @@ export const launchAgentExecution = createAsyncThunk<
     }
   }
   const callerOrAdoptedScope = runtime?.applicationScope ?? adoptedScope;
+  // THE SURFACE CHAIN: every other registered screen open right now (the page
+  // under a window, a parent page, a window over the page) and every open
+  // window nobody has registered yet travel with the run — see
+  // features/surfaces/runtime/surface-chain.ts. Skipped on the explicit
+  // opt-out: a conversation that IS its surface gets no ambient page context.
   const baselineApplicationScope =
     callerOrAdoptedScope !== undefined || surfaceName
-      ? withBaselineScope(callerOrAdoptedScope)
+      ? surfaceOptOut
+        ? withBaselineScope(callerOrAdoptedScope)
+        : await withLiveSurfaceContext(
+            surfaceName,
+            withBaselineScope(callerOrAdoptedScope),
+          )
       : undefined;
   const applicationScope =
     surfaceName && baselineApplicationScope

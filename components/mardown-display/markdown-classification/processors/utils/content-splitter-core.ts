@@ -1945,7 +1945,8 @@ function normalizeLine(text: string): string {
  * `<artifact>` in a YAML value must not open a card (RC-B3r R1).
  */
 function frontMatterLineCount(lines: readonly string[]): number {
-  const opener = lines[0];
+  // A leading byte-order mark is an encoding mark, not content (C1).
+  const opener = lines[0]?.replace(/^\uFEFF/, "");
   if (lines.length < 2 || (opener !== "---" && opener !== "+++")) return 0;
   for (let k = 1; k < lines.length; k++) {
     if (lines[k] === opener || (opener === "---" && lines[k] === "...")) return k + 1;
@@ -2301,6 +2302,15 @@ export const splitContentIntoBlocksWith = (
           openerIdx = idx;
           openerLen = opener.length;
         }
+      }
+      // Nearest-closer pairing: an opener already closed after it (an inline
+      // `<think>…</think>` span) is not this closer's opener — the closer is
+      // an orphan and rescues the text before it (RC-B3r round 3, C2).
+      if (
+        openerIdx >= 0 &&
+        /<\/(?:thinking|think|reasoning)>/.test(currentText.slice(openerIdx + openerLen))
+      ) {
+        openerIdx = -1;
       }
       let regionText = currentText;
       if (openerIdx >= 0) {

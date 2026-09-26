@@ -73,6 +73,11 @@ export function opensTable(lines: readonly string[], index: number): boolean {
   return isPipeLedRow(line) || startsPipelessTable(line, lines[index + 1]);
 }
 
+/** A WHOLE table header at `index`: a table opens here AND its next line is a GFM delimiter row. */
+export function tableStartsAt(lines: readonly string[], index: number): boolean {
+  return opensTable(lines, index) && isGfmDelimiterRow(lines[index + 1] ?? "");
+}
+
 /** Index just past the table whose header is at `start` (header, delimiter, then continuation rows). */
 export function findTableEnd(lines: readonly string[], start: number): number {
   let end = Math.min(lines.length, start + 2);

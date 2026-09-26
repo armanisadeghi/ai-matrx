@@ -69,6 +69,9 @@ const RESOURCE_ICONS: Record<string, LucideIcon> = {
   dataset: Table,
   workbook: Table,
   udt_document: FileText,
+  // The record store's token (custom.record): Trash lists its archived Tables and Records under it
+  // (lane TRASH-TABLES).
+  record: Table,
   sandbox_instance: Boxes,
   wc_claim: Building2,
   feature_doc: FileText,

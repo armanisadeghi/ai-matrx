@@ -64,12 +64,12 @@ const FIXTURES: Array<{ family: string; file: string; model: string }> = [
   {
     family: "openai",
     file: "decision-stream-gpt.ndjson",
-    model: "",
+    model: "gpt-5.6-terra",
   },
   {
     family: "xai",
     file: "decision-stream-grok.ndjson",
-    model: "",
+    model: "grok-4.7",
   },
   {
     family: "native (typesafe)",
@@ -189,14 +189,17 @@ describe.each(available)("$family decision stream", ({ file, model }) => {
 
     const slot = decisionSlots[0];
     if (slot.kind !== "render_block") throw new Error("unreachable");
+    // The card renders EXACTLY what the server emitted — the column adds and
+    // loses nothing. (What the model answered is the server's contract; the
+    // xai capture predates aidream 7192e45a03 and carries its all-unanswerable
+    // answer, which the card must still show as it is.)
+    const emitted = lines
+      .map((line) => JSON.parse(line) as { event: string; data: { type?: string } })
+      .find((e) => e.event === "data" && e.data.type === DECISION_ANSWERS_BLOCK_TYPE);
     const payload = request.renderBlocks[slot.blockId]?.data?.payload as
-      | { model?: string; answers?: Record<string, unknown> }
+      | { model?: string }
       | undefined;
+    expect(payload).toEqual(emitted?.data);
     if (model) expect(payload?.model).toBe(model);
-    expect(Object.keys(payload?.answers ?? {}).sort()).toEqual([
-      "is_defect",
-      "owning_surface",
-      "urgency",
-    ]);
   });
 });

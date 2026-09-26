@@ -1014,6 +1014,22 @@
       "default": null,
       "title": "Reasoning Summary"
     },
+    "visualization": {
+      "anyOf": [
+        {
+          "enum": [
+            "auto",
+            "off"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Visualization"
+    },
     "thinking_level": {
       "anyOf": [
         {

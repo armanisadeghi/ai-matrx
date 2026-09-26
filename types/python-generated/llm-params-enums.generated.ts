@@ -39,3 +39,5 @@ export type LLMParamTtsQuality = "high_quality" | "fast";
 export type LLMParamVerbosity = "low" | "medium" | "high";
 
 export type LLMParamVideoAction = "generate" | "edit" | "extend";
+
+export type LLMParamVisualization = "auto" | "off";

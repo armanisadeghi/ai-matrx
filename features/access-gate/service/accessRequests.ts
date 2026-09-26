@@ -175,6 +175,26 @@ export async function askForAccessBlind(args: {
 }
 
 /**
+ * RC-A2m: `access_request_create` hands a person the not-found split hides from to the blind ask
+ * and returns its one sentence (`{asked, says}`) — the same for a real and a random id. That is
+ * a complete answer, not an incomplete request response; nobody is named, nobody is DMed.
+ */
+function blindAnswerOf(payload: Record<string, unknown>, level: RequestedLevel): AccessRequestCreated | null {
+  if (payload.asked !== true) return null;
+  const says = str(payload.says);
+  return {
+    requestId: "",
+    status: "pending",
+    already: false,
+    level,
+    entityLabel: null,
+    entityTitle: null,
+    recipients: [],
+    blindAnswer: says && says.trim() !== "" ? says : BLIND_ASK_ANSWER,
+  };
+}
+
+/**
  * File a request, then tell the humans who can answer it.
  *
  * `already: true` means a pending request existed — the caller clicked twice,
@@ -201,6 +221,8 @@ export async function createAccessRequest(args: {
   if (error) throw rpcError(error);
 
   const payload = responseRecord(data);
+  const blind = blindAnswerOf(payload, args.level ?? "viewer");
+  if (blind) return blind;
   const created: AccessRequestCreated = {
     requestId: responseString(payload, "request_id"),
     status: parseStatus(payload.status),
@@ -237,6 +259,8 @@ export async function createDeleteRequest(args: {
   if (error) throw rpcError(error);
 
   const payload = responseRecord(data);
+  const blind = blindAnswerOf(payload, "admin");
+  if (blind) return blind;
   const created: AccessRequestCreated = {
     requestId: responseString(payload, "request_id"),
     status: parseStatus(payload.status),
