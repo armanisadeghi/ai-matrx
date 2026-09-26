@@ -11,6 +11,10 @@
 //   tables    :::table[Caption]{#tbl:id}    → "Table n"
 //   equations \label{eq:id} in display math → "(n)"       (an explicit \tag keeps its text)
 //   sections  ## Heading {#sec:id}           → the heading text
+//   links     [label]: url "title"            → every block resolves `[text][label]`
+//             against the WHOLE document's definitions, as GFM does (a table
+//             cell split from the definitions below it still shows its link;
+//             verify-RC-B4 round 9, R9-4)
 //
 // A block looks a figure up by its id, or — unlabelled — by its caption text
 // in document order, so the same figure gets the same number in any block.
@@ -19,7 +23,7 @@
 
 import { DirectiveContainerTracker } from "../directive-container";
 import { TITLED_IMAGE_LINE } from "../image-figure";
-import { fenceLineKinds } from "@ai-matrx/content-ir/source";
+import { collectLinkDefinitions, fenceLineKinds } from "@ai-matrx/content-ir/source";
 
 export interface NumberedTarget {
   kind: "fig" | "tbl" | "eq" | "sec";
@@ -34,6 +38,13 @@ export interface DocumentNumbering {
   byCaption: Map<string, string[]>;
   /** Footnote identifier (lower-case) → its number, in order of FIRST reference across the whole document. */
   footnotes: Map<string, number>;
+  /**
+   * The document's link reference definitions as definition lines
+   * (`[label]: <url> "title"`), "" when none — appended to every block's source
+   * so a block split from them still resolves `[text][label]` (GFM renders a
+   * definition as nothing).
+   */
+  linkDefinitions: string;
 }
 
 const FIGURE_OPEN = /^[ \t]{0,3}:{3,}(figure|table)(?:\[((?:[^\]\\]|\\.)*)\])?(?:\{([^}]*)\})?/i;
@@ -66,7 +77,7 @@ export function computeDocumentNumbering(source: string): DocumentNumbering {
   const byLabel = new Map<string, NumberedTarget>();
   const byCaption = new Map<string, string[]>();
   const footnotes = new Map<string, number>();
-  if (!source) return { byLabel, byCaption, footnotes };
+  if (!source) return { byLabel, byCaption, footnotes, linkDefinitions: "" };
 
   // Prose only: fenced code never numbers anything (THE one code-range rule).
   const kinds = fenceLineKinds(source);
@@ -123,7 +134,7 @@ export function computeDocumentNumbering(source: string): DocumentNumbering {
       if (!footnotes.has(id)) footnotes.set(id, footnotes.size + 1);
     }
   }
-  return { byLabel, byCaption, footnotes };
+  return { byLabel, byCaption, footnotes, linkDefinitions: linkDefinitionLines(source) };
 }
 
 /**
@@ -136,6 +147,7 @@ export function computeDocumentNumbering(source: string): DocumentNumbering {
  */
 export function sameDocumentNumbering(a: DocumentNumbering, b: DocumentNumbering): boolean {
   if (a === b) return true;
+  if (a.linkDefinitions !== b.linkDefinitions) return false;
   if (a.byLabel.size !== b.byLabel.size || a.byCaption.size !== b.byCaption.size || a.footnotes.size !== b.footnotes.size) return false;
   for (const [k, v] of a.byLabel) {
     const o = b.byLabel.get(k);
@@ -147,4 +159,15 @@ export function sameDocumentNumbering(a: DocumentNumbering, b: DocumentNumbering
   }
   for (const [k, v] of a.footnotes) if (b.footnotes.get(k) !== v) return false;
   return true;
+}
+
+/** The document's link definitions, one canonical line each (THE link-reference rule, content-ir). */
+function linkDefinitionLines(source: string): string {
+  if (!source.includes("]:")) return "";
+  const lines: string[] = [];
+  for (const [label, def] of collectLinkDefinitions(source)) {
+    const title = def.title === null ? "" : ` "${def.title.replace(/["\\]/g, "\\$&")}"`;
+    lines.push(`[${label.replace(/[\[\]\\]/g, "\\$&")}]: <${def.url.replace(/[<>]/g, encodeURIComponent)}>${title}`);
+  }
+  return lines.join("\n");
 }

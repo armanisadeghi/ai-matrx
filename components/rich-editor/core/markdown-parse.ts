@@ -22,7 +22,7 @@ import { findTableEnd, tableStartsAt } from "@/components/mardown-display/markdo
 import { isPageBreakLine } from "@ai-matrx/print/directives";
 import type { JSONContent } from "@tiptap/core";
 import type { Schema } from "@tiptap/pm/model";
-import type { SourceBlock, SourceIsland } from "@ai-matrx/content-ir/source";
+import type { LinkDefinition, SourceBlock, SourceIsland } from "@ai-matrx/content-ir/source";
 import {
   hasPrivateUseCharacter,
   restorePlaceholders,
@@ -540,6 +540,14 @@ export function parseProseBlock(
   schema: Schema,
   adjacency: Map<string, Adjacency>,
   nextId: () => string,
+  /**
+   * The WHOLE document's link reference definitions (THE link-reference rule,
+   * content-ir `collectLinkDefinitions`): each segment is lexed on its own, so
+   * without them `[Apple Support][1]` in a cell could not see `[1]: …` below
+   * the table (verify-RC-B4 round 9, R9-4). The bytes still round-trip — the
+   * link mark keeps its `[1]` tail.
+   */
+  linkDefinitions?: ReadonlyMap<string, LinkDefinition>,
 ): ParsedProse {
   if (block.raw.includes("\r")) return { children: [], lockedReason: "Windows line endings" };
   if (hasPrivateUseCharacter(block.raw)) {
@@ -557,7 +565,9 @@ export function parseProseBlock(
   for (const segment of segments) {
     let tokens: Token[];
     try {
-      tokens = new Lexer({ ...LEXER_OPTIONS, tokenizer: new RuleTableTokenizer(islands, segment.text) }).lex(segment.text);
+      const lexer = new Lexer({ ...LEXER_OPTIONS, tokenizer: new RuleTableTokenizer(islands, segment.text) });
+      for (const [label, def] of linkDefinitions ?? []) lexer.tokens.links[label] = { href: def.url, title: def.title ?? undefined };
+      tokens = lexer.lex(segment.text);
     } catch {
       return { children: [], lockedReason: "markdown the parser could not read" };
     }

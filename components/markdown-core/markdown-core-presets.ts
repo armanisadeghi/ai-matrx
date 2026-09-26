@@ -35,6 +35,7 @@ import remarkMatrxSyntax from "./syntax/remark-matrx-syntax";
 import rehypeMatrxSyntax from "./syntax/rehype-matrx-syntax";
 import { rewriteContainerSpellings } from "./syntax/prepare-syntax-source";
 import type { DocumentNumbering } from "./syntax/document-numbering";
+import { fenceLineKinds } from "@ai-matrx/content-ir/source";
 import type { Options } from "react-markdown";
 import {
   normalizeMathDelimiters,
@@ -160,8 +161,17 @@ export function rehypeWithNumbering(
 }
 
 /** The source a preset parses: math presets run the one normalizer. */
-export function prepareCoreSource(source: string, preset: MarkdownPreset): string {
+export function prepareCoreSource(source: string, preset: MarkdownPreset, numbering?: DocumentNumbering | null): string {
   if (preset === "plain") return source;
+  // The WHOLE document's link definitions ride along (a definition renders as
+  // nothing), so a block split from them resolves `[text][label]` as GFM does —
+  // unless the block ends inside an open fence, where they would become code.
+  if (numbering?.linkDefinitions) {
+    const kinds = fenceLineKinds(source);
+    if (kinds[kinds.length - 1] === "prose" || kinds[kinds.length - 1] === "close") {
+      source = `${source}\n\n${numbering.linkDefinitions}`;
+    }
+  }
   // Page-break lines get their own block before parsing (remarkMatrxPageBreak).
   // MkDocs `!!! note` / Docusaurus `:::note Title` → the one directive grammar.
   const isolated = isolatePageBreakLines(rewriteContainerSpellings(source));

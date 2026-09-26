@@ -22,7 +22,7 @@
 
 import type { JSONContent } from "@tiptap/core";
 import type { Node as PMNode, Schema } from "@tiptap/pm/model";
-import { tokenizeSource, type SourceBlock } from "@ai-matrx/content-ir/source";
+import { collectLinkDefinitions, tokenizeSource, type SourceBlock } from "@ai-matrx/content-ir/source";
 import { parseProseBlock } from "./markdown-parse";
 import {
   createSerializeContext,
@@ -68,6 +68,8 @@ export interface VisualLoad {
 
 export function buildVisualDocument(text: string, schema: Schema): VisualLoad {
   const blocks = tokenizeSource(text);
+  // One set of link definitions for the whole document (THE link-reference rule).
+  const linkDefinitions = collectLinkDefinitions(text);
   const adjacency = new Map<string, Adjacency>();
   const childRaw = new Map<string, string>();
   const nextNonGap = new Map<number, number>();
@@ -110,7 +112,7 @@ export function buildVisualDocument(text: string, schema: Schema): VisualLoad {
 
     stats.proseBlocks += 1;
     stats.inlineIslands += block.inlines.length;
-    const parsed = parseProseBlock(block, schema, adjacency, nextId);
+    const parsed = parseProseBlock(block, schema, adjacency, nextId, linkDefinitions);
     if (parsed.lockedReason !== null) {
       stats.lockedBlocks += 1;
       content.push({

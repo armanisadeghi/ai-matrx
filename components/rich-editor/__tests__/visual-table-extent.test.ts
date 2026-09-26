@@ -43,10 +43,32 @@ it.each([
   ["a table right under an ordered item's text", ["1. Drain the print queue", ...HANDOVER, "", "Signed off."]],
   ["a table inside the item, at its content column", ["- Dock C reopens at six", ...HANDOVER.map((line) => `  ${line}`), "", "Signed off."]],
   ["a table after the item and a blank line", ["- Dock C reopens at six", "", ...HANDOVER, "", "Signed off."]],
+  // verify-RC-B4 round 9: a footnote definition ends a table (R9-1); a table never
+  // opens inside an HTML block (R9-5).
+  ["a footnote definition under a row", [...HANDOVER, "[^1]: counted Monday", "| B4 | clear |", "", "Signed off."]],
+  ["table lines right under <details>", ["<details>", ...HANDOVER, "</details>", "", "Signed off."]],
 ] as const)("%s", (_label, lines) => {
   const text = lines.join("\n");
   const { json, plan } = buildVisualDocument(text, schema);
   expect(visualTables(json as JSONContent)).toEqual(oracleTableGrids(text).map((grid) => grid.length));
+  const editor = new Editor({ element: document.createElement("div"), extensions, content: json as JSONContent });
+  editors.push(editor);
+  expect(serializeVisualDocument(editor.state.doc, captureBaseline(editor.state.doc, plan))).toBe(text);
+});
+
+// verify-RC-B4 round 9 (R9-4): a reference-style link in a cell resolves against
+// the WHOLE document's definitions — even ones below the table, past a blank
+// line — and the stored bytes (`[Apple Support][1]`) round-trip exactly.
+it("a reference link in a cell is a link, its definition in another paragraph", () => {
+  const text = ["| Model | Source |", "| --- | --- |", "| AirPods Pro 2 | ([Apple Support][1]) |", "", "[1]: https://support.apple.com/en-us/111851"].join("\n");
+  const { json, plan } = buildVisualDocument(text, schema);
+  const hrefs: string[] = [];
+  const walk = (node: JSONContent) => {
+    for (const mark of node.marks ?? []) if (mark.type === "link") hrefs.push(String(mark.attrs?.href));
+    (node.content ?? []).forEach(walk);
+  };
+  walk(json as JSONContent);
+  expect(hrefs).toEqual(["https://support.apple.com/en-us/111851"]);
   const editor = new Editor({ element: document.createElement("div"), extensions, content: json as JSONContent });
   editors.push(editor);
   expect(serializeVisualDocument(editor.state.doc, captureBaseline(editor.state.doc, plan))).toBe(text);

@@ -26,7 +26,7 @@ export default function MarkdownCoreImpl({
       rehypePlugins={rehypeWithNumbering(plugins.rehype, numbering)}
       components={withCoreSyntaxElements(components)}
     >
-      {prepareCoreSource(children, preset)}
+      {prepareCoreSource(children, preset, numbering)}
     </ReactMarkdown>
   );
 }
