@@ -76,21 +76,21 @@ export function IslandBlockView({ node, updateAttributes, deleteNode, selected, 
       data-island-type={islandType}
       contentEditable={false}
     >
-      <div className="flex min-h-8 items-center gap-1.5 border-b border-border/60 px-2 py-1 text-xs text-muted-foreground">
-        <span data-drag-handle className="cursor-grab touch-none text-muted-foreground/60 hover:text-foreground" aria-hidden>
+      <div className="flex min-h-8 min-w-0 items-center gap-1.5 border-b border-border/60 px-2 py-1 text-xs text-muted-foreground">
+        <span data-drag-handle className="shrink-0 cursor-grab touch-none text-muted-foreground/60 hover:text-foreground" aria-hidden>
           <GripVertical className="h-3.5 w-3.5" />
         </span>
         <Icon className="h-3.5 w-3.5 shrink-0" />
-        <span className="truncate font-medium text-foreground/80">{meta.label}</span>
+        <span className="min-w-0 truncate font-medium text-foreground/80">{meta.label}</span>
         <Lock className="h-3 w-3 shrink-0 opacity-60" aria-label="Protected — never rewritten by the editor" />
         {!complete && (
-          <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400" title="This block's closing marker is missing, so it runs to the end of the text. It is kept exactly as written.">
+          <span className="flex shrink-0 items-center gap-1 text-amber-600 dark:text-amber-400" title="This block's closing marker is missing, so it runs to the end of the text. It is kept exactly as written.">
             <AlertTriangle className="h-3 w-3" /> not closed
           </span>
         )}
         {isFence && !readOnly && (
           <select
-            className="ml-1 h-6 max-w-[8rem] rounded border border-border bg-background px-1 text-xs text-foreground"
+            className="ml-1 h-6 min-w-0 max-w-[8rem] shrink rounded border border-border bg-background px-1 text-xs text-foreground"
             aria-label="Code language"
             value={fenceLanguageOf(raw)}
             onChange={(event) => write(withFenceLanguage(raw, event.target.value))}
@@ -102,7 +102,7 @@ export function IslandBlockView({ node, updateAttributes, deleteNode, selected, 
             ))}
           </select>
         )}
-        <div className="ml-auto flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover/island:opacity-100 sm:group-focus-within/island:opacity-100">
+        <div className="ml-auto flex shrink-0 items-center gap-0.5 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover/island:opacity-100 sm:group-focus-within/island:opacity-100">
           <button type="button" className="rounded p-1 hover:bg-muted hover:text-foreground" onClick={copy} title="Copy its exact source">
             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           </button>

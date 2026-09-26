@@ -142,8 +142,9 @@ export const CodeBlockHeader: React.FC<CodeBlockHeaderProps> = ({
   return (
     <div
       className={cn(
-        "flex items-center justify-between",
-        "pl-5 py-0 rounded-t-xl",
+        "flex min-w-0 items-center justify-between gap-2",
+        isMobile ? "pl-3" : "pl-5",
+        "py-0 rounded-t-xl",
         "bg-zinc-300 dark:bg-zinc-700",
         "text-xs text-gray-700 dark:text-gray-300",
         "transition-all duration-200",
@@ -153,7 +154,7 @@ export const CodeBlockHeader: React.FC<CodeBlockHeaderProps> = ({
       )}
       onClick={isEditing || !canCollapse ? undefined : toggleCollapse}
     >
-      <div className="flex items-center space-x-4">
+      <div className="flex min-w-0 items-center space-x-4 overflow-hidden">
         {!language && (
           <div className="flex space-x-2">
             <div className="w-3 h-3 rounded-full bg-red-500"></div>
@@ -354,6 +355,29 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
   // because `AdvancedMenu` preserves insertion order when grouping.
   const menuItems: MenuItem[] = [];
 
+  // A phone keeps three buttons in the row (copy, edit, more) so the header
+  // never runs past the right edge at 375; full screen and collapse move here.
+  if (isMobile && toggleFullScreen) {
+    menuItems.push({
+      key: "fullscreen",
+      icon: isFullScreen ? Minimize : Expand,
+      label: isFullScreen ? "Exit fullscreen" : "Fullscreen",
+      category: "View",
+      showToast: false,
+      action: () => toggleFullScreen(noopEvent()),
+    });
+  }
+  if (isMobile && toggleCollapse && canCollapse && !isEditing) {
+    menuItems.push({
+      key: "collapse",
+      icon: isCollapsed ? ChevronDown : ChevronUp,
+      label: isCollapsed ? "Expand code" : "Collapse code",
+      category: "View",
+      showToast: false,
+      action: () => toggleCollapse(noopEvent()),
+    });
+  }
+
   if (toggleWrapLines) {
     menuItems.push({
       key: "wrap",
@@ -485,9 +509,9 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
   }
 
   return (
-    <div className="flex items-center gap-0.5 pr-5">
+    <div className={cn("flex shrink-0 items-center gap-0.5", isMobile ? "pr-2" : "pr-5")}>
       {/* 1. Fullscreen */}
-      {toggleFullScreen && (
+      {toggleFullScreen && !isMobile && (
         <IconButton
           icon={isFullScreen ? Minimize : Expand}
           tooltip={isFullScreen ? "Exit fullscreen" : "Fullscreen"}
@@ -499,7 +523,7 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
       )}
 
       {/* 2. Collapse / Expand */}
-      {toggleCollapse && (
+      {toggleCollapse && !isMobile && (
         <IconButton
           icon={isCollapsed ? ChevronDown : ChevronUp}
           tooltip={
