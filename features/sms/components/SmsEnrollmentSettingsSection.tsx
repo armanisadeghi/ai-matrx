@@ -24,6 +24,7 @@ import {
   SMS_PERSONAL_STAFF_OPT_IN_PATH,
   SMS_PERSONAL_STAFF_PROGRAM_NAME,
   SMS_PRIVACY_PATH,
+  SMS_PROGRAM_NAME,
   SMS_TERMS_PATH,
 } from "@/features/sms/compliance";
 import {
@@ -44,7 +45,7 @@ const SMS_PROGRAMS: ReadonlyArray<{
 }> = [
   {
     key: "notifications",
-    label: "AI Matrx notifications",
+    label: SMS_PROGRAM_NAME,
     disclosure: SMS_CONSENT_DISCLOSURE,
     detailsPath: SMS_OPT_IN_PATH,
   },
@@ -93,21 +94,27 @@ export function SmsEnrollmentSettingsSection() {
               icon={ShieldCheck}
             />
             <SettingsReadOnlyValue
-              label="AI Matrx notifications"
+              label={SMS_PROGRAM_NAME}
               description="Account and workplace notifications."
               value={enrollment.enrolled.notifications ? "On" : "Off"}
               icon={BellRing}
             />
             <SettingsReadOnlyValue
               label={SMS_PERSONAL_STAFF_PROGRAM_NAME}
-              description="Replies and results from your Personal Staff."
+              description={
+                enrollment.personalStaffLegacy
+                  ? "Replies and results from your Personal Staff, covered by the consent you gave before programs were separated."
+                  : "Replies and results from your Personal Staff."
+              }
               value={enrollment.enrolled.personalStaff ? "On" : "Off"}
               icon={MessagesSquare}
             />
-            {!(enrollment.enrolled.notifications && enrollment.enrolled.personalStaff) && (
+            {(!enrollment.enrolled.notifications ||
+              !enrollment.enrolled.personalStaff ||
+              enrollment.personalStaffLegacy) && (
               <SettingsButton
                 label="Add a text program"
-                description="Opt this number in to a program that is off. You will confirm with a new code."
+                description="Opt this number in to a program separately. You will confirm with a new code."
                 actionLabel="Add program"
                 actionIcon={Plus}
                 kind="outline"
@@ -174,7 +181,11 @@ export function SmsEnrollmentSettingsSection() {
               type="tel"
               inputMode="tel"
             />
-            {SMS_PROGRAMS.filter((program) => !enrollment.enrolled[program.key]).map(
+            {SMS_PROGRAMS.filter(
+              (program) =>
+                !enrollment.enrolled[program.key] ||
+                (program.key === "personalStaff" && enrollment.personalStaffLegacy),
+            ).map(
               (program) => (
                 <SettingsCheckbox
                   key={program.key}

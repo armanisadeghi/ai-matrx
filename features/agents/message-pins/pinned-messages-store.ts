@@ -44,6 +44,11 @@ function subscribe(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 
+/** Subscribe to any pin / pending change (registry actions re-read their state). */
+export function subscribePinnedMessages(listener: () => void): () => void {
+  return subscribe(listener);
+}
+
 const getSnapshot = () => pinned;
 const getPendingSnapshot = () => pending;
 

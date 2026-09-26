@@ -119,9 +119,11 @@ export const selectActiveBattleColumns = createSelector(
       case "variations":
         return lockedColumns(variations, variations.locked.sourceAgentId, variations.locked.agentVersion, "variations");
       case "conversation":
+        // Every fork continues the same conversation, so it answers with the
+        // source's agent (the rank picker only counts columns naming one).
         return lockedColumns(
           { columns: conversation.forks },
-          null,
+          conversation.source?.agentId ?? null,
           null,
           "conversation",
         );

@@ -42,7 +42,7 @@ function multiModeState(mountedMode: RootState["agentComparison"]["mountedMode"]
     },
     agentComparisonConversation: {
       ...baseState.agentComparisonConversation,
-      source: { conversationId: "src-conv", title: "Source", updatedAt: "2026-09-26", agentId: null },
+      source: { conversationId: "src-conv", title: "Source", updatedAt: "2026-09-26", agentId: "agent-source" },
       forks: [
         { columnId: "fork-col", conversationId: "fork-conv", label: "Fork 1" },
       ],
@@ -157,7 +157,7 @@ describe("conversation mode", () => {
         columnId: "fork-col",
         conversationId: "fork-conv",
         label: "Fork 1",
-        agentId: null,
+        agentId: "agent-source",
         agentVersion: null,
         mode: "conversation",
       },

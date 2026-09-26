@@ -76,14 +76,28 @@ describe("SMS notification consent contract", () => {
     );
   });
 
-  test("notification preferences require notification-purpose consent", () => {
+  test("preferences read separate notification and Personal Staff consent statuses", () => {
     const route = source("app/api/sms/preferences/route.ts");
 
-    expect(
-      route.match(/\.eq\("consent_type", "notifications"\)/g),
-    ).toHaveLength(2);
+    expect(route).toContain('.select("consent_type, status")');
     expect(route).toContain(
-      '.in("consent_type", ["transactional", "notifications"])',
+      '.in("consent_type", ["notifications", "ai_agent"])',
+    );
+    expect(route).toContain('sms_consent_status: consentStatus("notifications")');
+    expect(route).toContain(
+      'personal_staff_consent_status: consentStatus("ai_agent")',
+    );
+
+    // GET reports both program-specific states, but enabling notifications is
+    // still authorized by the notifications-purpose row alone.
+    expect(route).toContain('.eq("consent_type", "notifications")');
+  });
+
+  test("opting out disables every program represented by this settings switch", () => {
+    const route = source("app/api/sms/preferences/route.ts");
+
+    expect(route).toContain(
+      '.in("consent_type", ["transactional", "notifications", "ai_agent"])',
     );
   });
 

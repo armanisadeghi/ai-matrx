@@ -56,6 +56,7 @@ import { MenuPresenceProvider, RegistryMenuSourceProvider } from "./menu-presenc
 import { useOptionalWidgetHandle } from "@/features/agents/hooks/useWidgetHandle";
 import { buildEditableWidgetHandle } from "./utils/widget-handle";
 import { resolveTableRowMenuDescriptor } from "./table-row-context-registry";
+import { CONTEXT_REGION_TRIGGER_ATTRS } from "./region-trigger-attrs";
 
 /**
  * Text-entry targets whose NATIVE menu we must never steal.
@@ -720,7 +721,7 @@ export function ContextMenuV3({
   // illegal), falling back to a `display:contents` wrapper for a Fragment or
   // multi-child payload, where a `<div>` is always legal.
   const triggerProps = {
-    "data-alchemy-trigger": "context",
+    ...CONTEXT_REGION_TRIGGER_ATTRS,
     // Radix-compatible open state, for styles that key on it.
     "data-state": mode ? "open" : "closed",
     onContextMenuCapture: (e: React.MouseEvent<HTMLElement>) => {

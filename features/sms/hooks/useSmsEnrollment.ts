@@ -64,6 +64,7 @@ export function useSmsEnrollment(source: "settings" | "sms-demo") {
   const [verificationCode, setVerificationCode] = useState("");
   const [consents, setConsents] = useState<SmsProgramFlags>(NO_PROGRAMS);
   const [enrolled, setEnrolled] = useState<SmsProgramFlags>(NO_PROGRAMS);
+  const [personalStaffLegacy, setPersonalStaffLegacy] = useState(false);
   const [step, setStep] = useState<EnrollmentStep>("phone");
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<SmsEnrollmentResult | null>(null);
@@ -78,10 +79,17 @@ export function useSmsEnrollment(source: "settings" | "sms-demo") {
         if (!active) return;
 
         const preferences = payload.data;
+        const notificationsOn = preferences?.sms_consent_status === "opted_in";
+        const personalStaffStatus = preferences?.personal_staff_consent_status ?? null;
+        // A number enrolled before the programs were separated has no Personal
+        // Staff row; the send gate honours its earlier consent, so the screen
+        // says so rather than showing "Off" for texts that still arrive.
+        const legacy = personalStaffStatus === null && notificationsOn;
         const current: SmsProgramFlags = {
-          notifications: preferences?.sms_consent_status === "opted_in",
-          personalStaff: preferences?.personal_staff_consent_status === "opted_in",
+          notifications: notificationsOn,
+          personalStaff: personalStaffStatus === "opted_in" || legacy,
         };
+        setPersonalStaffLegacy(legacy);
         if (
           response.ok &&
           preferences?.sms_enabled &&
@@ -278,6 +286,7 @@ export function useSmsEnrollment(source: "settings" | "sms-demo") {
     consents,
     anyConsent: consents.notifications || consents.personalStaff,
     enrolled,
+    personalStaffLegacy,
     step,
     loading,
     result,

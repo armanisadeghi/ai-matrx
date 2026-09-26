@@ -22,8 +22,8 @@ import {
   FileText,
   FileType,
   Globe,
+  Loader2,
   Pin,
-  PinOff,
   Play,
   RefreshCw,
   BarChart3,
@@ -35,7 +35,9 @@ import { registerAction } from "../provider";
 import { chatIds, getErrorMessage } from "../utils";
 import type { RichDocumentActionContext } from "../../types";
 import {
+  isMessagePinPending,
   isMessagePinned,
+  subscribePinnedMessages,
   togglePinnedMessage,
 } from "@/features/agents/message-pins/pinned-messages-store";
 import { selectRegenerateAnchor } from "@/features/agents/redux/execution-system/message-crud/regenerate-anchor";
@@ -51,22 +53,35 @@ registerAction({
   writesSource: true,
   label: (ctx) => {
     const { messageId } = chatIds(ctx);
+    if (messageId && isMessagePinPending(messageId)) {
+      return isMessagePinned(messageId) ? "Unpinning…" : "Pinning…";
+    }
     return messageId && isMessagePinned(messageId) ? "Unpin message" : "Pin message";
   },
   icon: Pin,
   iconColor: "text-amber-500 dark:text-amber-400",
   category: "save",
   supportedSources: ["chat-message"],
-  renderSlot: "overflow",
+  // In the message's own bar (lit amber while pinned) AND its ⋯ menu — never
+  // a separate badge or row on the transcript.
+  renderSlot: "both",
   order: -10,
   requiresAuth: true,
   visible: (ctx) => Boolean(chatIds(ctx).messageId),
+  active: (ctx) => {
+    const { messageId } = chatIds(ctx);
+    return Boolean(messageId && isMessagePinned(messageId));
+  },
+  stateIcon: (ctx) => {
+    const { messageId } = chatIds(ctx);
+    return messageId && isMessagePinPending(messageId) ? { icon: Loader2, spin: true } : null;
+  },
+  subscribe: (onChange) => subscribePinnedMessages(onChange),
   run: async (ctx) => {
     ctx.onClose();
     const { messageId } = chatIds(ctx);
     if (!messageId) return;
-    const pinnedNow = await togglePinnedMessage(messageId);
-    if (pinnedNow) toast.success("Pinned", { description: "Find it with the Pinned filter above the chat." });
+    await togglePinnedMessage(messageId);
   },
 });
 

@@ -29,7 +29,12 @@
 import { buildChatMessageActions } from "@/features/rich-document/chat/chatMessageActions";
 import { useDocumentDialogsHost } from "@/features/rich-document/hosts/DocumentDialogsHost";
 import React, { useState, lazy, Suspense, useCallback } from "react";
-import { Copy, Check, Edit, Send, MoreHorizontal } from "lucide-react";
+import { Copy, Check, Edit, Send, MoreHorizontal, Pin, Loader2 } from "lucide-react";
+import {
+  togglePinnedMessage,
+  usePendingPinMessageIds,
+  usePinnedMessageIds,
+} from "@/features/agents/message-pins/pinned-messages-store";
 import {
   TapTargetButtonForGroup,
   TapTargetButtonGroup,
@@ -138,6 +143,10 @@ export function UserActionBar({
   const openEditor = useOpenFullScreenMarkdownEditorBridge();
 
   const [isCopied, setIsCopied] = useState(false);
+  // Pin lives IN this bar (lit amber while pinned) and in the ⋯ menu — the
+  // same store the "p" key and the registry action write.
+  const isPinned = usePinnedMessageIds().has(messageId);
+  const pinPending = usePendingPinMessageIds().has(messageId);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [moreOptionsAnchor, setMoreOptionsAnchor] =
     useState<HTMLButtonElement | null>(null);
@@ -319,6 +328,33 @@ export function UserActionBar({
           onClick={handleEdit}
           ariaLabel="Edit and resubmit"
           icon={<Send className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />}
+        />
+
+        <TapTargetButtonForGroup
+          onClick={() => void togglePinnedMessage(messageId)}
+          ariaLabel={
+            pinPending
+              ? isPinned
+                ? "Unpinning…"
+                : "Pinning…"
+              : isPinned
+                ? "Unpin message"
+                : "Pin message"
+          }
+          disabled={pinPending}
+          icon={
+            pinPending ? (
+              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            ) : (
+              <Pin
+                className={
+                  isPinned
+                    ? "w-4 h-4 fill-current text-amber-500 dark:text-amber-400"
+                    : "w-4 h-4 text-muted-foreground"
+                }
+              />
+            )
+          }
         />
 
         {showOptions && (

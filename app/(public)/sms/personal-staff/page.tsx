@@ -123,13 +123,16 @@ export default function PersonalStaffSmsPage() {
         </ul>
 
         <h2>Sample messages</h2>
-        <ul>
+        <div className="not-prose my-4 flex flex-col gap-2">
           {SAMPLE_MESSAGES.map((sample) => (
-            <li key={sample}>
-              <code className="whitespace-normal break-words">{sample}</code>
-            </li>
+            <p
+              key={sample}
+              className="max-w-md break-words rounded-2xl rounded-bl-sm bg-muted px-4 py-2.5 text-sm leading-relaxed text-foreground"
+            >
+              {sample}
+            </p>
           ))}
-        </ul>
+        </div>
 
         <p>
           Read the <Link href={SMS_TERMS_PATH}>Terms and Conditions</Link> and

@@ -86,7 +86,7 @@ export default function SmsProgramPage() {
           </li>
           <li>Enter the mobile number that should receive messages.</li>
           <li>
-            Check the box labeled <strong>AI Matrx notifications</strong>. It
+            Check the box labeled <strong>{SMS_PROGRAM_NAME}</strong>. It
             is unchecked by default, separate from the Personal Staff box, and
             not required to create or use an AI Matrx account.
           </li>
