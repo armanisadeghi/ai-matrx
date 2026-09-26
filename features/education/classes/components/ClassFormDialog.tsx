@@ -6,7 +6,7 @@
 // dates + teacher/term/period live in scope.settings — this is the only editor
 // of a class's shape. No browser dialogs; semantic colors; Lucide only.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CalendarClock, Plus, Trash2, GraduationCap } from "lucide-react";
 import { toast } from "@/lib/toast";
 import {
@@ -38,6 +38,11 @@ import type {
   StudyClass,
 } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { SURFACE_LAYER_ATTRIBUTE } from "@/features/surfaces/runtime/window-forms";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
+import type { NewClassDraftScope } from "@/features/surfaces/manifests/education-classes.manifest";
+import { makeExamId, parseClassWriteFields } from "../classAgentWrites";
 
 export interface ClassFormValue {
   name: string;
@@ -51,10 +56,17 @@ interface ClassFormDialogProps {
   /** Present → edit mode; absent → create mode. */
   initial?: StudyClass;
   onSubmit: (value: ClassFormValue) => Promise<void>;
-}
-
-function makeExamId(): string {
-  return `exam-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  /**
+   * The surface this dialog speaks for, when a page registers it (My Classes →
+   * `matrx-user/education-classes`). Set, the dialog registers that surface's
+   * `new_class_draft` write target — so an agent can open and fill EVERY field,
+   * access mode and exam dates included — and marks its root as a registered
+   * layer, so the platform's generic window-form reader does not offer a
+   * second, weaker way to write the same fields.
+   */
+  agentSurfaceName?: string;
+  /** Receives the live field values on every render (the draft read twin). */
+  onDraftChange?: (draft: NewClassDraftScope) => void;
 }
 
 export function ClassFormDialog({
@@ -62,6 +74,8 @@ export function ClassFormDialog({
   onOpenChange,
   initial,
   onSubmit,
+  agentSurfaceName,
+  onDraftChange,
 }: ClassFormDialogProps) {
   const isMobile = useIsMobile();
   const isEdit = Boolean(initial);
@@ -81,6 +95,45 @@ export function ClassFormDialog({
     initial?.settings.priceCents ? String(initial.settings.priceCents / 100) : "",
   );
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    onDraftChange?.({
+      name,
+      description,
+      teacher,
+      term,
+      period,
+      access_mode: accessMode,
+      price,
+      exam_dates: examDates.map((e) => ({ title: e.title, date: e.date })),
+    });
+  });
+
+  // Write half: stage what the agent sends into this dialog's own state and
+  // open it. Validated whole before any setter runs, so a partly-bad value
+  // stages nothing. Only useState setters and a parent callback are closed
+  // over. Nothing is saved — the person presses Create.
+  useSurfaceWriteHandlers(agentSurfaceName ?? null, {
+    new_class_draft: (value: unknown) => {
+      const fields = parseClassWriteFields("new_class_draft", value);
+      if (Object.keys(fields).length === 0)
+        throw new Error(
+          "new_class_draft needs at least one field, e.g. { \"name\": \"AP Biology\" }.",
+        );
+      if (fields.name !== undefined) setName(fields.name);
+      if (fields.description !== undefined) setDescription(fields.description);
+      if (fields.teacher !== undefined) setTeacher(fields.teacher);
+      if (fields.term !== undefined) setTerm(fields.term);
+      if (fields.period !== undefined) setPeriod(fields.period);
+      if (fields.accessMode !== undefined) setAccessMode(fields.accessMode);
+      if (fields.price !== undefined) setPrice(String(fields.price));
+      if (fields.examDates !== undefined) setExamDates(fields.examDates);
+      onOpenChange(true);
+    },
+  });
+  const layerProps = agentSurfaceName
+    ? { [SURFACE_LAYER_ATTRIBUTE]: agentSurfaceName }
+    : {};
 
   function addExam() {
     setExamDates((rows) => [
@@ -132,6 +185,8 @@ export function ClassFormDialog({
       });
       onOpenChange(false);
     } catch (e) {
+      // Closing the workspace picker is an answer ("not now"), not a failure.
+      if (isOrganizationSelectionCancelled(e)) return;
       toast.error(
         e instanceof Error ? e.message : "Could not save the class.",
       );
@@ -283,7 +338,7 @@ export function ClassFormDialog({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="pb-safe">
+        <DrawerContent className="pb-safe" {...layerProps}>
           <DrawerHeader>
             <DrawerTitle className="flex items-center justify-center gap-2">
               <GraduationCap className="h-5 w-5 text-primary" />
@@ -315,7 +370,10 @@ export function ClassFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
+      <DialogContent
+        className="max-h-[85dvh] overflow-y-auto sm:max-w-lg"
+        {...layerProps}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GraduationCap className="h-5 w-5 text-primary" />

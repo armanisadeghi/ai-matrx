@@ -723,6 +723,13 @@ export function surfaceFromPathname(
     return "matrx-user/education-flashcard-set";
   }
 
+  // My Classes is exactly `/education/classes`. A class HUB
+  // (`/education/classes/[id]`) is a different page with no surface of its
+  // own yet, so it keeps falling through to the education hub mapping.
+  if (/^\/education\/classes\/?$/.test(stripped)) {
+    return "matrx-user/education-classes";
+  }
+
   // Study-guide AUTHORING is `/education/learn/admin`, which sits under the
   // `/education/learn` prefix below — and that prefix also covers the PUBLIC
   // library index and the public `[...slug]` article. Those are anonymous

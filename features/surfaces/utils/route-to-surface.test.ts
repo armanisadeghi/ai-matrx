@@ -463,6 +463,13 @@ describe("Education tool-family resolution", () => {
     expect(surfaceFromPathname("/education/learn/admin-guide/intro")).toBe(
       "matrx-user/education-learn",
     );
+    // My Classes is the exact list route; a class hub is not that surface.
+    expect(surfaceFromPathname("/education/classes")).toBe(
+      "matrx-user/education-classes",
+    );
+    expect(surfaceFromPathname("/education/classes/ap-biology")).toBe(
+      "matrx-user/education",
+    );
   });
 
   it("keeps the pre-existing education surfaces and the hub fallback", () => {

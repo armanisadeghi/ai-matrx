@@ -7,7 +7,7 @@
 // Matches the education tool-page convention (MemoryHome): centered container,
 // inline header, content floats behind the shell glass. React Compiler on.
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { GraduationCap, Plus, CalendarClock, User } from "lucide-react";
@@ -22,6 +22,15 @@ import { ClassFormDialog, type ClassFormValue } from "./ClassFormDialog";
 import { AccessModeBadge } from "./AccessModeBadge";
 import { daysUntil, nextExamDate } from "../settings";
 import type { ClassSettings, StudyClass } from "../types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { refuseSurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
+import {
+  EDUCATION_CLASSES_SURFACE_NAME,
+  type NewClassDraftScope,
+} from "@/features/surfaces/manifests/education-classes.manifest";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
+import { parseCreateClassesValue } from "../classAgentWrites";
+import { buildEducationClassesScope } from "../classesSurfaceScope";
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -96,10 +105,65 @@ const JOINED_STATUS_LABEL: Record<string, string> = {
 
 export function ClassesHome() {
   const router = useRouter();
-  const { classes, loading, createClass } = useClasses();
-  const { joined } = useMyClasses();
+  const { classes, archived, loading, createClass } = useClasses();
+  const {
+    joined,
+    loading: joinedLoading,
+    error: joinedError,
+  } = useMyClasses();
   const { organizationState } = useOrganizationRequired();
   const [dialogOpen, setDialogOpen] = useState(false);
+  // The dialog's live values, published by ClassFormDialog on every render —
+  // read synchronously by getScope (polled every 400ms; it must never fetch).
+  const draftRef = useRef<NewClassDraftScope | null>(null);
+
+  // Surface `matrx-user/education-classes`: what this page shows, plus the
+  // agent's two ways in — `new_class_draft` (registered by the dialog, which
+  // owns those fields) and `create_classes` (here).
+  const getScope = () =>
+    buildEducationClassesScope({
+      organizationState,
+      ownedLoading: loading,
+      classes,
+      archived,
+      joinedLoading: joinedLoading || joinedError != null,
+      joined,
+      dialogOpen,
+      draft: draftRef.current,
+    });
+
+  const getWriteHandlers = () => ({
+    // A LIST of classes through the same createClass the Create button calls.
+    // The whole list is validated (and checked against the person's existing
+    // class names) before the first is created; if one fails part-way, the
+    // error says exactly which were created, so a retry never duplicates.
+    create_classes: async (value: unknown) => {
+      const inputs = parseCreateClassesValue(
+        value,
+        [...classes, ...archived].map((c) => c.name),
+      );
+      const created: string[] = [];
+      for (const [i, input] of inputs.entries()) {
+        try {
+          const cls = await createClass(input);
+          created.push(cls.name);
+        } catch (e) {
+          if (isOrganizationSelectionCancelled(e) && created.length === 0)
+            refuseSurfaceWrite(
+              "The person closed the workspace picker, so no classes were created. Ask which workspace the classes belong in.",
+            );
+          const rest = inputs.slice(i + 1).map((c) => c.name);
+          throw new Error(
+            `Created ${created.length} of ${inputs.length} classes${
+              created.length ? ` (${created.join(", ")})` : ""
+            }. "${input.name}" failed: ${
+              e instanceof Error && e.message ? e.message : "unknown error"
+            }.${rest.length ? ` Not attempted: ${rest.join(", ")}.` : ""}`,
+          );
+        }
+      }
+    },
+  });
 
   async function handleCreate(value: ClassFormValue) {
     const created = await createClass(value);
@@ -109,7 +173,11 @@ export function ClassesHome() {
   }
 
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={EDUCATION_CLASSES_SURFACE_NAME}
+      getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
+    >
     <EducationToolHeader title="My Classes" />
     <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-4">
       <div className="flex items-center justify-end">
@@ -186,8 +254,12 @@ export function ClassesHome() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onSubmit={handleCreate}
+        agentSurfaceName={EDUCATION_CLASSES_SURFACE_NAME}
+        onDraftChange={(draft) => {
+          draftRef.current = draft;
+        }}
       />
     </div>
-    </>
+    </SurfaceRuntimeProvider>
   );
 }
