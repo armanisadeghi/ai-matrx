@@ -42,8 +42,8 @@ try {
   out.signed_in_as = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
   if (out.signed_in_as !== "admin@admin.com") throw new Error(`signed in as ${out.signed_in_as}`);
 
-  await page.goto(`${ORIGIN}/organizations/${ORG}/settings#data`, { waitUntil: "domcontentloaded", timeout: 180000 });
-  await until("Check again", () => button("Check again").isVisible(), 180000);
+  await page.goto(`${ORIGIN}/organizations/${ORG}/settings#data`, { waitUntil: "domcontentloaded", timeout: 600000 });
+  await until("Check again", () => button("Check again").isVisible(), 600000);
   await button("Check again").scrollIntoViewIfNeeded();
   await sleep(1500);
   out.card_before = await sectionText();
@@ -66,8 +66,8 @@ try {
   }
 
   if (TABLE) {
-    await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 180000 });
-    await until("table menu", () => page.locator("[data-table-menu]").first().isVisible(), 180000);
+    await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 600000 });
+    await until("table menu", () => page.locator("[data-table-menu]").first().isVisible(), 600000);
     await sleep(3000);
     await page.locator("[data-table-menu]").first().click();
     const item = page.locator('[data-table-menu-extra="copy-again"]').first();
