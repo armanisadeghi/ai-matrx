@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Zap, Loader2, ExternalLink, X } from "lucide-react";
+import { SaveSourceButton } from "@/features/sources/SaveSourceButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
@@ -131,181 +132,192 @@ export default function ScraperSearchAndScrapePage() {
           "This is the Search & Scrape route. Open /scraper/quick for a single URL, /scraper/search for search-only, or the floating Web Scraper workspace, which owns every mode at once.",
       }}
     >
-    <div
-      className="h-full flex flex-col overflow-hidden bg-textured"
-      style={{ paddingTop: "var(--shell-header-h)" }}
-    >
-      {/* Search toolbar */}
-      <div className="flex-shrink-0 px-3 py-2 border-b border-border/50">
-        <div className="max-w-full mx-auto flex flex-col sm:flex-row gap-2 sm:items-end">
-          <div className="w-full sm:flex-1 sm:min-w-[200px]">
-            <Label
-              htmlFor="keyword"
-              className="text-xs text-muted-foreground mb-1 block"
-            >
-              Keyword
-            </Label>
-            <Input
-              id="keyword"
-              placeholder="Enter keyword to search and scrape..."
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isLoading}
-              className="h-8 text-sm"
-              style={{ fontSize: "16px" }}
-            />
-          </div>
-          <div className="flex items-end gap-2 flex-wrap">
-            <div className="w-24">
+      <div
+        className="h-full flex flex-col overflow-hidden bg-textured"
+        style={{ paddingTop: "var(--shell-header-h)" }}
+      >
+        {/* Search toolbar */}
+        <div className="flex-shrink-0 px-3 py-2 border-b border-border/50">
+          <div className="max-w-full mx-auto flex flex-col sm:flex-row gap-2 sm:items-end">
+            <div className="w-full sm:flex-1 sm:min-w-[200px]">
               <Label
-                htmlFor="maxPages"
+                htmlFor="keyword"
                 className="text-xs text-muted-foreground mb-1 block"
               >
-                Max pages
+                Keyword
               </Label>
               <Input
-                id="maxPages"
-                type="number"
-                min={PAGE_LIMIT_MIN}
-                max={PAGE_LIMIT_MAX}
-                value={maxPages}
-                onChange={(e) => setMaxPages(e.target.value)}
+                id="keyword"
+                placeholder="Enter keyword to search and scrape..."
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                onKeyDown={handleKeyDown}
                 disabled={isLoading}
                 className="h-8 text-sm"
                 style={{ fontSize: "16px" }}
               />
             </div>
-            <div className="flex items-center gap-1.5 pb-1.5">
-              <Switch
-                id="useCache"
-                checked={useCache}
-                onCheckedChange={setUseCache}
-                disabled={isLoading}
-              />
-              <Label htmlFor="useCache" className="text-xs">
-                Cache
-              </Label>
-            </div>
-            {allResults.length > 0 && (
-              <Button
-                onClick={handleClear}
-                variant="outline"
-                size="sm"
-                className="h-8"
-              >
-                <X className="w-3.5 h-3.5 mr-1" />
-                Clear
-              </Button>
-            )}
-            <Button
-              onClick={handleSearchAndScrape}
-              disabled={!keyword.trim() || isLoading}
-              size="sm"
-              className="h-8 gap-1.5"
-            >
-              {isLoading ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Zap className="w-3.5 h-3.5" />
-              )}
-              {isLoading
-                ? (statusMessage ?? "Processing...")
-                : "Search & Scrape"}
-            </Button>
-          </div>
-        </div>
-        {hasError && (
-          <Alert variant="destructive" className="mt-2 py-2">
-            <AlertDescription className="text-xs">
-              {error}
-              <ScraperHookErrorDetails diagnostics={errorDiagnostics} />
-            </AlertDescription>
-          </Alert>
-        )}
-      </div>
-
-      {/* Body: sidebar + detail */}
-      <div className="flex-1 min-h-0 flex overflow-hidden">
-        {/* Sidebar — list of scraped pages */}
-        {allResults.length > 0 && (
-          <div className="w-56 border-r border-border flex-shrink-0 flex flex-col overflow-hidden bg-white/30 dark:bg-gray-900/30">
-            <div className="px-3 py-2 border-b border-border bg-muted/50">
-              <span className="text-xs text-muted-foreground font-medium">
-                {allResults.length} pages
-              </span>
-            </div>
-            <div className="flex-1 overflow-y-auto divide-y divide-border">
-              {allResults.map((result, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    setSelectedIndex(index);
-                    setActiveTab("pretty");
-                  }}
-                  className={`w-full text-left px-3 py-2.5 hover:bg-accent transition-colors ${
-                    selectedIndex === index
-                      ? "bg-accent border-l-2 border-primary"
-                      : ""
-                  }`}
+            <div className="flex items-end gap-2 flex-wrap">
+              <div className="w-24">
+                <Label
+                  htmlFor="maxPages"
+                  className="text-xs text-muted-foreground mb-1 block"
                 >
-                  <p className="text-xs font-medium line-clamp-2 text-foreground">
-                    {result.overview.page_title || `Page ${index + 1}`}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">
-                    {result.url}
-                  </p>
-                  {result.overview.char_count && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {((result.overview.char_count as number) / 1000).toFixed(
-                        1,
-                      )}
-                      k chars
-                    </p>
-                  )}
-                </button>
-              ))}
+                  Max pages
+                </Label>
+                <Input
+                  id="maxPages"
+                  type="number"
+                  min={PAGE_LIMIT_MIN}
+                  max={PAGE_LIMIT_MAX}
+                  value={maxPages}
+                  onChange={(e) => setMaxPages(e.target.value)}
+                  disabled={isLoading}
+                  className="h-8 text-sm"
+                  style={{ fontSize: "16px" }}
+                />
+              </div>
+              <div className="flex items-center gap-1.5 pb-1.5">
+                <Switch
+                  id="useCache"
+                  checked={useCache}
+                  onCheckedChange={setUseCache}
+                  disabled={isLoading}
+                />
+                <Label htmlFor="useCache" className="text-xs">
+                  Cache
+                </Label>
+              </div>
+              {allResults.length > 0 && (
+                <Button
+                  onClick={handleClear}
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                >
+                  <X className="w-3.5 h-3.5 mr-1" />
+                  Clear
+                </Button>
+              )}
+              <Button
+                onClick={handleSearchAndScrape}
+                disabled={!keyword.trim() || isLoading}
+                size="sm"
+                className="h-8 gap-1.5"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Zap className="w-3.5 h-3.5" />
+                )}
+                {isLoading
+                  ? (statusMessage ?? "Processing...")
+                  : "Search & Scrape"}
+              </Button>
             </div>
           </div>
-        )}
+          {hasError && (
+            <Alert variant="destructive" className="mt-2 py-2">
+              <AlertDescription className="text-xs">
+                {error}
+                <ScraperHookErrorDetails diagnostics={errorDiagnostics} />
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
 
-        {/* Main content area */}
-        <div className="flex-1 min-w-0 overflow-hidden">
-          {isLoading && allResults.length === 0 && (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-primary" />
-                <p className="text-sm text-muted-foreground">
-                  {statusMessage ?? "Searching and scraping..."}
-                </p>
+        {/* Body: sidebar + detail */}
+        <div className="flex-1 min-h-0 flex overflow-hidden">
+          {/* Sidebar — list of scraped pages */}
+          {allResults.length > 0 && (
+            <div className="w-56 border-r border-border flex-shrink-0 flex flex-col overflow-hidden bg-white/30 dark:bg-gray-900/30">
+              <div className="px-3 py-2 border-b border-border bg-muted/50">
+                <span className="text-xs text-muted-foreground font-medium">
+                  {allResults.length} pages
+                </span>
+              </div>
+              <div className="flex-1 overflow-y-auto divide-y divide-border">
+                {allResults.map((result, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      setSelectedIndex(index);
+                      setActiveTab("pretty");
+                    }}
+                    className={`w-full text-left px-3 py-2.5 hover:bg-accent transition-colors ${
+                      selectedIndex === index
+                        ? "bg-accent border-l-2 border-primary"
+                        : ""
+                    }`}
+                  >
+                    <p className="text-xs font-medium line-clamp-2 text-foreground">
+                      {result.overview.page_title || `Page ${index + 1}`}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      {result.url}
+                    </p>
+                    {result.overview.char_count && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {(
+                          (result.overview.char_count as number) / 1000
+                        ).toFixed(1)}
+                        k chars
+                      </p>
+                    )}
+                  </button>
+                ))}
               </div>
             </div>
           )}
 
-          {pageData && (
-            <PageContent
-              pageData={pageData}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              dataUtils={ScraperDataUtils}
-            />
-          )}
+          {/* Main content area */}
+          <div className="flex-1 min-w-0 overflow-hidden flex flex-col">
+            {isLoading && allResults.length === 0 && (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-primary" />
+                  <p className="text-sm text-muted-foreground">
+                    {statusMessage ?? "Searching and scraping..."}
+                  </p>
+                </div>
+              </div>
+            )}
 
-          {!isLoading && allResults.length === 0 && !hasError && (
-            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-              <Zap className="w-10 h-10 mb-3 opacity-40" />
-              <p className="text-sm">
-                Enter a keyword above to search and scrape results
-              </p>
-              <p className="text-xs mt-1 opacity-70">
-                Finds pages matching your keyword and extracts their full
-                content
-              </p>
-            </div>
-          )}
+            {selectedResult ? (
+              <SaveSourceButton
+                key={selectedResult.processedDocumentId ?? selectedResult.url}
+                processedDocumentId={selectedResult.processedDocumentId}
+                name={selectedResult.overview?.page_title || selectedResult.url}
+                notices={selectedResult.sourceNotices}
+                className="px-4 pt-2"
+              />
+            ) : null}
+            {pageData && (
+              <div className="flex-1 min-h-0">
+                <PageContent
+                  pageData={pageData}
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  dataUtils={ScraperDataUtils}
+                />
+              </div>
+            )}
+
+            {!isLoading && allResults.length === 0 && !hasError && (
+              <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                <Zap className="w-10 h-10 mb-3 opacity-40" />
+                <p className="text-sm">
+                  Enter a keyword above to search and scrape results
+                </p>
+                <p className="text-xs mt-1 opacity-70">
+                  Finds pages matching your keyword and extracts their full
+                  content
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
     </ScraperSurfaceMount>
   );
 }

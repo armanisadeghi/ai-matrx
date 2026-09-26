@@ -1100,6 +1100,7 @@ export function SourcesPage() {
               landingNotices={saveTarget.notices}
               defaultSave={saveTarget.defaultSave}
               embedded
+              onSettled={refresh}
               onCancel={() => setSaveTarget(null)}
               onSaved={() => {
                 setSaveTarget(null);
