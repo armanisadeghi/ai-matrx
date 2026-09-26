@@ -7,10 +7,11 @@ description: "Context and scope-tagging UI. Use when adding a context picker to 
 
 ## The mental model (read this or you WILL wire it wrong)
 
-1. **Membership, not ownership.** A USER belongs to MULTIPLE organizations
-   (personal workspace + any number of real orgs). Never assume one org per
-   user, never force an org choice before showing projects/tasks — both can
-   be org-less ("unassigned"), and that is normal, not an error.
+1. **Membership, not ownership.** A person belongs to MULTIPLE organizations,
+   all equal (no personal or business type — `common-docs/policies/access-ladder.md`).
+   Never assume one org per user. Every project and task belongs to exactly one
+   organization (`organization_id` NOT NULL, live); a SCOPE assignment on them
+   can be empty ("unassigned"), and that is normal, not an error.
 2. **The hierarchy:** organization → scope types (the org's custom dimensions,
    e.g. Clients, Matters) → scopes (instances, e.g. "Acme Corp") → context
    items (typed fields per scope). Tasks may live in projects but DON'T have

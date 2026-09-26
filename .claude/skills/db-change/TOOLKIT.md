@@ -73,7 +73,7 @@ deleted_at timestamptz                 -- soft delete; NULL = live
 version int NOT NULL default 1         -- bumped by _touch_row
 metadata jsonb NOT NULL default '{}'   -- display/provenance hints only, never queryable business data
 ```
-**Plus, for anything shareable:** `visibility platform.visibility NOT NULL default 'private'` (NOT in `_base_entity` — add it per entity).
+**Plus, for anything shareable:** `visibility platform.visibility NOT NULL` (NOT in `_base_entity` — add it per entity). Its words are per-row, never the table's access level — that is `platform.entity_types.data_class`, chosen by the law `common-docs/policies/access-ladder.md` (every table starts at `organization`).
 **Legacy → canonical normalizations the spec demands:** `user_id|owner_id|author_id|creator_id (owner) → created_by` · `is_public → visibility` · `is_deleted → deleted_at` · non-uuid `created_by → created_by_kind` (then add a real uuid `created_by`).
 
 ### Satellites are polymorphic by token — a table joins them by being *registered*, never by adding columns
@@ -93,7 +93,7 @@ All key off `(entity_type/source_type = '<token>', entity_id/_id = <row id>)`:
 SECURITY DEFINER, **hardcoded to `public` schema** (`format('public.%I', p_table)`). **Does a BOUNDED job:**
 - ADDs (if missing): `organization_id` (or reuses existing `org_id`), `created_by`, `updated_by`, `updated_at`, `version`.
 - Backfills `created_by` from `p_owner_col`; backfills org by strategy:
-  - `personal` — owner's personal org (`organizations.is_personal AND created_by=owner`), else the system org.
+  - `personal` — the owner's `is_personal` organization, else the system org. It reads a flag that is being deleted (organizations are equal — access-ladder law); never choose it for new work.
   - `parent` — copies org from `p_parent_table` via `p_parent_fk` (needs both args).
   - `keep` — no org backfill, tolerates null org.
 - Drops `p_legacy_trigger` (if given) + any `_touch_row`/`_stamp_actor`, then attaches fresh `_touch_row` + `_stamp_actor`.
@@ -184,7 +184,8 @@ Lives in **`iam`** (moved from `public` in the reorg; verified live 2026-07-05).
 ## 4. The access model — reality vs the conceptual tiers
 
 **Two enums, verified:**
-- `platform.visibility` (ordered): `private < internal < link < public`. The "make public" driver. (`link` ≈ the "shared by link / discoverable" idea.)
+- `platform.data_class`: `organization` · `public` · `confidential` · `private` — the table's access level (who can open a record without being shared in). Law: `common-docs/policies/access-ladder.md` — every table starts at `organization`; only Arman approves `confidential` or `private`; a component carries no level of its own.
+- `platform.visibility` (ordered): `personal < internal < link < public` — a per-row column, not an access level, being renamed so no word means two things. (Live enum verified 2026-09-26; `private` is not a value.)
 - `public.permission_level` (ordered): **`viewer < editor < admin`** — only **3** levels.
 
 **The conceptual model the PM wrote (Viewer / Commenter / Editor / Owner) does NOT map 1:1 to the DB:**
