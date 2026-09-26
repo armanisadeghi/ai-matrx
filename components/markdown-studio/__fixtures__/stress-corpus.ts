@@ -279,6 +279,34 @@ export function megaDoc(targetBytes: number, seed = 10): string {
   return pieces.join("\n\n");
 }
 
+// ── 11. Many diagrams across a long document (the verifier's shape) ───────
+/**
+ * A 1 MB operations runbook with 46 diagrams of four kinds spread evenly
+ * through it — the shape that froze the studio 38–75 s and a chat answer's
+ * Preview 51 s before diagrams drew only near the viewport (verifier round 1).
+ */
+export function manyDiagramsLongDoc(targetBytes = 1_000_000, diagrams = 46, seed = 11): string {
+  const r = rng(seed);
+  const kinds = [
+    (i: number) => `flowchart LR\n  A${i}[Ingest ${i}] --> B${i}{Healthy?}\n  B${i} -- yes --> C${i}[Serve]\n  B${i} -- no --> D${i}[Page on-call]`,
+    (i: number) => `sequenceDiagram\n  participant C as Client\n  participant S as Service ${i}\n  C->>S: request\n  S-->>C: 200 OK`,
+    (i: number) => `stateDiagram-v2\n  [*] --> Idle${i}\n  Idle${i} --> Busy${i}: job\n  Busy${i} --> Idle${i}: done`,
+    (i: number) => `gantt\n  title Rollout ${i}\n  dateFormat YYYY-MM-DD\n  section Phase\n  Canary :a${i}, 2026-09-01, 3d\n  Fleet :after a${i}, 5d`,
+  ];
+  const perGap = Math.floor(targetBytes / (diagrams + 1));
+  const parts: string[] = ["# Storage fleet runbook", ""];
+  for (let d = 0; d <= diagrams; d++) {
+    let size = 0;
+    while (size < perGap) {
+      const p = paragraph(r, 5);
+      parts.push(p, "");
+      size += p.length + 2;
+    }
+    if (d < diagrams) parts.push(`## Diagram ${d + 1}`, "", "```mermaid", kinds[d % kinds.length](d), "```", "");
+  }
+  return parts.join("\n");
+}
+
 export interface StressFixture {
   name: string;
   /** The real situation this document stands for. */
@@ -298,4 +326,5 @@ export const STRESS_CORPUS: StressFixture[] = [
   { name: "pathological-midstream", useCase: "A stream cut mid-table, mid-math, mid-fence with delimiter soup", build: () => pathological() },
   { name: "mega-1mb", useCase: "A 1 MB knowledge-base document", build: () => megaDoc(1_000_000) },
   { name: "mega-5mb", useCase: "A 5 MB pasted book-length document", build: () => megaDoc(5_000_000) },
+  { name: "diagrams-46-1mb", useCase: "A 1 MB runbook with 46 diagrams spread through it", build: () => manyDiagramsLongDoc() },
 ];

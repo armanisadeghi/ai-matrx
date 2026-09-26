@@ -29,6 +29,10 @@ export const BUDGETS = {
   RENDER_5MB_MAX_TASK_MS: 2500,
   // Measured 517 MB (a fully mounted 5 MB document grew past 2 GB).
   RENDER_5MB_HEAP_MB: 700,
+  // 46 diagrams across 1 MB: the longest main-thread stall in the 30 s after
+  // the paste (a 50 ms setInterval gap monitor — the verifier's method).
+  // Before c71082a03a: 38-75 s.
+  DIAGRAMS_1MB_MAX_STALL_MS: 3000,
   REPLAY_HEAP_GROWTH_MB: 30,
 };
 
@@ -160,6 +164,26 @@ const tasks5 = await lt();
 report.render5mb = { alive: alive5 && !crashed, wallMs: Date.now() - t5, maxTaskMs: tasks5.max, heapMB: await heapMB() };
 if (!report.render5mb.alive || tasks5.max > BUDGETS.RENDER_5MB_MAX_TASK_MS || report.render5mb.heapMB > BUDGETS.RENDER_5MB_HEAP_MB)
   failures.push(`5 MB paste: longest task ${tasks5.max} ms, heap ${report.render5mb.heapMB} MB, alive=${report.render5mb.alive} (budgets ${BUDGETS.RENDER_5MB_MAX_TASK_MS} ms, ${BUDGETS.RENDER_5MB_HEAP_MB} MB)`);
+
+// 3b. 46 diagrams across a 1 MB document (the verifier's shape).
+await page.close();
+await open();
+await page.evaluate(() => {
+  window.__gaps = [];
+  let last = performance.now();
+  window.__gapT = setInterval(() => {
+    const n = performance.now();
+    const g = n - last - 50;
+    if (g > 50) window.__gaps.push(Math.round(g));
+    last = n;
+  }, 50);
+});
+await paste("diagrams-46-1mb");
+await page.waitForTimeout(30000);
+const gaps = await page.evaluate(() => window.__gaps || []).catch(() => [99999]);
+report.diagrams1mb = { alive: !crashed, maxStallMs: Math.max(0, ...gaps), totalStallMs: gaps.reduce((a, b) => a + b, 0) };
+if (crashed || report.diagrams1mb.maxStallMs > BUDGETS.DIAGRAMS_1MB_MAX_STALL_MS)
+  failures.push(`46 diagrams / 1 MB: longest stall ${report.diagrams1mb.maxStallMs} ms (budget ${BUDGETS.DIAGRAMS_1MB_MAX_STALL_MS})`);
 
 // 4. Three stream replays of the 60-code-block answer: no retained growth.
 await page.close();
