@@ -469,11 +469,23 @@ say "─── invalid indexes: production and the clone, read-only ───"
 zsh "$FRONTEND/scripts/night/invalid-indexes.sh" > "$WORK/invalid-indexes.out" 2>&1; INDEX_RC=$?
 grep -E 'invalid indexes|RESULT|REFUSED|READ FAILED' "$WORK/invalid-indexes.out" | while read -r l; do say "  ${l#\[*\] }"; done
 
+# ── KERNEL FINGERPRINT AUTO RE-RECORDS (lane PROVISIONER-SELF-HEAL, 2026-09-25) ──
+# The provisioner re-records a stale access-kernel fingerprint ITSELF when the kernel's equivalence
+# self-check still answers identically, so table creation no longer stops (83 minutes on
+# 2026-09-25). Correct, and it must still be SEEN: each one means a file changed a kernel body and
+# re-recorded nothing. Report only (production read-only; the fixture check on the clone rolls back).
+# A report never fails the catch-up; it is named in the summary.
+KFP_RC=0
+say "─── kernel fingerprint: auto re-records and stale refusals of the last 24h ───"
+zsh "$FRONTEND/scripts/night/kernel-fingerprint-auto-rerecords.sh" > "$WORK/kernel-fingerprint.out" 2>&1; KFP_RC=$?
+grep -E 'kernel fingerprint|AUTO RE-RECORD|STALE REFUSAL|LIVE MISMATCH|fixture|RESULT|REFUSED|READ FAILED' "$WORK/kernel-fingerprint.out" | while read -r l; do say "  ${l#\[*\] }"; done
+
 say "parity repairs made: $REPAIRED; superseded on production: $SUPERSEDED"
 for n in "${SUPERSEDED_NAMES[@]:-}"; do [ -n "$n" ] && say "  superseded, not carried: $n"; done
 for n in "${FAILED_NAMES[@]:-}"; do [ -n "$n" ] && say "  did not land: $n"; done
 say "clone-catchup done: $APPLIED applied, $REPAIRED parity repair(s), $SUPERSEDED superseded, $FAILED failed, $REFUSE_N refused."
 [ "$BODY_RC" -ne 0 ] && say "body drift: bodies remain unlevelled (exit $BODY_RC) — named above."
+[ "$KFP_RC" -ne 0 ] && say "kernel fingerprint: the provisioner re-recorded or refused on its own in the last 24h, or the fixture drifted (exit $KFP_RC) — named above."
 [ "$INDEX_RC" -ne 0 ] && say "invalid indexes: at least one remains on production or the clone (exit $INDEX_RC) — named above. Fix with scripts/night/invalid-indexes.sh --fix --target <clone|production>."
 [ "$FAILED" -gt 0 ] && exit 70
 [ "$REFUSE_N" -gt 0 ] && exit 71
