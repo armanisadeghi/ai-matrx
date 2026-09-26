@@ -968,8 +968,18 @@ export interface ResearchContent {
   source_id: string;
   topic_id: string;
   content: string | null;
-  /** Original scraped content, backed up once on the first user edit (recoverable). */
+  /**
+   * Research's own backup of the scrape, taken on the first edit of a page
+   * that is NOT yet a Source. A page that is a Source keeps its original in
+   * the Source itself (a person's edit is a version beside it).
+   */
   original_content: string | null;
+  /**
+   * The Source this page's body lives in (`docproc.processed_documents`), set
+   * once the page landed through the door. Null = not yet a Source: research
+   * still holds the body itself.
+   */
+  processed_document_id: string | null;
   content_hash: string | null;
   char_count: number | null;
   content_type: string | null;

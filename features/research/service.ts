@@ -5,6 +5,9 @@ import type { Database } from "@/types/database.types";
 import { isJsonObject } from "@/types/json";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { writeOne } from "@/utils/supabase/writeOne";
+import { getJson, postJson } from "@/lib/python-client";
+import type { components } from "@/types/python-generated/api-types";
+import { RESEARCH_ENDPOINTS } from "./service/research-endpoints";
 import type {
   ResearchTopic,
   ResearchProgress,
@@ -47,6 +50,11 @@ import type { CostLedgerInput, CostLedgerRow, SynthesisCostRow } from "./costs";
 
 import type { ScopesRpcResult } from "@/features/scopes/types";
 import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
+
+/** The landing door's wire types (generated contract, never a mirror). */
+type LandedSource = components["schemas"]["LandedSource"];
+type EditSourceBody = components["schemas"]["EditBody"];
+type SourcePortion = components["schemas"]["Portion"];
 
 // ── Research M2M edges live in platform.associations ─────────────────────────
 // The rs_source_tag / rs_keyword_source junctions were collapsed into the
@@ -832,17 +840,71 @@ export async function bulkUpdateSources(
 // Content
 // ============================================================================
 
+/**
+ * Every column of a content version EXCEPT its body. The body is read through
+ * the research content route, which reads the page's Source (a person's edit,
+ * a recapture, a cleaned version) — never `rs_content.content` directly.
+ */
+const CONTENT_VERSION_COLUMNS = [
+  "id",
+  "source_id",
+  "topic_id",
+  "original_content",
+  "processed_document_id",
+  "content_hash",
+  "char_count",
+  "content_type",
+  "is_good_scrape",
+  "quality_override",
+  "capture_method",
+  "failure_reason",
+  "published_at",
+  "modified_at",
+  "is_current",
+  "version",
+  "linked_extraction_id",
+  "linked_transcript_id",
+  "extracted_links",
+  "extracted_images",
+  "scraped_at",
+].join(",");
+
+/**
+ * A page's content versions, newest first. The fetch record comes straight
+ * from Supabase; the body comes from `GET /research/topics/{t}/sources/{s}/content`,
+ * which answers with the Source's current text for a landed page and
+ * research's own copy for a page that is not yet a Source.
+ */
 export async function getSourceContent(
+  topicId: string,
   sourceId: string,
 ): Promise<ResearchContent[]> {
-  const { data, error } = await supabase
-    .schema("research")
-    .from("rs_content")
-    .select("*")
-    .eq("source_id", sourceId)
-    .order("version", { ascending: false });
-  if (error) throw error;
-  return data ?? [];
+  const [versions, bodies] = await Promise.all([
+    supabase
+      .schema("research")
+      .from("rs_content")
+      .select(CONTENT_VERSION_COLUMNS)
+      .eq("source_id", sourceId)
+      .order("version", { ascending: false })
+      .returns<Omit<ResearchContent, "content">[]>(),
+    getJson<Array<{ id: string; content?: string | null }>>(
+      RESEARCH_ENDPOINTS.topic(topicId).sources.content(sourceId),
+    ),
+  ]);
+  if (versions.error) throw versions.error;
+  const bodyById = new Map(
+    (bodies.data ?? []).map((b) => [b.id, b.content ?? null]),
+  );
+  return (versions.data ?? []).map((v) => {
+    const content = bodyById.get(v.id) ?? null;
+    // The size the screen shows is the size of the body it shows (a Source
+    // edit changes the text without touching the fetch record's count).
+    return {
+      ...v,
+      content,
+      char_count: content !== null ? content.length : v.char_count,
+    };
+  });
 }
 
 // ============================================================================
@@ -1377,40 +1439,214 @@ export async function getCurationData(topicId: string): Promise<CurationData> {
   return { rows, keywords, tags };
 }
 
+const BODY_READ_CHUNK = 150;
+const BODY_READ_CONCURRENCY = 4;
+
 /**
- * Save user-curated content (the trimmed/edited text the model will analyze),
- * backing up the original scrape ONCE on the first edit so it stays
- * recoverable. Reads go straight to Supabase, so there is no FE cache to bust.
+ * Page bodies for a set of content versions, keyed by content id — for
+ * everything that feeds whole pages onward (the resource catalog).
+ *
+ * A landed page is read through its Source (the research content route, one
+ * call per page, a few at a time). Only a page that is NOT yet a Source is
+ * read from research's own copy, and the query itself refuses Source rows
+ * (`processed_document_id is null`), so a Source's body is never read from the
+ * cache.
+ */
+export async function getContentBodies(
+  contentIds: string[],
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const landed: Array<{ id: string; source_id: string; topic_id: string }> = [];
+  for (let i = 0; i < contentIds.length; i += BODY_READ_CHUNK) {
+    const chunk = contentIds.slice(i, i + BODY_READ_CHUNK);
+    const [pointers, ownCopies] = await Promise.all([
+      supabase
+        .schema("research")
+        .from("rs_content")
+        .select("id, source_id, topic_id")
+        .in("id", chunk)
+        .not("processed_document_id", "is", null),
+      supabase
+        .schema("research")
+        .from("rs_content")
+        .select("id, content")
+        .in("id", chunk)
+        .is("processed_document_id", null),
+    ]);
+    if (pointers.error) throw pointers.error;
+    if (ownCopies.error) throw ownCopies.error;
+    landed.push(...(pointers.data ?? []));
+    for (const r of ownCopies.data ?? []) out.set(r.id, r.content ?? "");
+  }
+  const bySource = new Map<string, { topicId: string; ids: string[] }>();
+  for (const r of landed) {
+    const entry = bySource.get(r.source_id) ?? { topicId: r.topic_id, ids: [] };
+    entry.ids.push(r.id);
+    bySource.set(r.source_id, entry);
+  }
+  const queue = [...bySource.entries()];
+  const worker = async () => {
+    for (let next = queue.shift(); next; next = queue.shift()) {
+      const [sourceId, { topicId, ids }] = next;
+      const { data } = await getJson<Array<{ id: string; content?: string | null }>>(
+        RESEARCH_ENDPOINTS.topic(topicId).sources.content(sourceId),
+      );
+      for (const b of data ?? []) {
+        if (ids.includes(b.id)) out.set(b.id, b.content ?? "");
+      }
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(BODY_READ_CONCURRENCY, queue.length) }, worker),
+  );
+  return out;
+}
+
+/** True when the page's body lives in a Source (it landed through the door). */
+export function isContentASource(
+  content: Pick<ResearchContent, "processed_document_id">,
+): boolean {
+  return Boolean(content.processed_document_id);
+}
+
+/** The Source's organization — named on every door request, never guessed. */
+async function sourceOrganizationId(processedDocumentId: string): Promise<string> {
+  const { data, error } = await supabase
+    .schema("docproc")
+    .from("processed_documents")
+    .select("id, organization_id")
+    .eq("id", processedDocumentId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data?.organization_id) {
+    throw new Error(
+      "This page's Source could not be opened (it may have been deleted), so the edit was not saved.",
+    );
+  }
+  return data.organization_id;
+}
+
+/**
+ * The whole edited body as ONE `section` portion, exactly as the person
+ * wrote it (markdown kept), so the Source's text reads back verbatim.
+ */
+function editedBodyPortion(text: string): SourcePortion {
+  return {
+    ordinal: 1,
+    kind: "section",
+    text,
+    locator: { heading_path: [], text_fragment: text.trim().slice(0, 80) },
+    method: "manual",
+  };
+}
+
+/**
+ * Save a person's curation of a page body (the trimmed/edited text the model
+ * will analyze).
+ *
+ * A page that is a Source is edited THROUGH the Source (SOURCE-CONVERGENCE §1
+ * rule 4): `POST /sources/{id}/edit` mints a `manual_curation` version beside
+ * the original, which stays in the Source. If research had curated the row
+ * itself before it landed, that research-side copy is retired so the row
+ * reads its Source again.
+ *
+ * A page that is not yet a Source keeps research's own copy: the body is
+ * edited in place and the original scrape backed up ONCE on the first edit.
  */
 export async function updateContentCurated(
   content: ResearchContent,
   newText: string,
-): Promise<void> {
-  const updates: Database["research"]["Tables"]["rs_content"]["Update"] = {
-    content: newText,
-    char_count: newText.length,
-  };
-  if (!content.original_content && content.content) {
-    // First edit of real content — preserve the pre-edit scrape. (Nothing to
-    // back up if the scrape was empty/null.)
-    updates.original_content = content.content;
+): Promise<LandedSource | null> {
+  const pointer = content.processed_document_id;
+  if (pointer) {
+    const organizationId = await sourceOrganizationId(pointer);
+    const { data } = await postJson<LandedSource, EditSourceBody>(
+      `/sources/${encodeURIComponent(pointer)}/edit`,
+      { portions: [editedBodyPortion(newText)] },
+      { organizationId },
+    );
+    if (content.original_content) {
+      await writeOne(
+        supabase
+          .schema("research")
+          .from("rs_content")
+          .update({ original_content: null })
+          .eq("id", content.id)
+          .select("id"),
+        { action: "save", noun: "research content" },
+      );
+    }
+    return data;
   }
+  // Not yet a Source: research's own copy. Back up the scrape on the first
+  // edit of real content (nothing to back up if the scrape was empty).
+  const backup =
+    !content.original_content && content.content
+      ? content.content
+      : content.original_content;
   await writeOne(
     supabase
       .schema("research")
       .from("rs_content")
-      .update(updates)
+      .update({
+        content: newText,
+        char_count: newText.length,
+        original_content: backup,
+      })
       .eq("id", content.id)
       .select("id"),
     { action: "save", noun: "research content" },
   );
+  return null;
 }
 
-/** Restore the backed-up original scrape (undo curation). */
+/**
+ * Whether a Source currently shows a person's edit — i.e. whether "Restore
+ * original" has anything to undo. The Source's newest capture points at the
+ * version people read (`canonical_clean_id`); only a `manual_curation`
+ * version is an edit (a cleaned version is not undone by restore).
+ */
+export async function getSourceEditState(
+  processedDocumentId: string,
+): Promise<{ edited: boolean }> {
+  const { data: head, error } = await supabase
+    .schema("docproc")
+    .from("processed_documents")
+    .select("id, canonical_clean_id")
+    .eq("id", processedDocumentId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!head?.canonical_clean_id) return { edited: false };
+  const { data: current, error: currentError } = await supabase
+    .schema("docproc")
+    .from("processed_documents")
+    .select("id, derivation_kind")
+    .eq("id", head.canonical_clean_id)
+    .maybeSingle();
+  if (currentError) throw currentError;
+  return { edited: current?.derivation_kind === "manual_curation" };
+}
+
+/**
+ * Undo a person's curation. A Source goes back to its original capture
+ * (`POST /sources/{id}/restore`; the edit stays in the Source's history). A
+ * page that is not yet a Source gets research's backup back, and the backup
+ * is cleared — there is nothing left to restore.
+ */
 export async function restoreOriginalContent(
   content: ResearchContent,
-): Promise<void> {
-  if (!content.original_content) return;
+): Promise<LandedSource | null> {
+  const pointer = content.processed_document_id;
+  if (pointer && !content.original_content) {
+    const organizationId = await sourceOrganizationId(pointer);
+    const { data } = await postJson<LandedSource, Record<string, never>>(
+      `/sources/${encodeURIComponent(pointer)}/restore`,
+      {},
+      { organizationId },
+    );
+    return data;
+  }
+  if (!content.original_content) return null;
   await writeOne(
     supabase
       .schema("research")
@@ -1418,11 +1654,13 @@ export async function restoreOriginalContent(
       .update({
         content: content.original_content,
         char_count: content.original_content.length,
+        original_content: null,
       })
       .eq("id", content.id)
       .select("id"),
     { action: "restore", noun: "research content" },
   );
+  return null;
 }
 
 // ============================================================================

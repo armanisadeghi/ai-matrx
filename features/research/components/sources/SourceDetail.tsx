@@ -51,6 +51,7 @@ import {
   useResearchSource,
   useResearchSources,
   useSourceContent,
+  useSourceEditState,
   useAnalysisForSource,
   useSourceImportance,
   useYouTubeVideoIndex,
@@ -73,6 +74,7 @@ import {
   restoreOriginalContent,
 } from "../../service";
 import { toast } from "@/lib/toast";
+import { sourceRefusalSentence } from "@/features/sources/api/sourcesApi";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
 import { OriginBadge } from "../shared/OriginBadge";
@@ -751,8 +753,11 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
     error: sourceError,
     refresh: refetchSource,
   } = useResearchSource(sourceId);
-  const { data: contentData, refresh: refetchContent } =
-    useSourceContent(sourceId);
+  const {
+    data: contentData,
+    error: contentError,
+    refresh: refetchContent,
+  } = useSourceContent(topicId, sourceId);
   const { data: allSources } = useResearchSources(topicId);
   const { data: importanceMap } = useSourceImportance(topicId);
   const importance = importanceMap?.get(sourceId);
@@ -804,6 +809,16 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
 
   const [selectedVersion, setSelectedVersion] = useState(0);
   const currentContent = contentVersions[selectedVersion] ?? null;
+  // A landed page's body lives in its Source: curation and restore go through
+  // the Source, and "Restore original" is offered only while the Source shows
+  // a person's edit. A page not yet a Source keeps research's own copy.
+  const contentSourceId = currentContent?.processed_document_id ?? null;
+  const { data: sourceEditState, refresh: refetchSourceEditState } =
+    useSourceEditState(contentSourceId);
+  const canRestoreOriginal = Boolean(
+    currentContent?.original_content ||
+      (contentSourceId && sourceEditState?.edited),
+  );
 
   // Analyses for the currently-selected content version — but NEVER hide
   // expensive prior analyses. Editing content writes a NEW version (v+1); the
@@ -979,14 +994,17 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
     setAnalyzeDialogOpen(false);
     if (curated !== null && currentContent) {
       try {
-        await updateContentCurated(currentContent, curated);
-        await refetchContent();
-      } catch (err) {
-        toast.error(
-          `Couldn't save curated content: ${
-            err instanceof Error ? err.message : "unknown error"
-          }`,
+        const landed = await updateContentCurated(currentContent, curated);
+        refetchContent();
+        refetchSourceEditState();
+        toast.success(
+          landed
+            ? (landed.notices[0]?.message ??
+                "Your edit was saved to the Source; the original capture is kept.")
+            : "Saved in research. This page is not yet a Source, so the edit stays in research until it lands.",
         );
+      } catch (err) {
+        toast.error(`Couldn't save curated content: ${sourceRefusalSentence(err)}`);
         return;
       }
     }
@@ -994,15 +1012,16 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
   };
 
   const handleRestoreOriginal = async () => {
-    if (!currentContent?.original_content) return;
+    if (!currentContent || !canRestoreOriginal) return;
     try {
-      await restoreOriginalContent(currentContent);
+      const landed = await restoreOriginalContent(currentContent);
       refetchContent();
-      toast.success("Restored the original page content");
-    } catch (err) {
-      toast.error(
-        `Couldn't restore: ${err instanceof Error ? err.message : "unknown error"}`,
+      refetchSourceEditState();
+      toast.success(
+        landed?.notices[0]?.message ?? "Restored the original page content",
       );
+    } catch (err) {
+      toast.error(`Couldn't restore: ${sourceRefusalSentence(err)}`);
     }
   };
 
@@ -1612,13 +1631,17 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
               <ClipboardPaste className="h-3.5 w-3.5" />
               Paste Content
             </Button>
-            {currentContent?.original_content && (
+            {canRestoreOriginal && (
               <Button
                 variant="outline"
                 size="sm"
                 className="gap-1.5 h-8"
                 onClick={handleRestoreOriginal}
-                title="Replace the curated content with the original page content"
+                title={
+                  contentSourceId
+                    ? "Undo your edit: the Source's original capture becomes the version people read (your edit stays in its history)"
+                    : "Replace the curated content with the original page content"
+                }
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 Restore original
@@ -1703,6 +1726,26 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
 
         {/* Content Section */}
         <div className="min-h-[220px]">
+          {contentError ? (
+            <div className="mb-2 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span className="flex-1">
+                This page&apos;s text could not be loaded: {contentError}
+              </span>
+              <button
+                type="button"
+                onClick={refetchContent}
+                className="shrink-0 font-medium underline underline-offset-2"
+              >
+                Try again
+              </button>
+            </div>
+          ) : null}
+          {currentContent && !contentSourceId ? (
+            <p className="mb-2 text-[11px] text-muted-foreground">
+              Not yet a Source — edits stay in research until it lands.
+            </p>
+          ) : null}
           {currentContent ? (
             <ContentViewer
               topicId={topicId}

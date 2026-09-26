@@ -236,11 +236,23 @@ export function useYouTubeVideoIdentityIndex(videoIds: string[]) {
 // Content hooks
 // ============================================================================
 
-export function useSourceContent(sourceId: string) {
+export function useSourceContent(topicId: string, sourceId: string) {
   return useServiceQuery<ResearchContent[]>(
-    () => service.getSourceContent(sourceId),
-    [sourceId],
-    !!sourceId,
+    () => service.getSourceContent(topicId, sourceId),
+    [topicId, sourceId],
+    !!topicId && !!sourceId,
+  );
+}
+
+/** Whether a page's Source shows a person's edit (what "Restore original" undoes). */
+export function useSourceEditState(processedDocumentId: string | null | undefined) {
+  return useServiceQuery<{ edited: boolean }>(
+    () =>
+      processedDocumentId
+        ? service.getSourceEditState(processedDocumentId)
+        : Promise.resolve({ edited: false }),
+    [processedDocumentId ?? ""],
+    !!processedDocumentId,
   );
 }
 

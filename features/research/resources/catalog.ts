@@ -41,6 +41,7 @@ import {
   Boxes,
 } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
+import { getContentBodies } from "../service";
 import { estimateTokens } from "@/lib/tokens/estimate";
 import {
   applySnippetLengthLimit,
@@ -562,14 +563,12 @@ export const CATALOG: ResourceKindDef[] = [
     shape: "prose",
     defaultVariable: "scraped_pages",
     resourceType: "research_content",
+    // Read through each page's Source (research's own copy only for a page
+    // not yet a Source) — never rs_content.content for a landed page.
     fetchBodies: async (ids) => {
-      const rows = await fetchRows<{ id: string; content: string | null }>(
-        "rs_content",
-        "id,content",
-        ids,
-      );
+      const bodies = await getContentBodies(ids);
       return new Map(
-        rows.map((r) => [r.id, { id: r.id, text: textOf(r.content) }]),
+        [...bodies].map(([id, text]) => [id, { id, text: textOf(text) }]),
       );
     },
     render: (item, body, ctx) =>
