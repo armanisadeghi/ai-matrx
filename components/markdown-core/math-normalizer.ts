@@ -24,7 +24,7 @@
 // wholesale.
 // ─────────────────────────────────────────────────────────────────────────
 
-import { fenceLineKinds, findCodeRanges, isSingleDollarMath } from "@ai-matrx/content-ir/source";
+import { fenceLineKinds, findCodeRanges, isSingleDollarMath, singleDollarAfter } from "@ai-matrx/content-ir/source";
 
 /** remark-math options for EVERY math-capable renderer. */
 export const REMARK_MATH_OPTIONS = { singleDollarTextMath: false } as const;
@@ -182,7 +182,9 @@ function convertSingleDollar(text: string): string {
       }
       if (close !== -1 && text[close + 1] !== "$") {
         const content = text.slice(i + 1, close);
-        if (isSingleDollarMath(content, text[close + 1])) {
+        // The rule reads the NAME after the closer (`$n$th` is math, `$USER$HOSTNAME`
+        // a shell variable chain — verify-RC-B3 F5), not one character.
+        if (isSingleDollarMath(content, singleDollarAfter(text, close))) {
           out += `$$${content}$$`;
           i = close + 1;
           continue;

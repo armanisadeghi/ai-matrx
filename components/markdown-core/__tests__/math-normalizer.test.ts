@@ -79,3 +79,16 @@ describe("escaped brackets are literal unless the content is TeX (verify-RC-B4 R
     expect(isEscapedBracketMath("file_name", " ")).toBe(false);
   });
 });
+
+describe("shell and template variables outside backticks stay text (verify-RC-B3 F5)", () => {
+  test.each([
+    ["Check the login with echo $USER$HOSTNAME before you start."],
+    ["Rename it with mv $name.$ext $name.bak and keep the original."],
+    ["Join the two parts as ${a}${b} in the route template."],
+  ])("%s", (text) => {
+    expect(normalizeMathDelimiters(text)).toBe(text);
+  });
+  test("a glued math suffix stays math: the $n$th term", () => {
+    expect(normalizeMathDelimiters("the $n$th term")).toContain("$$n$$");
+  });
+});

@@ -42,7 +42,7 @@ importers:
         version: 0.5.16(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/content-ir':
         specifier: latest
-        version: 0.18.4
+        version: 0.18.5
       '@ai-matrx/content-ir-react':
         specifier: latest
         version: 0.11.11(react@19.3.0)
@@ -1059,8 +1059,8 @@ packages:
     peerDependencies:
       react: '>=19.0.0'
 
-  '@ai-matrx/content-ir@0.18.4':
-    resolution: {integrity: sha512-Jx072JClt57VjYSWo3QPKxlLfN9RySMuFnN7ebqFbkjCaaovPil82eRtZh2TRhf+IuL3OIG1myCi8hyr2qFsEQ==}
+  '@ai-matrx/content-ir@0.18.5':
+    resolution: {integrity: sha512-YLIY7uEbGNWuNBYSesnE4N/wAUxElvpaeFz4NcUYMF5pQQPwvTM2eAJgB1S2mFaYPpZm1go+RU6wboZ6qTPm/Q==}
     engines: {node: '>=20'}
 
   '@ai-matrx/data@0.18.1':
@@ -12792,10 +12792,10 @@ snapshots:
 
   '@ai-matrx/content-ir-react@0.11.11(react@19.3.0)':
     dependencies:
-      '@ai-matrx/content-ir': 0.18.4
+      '@ai-matrx/content-ir': 0.18.5
       react: 19.3.0
 
-  '@ai-matrx/content-ir@0.18.4':
+  '@ai-matrx/content-ir@0.18.5':
     dependencies:
       ajv: 8.20.0
 
@@ -12867,7 +12867,7 @@ snapshots:
 
   '@ai-matrx/kit@0.16.6(react@19.3.0)':
     dependencies:
-      '@ai-matrx/content-ir': 0.18.4
+      '@ai-matrx/content-ir': 0.18.5
       dompurify: 3.4.15
       idb: 8.0.3
       json5: 2.2.3
@@ -12928,7 +12928,7 @@ snapshots:
 
   '@ai-matrx/print@0.8.7(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@ai-matrx/content-ir': 0.18.4
+      '@ai-matrx/content-ir': 0.18.5
       '@ai-matrx/kit': 0.16.6(react@19.3.0)
       '@radix-ui/react-dialog': 1.1.23(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       bidi-js: 1.1.0
