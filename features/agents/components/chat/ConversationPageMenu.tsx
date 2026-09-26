@@ -31,7 +31,7 @@
  * record true.
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Download, MoreHorizontal, Pin, Search, Send, X } from "lucide-react";
 import { useAssociations } from "@ai-matrx/associations/react";
 import { toast } from "@/lib/toast";
@@ -98,6 +98,9 @@ export function ConversationPageMenu({
   const messages = useAppSelector(selectConversationMessages(conversationId));
   const pinnedIds = usePinnedMessageIds();
   const pinnedCount = messages.filter((m) => pinnedIds.has(m.id)).length;
+  // Find takes the focus it asks for on open; the menu must not hand focus
+  // back to its trigger over it.
+  const keepFocusOnCloseRef = useRef(false);
   const isMac =
     typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
   const viewSection: ItemMenuSection = {
@@ -108,10 +111,9 @@ export function ConversationPageMenu({
         label: "Find in conversation",
         icon: Search,
         shortcut: isMac ? "⌘F" : "Ctrl+F",
-        // After the menu has closed and handed focus back, so the find
-        // field keeps the focus it takes on open.
         onSelect: () => {
-          setTimeout(() => setConversationFindOpen(conversationId, true), 0);
+          keepFocusOnCloseRef.current = true;
+          setConversationFindOpen(conversationId, true);
         },
       },
       {
@@ -204,11 +206,11 @@ export function ConversationPageMenu({
           onClick={() => setConversationPinnedOnly(conversationId, false)}
           aria-label="Showing pinned messages only — show all messages"
           title="Show all messages"
-          className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md bg-amber-500/15 px-2 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-500/25 dark:text-amber-300"
+          className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md bg-amber-500/15 px-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-500/25 dark:text-amber-300"
         >
           <Pin className="h-3.5 w-3.5" aria-hidden="true" />
           <span className="tabular-nums">{pinnedCount}</span>
-          <X className="h-3 w-3 opacity-70" aria-hidden="true" />
+          <X className="hidden h-3 w-3 opacity-70 sm:block" aria-hidden="true" />
         </button>
       )}
       <ItemMenu
@@ -219,6 +221,11 @@ export function ConversationPageMenu({
             : [viewSection, ...menuConfig.sections],
         }}
         align="end"
+        onCloseAutoFocus={(event) => {
+          if (!keepFocusOnCloseRef.current) return;
+          keepFocusOnCloseRef.current = false;
+          event.preventDefault();
+        }}
       >
         <button
           type="button"
