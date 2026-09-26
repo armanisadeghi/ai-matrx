@@ -239,6 +239,7 @@
     "check:branch-seed-list:self-test": "zsh scripts/night/branch-seed-census.sh --self-test",
     "check:night-no-branch": "zsh scripts/night/night-no-branch-census.sh",
     "check:night-no-branch:self-test": "zsh scripts/night/night-no-branch-census.sh --self-test",
+    "check:clone-catchup:self-test": "zsh scripts/night/clone-catchup.sh --self-test",
     "check:campaign-auth:self-test": "tsx scripts/apply-migration.ts --campaign-auth-self-test",
     "db:apply:self-test": "tsx scripts/apply-migration.ts --self-test",
     "check:policy-lock-set": "./scripts/check-policy-lock-set.sh",
