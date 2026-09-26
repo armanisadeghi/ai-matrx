@@ -81,7 +81,9 @@ describe("SandboxDetailPage extension", () => {
     expect(container.textContent).toContain("time:2026-01-01T02:00:00.000Z");
   });
 
-  it("routes the inline admin extension through the same POST handler", async () => {
+  it("routes the inline admin extension through the same POST handler, inside the admin section", async () => {
+    // Admin POWER exists only where the admin lane is open (utils/supabase/adminLane.ts).
+    await act(async () => setSandboxTestIdentity(store, { userId: "user-a", organizationId: "org-a", adminLevel: "super_admin", adminLaneOpen: true }));
     const fetchMock = jest.fn(async (_input: RequestInfo | URL, init?: RequestInit) => init?.method === "POST" ? response({ ...initial, expires_at: "2026-01-01T02:00:00.000Z" }) : response());
     Object.defineProperty(globalThis, "fetch", { configurable: true, value: fetchMock, writable: true });
     await act(async () => root.render(page()));
@@ -90,6 +92,17 @@ describe("SandboxDetailPage extension", () => {
 
     expect(fetchMock.mock.calls.filter(([, init]) => (init as RequestInit | undefined)?.method === "POST")).toHaveLength(1);
     expect(fetchMock).toHaveBeenCalledWith("/api/sandbox/sandbox-1/extend", expect.objectContaining({ method: "POST", body: JSON.stringify({ ttl_seconds: 3600 }) }));
+  });
+
+  it("never shows Admin Quick Actions to a super admin on this user page", async () => {
+    // The default store identity: a super admin with the admin lane CLOSED — /sandbox/[id] is a user page.
+    const fetchMock = jest.fn(async () => response());
+    Object.defineProperty(globalThis, "fetch", { configurable: true, value: fetchMock, writable: true });
+    await act(async () => root.render(page()));
+
+    expect(container.textContent).toContain("time:2026-01-01T01:00:00.000Z");
+    expect(container.textContent).not.toContain("Admin Quick Actions");
+    expect(container.textContent).not.toContain("+1h Debug Time");
   });
 
   it("does not let a stale identity's extension overwrite the detail row", async () => {
