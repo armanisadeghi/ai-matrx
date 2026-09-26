@@ -203,6 +203,7 @@ export function RecordAdminPanels({
           "No open problems" — before the code diagnostics below it. */}
       {section === "diagnostics" ? (
         <div className="mb-3">
+          {/* key-is-the-subject: a key handed to the health summary's key prop, never rendered as a name */}
           <MandateHealthSummary mandateKey={mandate?.mandate_key ?? mandateKey} />
         </div>
       ) : null}

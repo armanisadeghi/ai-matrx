@@ -304,7 +304,7 @@ export function IntelligenceIndex({
       })
       .catch((cause: unknown) => {
         console.warn(
-          "[intelligence] holders for the directory could not be read",
+          "[intelligence] Mandate Holders for the directory could not be read",
           cause,
         );
       });

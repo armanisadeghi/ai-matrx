@@ -363,10 +363,10 @@ function list(Card: (props: { row: FeatureIntelligenceRow; ctx: JobContext }) =>
 }
 
 export const CARD_OPTIONS: readonly { n: number; name: string; Option: (props: OptionProps) => React.ReactNode }[] = [
-  { n: 1, name: "Original card — real new tab, two peeks, actions beside the holder (recommended)", Option: list(OriginalCard) },
+  { n: 1, name: "Original card — real new tab, two peeks, actions beside the Mandate Holder (recommended)", Option: list(OriginalCard) },
   { n: 2, name: "Compact rows — one line each, expand for the rest", Option: list(CompactCard, "space-y-2") },
   { n: 3, name: "Split — the mandate left, the intelligence right", Option: list(SplitCard) },
-  { n: 4, name: "Stepper — the ladder is the holder row", Option: list(StepperCard) },
+  { n: 4, name: "Stepper — the ladder is the Mandate Holder row", Option: list(StepperCard) },
   { n: 5, name: "Table — one row per job", Option: TableOption },
   { n: 6, name: "Properties — calm key/value rows", Option: list(PropertiesCard) },
   { n: 7, name: "Dense — three tight lines per job", Option: list(DenseCard, "space-y-1.5") },
