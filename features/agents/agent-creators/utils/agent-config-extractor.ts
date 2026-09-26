@@ -18,7 +18,31 @@ interface MessageEntry {
   content: string;
 }
 
-export function extractAgentConfig(raw: unknown): AgentBuilderConfig | null {
+/**
+ * THE AGENT BUILDER'S OWN SHAPE. The trained Agent Structure Builder (the
+ * agent `agent_author` runs) answers with a create-agent directive envelope —
+ * `{ __kind: "directive_v1_action_create_agent_definition", items: [ {
+ * __kind: "agent_definition", name, messages, … } ] }` — not a bare agent.
+ * The agent is its first item; `__kind` stays on it (it is part of the data)
+ * and is simply not a field this extractor reads. A bare agent passes through.
+ */
+export function unwrapAgentDefinition(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return raw;
+  const obj = raw as Record<string, unknown>;
+  if (
+    obj.__kind === "directive_v1_action_create_agent_definition" &&
+    Array.isArray(obj.items) &&
+    obj.items.length > 0 &&
+    obj.items[0] &&
+    typeof obj.items[0] === "object"
+  ) {
+    return obj.items[0];
+  }
+  return raw;
+}
+
+export function extractAgentConfig(input: unknown): AgentBuilderConfig | null {
+  const raw = unwrapAgentDefinition(input);
   if (!raw || typeof raw !== "object") return null;
 
   const obj = raw as Record<string, unknown>;
@@ -154,7 +178,8 @@ function extractObject(raw: unknown): Record<string, unknown> | undefined {
  * Extracts the suggested agent name from raw JSON.
  * Returns null if no name is found.
  */
-export function extractAgentName(raw: unknown): string | null {
+export function extractAgentName(input: unknown): string | null {
+  const raw = unwrapAgentDefinition(input);
   if (!raw || typeof raw !== "object") return null;
   const obj = raw as Record<string, unknown>;
   return typeof obj.name === "string" && obj.name.trim()
