@@ -19,8 +19,8 @@
 --       The self-check took under 3 s.
 --   A3  the next table ("Lab case tracker") finds a matched kernel: no further rows.
 --   A4  a batch of two ("Referral letters", "Referral letter replies") after a second harmless
---       plant gets past the stale-kernel preflight through the heal (see the note in A4: batches
---       meet an unrelated certification refusal on this database today).
+--       plant heals once and builds both; each member carries base_contract pending_attach
+--       (strict since PROVISION-BATCH-FIX; before it every batch refused certification).
 --   B1  (b) plant a BEHAVIOUR-CHANGING arm in iam.has_access_for_base that opens every
 --       `internal` row at viewer to anyone signed in — a stranger reads the practice's records.
 --   B2  "Hygiene recall calls" is REFUSED: {ok false, refused true}, exactly one
@@ -185,12 +185,11 @@ end $a3$;
 do $a4$
 declare r jsonb; e text; c0 jsonb := pg_temp.sh_counts();
 begin
-  -- 🚨 A batch cannot finish on this database for a reason that is NOT this lane's: every batch
-  -- refuses certification after its deferred constraints (base_org_fk / base_created_by_fk /
-  -- base_updated_by_fk missing), with the kernel matched and this file's heal never entered —
-  -- measured 2026-09-26 on the clone with a one-table batch. So A4 proves what it can: the batch
-  -- gets PAST the stale-kernel preflight (the heal ran and the refusal it meets is the later
-  -- certification one, never provisioner_fingerprint_stale). The raise rolls its rows back.
+  -- A healed BATCH completes (lane PROVISION-BATCH-FIX, 2026-09-26). Until
+  -- provbatch_a_batch_owes_its_base_contract_like_one_table.sql every batch refused certification
+  -- after its deferred constraints (base_org_fk / base_created_by_fk / base_updated_by_fk owed, not
+  -- failed), so this clause could only prove the batch got past the preflight. Now it must build
+  -- both members, heal once, and hand each member's base-contract debt back as pending_attach.
   perform pg_temp.sh_plant('public', 'library_is_open', null, E'\n  -- planted again by selfheal_green (the batch)');
   perform set_config('matrx.kernel_rerecorded', '', true);
   begin
@@ -198,11 +197,13 @@ begin
            current_setting('sh.referral_letters')::jsonb, current_setting('sh.referral_letter_replies')::jsonb)), 'runner');
   exception when others then e := sqlerrm;
   end;
-  if (e is null and (r->>'ok')::boolean is true and (r->'kernel_fingerprint'->>'auto_rerecorded')::boolean is true) then
-    raise notice 'A4 PASSED — a two-table batch healed once and built both';
-  elsif e like '%refused certification after its deferred constraints%' and pg_temp.sh_counts() = c0
-        and (r is null or (r->>'refused')::boolean is not true) then
-    raise notice 'A4 PASSED (bounded) — the batch passed the stale-kernel preflight through the heal and met the unrelated certification refusal (%), rolled back with its rows', left(e, 90);
+  if e is null and (r->>'ok')::boolean is true and (r->'kernel_fingerprint'->>'auto_rerecorded')::boolean is true
+     and jsonb_array_length(r->'tables') = 2
+     and not exists (select 1 from jsonb_array_elements(r->'tables') m
+                      where m->'base_contract'->>'status' is distinct from 'pending_attach')
+     and to_regclass('workbench.sh_referral_letters') is not null
+     and to_regclass('workbench.sh_referral_letter_replies') is not null then
+    raise notice 'A4 PASSED — a two-table batch healed once and built both; each member owes its base contract (pending_attach)';
   else
     raise exception 'A4 FAILED — batch: error=% answer=% rows %', e, left(coalesce(r::text, 'null'), 300), pg_temp.sh_counts();
   end if;
