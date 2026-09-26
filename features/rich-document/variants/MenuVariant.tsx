@@ -49,7 +49,7 @@ export function MenuVariant(props: MenuVariantProps): React.ReactElement {
   return (
     <div className={cn("inline-flex items-center", className)}>
       {oneMenu ? (
-        <OpenOneMenuButton />
+        <OpenOneMenuButton source={getCtx().source} />
       ) : isMobile ? (
         <>
           <Trigger onClick={() => setSheetOpen(true)} />

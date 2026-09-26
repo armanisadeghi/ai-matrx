@@ -57,7 +57,7 @@ export function ActionBar(props: ActionBarProps): React.ReactElement {
         restrict={BAR_RESTRICT}
         hideOverflow={hideOverflow || oneMenu}
       />
-      {oneMenu && !hideOverflow ? <OpenOneMenuButton /> : null}
+      {oneMenu && !hideOverflow ? <OpenOneMenuButton source={getCtx().source} /> : null}
     </div>
   );
 }

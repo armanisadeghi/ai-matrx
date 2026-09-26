@@ -78,13 +78,21 @@ export function sameContentSource(
   b: ContentSource | null | undefined,
 ): boolean {
   if (!a || !b || a.type !== b.type) return false;
-  const strip = (s: ContentSource) =>
-    JSON.stringify(
-      Object.fromEntries(
-        Object.entries(s as Record<string, unknown>)
-          .filter(([k]) => k !== "readOnly")
-          .sort(([x], [y]) => x.localeCompare(y)),
-      ),
-    );
-  return strip(a) === strip(b);
+  return contentSourceKey(a) === contentSourceKey(b);
+}
+
+/**
+ * A content source's identity as one string (every identifying field, the
+ * read-only flag excluded). The shell stamps it on its trigger
+ * (`data-content-source`) so a ⋯ button can open the ONE menu that carries its
+ * content even when the button renders beside that content, not inside it.
+ */
+export function contentSourceKey(s: ContentSource): string {
+  return JSON.stringify(
+    Object.fromEntries(
+      Object.entries(s as Record<string, unknown>)
+        .filter(([k]) => k !== "readOnly")
+        .sort(([x], [y]) => x.localeCompare(y)),
+    ),
+  );
 }

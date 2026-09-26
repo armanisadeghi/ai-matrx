@@ -51,7 +51,7 @@ import {
   resolveEffectiveEntity,
   sniffEntityFromDom,
 } from "./utils/per-row-entity";
-import { MenuPresenceProvider, RegistryMenuSourceProvider } from "./menu-presence";
+import { MenuPresenceProvider, RegistryMenuSourceProvider, contentSourceKey } from "./menu-presence";
 
 import { useOptionalWidgetHandle } from "@/features/agents/hooks/useWidgetHandle";
 import { buildEditableWidgetHandle } from "./utils/widget-handle";
@@ -724,6 +724,8 @@ export function ContextMenuV3({
     ...CONTEXT_REGION_TRIGGER_ATTRS,
     // Radix-compatible open state, for styles that key on it.
     "data-state": mode ? "open" : "closed",
+    // Lets a ⋯ beside (not inside) this content open THIS menu.
+    "data-content-source": contentSource ? contentSourceKey(contentSource) : undefined,
     onContextMenuCapture: (e: React.MouseEvent<HTMLElement>) => {
       // CAPTURE: a read-only menu never steals a live text field's native menu.
       if (!isEditable && yieldsToNativeTextMenu(e.target)) e.stopPropagation();
