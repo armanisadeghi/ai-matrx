@@ -52,6 +52,7 @@ import {
   unresolvedRelationTitle,
 } from "@/lib/field-formats/relation";
 import { cn } from "@/utils/cn";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export type ChoiceInputProps = {
   id?: string;
@@ -111,7 +112,7 @@ export function ChoiceInput({
   const resolved = useFieldChoices(format, personChoices);
   // Narrowed to the tier this row's controlling cell names, when the column is
   // dependent. A pure filter over already-loaded options — no extra fetch.
-  const { groups, choices, loading, unavailable, allowOther } = choicesForRow(
+  const { groups, choices, loading, unavailable, allowOther, error: listError, retry: retryList } = choicesForRow(
     resolved,
     row,
   );
@@ -247,7 +248,16 @@ export function ChoiceInput({
                 </div>
               )}
 
-              {!loading && unavailable && (
+              {!loading && listError != null && (
+                <ReadFailure
+                  error={listError}
+                  what="this column's pick list"
+                  onRetry={retryList}
+                  className="m-2"
+                />
+              )}
+
+              {!loading && listError == null && unavailable && (
                 <div className="px-3 py-4 text-sm text-amber-600 dark:text-amber-400">
                   This column's pick list can't be opened — it may have been
                   deleted, or it may not be shared with you. Existing values are
@@ -261,7 +271,7 @@ export function ChoiceInput({
                 </div>
               )}
 
-              {!loading && !unavailable && choices.length === 0 && (
+              {!loading && listError == null && !unavailable && choices.length === 0 && (
                 <div className="px-3 py-4 text-sm text-muted-foreground">
                   No options declared yet.
                   {allowOther ? " Type a value to use one." : ""}
@@ -312,7 +322,9 @@ export function ChoiceInput({
               )}
 
               {!loading && !canAddOther && choices.length > 0 && (
+                // read-gate-exempt: cmdk's no-search-match slot over options already read (choices.length > 0)
                 <CommandEmpty>
+                  {/* read-gate-exempt: no search match among options already read (choices.length > 0), not an empty read */}
                   {allowOther
                     ? "Keep typing to use a value that isn't listed."
                     : "No matching option."}

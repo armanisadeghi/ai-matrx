@@ -138,6 +138,13 @@ export type ResolvedChoices = {
    * an empty dropdown would look like the column has nothing to pick.
    */
   unavailable: boolean;
+  /**
+   * The bound list's read failed (a thrown read, not a missing list). Set only
+   * then; a view shows the failure instead of "no options".
+   */
+  error?: unknown;
+  /** Re-run the bound list's read after a failure. */
+  retry?: () => void;
   /** May a value outside the list be entered? Defaults to true. */
   allowOther: boolean;
   /**
@@ -260,6 +267,8 @@ export function useFieldChoices(
     groups,
     loading: listId ? list.loading : false,
     unavailable: listId ? list.unavailable : false,
+    error: listId ? list.error : null,
+    retry: listId ? list.retry : undefined,
     allowOther: format?.options?.allowOther !== false,
     groupFromField: binding?.groupName ? null : (binding?.groupFromField ?? null),
   };

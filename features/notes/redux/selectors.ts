@@ -209,6 +209,17 @@ export const selectSharedWithMeNotes = createSelector(
       .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? "")),
 );
 
+/** The Trash read's outcome — gate "Trash is empty" on "loaded". */
+export const selectNotesTrashStatus = createSelector(
+  [selectNotesState],
+  (slice) => slice.trashStatus ?? "idle",
+);
+
+export const selectNotesTrashError = createSelector(
+  [selectNotesState],
+  (slice) => slice.trashError ?? null,
+);
+
 export const selectNotesListStatus = createSelector(
   [selectNotesState],
   (slice) => slice.listStatus,

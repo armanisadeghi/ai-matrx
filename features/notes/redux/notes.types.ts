@@ -362,6 +362,9 @@ export interface NotesSliceState {
   contentLoadStatus: Record<string, "loading" | "loaded" | "error">;
   listStatus: "idle" | "loading" | "loaded" | "error";
   listError: string | null;
+  /** The Trash read (fetchDeletedNotes): the bin is "empty" only once it has loaded. */
+  trashStatus?: "idle" | "loading" | "loaded" | "error";
+  trashError?: string | null;
   /** Ephemeral reducer receipts; consumers must match their own request ID. */
   conflictResolutionReceipts: Record<string, NoteConflictResolutionReceipt>;
   /** Current retained review pointer per note; entries remain inspectable after replacement. */

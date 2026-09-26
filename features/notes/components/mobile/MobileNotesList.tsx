@@ -28,6 +28,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectDeletedNotesList,
   selectSharedWithMeNotes,
+  selectNotesTrashStatus,
+  selectNotesTrashError,
 } from "../../redux/selectors";
 import {
   fetchNotesList,
@@ -49,6 +51,7 @@ import { MobileActionBar } from "@/components/official/mobile-action-bar/MobileA
 import NotesFilterSheet, { NotesFilterState } from "./NotesFilterSheet";
 import type { Note } from "@/features/notes/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface MobileNotesListProps {
   onNoteSelect: (note: Note) => void;
@@ -67,6 +70,8 @@ export default function MobileNotesList({
   const listError = useAppSelector(selectNotesListError);
   const sharedNotes = useAppSelector(selectSharedWithMeNotes);
   const deletedNotes = useAppSelector(selectDeletedNotesList);
+  const trashStatus = useAppSelector(selectNotesTrashStatus);
+  const trashError = useAppSelector(selectNotesTrashError);
 
   const [searchQuery, setSearchQuery] = useState("");
   // Bodies are matched by the database (list rows carry only a preview).
@@ -402,7 +407,17 @@ export default function MobileNotesList({
                 </button>
                 {trashOpen && (
                   <div className="pb-2">
-                    {deletedNotes.length === 0 ? (
+                    {trashStatus === "error" && deletedNotes.length === 0 ? (
+                      <ReadFailure
+                        error={trashError ?? true}
+                        what="your trash"
+                        onRetry={() => dispatch(fetchDeletedNotes())}
+                      />
+                    ) : trashStatus !== "loaded" && deletedNotes.length === 0 ? (
+                      <p className="flex items-center gap-2 px-4 py-2 text-xs text-muted-foreground/60" role="status">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Loading trash…
+                      </p>
+                    ) : deletedNotes.length === 0 ? (
                       <p className="px-4 py-2 text-xs text-muted-foreground/60">
                         Trash is empty
                       </p>

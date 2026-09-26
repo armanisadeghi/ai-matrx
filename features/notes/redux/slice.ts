@@ -519,6 +519,8 @@ const initialState: NotesSliceState & {
   contentLoadStatus: {},
   listStatus: "idle",
   listError: null,
+  trashStatus: "idle",
+  trashError: null,
   conflictResolutionReceipts: {},
   currentConflictReviewKeys: {},
   retainedConflictReviews: {},
@@ -1704,6 +1706,31 @@ const notesSlice = createSlice({
         for (const [noteId, key] of Object.entries(state.currentConflictReviewKeys)) {
           if (!state.retainedConflictReviews[key]) delete state.currentConflictReviewKeys[noteId];
         }
+      },
+    );
+    // The Trash read's outcome (fetchDeletedNotes, matched by type string —
+    // a runtime import of thunks.ts would be circular). The bin says "empty"
+    // only after this read succeeded.
+    builder.addMatcher(
+      (action) => action.type === "notes/fetchDeletedNotes/pending",
+      (state) => {
+        state.trashStatus = "loading";
+        state.trashError = null;
+      },
+    );
+    builder.addMatcher(
+      (action) => action.type === "notes/fetchDeletedNotes/fulfilled",
+      (state) => {
+        state.trashStatus = "loaded";
+        state.trashError = null;
+      },
+    );
+    builder.addMatcher(
+      (action): action is PayloadAction<unknown, string, unknown, { message?: string }> =>
+        action.type === "notes/fetchDeletedNotes/rejected",
+      (state, action) => {
+        state.trashStatus = "error";
+        state.trashError = action.error?.message ?? "Couldn't load the trash";
       },
     );
     builder.addMatcher(

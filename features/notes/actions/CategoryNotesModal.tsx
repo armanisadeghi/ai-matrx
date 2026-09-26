@@ -27,6 +27,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
@@ -61,7 +62,7 @@ export function CategoryNotesModal({
     title,
     description,
 }: CategoryNotesModalProps) {
-    const { notes, createNote, updateNote, deleteNote, isLoading } = useNotesRedux();
+    const { notes, createNote, updateNote, deleteNote, isLoading, error: notesError, refreshNotes } = useNotesRedux();
     const organizationId = useAppSelector(selectOrganizationId);
     const [searchQuery, setSearchQuery] = useState('');
     const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit' | 'import'>('list');
@@ -328,6 +329,12 @@ export function CategoryNotesModal({
                                         <div className="flex items-center justify-center py-12">
                                             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                                         </div>
+                                    ) : notesError && sortedNotes.length === 0 ? (
+                                        <ReadFailure
+                                            error={notesError}
+                                            what={`your ${categoryName.toLowerCase()}`}
+                                            onRetry={() => void refreshNotes()}
+                                        />
                                     ) : sortedNotes.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                                             <FileText className="h-10 w-10 text-muted-foreground mb-2" />
@@ -512,7 +519,9 @@ export function CategoryNotesModal({
                                 </div>
                             </div>
                             <ScrollArea className="flex-1">
-                                {sortedImportNotes.length === 0 ? (
+                                {notesError && sortedImportNotes.length === 0 ? (
+                                    <ReadFailure error={notesError} what="your notes" onRetry={() => void refreshNotes()} />
+                                ) : sortedImportNotes.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-12 text-center">
                                         <FileText className="h-12 w-12 text-muted-foreground mb-3" />
                                         <p className="text-muted-foreground">
