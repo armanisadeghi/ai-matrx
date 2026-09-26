@@ -190,9 +190,12 @@ describe("task lifecycle responsive contract", () => {
     expect(thunks).toContain(
       "throw new Error(`Task ${taskId} completion could not be saved.`)",
     );
+    // A refused delete throws the service's own sentence (a63e5925ec), never a
+    // generic one — and never returns quietly.
     expect(thunks).toContain(
-      "throw new Error(`Task ${taskId} could not be deleted.`)",
+      "const failure = await taskService.deleteTaskExplained(taskId);",
     );
+    expect(thunks).toMatch(/if \(failure\) \{[\s\S]*?throw failure;/);
     expect(service).toContain("...companionUpdates");
   });
 
