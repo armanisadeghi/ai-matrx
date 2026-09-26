@@ -11,8 +11,8 @@
  * (`pasted-text:<sha256>`), so pasting the same text twice is one Source.
  *
  * `source_kind` is `inline` — the one registered kind for text that has no
- * origin row. The door must accept it as landable (see the Phase 1c report);
- * until it does, the refusal is shown to the person in the server's words.
+ * origin row; the door accepts it and mints the source id itself (aidream
+ * 1772395cd0). A door that refuses is shown to the person in its own words.
  */
 
 import type { components } from "@/types/python-generated/api-types";
@@ -31,8 +31,6 @@ export interface PastedTextInput {
   userId: string;
   /** Injected for tests; defaults to now. */
   now?: Date;
-  /** Injected for tests; defaults to crypto.randomUUID(). */
-  newId?: () => string;
 }
 
 /** The name a pasted text gets when the person did not name it. */
@@ -71,10 +69,10 @@ export async function buildPastedTextLanding(
   }
   const hash = await sha256Hex(text);
   const name = pastedTextName(text, input.name);
-  const newId = input.newId ?? (() => crypto.randomUUID());
   return {
     source_kind: PASTED_TEXT_SOURCE_KIND,
-    source_id: newId(),
+    // Pasted text has no origin row: the door mints its source id.
+    source_id: null,
     canonical_identity: `pasted-text:${hash}`,
     name,
     mime_type: "text/plain",

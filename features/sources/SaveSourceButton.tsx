@@ -21,7 +21,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/utils/cn";
-import { sourceHref, type LandingNotice } from "@/features/sources/api/sourcesApi";
+import {
+  sourceHref,
+  type LandingNotice,
+} from "@/features/sources/api/sourcesApi";
 import { SaveSourcePanel } from "@/features/sources/SaveSourcePanel";
 
 export interface SaveSourceButtonProps {
@@ -33,13 +36,21 @@ export interface SaveSourceButtonProps {
   onSaved?: () => void;
 }
 
-export function SaveSourceButton({ processedDocumentId, name, notices = [], className, onSaved }: SaveSourceButtonProps) {
+export function SaveSourceButton({
+  processedDocumentId,
+  name,
+  notices = [],
+  className,
+  onSaved,
+}: SaveSourceButtonProps) {
   const [open, setOpen] = useState(false);
   const [saved, setSaved] = useState(false);
 
   if (!processedDocumentId) {
     return notices[0]?.message ? (
-      <p className={cn("text-xs text-muted-foreground", className)}>{notices[0].message}</p>
+      <p className={cn("text-xs text-muted-foreground", className)}>
+        {notices[0].message}
+      </p>
     ) : (
       <p className={cn("text-xs text-muted-foreground", className)}>
         This page was not added to your Sources, and the server did not say why.
@@ -54,7 +65,13 @@ export function SaveSourceButton({ processedDocumentId, name, notices = [], clas
           <CheckCircle2 className="h-3.5 w-3.5" /> Saved
         </span>
       ) : (
-        <Button type="button" size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setOpen(true)}>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1 text-xs"
+          onClick={() => setOpen(true)}
+        >
           <Bookmark className="h-3.5 w-3.5" /> Save
         </Button>
       )}

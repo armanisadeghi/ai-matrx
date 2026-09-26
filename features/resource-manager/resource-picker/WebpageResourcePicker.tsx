@@ -344,8 +344,7 @@ export function WebpageResourcePickerCore({
               {stagedYouTube && (
                 <p className="rounded border border-emerald-500/20 bg-emerald-500/10 p-2 text-xs text-emerald-700 dark:text-emerald-400">
                   Added the video. We read its transcript with timestamps, so
-                  every rule it suggests points back at the moment it came
-                  from.
+                  every rule it suggests points back at the moment it came from.
                 </p>
               )}
 
@@ -359,9 +358,9 @@ export function WebpageResourcePickerCore({
                     <p className="text-xs text-blue-600 dark:text-blue-400">
                       {suggestedType === "youtube_channel" ? (
                         <>
-                          That is a YouTube channel page, not a video. Paste
-                          the link to one video and we will read its transcript
-                          with timestamps.
+                          That is a YouTube channel page, not a video. Paste the
+                          link to one video and we will read its transcript with
+                          timestamps.
                         </>
                       ) : (
                         <>
