@@ -398,6 +398,7 @@ export function SetContextValueCore({
                 onClick={() => handlePostSaveAction("newTab")}
                 className="h-8 text-xs gap-1.5 rounded-md"
               >
+                {/* new-tab-icon: handler calls window.open(..., "_blank", ...) defined elsewhere in this file */}
                 <ExternalLink className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">New tab</span>
               </Button>

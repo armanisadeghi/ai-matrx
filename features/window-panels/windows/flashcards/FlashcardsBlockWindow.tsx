@@ -18,7 +18,7 @@ import {
 import { PrintOptionsDialog } from "@ai-matrx/print/react";
 import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Printer } from "lucide-react";
+import { Printer, ArrowUpRight } from "lucide-react";
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
 import {
   toFlashcardMobileCards,
@@ -183,7 +183,7 @@ export function FlashcardsBlockWindow({
                 onClick={set.handleOpenInCanvas}
                 disabled={set.openingCanvas}
               >
-                <ExternalLink className="h-3 w-3" />
+                <ArrowUpRight className="h-3 w-3" />
                 Canvas
               </Button>
             </div>

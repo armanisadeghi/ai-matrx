@@ -77,7 +77,9 @@ export default function SandboxManagementWindow({
           <Link
             href={`/sandbox/${encodeURIComponent(sandboxId)}`}
             aria-label="Open full sandbox management"
-          >
+             target="_blank"
+             rel="noopener noreferrer"
+           >
             <ExternalLink className="h-4 w-4" />
           </Link>
         </Button>

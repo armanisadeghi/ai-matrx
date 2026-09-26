@@ -460,6 +460,7 @@ export function SurfaceAdminDetailPage({
                   title={`This surface lives at ${surface.url_pattern} — open it from a specific record, since the route needs real ids.`}
                   className="h-7 gap-1.5 text-xs"
                 >
+                  {/* new-tab-icon: permanently disabled by design — this surface needs a real record id and the title says so honestly; this admin listing shows every registered surface even ones that can't be opened from here */}
                   <ExternalLink className="h-3.5 w-3.5" />
                   Needs a record
                 </Button>
@@ -1280,7 +1281,9 @@ function HierarchySection({
                             <AppLink
                               href={surfaceAdminHref(child.name)}
                               aria-label={`Open ${child.name}`}
-                            >
+                               target="_blank"
+                               rel="noopener noreferrer"
+                             >
                               <ExternalLink className="h-3.5 w-3.5" />
                             </AppLink>
                           </Button>

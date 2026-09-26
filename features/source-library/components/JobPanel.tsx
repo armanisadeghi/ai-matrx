@@ -46,7 +46,6 @@ import {
     Ban,
     CheckCircle2,
     Clock,
-    ExternalLink,
     Hourglass,
     Loader2,
     Play,
@@ -55,6 +54,7 @@ import {
     Timer,
     X,
     XCircle,
+    ArrowUpRight,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -351,7 +351,7 @@ function JobItem({
                         onClick={() => onOpenVideo(item.video_id)}
                         aria-label={`Open ${item.title ?? `this ${vocabulary.item.one}`}`}
                     >
-                        <ExternalLink className="h-4 w-4" aria-hidden />
+                        <ArrowUpRight className="h-4 w-4" aria-hidden />
                         <span className="sr-only sm:not-sr-only sm:ml-1.5 sm:text-xs">Open</span>
                     </Button>
                 )}

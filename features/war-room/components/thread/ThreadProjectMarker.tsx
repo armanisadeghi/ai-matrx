@@ -35,7 +35,9 @@ export function ThreadProjectMarker({
         size === "md" && "text-[11px] px-2 py-1",
         className,
       )}
-    >
+       target="_blank"
+       rel="noopener noreferrer"
+     >
       {loading ? (
         <Loader2 className="size-2.5 shrink-0 animate-spin" />
       ) : (

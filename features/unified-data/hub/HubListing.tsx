@@ -93,7 +93,9 @@ function Row({ item }: { item: HubItem }) {
               href={item.publicHref}
               className="flex shrink-0 items-center gap-1 underline-offset-2 hover:underline"
               title={item.publicLabel}
-            >
+               target="_blank"
+               rel="noopener noreferrer"
+             >
               <ExternalLink className="h-3 w-3" aria-hidden />
               {item.publicLabel}
             </Link>

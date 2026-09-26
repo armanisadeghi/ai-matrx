@@ -1003,7 +1003,9 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             href="/settings/feedback"
             onClick={onClose}
             className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-card hover:bg-accent transition-colors p-3 text-center cursor-pointer group"
-          >
+             target="_blank"
+             rel="noopener noreferrer"
+           >
             <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
             <span className="text-[11px] font-medium text-muted-foreground group-hover:text-foreground transition-colors leading-tight">
               View All

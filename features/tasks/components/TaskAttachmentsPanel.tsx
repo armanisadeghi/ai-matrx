@@ -432,7 +432,7 @@ function Section({
             );
 
             return it.href ? (
-              <Link key={it.key} href={it.href} className={rowClass}>
+              <Link key={it.key} href={it.href} className={rowClass} target="_blank" rel="noopener noreferrer">
                 {rowContent}
               </Link>
             ) : (

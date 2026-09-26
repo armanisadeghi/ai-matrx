@@ -28,7 +28,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import Link from "next/link";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useRouter } from "next/navigation";
-import { ExternalLink, RefreshCw } from "lucide-react";
+import { RefreshCw, ArrowUpRight } from "lucide-react";
 
 // The versions THIS DEPLOYMENT resolved at build time. `package.json` is the
 // only honest source: the app's own dependency line says `latest`, which is a
@@ -1134,7 +1134,7 @@ function WorkingTableBar({
                     onClick={() => onOpenTable(selectedId)}
                 >
                     Open its full screen
-                    <ExternalLink className="ml-1 h-3.5 w-3.5" aria-hidden />
+                    <ArrowUpRight className="ml-1 h-3.5 w-3.5" aria-hidden />
                 </Button>
             ) : null}
         </div>

@@ -10,7 +10,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createSelector } from "@reduxjs/toolkit";
-import { ExternalLink, Loader2, MessagesSquare, Pin } from "lucide-react";
+import { Loader2, MessagesSquare, Pin, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
@@ -155,7 +155,7 @@ function OpenThreadAction({ row }: { row: ThreadTableRow }) {
       {busy ? (
         <Loader2 className="size-3.5 animate-spin" />
       ) : (
-        <ExternalLink className="size-3.5" />
+        <ArrowUpRight className="size-3.5" />
       )}
       Open
     </Button>

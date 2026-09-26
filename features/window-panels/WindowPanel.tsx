@@ -30,7 +30,7 @@ import {
   RectangleVertical,
   PanelLeftClose,
   PanelLeft,
-  ExternalLink,
+  AppWindow,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -1603,7 +1603,7 @@ function PopOutHeaderButton({ onClick }: { onClick: () => void }) {
       title="Pop out into a separate window"
       aria-label="Pop out into a separate window"
     >
-      <ExternalLink className="w-3.5 h-3.5" />
+      <AppWindow className="w-3.5 h-3.5" />
     </button>
   );
 }
@@ -2234,7 +2234,7 @@ function GreenTrafficLight({
                 onPointerDown={(e) => e.stopPropagation()}
                 title="Pop out into a separate window"
               >
-                <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                <AppWindow className="w-3.5 h-3.5 shrink-0" />
                 <span className="flex-1 text-left">Pop out</span>
               </button>
             </>

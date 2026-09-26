@@ -233,7 +233,7 @@ function CapabilitySection({
             </p>
           </div>
           <Button asChild className="shrink-0">
-            <Link href={href}>
+            <Link href={href} target="_blank" rel="noopener noreferrer">
               Create your free account
               <ExternalLink className="ml-1.5 h-4 w-4" />
             </Link>

@@ -24,6 +24,7 @@ import {
   MessageSquare,
   CheckSquare,
   FileText,
+  ArrowUpRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -747,6 +748,7 @@ export function TaskQuickCreateCore({
               onClick={() => handlePostSaveAction("newTab")}
               className={btnClass}
             >
+              {/* new-tab-icon: handler calls window.open(..., "_blank", ...) defined elsewhere in this file */}
               <ExternalLink className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">New tab</span>
             </Button>
@@ -1004,7 +1006,7 @@ function ResourceLinkChip({
           </span>
         </>
       )}
-      <ExternalLink className="w-3 h-3 shrink-0 opacity-50 group-hover:opacity-100" />
+      <ArrowUpRight className="w-3 h-3 shrink-0 opacity-50 group-hover:opacity-100" />
     </button>
   );
 

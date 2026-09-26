@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Upload,
   XCircle,
+  ArrowUpRight,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
@@ -340,7 +341,9 @@ export function SkillIngestPanel({
                                 onViewSkill(s.skillId);
                               }}
                               className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline shrink-0"
-                            >
+                               target="_blank"
+                               rel="noopener noreferrer"
+                             >
                               View
                               <ExternalLink className="h-3 w-3" />
                             </Link>
@@ -351,7 +354,7 @@ export function SkillIngestPanel({
                               className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline shrink-0"
                             >
                               View
-                              <ExternalLink className="h-3 w-3" />
+                              <ArrowUpRight className="h-3 w-3" />
                             </button>
                           ) : null)}
                       </li>
