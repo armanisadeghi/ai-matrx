@@ -36,6 +36,7 @@ import {
   restoreVersion,
   type VersionEntry,
 } from "@/lib/versioning/versionHistory";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The platform entity token the version system keys a flashcard set by. */
 const FC_SET_ENTITY = "fc_set";
@@ -114,7 +115,7 @@ export function SetVersionHistoryDialog({
                   <p className="text-sm text-foreground">
                     Couldn&apos;t load version history
                   </p>
-                  <p className="max-w-sm text-xs text-muted-foreground">{error}</p>
+                  <p className="max-w-sm text-xs text-muted-foreground">{error} <ErrorAlchemyMenu /></p>
                 </div>
               ) : versions.length === 0 ? (
                 <p className="py-10 text-center text-sm text-muted-foreground">

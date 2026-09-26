@@ -29,7 +29,11 @@ import {
 } from "../redux/selectors";
 import { revealBlind, setBlindEnabled } from "../redux/battleSlice";
 
-export function BlindControls({ compact = false }: { compact?: boolean } = {}) {
+export function BlindControls({
+  compact = false,
+}: {
+  compact?: boolean;
+} = {}) {
   const dispatch = useAppDispatch();
   const enabled = useAppSelector(selectBlindEnabled);
   const sessionExists = useAppSelector(selectBlindSessionExists);

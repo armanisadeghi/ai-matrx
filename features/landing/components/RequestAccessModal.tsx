@@ -11,6 +11,7 @@ import { Check, AlertCircle, Loader2, Lightbulb, Phone, Brain, Radio } from 'luc
 import { submitInvitationRequestStep1, submitInvitationRequestStep2 } from '../actions';
 import { InvitationRequestStep1, InvitationRequestStep2, USER_TYPE_OPTIONS } from '../types';
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface RequestAccessModalProps {
   open: boolean;
@@ -346,6 +347,7 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
               <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
                 <AlertCircle className="h-4 w-4 flex-shrink-0" />
                 <span>{error}</span>
+                <ErrorAlchemyMenu error={error} />
               </div>
             )}
 
@@ -467,6 +469,7 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
               <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
                 <AlertCircle className="h-4 w-4 flex-shrink-0" />
                 <span>{error}</span>
+                <ErrorAlchemyMenu error={error} />
               </div>
             )}
 

@@ -34,6 +34,7 @@ import { ADMIN_KIND_REGISTRY_SURFACE_NAME } from "@/features/surfaces/manifests/
 import { buildAdminKindCatalogScope } from "@/features/content-ir/admin/kind-registry-scope";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const KindSchemaExplorer = dynamic(
   () => import("@/features/content-ir/admin/KindRegistryAdminClient"),
@@ -103,6 +104,7 @@ export default function KindRegistryPageClient({
       <CircleAlert className="h-4 w-4 shrink-0" />
       <span className="font-semibold">Shape doctor failed to run:</span>
       <span className="font-mono text-xs">{boardError}</span>
+      <ErrorAlchemyMenu error={boardError} />
     </div>
   );
 

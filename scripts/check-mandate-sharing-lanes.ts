@@ -209,6 +209,11 @@ async function main(): Promise<void> {
       bind = await tryBind(client, { mandateId, principal: "org", orgId: memberOnlyOrg, actor: viewer });
       expect(/cannot bind mandate/.test(bind ?? ""), "granted to a plain member of an organization → still not bindable for that organization");
     }
+    // …and the organization seat lists it under "Shared with me" so the choice can start there
+    // (organization seat, scope `shared`), while it is not yet the organization's.
+    await asSeat(client, viewer);
+    r = await listKeys(client, { level: "organization", scope: "shared", orgId: sharedOrg });
+    expect(r.keys.has(key), `granted to an organization's admin → in that organization seat's Shared with me lane${r.error ? ` (${r.error})` : ""}`);
     bind = await tryBind(client, { mandateId, principal: "org", orgId: sharedOrg, actor: stranger });
     expect(/cannot bind mandate/.test(bind ?? ""), "an actor the mandate never reached → still not bindable organization-wide");
     // Once the organization adopts it, it is in the organization's own list — for the admin in
@@ -233,6 +238,8 @@ async function main(): Promise<void> {
     r = await listKeys(client, { level: "organization", scope: "orgs", orgId: sharedOrg });
     expect(adopted === null && r.keys.has(key),
       `adopted as an organization's default → in that organization seat's own list${adopted ? ` (could not adopt: ${adopted})` : ""}${r.error ? ` (${r.error})` : ""}`);
+    r = await listKeys(client, { level: "organization", scope: "shared", orgId: sharedOrg });
+    expect(!r.keys.has(key), "adopted as an organization's default → no longer under Shared with me (it is the organization's now)");
     await asOperator(client);
     await client.query(`delete from mandate.binding where mandate_id = $1`, [mandateId]);
     let own = await ownership();

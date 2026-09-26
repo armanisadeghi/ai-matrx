@@ -2155,6 +2155,7 @@ function DestinationSection({
                 ) : (
                   <span className="shrink-0 font-sans text-destructive">
                     Invalid URL
+                    <ErrorAlchemyMenu />
                   </span>
                 )}
                 {editMode && caps.can_edit && (
@@ -2944,6 +2945,7 @@ function AuditPanel({ itemId }: { itemId: string }) {
       ) : error ? (
         <p className="text-xs text-muted-foreground">
           Audit trail unavailable: {error}
+          <ErrorAlchemyMenu error={error} />
         </p>
       ) : entries.length === 0 ? (
         <p className="text-xs text-muted-foreground">No audit events yet.</p>

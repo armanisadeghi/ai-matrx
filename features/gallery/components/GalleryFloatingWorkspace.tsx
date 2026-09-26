@@ -595,6 +595,7 @@ export function GalleryFloatingWorkspace() {
               </p>
               <p className="text-[10px] text-muted-foreground mt-0.5 max-w-[240px]">
                 {photoError}
+                <ErrorAlchemyMenu error={photoError} />
               </p>
               <button
                 type="button"

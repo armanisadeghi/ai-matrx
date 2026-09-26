@@ -53,6 +53,7 @@ import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execu
 import { useAgentRunSurfaceScope } from "@/features/agents/hooks/useAgentRunSurfaceScope";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import { createAgentRunVariableValuesHandler } from "./agent-run-variable-write";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const RUN_INITIAL_MESSAGE_LIMIT = 12;
 
@@ -308,6 +309,7 @@ export function AgentRunnerPage({
             <RotateCw className="w-3.5 h-3.5" />
             Retry
           </Button>
+          <ErrorAlchemyMenu error={initError} />
         </div>
       </div>
     );

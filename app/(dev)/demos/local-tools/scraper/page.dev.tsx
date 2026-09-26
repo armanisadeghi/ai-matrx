@@ -613,6 +613,7 @@ function ResearchPanel({ local }: { local: UseMatrxLocalReturn }) {
                   className="text-orange-500 border-orange-400"
                 >
                   {result.meta.pages_failed} failed
+                  <ErrorAlchemyMenu />
                 </Badge>
               )}
               <Badge variant="outline" className="text-muted-foreground">

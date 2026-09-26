@@ -30,6 +30,7 @@ import {
 } from "./interviewModes";
 import { useInterviewSettings } from "./useInterviewSettings";
 import { useRulebookSourceCount } from "../sourceLinks";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface InterviewChoice {
   mode: InterviewContextMode;
@@ -91,7 +92,7 @@ export function InterviewStartScreen({
           We can&apos;t start an interview yet, because we couldn&apos;t read your
           interview settings — so we don&apos;t know which interviewer you asked for.
         </p>
-        <p className="text-xs text-muted-foreground">{failure.reason}</p>
+        <p className="text-xs text-muted-foreground">{failure.reason} <ErrorAlchemyMenu error={failure.reason} /></p>
         <Button size="sm" variant="outline" onClick={failure.retry}>
           <RotateCw className="mr-1 h-3.5 w-3.5" />
           Try again

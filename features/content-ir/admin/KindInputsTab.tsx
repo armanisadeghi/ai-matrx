@@ -328,6 +328,7 @@ export default function KindInputsTab({
                         <code className="font-mono">{pair.field.type}</code>:{" "}
                         {coercionError}
                       </span>
+                      <ErrorAlchemyMenu error={coercionError} />
                     </p>
                   )}
 

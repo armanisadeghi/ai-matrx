@@ -45,6 +45,7 @@ import {
   useMandateProvenance,
   type MandateProvenanceReport,
 } from "@/features/mandates/provenance";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** A link that opens a surface, in the panel's own small type. */
 function SurfaceLink({ href, children }: { href: string; children: string }) {
@@ -96,6 +97,7 @@ export function MandateProvenancePanel({
           </p>
           <p className="mt-0.5 break-words text-[12.5px] text-muted-foreground">
             {error ?? "The server returned no provenance report."}
+            <ErrorAlchemyMenu error={error} />
           </p>
         </div>
       </Section>

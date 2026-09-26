@@ -15,17 +15,25 @@
  * mode moves its request, variables and settings differently.
  */
 
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
+import type { ContentTransferController } from "@ai-matrx/design-system/content-transfer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Loader2, Play } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import HeaderActions from "@/features/shell/components/header/variants/shared/HeaderActions";
 import type { HeaderAction } from "@/features/shell/components/header/variants/types";
 import { Button } from "@/components/ui/button";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { BattleModeNav } from "./ModePicker";
 import { BlindControls } from "./BlindControls";
 import { BattleAlchemy } from "./BattleAlchemy";
-import { selectBlindActive } from "../redux/selectors";
+import { selectActiveBattleColumns } from "./activeBattleColumns";
+import {
+  selectBlindActive,
+  selectBlindEnabled,
+  selectBlindSessionExists,
+} from "../redux/selectors";
+import { setBlindEnabled } from "../redux/battleSlice";
 
 interface BattleHeaderProps {
   /** Name of the battle on screen (the saved comparison), or null before its first run. */
@@ -55,7 +63,13 @@ export function BattleHeader({
   canSubmit,
   submitTitle,
 }: BattleHeaderProps) {
+  const dispatch = useAppDispatch();
   const blindActive = useAppSelector(selectBlindActive);
+  const blindEnabled = useAppSelector(selectBlindEnabled);
+  const blindSession = useAppSelector(selectBlindSessionExists);
+  const isMobile = useIsMobile();
+  const alchemyRef = useRef<ContentTransferController>(null);
+  const hasColumns = useAppSelector(selectActiveBattleColumns).length > 0;
   // A blind run hides everything that could identify a column; the battle's
   // own name never identifies a column, but it is kept neutral while blind so
   // the header matches every other masked surface.
@@ -63,11 +77,43 @@ export function BattleHeader({
     ? "Blind comparison"
     : (battleName ?? fallbackTitle);
 
+  // On a phone the bar holds only the actions button and Submit all, so the
+  // mode switcher has room; Blind test and the battle Alchemy move into the
+  // actions sheet (the Alchemy control stays mounted, hidden, and opens its
+  // own prepare-and-export workspace from there).
+  const allActions: HeaderAction[] = isMobile
+    ? [
+        ...actions,
+        ...(blindSession
+          ? []
+          : [
+              {
+                icon: "EyeOff",
+                label: blindEnabled ? "Blind test: on (tap to turn off)" : "Blind test: off (tap to turn on)",
+                onPress: () => dispatch(setBlindEnabled(!blindEnabled)),
+              },
+            ]),
+        ...(hasColumns
+          ? [
+              {
+                icon: "FileOutput",
+                label: "Copy, prepare or export this battle",
+                onPress: () => {
+                  void alchemyRef.current?.preparePrimary();
+                },
+              },
+            ]
+          : []),
+      ]
+    : actions;
+
   return (
     <RouteHeader
       left={
+        // On a phone the mode switcher needs the room; the name is still the
+        // tab title and the sheet title of the actions menu.
         <span
-          className="text-sm font-medium truncate"
+          className="text-sm font-medium truncate max-sm:hidden"
           title={title}
           data-testid="battle-header-title"
         >
@@ -75,16 +121,28 @@ export function BattleHeader({
         </span>
       }
       center={<BattleModeNav />}
+      // Siblings, never one wrapper: RouteHeader folds each item on its own
+      // at narrow widths and always keeps the LAST one (Submit all) visible.
+      // One wrapper made the whole cluster — Submit all included — a single
+      // item that folded away on a phone.
       right={
-        <div className="flex items-center gap-1">
+        <>
           {extra}
-          <HeaderActions
-            actions={actions}
-            maxInline={inlineCount}
+          <BattleActionsMenu
+            ariaLabel="Battle actions"
+            actions={allActions}
+            inlineCount={inlineCount}
             sheetTitle={title}
           />
-          <BlindControls compact />
-          <BattleAlchemy />
+          <span className="max-sm:hidden" aria-label="Blind test">
+            <BlindControls compact />
+          </span>
+          <span
+            className="max-sm:hidden"
+            aria-label="Copy, transform or export this battle"
+          >
+            <BattleAlchemy controllerRef={alchemyRef} />
+          </span>
           <Button
             size="sm"
             onClick={onSubmit}
@@ -103,8 +161,35 @@ export function BattleHeader({
             )}
             <span className="max-sm:sr-only">Submit all</span>
           </Button>
-        </div>
+        </>
       }
     />
+  );
+}
+
+/**
+ * The mode's actions as ONE header item: a few inline icons plus "…" on
+ * desktop, a sheet on a phone. It deliberately does not expose its buttons to
+ * RouteHeader one by one — the page keeps the compact Model-page layout.
+ * `ariaLabel` names the item when RouteHeader folds it into its own "…".
+ */
+function BattleActionsMenu({
+  actions,
+  inlineCount,
+  sheetTitle,
+}: {
+  ariaLabel: string;
+  actions: HeaderAction[];
+  inlineCount: number;
+  sheetTitle: string;
+}) {
+  return (
+    <div className="flex items-center">
+      <HeaderActions
+        actions={actions}
+        maxInline={inlineCount}
+        sheetTitle={sheetTitle}
+      />
+    </div>
   );
 }

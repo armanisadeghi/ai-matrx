@@ -27,6 +27,7 @@ import {
   mandateRefusalHeadline,
   type MandateRunFailure,
 } from "./test-run";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function RunFailureCard({
   failure,
@@ -87,6 +88,7 @@ export function RunFailureCard({
           request {failure.requestId}
         </p>
       ) : null}
+      <ErrorAlchemyMenu error={failure.status} />
     </div>
   );
 }

@@ -32,6 +32,7 @@ import {
   notesAgentPayload,
   type CrmRecordCopyParent,
 } from "./record-copy";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   /** The record the notes hang on (a party by default; a deal via entityType). */
@@ -246,7 +247,7 @@ export function PartyNotes({
       {loadError ? (
         <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-destructive" />
-          <span>Couldn&apos;t load notes — {loadError}</span>
+          <span>Couldn&apos;t load notes — {loadError} <ErrorAlchemyMenu error={loadError} /></span>
           <button
             type="button"
             onClick={() => setReloadNonce((current) => current + 1)}

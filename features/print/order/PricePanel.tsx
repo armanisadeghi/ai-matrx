@@ -231,6 +231,7 @@ export function PricePanel({
           <RefreshCcw className="size-3.5" />
           Retry pricing
         </Button>
+        <ErrorAlchemyMenu error={state.detail} />
       </div>
     );
   }

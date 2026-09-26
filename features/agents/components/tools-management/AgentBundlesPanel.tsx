@@ -28,6 +28,7 @@ import {
   isClientOnly,
 } from "@/features/tool-registry/shared/toolRuntimes.service";
 import type { AgentBundleOption } from "@/features/tool-registry/bundles/services/bundles.service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Internal toolkits vs third-party MCP-server bundles are kept on separate tabs
 // so our own bundles aren't buried under dozens of MCP entries. "Internal" is
@@ -239,7 +240,7 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
       <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground p-8">
         <AlertTriangle className="w-7 h-7 text-yellow-500" />
         <p className="text-sm">Couldn&apos;t load bundles.</p>
-        {error && <p className="text-[11px] text-center max-w-xs">{error}</p>}
+        {error && <p className="text-[11px] text-center max-w-xs">{error} <ErrorAlchemyMenu error={error} /></p>}
       </div>
     );
   }

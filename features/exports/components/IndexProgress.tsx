@@ -13,6 +13,7 @@ import { AlertCircle, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCount } from "../format";
 import type { ExportCounts } from "../counts";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type IndexPhase = "idle" | "starting" | "running" | "completed" | "failed";
 
@@ -99,6 +100,7 @@ export function IndexProgress({
           <RotateCcw className="h-4 w-4" />
           Index it again
         </Button>
+        <ErrorAlchemyMenu error={state.message} />
       </div>
     );
   }

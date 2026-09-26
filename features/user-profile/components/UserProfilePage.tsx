@@ -173,6 +173,7 @@ export function UserProfilePage({
       <ErrorPanel
         title="Couldn't load your profile"
         message={account.loadError ?? "Unknown error"}
+        calls={["/api/user/profile"]}
         onRetry={() => account.reset()}
       />
     );
@@ -183,6 +184,7 @@ export function UserProfilePage({
       <ErrorPanel
         title="Couldn't load your form profile"
         message={formProfile.loadError ?? "Unknown error"}
+        calls={["/api/user/form-profile"]}
         onRetry={() => formProfile.reset()}
       />
     );
@@ -1008,16 +1010,19 @@ function DateField({ label, value, onChange }: DateFieldProps) {
 interface ErrorPanelProps {
   title: string;
   message: string;
+  /** The request that failed — pins its captured failure as the cause. */
+  calls?: readonly string[];
   onRetry: () => Promise<void> | void;
 }
 
-function ErrorPanel({ title, message, onRetry }: ErrorPanelProps) {
+function ErrorPanel({ title, message, onRetry, calls }: ErrorPanelProps) {
   return (
     <div className="mx-auto w-full max-w-2xl p-6">
       <ErrorNotice
         title={title}
         message={message}
         operation={title.replace(/^Couldn't /, "").replace(/^load/, "Load")}
+        calls={calls}
         actions={
           <Button size="sm" variant="outline" onClick={() => void onRetry()}>
             Try again

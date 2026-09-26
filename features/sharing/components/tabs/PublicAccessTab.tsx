@@ -58,8 +58,9 @@ interface PublicAccessTabProps {
   resourceId: string;
   resourceName: string;
   /**
-   * False when the thing lives in its owner's personal workspace: "My organization" is then not
-   * offered (nobody else is in it) — it is still shown when it is already the state. Default true.
+   * False when the thing lives in its owner's personal workspace: "My organization" is then never
+   * drawn (nobody else is in it), and a stored `internal` shows as "Only people I share it with",
+   * which reaches the same people. Default true.
    */
   offerOrganization?: boolean;
   /**
@@ -425,13 +426,19 @@ export function PublicAccessTab({
                 <p className="text-xs font-medium">Who can reach this</p>
                 <div className="grid gap-1.5">
                   {VISIBILITY_CHOICES.filter(
-                    (choice) =>
-                      offerOrganization ||
-                      choice.value !== "internal" ||
-                      visibility === "internal",
+                    // PERSONAL WORKSPACE (2026-09-26): "My organization" is never drawn there.
+                    // Its only member is the owner, so `internal` reaches exactly the people
+                    // "Only people I share it with" does — agents and workflows are born
+                    // `internal`, and offering them "My organization" named a team that does
+                    // not exist. A stored `internal` reads as the private choice it equals.
+                    (choice) => offerOrganization || choice.value !== "internal",
                   ).map((choice) => {
                     const Icon = choice.icon;
-                    const selected = visibility === choice.value;
+                    const shownVisibility =
+                      !offerOrganization && visibility === "internal"
+                        ? "personal"
+                        : visibility;
+                    const selected = shownVisibility === choice.value;
                     return (
                       <button
                         key={choice.value}

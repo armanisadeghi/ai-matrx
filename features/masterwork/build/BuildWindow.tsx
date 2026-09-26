@@ -32,6 +32,7 @@ import {
   MASTERWORK_DELIVERABLE_MAX_LENGTH,
 } from "./contract";
 import { useBuildRun, type MasterworkKind } from "./useBuildRun";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * BUILD A MASTERWORK — the payoff moment of the whole product, on a window
@@ -279,7 +280,7 @@ function BuildWindowInner({
       // read clears it.
       return (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
-          <p className="text-sm text-muted-foreground">{loadError}</p>
+          <p className="text-sm text-muted-foreground">{loadError} <ErrorAlchemyMenu error={loadError} /></p>
           <Button
             size="sm"
             variant="outline"

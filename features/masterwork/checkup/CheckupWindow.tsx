@@ -37,6 +37,7 @@ import { useCheckup } from "./useCheckup";
 import { useCleanCorpusRun } from "./useCleanCorpusRun";
 import { chosenProposal, type CheckupProposedRule } from "./types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * THE FINAL CHECKUP — the window an Expert opens when they feel done.
@@ -293,13 +294,14 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
       return (
         <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-muted-foreground">
           {loadError}
+          <ErrorAlchemyMenu error={loadError} />
         </div>
       );
     }
     if (run.status === "error" && totalFindings === 0) {
       return (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-          <p className="max-w-md text-sm text-muted-foreground">{run.error}</p>
+          <p className="max-w-md text-sm text-muted-foreground">{run.error} <ErrorAlchemyMenu error={run.error} /></p>
           <Button variant="outline" onClick={() => void run.start()}>
             <RotateCcw className="h-4 w-4" />
             Try again

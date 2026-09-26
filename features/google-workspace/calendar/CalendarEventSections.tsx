@@ -44,6 +44,7 @@ import {
 import { OpenItemsCount } from "./OpenItemsCount";
 import { readAttendeePeople } from "./service";
 import type { AttendeePerson, CalendarEventRow } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * PLAN §4.6's edge: *"This attendee is a Person here; these are the three open
@@ -102,7 +103,7 @@ export function CalendarEventAttendeesSection({ event }: { event: CalendarEventR
 
   return (
     <div className="space-y-2">
-      {problem ? <p className="text-xs text-muted-foreground">{problem}</p> : null}
+      {problem ? <p className="text-xs text-muted-foreground">{problem} <ErrorAlchemyMenu error={problem} /></p> : null}
       <ul className="space-y-1.5">
         {index.matches.map(({ attendee, people: matched }) => (
           <li key={attendee.email} className="flex flex-wrap items-center gap-x-2 gap-y-1">

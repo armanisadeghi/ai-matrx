@@ -389,7 +389,7 @@ export function GmailComposePanel({
           This record could not be loaded, so there is nobody to write to.
           <ErrorAlchemyMenu />
         </p>
-        <p className="mt-1">{error}</p>
+        <p className="mt-1">{error} <ErrorAlchemyMenu error={error} /></p>
       </div>
     );
   }

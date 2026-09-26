@@ -87,12 +87,20 @@ describe("member list scope args", () => {
     expect(args.p_scope).toBe("orgs");
   });
 
-  it("organization counts carry no Mine or Shared tab", () => {
+  it("organization counts carry no Mine tab, and Shared with me for adopting", () => {
     const counts = memberCountsFromAnswer(
       { mine: 4, shared: 1, orgs: 2, public: 7, system: 469, orgs_narrow: [] },
       "organization",
     );
-    expect(counts.byKind).toEqual({ orgs: 2, public: 7, system: 469 });
+    expect(counts.byKind).toEqual({ orgs: 2, shared: 1, public: 7, system: 469 });
+  });
+
+  it("organization seat asks for Shared with me by name", () => {
+    const args = memberScopeArgs(query({ scope: { kind: "shared" } }), {
+      level: "organization",
+      organizationId: ORG,
+    });
+    expect(args.p_scope).toBe("shared");
   });
 
   it("person counts carry every lane: mine, shared, organizations, public, system", () => {

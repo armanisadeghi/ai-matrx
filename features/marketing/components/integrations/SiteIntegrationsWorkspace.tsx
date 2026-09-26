@@ -136,6 +136,7 @@ import {
   type UrlChangeEvidenceRow,
 } from "@/features/marketing/data/url-change-evidence";
 import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const integrationValueLabels = surfaceValueLabels(
   marketingIntegrationsManifest,
@@ -1511,6 +1512,7 @@ function Ga4CampaignPanel({
           requesting a new scope.
         </p>
       ) : null}
+      <ErrorAlchemyMenu error={diagnosis?.reason} />
     </div>
   );
 }
@@ -1626,6 +1628,7 @@ function GscSyncRow({
               </Link>
             </p>
           ) : null}
+          <ErrorAlchemyMenu error={diagnosis.reason} />
         </div>
       ) : null}
 

@@ -478,6 +478,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                                     >
                                         Check again
                                     </Button>
+                                  <ErrorAlchemyMenu error={registry.error} />
                                 </span>
                             </p>
                         )}
@@ -498,6 +499,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                                         Try again
                                     </Button>
                                 </span>
+                              <ErrorAlchemyMenu error={jobsDoorError} />
                             </p>
                         )}
 

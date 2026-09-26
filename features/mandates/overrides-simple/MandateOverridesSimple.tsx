@@ -750,6 +750,7 @@ function OverridesBody({
           ) : refusal ? (
             <span className="mr-auto text-sm text-muted-foreground">
               {refusal}
+              <ErrorAlchemyMenu error={refusal} />
             </span>
           ) : null}
           {dirty ? (

@@ -37,6 +37,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { FIELD_ACTION, useOrgAutoRagPreference } from "../hooks/useOrgAutoRagPreference";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { formatDurationMs, formatPercent, formatUsd } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface OrgPrivacyTabProps {
   organizationId: string;
@@ -342,6 +343,7 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
             <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
               <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
               <span>{pref.error}</span>
+              <ErrorAlchemyMenu error={pref.error} />
             </div>
           )}
         </div>

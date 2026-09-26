@@ -126,6 +126,7 @@ import {
   getMasterworkDefinition,
   getMasterworkRunVerdict,
 } from "../../service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The last run started for this Masterwork, remembered for the tab's lifetime
@@ -929,6 +930,7 @@ export function TryMasterworkBox({
                 </p>
               </details>
             ) : null}
+            <ErrorAlchemyMenu error={failure.headline} />
           </div>
         ) : null}
 

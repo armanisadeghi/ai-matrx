@@ -69,6 +69,7 @@ import {
   TASK_CREATE_SURFACE_NAME,
   type TaskCreateDraftScope,
 } from "@/features/surfaces/manifests/task-create.manifest";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type PostSaveAction = "newTab" | "navigate" | "openWindow" | "none";
 type Priority = TaskPriorityValue | "";
@@ -526,6 +527,7 @@ export function TaskQuickCreateCore({
               )}
               <span className="block text-muted-foreground break-words">
                 {linkFailure}
+                <ErrorAlchemyMenu error={linkFailure} />
               </span>
             </span>
           </div>

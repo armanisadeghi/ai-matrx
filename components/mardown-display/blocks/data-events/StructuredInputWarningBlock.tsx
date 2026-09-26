@@ -51,6 +51,7 @@ const StructuredInputWarningBlock: React.FC<
         <div className="border-t border-border/40 px-3 py-2">
           <pre className="text-xs text-muted-foreground overflow-auto max-h-48 leading-relaxed">
             {JSON.stringify(failures, null, 2)}
+            <ErrorAlchemyMenu />
           </pre>
         </div>
       )}

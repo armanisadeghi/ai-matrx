@@ -20,6 +20,7 @@ import { useSettingsDesign } from "./SettingsDesignProvider";
 import { useSettingsSectionTitle } from "./SettingsSectionContext";
 import { SettingAnchor } from "@/features/settings/doors/SettingAnchor";
 import { settingsControlSearchId } from "./searchIdentity";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type SettingsRowProps = SettingsCommonProps & {
   /** Layout variant. Defaults to "inline". */
@@ -199,6 +200,7 @@ export function SettingsRow({
         <div className="mt-1 flex items-start gap-1.5 text-xs text-red-600 dark:text-red-400">
           <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
           <span className="break-words leading-snug">{error}</span>
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
     </div>

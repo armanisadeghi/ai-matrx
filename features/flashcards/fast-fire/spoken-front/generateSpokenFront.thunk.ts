@@ -55,31 +55,16 @@ interface SpokenFrontCard {
 }
 
 /**
- * Pull the durable audio file_id out of the completed run. Gemini TTS streams
- * terminate with an `audio_stream_end` event carrying the durable `file_id` (the
- * same contract the podcast generator reads). The agent stream processor files
- * that terminal event as an `unknown_data_event` render block tagged
- * `_dataType: "audio_stream_end"` — that's the canonical path. A `media_block` /
- * `audio_output` block (with `fileId`) is checked as a fallback for any deploy
- * that emits one. Prefer the re-mintable `file_id`; last block wins.
+ * Pull the durable audio file_id out of the completed run. Every TTS path
+ * emits the persisted audio as a `media_block`, which the stream processor
+ * files as an `audio_output` render block carrying `fileId`; the transport
+ * `audio_stream_end` event becomes that same block when no media block
+ * arrived (process-stream.ts). Last block wins.
  */
 export function readAudioFileId(
   state: RootState,
   requestId: string,
 ): string | null {
-  // Path A (canonical for streaming TTS): audio_stream_end → file_id.
-  const unknown = selectRenderBlocksByType(
-    requestId,
-    "unknown_data_event",
-  )(state);
-  if (unknown) {
-    for (let i = unknown.length - 1; i >= 0; i--) {
-      const d = unknown[i]?.data as
-        { _dataType?: string; file_id?: string | null } | undefined;
-      if (d?._dataType === "audio_stream_end" && d.file_id) return d.file_id;
-    }
-  }
-  // Path B (fallback): a media_block/audio_output carrying a durable id.
   const media = selectRenderBlocksByType(requestId, "audio_output")(state);
   if (media) {
     for (let i = media.length - 1; i >= 0; i--) {

@@ -402,6 +402,7 @@ export function ResponseViewer({
             {diagnosticsText}
           </pre>
         )}
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

@@ -66,7 +66,7 @@ export function LiveIntegrationsList() {
             Integrations could not be loaded
             <ErrorAlchemyMenu />
           </p>
-          <p className="max-w-sm text-sm text-muted-foreground">{error}</p>
+          <p className="max-w-sm text-sm text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
           <Button
             type="button"
             variant="outline"

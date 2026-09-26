@@ -171,6 +171,7 @@ export function ConversationArtifactsPanel({
               Try again
             </button>
           </div>
+          <ErrorAlchemyMenu error={artifacts.error} />
         </div>
       ) : (
         <div className="space-y-2">
@@ -255,6 +256,7 @@ function ToolArtifacts({
               Try again
             </button>
           </div>
+          <ErrorAlchemyMenu error={group.error} />
         </div>
       ) : group.rows.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">

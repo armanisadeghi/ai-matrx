@@ -45,6 +45,7 @@ import type { AuthenticatorEntry } from "../../authenticator-types";
 import { safeVaultLoginUrl } from "../../utils";
 import { VaultCreateDialog } from "../VaultCreateDialog";
 import { AuthenticatorCode } from "./AuthenticatorCode";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** `totp_label` holds the URI's raw `Issuer:account` path. Show the account
  *  alone when the issuer is already the card's title — nobody wants to read
@@ -283,6 +284,7 @@ export function AuthenticatorWorkspace() {
                 <RefreshCw className="h-4 w-4" />
                 Retry
               </Button>
+              <ErrorAlchemyMenu error={error} />
             </div>
           ) : null}
 

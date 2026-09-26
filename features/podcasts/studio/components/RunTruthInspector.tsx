@@ -391,6 +391,7 @@ export function RunTruthInspector({
                 <RefreshCw className="h-3.5 w-3.5" />
                 Retry
               </button>
+              <ErrorAlchemyMenu error={error} />
             </div>
           ) : null}
 

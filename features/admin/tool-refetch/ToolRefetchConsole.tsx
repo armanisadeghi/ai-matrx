@@ -693,6 +693,7 @@ export function ToolRefetchConsole() {
           <Button size="sm" variant="outline" onClick={() => void report.refetch()}>
             Retry
           </Button>
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 
@@ -706,7 +707,7 @@ export function ToolRefetchConsole() {
           <div className="flex items-start gap-2">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
-              <div className="font-medium">This window could not be answered — the query timed out.</div>
+              <div className="font-medium">This window could not be answered — the query timed out. <ErrorAlchemyMenu /></div>
               <p className="mt-1 leading-snug">{timedOut.message}</p>
             </div>
           </div>

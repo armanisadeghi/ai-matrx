@@ -147,6 +147,7 @@ export function CredentialMaintenanceEditor({
               Remove invalid entry
             </Button>
           </div>
+          <ErrorAlchemyMenu />
         </div>
       ))}
 

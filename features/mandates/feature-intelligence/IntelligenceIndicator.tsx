@@ -111,7 +111,7 @@ export function IntelligenceIndicator({
           <PopoverTrigger asChild>
             <button
               type="button"
-              aria-label="Intelligence"
+              aria-label={label ? `Intelligence: ${label}` : `Intelligence: ${featureName}`}
               data-intelligence-indicator={resolvedFeature}
               className={cn(
                 "inline-flex shrink-0 items-center justify-center rounded-full border border-primary/40 bg-primary/5 text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
@@ -129,7 +129,8 @@ export function IntelligenceIndicator({
         <div className="border-b border-border px-3 py-2">
           <p className="text-[13px] font-semibold text-foreground">Intelligence</p>
           <p className="text-[11.5px] text-muted-foreground">
-            {label ?? "The AI jobs behind this"} — see what runs them, duplicate or use your own.
+            {label ?? "The AI jobs behind this"} — see what runs{" "}
+            {keys.length === 1 ? "it" : "them"}, duplicate or use your own.
           </p>
         </div>
         {keys.length > 0 ? (

@@ -252,7 +252,7 @@ export function AiMatrxReplyComposer({
           className="mt-1 flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300"
         >
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>{refusalSentence}</span>
+          <span>{refusalSentence} <ErrorAlchemyMenu error={refusalSentence} /></span>
         </p>
       ) : null}
       {/* THE ANNOUNCED STAND-IN, on screen and not only in a log: visually
@@ -320,6 +320,7 @@ export function AiMatrxReplyComposer({
             {refusalSentence
               ? `This reply cannot be sent: ${refusalSentence}`
               : "This reply cannot be sent."}
+            <ErrorAlchemyMenu />
           </span>
         ) : responder.status === "loading" ? (
           <span className="text-xs text-muted-foreground">

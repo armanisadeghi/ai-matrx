@@ -47,10 +47,12 @@ export function memberScopeArgs(
   return {
     p_level: options.level,
     // The shell asks counts under a normalized scope (it may say "mine"); the
-    // organization seat has its own (homed or shared with it), the published
+    // organization seat has its own (homed, shared with or adopted by it), the
+    // viewer's "Shared with me" (given to them by name, not yet the
+    // organization's — an owner or admin adopts it from here), the published
     // lane and the system's, so anything else is this organization's own.
     p_scope: orgLevel
-      ? scope.kind === "system" || scope.kind === "public"
+      ? scope.kind === "system" || scope.kind === "public" || scope.kind === "shared"
         ? scope.kind
         : "orgs"
       : scope.kind,
@@ -76,7 +78,7 @@ export function memberCountsFromAnswer(
   }));
   return {
     byKind: level === "organization"
-      ? { orgs: answer.orgs, public: answer.public, system: answer.system }
+      ? { orgs: answer.orgs, shared: answer.shared, public: answer.public, system: answer.system }
       : {
           mine: answer.mine,
           shared: answer.shared,

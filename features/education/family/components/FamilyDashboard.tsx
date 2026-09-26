@@ -42,6 +42,7 @@ import { needsConsentVerification } from "../types";
 import type { GuardianLinkView } from "../types";
 import { GuardianConsentVerifyDialog } from "./GuardianConsentVerifyDialog";
 import { StudentAgeBandControl } from "./StudentAgeBandControl";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function displayName(link: GuardianLinkView): string {
   return link.counterpart_name?.trim() || link.counterpart_email || "Learner";
@@ -159,6 +160,7 @@ export function FamilyDashboard() {
       {error && (
         <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
           Couldn&apos;t load your family links: {error}
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 

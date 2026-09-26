@@ -25,6 +25,7 @@ import KeywordAnalysis from "../agent-analysis/KeywordAnalysis";
 import FeatureDisabledPlaceholder from "../reusable/FeatureDisabledPlaceholder";
 import ImageGallery from "../tabs/images/ImageGallery";
 import { ScrapedContentPretty } from "../ScrapedContentPretty";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface PageContentProps {
   pageData: any;
@@ -174,7 +175,7 @@ const PageContentBody: React.FC<PageContentProps> = ({
   if (extractedData.isError) {
     return (
       <Alert className="m-4">
-        <AlertDescription>{extractedData.error}</AlertDescription>
+        <AlertDescription>{extractedData.error} <ErrorAlchemyMenu error={extractedData.error} /></AlertDescription>
       </Alert>
     );
   }

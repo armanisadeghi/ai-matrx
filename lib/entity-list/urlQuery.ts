@@ -2,7 +2,7 @@
 
 // lib/entity-list/urlQuery.ts
 //
-// THE URL IS THE LIST'S QUERY. Opt-in per surface (`config.urlState`), because
+// THE URL IS THE LIST'S QUERY. On for every EntityListPage unless `config.urlState: false`, because
 // a list whose scope, search, filters and page live only in React state cannot
 // be linked, cannot survive a refresh, and turns the browser Back button into
 // "leave the page" — which is the system rule /work/conversations was violating.

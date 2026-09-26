@@ -55,6 +55,7 @@ import {
   type HrCorrectiveActionRow,
 } from "../types";
 import { formatHrDay as formatDay } from "@/features/hr/people/shared/HrStatusChip";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 
 export function CorrectiveActionPanel({
@@ -262,7 +263,7 @@ export function CorrectiveActionPanel({
               {HR_ACKNOWLEDGMENT_KIND_LABELS.refused}
             </p>
             {refusalOnFile ? (
-              <p className="text-sm text-muted-foreground">{refusalOnFile}</p>
+              <p className="text-sm text-muted-foreground">{refusalOnFile} <ErrorAlchemyMenu /></p>
             ) : null}
           </div>
         ) : acknowledged ? (

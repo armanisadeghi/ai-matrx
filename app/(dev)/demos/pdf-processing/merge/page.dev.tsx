@@ -18,6 +18,7 @@ import {
   usePdfDemoApi,
 } from "@/features/pdf-demo/hooks/usePdfDemoApi";
 import { parsePagesInput } from "@/features/pdf-demo/utils/pages";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface MergeSource {
   state: PdfSourceState;
@@ -169,6 +170,7 @@ export default function MergeDemo() {
           <pre className="whitespace-pre-wrap break-words font-mono text-xs">
             {error}
           </pre>
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : null}
 

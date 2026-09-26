@@ -42,6 +42,7 @@ import { useRequestLedger } from "@/lib/diagnostics/stream-capture/useRequestLed
 import { BACKEND_URLS } from "@/lib/api/endpoints";
 import { setUseSnapshot } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectIsSnapshot } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Debug module ids that open a WindowPanel instead of the modal DebugModulePanel. */
 const DEBUG_MODULE_IDS_AS_WINDOW = new Set<string>([
@@ -360,6 +361,7 @@ const MediumIndicator: React.FC<MediumIndicatorProps> = ({
           <div className="flex items-center gap-1 text-red-400 px-1">
             <AlertCircle size={12} />
             <span className="truncate">{activeHealth.error}</span>
+            <ErrorAlchemyMenu />
           </div>
         )}
 

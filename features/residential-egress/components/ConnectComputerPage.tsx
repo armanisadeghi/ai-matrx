@@ -331,6 +331,7 @@ function ApprovalCard({ code }: { code: string }) {
           {error ??
             "It may have already been used, or it may have expired — a code is good for 15 minutes."}{" "}
           Run Connect again on that computer to get a fresh code.
+          <ErrorAlchemyMenu error={error} />
         </p>
         <Button
           size="sm"

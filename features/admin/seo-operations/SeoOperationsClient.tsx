@@ -53,6 +53,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { useScheduledTaskMenuSection } from "@/features/scheduling/components/shared/scheduling-menu-sections";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── Automations panel ───────────────────────────────────────────────────────
 
@@ -666,6 +667,7 @@ export function WorkbenchPanel() {
                 Retry this workbench run
               </Button>
             ) : null}
+            <ErrorAlchemyMenu error={command.error} />
           </div>
         ) : null}
       </div>

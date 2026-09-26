@@ -284,7 +284,7 @@ export function AnnouncementExperience({
       </span>
       <div>
         <p className="font-semibold">Announcements could not be loaded <ErrorAlchemyMenu /></p>
-        <p className="mt-1 max-w-sm text-sm text-muted-foreground">{error}</p>
+        <p className="mt-1 max-w-sm text-sm text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
       </div>
     </div>
   ) : announcements.length === 0 ? (

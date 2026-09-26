@@ -19,6 +19,7 @@ import { extractErrorMessage } from "@/utils/errors";
 
 import { AgendaPanel } from "./AgendaPanel";
 import { readPartyEmailKeys } from "./service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function PersonUpcomingCard({
   partyId,
@@ -58,7 +59,7 @@ export function PersonUpcomingCard({
   if (problem) {
     return (
       <section className="rounded-md border border-border bg-card px-2.5 py-2">
-        <p className="text-xs text-muted-foreground">{problem}</p>
+        <p className="text-xs text-muted-foreground">{problem} <ErrorAlchemyMenu error={problem} /></p>
       </section>
     );
   }

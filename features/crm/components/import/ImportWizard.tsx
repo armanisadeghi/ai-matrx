@@ -659,6 +659,7 @@ export function ImportWizard() {
               {plan.counts.invalid > 0 && (
                 <span className="rounded bg-destructive/10 px-2 py-0.5 text-xs text-destructive">
                   {plan.counts.invalid} invalid
+                  <ErrorAlchemyMenu />
                 </span>
               )}
               {plan.newCompanyNames.length > 0 && (

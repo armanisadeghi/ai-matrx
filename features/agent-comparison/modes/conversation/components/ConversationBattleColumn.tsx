@@ -13,6 +13,7 @@ import { BoundColumn } from "@/features/agent-comparison/shared/BoundColumn";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import type { ConversationBattleFork } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ConversationBattleColumnProps {
   fork: ConversationBattleFork;
@@ -96,6 +97,7 @@ export function ConversationBattleColumn({
               </button>
               <p className="text-[10px] text-muted-foreground break-words">
                 {loadError}
+                <ErrorAlchemyMenu error={loadError} />
               </p>
             </div>
           </div>

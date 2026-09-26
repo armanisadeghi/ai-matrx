@@ -6,6 +6,7 @@ import Papa from 'papaparse';
 import { cleanGrid, firstRowLooksLikeHeader, tableFromGrid, type Grid } from '@/utils/user-table-utls/grid-import';
 import { ZipCodeData } from '../page';
 import ColumnMapper from './ColumnMapper';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface FileUploadProps {
   onDataUpload: (data: ZipCodeData[]) => void;
@@ -267,6 +268,7 @@ export default function FileUpload({ onDataUpload, onLoadingChange }: FileUpload
           <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 text-destructive">
             <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <p className="text-xs">{error}</p>
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
 

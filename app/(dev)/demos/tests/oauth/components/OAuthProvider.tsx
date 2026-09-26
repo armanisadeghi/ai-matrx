@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import {OAuthProviderConfig, ProviderState, SlackTokenResponse} from '../types/oauth';
 import SlackManager from './SlackManager';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface OAuthProviderProps {
   config: OAuthProviderConfig;
@@ -30,6 +31,7 @@ export default function OAuthProvider({
         {state.error && (
             <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
               <p className="text-sm">{state.error}</p>
+              <ErrorAlchemyMenu />
             </div>
         )}
 

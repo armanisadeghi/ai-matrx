@@ -298,7 +298,7 @@ export default function HealthTestClient() {
                                             {String(basicHealth.status ?? 'Healthy')}
                                         </h2>
                                         {basicHealth.message && (
-                                            <p className="text-sm text-muted-foreground">{String(basicHealth.message)}</p>
+                                            <p className="text-sm text-muted-foreground">{String(basicHealth.message)} <ErrorAlchemyMenu /></p>
                                         )}
                                         {basicHealth.timestamp && (
                                             <p className="text-xs text-muted-foreground mt-2">

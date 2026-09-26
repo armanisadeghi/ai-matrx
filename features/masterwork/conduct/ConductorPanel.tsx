@@ -79,6 +79,7 @@ import {
   type MasterworkAttachment,
 } from "./service";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SOURCE_FEATURE = "masterwork" as const;
 
@@ -600,6 +601,7 @@ export function ConductorContent({
         The Masterwork system isn&apos;t available right now
         {error ? ` (${error})` : ""}. An administrator can bind an agent to the
         `masterwork.conductor` Mandate.
+        <ErrorAlchemyMenu />
       </div>
     );
   }
@@ -624,6 +626,7 @@ export function ConductorContent({
         <p className="text-foreground">
           {rulebookDoc.error ??
             missingVariablesMessage(CONDUCTOR_MANDATE_KEY, missing)}
+          <ErrorAlchemyMenu error={rulebookDoc.error} />
         </p>
         <p className="text-muted-foreground">
           Starting without your rules would mean building a system from

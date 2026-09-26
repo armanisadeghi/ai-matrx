@@ -49,6 +49,7 @@ import {
   type RulebookInterview,
 } from "./service";
 import type { RulebookRule } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface ConversationsSectionProps {
   rulebookId: string;
@@ -134,6 +135,7 @@ export function ConversationsSection({
             Try again
           </button>
           .
+          <ErrorAlchemyMenu error={readError} />
         </p>
       ) : interviews.length === 0 ? (
         <p className="px-3 py-3 text-xs leading-5 text-muted-foreground">

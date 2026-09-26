@@ -79,6 +79,7 @@ import {
   type ImageRoleLimits,
   type ReferenceRole,
 } from "@/features/agents/image-roles/roles";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -793,6 +794,7 @@ export function BlockRow({
         <p className="pl-5 pt-0.5 flex items-start gap-1 text-[10px] leading-snug text-destructive">
           <AlertTriangle className="w-3 h-3 shrink-0 mt-px" />
           <span>{compatibility.reason}</span>
+          <ErrorAlchemyMenu error={compatibility.reason} />
         </p>
       )}
 

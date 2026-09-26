@@ -46,6 +46,7 @@ import { useEnrollmentActions } from "../hooks/useEnrollmentActions";
 import { EnrollmentSidebar } from "./EnrollmentSidebar";
 import { ImprovementsRail } from "./ImprovementsRail";
 import { ReviewerChat } from "./ReviewerChat";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function EnrolledWorkspace({
   agentId,
@@ -94,6 +95,7 @@ function EnrolledWorkspace({
               <h2 className="font-medium">Review workspace unavailable</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {(detail.error as Error).message}
+                <ErrorAlchemyMenu />
               </p>
               <Button
                 className="mt-4"
@@ -231,6 +233,7 @@ export function ImprovementWorkspace({
               <h2 className="font-medium">Review status unavailable</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {(enrollments.error as Error).message}
+                <ErrorAlchemyMenu />
               </p>
               <Button
                 className="mt-4"

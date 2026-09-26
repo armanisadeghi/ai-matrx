@@ -137,7 +137,7 @@ function VoiceCell({
           }}
         >
           <SelectTrigger
-            className="h-6 text-[11px] flex-1 min-w-0"
+            className="h-7 text-xs flex-1 min-w-0"
             aria-label={`Turn ${index + 1} voice`}
           >
             <SelectValue placeholder="Voice" />
@@ -170,9 +170,9 @@ function VoiceCell({
             onClick={preview}
             aria-label={`Play a sample of ${label}`}
             title={`Play a sample of ${label}`}
-            className="shrink-0 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent"
           >
-            <Volume2 className="w-3 h-3" />
+            <Volume2 className="h-3.5 w-3.5" />
           </button>
         )}
       </div>
@@ -209,13 +209,14 @@ function SortableTurn({
   const grip = (
     <button
       type="button"
-      className="flex items-center gap-0.5 pt-1 cursor-grab text-muted-foreground hover:text-foreground touch-none"
+      className="inline-flex h-5 w-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-full bg-muted text-[11px] font-semibold tabular-nums text-muted-foreground hover:bg-accent hover:text-foreground active:cursor-grabbing"
       aria-label={`Reorder turn ${index + 1}`}
+      title="Drag to reorder"
       {...attributes}
       {...listeners}
     >
-      <GripVertical className="w-3 h-3" />
-      <span className="font-mono text-[10px]">{index + 1}</span>
+      <span className="group-hover/turn:hidden">{index + 1}</span>
+      <GripVertical className="hidden h-3 w-3 group-hover/turn:block" />
     </button>
   );
   return (
@@ -223,8 +224,8 @@ function SortableTurn({
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        "border-t border-border/60 py-1.5 bg-card",
-        isDragging && "relative z-10 opacity-80 shadow-md",
+        "group/turn rounded-md border border-border bg-background p-2",
+        isDragging && "relative z-10 opacity-90 shadow-lg",
       )}
       data-testid="speech-turn"
     >
@@ -302,15 +303,15 @@ export function SpeechScriptEditor({
   return (
     <div
       className={cn(
-        "@container/ss flex flex-col gap-2 w-full rounded-lg border border-border bg-card p-2",
-        refused && "border-destructive/40",
+        "@container/ss flex flex-col gap-2 w-full",
+        refused && "opacity-60",
         className,
       )}
       data-testid="speech-script-editor"
     >
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs font-medium">Speech script</span>
-        <span className="text-[10px] font-mono text-muted-foreground">
+        <span className="text-[11px] tabular-nums text-muted-foreground">
           {turns.length} {turns.length === 1 ? "turn" : "turns"} ·{" "}
           {speakers.length}
           {cap !== null ? `/${cap}` : ""} {cap === 1 ? "speaker" : "speakers"}
@@ -320,10 +321,10 @@ export function SpeechScriptEditor({
             type="button"
             size="sm"
             variant="outline"
-            className="h-6 text-[11px] px-2"
+            className="h-7 text-xs px-2"
             onClick={() => onChange([...turns, newSpeechTurn(turns)])}
           >
-            <Plus className="w-3 h-3 mr-1" />
+            <Plus className="h-3.5 w-3.5 mr-1" />
             Add turn
           </Button>
           {onRemovePart && (
@@ -356,130 +357,134 @@ export function SpeechScriptEditor({
       )}
 
       <div className="text-xs">
-        <div className="hidden @[44rem]/ss:grid grid-cols-[2rem_9.5rem_1fr_12rem_4.5rem_1.25rem] gap-2 text-[10px] uppercase tracking-wide text-muted-foreground pb-1">
-          <span>#</span>
-          <span>Speaker</span>
-          <span>Text</span>
-          <span>Direction</span>
-          <span>Pause ms</span>
-          <span />
-        </div>
-
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-            {turns.map((turn, index) => (
-              <SortableTurn key={ids[index]} id={ids[index]} index={index}>
-                {(grip) => (
-                  <div className="grid grid-cols-1 @[44rem]/ss:grid-cols-[2rem_9.5rem_1fr_12rem_4.5rem_1.25rem] gap-2 items-start">
-                    {grip}
-
-                    <div className="flex flex-col gap-1">
-                      <Input
-                        value={turn.speaker}
-                        onChange={(e) => setSpeaker(index, e.target.value)}
-                        aria-label={`Turn ${index + 1} speaker`}
-                        placeholder="Speaker"
-                        className={cn(
-                          "h-6 text-[11px]",
-                          (!turn.speaker.trim() ||
-                            conflicts.has(turn.speaker)) &&
-                            "border-destructive",
-                        )}
-                      />
-                      <VoiceCell
-                        value={turn.voice ?? ""}
-                        options={options}
-                        onChange={(voice) => setVoice(index, voice)}
-                        index={index}
-                        modelName={model?.name ?? null}
-                      />
-                    </div>
-
-                    <div className="min-w-0">
-                      <ProTextarea
-                        value={turn.text}
-                        onChange={(e) =>
-                          update(index, { text: e.target.value })
-                        }
-                        placeholder="What this speaker says. {{variables}} work."
-                        aria-label={`Turn ${index + 1} text`}
-                        autoGrow
-                        minHeight={44}
-                        maxHeight={200}
-                        className={cn(
-                          "text-[11px]",
-                          !turn.text.trim() && "border-destructive/60",
-                        )}
-                      />
-                      {turn.text.includes("{{") && (
-                        <div className="mt-0.5 text-[10px] leading-snug">
-                          <HighlightedText
-                            text={turn.text}
-                            validVariables={validVariables}
+            <div className="flex flex-col gap-2">
+              {turns.map((turn, index) => (
+                <SortableTurn key={ids[index]} id={ids[index]} index={index}>
+                  {(grip) => (
+                    <div className="flex flex-col gap-1.5">
+                      {/* Who speaks, in which voice */}
+                      <div className="flex items-start gap-2">
+                        <span className="mt-1">{grip}</span>
+                        <div className="grid min-w-0 flex-1 grid-cols-1 gap-1.5 @sm/ss:grid-cols-[10rem_minmax(0,1fr)]">
+                          <Input
+                            value={turn.speaker}
+                            onChange={(e) => setSpeaker(index, e.target.value)}
+                            aria-label={`Turn ${index + 1} speaker`}
+                            placeholder="Speaker"
+                            className={cn(
+                              "h-7 text-xs font-medium",
+                              (!turn.speaker.trim() ||
+                                conflicts.has(turn.speaker)) &&
+                                "border-destructive",
+                            )}
+                          />
+                          <VoiceCell
+                            value={turn.voice ?? ""}
+                            options={options}
+                            onChange={(voice) => setVoice(index, voice)}
+                            index={index}
+                            modelName={model?.name ?? null}
                           />
                         </div>
-                      )}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onChange(turns.filter((_, i) => i !== index))
+                          }
+                          disabled={turns.length === 1}
+                          aria-label={`Remove turn ${index + 1}`}
+                          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-destructive disabled:pointer-events-none disabled:opacity-30"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+
+                      {/* What they say — the line leads */}
+                      <div className="min-w-0 @sm/ss:pl-7">
+                        <ProTextarea
+                          value={turn.text}
+                          onChange={(e) =>
+                            update(index, { text: e.target.value })
+                          }
+                          placeholder="What this speaker says. {{variables}} work."
+                          aria-label={`Turn ${index + 1} text`}
+                          autoGrow
+                          minHeight={44}
+                          maxHeight={200}
+                          className={cn(
+                            "text-sm",
+                            !turn.text.trim() && "border-destructive/60",
+                          )}
+                        />
+                        {turn.text.includes("{{") && (
+                          <div className="mt-0.5 text-[11px] leading-snug">
+                            <HighlightedText
+                              text={turn.text}
+                              validVariables={validVariables}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* How — quiet, secondary */}
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 @sm/ss:pl-7">
+                        <label className="flex min-w-[12rem] flex-1 items-center gap-1.5 text-[11px] text-muted-foreground">
+                          Direction
+                          <Input
+                            value={turn.direction ?? ""}
+                            onChange={(e) =>
+                              update(index, {
+                                direction: e.target.value || null,
+                              })
+                            }
+                            placeholder="e.g. warm, a little amused"
+                            aria-label={`Turn ${index + 1} direction`}
+                            className="h-7 flex-1 text-xs italic"
+                          />
+                        </label>
+                        <label className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                          Pause after
+                          <Input
+                            value={
+                              turn.pause_after_ms == null
+                                ? ""
+                                : String(turn.pause_after_ms)
+                            }
+                            onChange={(e) => {
+                              const raw = e.target.value.trim();
+                              const parsed = raw === "" ? null : Number(raw);
+                              update(index, {
+                                pause_after_ms:
+                                  parsed != null && Number.isFinite(parsed)
+                                    ? Math.max(
+                                        0,
+                                        Math.min(
+                                          MAX_PAUSE_MS,
+                                          Math.round(parsed),
+                                        ),
+                                      )
+                                    : null,
+                              });
+                            }}
+                            inputMode="numeric"
+                            placeholder="0"
+                            aria-label={`Turn ${index + 1} pause after, milliseconds`}
+                            className="h-7 w-16 text-center text-xs tabular-nums"
+                          />
+                          ms
+                        </label>
+                      </div>
                     </div>
-
-                    <ProTextarea
-                      value={turn.direction ?? ""}
-                      onChange={(e) =>
-                        update(index, { direction: e.target.value || null })
-                      }
-                      placeholder="e.g. warm, a little amused"
-                      aria-label={`Turn ${index + 1} direction`}
-                      autoGrow
-                      minHeight={44}
-                      maxHeight={120}
-                      className="text-[11px]"
-                    />
-
-                    <Input
-                      value={
-                        turn.pause_after_ms == null
-                          ? ""
-                          : String(turn.pause_after_ms)
-                      }
-                      onChange={(e) => {
-                        const raw = e.target.value.trim();
-                        const parsed = raw === "" ? null : Number(raw);
-                        update(index, {
-                          pause_after_ms:
-                            parsed != null && Number.isFinite(parsed)
-                              ? Math.max(
-                                  0,
-                                  Math.min(MAX_PAUSE_MS, Math.round(parsed)),
-                                )
-                              : null,
-                        });
-                      }}
-                      inputMode="numeric"
-                      placeholder="0"
-                      aria-label={`Turn ${index + 1} pause after, milliseconds`}
-                      className="h-6 text-[11px] font-mono"
-                    />
-
-                    <div className="flex items-center gap-0.5">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          onChange(turns.filter((_, i) => i !== index))
-                        }
-                        disabled={turns.length === 1}
-                        aria-label={`Remove turn ${index + 1}`}
-                        className="p-0.5 rounded text-muted-foreground hover:text-destructive disabled:opacity-30"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </SortableTurn>
-            ))}
+                  )}
+                </SortableTurn>
+              ))}
+            </div>
           </SortableContext>
         </DndContext>
       </div>

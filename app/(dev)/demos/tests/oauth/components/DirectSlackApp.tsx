@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import SlackManager from "@/app/(dev)/demos/tests/oauth/components/SlackManager";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function DirectSlackApp() {
   const [token, setToken] = useState<string>('');
@@ -77,6 +78,7 @@ export default function DirectSlackApp() {
                 {error && (
                     <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
                       <p className="text-sm">{error}</p>
+                      <ErrorAlchemyMenu error={error} />
                     </div>
                 )}
 

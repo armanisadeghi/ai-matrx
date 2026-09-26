@@ -57,6 +57,7 @@ import {
   type AgentShortcutPanelRow,
   type AgentShortcutsPanelKpis,
 } from "@/features/agent-shortcuts/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AgentShortcutsPanelProps {
   agentId: string;
@@ -350,6 +351,7 @@ export function AgentShortcutsPanel({
                 })}
               />
             </span>
+            <ErrorAlchemyMenu error={errorText} />
           </div>
         )}
 

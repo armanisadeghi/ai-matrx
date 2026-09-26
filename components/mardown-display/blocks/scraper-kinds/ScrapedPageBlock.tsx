@@ -66,6 +66,7 @@ import {
   statusTone,
   text,
 } from "./scraper-kind-data";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   serverData?: unknown;
@@ -244,7 +245,7 @@ export default function ScrapedPageBlock({ serverData, className }: Props) {
                 {status}
               </Pill>
             )}
-            {failureReason && <Pill tone="error">{failureReason}</Pill>}
+            {failureReason && <Pill tone="error">{failureReason} <ErrorAlchemyMenu error={failureReason} /></Pill>}
           </div>
           <BreadcrumbLine url={responseUrl} />
           <div className="mt-1 flex flex-wrap items-center gap-1.5">

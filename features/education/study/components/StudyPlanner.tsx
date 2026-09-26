@@ -72,6 +72,7 @@ import {
 } from "../planner/goalWrites";
 import type { StudyGoalRow, GoalStatus } from "../types";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface GoalFormState {
   title: string;
@@ -274,7 +275,7 @@ export function StudyPlanner({
             <p className="text-sm text-foreground">
               Couldn&apos;t load your goals
             </p>
-            <p className="max-w-md text-xs text-muted-foreground">{error}</p>
+            <p className="max-w-md text-xs text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
           </div>
         ) : ranked.length === 0 ? (
           <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">

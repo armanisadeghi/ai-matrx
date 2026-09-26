@@ -48,6 +48,7 @@ import { useSaveSample } from "../hooks/useSaveSample";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import type { ToolStreamEvent, FinalPayload, ExecutionStatus } from "@/features/tool-call-visualization/testing/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Copy button ────────────────────────────────────────────────────────────
 
@@ -434,6 +435,7 @@ export function ResultsPanel({
         <div className="flex-shrink-0 mx-3 mt-2 p-2.5 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive">
           <span className="font-semibold">Error: </span>
           <span className="font-mono">{errorMessage}</span>
+          <ErrorAlchemyMenu error={errorMessage} />
         </div>
       )}
 

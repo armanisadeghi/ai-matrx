@@ -18,6 +18,7 @@ import type { PartyListRow } from "../../types";
 import { SectionCard, SectionEmpty } from "../record/SectionCard";
 import { dealStatusBadge } from "./columns";
 import { DealCreateDialog } from "./DealCreateDialog";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   party: PartyListRow;
@@ -68,7 +69,7 @@ export function PartyDealsCard({ party }: Props) {
     >
       {loadError ? (
         <div className="flex items-center justify-between gap-2 py-1 text-xs text-muted-foreground">
-          <span>Couldn&apos;t load deals — {loadError}</span>
+          <span>Couldn&apos;t load deals — {loadError} <ErrorAlchemyMenu error={loadError} /></span>
           <button
             type="button"
             onClick={() => setGeneration((g) => g + 1)}

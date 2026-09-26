@@ -62,7 +62,7 @@ export default async function AuthCodeError({ searchParams }: AuthCodeErrorProps
       <div className="space-y-4">
         {errorCode && (
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Error Code: <span className="font-mono">{errorCode}</span>
+            Error Code: <span className="font-mono">{errorCode} <ErrorAlchemyMenu /></span>
           </p>
         )}
         <p className="text-sm text-gray-600 dark:text-gray-400">

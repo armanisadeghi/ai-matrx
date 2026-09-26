@@ -50,6 +50,7 @@ import {
 import { getBlockTypeStyle } from "./block-type-colors";
 import type { SplitterBlock } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AnalysisViewProps {
   content: string;
@@ -244,6 +245,7 @@ export function AnalysisView({ content, contentLabel }: AnalysisViewProps) {
               Comparison failed
             </div>
             <p className="mt-1 text-xs">{error}</p>
+            <ErrorAlchemyMenu />
           </div>
         )}
 

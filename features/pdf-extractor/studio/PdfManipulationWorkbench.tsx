@@ -31,6 +31,7 @@ import {
 import { ManipulationPanel } from "../components/ManipulationPanel";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
 import { PdfManipulationViewer, type PdfPaneEditMode } from "./PdfStudioReader";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function provisionalDocFromFile(params: {
   fileId: string;
@@ -233,6 +234,7 @@ export function PdfManipulationWorkbench({
             <div className="flex max-w-md items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{resolveError}</span>
+              <ErrorAlchemyMenu error={resolveError} />
             </div>
           </div>
         ) : doc ? (

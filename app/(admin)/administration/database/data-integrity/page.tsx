@@ -279,7 +279,7 @@ function CheckDetail({ row }: { row: IntegrityRow }) {
         </p>
       )}
       {r?.error && r.skipped ? (
-        <p className="text-xs italic text-muted-foreground">{r.error}</p>
+        <p className="text-xs italic text-muted-foreground">{r.error} <ErrorAlchemyMenu error={r.error} /></p>
       ) : r?.error ? (
         <Alert variant="destructive" className="py-2">
           <AlertDescription className="text-xs font-mono">

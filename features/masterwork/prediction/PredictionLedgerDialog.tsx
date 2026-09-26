@@ -78,6 +78,7 @@ import {
   type PredictionEntry,
 } from "./scoring";
 import { RunStages } from "@/features/masterwork/components/RunStages";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Served by `aidream/aidream/services/distillation/prediction_ledger.py`.
@@ -469,7 +470,7 @@ export function PredictionLedgerDialog({
         {knobs.problem ? (
           <p className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-400">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <span>{knobs.problem}</span>
+            <span>{knobs.problem} <ErrorAlchemyMenu error={knobs.problem} /></span>
           </p>
         ) : null}
 
@@ -709,6 +710,7 @@ export function PredictionLedgerDialog({
             <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2.5 text-sm text-destructive">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{run.error}</span>
+              <ErrorAlchemyMenu error={run.error} />
             </p>
           ) : null}
           <RunStages

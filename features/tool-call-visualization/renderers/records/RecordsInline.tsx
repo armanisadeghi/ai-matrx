@@ -24,6 +24,7 @@ import { readRecordChangeWait } from "@/features/record-change-approvals/recordC
 
 import type { ToolRendererProps } from "../../types";
 import { resultAsObject } from "../_shared";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function sentenceFor(result: Record<string, unknown>): string | null {
   const notDone = result["not_done"];
@@ -46,6 +47,7 @@ export function RecordsInline({ entry, conversationId }: ToolRendererProps) {
       <div className="flex items-start gap-1.5 text-xs text-destructive">
         <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
         <span>{entry.errorMessage ?? "The record store refused the call."}</span>
+        <ErrorAlchemyMenu error={entry.errorMessage} />
       </div>
     );
   }

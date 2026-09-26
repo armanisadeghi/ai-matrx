@@ -8,6 +8,7 @@ import { ProviderState } from './types/oauth';
 import OAuthProvider from './components/OAuthProvider';
 import TokenDisplay from './components/TokenDisplay';
 import SlackManager from './components/SlackManager';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function SlackApp() {
   const searchParams = useSearchParams();
@@ -243,6 +244,7 @@ export default function SlackApp() {
                       {directTokenError && (
                           <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
                             <p className="text-sm">{directTokenError}</p>
+                            <ErrorAlchemyMenu error={directTokenError} />
                           </div>
                       )}
 

@@ -16,6 +16,7 @@ import { EducationToolHeader } from "@/features/education/components/EducationTo
 import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresentation";
 import { listKits, kitHref, type StudyKit } from "../kitService";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function KitRow({ kit }: { kit: StudyKit }) {
   return (
@@ -114,7 +115,7 @@ export function KitsHome() {
         ) : error ? (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-10 text-center">
             <Package className="h-8 w-8 text-amber-600 dark:text-amber-500" />
-            <p className="text-sm text-muted-foreground">{error}</p>
+            <p className="text-sm text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
             <Button
               size="sm"
               variant="outline"

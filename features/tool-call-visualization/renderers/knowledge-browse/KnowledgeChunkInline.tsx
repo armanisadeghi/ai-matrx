@@ -16,6 +16,7 @@ import { useFileNode } from "@/features/files/hooks/useFileNode";
 import { normalizeSourceName } from "@/features/rag/components/hit-card/adapters";
 import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
 import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Inline renderer for `knowledge_browse(action="chunk")` — the FULL text of one retrieved chunk
@@ -110,6 +111,7 @@ export function KnowledgeChunkInline({
             </div>
           ) : null}
         </div>
+        <ErrorAlchemyMenu error={entry.errorMessage} />
       </div>
     );
   }

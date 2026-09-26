@@ -54,6 +54,7 @@ import {
 import { useQuizPersistence } from "@/hooks/useQuizPersistence";
 import { parseQuizJSON, type RawQuizJSON } from "./quiz-parser";
 import { InlineLatexRenderer } from "@/features/math/components/InlineLatexRenderer";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Legacy type for backwards compatibility
 export type Question = OriginalQuestion;
@@ -571,6 +572,7 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
             <AlertTriangle className="h-3 w-3" />
             <span>{uploadError}</span>
           </p>
+          <ErrorAlchemyMenu />
         </div>
       )}
 

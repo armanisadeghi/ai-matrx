@@ -21,6 +21,7 @@ import { MermaidRenderer } from "../MermaidRenderer";
 import type { LadderResult } from "../sanitize";
 import type { MermaidEditorAction } from "../workbench/useMermaidEditor";
 import type { MermaidRenderOptions } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const COMMIT_DEBOUNCE_MS = 400;
 
@@ -112,6 +113,7 @@ export function CodeModePane({ source, options, dispatch }: CodeModePaneProps) {
         <div className="flex items-start gap-1.5 border-t border-border bg-destructive/5 px-3 py-1.5">
           <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
           <p className="text-xs text-muted-foreground">{humanizeMermaidError(ladder.error)}</p>
+          <ErrorAlchemyMenu />
         </div>
       )}
     </div>

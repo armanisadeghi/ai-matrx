@@ -33,6 +33,7 @@ import {
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectPersonalOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import type {
   PermissionLevel,
   ShareActionResult,
@@ -85,8 +86,15 @@ export function AddEveryoneInOrg({
   onDone,
   defaultOrgId,
 }: AddEveryoneInOrgProps) {
-  const { orgs } = useNavTree();
+  const { orgs: allOrgs } = useNavTree();
   const me = useAppSelector(selectUserId);
+  // YOUR PERSONAL WORKSPACE IS NOT A TEAM (2026-09-26). Its only member is you, and this panel
+  // lists the members OTHER than you — so offering it only ever led to "Nobody else is in …".
+  // Same rule the Share dialog's `personalHome` applies to "My organization".
+  const personalOrgId = useAppSelector(selectPersonalOrganizationId);
+  const orgs = personalOrgId
+    ? allOrgs.filter((o) => o.id !== personalOrgId)
+    : allOrgs;
   const [open, setOpen] = useState(false);
   const [orgId, setOrgId] = useState("");
   const [members, setMembers] = useState<OrgMemberPerson[] | null>(null);
@@ -161,6 +169,10 @@ export function AddEveryoneInOrg({
     setTicked(new Set());
     if (granted > 0) onDone?.();
   };
+
+  // Nobody to add from anywhere (only a personal workspace): the control is absent, never a
+  // picker with nothing in it.
+  if (orgs.length === 0) return null;
 
   if (!open) {
     return (

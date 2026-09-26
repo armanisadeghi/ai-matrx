@@ -41,6 +41,7 @@ import {
 } from "./sanitize";
 import type { MermaidRenderOptions } from "./types";
 import { renderOptionsKey } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const STREAMING_DEBOUNCE_MS = 300;
 const SETTLED_DEBOUNCE_MS = 250;
@@ -282,6 +283,7 @@ function MermaidErrorCard({
           )}
         </div>
       </div>
+      <ErrorAlchemyMenu />
     </div>
   );
 }

@@ -23,6 +23,7 @@ import {
 } from "../vault-service";
 import type { VaultField, VaultPasswordHistoryResponse } from "../types";
 import { VaultRevealReauthDialog } from "./SecretValue";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Props = {
   itemId: string;
@@ -289,7 +290,7 @@ export function VaultPasswordHistoryPanel({
           Loading password history…
         </p>
       ) : error ? (
-        <p className="text-xs text-muted-foreground">{error}</p>
+        <p className="text-xs text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
       ) : history?.entries.length === 0 ? (
         <div className="rounded-md bg-background/70 px-3 py-2 text-xs text-muted-foreground">
           No captured password states yet.{" "}

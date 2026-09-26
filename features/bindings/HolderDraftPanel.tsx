@@ -36,6 +36,7 @@ import {
   RequestAccess,
   type RequestAccessTarget,
 } from "@/features/access-gate/components/RequestAccess";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface HolderDraftPanelProps {
   data: MandateWorkspaceData;
@@ -76,6 +77,7 @@ export function HolderDraftPanel({
           className="rounded-md border border-border bg-muted/40 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground"
         >
           {refusal}
+          <ErrorAlchemyMenu error={refusal} />
         </p>
         {requestAccess ? (
           <RequestAccess target={requestAccess} reason="" />

@@ -90,6 +90,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface FieldProps {
   /** Visible label text. Always required. */
@@ -258,6 +259,7 @@ export function Field({
             <p className="text-xs text-destructive flex items-center gap-1">
               <AlertCircle className="h-3 w-3 flex-shrink-0" />
               <span>{error}</span>
+              <ErrorAlchemyMenu error={error} />
             </p>
           ) : requiredEmpty ? (
             <p

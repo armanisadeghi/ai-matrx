@@ -76,6 +76,7 @@ import { LEAD_ROLE, OpeningVisionSend, RoleHeroIdentity } from "./RoomOpening";
 import { DeliverablePane } from "./DeliverablePane";
 import { DocumentPane } from "./DocumentPane";
 import { StageTabs } from "./StageTabs";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── The answer-append rule (v3 contract) ───────────────────────────────────
 // Answers written in the left-hand questions panel ride the NEXT message the
@@ -285,6 +286,7 @@ function ExpertNotJoined({
             {rolesError && (
               <p className="mt-2 break-words text-xs text-muted-foreground/80">
                 {rolesError}
+                <ErrorAlchemyMenu error={rolesError} />
               </p>
             )}
             <div className="mt-5 flex items-center justify-center">

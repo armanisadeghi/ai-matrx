@@ -58,6 +58,8 @@ function resolve(input: NonNullable<ErrorAlchemyMenuProps["input"]>): ErrorAlche
       base.message,
       typeof window !== "undefined" ? window.location.pathname : null,
       getCapturedErrors(),
+      Date.now(),
+      base.calls,
     );
     return captured.length > 0 ? { ...base, captured } : base;
   } catch {

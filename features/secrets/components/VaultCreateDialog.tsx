@@ -2003,7 +2003,7 @@ function DefinitionForm({
       )}
 
       {problems.length > 0 && (
-        <p className="text-xs text-muted-foreground">{problems[0]}</p>
+        <p className="text-xs text-muted-foreground">{problems[0]} <ErrorAlchemyMenu /></p>
       )}
       <div className="flex justify-end">
         <Button type="submit" size="sm" disabled={busy || problems.length > 0}>

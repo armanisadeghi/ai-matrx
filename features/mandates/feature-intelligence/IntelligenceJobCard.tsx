@@ -82,7 +82,7 @@ function Inputs({ mandateKey }: { mandateKey: string }) {
     return <span className="h-5 w-40 animate-pulse rounded bg-muted" aria-label="Reading inputs" />;
   }
   if (state.status === "error") {
-    return <span className="text-xs text-muted-foreground">{state.message}</span>;
+    return <span className="text-xs text-muted-foreground">{state.message} <ErrorAlchemyMenu error={state.message} /></span>;
   }
   const { inputs, acceptsUserInput } = state.surface;
   if (inputs.length === 0) {

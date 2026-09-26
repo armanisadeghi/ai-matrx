@@ -42,6 +42,7 @@ import {
 import { formatFileSize } from "@ai-matrx/kit/format";
 import type { CanonicalStorageImport } from "@/features/files/storage-sources/types";
 import { pythonFileInlineUrl } from "@/features/files/handler/utils/python-base";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface UploadedFile {
   /** Original local filename, retained even when the durable URL is opaque. */
@@ -680,6 +681,7 @@ export function InlineUploadArea({
               >
                 <X className="h-3 w-3" />
               </button>
+              <ErrorAlchemyMenu error={displayError} />
             </div>
           )}
 

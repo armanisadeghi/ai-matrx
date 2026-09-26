@@ -52,6 +52,7 @@ import {
 } from "@/features/context-menu-v3/types";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { toast } from "@/lib/toast";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 // context-menu-exempt: entity — the "values" view inspects one declared
 // SurfaceValue at a time, a manifest field, not a record; the "settings" view
 // attaches the real `surface` entity once its DB row is loaded (see
@@ -905,6 +906,7 @@ function SurfaceContextInspectorWindowInner({
             <ShieldAlert className="h-8 w-8" />
             <p className="text-sm font-medium">Surface settings unavailable</p>
             <p className="max-w-md text-xs">{surfaceError}</p>
+            <ErrorAlchemyMenu error={surfaceError} />
           </div>
         ) : (
           <div className="flex h-full items-center justify-center gap-2 text-xs text-muted-foreground">

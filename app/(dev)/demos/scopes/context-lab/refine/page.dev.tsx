@@ -495,6 +495,7 @@ export default function RefineContextLabPage() {
               </div>
               <div className="truncate text-xs text-muted-foreground">
                 {data.treeError ?? "Unknown error"}
+                <ErrorAlchemyMenu error={data.treeError} />
               </div>
             </div>
             <Button size="sm" variant="outline" onClick={data.retryTree}>

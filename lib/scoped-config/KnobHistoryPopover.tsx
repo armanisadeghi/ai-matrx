@@ -16,6 +16,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { extractErrorMessage } from "@/utils/errors";
 import { doorLabel, fetchKnobHistory, type KnobHistoryEntry } from "./history";
 import type { KnobScopeKindName } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function when(at: string): string {
   const date = new Date(at);
@@ -110,7 +111,10 @@ export function KnobHistoryPopover(props: {
           {loading && entries === null ? (
             <p className="px-3 py-3 text-muted-foreground">Reading the change history…</p>
           ) : error ? (
-            <p className="px-3 py-3 text-destructive">The history could not be read: {error}</p>
+            <p className="px-3 py-3 text-destructive">
+              The history could not be read: {error}{" "}
+              <ErrorAlchemyMenu className="align-middle" error={error} operation="Read this setting's change history" />
+            </p>
           ) : !entries || entries.length === 0 ? (
             <p className="px-3 py-3 text-muted-foreground">
               No changes recorded. It has held its current value since the settings history started.

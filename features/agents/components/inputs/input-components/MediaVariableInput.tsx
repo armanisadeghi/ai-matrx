@@ -52,6 +52,7 @@ import { ResourceFamilyPolicyEditor } from "@/features/agents/components/inputs/
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setRuntimeVariableResourcePolicy } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { selectRuntimeVariableResourcePolicies } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // 36-char canonical UUID — what cld_files file_ids look like.
 const UUID_PATTERN =
@@ -441,6 +442,7 @@ export function MediaVariableInput({
         <div className="flex items-start gap-1.5 px-2 py-1.5 rounded-md bg-destructive/10 text-destructive">
           <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
           <span className="text-[11px]">{error.message}</span>
+          <ErrorAlchemyMenu error={error.message} />
         </div>
       )}
 

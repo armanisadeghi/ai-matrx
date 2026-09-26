@@ -308,7 +308,7 @@ function ResourceAttachPickerBody({
           {loadError ? (
             <li className="flex items-start gap-1.5 px-3 py-4 text-xs text-amber-700 dark:text-amber-300">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              <span>{loadError}</span>
+              <span>{loadError} <ErrorAlchemyMenu error={loadError} /></span>
             </li>
           ) : loading && !live ? (
             <li className="px-3 py-4 text-center text-xs text-muted-foreground">

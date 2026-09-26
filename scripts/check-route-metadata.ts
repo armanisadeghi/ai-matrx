@@ -8,6 +8,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { faviconRouteData } from "../constants/favicon-route-data";
+import { emitItem } from "./checks/items.mjs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const strict = process.argv.includes("--strict");
@@ -23,6 +24,8 @@ interface Finding {
   route: string;
   file: string;
   reason: string;
+  /** Stable rule id — the first half of the item key `<rule>|<route>`. */
+  rule: string;
 }
 
 const families: RouteFamily[] = [
@@ -62,12 +65,14 @@ function routeDirectories(family: RouteFamily): string[] {
 
 function hasNestedPage(relativeDirectory: string): boolean {
   const absoluteDirectory = join(root, relativeDirectory);
-  return readdirSync(absoluteDirectory, { withFileTypes: true }).some((entry) => {
-    if (!entry.isDirectory() || entry.name.startsWith("_")) return false;
-    const childDirectory = join(absoluteDirectory, entry.name);
-    if (existsSync(join(childDirectory, "page.tsx"))) return true;
-    return hasNestedPage(join(relativeDirectory, entry.name));
-  });
+  return readdirSync(absoluteDirectory, { withFileTypes: true }).some(
+    (entry) => {
+      if (!entry.isDirectory() || entry.name.startsWith("_")) return false;
+      const childDirectory = join(absoluteDirectory, entry.name);
+      if (existsSync(join(childDirectory, "page.tsx"))) return true;
+      return hasNestedPage(join(relativeDirectory, entry.name));
+    },
+  );
 }
 
 const findings: Finding[] = [];
@@ -80,13 +85,18 @@ for (const entry of faviconRouteData) {
       route: entry.href,
       file: "constants/favicon-route-data.ts",
       reason: "route has more than one favicon registry entry",
+      rule: "duplicate-registry-entry",
     });
   }
   seenRegisteredRoutes.add(entry.href);
 
   const letter = entry.favicon?.letter?.toUpperCase();
-  if (!letter || entry.href === "/rag" || entry.href.startsWith("/legacy/")) continue;
-  routesByLetter.set(letter, [...(routesByLetter.get(letter) ?? []), entry.href]);
+  if (!letter || entry.href === "/rag" || entry.href.startsWith("/legacy/"))
+    continue;
+  routesByLetter.set(letter, [
+    ...(routesByLetter.get(letter) ?? []),
+    entry.href,
+  ]);
 }
 
 for (const [letter, routes] of routesByLetter) {
@@ -95,6 +105,7 @@ for (const [letter, routes] of routesByLetter) {
     route: routes.join(", "),
     file: "constants/favicon-route-data.ts",
     reason: `favicon letter ${letter} is assigned to multiple routes`,
+    rule: "shared-favicon-letter",
   });
 }
 
@@ -114,6 +125,7 @@ for (const family of families) {
         file: page,
         reason:
           "page metadata does not cover nested routes; move the module identity to layout.tsx",
+        rule: "page-not-layout",
       });
       continue;
     }
@@ -123,6 +135,7 @@ for (const family of families) {
         route,
         file: boundary,
         reason: "no metadata boundary at the module root",
+        rule: "no-metadata-boundary",
       });
       continue;
     }
@@ -133,6 +146,7 @@ for (const family of families) {
         file: boundary,
         reason:
           "metadata bypasses the canonical route helpers, so favicon/social defaults can drift",
+        rule: "bypasses-canonical-helper",
       });
     }
 
@@ -143,6 +157,7 @@ for (const family of families) {
           file: boundary,
           reason:
             "administration route has no explicit, route-specific favicon letter",
+          rule: "no-admin-favicon-letter",
         });
       }
     } else if (!registeredRoutes.has(route)) {
@@ -150,12 +165,15 @@ for (const family of families) {
         route,
         file: boundary,
         reason: "route is missing from constants/favicon-route-data.ts",
+        rule: "unregistered-favicon",
       });
     } else {
       const registeredLetter = faviconRouteData
         .find((entry) => entry.href === route)
         ?.favicon?.letter?.toUpperCase();
-      const explicitLetter = source.match(/\bletter\s*:\s*["']([^"']+)["']/)?.[1];
+      const explicitLetter = source.match(
+        /\bletter\s*:\s*["']([^"']+)["']/,
+      )?.[1];
       if (
         registeredLetter &&
         explicitLetter &&
@@ -165,6 +183,7 @@ for (const family of families) {
           route,
           file: boundary,
           reason: `root metadata overrides registry letter ${registeredLetter} with ${explicitLetter}`,
+          rule: "overrides-registry-letter",
         });
       }
     }
@@ -176,6 +195,17 @@ if (findings.length === 0) {
     "check-route-metadata: OK — every active module root has canonical metadata and favicon identity.",
   );
   exitAfterDrain(0);
+}
+
+// Items (ITEM-PROTOCOL.md): no allowlist or baseline — every item is new, keyed `<rule>|<route>`.
+for (const finding of findings) {
+  emitItem({
+    key: `${finding.rule}|${finding.route}`,
+    status: "new",
+    title: finding.reason,
+    file: finding.file,
+    rule: finding.rule,
+  });
 }
 
 console.error("ROUTE METADATA GAPS");

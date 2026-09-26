@@ -6,6 +6,7 @@ import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { isTerminal, resultAsObject } from "../_shared";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Inline renderer for `knowledge_browse(action="stores")` — the curated data
@@ -112,6 +113,7 @@ export function KnowledgeStoresInline({
             </div>
           ) : null}
         </div>
+        <ErrorAlchemyMenu error={entry.errorMessage} />
       </div>
     );
   }

@@ -38,6 +38,7 @@ import { useUniversalSettings } from "./UniversalSettingsContext";
 import { SETTINGS_BASE, tabIdToHref } from "../route-shell/routing";
 import { auditedSettingsDispositions, dispositionFor } from "./disposition";
 import { KnobRungOverrides } from "./KnobRungOverrides";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function UniversalSettingsRows({
   knobs,
@@ -227,7 +228,7 @@ export default function UniversalSettingsPane() {
     return (
       <div className="p-4">
         <SettingsCallout tone="error" title="Configuration could not be read">
-          <p>{settings.error}</p>
+          <p>{settings.error} <ErrorAlchemyMenu error={settings.error} /></p>
           <div className="mt-3">
             <SettingsButton
               label="Configuration"

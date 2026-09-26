@@ -30,6 +30,7 @@ import { supabase } from "@/utils/supabase/client";
 import { toast } from "@/lib/toast";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { InlineMediaRef } from "@ai-matrx/media/react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function ProfilePhotoTab() {
   const currentAvatar = useAppSelector(selectUserAvatarUrl);
@@ -118,6 +119,7 @@ export function ProfilePhotoTab() {
         <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
           <ShieldAlert className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
           <span>{persistError}</span>
+          <ErrorAlchemyMenu error={persistError} />
         </div>
       ) : null}
 

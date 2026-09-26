@@ -31,6 +31,7 @@ import {
   type MandateDefinitionRow,
 } from "./service";
 import { versionLabel, type ImpactVerdict } from "./impact";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type CompanionSection = "history" | "test";
 
@@ -179,6 +180,7 @@ function VersionHistory({
           <p className="flex items-start gap-1.5 text-xs text-rose-700 dark:text-rose-400">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span>Couldn&apos;t load both versions: {error}</span>
+            <ErrorAlchemyMenu error={error} />
           </p>
         ) : loading || !diff || diff.key !== pairKey ? (
           <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
@@ -267,6 +269,7 @@ function QuickTest({ mandateKeys }: { mandateKeys: string[] }) {
           <p className="flex items-start gap-1.5 text-xs text-rose-700 dark:text-rose-400">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span>{error}</span>
+            <ErrorAlchemyMenu error={error} />
           </p>
         ) : loading || !loaded || loaded.key !== activeKey ? (
           <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">

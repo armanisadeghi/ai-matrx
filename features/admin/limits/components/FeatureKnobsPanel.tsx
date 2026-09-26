@@ -26,6 +26,7 @@ import { knobMatchesControlSearch } from "@/features/settings/search/controlSear
 import { fetchKnobOverrideCounts } from "@/lib/scoped-config/service";
 import { registerDirectiveHandler } from "@/lib/client-directives/directiveRegistry";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** `?knob=<feature.key>` — what a mandate page or a doc links a knob by. */
 const KNOB_PARAM = "knob";
@@ -79,7 +80,7 @@ function SystemKnobRows() {
   const matching = settings.knobs.filter((knob) => knobMatchesControlSearch(knob, query));
 
   if (settings.isLoading) return <p className="text-sm text-muted-foreground">Loading knobs…</p>;
-  if (settings.error) return <SettingsCallout tone="error" title="Knobs could not be read">{settings.error}</SettingsCallout>;
+  if (settings.error) return <SettingsCallout tone="error" title="Knobs could not be read">{settings.error} <ErrorAlchemyMenu error={settings.error} /></SettingsCallout>;
   const overdue = settings.knobs.filter((knob) => isOverdue(knob.set_by, knob.review_due));
   const trimmed = query.trim();
 
@@ -101,7 +102,7 @@ function SystemKnobRows() {
         Each row keeps its registered default, basis, and review date. Changes refresh this register and all override counts.
       </SettingsCallout>
       {overdue.length > 0 && <p className="mt-3 flex items-center gap-2 text-sm text-amber-600"><AlertTriangle className="h-4 w-4" />{overdue.length} agent-set setting{overdue.length === 1 ? " is" : "s are"} past review.</p>}
-      {countError && <SettingsCallout tone="error" title="Override counts could not be read">{countError}</SettingsCallout>}
+      {countError && <SettingsCallout tone="error" title="Override counts could not be read">{countError} <ErrorAlchemyMenu error={countError} /></SettingsCallout>}
       <div className="relative mt-4">
         <SettingsNavigationSearch
           value={query}

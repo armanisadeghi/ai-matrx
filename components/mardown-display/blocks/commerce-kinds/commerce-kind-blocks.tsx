@@ -36,6 +36,7 @@ import {
   strings,
   text,
 } from "../search-kinds/search-kind-data";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface CommerceBlockProps {
   serverData?: unknown;
@@ -824,6 +825,7 @@ export function PublishPreflightBlock({
               {failure.fix && (
                 <div className="mt-1 text-xs text-primary">
                   Fix: {failure.fix}
+                  <ErrorAlchemyMenu error={failure.fix} />
                 </div>
               )}
             </div>

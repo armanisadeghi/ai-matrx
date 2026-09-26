@@ -1095,7 +1095,7 @@ function WorkingTableBar({
     onSelect: (id: string) => void;
     onOpenTable: (id: string) => void;
 }) {
-    if (error) return <Refusal>{error}</Refusal>;
+    if (error) return <Refusal>{error} <ErrorAlchemyMenu error={error} /></Refusal>;
     if (loading && tables.length === 0) {
         return (
             <p className="px-1 text-sm text-muted-foreground">Reading this organization’s tables…</p>
@@ -1329,7 +1329,7 @@ function MemberVisibilityControl({
         return <Aside>{door.authorityDetail}</Aside>;
     }
     if (choicesProblem) {
-        return <Refusal>{choicesProblem}</Refusal>;
+        return <Refusal>{choicesProblem} <ErrorAlchemyMenu error={choicesProblem} /></Refusal>;
     }
     if (choicesLoading) {
         return <p className="text-sm text-muted-foreground">Reading what this setting can be set to…</p>;
@@ -1364,7 +1364,7 @@ function MemberVisibilityControl({
                         because both read this one setting.
                     </Aside>
                 )}
-                {refusal ? <Refusal>{refusal}</Refusal> : null}
+                {refusal ? <Refusal>{refusal} <ErrorAlchemyMenu error={refusal} /></Refusal> : null}
             </div>
         </TryIt>
     );
@@ -1501,7 +1501,7 @@ function AgentTry({ organizationId }: { organizationId: string }) {
         <div className="space-y-3">
             <TryIt hint="the agent really writes into this organization">
                 {problem ? (
-                    <Refusal>Could not list this organization’s agents — {problem}</Refusal>
+                    <Refusal>Could not list this organization’s agents — {problem} <ErrorAlchemyMenu error={problem} /></Refusal>
                 ) : agents === null ? (
                     <p className="text-sm text-muted-foreground">Finding this organization’s agents…</p>
                 ) : agents.length === 0 ? (
@@ -1562,7 +1562,7 @@ function HistoryTry({ table }: { table: Table }) {
     const rows = records.data?.rows ?? [];
     const recordId = chosen ?? rows[0]?.id ?? null;
 
-    if (records.error) return <Refusal>{refusalLineForAPerson(records.error)}</Refusal>;
+    if (records.error) return <Refusal>{refusalLineForAPerson(records.error)} <ErrorAlchemyMenu /></Refusal>;
     if (records.loading && rows.length === 0) {
         return <p className="text-sm text-muted-foreground">Reading this table’s records…</p>;
     }
@@ -1860,7 +1860,7 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
     }
 
     if (problem && templates !== null && templates.length === 0 && renders === null) {
-        return <Refusal>{problem}</Refusal>;
+        return <Refusal>{problem} <ErrorAlchemyMenu error={problem} /></Refusal>;
     }
     if (templates === null) {
         return <p className="text-sm text-muted-foreground">Reading this table’s document templates…</p>;
@@ -2048,7 +2048,7 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                         </div>
                     )}
 
-                    {refusal ? <Refusal>{refusal}</Refusal> : null}
+                    {refusal ? <Refusal>{refusal} <ErrorAlchemyMenu error={refusal} /></Refusal> : null}
 
                     {/* ── the documents already made from this record ──────── */}
                     {renders && renders.length > 0 ? (
@@ -2406,7 +2406,7 @@ function NotificationsTry({ table, organizationId }: { table: Table; organizatio
         void load();
     }, [load]);
 
-    if (problem) return <Refusal>{problem}</Refusal>;
+    if (problem) return <Refusal>{problem} <ErrorAlchemyMenu error={problem} /></Refusal>;
     if (rows === null) {
         return <p className="text-sm text-muted-foreground">Reading what this table tells people about…</p>;
     }

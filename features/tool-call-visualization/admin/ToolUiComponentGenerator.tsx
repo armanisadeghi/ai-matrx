@@ -1100,6 +1100,7 @@ export function ToolUiComponentGenerator({
                 </div>
                 <pre className="text-[11px] bg-muted/40 p-3 rounded-lg overflow-auto max-h-[300px] whitespace-pre-wrap font-mono">
                   {saveError.raw}
+                  <ErrorAlchemyMenu error={saveError.raw} />
                 </pre>
               </div>
             )}

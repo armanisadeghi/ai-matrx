@@ -72,6 +72,7 @@ import FeedbackDetailDialog from "./FeedbackDetailDialog";
 import { feedbackBrief, feedbackRowSummary } from "../format";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const TABLE_ID = "admin-feedback";
 const DONE: FeedbackStatus[] = ["resolved", "closed", "wont_fix", "deferred"];
@@ -767,6 +768,7 @@ export default function FeedbackTable() {
         <div className="mb-3 flex items-center justify-between gap-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
           <span>
             {referenceError} Category and assignee filtering may be incomplete.
+            <ErrorAlchemyMenu error={referenceError} />
           </span>
           <Button
             variant="outline"

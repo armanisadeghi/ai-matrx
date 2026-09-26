@@ -249,7 +249,7 @@ export const SourceFolderNode: React.FC<SourceFolderNodeProps> = ({
               style={{ paddingLeft: 8 + (depth + 1) * 12 }}
             >
               <span className="text-red-500">Failed to load <ErrorAlchemyMenu /></span>
-              <span className="text-neutral-500">{error}</span>
+              <span className="text-neutral-500">{error} <ErrorAlchemyMenu error={error} /></span>
               <button
                 type="button"
                 className="self-start rounded-sm bg-neutral-200 px-2 py-0.5 font-medium text-neutral-800 hover:bg-neutral-300 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"

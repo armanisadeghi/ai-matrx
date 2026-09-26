@@ -40,6 +40,7 @@ import {
   entryHasError,
   toolEntryBundleToHuman,
 } from "../utils/toolEntryBundle";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Copy payload helpers ──────────────────────────────────────────────────
 
@@ -213,6 +214,7 @@ export const ErrorView: React.FC<{ entry: ToolLifecycleEntry }> = ({
           {entry.errorType && (
             <Badge variant="outline" className="px-1.5 py-0 font-mono text-[10px]">
               {entry.errorType}
+              <ErrorAlchemyMenu error={entry.errorType} />
             </Badge>
           )}
         </div>

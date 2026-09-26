@@ -11,6 +11,7 @@ import { useActiveSettingsTabId } from "../components/SettingsTabHost";
 import { useUniversalSettings } from "../universal/UniversalSettingsContext";
 import { UniversalSettingsRows } from "../universal/UniversalSettingsPane";
 import { THEME_MODE_OPTIONS, type ThemeMode } from "../agent-writable-settings";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const TABLE_DENSITY_KNOB_KEY = "tables.density.mode";
 
@@ -35,6 +36,7 @@ function TableDensitySettings() {
       {settings.error && (
         <SettingsCallout tone="error" title="Table density could not be read">
           {settings.error}
+          <ErrorAlchemyMenu error={settings.error} />
         </SettingsCallout>
       )}
       {!settings.isLoading && !settings.error && !settings.organizationId && (

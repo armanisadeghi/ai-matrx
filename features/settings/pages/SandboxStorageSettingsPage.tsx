@@ -128,7 +128,7 @@ export default function SandboxStoragePage() {
           <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
           <div>
             <div className="font-medium">Couldn&apos;t load every tier</div>
-            <div className="text-xs mt-0.5 opacity-80">{persistence.error}</div>
+            <div className="text-xs mt-0.5 opacity-80">{persistence.error} <ErrorAlchemyMenu error={persistence.error} /></div>
           </div>
         </div>
       )}

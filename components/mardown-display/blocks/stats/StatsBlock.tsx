@@ -16,6 +16,7 @@ import { toast } from "@/lib/toast";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { soleFence } from "@/lib/markdown/code-ranges";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface StatItem {
   label: string;
@@ -125,6 +126,7 @@ export const StatsBlock: React.FC<StatsBlockProps> = ({ content = "", isStreamAc
           <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
             <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
             <p className="text-xs text-muted-foreground">{error}</p>
+            <ErrorAlchemyMenu error={error} />
           </div>
         ) : spec ? (
           <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>

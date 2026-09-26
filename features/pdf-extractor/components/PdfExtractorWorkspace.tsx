@@ -705,6 +705,7 @@ function ExtractionTabContent({
         </p>
         <p className="text-xs text-muted-foreground text-center max-w-[280px]">
           {tab.error}
+          <ErrorAlchemyMenu error={tab.error} />
         </p>
       </div>
     );

@@ -124,7 +124,7 @@ export function ConversationBattlePage() {
     >
       <RouteHeader
         left={
-          <span className="text-sm font-medium truncate">
+          <span className="text-sm font-medium truncate max-sm:hidden">
             Conversation battle
           </span>
         }

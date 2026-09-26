@@ -174,6 +174,7 @@ import { useDialogSitting } from "../sitting/useDialogSitting";
 import { SittingResumed } from "../sitting/SittingResumed";
 import { IngestOutcome, RunStages } from "../components/RunStages";
 import { describeIngest } from "../components/detail/IngestSourceDialog";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * A HALF-TYPED ANSWER TO TODAY'S QUESTION IS REAL WORK. Cold walk 6
@@ -436,7 +437,7 @@ export function DailyDripDialog({
         {knobs.problem ? (
           <p className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-400">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <span>{knobs.problem}</span>
+            <span>{knobs.problem} <ErrorAlchemyMenu error={knobs.problem} /></span>
           </p>
         ) : null}
 

@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import VoicesList from "./VoicesList";
 import VoiceActions from "./VoiceActions";
 import VoicePlayground from "./VoicePlayground";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useAiAudio } from "./AiVoicePage"; // We'll share the hook from here or should it be separated?
 
 const AiVoiceFloatingWorkspace: React.FC = () => {
@@ -70,6 +71,7 @@ const AiVoiceFloatingWorkspace: React.FC = () => {
         return (
             <div className="flex w-full h-full items-center justify-center p-6 text-sm text-destructive text-center">
                 <span className="font-semibold">{error}</span>
+              <ErrorAlchemyMenu error={error} />
             </div>
         );
     }

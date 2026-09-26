@@ -147,6 +147,7 @@ export function DirectiveCatalogClient() {
             </p>
             <p className="max-w-md font-mono text-xs text-muted-foreground">
               {error}
+              <ErrorAlchemyMenu error={error} />
             </p>
             <Button type="button" variant="outline" size="sm" onClick={refresh}>
               <RefreshCw className="h-3.5 w-3.5" />

@@ -214,6 +214,7 @@ export function PlanToolbar({
         >
           <X className="h-3 w-3" />
         </Button>
+        <ErrorAlchemyMenu />
       </span>
     ) : run.status === "error" ? (
       <span className="flex min-w-0 items-center gap-1.5 text-xs text-destructive">

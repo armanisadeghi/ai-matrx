@@ -51,6 +51,7 @@ import {
   agentRunResult,
 } from "./proTextareaAgentActions";
 import type { SourceFeature } from "@/types/python-generated/source-attribution";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ProTextareaAgentPanelProps {
   actionId: ProTextareaAgentActionId;
@@ -367,6 +368,7 @@ export function ProTextareaAgentPanel({
         ) : mandateRefusal ? (
           <div className="flex h-full items-center justify-center px-6 text-center text-sm text-muted-foreground">
             {mandateRefusal}
+            <ErrorAlchemyMenu error={mandateRefusal} />
           </div>
         ) : null}
       </div>

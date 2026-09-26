@@ -14,12 +14,13 @@ import { UniversalSettingsProvider, useUniversalSettings } from "@/features/sett
 import { UniversalSettingsRows } from "@/features/settings/universal/UniversalSettingsPane";
 import { Skeleton } from "@ai-matrx/design-system";
 import { ConfigurationExport } from "@/features/settings/universal/ConfigurationExport";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function OrganizationConfigurationRows() {
   const settings = useUniversalSettings();
   if (settings.isLoading) return <SuspenseLoader size="sm" message="Reading organization configuration…" />;
   if (settings.error) {
-    return <SettingsCallout tone="error" title="Configuration could not be read">{settings.error}</SettingsCallout>;
+    return <SettingsCallout tone="error" title="Configuration could not be read">{settings.error} <ErrorAlchemyMenu error={settings.error} /></SettingsCallout>;
   }
   if (settings.missing.length > 0) return <SettingsCallout tone="error" title="Some settings resolved to nothing">{settings.missing.map((knob) => knob.full_key).join(", ")} — the register and the code disagree.</SettingsCallout>;
   const knobs = settings.knobs.filter((knob) => !knob.feature.startsWith("hr."));

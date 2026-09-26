@@ -34,6 +34,7 @@ import { assessmentService } from "../data/assessmentService";
 import type { AssessmentKind, AssessmentRow } from "../data/types";
 import { KIND_CONFIG, type KindConfig } from "./kindConfig";
 import { formatRelativeTime } from "@/utils/datetime";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type VisibilityFilter = "all" | "mine" | "shared" | "public";
 const VISIBILITY_FILTERS: { id: VisibilityFilter; label: string }[] = [
@@ -312,7 +313,7 @@ export function AssessmentHome({ kind }: { kind: AssessmentKind }) {
               <p className="text-sm font-medium text-foreground">
                 Couldn&apos;t load your {config.pluralLabel.toLowerCase()}
               </p>
-              <p className="max-w-md text-xs text-muted-foreground">{error}</p>
+              <p className="max-w-md text-xs text-muted-foreground">{error} <ErrorAlchemyMenu /></p>
             </div>
           ) : rows.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">

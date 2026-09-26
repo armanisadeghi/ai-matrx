@@ -1333,7 +1333,7 @@ function FactsPanel({
         ) : verdictsError ? (
           <div className="inline-flex items-center gap-1.5">
             <StatusToken status="error" label="Check failed" />
-            <FieldHelp label="Variable flow error">{verdictsError}</FieldHelp>
+            <FieldHelp label="Variable flow error">{verdictsError} <ErrorAlchemyMenu error={verdictsError} /></FieldHelp>
           </div>
         ) : variableVerdicts.length > 0 ? (
           <VariableVerdictList items={variableVerdicts} />

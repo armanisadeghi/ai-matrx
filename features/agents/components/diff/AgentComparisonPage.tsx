@@ -22,6 +22,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const AgentDiffViewer = dynamic(
   () => import("./AgentDiffViewer").then((m) => m.AgentDiffViewer),
@@ -312,8 +313,8 @@ export function AgentComparisonPage({
           <span className="font-medium text-foreground">
             This comparison could not be opened.
           </span>
-          {left.loadError && <span>{left.loadError}</span>}
-          {right.loadError && <span>{right.loadError}</span>}
+          {left.loadError && <span>{left.loadError} <ErrorAlchemyMenu error={left.loadError} /></span>}
+          {right.loadError && <span>{right.loadError} <ErrorAlchemyMenu error={right.loadError} /></span>}
           <span className="text-xs">
             Pick an agent on each side above to compare something else.
           </span>

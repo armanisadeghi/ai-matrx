@@ -727,6 +727,7 @@ function RunRow({
         <span className="flex w-full items-center gap-1 text-[10px] text-destructive">
           <AlertTriangle className="h-3 w-3 shrink-0" />
           <span className="truncate">{run.error_text}</span>
+          <ErrorAlchemyMenu error={run.error_text} />
         </span>
       ) : null}
     </button>

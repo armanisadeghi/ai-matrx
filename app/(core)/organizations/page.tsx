@@ -83,6 +83,7 @@ import {
   type OrganizationKpis,
 } from "@/features/organizations/lib/copy";
 import { organizationLogoRef } from "@/features/organizations/lib/organization-logo";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface RoleMeta {
   label: string;
@@ -581,6 +582,7 @@ export default function OrganizationsPage() {
                     Try again
                   </Button>
                 </div>
+                <ErrorAlchemyMenu error={error} />
               </Card>
             ) : organizations.length === 0 ? (
               <Card className="p-12 text-center">

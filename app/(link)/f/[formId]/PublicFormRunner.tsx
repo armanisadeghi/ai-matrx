@@ -36,6 +36,7 @@ import type { Field, RuleExpression } from "@ai-matrx/records";
 
 import type { PublicForm } from "@/features/forms/service";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 
 /** Authored form text → the static inline level (phrasing, valid inside the package's <p>). */
@@ -387,7 +388,7 @@ export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?
       {!sent && save.kind !== "idle" ? (
         <div className="mt-2 flex flex-col gap-1 text-xs text-muted-foreground" aria-live="polite">
           {save.kind === "saving" ? <span>Saving your answers…</span> : null}
-          {save.kind === "refused" ? <span>{save.message}</span> : null}
+          {save.kind === "refused" ? <span>{save.message} <ErrorAlchemyMenu error={save.message} /></span> : null}
           {save.kind === "saved" && resumeUrl ? (
             <span className="flex flex-wrap items-center gap-x-2">
               <span>

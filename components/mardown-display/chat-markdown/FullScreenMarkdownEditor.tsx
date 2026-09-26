@@ -847,6 +847,7 @@ function TabErrorFallback({
                 <AdminSection label="Next.js Error Digest">
                   <p className="font-mono text-xs text-foreground">
                     {(errorInfo as ErrorInfo & { digest?: string }).digest}
+                    <ErrorAlchemyMenu />
                   </p>
                 </AdminSection>
               )}

@@ -23,6 +23,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ResearchTopicSelect } from "@/features/marketing/content-plan/components/ResearchTopicSelect";
 import type { ResearchDocument } from "@/features/research/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface SetupAiRunSummary {
   kind: "shape" | "names" | "review" | "keywords" | "entities";
@@ -167,6 +168,7 @@ export function SetupAiBar({
           <button type="button" aria-label="Dismiss AI error" onClick={onDismissError}>
             <X className="h-3 w-3" />
           </button>
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : lastRun ? (
         <p

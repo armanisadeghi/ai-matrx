@@ -47,6 +47,7 @@ import {
 import { composeKindAgentIntent } from "@/features/content-ir/studio/kind-agent-intents";
 import { useKindAgentLaunch } from "@/features/content-ir/studio/useKindAgentLaunch";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ShapeActivationControlProps {
   kind: string;
@@ -289,6 +290,7 @@ export default function ShapeActivationControl({
         <p className="mt-2 flex items-start gap-1.5 border-t border-border pt-2 text-xs text-destructive">
           <CircleAlert className="mt-0.5 h-3 w-3 shrink-0" />
           <span>{error}</span>
+          <ErrorAlchemyMenu error={error} />
         </p>
       ) : null}
     </section>

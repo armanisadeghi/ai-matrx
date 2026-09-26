@@ -30,6 +30,7 @@ import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { serverRefusal } from "@/lib/progress/failureSentence";
 import { useScrollIntoViewOnAppear } from "./useScrollIntoViewOnAppear";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface DurableRunFailureProps {
   /** The row's own reason. Null/empty renders nothing at all. */
@@ -107,6 +108,7 @@ export function DurableRunFailure({
           {children}
         </div>
       ) : null}
+      <ErrorAlchemyMenu error={refusal.traceId} />
     </div>
   );
 }

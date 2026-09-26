@@ -645,6 +645,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
                   {generatorLoadError}
                 </div>
               </div>
+              <ErrorAlchemyMenu error={generatorLoadError} />
             </div>
           ) : null}
 

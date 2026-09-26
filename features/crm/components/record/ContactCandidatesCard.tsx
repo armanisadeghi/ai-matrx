@@ -49,6 +49,7 @@ import {
 } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { SectionCard } from "./SectionCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   partyId: string;
@@ -222,6 +223,7 @@ export function ContactCandidatesCard({ partyId, onChanged }: Props) {
             <Button variant="outline" size="sm" onClick={() => void load()}>
               Retry
             </Button>
+            <ErrorAlchemyMenu />
           </div>
         ))}
 

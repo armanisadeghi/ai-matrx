@@ -103,6 +103,7 @@ import {
   AdvanceResultsCard,
   VerdictDetail,
 } from "./impact-cells";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type ImpactBatchMode = "dry_run" | "post_batch";
 
@@ -769,6 +770,7 @@ export function ImpactBatchPanel({
             <span>
               Grades are unavailable — every pin here is unknown, not safe. {error}
             </span>
+            <ErrorAlchemyMenu error={error} />
           </p>
         ) : loading && !impact ? (
           <p className="inline-flex items-center gap-1.5 text-muted-foreground">

@@ -1086,6 +1086,7 @@ function ErrorDialog({
                 <Label>Error Details</Label>
                 <pre className="mt-1 overflow-x-auto rounded bg-muted p-3 text-xs">
                   {JSON.stringify(selected.error_details, null, 2)}
+                  <ErrorAlchemyMenu />
                 </pre>
               </div>
             )}

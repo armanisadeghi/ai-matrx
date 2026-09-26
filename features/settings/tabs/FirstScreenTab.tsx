@@ -35,6 +35,7 @@ import {
   RegistryCoverage,
   UniversalSettingsRows,
 } from "../universal/UniversalSettingsPane";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The registry keys the first screen shows, in order (USD-12). */
 export const FIRST_SCREEN_MODEL_KEY = "agents.model_prefs.chat_default_model";
@@ -123,6 +124,7 @@ export default function FirstScreenTab() {
       {settings.error && (
         <SettingsCallout tone="error" title="Your AI and voice defaults could not be read">
           {settings.error}
+          <ErrorAlchemyMenu error={settings.error} />
         </SettingsCallout>
       )}
       {noOrganizationYet && (

@@ -334,6 +334,7 @@ export default function RecoveryWindowImpl() {
                         <span className="leading-snug">
                           {selected.errorMessage}
                         </span>
+                        <ErrorAlchemyMenu error={selected.errorMessage} />
                       </div>
                     )}
                   </div>

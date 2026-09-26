@@ -35,6 +35,7 @@ import {
   flashcardEntityRef,
 } from "@/features/flashcards/components/flashcard-menu";
 import { useOpenFlashcardItemWindow } from "@/features/overlays/openers/flashcardItemWindow";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface FlashcardStudyWindowProps {
   isOpen: boolean;
@@ -198,6 +199,7 @@ export function FlashcardStudyWindow({
           <p className="text-sm font-medium">Couldn&apos;t load this set</p>
           <p className="max-w-sm text-xs text-muted-foreground">
             {study.error}
+            <ErrorAlchemyMenu error={study.error} />
           </p>
         </div>
       );

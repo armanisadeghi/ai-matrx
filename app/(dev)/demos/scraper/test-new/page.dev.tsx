@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { ScraperHookErrorDetails } from "@/features/scraper/parts/ScraperHookErrorDetails";
 import { ScrapedContentPretty } from "@/features/scraper/parts/ScrapedContentPretty";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function normalizeUrl(raw: string): string | null {
   const trimmed = raw.trim();
@@ -113,7 +114,7 @@ export default function TestNewScraperPage() {
           )}
           {statusMessage && !hasError && (
             <Alert className="mt-3">
-              <AlertDescription>{statusMessage}</AlertDescription>
+              <AlertDescription>{statusMessage} <ErrorAlchemyMenu error={statusMessage} /></AlertDescription>
             </Alert>
           )}
         </div>

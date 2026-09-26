@@ -157,6 +157,7 @@ export function AnalysisCard({
               {analysis.error && (
                 <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                   {analysis.error}
+                  <ErrorAlchemyMenu error={analysis.error} />
                 </p>
               )}
             </div>

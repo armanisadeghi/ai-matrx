@@ -113,6 +113,7 @@ import { MemoryAidButton } from "@/features/education/memory/components/MemoryAi
 import { CardDetailLayers } from "./CardDetailLayers";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { useFlashcardMandates } from "../../data/mandate-disclosure";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // One-at-a-time on user action — the enhance dialog (its agents, preview flow,
 // entitlement chrome) loads only when the learner actually asks to improve a
@@ -726,8 +727,8 @@ export function StudyDeck(props: StudyDeckProps) {
       <Shell>
         <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card px-6 py-16 text-center">
           <AlertCircle className="h-6 w-6 text-muted-foreground" />
-          <p className="text-sm font-medium text-foreground">{errorTitle}</p>
-          <p className="max-w-md text-xs text-muted-foreground">{error}</p>
+          <p className="text-sm font-medium text-foreground">{errorTitle} <ErrorAlchemyMenu /></p>
+          <p className="max-w-md text-xs text-muted-foreground">{error} <ErrorAlchemyMenu /></p>
         </div>
       </Shell>
     );

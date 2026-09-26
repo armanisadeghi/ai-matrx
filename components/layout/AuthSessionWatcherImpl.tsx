@@ -24,6 +24,7 @@ import { useRouter } from "next/navigation";
 import { LogIn, AlertTriangle, RefreshCw, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AuthSessionWatcherImplProps {
   variant: "expired" | "identity-changed";
@@ -107,6 +108,7 @@ export default function AuthSessionWatcherImpl({
             Your session has timed out. Sign in again from this tab or any
             other — this tab continues on its own once you are signed in. Your
             work is saved.
+            <ErrorAlchemyMenu />
           </p>
         </div>
 

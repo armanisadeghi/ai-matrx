@@ -23,7 +23,11 @@
  *      `if (error) return …`) — whatever the rendered value is called.
  * Error values include message-like names (`msg`, `message`, `problem`), and
  * failure sentences include "Unable to…", "Error loading…", "Save failed". A
- * hidden menu (`hidden`, `sr-only`, `invisible`) carries nothing.
+ * hidden menu (`hidden`, `sr-only`, `invisible`, `opacity-0` with no hover
+ * reveal) carries nothing. Round 3 added "Failed to compile", "Template
+ * Error", "Permission denied", "timed out", red "Error: {…}", `reason`/`detail`
+ * names, orange error text, and any error/message value rendered in an error
+ * branch whatever its colour.
  * "Own children" means text and the values an expression actually renders —
  * the leaves of `a ? b : c`, `a && b`, `a ?? b` — never the inside of a
  * callback, a nested element, a comment or a prop. Controls (buttons, inputs,
@@ -55,12 +59,14 @@ export interface ErrorDisplayHit {
 const RED =
   /(?<!(?:hover|focus|focus-visible|focus-within|active|group-hover|peer-hover|disabled|placeholder|visited):)\b(?:text|bg|border|ring)-(?:destructive|red-\d{2,3}|rose-\d{2,3})\b|\btext-\[#(?:ff6961|f87171|ef4444|dc2626)\]/i;
 const NOTICE =
-  /(?<!(?:hover|focus|focus-visible|focus-within|active|group-hover|peer-hover|disabled|placeholder|visited):)\b(?:text|bg|border)-(?:amber-\d{2,3}|warning|yellow-\d{2,3})\b/;
+  /(?<!(?:hover|focus|focus-visible|focus-within|active|group-hover|peer-hover|disabled|placeholder|visited):)\b(?:text|bg|border)-(?:amber-\d{2,3}|orange-\d{2,3}|warning|yellow-\d{2,3})\b/;
 const FAILURE_WORDS =
-  /something went wrong|could(?:n['’]t| not) (?:load|save|read|open|find|update|create|delete|connect|send|start|reach|be (?:loaded|saved|read))|failed to (?:load|save|read|fetch|create|update|delete|send|start|connect|open)|unable to (?:load|save|read|fetch|open|find|create|update|delete|send|start|connect|reach|play|process|generate)|error (?:loading|saving|fetching|reading|creating|updating|deleting|sending|connecting|processing)|\b(?:save|load|upload|download|delete|update|sync|send|fetch|import|export|connection|request|generation) failed\b|\bnot saved\b|unexpected error|an error occurred/i;
+  /something went wrong|could(?:n['’]t| not) (?:load|save|read|open|find|update|create|delete|connect|send|start|reach|be (?:loaded|saved|read))|failed to (?:load|save|read|fetch|create|update|delete|send|start|connect|open)|unable to (?:load|save|read|fetch|open|find|create|update|delete|send|start|connect|reach|play|process|generate)|error (?:loading|saving|fetching|reading|creating|updating|deleting|sending|connecting|processing)|\b(?:save|load|upload|download|delete|update|sync|send|fetch|import|export|connection|request|generation) failed\b|\bnot saved\b|unexpected error|an error occurred|failed to compile|\btemplate error\b|permission denied|access denied|\btimed out\b|\bnot authori[sz]ed\b/i;
+/** Words that only mean an error when the text is painted red ("Error: {detail}"). */
+const RED_ONLY_WORDS = /\berror\b\s*:?|\bdenied\b|\binvalid\b/i;
 const ERROR_NAME = /(?:[eE]rror|Err$|^err$|^e$|[fF]ailure|[rR]efusal|^why$|Why$|[pP]roblem)/;
 /** Message-like names count only in red text: an amber `{message}` is usually a warning. */
-const MESSAGE_NAME = /(?:^msg$|Msg$|^message$|Message$)/;
+const MESSAGE_NAME = /(?:^msg$|Msg$|^message$|Message$|^reason$|Reason$|^detail$|Detail$)/;
 /** A branch condition that means "we are in the error state". */
 const ERROR_CONDITION = /[eE]rror|[fF]ail|[pP]roblem|[rR]efus|===?\s*["'`](?:error|failed)["'`]/;
 /** An inline style that paints text red. */
@@ -174,6 +180,8 @@ function isErrorLeaf(leaf: ts.Expression, names: RegExp = ERROR_NAME): boolean {
   if (ts.isPropertyAccessExpression(leaf) || ts.isElementAccessExpression(leaf)) {
     const text = leaf.getText();
     if (/\.(length|count|size|total)$/.test(text)) return false;
+    // An identifier of an error (its digest, id or code) is a reference, not the error shown.
+    if (/\.(digest|id|code|errorId|error_id|error_code|errorCode)$/.test(text)) return false;
     return text.split(/\??\.|\[|\]/).some((part) => names.test(part));
   }
   if (ts.isIdentifier(leaf)) return names.test(leaf.text);
@@ -253,7 +261,13 @@ function classify(node: JsxLike): ErrorDisplayHit["reason"] | null {
   const { words, errorLeaves, messageLeaves, renderedAny } = ownChildren(node);
   const className = alwaysClasses(node);
   const red = RED.test(className) || STYLE_RED.test(attrText(node, "style") ?? "");
-  if (red && (errorLeaves.length > 0 || messageLeaves.length > 0 || FAILURE_WORDS.test(words))) return "red-error";
+  if (red && (errorLeaves.length > 0 || messageLeaves.length > 0 || FAILURE_WORDS.test(words) || RED_ONLY_WORDS.test(words))) {
+    return "red-error";
+  }
+  // Orange/amber text rendering an error value is an error shown in warning colours.
+  if (NOTICE.test(className) && /\borange-\d/.test(className) && errorLeaves.length > 0) return "red-error";
+  // Whatever its colour, an error or message value rendered only in the error state IS the error.
+  if ((errorLeaves.length > 0 || messageLeaves.length > 0) && inErrorBranch(node)) return "red-error";
   // Anything painted red, rose or amber inside an error branch is the error
   // shown (`{load.status === "error" ? <p className="text-destructive">{load.detail}</p> : …}`).
   if ((red || NOTICE.test(className)) && (renderedAny || words.trim()) && inErrorBranch(node)) return "red-error";
@@ -263,13 +277,24 @@ function classify(node: JsxLike): ErrorDisplayHit["reason"] | null {
   return null;
 }
 
+/**
+ * A menu the person can never see carries nothing: `hidden`, `sr-only`,
+ * `invisible`, or `opacity-0` with no hover/focus reveal (a dense row's
+ * `opacity-0 group-hover:opacity-100` menu IS visible when it matters).
+ */
+function isHiddenMenu(node: JsxLike): boolean {
+  const cls = attrText(node, "className") ?? "";
+  if (/(?<![\w:-])(?:hidden|sr-only|invisible)\b/.test(cls)) return true;
+  return /(?<![\w:-])opacity-0\b/.test(cls) && !/(?:hover|focus|focus-within|focus-visible):opacity-/.test(cls);
+}
+
 function containsCarrier(node: ts.Node): boolean {
   let found = false;
   node.forEachChild(function visit(n) {
     if (found) return;
     if ((ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n)) && CARRIER_NAMES.has(tagName(n))) {
       // A hidden menu carries nothing.
-      if (!/\b(?:hidden|sr-only|invisible)\b/.test(attrText(n, "className") ?? "")) {
+      if (!isHiddenMenu(n)) {
         found = true;
         return;
       }
@@ -292,7 +317,7 @@ function hasSiblingMenu(box: JsxLike): boolean {
     (child) =>
       (ts.isJsxSelfClosingElement(child) || ts.isJsxElement(child)) &&
       tagName(child) === "ErrorAlchemyMenu" &&
-      !/\b(?:hidden|sr-only|invisible)\b/.test(attrText(child, "className") ?? ""),
+      !isHiddenMenu(child),
   );
 }
 
@@ -321,11 +346,20 @@ export function findErrorDisplays(source: string, fileName = "file.tsx"): ErrorD
         const ancestors = jsxAncestors(n);
         const wrapped = ancestors.some((a) => WRAPPER_NAMES.has(tagName(a)) || isDestructiveAlert(a));
         // The box: climb while the ancestor is itself error-styled or a display.
+        // Plain layout wrappers between two error-styled elements belong to the
+        // same box (a destructive card > plain column > red title + red text).
         let box: JsxLike = n;
-        for (const a of ancestors) {
+        for (let i = 0; i < ancestors.length; i += 1) {
+          const a = ancestors[i];
           if (CONTROLS.test(tagName(a))) break;
-          if (isErrorStyled(a) || classify(a)) box = a;
-          else break;
+          if (isErrorStyled(a) || classify(a)) {
+            box = a;
+            continue;
+          }
+          const next = ancestors.slice(i + 1, i + 3).findIndex((b) => isErrorStyled(b));
+          if (next === -1) break;
+          box = ancestors[i + 1 + next];
+          i += 1 + next;
         }
         if (!wrapped && !counted.has(box)) {
           counted.add(box);

@@ -28,6 +28,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { classifyPrecondition, type ExportFailure } from "../errors";
 import { HrIdentityDoor } from "./HrIdentityDoor";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * 🚨 THE SERVER'S OWN WORDS, RENDERED (V2).
@@ -60,12 +61,14 @@ function FailureFooter({ failure }: { failure: ExportFailure }) {
       {failure.engineMessage ? (
         <p className="mt-3 rounded-md border border-border/60 bg-background/40 px-3 py-2 text-xs leading-relaxed text-foreground">
           {failure.engineMessage}
+          <ErrorAlchemyMenu error={failure.engineMessage} />
         </p>
       ) : null}
       {failure.hint ? (
         <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
           <span className="font-medium text-foreground">What to do: </span>
           {failure.hint}
+          <ErrorAlchemyMenu error={failure.hint} />
         </p>
       ) : null}
       <p className="mt-3 text-xs text-muted-foreground">

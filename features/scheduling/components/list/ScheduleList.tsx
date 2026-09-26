@@ -18,6 +18,7 @@ import { buildScheduleRosterValues } from "../../lib/schedules-scope";
 import { scheduleKpis } from "../../lib/copy";
 import { scheduleSummary } from "../../lib/copy";
 import { ScheduleRow } from "./ScheduleRow";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Surface emitter for `matrx-user/schedules` on the list route. The scope is
@@ -141,6 +142,7 @@ function ScheduleListBody() {
             <span>
               {duplicateError} Your schedules are still available, but possible
               duplicate runs are not currently highlighted.
+              <ErrorAlchemyMenu />
             </span>
             <Button
               variant="outline"

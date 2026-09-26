@@ -40,6 +40,7 @@ import {
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { MEET_PLACES } from "@/features/meet/intelligence-places";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // The meeting's AI jobs (live notes, answers, the wrap-up), disclosed IN the
 // room through the package's `headerControls` slot (@ai-matrx/meet 0.7.0).
@@ -116,7 +117,7 @@ export function MeetingSurface({
     return (
       <Centered>
         <h1 className="text-base font-semibold">This meeting did not open</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{resolution.message}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{resolution.message} <ErrorAlchemyMenu error={resolution.message} /></p>
         <p className="mt-2 text-sm text-muted-foreground">{resolution.remedy}</p>
       </Centered>
     );

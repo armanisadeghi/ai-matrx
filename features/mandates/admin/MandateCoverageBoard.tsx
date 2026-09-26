@@ -30,6 +30,7 @@ import {
   type MandateCoverageBucket,
   type ScopedMandateCoverage,
 } from "@/features/mandates/coverage";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** How many named rows a strip shows before it counts the rest. */
 export const COVERAGE_NAMED_ROW_CAP = 6;
@@ -67,6 +68,7 @@ export function MandateCoverageBoard({
           <div className="text-muted-foreground">
             No mandate can be called assigned or unassigned until aidream
             answers: {error}
+            <ErrorAlchemyMenu error={error} />
           </div>
         </div>
       </div>

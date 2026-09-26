@@ -237,6 +237,7 @@ export default function KindInputForm({
           No input path for <code className="font-mono">{kind}</code> —{" "}
           {state.reason}
         </span>
+        <ErrorAlchemyMenu error={state.reason} />
       </div>
     );
   }
@@ -352,6 +353,7 @@ export default function KindInputForm({
                       <code className="font-mono">{pair.field.type}</code>:{" "}
                       {coercionError}
                     </span>
+                    <ErrorAlchemyMenu error={coercionError} />
                   </p>
                 )}
                 {fieldErrors.map((message) => (

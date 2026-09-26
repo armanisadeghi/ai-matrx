@@ -53,6 +53,7 @@ import {
 } from "../service";
 import type { EmergencyDoorPurpose } from "../types";
 import { recordKindLabel } from "../presentation";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The platform default floor — `iam._door_min_chars()` resolves the
@@ -246,6 +247,7 @@ export function EmergencyDoorDialog({
                     aria-hidden="true"
                   />
                   <span>{purposesError}</span>
+                  <ErrorAlchemyMenu error={purposesError} />
                 </p>
               ) : null}
             </div>

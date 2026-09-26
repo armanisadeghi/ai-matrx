@@ -16,6 +16,7 @@ import type { AgendaTask, SchRunRow } from "../../types";
 // 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
 // 1h 02m. THE UNIT LAW puts the unit in the name.
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   run: SchRunRow;
@@ -92,6 +93,7 @@ export function RunRow({ run, task = null }: Props) {
               <pre className="whitespace-pre-wrap font-mono text-[11px]">
                 {run.error_message}
               </pre>
+              <ErrorAlchemyMenu />
             </div>
           )}
           <Field label="Run id" value={run.id} mono />

@@ -239,3 +239,27 @@ it("never repeats a title the sentence already starts with", () => {
     }),
   ).toBe("Couldn't load this conversation: forced failure.");
 });
+
+describe("a box's declared call is always retained (RC-B12 round 3)", () => {
+  const now = 10_000_000;
+  const route = "/settings/profile";
+  const own = { source: "app-api-http", lastAt: now - 600_000, route, relation: "/api/user/profile", status: 500, message: "GET /api/user/profile → 500" };
+  const noise = Array.from({ length: 8 }, (_, i) => ({
+    source: "supabase-postgrest",
+    lastAt: now - 1_000 * (i + 1),
+    route,
+    relation: `shell_rpc_${i}`,
+    status: 500,
+    message: "forced",
+  }));
+
+  it("keeps the declared call's failure however old and however many others failed after it", () => {
+    const offered = matchCapturedErrors("Couldn't load your profile", route, [own, ...noise], now, ["/api/user/profile"]);
+    const data = buildErrorAlchemyPayload(
+      { message: "Couldn't load your profile", calls: ["/api/user/profile"], captured: offered },
+      surface,
+    ).data as { error: Record<string, unknown>; recent_unmatched_errors: unknown[] };
+    expect(data.error).toMatchObject({ relation: "/api/user/profile", status: 500 });
+    expect(data.recent_unmatched_errors.length).toBeLessThanOrEqual(5);
+  });
+});

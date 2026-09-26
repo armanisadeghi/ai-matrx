@@ -10,6 +10,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import AppLink from "@/components/navigation/AppLink";
 import type { SettingsBadge, SettingsCommonProps } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type SettingsNavigationRowProps = SettingsCommonProps & {
   value?: ReactNode;
@@ -85,6 +86,7 @@ export function SettingsNavigationRow({
               aria-hidden="true"
             />
             <span className="break-words">{error}</span>
+            <ErrorAlchemyMenu error={error} />
           </span>
         )}
       </span>

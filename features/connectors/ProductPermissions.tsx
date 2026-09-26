@@ -33,6 +33,7 @@ import { AlertTriangle, Check, ChevronDown, Clock, Info } from "lucide-react";
 import { formatRelativeTime, parseTimestamp } from "@ai-matrx/kit/format";
 import { cn } from "@/lib/utils";
 import { rolloutSentence, type ConnectorProductHealth } from "./health";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Absolute timestamp → how long ago, or null when it is not a timestamp. */
 export function relativeTime(iso: string | null): string | null {
@@ -187,6 +188,7 @@ export function ProductPermissionsDisclosure({
                           {health.lastRefusal.httpStatus
                             ? ` · HTTP ${health.lastRefusal.httpStatus}`
                             : ""}
+                          <ErrorAlchemyMenu error={health.lastRefusal} />
                         </span>
                       ) : null}
                     </>

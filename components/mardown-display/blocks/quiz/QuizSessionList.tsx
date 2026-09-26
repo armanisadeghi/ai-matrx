@@ -7,6 +7,7 @@ import { confirm as confirmDialog } from '@/components/dialogs/confirm/ConfirmDi
 import { EntityRef } from '@/components/official/entity-ref/EntityRef';
 import { toast } from '@/lib/toast';
 import { formatTime } from './quiz-utils';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface QuizSessionListProps {
   onLoadSession?: (sessionId: string) => void;
@@ -75,6 +76,7 @@ export const QuizSessionList: React.FC<QuizSessionListProps> = ({
           <AlertCircle className="h-5 w-5" />
           <span>{error}</span>
         </div>
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

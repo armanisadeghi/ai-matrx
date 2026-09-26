@@ -768,6 +768,7 @@ export function CreateTranscriptModal({
                     </h3>
                     <p className="text-sm text-gray-500 mt-2">
                       {transcribeError}
+                      <ErrorAlchemyMenu error={transcribeError} />
                     </p>
                   </div>
                   <div className="flex gap-2 justify-center">

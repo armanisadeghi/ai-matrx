@@ -36,6 +36,7 @@ import { learningGainService } from "../../learning-gain/learningGainService";
 import type { LearningGainReport } from "../../learning-gain/types";
 import type { ItemMasteryRow } from "../../types";
 import type { StudyAnalytics } from "../computeAnalytics";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface StudyAnalyticsViewProps {
   analytics: StudyAnalytics | null;
@@ -125,7 +126,7 @@ export function StudyAnalyticsView({
           <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card px-6 py-14 text-center">
             <AlertCircle className="h-6 w-6 text-muted-foreground" />
             <p className="text-sm text-foreground">Couldn&apos;t load progress</p>
-            <p className="max-w-md text-xs text-muted-foreground">{error}</p>
+            <p className="max-w-md text-xs text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
           </div>
         ) : !analytics || !analytics.hasData ? (
           <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">

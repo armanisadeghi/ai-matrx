@@ -177,6 +177,7 @@ function ToggleRow({
           <p className="text-xs text-destructive flex items-center gap-1 mt-1">
             <ShieldAlert className="h-3 w-3 shrink-0" />
             {disabledReason}
+            <ErrorAlchemyMenu error={disabledReason} />
           </p>
         )}
       </div>

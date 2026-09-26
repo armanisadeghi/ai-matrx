@@ -8,6 +8,7 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { FileText } from "lucide-react";
 import { useWikiResolution, WikiLink } from "./WikiLink";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const NestedRichContent = lazy(() =>
   import("@/components/rich-content/standard/NestedRichContent").then((m) => ({ default: m.NestedRichContent })),
@@ -73,7 +74,7 @@ export function WikiEmbed(props: { "data-target"?: string; "data-alias"?: string
       {noteId && (
         <span className="block px-3 py-2">
           {error ? (
-            <span className="text-sm text-muted-foreground">{error}</span>
+            <span className="text-sm text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></span>
           ) : body === null ? (
             <span className="block h-10 animate-pulse rounded bg-muted/60" aria-label="Loading the embedded note" />
           ) : body.trim() ? (

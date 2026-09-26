@@ -88,6 +88,7 @@ import { SafeBlockRenderer } from "./internal-handlers/SafeBlockRenderer";
 import { MarkdownStreamingProvider } from "@/components/markdown-core/streaming-context";
 import { useBoundAgentOutputSchema } from "@/components/mardown-display/blocks/json/useBoundAgentOutputSchema";
 import { MarkdownErrorBoundary } from "./internal-handlers/MarkdownErrorBoundary";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Server-processed block from the content_block protocol. */
 export interface ServerProcessedBlock {
@@ -1068,6 +1069,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
             className="py-2 px-1 text-sm text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap break-words border-l-2 border-red-500 bg-red-50 dark:bg-red-950/20"
           >
             {block?.content || "[Render error]"}
+            <ErrorAlchemyMenu />
           </div>
         );
       }

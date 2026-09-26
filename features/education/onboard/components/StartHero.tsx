@@ -46,6 +46,7 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 
 type InputMode = "upload" | "paste" | "link";
@@ -209,6 +210,7 @@ export function StartHero() {
             <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{kit.error}</span>
+              <ErrorAlchemyMenu error={kit.error} />
             </div>
           )}
 

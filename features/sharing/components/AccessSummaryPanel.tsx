@@ -45,6 +45,7 @@ import {
 } from "@/features/sharing/format";
 import { cn } from "@/utils/cn";
 import type { EntityTypeToken } from "@ai-matrx/associations";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** What the panel currently knows, for pages that mirror it in their payload. */
 export interface AccessSummaryState {
@@ -210,6 +211,7 @@ export function AccessSummaryPanel({
         >
           Retry
         </button>
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

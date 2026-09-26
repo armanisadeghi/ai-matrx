@@ -46,6 +46,7 @@ import type {
   StagePillName,
   StageStatus,
 } from "@/features/rag/api/stages";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------------------------------------------------------------------------
 // Pill definitions (label + icon + which stage action drives it)
@@ -385,6 +386,7 @@ function StageActionPanel({
           >
             Retry
           </Button>
+          <ErrorAlchemyMenu error={action.error} />
         </div>
       )}
 

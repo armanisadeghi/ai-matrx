@@ -55,6 +55,7 @@ import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks"
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildAgentMenuSection, agentEntityRef } from "@/features/agents/menu/agent-actions";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AgentShortcutQuickCreateWindowProps {
   isOpen: boolean;
@@ -340,6 +341,7 @@ function FooterLeft({ state }: { state: ShortcutQuickCreateState }) {
         <div className="flex items-center gap-1 text-destructive min-w-0">
           <AlertCircle className="h-3 w-3 shrink-0" />
           <span className="truncate max-w-[260px]">{error}</span>
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : (
         <span className="inline-flex items-center gap-1 text-muted-foreground">

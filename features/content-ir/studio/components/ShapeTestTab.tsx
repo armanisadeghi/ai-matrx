@@ -40,6 +40,7 @@ import { storeKindRecord } from "@/features/content-ir/studio/store-kind-record"
 import { shapeInstancesHref } from "@/features/content-ir/studio/constants";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ShapeTestTabProps {
   kind: string;
@@ -375,6 +376,7 @@ export default function ShapeTestTab({
                 )}
                 {saveState.message}
               </span>
+              <ErrorAlchemyMenu error={saveState.message} />
             </div>
           )}
           {instance === null ? (

@@ -30,6 +30,7 @@ import {
 import { attachmentKey } from "@/features/connectors/attachable-resources";
 import { useConversationAttachments } from "@/features/connectors/useConversationAttachments";
 import { useMcpCatalog } from "@/features/agents/hooks/useMcpTools";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function ConversationAttachmentsChip({
   conversationId,
@@ -97,6 +98,7 @@ export function ConversationAttachmentsChip({
               >
                 Try again
               </button>
+              <ErrorAlchemyMenu error={attachments.error} />
             </span>
           </p>
         )}

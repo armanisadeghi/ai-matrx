@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import Link from 'next/link';
 import { ErrorAlchemyMenu } from '@/components/errors/ErrorAlchemyMenu';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ErrorPageProps {
     error: Error & { digest?: string };

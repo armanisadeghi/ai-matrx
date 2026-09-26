@@ -59,6 +59,7 @@ import { hrMeHref } from "@/features/hr/routes";
 import { getMyTimesheetContext } from "@/features/hr/time/api/service";
 import { HrRpcError } from "@/features/hr/time/api/rpc";
 import { MyTimesheet } from "@/features/hr/time/timesheet/MyTimesheet";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Resolution =
   | { state: "resolving" }
@@ -215,6 +216,7 @@ export function MyTimesheetContext({
           */}
           <p className="mt-2 text-sm text-muted-foreground">
             {resolved.state === "no-period" ? resolved.reason : resolved.sentence}
+            <ErrorAlchemyMenu />
           </p>
           {/*
             ♻️ THE ORG TRAVELS ON THE LINK. `hrMeHref(orgRef)` and never a bare "/hr/me" — HR is

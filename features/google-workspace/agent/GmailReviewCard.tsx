@@ -402,6 +402,7 @@ export function GmailReviewCard({ ask, preflight, plan }: GmailReviewCardProps) 
                 ))}
               </ul>
             ) : null}
+            <ErrorAlchemyMenu error={refusal.userMessage} />
           </div>
         ) : null}
         <a

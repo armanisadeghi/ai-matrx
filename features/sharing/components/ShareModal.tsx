@@ -380,6 +380,7 @@ export function ShareModal({
             <p className="text-sm font-medium">Sharing is unavailable</p>
             <p className="text-xs text-muted-foreground max-w-sm">
               {configError}
+              <ErrorAlchemyMenu error={configError} />
             </p>
           </div>
         )}

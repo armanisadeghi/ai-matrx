@@ -1,7 +1,4 @@
 {
   "_comment": "Error displays (semantic, per element \u2014 see error-display-census.ts) that do not carry the Alchemy Menu, per file. Reached zero on 2026-09-26 after the RC-B12 verify reopen (1141 in 879 files under the semantic definition). It stays empty: a new error display without the menu fails error-renders-carry-alchemy.test.ts.",
-  "files": {
-    "features/agent-comparison/shared/useBattleRoute.tsx": 1,
-    "lib/scoped-config/KnobHistoryPopover.tsx": 1
-  }
+  "files": {}
 }

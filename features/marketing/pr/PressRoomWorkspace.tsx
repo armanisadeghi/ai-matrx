@@ -93,6 +93,7 @@ import {
 import { readLadder } from "@/features/marketing/pr/ladder";
 import { deadlineState } from "@/features/marketing/pr/scoring";
 import { isAnswerable, type StoryAngle } from "@/features/marketing/pr/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function Banner({
   tone,
@@ -686,6 +687,7 @@ export default function PressRoomWorkspace({
                 }
               >
                 {analysis.error}
+                <ErrorAlchemyMenu error={analysis.error} />
               </Banner>
             ) : null}
 

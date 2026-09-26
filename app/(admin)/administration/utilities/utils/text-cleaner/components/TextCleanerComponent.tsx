@@ -27,6 +27,7 @@ import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/featu
 
 import { toast } from "@/components/ui/use-toast";
 import type { PatternConfig } from "@/app/(admin)/administration/utilities/utils/configs/patterns";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type GroupedPatterns = {
   [key: string]: Array<{
@@ -149,18 +150,21 @@ export const TextCleanerComponent: React.FC = () => {
             <Badge variant="destructive" className="flex items-center gap-1">
               <AlertCircle className="w-3 h-3" />
               {errorStats.bySeverity.error} Errors
+              <ErrorAlchemyMenu error={errorStats.bySeverity.error} />
             </Badge>
           )}
           {errorStats.bySeverity.warning && (
             <Badge variant="warning" className="flex items-center gap-1">
               <AlertTriangle className="w-3 h-3" />
               {errorStats.bySeverity.warning} Warnings
+              <ErrorAlchemyMenu error={errorStats.bySeverity.warning} />
             </Badge>
           )}
           {errorStats.bySeverity.info && (
             <Badge variant="info" className="flex items-center gap-1">
               <Info className="w-3 h-3" />
               {errorStats.bySeverity.info} Info
+              <ErrorAlchemyMenu error={errorStats.bySeverity.info} />
             </Badge>
           )}
         </div>
@@ -477,6 +481,7 @@ export const TextCleanerComponent: React.FC = () => {
               {renderErrorStats()}
             </Card>
             {renderErrorDetails()}
+            <ErrorAlchemyMenu />
           </div>
         )}
       </div>

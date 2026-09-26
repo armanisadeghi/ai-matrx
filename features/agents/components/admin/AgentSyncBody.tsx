@@ -78,6 +78,7 @@ import {
 } from "@/features/agents/sync/field-change-history";
 import { fetchAgentVersionFieldSnapshots } from "@/features/agents/sync/field-change-history.service";
 import { formatAbsoluteDate } from "@/utils/datetime";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SYSTEM_AGENT_ADMIN_BASE_PATH =
   "/administration/agents/system-agents/agents";
@@ -795,6 +796,7 @@ export function AgentSyncBody({
               <AlertCircle className="h-5 w-5 text-destructive" />
               <p className="max-w-md text-sm text-muted-foreground">
                 {currentComparisonError}
+                <ErrorAlchemyMenu error={currentComparisonError} />
               </p>
               <Button
                 variant="outline"

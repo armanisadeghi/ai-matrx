@@ -42,6 +42,7 @@ import { useOpenApprovalsWindow } from "@/features/overlays/openers/approvalsWin
 import { useInboxCounts, useInboxList } from "../useInbox";
 import type { InboxNotification } from "../types";
 import { NotificationBody } from "./NotificationBody";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const NOTIFICATIONS_ROUTE = "/notifications";
 
@@ -301,6 +302,7 @@ export function InboxPanel({
             >
               Retry
             </Button>
+            <ErrorAlchemyMenu error={list.error.message} />
           </div>
         ) : list.isLoading ? (
           <div className="flex items-center justify-center gap-2 py-8 text-xs text-muted-foreground">

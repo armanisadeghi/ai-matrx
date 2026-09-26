@@ -394,7 +394,7 @@ export function MasterworksPage({
   if (error) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="text-sm text-muted-foreground">{error}</p>
+        <p className="text-sm text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
         <Button asChild variant="outline" size="sm">
           <Link href="/masterwork/all">Back to Masterwork Studio</Link>
         </Button>

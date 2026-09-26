@@ -395,6 +395,7 @@ function DetailPanel({
               {analysis.error && (
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   {analysis.error}
+                  <ErrorAlchemyMenu error={analysis.error} />
                 </p>
               )}
             </div>

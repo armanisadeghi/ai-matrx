@@ -100,6 +100,7 @@ import {
   type DeviceFallbackInputHandle,
   type DeviceFallbackPhoto,
 } from "@/features/media-capture/components/DeviceFallbackInput";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type StudioPhase = "starting" | "preview" | "review" | "error";
 
@@ -1055,6 +1056,7 @@ export function CaptureStudio({
                 <AlertTriangle className="h-6 w-6 text-destructive" />
                 <p className="max-w-sm text-sm text-muted-foreground">
                   {error.message}
+                  <ErrorAlchemyMenu error={error.message} />
                 </p>
                 {/* Every terminal error gets a way forward — a retry for the
                     user who just fixed the grant, the device fallback where a

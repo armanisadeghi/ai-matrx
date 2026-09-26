@@ -150,7 +150,7 @@ export function FileVersionsList({ fileId, className }: FileVersionsListProps) {
           <AlertCircle className="h-5 w-5 text-destructive" />
         </div>
         <p className="text-sm font-medium">Couldn't load versions <ErrorAlchemyMenu /></p>
-        <p className="max-w-md text-xs text-muted-foreground">{error}</p>
+        <p className="max-w-md text-xs text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
         <button
           type="button"
           onClick={() => void fetchVersions()}

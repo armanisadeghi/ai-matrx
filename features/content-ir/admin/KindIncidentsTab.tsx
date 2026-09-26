@@ -44,6 +44,7 @@ import {
   type IncidentScope,
   type KindIncidentRecord,
 } from "@/features/content-ir/admin/incident-service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SCOPES: { id: IncidentScope; label: string }[] = [
   { id: "open", label: "Open" },
@@ -215,6 +216,7 @@ export default function KindIncidentsTab() {
           <div className="m-3 flex items-start gap-2 rounded border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-700 dark:text-red-300">
             <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{error}</span>
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
         {!rows && !error && (

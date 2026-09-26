@@ -365,6 +365,7 @@ function AgentToolAssignment({
         <Button size="sm" variant="outline" onClick={onRetryLoad}>
           <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Retry
         </Button>
+        <ErrorAlchemyMenu error={loadError} />
       </div>
     );
   if (agentUnavailable)

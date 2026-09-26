@@ -1634,6 +1634,7 @@ export default function AiModelDetailPanel({
               >
                 <X className="h-3.5 w-3.5" />
               </button>
+              <ErrorAlchemyMenu error={saveError} />
             </div>
           )}
           <div className="px-3 py-2 flex items-center justify-between gap-2">

@@ -269,6 +269,7 @@ export function DecisionComparisonTable() {
         <p className="flex items-start gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-[11px] text-destructive">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" />
           <span>{verdictError}</span>
+          <ErrorAlchemyMenu error={verdictError} />
         </p>
       )}
 

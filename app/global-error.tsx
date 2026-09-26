@@ -153,7 +153,7 @@ export default function GlobalError({
               <ErrorAlchemyMenu
                 size="icon"
                 input={{
-                  title: "This page crashed",
+                  title: "This feature is still under development",
                   message: error.message || "An unexpected error stopped this page.",
                   error,
                   operation: "Show this page",

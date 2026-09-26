@@ -201,7 +201,7 @@ export function memberMandateListConfig(
     // public, plus the platform's own. `public` is the published lane — a mandate someone
     // outside my organizations shared with everyone.
     options.level === "organization"
-      ? ["orgs", "public", "system"]
+      ? ["orgs", "shared", "public", "system"]
       : ["mine", "orgs", "shared", "public", "system"];
   const surfaceKey =
     options.level === "organization" ? "org-mandates-list-preview" : "user-mandates-list-preview";

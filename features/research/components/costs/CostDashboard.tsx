@@ -476,6 +476,7 @@ export default function CostDashboard() {
           </p>
           <p className="text-[10px] text-muted-foreground mt-1 max-w-[280px]">
             {error}
+            <ErrorAlchemyMenu error={error} />
           </p>
         </div>
       </div>

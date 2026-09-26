@@ -316,6 +316,7 @@ export function PlanAiRunsView({
                       {Object.keys(detail.data.error).length > 0 ? (
                         <Section title="Error">
                           {JSON.stringify(detail.data.error, null, 2)}
+                          <ErrorAlchemyMenu />
                         </Section>
                       ) : null}
                       <Section title="Result">

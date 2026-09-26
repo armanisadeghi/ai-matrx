@@ -100,20 +100,31 @@ function overlaps(sentence: string, message: string): boolean {
 }
 
 /**
- * The errors captured on this route in the last two minutes, newest first —
- * candidates only. Which one (if any) caused the box is decided by the box's
- * declared `calls`, never by words in its sentence.
+ * The captures offered to a box: for each of its declared `calls`, the latest
+ * failure of that call on this route — however old, however many other
+ * requests failed after it (a five-slot recency window pushed the profile's own
+ * 500 out; RC-B12 round 3) — then up to five other failures from the last two
+ * minutes, newest first, as unmatched context. Which one caused the box is
+ * decided by `calls` alone, never by words in its sentence.
  */
 export function matchCapturedErrors(
   _sentence: string,
   route: string | null,
   captured: readonly CapturedErrorLike[],
   now: number = Date.now(),
+  calls?: readonly string[],
 ): CapturedErrorLike[] {
-  return captured
-    .filter((c) => route !== null && c.route === route && now - c.lastAt <= CAPTURE_WINDOW_MS)
-    .sort((a, b) => b.lastAt - a.lastAt)
+  if (route === null) return [];
+  const onRoute = captured.filter((c) => c.route === route).sort((a, b) => b.lastAt - a.lastAt);
+  const own: CapturedErrorLike[] = [];
+  for (const call of calls ?? []) {
+    const latest = onRoute.find((c) => isOwnCall(c, [call]));
+    if (latest && !own.includes(latest)) own.push(latest);
+  }
+  const others = onRoute
+    .filter((c) => !own.includes(c) && now - c.lastAt <= CAPTURE_WINDOW_MS)
     .slice(0, 5);
+  return [...own, ...others];
 }
 
 function isOwnCall(c: CapturedErrorLike, calls: readonly string[] | undefined): boolean {

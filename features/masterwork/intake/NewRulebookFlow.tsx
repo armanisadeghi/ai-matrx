@@ -87,6 +87,7 @@ import { useApproachRegistry } from "../browse/useApproachRegistry";
 import { ApproachCard, ACCENT } from "../browse/ApproachCard";
 import { relevantApproachKeys } from "./approachRelevance";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const WIZARD_ID = "masterwork-new";
 
@@ -891,6 +892,7 @@ export function NewRulebookFlow() {
               >
                 Try again
               </Button>
+              <ErrorAlchemyMenu error={approachError} />
             </div>
           ) : registry.loading || approaches === null ? (
             // Reached ONLY while a read is outstanding. A failed read sets the

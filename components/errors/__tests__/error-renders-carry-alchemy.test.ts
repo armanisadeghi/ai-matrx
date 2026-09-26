@@ -17,6 +17,7 @@
  * file may not introduce one, and a file whose count drops fails until its
  * entry is lowered — the list only shrinks.
  */
+import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { findOrphanMenus, uncarriedErrorDisplays } from "./error-display-census";
@@ -24,6 +25,15 @@ import { findOrphanMenus, uncarriedErrorDisplays } from "./error-display-census"
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 const SCANNED_DIRS = ["app", "components", "features", "lib"];
 const BASELINE_FILE = path.join(__dirname, "error-render-census.baseline.json");
+
+/**
+ * THE CEILING. The census reached zero; the baseline may never hold more than
+ * this many uncarried displays. A sweep that "fixes" the guard by adding a
+ * baseline entry fails here — raising this number is an edit to this test, in
+ * review, never a quiet JSON change (RC-B12 round 3: three entries arrived by
+ * baseline edits instead of menus).
+ */
+const MAX_BASELINE_TOTAL = 0;
 
 /** The primitives themselves — they ARE the one place an error box is drawn. */
 const PRIMITIVES = new Set([
@@ -156,6 +166,38 @@ describe("round-2 holes (RC-B12 verify R2-1), red then green", () => {
   });
 });
 
+describe("round-3 probes (RC-B12 verify R3-1), red then green", () => {
+  it("one destructive card with plain wrappers inside is one box, carried by one menu", () => {
+    expect(
+      count('<div className="bg-destructive/10"><div className="flex"><div><p className="text-destructive">Template Error</p><p className="text-destructive/80">Failed to compile.</p></div></div><ErrorAlchemyMenu /></div>'),
+    ).toBe(0);
+  });
+  it("'Template Error' / 'Failed to compile' in a destructive box counts", () => {
+    expect(
+      count('<div className="rounded bg-destructive/10 p-4"><h3>Template Error</h3><p>Failed to compile the {mode} template.</p></div>'),
+    ).toBe(1);
+  });
+  it("red {reason}, orange {error} and red 'Error: {detail}' count", () => {
+    expect(count('<p className="text-red-600">{reason}</p>')).toBe(1);
+    expect(count('<p className="text-orange-600">{error}</p>')).toBe(1);
+    expect(count('<span className="text-destructive">Error: {detail}</span>')).toBe(1);
+  });
+  it("'Permission denied' and 'Request timed out' in red count", () => {
+    expect(count('<p className="text-destructive">Permission denied</p>')).toBe(1);
+    expect(count('<p className="text-red-500">Request timed out</p>')).toBe(1);
+  });
+  it("an error's id or digest line is a reference, not a second error display", () => {
+    expect(count('{error.digest && <p className="text-xs">Error ID: {error.digest}</p>}')).toBe(0);
+  });
+  it("an uncoloured {state.message} inside an error branch counts", () => {
+    expect(count('{state.status === "error" ? <p className="text-sm">{state.message}</p> : null}')).toBe(1);
+  });
+  it("an opacity-0 menu does not carry, unless it is revealed on hover", () => {
+    expect(count('<p role="alert">{error}<ErrorAlchemyMenu className="opacity-0" /></p>')).toBe(1);
+    expect(count('<p role="alert">{error}<ErrorAlchemyMenu className="opacity-0 group-hover:opacity-100" /></p>')).toBe(0);
+  });
+});
+
 describe("a menu never shows when nothing failed", () => {
   const orphans = (jsx: string) =>
     findOrphanMenus(`export function C({ error }: any) { return (<>${jsx}</>); }`).length;
@@ -200,6 +242,26 @@ describe("every error render carries the Alchemy Menu", () => {
           `${file}: ${n} error display(s) without the Alchemy Menu, baseline ${baseline.files[file] ?? 0} — render it with <ErrorNotice error={…}> or put <ErrorAlchemyMenu error={…} /> inside the box`,
       );
     expect(grown).toEqual([]);
+  });
+
+  it("the baseline never exceeds its ceiling, and never grows against the last commit", () => {
+    const total = Object.values(baseline.files).reduce((a, b) => a + b, 0);
+    expect(total).toBeLessThanOrEqual(MAX_BASELINE_TOTAL);
+    let committed: { files: Record<string, number> } | null = null;
+    try {
+      const rel = path.relative(REPO_ROOT, BASELINE_FILE).split(path.sep).join("/");
+      committed = JSON.parse(
+        execSync(`git show HEAD:${rel}`, { cwd: REPO_ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }),
+      );
+    } catch {
+      committed = null; // no git (a tarball, a sandbox): the ceiling above still holds
+    }
+    if (committed) {
+      const grown = Object.entries(baseline.files)
+        .filter(([file, n]) => n > (committed!.files[file] ?? 0))
+        .map(([file, n]) => `${file}: baseline raised to ${n} (committed ${committed!.files[file] ?? 0}) — add the menu instead`);
+      expect(grown).toEqual([]);
+    }
   });
 
   it("the baseline only shrinks — a fixed file lowers its entry", () => {

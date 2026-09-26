@@ -38,6 +38,7 @@
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { emitItem } from "./checks/items.mjs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
@@ -207,6 +208,19 @@ function main(): void {
       continue;
     }
     findings.push({ file: rel, signals });
+  }
+
+  // Items (ITEM-PROTOCOL.md): exemptions are reasoned path prefixes in this file, never a key list,
+  // so every item is new. Keys (no line): `undisclosed|<file>`, `inline-disclosure|<file>`,
+  // `cross-surface|<the forbidden pattern>`.
+  for (const f of findings) {
+    emitItem({ key: `undisclosed|${f.file}`, status: "new", title: `runs a mandate and names no agent (${f.signals.join(", ")})`, file: f.file, rule: "undisclosed" });
+  }
+  for (const f of forbiddenInline) {
+    emitItem({ key: `inline-disclosure|${f}`, status: "new", title: "deleted PageAgents inline disclosure is back", file: f, rule: "inline-disclosure" });
+  }
+  for (const rx of crossSurfaceExpansion) {
+    emitItem({ key: `cross-surface|${rx.source}`, status: "new", title: "surface mandates section expands disclosure beyond this surface", file: relative(ROOT, SURFACE_MANDATES_SECTION), rule: "cross-surface" });
   }
 
   console.log(

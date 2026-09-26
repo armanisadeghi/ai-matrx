@@ -59,6 +59,7 @@ import type {
   OrgNode,
   ScopeTypeNode,
 } from "@/features/scopes/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Reasonable cap on context-item columns so wide catalogs don't explode
  *  the table; overflow is announced in the header ("+N more"). */
@@ -163,6 +164,7 @@ export function ScopesHub() {
           <div className="font-medium">Couldn&apos;t load your scopes</div>
           <div className="text-sm text-muted-foreground">
             {error ?? "Unknown error"}
+            <ErrorAlchemyMenu />
           </div>
           <button
             onClick={() => void refresh()}

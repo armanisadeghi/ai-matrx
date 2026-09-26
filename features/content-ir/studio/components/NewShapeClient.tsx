@@ -255,7 +255,7 @@ function ShapeBuilderRun({
           The Shape builder could not start.
           <ErrorAlchemyMenu />
         </p>
-        <p className="mt-1 max-w-xs text-xs text-muted-foreground">{error}</p>
+        <p className="mt-1 max-w-xs text-xs text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
       </div>
     );
   }

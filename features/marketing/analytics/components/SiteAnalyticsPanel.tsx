@@ -343,6 +343,7 @@ export function SiteAnalyticsPanel({
                 : "Restore Analytics access"}
             </Link>
           </Button>
+          <ErrorAlchemyMenu error={bindingDiagnosis.reason} />
         </div>
       ) : null}
 

@@ -53,6 +53,7 @@ import {
 } from "./types";
 import { useAiVisibility } from "./useAiVisibility";
 import type { AiVisibilityEvidenceView } from "./evidence-views";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ClaimRow extends AiVisibilityClaim {
   engine: string;
@@ -808,7 +809,7 @@ export function AiVisibilityWorkspace({
         {evidenceRefreshError ? (
           <div className="mb-2 flex shrink-0 items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs">
             <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
-            <span className="flex-1">{evidenceRefreshError}</span>
+            <span className="flex-1">{evidenceRefreshError} <ErrorAlchemyMenu error={evidenceRefreshError} /></span>
             <Button
               size="sm"
               variant="outline"
@@ -956,6 +957,7 @@ export function AiVisibilityWorkspace({
         <section className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <p>{run.error}</p>
+          <ErrorAlchemyMenu error={run.error} />
         </section>
       ) : null}
 
@@ -1031,7 +1033,7 @@ export function AiVisibilityWorkspace({
       {evidenceRefreshError ? (
         <section className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" />
-          <span className="flex-1">{evidenceRefreshError}</span>
+          <span className="flex-1">{evidenceRefreshError} <ErrorAlchemyMenu error={evidenceRefreshError} /></span>
           <Button
             size="sm"
             variant="outline"

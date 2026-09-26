@@ -45,6 +45,7 @@ import {
   type IllustrateCardState,
   type IllustrateRunState,
 } from "./illustrateSetRun";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface IllustrateSetWindowProps {
   run: IllustrateRunState;
@@ -256,7 +257,7 @@ export function IllustrateSetWindow({
           {(run.phase === "refused" || run.phase === "error") && (
             <div className="m-3 flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-700 dark:text-amber-400">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{run.message}</span>
+              <span>{run.message} <ErrorAlchemyMenu error={run.message} /></span>
             </div>
           )}
 

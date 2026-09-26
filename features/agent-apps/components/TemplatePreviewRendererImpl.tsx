@@ -24,6 +24,7 @@ import {
 } from "../utils/allowed-imports";
 import { AgentAppErrorBoundary } from "./AgentAppErrorBoundary";
 import type { AppDisplayMode } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface TemplatePreviewRendererProps {
   templateCode: string;
@@ -170,6 +171,10 @@ export function TemplatePreviewRenderer({
                 for details.
               </p>
             </div>
+            <ErrorAlchemyMenu
+              className="ml-auto"
+              operation={`Compile the ${displayMode} template`}
+            />
           </div>
         </div>
       </div>

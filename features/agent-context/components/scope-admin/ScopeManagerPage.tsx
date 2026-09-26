@@ -95,6 +95,7 @@ export function ScopeManagerPage({
             {adminResult.status === "error"
               ? adminResult.message
               : "It may have been archived, or the link is wrong."}
+            <ErrorAlchemyMenu error={adminResult.message} />
           </p>
         </div>
       </div>

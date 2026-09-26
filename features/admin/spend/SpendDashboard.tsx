@@ -349,6 +349,7 @@ export function SpendDashboard() {
             {" · "}
             The breakdown below has a separate read. Retry the overview here.
           </div>
+          <ErrorAlchemyMenu />
         </div>
       ) : null}
 

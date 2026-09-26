@@ -41,6 +41,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { setEmploymentPin } from "@/features/hr/time/api/service";
 import { toast } from "@/lib/toast";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * The server's sentences name the knob that produced them — *"…(hr.time_and_attendance.
@@ -214,7 +215,7 @@ export function SetKioskPinCard({
         </p>
       )}
 
-      {refusal && <p className="text-sm text-foreground">{refusal}</p>}
+      {refusal && <p className="text-sm text-foreground">{refusal} <ErrorAlchemyMenu error={refusal} /></p>}
 
       <div className="flex flex-col gap-2">
         <Button

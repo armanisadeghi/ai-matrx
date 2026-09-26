@@ -16,6 +16,7 @@ import { KnobOverrideRow } from "@/lib/scoped-config/KnobOverrideRow";
 import { useScopedKnobs } from "@/lib/scoped-config/useScopedKnobs";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function PersonalConfigTab() {
   const userId = useAppSelector(selectUserId);
@@ -55,7 +56,7 @@ export default function PersonalConfigTab() {
           </SettingsCallout>
         )}
         {organizationId && error && (
-          <SettingsCallout tone="warning">{error}</SettingsCallout>
+          <SettingsCallout tone="warning">{error} <ErrorAlchemyMenu error={error} /></SettingsCallout>
         )}
         {organizationId && !isLoading && byFeature.length === 0 && (
           <SettingsCallout tone="info">

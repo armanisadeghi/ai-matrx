@@ -41,6 +41,7 @@ import {
   hasValidationRules,
   type ValidationRules,
 } from "../validation";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type ColumnValidationEditorProps = {
   /** The column's storage type (`string` | `number` | `integer` | …). */
@@ -245,6 +246,7 @@ export function ColumnValidationEditor({
                       valid pattern — a rule that cannot be read is a rule that
                       does nothing.
                     </span>
+                    <ErrorAlchemyMenu error={patternError} />
                   </p>
                 ) : (
                   <p className="text-[11px] text-muted-foreground">

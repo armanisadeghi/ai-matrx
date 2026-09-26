@@ -58,6 +58,7 @@ import {
   upsertSiteValueWorth,
   type SiteWorthRow,
 } from "./data";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function Line({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -219,6 +220,7 @@ export function WorthConvertDialog({
             ) : data?.error ? (
               <p className="rounded-md border border-dashed border-border bg-muted/30 px-2.5 py-2 text-[11px] text-muted-foreground">
                 {data.message}
+                <ErrorAlchemyMenu error={data.message} />
               </p>
             ) : (
               <>

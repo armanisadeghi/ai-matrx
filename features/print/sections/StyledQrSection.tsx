@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Field, SectionShell, StatusChip, controlClass, svgToImgSrc } from "@/features/print/components/shared";
 import { SAMPLE_CODE, SAMPLE_ORIGIN } from "./sample-data";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const DOT_STYLES: StyledQrDotStyle[] = ["square", "dots", "rounded", "classy", "extra-rounded"];
 const CORNER_STYLES: StyledQrCornerStyle[] = ["square", "dot", "extra-rounded"];
@@ -190,7 +191,7 @@ export function StyledQrSection() {
                         URL — a print window is unauthenticated and a remote image taints the canvas. Logo size is capped
                         at {Math.round(MAX_STYLED_QR_LOGO_RATIO * 100)}% of the symbol.
                     </StatusChip>
-                    {shownError ? <StatusChip tone="warn">{shownError}</StatusChip> : null}
+                    {shownError ? <StatusChip tone="warn">{shownError} <ErrorAlchemyMenu error={shownError} /></StatusChip> : null}
                 </div>
 
                 <div className="flex items-start justify-center rounded-md border border-border bg-background p-3">

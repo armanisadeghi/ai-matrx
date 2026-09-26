@@ -639,6 +639,7 @@ function DetailPanel({
           <div className="flex items-start gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-300">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-red-500" />
             <span className="flex-1 min-w-0 break-words">{saveError}</span>
+            <ErrorAlchemyMenu error={saveError} />
           </div>
         )}
         <div className="px-3 py-2 flex items-center justify-end gap-2">

@@ -232,6 +232,7 @@ export default function DocumentViewer() {
           {document.error && (
             <p className="text-[10px] text-muted-foreground mt-1 max-w-[280px]">
               {document.error}
+              <ErrorAlchemyMenu error={document.error} />
             </p>
           )}
         </div>

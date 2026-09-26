@@ -1536,6 +1536,69 @@ export async function processStream({
           if (unified.kind === "image" && !isStreamingPartial) {
             dispatch(openOverlay({ overlayId: "imagePeekHost" }));
           }
+        } else if (
+          dataType === "audio_stream_chunk" ||
+          dataType === "audio_stream_end"
+        ) {
+          // LIVE AUDIO TRANSPORT, not content. Every TTS provider path
+          // (ElevenLabs dialogue, Gemini TTS) emits the persisted audio as a
+          // `media_block` BEFORE `audio_stream_end`, and that block is what the
+          // turn renders — the chunk is a live-playback aid (base64 at chunk
+          // rate, never state) and the end is the hand-over signal. Until
+          // 2026-09-26 both fell to `unknown_data_event` and every speech-script
+          // run printed two "Unknown Data Event" cards under its audio player.
+          //
+          // Nothing is dropped silently: an end that arrives with NO audio
+          // media block for this request becomes that block itself (built from
+          // the end's durable file), so a deploy that never emits `media_block`
+          // still shows its audio.
+          const audioKey = "media_block_audio_current";
+          const endData = d as unknown as {
+            url?: string | null;
+            file_id?: string | null;
+            cdn_url?: string | null;
+            download_url?: string | null;
+            mime_type?: string | null;
+            duration_ms?: number | null;
+          };
+          const haveAudio = Boolean(
+            getState().activeRequests.byRequestId[requestId]?.renderBlocks?.[
+              audioKey
+            ],
+          );
+          if (
+            dataType === "audio_stream_end" &&
+            !haveAudio &&
+            (endData.file_id || endData.url)
+          ) {
+            dataRenderBlockId = audioKey;
+            const unified = fromMediaBlock({
+              kind: "audio",
+              origin: endData.file_id ? "matrx" : "external",
+              status: "complete",
+              file_id: endData.file_id ?? null,
+              cdn_url: endData.cdn_url ?? (endData.file_id ? endData.url : null) ?? null,
+              download_url: endData.download_url ?? null,
+              external_url: endData.file_id ? null : (endData.url ?? null),
+              mime_type: endData.mime_type ?? null,
+              duration_ms: endData.duration_ms ?? null,
+            });
+            dispatch(
+              upsertRenderBlock({
+                requestId,
+                block: {
+                  blockId: audioKey,
+                  blockIndex: renderBlockEvents,
+                  type: "audio_output",
+                  status: "complete",
+                  content: null,
+                  // MATRX-EXCEPTION: same open-bag cast as the media_block
+                  // branch above (UnifiedMediaBlock has no index signature).
+                  data: unified as unknown as Record<string, unknown>,
+                },
+              }),
+            );
+          }
         } else if (dataType === DECISION_ANSWERS_BLOCK_TYPE) {
           // A DECISION ARRIVES LIVE, exactly like an image or a TTS render.
           // The server emits the same `decision_answers` payload it persists

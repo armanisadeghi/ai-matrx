@@ -315,7 +315,9 @@ export interface EntityListConfig<TRow> {
 
   /**
    * Put the query in the URL: scope, search, filters, archived, deep, page,
-   * plus sort/direction. Off by default so existing surfaces are untouched.
+   * plus sort/direction. ON by default (2026-09-26): a list page's lane,
+   * search and filters live in its address. Set `false` only for a list that
+   * is not the page's own query (it would fight the host page for `?q=`).
    *
    * On, the URL is the source of truth — refresh, a pasted link and browser
    * Back/Forward all reproduce the list. Encoding lives in ./urlQuery.ts over

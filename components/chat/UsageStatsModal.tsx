@@ -18,6 +18,7 @@ import {
   TrendingUp,
   Activity
 } from 'lucide-react';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface UsageStatsData {
   status: string;
@@ -326,6 +327,7 @@ export function UsageStatsModal({ isOpen, onClose, data }: UsageStatsModalProps)
                             <div className="flex items-center gap-1 text-destructive">
                               <span className="text-muted-foreground">Errors:</span>
                               <span className="font-mono">{toolStats.error}</span>
+                              <ErrorAlchemyMenu error={toolStats.error} />
                             </div>
                           )}
                         </div>

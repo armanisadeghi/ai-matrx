@@ -43,6 +43,7 @@ import {
   ScoreRing,
   scoreAccentBgClasses,
 } from "@ai-matrx/design-system";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const STATUS_META: Record<
   string,
@@ -213,7 +214,7 @@ export function SessionsBrowser({
             <p className="text-sm text-foreground">
               Couldn&apos;t load sessions
             </p>
-            <p className="max-w-md text-xs text-muted-foreground">{error}</p>
+            <p className="max-w-md text-xs text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
           </div>
         ) : sessions.length === 0 ? (
           <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-14 text-center">

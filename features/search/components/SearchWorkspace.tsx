@@ -27,6 +27,7 @@ import { useKindSearch } from "../hooks/useKindSearch";
 import { buildSearchHref, SEARCH_RESULT_COUNT } from "../search-url";
 import { SearchBox } from "./SearchBox";
 import { SearchResultsSkeleton } from "./SearchResultsSkeleton";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SEARCH_SURFACE_NAME = "matrx-user/search";
 
@@ -223,6 +224,7 @@ export function SearchWorkspace({ query }: { query: string }) {
               <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
               Try again
             </Button>
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
 

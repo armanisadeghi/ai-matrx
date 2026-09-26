@@ -30,6 +30,14 @@ function run(cmd, items) {
   return { code: r.status, out: `${r.stdout ?? ""}\n${r.stderr ?? ""}`.replace(ANSI, "") };
 }
 
+/** A TypeScript module's export, read through tsx (for allowlists that live in .ts files). */
+function tsExport(rel, name) {
+  const code = `import(${JSON.stringify(join(ROOT, rel))}).then((m) => console.log(JSON.stringify(m[${JSON.stringify(name)}] ?? m.default?.[${JSON.stringify(name)}])))`;
+  const r = spawnSync("pnpm", ["exec", "tsx", "-e", code], { cwd: ROOT, encoding: "utf8" });
+  if (r.status !== 0) throw new Error(`tsExport ${rel}#${name}: ${r.stderr}`);
+  return JSON.parse(r.stdout.trim().split("\n").pop());
+}
+
 /**
  * One row per converted check:
  *   cmd        — the runner's command for it (scripts/run-release-gates.sh --list)
@@ -38,6 +46,8 @@ function run(cmd, items) {
  *   staleKeys  — (output) → keys the check reports as stale this run (they cannot be emitted).
  *                A check that reports no staleness omits it: then an allowlist key the run did not
  *                match is listed as a diagnostic (a stale entry to prune), not a failure.
+ *   countRatchet — the baseline holds per-key COUNTS: a grown key is `new` AND a baseline key.
+ *   mayBeClean   — the check is clean on today's tree, so zero items is the honest answer.
  */
 export const CONVERTED = [
   {
@@ -109,6 +119,86 @@ export const CONVERTED = [
     allowKeys: () => [],
     keyShape: /^((raw-supabase-message|raw-governed-write|claims-deleted|claims-denied)\|[^|]+|(swallowed|narrowed)\|[^|]+\|[^|]+)$/,
   },
+  // ── Batch 2 (2026-09-26) ──────────────────────────────────────────────────────────────────
+  {
+    // Allowlist: scripts/dead-ends/allowlist.ts — `<file>|<rule or *>`. Every finding is an item,
+    // whatever --limit prints.
+    id: "no-dead-ends-door-law",
+    cmd: "pnpm exec tsx scripts/dead-ends/check-dead-ends.ts",
+    allowKeys: () => tsExport("scripts/dead-ends/allowlist.ts", "DEAD_END_ALLOWLIST").map((e) => `${e.file}|${e.rule ?? "*"}`),
+    keyShape: /^[^|]+\|(\*|bare-id-text|unlinked-entity-name|unlinked-count|toast-names-record|no-doors-in-file)$/,
+  },
+  {
+    // Baseline: scripts/type-escape-baseline.json `counts` — one item per category.
+    id: "type-escape-hatch-ratchet",
+    cmd: "pnpm check:hatches",
+    allowKeys: () => Object.keys(json("scripts/type-escape-baseline.json").counts),
+    keyShape: /^[a-zA-Z]+$/,
+    countRatchet: true,
+  },
+  {
+    // Exemptions are code sets (a finding never exists): every item is new, `<kind>|<file>`.
+    id: "ui-primitives-check",
+    cmd: "pnpm exec tsx scripts/check-ui-primitives.ts",
+    allowKeys: () => [],
+    keyShape: /^(raw-input|fake-checkbox|fake-switch|raw-dialog|raw-modal-import)\|[^|]+\.tsx$/,
+  },
+  {
+    // Allowlist: scripts/settings-hardcoded-allowlist.json `entries` — `<file>::<NAME>`.
+    id: "settings-new-knob-shaped-constants-ratchet",
+    cmd: "pnpm check:settings-hardcoded",
+    allowKeys: () => json("scripts/settings-hardcoded-allowlist.json").entries.map((e) => `${e.file}::${e.name}`),
+    keyShape: /^[^:]+::[A-Z][A-Z0-9_]+$/,
+  },
+  {
+    // Register: scripts/package-twins.json — `<row>|<census list>|<file>` for census / shapeCensus /
+    // inputCensus entries. Stale census entries are printed by the check (name lane and shape lanes).
+    id: "package-logic-re-grown-outside-its-package",
+    cmd: "pnpm check:package-twins:strict",
+    allowKeys: () =>
+      json("scripts/package-twins.json").twins.flatMap((row) =>
+        ["census", "shapeCensus", "inputCensus"].flatMap((list) => (row[list] ?? []).map((e) => `${row.name}|${list}|${e.file}`)),
+      ),
+    keyShape: /^[^|]+\|(census|shapeCensus|inputCensus)\|[^|]+$/,
+    staleKeys(out) {
+      const keys = [...out.matchAll(/^ {2}(\S+) → (\S+)$/gm)].map((m) => `${m[1]}|census|${m[2]}`);
+      let lane = null;
+      for (const line of out.split("\n")) {
+        const head = /stale `(\w+)` entr\(ies\) on `([^`]+)`/.exec(line);
+        if (head) lane = { list: head[1], row: head[2] };
+        else if (lane && /^ {2}\S+$/.test(line)) keys.push(`${lane.row}|${lane.list}|${line.trim()}`);
+        else if (lane && line.trim() !== "") lane = null;
+      }
+      return keys;
+    },
+  },
+  {
+    id: "scroll-chain-clipped-tables-lists",
+    cmd: "pnpm exec tsx scripts/check-scroll-chain.ts",
+    allowKeys: () => [],
+    keyShape: /^(broken-chain\|[^|]+\.tsx|route-clipper\|[^|]+\.tsx\|[^|]+\.tsx)$/,
+  },
+  {
+    // Accepted only by an inline `canonical-*-picker-exempt:` comment: all new, `<rule>|<file>`.
+    id: "canonical-agent-model-pickers",
+    cmd: "pnpm check:canonical-pickers",
+    allowKeys: () => [],
+    keyShape: /^(retired-model-picker|model-picker|agent-picker)\|[^|]+$/,
+    mayBeClean: true,
+  },
+  {
+    // Exemptions are reasoned path prefixes in the check: all new.
+    id: "surfaces-running-an-agent-without-naming-it",
+    cmd: "pnpm check:agent-disclosure",
+    allowKeys: () => [],
+    keyShape: /^((undisclosed|inline-disclosure)\|[^|]+\.tsx?|cross-surface\|.+)$/,
+  },
+  {
+    id: "route-metadata-and-favicons",
+    cmd: "pnpm check:route-metadata",
+    allowKeys: () => [],
+    keyShape: /^(duplicate-registry-entry|shared-favicon-letter|page-not-layout|no-metadata-boundary|bypasses-canonical-helper|no-admin-favicon-letter|unregistered-favicon|overrides-registry-letter)\|\/.*$/,
+  },
 ];
 
 for (const check of CONVERTED) {
@@ -120,7 +210,8 @@ for (const check of CONVERTED) {
 
     const { items, errors } = parseItems(itemRun.out);
     assert.deepEqual(errors, [], "malformed item lines");
-    assert.ok(items.length > 0, `${check.id} printed no MATRX-ITEM lines`);
+    if (!check.mayBeClean) assert.ok(items.length > 0, `${check.id} printed no MATRX-ITEM lines`);
+    else if (items.length === 0) assert.equal(itemRun.code, 0, `${check.id} failed yet named no items`);
 
     const allow = new Set(check.allowKeys());
     const badShape = [...allow, ...items.map((i) => i.key)].filter((k) => !check.keyShape.test(k));
@@ -135,10 +226,15 @@ for (const check of CONVERTED) {
       const allowedNotEmitted = [...allow].filter((k) => !stale.has(k) && !known.includes(k));
       assert.deepEqual(allowedNotEmitted, [], "allowlist keys the check neither matched nor reported stale");
     } else {
-      const unmatched = [...allow].filter((k) => !known.includes(k));
+      const unmatched = [...allow].filter((k) => !known.includes(k) && !fresh.includes(k));
       if (unmatched.length) console.log(`# ${check.id}: ${unmatched.length} allowlist key(s) matched nothing this run (stale?): ${unmatched.slice(0, 5).join(", ")}`);
     }
-    const newButAllowed = fresh.filter((k) => allow.has(k));
-    assert.deepEqual(newButAllowed, [], "new keys that ARE allowlist keys");
+    if (check.countRatchet) {
+      // A count ratchet: every key — grown (new) or not (known) — IS a baseline key.
+      assert.deepEqual(fresh.filter((k) => !allow.has(k)), [], "grown keys that are not baseline keys");
+    } else {
+      const newButAllowed = fresh.filter((k) => allow.has(k));
+      assert.deepEqual(newButAllowed, [], "new keys that ARE allowlist keys");
+    }
   });
 }

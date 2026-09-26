@@ -73,6 +73,7 @@ import {
 } from "@/features/masterwork/record/interviewModes";
 import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SOURCE_FEATURE = "masterwork" as const;
 /**
@@ -746,6 +747,7 @@ export function ScoutInterviewContent({
         <p className="text-foreground">
           {historyError} If one is already going, starting a new one here would
           leave it behind — so nothing has been started.
+          <ErrorAlchemyMenu error={historyError} />
         </p>
         <Button
           size="sm"
@@ -767,6 +769,7 @@ export function ScoutInterviewContent({
         The interviewer isn&apos;t available right now
         {error ? ` (${error})` : ""}. An administrator can bind one to the
         `masterwork.scout` Mandate.
+        <ErrorAlchemyMenu />
       </div>
     );
   }
@@ -776,7 +779,7 @@ export function ScoutInterviewContent({
   if (rulebookDoc.error) {
     return (
       <div className="space-y-3 px-4 py-6 text-sm">
-        <p className="text-foreground">{rulebookDoc.error}</p>
+        <p className="text-foreground">{rulebookDoc.error} <ErrorAlchemyMenu error={rulebookDoc.error} /></p>
         <Button size="sm" variant="outline" onClick={rulebookDoc.reload}>
           Try again
         </Button>

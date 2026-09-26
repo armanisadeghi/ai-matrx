@@ -12,6 +12,7 @@ import {
 } from "@/utils/ts-function-registry/function-registry";
 import { registerDatabaseFunctions } from "@/utils/ts-function-registry/register-functions";
 import { registerUtilityFunctions } from "@/utils/ts-function-registry/register-utility-functions";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AppletFunctionPickerProps {
   dependencies?: FunctionDependencies;
@@ -287,6 +288,7 @@ export default function AppletFunctionPicker({
         <div className="mt-6 p-4 bg-red-100 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-md text-red-800 dark:text-red-200">
           <h3 className="text-lg font-medium mb-2">Error</h3>
           <pre className="whitespace-pre-wrap text-sm">{error}</pre>
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 

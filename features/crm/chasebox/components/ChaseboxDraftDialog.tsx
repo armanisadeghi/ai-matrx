@@ -473,6 +473,7 @@ export function ChaseboxDraftDialog({
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
               {loadError}
             </p>
+            <ErrorAlchemyMenu error={loadError} />
           </div>
         )}
 

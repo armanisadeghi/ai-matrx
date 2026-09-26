@@ -61,6 +61,7 @@ import {
   type StandingImpact,
 } from "./impact";
 import type { ImpactWriteBusy } from "./impact-advance";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Why a row carries no verdict — each is a different fact. */
 export type UngradedReason = "loading" | "read_failed" | "no_agent" | "not_returned";
@@ -431,6 +432,7 @@ export function StandingImpactStrip({
           </div>
           <div className="text-muted-foreground">{error}</div>
         </div>
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }

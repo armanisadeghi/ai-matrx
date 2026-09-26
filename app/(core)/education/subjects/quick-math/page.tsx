@@ -9,6 +9,7 @@ import { getAllMathProblems } from "@/features/math/service";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const metadata: Metadata = {
   title: "Quick Math Lessons — Interactive Algebra | AI Matrx Education",
@@ -135,6 +136,7 @@ export default async function QuickMathPage() {
                             className="w-fit"
                           >
                             {problem.difficulty_level}
+                            <ErrorAlchemyMenu />
                           </Badge>
                         )}
                       </CardHeader>

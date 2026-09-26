@@ -1087,6 +1087,7 @@ function BatchDetailDialog({
                   </h3>
                   <pre className="rounded-md border border-border bg-muted/50 p-3 text-xs overflow-x-auto">
                     {JSON.stringify(detail.error, null, 2)}
+                    <ErrorAlchemyMenu />
                   </pre>
                 </section>
               )}

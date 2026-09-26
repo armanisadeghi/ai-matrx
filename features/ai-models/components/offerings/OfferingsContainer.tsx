@@ -33,6 +33,7 @@ import type {
   AiOffering,
   AiOfferingFormData,
 } from "../../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const EMPTY_FORM: AiOfferingFormData = {
   model_id: "",
@@ -407,6 +408,7 @@ export default function OfferingsContainer() {
                       <span className="flex-1 min-w-0 break-words">
                         {saveError}
                       </span>
+                      <ErrorAlchemyMenu error={saveError} />
                     </div>
                   )}
                   <div className="px-3 py-2 flex items-center justify-between gap-2">

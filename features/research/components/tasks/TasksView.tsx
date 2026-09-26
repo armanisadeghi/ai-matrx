@@ -43,6 +43,7 @@ import type {
   UserVerdict,
 } from "../../types";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ============================================================================
 // Capture-ladder metadata
@@ -379,6 +380,7 @@ export default function TasksView() {
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive flex items-start gap-2">
           <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
           <span>{error}</span>
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 
@@ -623,6 +625,7 @@ function TaskRow({
               <FileWarning className="h-3 w-3 mt-0.5 shrink-0" />
               <span className="font-mono break-all">
                 {item.last_failure_reason}
+                <ErrorAlchemyMenu error={item.last_failure_reason} />
               </span>
             </div>
           )}

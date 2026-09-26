@@ -90,6 +90,7 @@ import { extractTurnTrust } from "../turnTrust";
 import { TutorLanding } from "./TutorLanding";
 import { TutorTrustStrip } from "./TutorTrustStrip";
 import { TutorTurnTrust } from "./TutorTurnTrust";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SOURCE_FEATURE = "education-tutor" as const;
 const BASE_PATH = "/education/tutor/[conversationId]";
@@ -151,6 +152,7 @@ export function EducationTutorClient(props: EducationTutorClientProps) {
         <p className="max-w-md text-xs text-muted-foreground">
           The {TUTOR_MANDATE_KEY} mandate could not resolve: {error}. Fix its
           binding at /mandates.
+          <ErrorAlchemyMenu error={error} />
         </p>
       </div>
     );

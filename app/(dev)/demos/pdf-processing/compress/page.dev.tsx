@@ -12,6 +12,7 @@ import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { PdfBinaryResult } from "@/features/pdf-demo/components/PdfBinaryResult";
 import { type BinaryResult } from "@/features/pdf-demo/hooks/usePdfDemoApi";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type CompressLevel = 1 | 2 | 3 | 4 | 5;
 
@@ -191,6 +192,7 @@ export default function CompressDemo() {
           <pre className="whitespace-pre-wrap break-words font-mono text-xs">
             {error}
           </pre>
+          <ErrorAlchemyMenu error={error} />
         </div>
       ) : null}
 

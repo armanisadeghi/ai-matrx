@@ -260,6 +260,7 @@ function FieldsSection({ core }: { core: DetailCore }) {
     return (
       <Notice tone="error">
         {`Couldn't load the details for this ${label}. ${core.errorMessage ?? ""}`.trim()}
+        <ErrorAlchemyMenu />
       </Notice>
     );
   }

@@ -256,6 +256,7 @@ function FallbackValueInput({
         {jsonError && (
           <p className="text-[10px] text-orange-600 dark:text-orange-400">
             {jsonError}
+            <ErrorAlchemyMenu error={jsonError} />
           </p>
         )}
       </div>

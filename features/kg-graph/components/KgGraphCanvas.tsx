@@ -67,6 +67,7 @@ import { KgGraphSidePanel } from "./KgGraphSidePanel";
 import { KgGraphLegend } from "./KgGraphLegend";
 import { KgScopeFilter } from "./KgScopeFilter";
 import { KgOrgFilter } from "./KgOrgFilter";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // cytoscape + extensions touch window at import → must be client-only.
 const KgGraphCytoscape = dynamic(() => import("./KgGraphCytoscape"), {
@@ -605,7 +606,7 @@ export function KgGraphCanvas({
                     <div className="text-sm font-medium">
                       Couldn&apos;t load the graph
                     </div>
-                    <div className="text-xs text-muted-foreground">{error}</div>
+                    <div className="text-xs text-muted-foreground">{error} <ErrorAlchemyMenu /></div>
                     <button
                       onClick={() => setReloadKey((n) => n + 1)}
                       className="text-xs text-primary hover:underline"

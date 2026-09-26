@@ -203,6 +203,7 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
             >
               Open Analytics setup
             </Link>
+            <ErrorAlchemyMenu error={bindingDiagnosis.reason} />
           </div>
         ) : null}
         {loadError ? (

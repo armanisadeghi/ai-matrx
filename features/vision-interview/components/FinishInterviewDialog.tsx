@@ -73,6 +73,7 @@ import {
   selectRunPhase,
 } from "../redux/vision-interview.slice";
 import { ROLES, type DocView } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface DeliverableRow {
   key: Extract<DocView, "vision" | "requirements" | "transcript">;
@@ -224,6 +225,7 @@ export function FinishInterviewDialog({
           {failed && runError && (
             <p className="break-words rounded-md border border-border bg-muted/50 p-3 text-xs text-muted-foreground">
               {runError}
+              <ErrorAlchemyMenu error={runError} />
             </p>
           )}
           {working && (

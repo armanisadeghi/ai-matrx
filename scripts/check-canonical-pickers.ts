@@ -14,6 +14,7 @@
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { emitItem } from "./checks/items.mjs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = path.resolve(__dirname, "..");
@@ -141,6 +142,8 @@ interface Finding {
   file: string;
   line: number;
   reason: string;
+  /** `retired-model-picker` | `model-picker` | `agent-picker` — the item key's first half. */
+  rule: string;
 }
 
 function sourceFiles(): string[] {
@@ -384,12 +387,13 @@ function main(): void {
         file,
         line: lineFor(text.code, retiredModelPicker),
         reason: "retired SmartModelSelect reference",
+        rule: "retired-model-picker",
       });
     }
 
     for (const spec of [MODEL_DOMAIN, AGENT_DOMAIN]) {
       for (const finding of scanDomain(text, spec)) {
-        findings.push({ file, ...finding });
+        findings.push({ file, rule: `${spec.label}-picker`, ...finding });
       }
     }
   }
@@ -399,6 +403,19 @@ function main(): void {
       "✅ Canonical pickers hold: no alternate platform agent/model selectors found.",
     );
     return;
+  }
+
+  // Items (ITEM-PROTOCOL.md): accepted only by an inline `canonical-*-picker-exempt:` comment at
+  // the control, never a key list — so every item is new, keyed `<rule>|<file>` (no line).
+  for (const finding of findings) {
+    emitItem({
+      key: `${finding.rule}|${finding.file}`,
+      status: "new",
+      title: finding.reason,
+      file: finding.file,
+      line: finding.line,
+      rule: finding.rule,
+    });
   }
 
   console.error("\n🚨 ALTERNATE AGENT / MODEL PICKERS FOUND\n");

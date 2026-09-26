@@ -25,6 +25,7 @@ import {
   type ContinuedAccessOrganization,
 } from "@/features/continued-access/service";
 import { PORTAL_FEATURES } from "@/features/continued-access/portalFeatures";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function onDate(iso: string | null): string {
   if (!iso) return "";
@@ -81,7 +82,7 @@ function OrganizationPanel({ org }: { org: ContinuedAccessOrganization }) {
         {refusal ? (
           <p className="flex items-start gap-2 text-sm text-muted-foreground">
             <Clock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-            <span>{refusal}</span>
+            <span>{refusal} <ErrorAlchemyMenu /></span>
           </p>
         ) : features.length === 0 ? (
           // The org has the portal ON but has switched every aspect OFF. Say so plainly rather
@@ -156,7 +157,7 @@ export function ContinuedAccessPortal({ organizationId }: { organizationId?: str
 
         {state.status === "error" && (
           <div className="rounded-lg border border-border bg-card p-5">
-            <p className="text-sm">{state.message}</p>
+            <p className="text-sm">{state.message} <ErrorAlchemyMenu /></p>
             <Button variant="outline" className="mt-4" onClick={() => void load()}>
               Try again
             </Button>

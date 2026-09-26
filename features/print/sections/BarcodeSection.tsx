@@ -25,6 +25,7 @@ import {
     createBarcodePreviewScope,
 } from "@/features/surfaces/manifests/barcode-preview.manifest";
 import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // The generated source-attribution contract is being extended with `print`.
 // Keep the runtime attribution canonical now without editing generated types.
@@ -190,7 +191,7 @@ export function BarcodeSection() {
 
                         {error ? (
                             <div data-surface-value={matchingRenderError ? "render_error" : undefined}>
-                                <StatusChip tone="warn">{error}</StatusChip>
+                                <StatusChip tone="warn">{error} <ErrorAlchemyMenu error={error} /></StatusChip>
                             </div>
                         ) : null}
                         {!error && normalized !== null ? (

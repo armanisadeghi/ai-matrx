@@ -21,6 +21,7 @@
 import { useState } from "react";
 
 import { KioskNumericKeypad, KioskPinDots } from "./KioskNumericKeypad";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface KioskPinResetPadProps {
   employeeName: string | null;
@@ -115,7 +116,7 @@ export function KioskPinResetPad({
       )}
 
       {/* The server's own sentence — "Choose a PIN different from the one you were given." */}
-      {refusal && !mismatch && <p className="max-w-lg text-center text-xl text-foreground">{refusal}</p>}
+      {refusal && !mismatch && <p className="max-w-lg text-center text-xl text-foreground">{refusal} <ErrorAlchemyMenu error={refusal} /></p>}
 
       <KioskNumericKeypad
         busy={busy}

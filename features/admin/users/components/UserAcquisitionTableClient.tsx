@@ -871,6 +871,7 @@ export function UserAcquisitionTableClient() {
                           {item.failures ? (
                             <Badge variant="destructive" className="ml-2">
                               {item.failures} failed
+                              <ErrorAlchemyMenu error={item.failures} />
                             </Badge>
                           ) : null}
                         </div>

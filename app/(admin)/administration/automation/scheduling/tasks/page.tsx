@@ -45,6 +45,7 @@ import { DuplicateScheduleBanner } from "@/features/scheduling/components/list/D
 import { useDuplicateSchedules } from "@/features/scheduling/hooks/useDuplicateSchedules";
 import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
 import { useScheduledTaskMenuSection } from "@/features/scheduling/components/shared/scheduling-menu-sections";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function triggerText(r: AdminTaskRow): string {
   return r.trigger
@@ -217,6 +218,7 @@ export default function AdminTasksPage() {
             <span>
               {duplicateError} Tasks remain available, but possible duplicate
               runs are not currently highlighted.
+              <ErrorAlchemyMenu />
             </span>
             <Button
               variant="outline"

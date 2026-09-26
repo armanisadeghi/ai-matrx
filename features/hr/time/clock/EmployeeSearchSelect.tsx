@@ -38,6 +38,7 @@ import { Input } from "@ai-matrx/design-system";
 import type { HrWorkerClass } from "@/features/hr/constants";
 import { fetchHrDirectory } from "@/features/hr/service";
 import { isHrGranted } from "@/features/hr/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Below this, nothing is queried and nothing is shown. The roster never renders itself. */
 export const MIN_QUERY_LENGTH = 2;
@@ -191,7 +192,7 @@ export function EmployeeSearchSelect({
         </p>
       )}
 
-      {refusal && <p className="text-sm text-foreground">{refusal}</p>}
+      {refusal && <p className="text-sm text-foreground">{refusal} <ErrorAlchemyMenu error={refusal} /></p>}
 
       {active && !searching && !refusal && rows.length === 0 && (
         <p className="text-sm text-muted-foreground">

@@ -37,6 +37,7 @@ import { SettingsTextInput } from "@/components/official/settings/primitives/Set
 
 import { MediaApiError, getMediaSettings, putMediaSettings } from "../api";
 import type { MediaSettingKnob, MediaSettingsResponse } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ───────────────────────────────────────────────────────────────── helpers ──
 
@@ -224,8 +225,8 @@ export default function SourceLibrarySettingsTab() {
                     icon={Settings2}
                 />
                 <SettingsCallout tone="error" title="These settings are not available">
-                    <p>{loadFailure.message}</p>
-                    {loadFailure.remedy && <p className="mt-1">{loadFailure.remedy}</p>}
+                    <p>{loadFailure.message} <ErrorAlchemyMenu error={loadFailure.message} /></p>
+                    {loadFailure.remedy && <p className="mt-1">{loadFailure.remedy} <ErrorAlchemyMenu error={loadFailure.remedy} /></p>}
                 </SettingsCallout>
                 <SettingsSection title="Retry">
                     <SettingsButton
@@ -272,8 +273,8 @@ export default function SourceLibrarySettingsTab() {
 
             {saveFailure && (
                 <SettingsCallout tone="error" title="That change was not saved">
-                    <p>{saveFailure.message}</p>
-                    {saveFailure.remedy && <p className="mt-1">{saveFailure.remedy}</p>}
+                    <p>{saveFailure.message} <ErrorAlchemyMenu error={saveFailure.message} /></p>
+                    {saveFailure.remedy && <p className="mt-1">{saveFailure.remedy} <ErrorAlchemyMenu error={saveFailure.remedy} /></p>}
                     <p className="mt-1">
                         The control below shows the value the server still holds.
                     </p>

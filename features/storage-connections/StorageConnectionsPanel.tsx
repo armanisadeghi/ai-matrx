@@ -240,6 +240,7 @@ export function StorageConnectionsPanel({
             {loadError} Your file connections could not be listed, so this
             screen is not claiming that you have none.
           </span>
+          <ErrorAlchemyMenu error={loadError} />
         </div>
       ) : null}
 

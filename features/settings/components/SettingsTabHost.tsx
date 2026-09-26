@@ -14,6 +14,7 @@ import { SettingsBreadcrumb } from "@/components/official/settings/tree/Settings
 import type { SettingsTreeNode } from "@/components/official/settings/tree/types";
 import type { SettingsTabDef } from "../types";
 import { SettingsPage } from "@/components/official/settings/SettingsPage";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type SettingsTabHostProps = {
   activeTab: SettingsTabDef | null;
@@ -142,6 +143,7 @@ class TabErrorBoundary extends Component<
           >
             <div className="font-mono text-[11px] break-all">
               {this.state.error.message}
+              <ErrorAlchemyMenu error={this.state.error.message} />
             </div>
             <div className="mt-1 text-xs">
               The other settings tabs still work. Check the browser console for

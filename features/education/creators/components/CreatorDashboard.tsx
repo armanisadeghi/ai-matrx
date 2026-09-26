@@ -60,6 +60,7 @@ import type {
 } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const RESOURCE_LABEL: Record<string, string> = {
   fc_set: "Flashcards",
@@ -166,7 +167,7 @@ function ClaimHandle({ onClaimed }: { onClaimed: (p: CreatorProfileMine) => void
             <p className="mt-1 text-xs text-muted-foreground">
               3–30 characters — letters, numbers, dashes.
               {available === false ? (
-                <span className="ml-1 text-destructive">Taken or invalid.</span>
+                <span className="ml-1 text-destructive">Taken or invalid. <ErrorAlchemyMenu /></span>
               ) : null}
             </p>
           </div>

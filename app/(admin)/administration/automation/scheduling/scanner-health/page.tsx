@@ -48,6 +48,7 @@ import {
   OrganizationRequiredNotice,
 } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function ScannerHealthPage() {
   const { organizationId, canLoad, organizationRequired, organizationState } =
@@ -397,6 +398,7 @@ export default function ScannerHealthPage() {
                   <Badge variant="destructive" className="gap-1">
                     <AlertTriangle className="h-3 w-3" />
                     {status.consecutive_errors} errors
+                    <ErrorAlchemyMenu />
                   </Badge>
                 )}
               </div>

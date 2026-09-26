@@ -2251,6 +2251,7 @@ function KeptMaterialSummary({
         <p className="text-foreground">
           We couldn&apos;t read the material this rulebook has kept, so the count
           below may be short. {kept.reason}
+          <ErrorAlchemyMenu error={kept.reason} />
         </p>
         <Button
           size="sm"

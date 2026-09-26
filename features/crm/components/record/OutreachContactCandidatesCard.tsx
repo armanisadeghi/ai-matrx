@@ -20,6 +20,7 @@ import {
 } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { SectionCard } from "./SectionCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   outletPartyId: string;
@@ -176,6 +177,7 @@ export function OutreachContactCandidatesCard({ outletPartyId }: Props) {
             <Button variant="outline" size="sm" onClick={() => void load()}>
               Retry
             </Button>
+            <ErrorAlchemyMenu />
           </div>
         ))}
 

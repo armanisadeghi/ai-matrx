@@ -23,7 +23,13 @@ test) · `features/masterwork/browse/` · marketing cross-site ranks ·
 
 ## The URL is the query (`config.urlState`)
 
-Opt-in per surface. On, `useEntityList` holds NO query state of its own: scope,
+**On for every `EntityListPage` since 2026-09-26; `urlState: false` is the
+opt-out** for a list that is not its page's own query. It was opt-in, and
+`/agents/all` and `/workflows/all` never opted in: `?scope=mine&q=…` was
+ignored, the late registry default (`registryToken`) flipped the untouched scope
+to My Orgs, and Back restored nothing. Guard:
+`__tests__/list-page-url-is-the-query.test.tsx`. On, `useEntityList` holds NO
+query state of its own: scope,
 search, filters, archived, deep and page are parsed from the query string on
 every render (via `lib/url-state`'s `useUrlSearchParams`, a
 `useSyncExternalStore`), and every setter commits back through

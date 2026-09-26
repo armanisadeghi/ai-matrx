@@ -144,7 +144,7 @@ export function ActionRunner({
     <div className="flex flex-col gap-1">
       <p className="text-sm text-destructive">{refusal.message} <ErrorAlchemyMenu error={refusal.message} /></p>
       {refusal.remedy ? (
-        <p className="text-sm text-muted-foreground">{refusal.remedy}</p>
+        <p className="text-sm text-muted-foreground">{refusal.remedy} <ErrorAlchemyMenu error={refusal.remedy} /></p>
       ) : null}
     </div>
   ) : null;

@@ -67,6 +67,7 @@ import {
 } from "@/components/official/mobile-table/mobileTable";
 import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -1588,7 +1589,7 @@ export default function ProviderSyncDashboard({
           ) : (
             <CheckCircle2 className="h-4 w-4 shrink-0" />
           )}
-          <span className="flex-1 text-xs">{syncError ?? syncSuccess}</span>
+          <span className="flex-1 text-xs">{syncError ?? syncSuccess} <ErrorAlchemyMenu error={syncError} /></span>
           <button
             onClick={() => {
               setSyncError(null);

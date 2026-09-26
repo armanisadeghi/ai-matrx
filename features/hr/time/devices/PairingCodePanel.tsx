@@ -46,6 +46,7 @@ import type {
   KioskLocation,
   KioskPairingCode,
 } from "./deviceAdminSource";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function PairingCodeDialogBody({
   source,
@@ -224,7 +225,7 @@ export function PairingCodeDialogBody({
         </p>
       )}
 
-      {error && <p className="text-sm text-foreground">{error}</p>}
+      {error && <p className="text-sm text-foreground">{error} <ErrorAlchemyMenu error={error} /></p>}
     </div>
   );
 }

@@ -698,6 +698,7 @@ export function HrDecisionPanel({
                                         failures
                                         <span className="ml-1 text-muted-foreground">
                                             ({hiddenOpenFailureCount} remaining)
+                                          <ErrorAlchemyMenu error={hiddenOpenFailureCount} />
                                         </span>
                                     </Button>
                                 ) : null}

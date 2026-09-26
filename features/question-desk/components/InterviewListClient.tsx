@@ -35,6 +35,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { listInterviews, setInterviewArchived } from "../data/interviews";
 import type { InterviewListRow } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function InterviewListClient() {
   const [archived, setArchived] = useState<ArchiveFilterValue>(
@@ -195,7 +196,7 @@ export function InterviewListClient() {
           <h2 className="text-base font-semibold text-foreground">
             The interviews did not load
           </h2>
-          <p className="mt-1.5 text-[13.5px] text-foreground/80">{error}</p>
+          <p className="mt-1.5 text-[13.5px] text-foreground/80">{error} <ErrorAlchemyMenu error={error} /></p>
           <button
             type="button"
             onClick={() => setReloadToken((token) => token + 1)}

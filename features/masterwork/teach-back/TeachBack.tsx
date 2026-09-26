@@ -574,6 +574,7 @@ export function TeachBack({
               Try that again
             </Button>
           ) : null}
+          <ErrorAlchemyMenu error={run.error} />
         </div>
       ) : null}
 

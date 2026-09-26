@@ -223,6 +223,7 @@ function FetchResolver({
         <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-2.5 text-xs text-destructive">
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{error}</span>
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 

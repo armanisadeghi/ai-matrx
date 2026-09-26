@@ -276,6 +276,7 @@ function MountedSpendExplorer({ refreshKey }: { refreshKey: number }) {
             This needs a Super Admin account; the read is refused at the
             database, not hidden in the UI. Use Refresh to try again.
           </div>
+          <ErrorAlchemyMenu />
         </div>
       ) : null}
 

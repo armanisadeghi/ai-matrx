@@ -194,6 +194,7 @@ export function MicrosoftConnectPanel({
             {loadError} Your Microsoft accounts could not be listed, so this
             screen is showing none rather than pretending you have none.
           </span>
+          <ErrorAlchemyMenu error={loadError} />
         </div>
       ) : null}
 

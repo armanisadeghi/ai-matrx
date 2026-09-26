@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { MediaApiError, createLibrary, resolveMediaInput } from "../api";
 import { formatCompactNumber } from "../format";
 import type { ResolveResult } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * WHAT THIS BOX ACCEPTS — named once, used everywhere below.
@@ -255,6 +256,7 @@ export function CatalogPasteBox({ autoFocus = true }: { autoFocus?: boolean }) {
                                 </span>
                             ) : null}
                         </span>
+                      <ErrorAlchemyMenu error={stage.message} />
                     </span>
                 )}
             </div>

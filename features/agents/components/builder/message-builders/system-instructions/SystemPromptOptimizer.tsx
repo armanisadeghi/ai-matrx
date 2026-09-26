@@ -49,6 +49,7 @@ import { usePathname } from "next/navigation";
 // Replace with agent.definition upsert once the prompt-to-agent migration completes.
 import { FullPromptOptimizer } from "./FullPromptOptimizer";
 import MarkdownStream from "@/components/MarkdownStream";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SystemPromptOptimizerProps {
   isOpen: boolean;
@@ -368,6 +369,7 @@ export function SystemPromptOptimizer({
                     {shortcutLoadError}
                   </div>
                 </div>
+                <ErrorAlchemyMenu error={shortcutLoadError} />
               </div>
             )}
             {!showGuidanceInput ? (

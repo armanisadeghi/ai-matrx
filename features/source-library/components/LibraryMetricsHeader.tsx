@@ -732,6 +732,7 @@ function SyncStrip({
                         </p>
                     )}
                 </div>
+              <ErrorAlchemyMenu error={sync.message} />
             </div>
         );
     }
@@ -839,6 +840,7 @@ function SyncStrip({
                         Try again
                     </Button>
                 </div>
+              <ErrorAlchemyMenu error={library.sync_error} />
             </div>
         );
     }
@@ -1086,7 +1088,7 @@ export function LibraryMetricsHeader(props: {
                         className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
                         aria-hidden="true"
                     />
-                    <p className="min-w-0 text-sm text-foreground">{metricsError}</p>
+                    <p className="min-w-0 text-sm text-foreground">{metricsError} <ErrorAlchemyMenu error={metricsError} /></p>
                     {props.onRetryMetrics && (
                         <Button
                             size="sm"

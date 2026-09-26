@@ -10,6 +10,7 @@ import AppLink from "@/components/navigation/AppLink";
 import axios from "axios";
 import _ from "lodash";
 import * as dateFns from "date-fns";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Enhanced DynamicComponentRenderer that handles imports
@@ -91,6 +92,7 @@ const DynamicComponentRenderer = ({
         <div className="p-4 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-800 rounded-md text-red-700 dark:text-red-300">
           <h3 className="font-bold mb-2">Error Rendering Component</h3>
           <pre className="whitespace-pre-wrap text-sm">{error}</pre>
+          <ErrorAlchemyMenu />
         </div>
       ) : processedCode ? (
         <LiveProvider code={processedCode} scope={scope} noInline={false}>

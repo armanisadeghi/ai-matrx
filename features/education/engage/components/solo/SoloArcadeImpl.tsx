@@ -25,6 +25,7 @@ import { DEFAULT_ROOM_CONFIG, type GameOutcome } from "../../types";
 import { PlaySurface } from "../play/PlaySurface";
 import { ResultsSummary } from "../results/ResultsSummary";
 import type { BadgeKey } from "../../engine/badges";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Solo rounds are short + snappy — a tighter clock than a multiplayer match. */
 const SOLO_CONFIG = { ...DEFAULT_ROOM_CONFIG, durationMs: 90_000 };
@@ -98,6 +99,7 @@ function SoloRound({
       <Centered>
         <p className="max-w-sm text-center text-sm text-muted-foreground">
           {game.error}
+          <ErrorAlchemyMenu />
         </p>
         <div className="flex gap-2">
           <Button variant="outline" onClick={back}>

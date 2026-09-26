@@ -39,6 +39,7 @@ import {
   type QueueFilters,
 } from "../service";
 import { optionLabel, queueKeyAction, type ReviewItem } from "../queue";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ALL = "__all__";
 
@@ -312,6 +313,7 @@ export function ReviewQueue({ agentId }: { agentId: string }) {
           <button type="button" className="underline" onClick={() => { setError(null); setReloadKey((k) => k + 1); }}>
             Reload
           </button>
+          <ErrorAlchemyMenu error={error} />
         </p>
       )}
 

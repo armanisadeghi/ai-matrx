@@ -320,6 +320,7 @@ function ProductRow({
             {selected
               ? ` Approving ${provider.name} again renews it — nothing new is asked for.`
               : ""}
+            <ErrorAlchemyMenu error={health.reason} />
           </p>
         ) : health.state === "unavailable" ? (
           <p className="mt-1 flex items-start gap-1 text-xs leading-snug text-destructive">

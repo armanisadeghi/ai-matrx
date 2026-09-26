@@ -14,6 +14,7 @@ import SectionViewer from "@/components/mardown-display/chat-markdown/analyzer/a
 import SectionViewerWithSidebar from "@/components/mardown-display/chat-markdown/analyzer/analyzer-options/SectionViewerWithSidebar";
 import IntelligentViewer from "@/components/mardown-display/chat-markdown/analyzer/analyzer-options/IntelligentViewer";
 import FlatSectionViewer from "@/components/mardown-display/chat-markdown/analyzer/analyzer-options/FlatSectionViewer";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Error Boundary Component
 interface ErrorBoundaryState {
@@ -62,6 +63,7 @@ class ViewerErrorBoundary extends React.Component<
                             </details>
                         )}
                     </div>
+                  <ErrorAlchemyMenu error={this.state.error.message} />
                 </div>
             );
         }

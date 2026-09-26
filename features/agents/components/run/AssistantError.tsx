@@ -149,6 +149,7 @@ export function AssistantError({
           >
             {RECOVERY_DOORS[errorType].label}
             <ArrowRight className="h-3 w-3" />
+            <ErrorAlchemyMenu />
           </Link>
         )}
 
@@ -208,6 +209,7 @@ export function AssistantError({
                 <span>
                   <span className="text-muted-foreground/60">type: </span>
                   {errorType}
+                  <ErrorAlchemyMenu error={errorType} />
                 </span>
               )}
               {code != null && (

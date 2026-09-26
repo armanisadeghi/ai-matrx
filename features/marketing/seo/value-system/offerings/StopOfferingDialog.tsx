@@ -29,6 +29,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { extractErrorMessage } from "@/utils/errors";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { getAvailabilityImpact, type AvailabilityImpact } from "./data";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function StopOfferingDialog({
   siteId,
@@ -94,6 +95,7 @@ export function StopOfferingDialog({
               >
                 Try again
               </Button>
+              <ErrorAlchemyMenu />
             </div>
           ) : (
             <>

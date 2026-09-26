@@ -293,6 +293,7 @@ function OneMandateRecordBody({
           {/* A key nothing answers to is simply not found — never the dotted
               key read back at the person. */}
           {failed.kind === "load-failed" ? failed.message : "Mandate not found"}
+          <ErrorAlchemyMenu error={failed.message} />
         </p>
         {failed.retryable ? (
           <Button variant="outline" size="sm" onClick={refresh}>

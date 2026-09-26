@@ -83,6 +83,7 @@ import {
   AGENT_RUN_WINDOW_CONVERSATION_ARG,
   AGENT_RUN_WINDOW_URL_MODE,
 } from "./agentRunWindowAddress";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SOURCE_FEATURE: SourceFeature = "agent-runner";
 
@@ -559,6 +560,7 @@ function AgentRunBody({
             <RotateCw className="w-3.5 h-3.5" />
             Retry
           </Button>
+          <ErrorAlchemyMenu error={initError} />
         </div>
       </div>
     );
@@ -576,6 +578,7 @@ function AgentRunBody({
             {resumeError} Choose another conversation from the sidebar and try
             again.
           </p>
+          <ErrorAlchemyMenu error={resumeError} />
         </div>
       </div>
     );

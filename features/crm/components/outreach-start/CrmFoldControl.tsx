@@ -230,7 +230,7 @@ export function CrmFoldControl({
 
       {refusal && (
         <div className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs">
-          <p className="font-medium text-foreground">{refusal}</p>
+          <p className="font-medium text-foreground">{refusal} <ErrorAlchemyMenu error={refusal} /></p>
           <p className="mt-1 text-muted-foreground">
             Fix: choose “{CRM_FOLD_MODE_LABEL.manual}” above, then press the
             button again.

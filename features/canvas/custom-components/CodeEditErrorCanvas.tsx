@@ -46,6 +46,7 @@ export function CodeEditErrorCanvas({
             <h3 className="text-sm font-semibold text-destructive">Code Edit Error</h3>
           </div>
         </div>
+        <ErrorAlchemyMenu />
       </div>
 
       {/* Content */}

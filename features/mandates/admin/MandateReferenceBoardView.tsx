@@ -384,6 +384,7 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
                           title={`Open the ${run.error_rows_filed} error row(s) this run filed`}
                         >
                           {run.error_rows_filed}
+                          <ErrorAlchemyMenu error={run.error_rows_filed} />
                         </Link>
                       ) : (
                         (run.error_rows_filed ?? "—")

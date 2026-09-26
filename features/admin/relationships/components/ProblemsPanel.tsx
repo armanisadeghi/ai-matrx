@@ -18,6 +18,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { PROBLEM_TITLES, problemHuman, RELATIONSHIPS_LOCATION } from "../utils";
 import type { RelationshipProblem } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   problems: RelationshipProblem[];
@@ -185,6 +186,7 @@ export function ProblemsPanel({
               {errorCount > 0 ? (
                 <Badge variant="destructive">
                   {errorCount} error{errorCount === 1 ? "" : "s"}
+                  <ErrorAlchemyMenu error={errorCount} />
                 </Badge>
               ) : null}
               {warningCount > 0 ? (

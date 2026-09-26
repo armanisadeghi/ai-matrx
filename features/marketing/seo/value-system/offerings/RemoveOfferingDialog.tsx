@@ -28,6 +28,7 @@ import { cn } from "@/styles/themes/utils";
 import { extractErrorMessage } from "@/utils/errors";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { getOfferingRemovalImpact, type CatalogOffering } from "./data";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function RemoveOfferingDialog({
   siteId,
@@ -96,6 +97,7 @@ export function RemoveOfferingDialog({
                   Try again
                 </Button>
               ) : null}
+              <ErrorAlchemyMenu />
             </div>
           ) : (
             <>

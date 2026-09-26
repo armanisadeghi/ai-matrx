@@ -95,6 +95,25 @@ import { fileURLToPath } from "node:url";
 import process from "node:process";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+/**
+ * THE ITEM LINE (common-docs/projects/checks-run-in-the-app/ITEM-PROTOCOL.md), loaded
+ * dynamically so this file stays portable: a repo without `scripts/checks/items.mjs` runs the
+ * guard unchanged, and SAYS so if its runner asked for items (MATRX_ITEMS=1) it cannot give.
+ * Key = `<row name>|<list>|<file>` — the register row and list (`census`, `shapeCensus`,
+ * `inputCensus`) whose entry `{file}` covers the item. Censused = `known` debt; an un-censused
+ * finding is `new` under the key its census entry would carry. `allow`/`shapeAllow` files are
+ * provably a different capability — not debt, not items.
+ */
+const emitItem = await import("./checks/items.mjs").then(
+  (m) => m.emitItem,
+  () => {
+    if (process.env.MATRX_ITEMS === "1") {
+      console.error("check:package-twins: MATRX_ITEMS=1 but scripts/checks/items.mjs is absent — no item lines this run.");
+    }
+    return () => {};
+  },
+);
 const STRICT = process.argv.includes("--strict");
 const SELF_TEST = process.argv.includes("--self-test");
 
@@ -1149,6 +1168,14 @@ for (const file of trackedFiles()) {
   }
   scanned++;
   for (const f of twinsIn(file, source)) {
+    emitItem({
+      key: `${f.row.name}|census|${file}`,
+      status: f.censused ? "known" : "new",
+      title: `${f.name} re-grown outside ${f.row.package}${f.alias ? ` (alias ${f.alias})` : ""}`,
+      file,
+      line: f.line,
+      rule: "package-twin:name",
+    });
     if (f.censused) {
       nameCensusHit.add(`${f.row.name}::${file}`);
       nameCensusFindings.push({ file, ...f });
@@ -1158,6 +1185,18 @@ for (const file of trackedFiles()) {
   }
   for (const lane of LANES) {
     const verdict = shapeVerdict(lane, file, source);
+    if (verdict.kind === "census" || verdict.kind === "finding") {
+      for (const h of verdict.hits) {
+        emitItem({
+          key: `${lane.row.name}|${lane.rule.censusKey ?? "shapeCensus"}|${file}`,
+          status: verdict.kind === "census" ? "known" : "new",
+          title: `${lane.rule.what} — ${lane.row.package}'s ${lane.row.name}`,
+          file,
+          line: h.line,
+          rule: `package-twin:shape:${lane.rule.id}`,
+        });
+      }
+    }
     if (verdict.kind === "census") {
       lane.censusHit.add(file);
       continue;

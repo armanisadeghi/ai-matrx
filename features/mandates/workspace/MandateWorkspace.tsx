@@ -499,6 +499,7 @@ function OneMandateWorkspace({
           }
         >
           {verdict.message}
+          <ErrorAlchemyMenu error={verdict.message} />
         </p>
         {verdict.retryable ? (
           <Button variant="outline" size="sm" onClick={refresh}>

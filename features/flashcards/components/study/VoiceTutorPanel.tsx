@@ -47,6 +47,7 @@ import { LiveVoiceDoor } from "@/features/voice-agent/components/LiveVoiceDoor";
 import { VoiceTranscriptStream } from "@/features/voice-agent/components/VoiceTranscriptStream";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export const EDUCATION_VOICE_TUTOR_MANDATE =
   MANDATE_KEYS.education__voice_tutor;
@@ -183,6 +184,7 @@ export function VoiceTutorPanel({
         <p className="mt-2 text-xs text-muted-foreground">
           {liveError.message ??
             "The voice session hit a problem — tap the mic to try again."}
+          <ErrorAlchemyMenu error={liveError.message} />
         </p>
       )}
 

@@ -23,6 +23,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 import { soleFence } from "@/lib/markdown/code-ranges";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface DiffSpec {
   title?: string;
@@ -154,6 +155,7 @@ const DiffSpecBlock: React.FC<DiffBlockProps> = ({ content = "", isStreamActive 
           <div className="m-3 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
             <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
             <p className="text-xs text-muted-foreground">{error}</p>
+            <ErrorAlchemyMenu error={error} />
           </div>
         ) : spec ? (
           <DiffCanvas oldValue={spec.oldValue} newValue={spec.newValue} split={effectiveSplit} />

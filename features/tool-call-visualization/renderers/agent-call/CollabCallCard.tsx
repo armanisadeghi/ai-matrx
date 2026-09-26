@@ -25,6 +25,7 @@ import { ResultMarkdown } from "../../result-fields/ResultMarkdown";
 import { cn } from "@/lib/utils";
 import type { ToolRendererProps } from "../../types";
 import { getCollabCallInfo, type CollabCallInfo } from "./collab";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const NO_CHILD_STREAM = () => null;
 
@@ -156,6 +157,7 @@ export function CollabCallCard(props: ToolRendererProps) {
                 Write-back note failed
                 {info.remember.error ? `: ${info.remember.error}` : "."}
               </span>
+              <ErrorAlchemyMenu />
             </span>
           )}
         </div>

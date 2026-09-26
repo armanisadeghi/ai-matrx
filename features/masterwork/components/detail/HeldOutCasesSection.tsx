@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { supabase } from "@/utils/supabase/client";
 import { readAllRows } from "@ai-matrx/data/db";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** What a sealed case is allowed to say about itself, and no more. */
 export interface SealedCaseRow {
@@ -169,6 +170,7 @@ export function HeldOutCasesSection({ rulebookId }: { rulebookId: string }) {
             <RefreshCw className="h-3.5 w-3.5" />
             Try again
           </Button>
+          <ErrorAlchemyMenu error={state.message} />
         </div>
       ) : null}
 

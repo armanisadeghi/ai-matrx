@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Field, SectionShell, StatusChip, byteLength, controlClass, svgToImgSrc } from "@/features/print/components/shared";
 import { SAMPLE_CODE, SAMPLE_GTIN, SAMPLE_ORIGIN } from "./sample-data";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const EC_LEVELS: QrEcLevel[] = ["L", "M", "Q", "H"];
 
@@ -145,7 +146,7 @@ export function QrSection() {
                         matter what a caller passes — a tight quiet zone is the most common cause of a code that scans
                         on a monitor and fails at the dock door.
                     </StatusChip>
-                    {shownError ? <StatusChip tone="warn">{shownError}</StatusChip> : null}
+                    {shownError ? <StatusChip tone="warn">{shownError} <ErrorAlchemyMenu error={shownError} /></StatusChip> : null}
                 </div>
 
                 <div className="flex items-start justify-center rounded-md border border-border bg-background p-3">
@@ -176,7 +177,7 @@ export function QrSection() {
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                         {resolverError ? (
-                            <StatusChip tone="warn">{resolverError}</StatusChip>
+                            <StatusChip tone="warn">{resolverError} <ErrorAlchemyMenu error={resolverError} /></StatusChip>
                         ) : (
                             <>
                                 <code className="break-all rounded bg-muted px-1.5 py-1 font-mono text-[11px]">
@@ -220,7 +221,7 @@ export function QrSection() {
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                         {gs1Error ? (
-                            <StatusChip tone="warn">{gs1Error}</StatusChip>
+                            <StatusChip tone="warn">{gs1Error} <ErrorAlchemyMenu error={gs1Error} /></StatusChip>
                         ) : (
                             <>
                                 <code className="break-all rounded bg-muted px-1.5 py-1 font-mono text-[11px]">

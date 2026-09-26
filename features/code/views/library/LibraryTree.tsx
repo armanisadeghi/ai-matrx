@@ -120,7 +120,7 @@ export const LibraryTree: React.FC<LibraryTreeProps> = ({
     return (
       <div className="flex flex-col gap-1 px-3 py-2 text-[11px]">
         <span className="text-red-500">Failed to load library <ErrorAlchemyMenu /></span>
-        <span className="text-neutral-500">{listError}</span>
+        <span className="text-neutral-500">{listError} <ErrorAlchemyMenu error={listError} /></span>
         <button
           type="button"
           className="self-start rounded-sm bg-neutral-200 px-2 py-0.5 font-medium text-neutral-800 hover:bg-neutral-300 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"

@@ -62,6 +62,7 @@ import type {
   LeaveConfigViolation,
   LeaveSaveRefusal,
 } from "../manager/api/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The jurisdictions named by a set of findings, in the order they were returned. */
 function jurisdictionsOf(findings: LeaveConfigViolation[]): string[] {
@@ -318,6 +319,7 @@ export function UnlawfulConfigDialog({
                 Past ledger entries are never touched either way — the runner uses the version
                 in force at each accrual date.
               </p>
+              <ErrorAlchemyMenu error={refusal.affectedEnrollments} />
             </div>
           ) : null}
 
@@ -333,6 +335,7 @@ export function UnlawfulConfigDialog({
                   Technical reference: {refusal.detail}
                 </p>
               ) : null}
+              <ErrorAlchemyMenu error={refusal.detail} />
             </div>
           ) : null}
 
@@ -374,10 +377,11 @@ export function UnlawfulConfigDialog({
           {refusal.validation?.jurisdictionsChecked.length ? (
             <p className="text-xs text-muted-foreground">
               Checked against {joinNames(refusal.validation.jurisdictionsChecked)}.
+              <ErrorAlchemyMenu />
             </p>
           ) : null}
           {refusal.validation?.checked === false && refusal.validation.detail ? (
-            <p className="text-xs text-muted-foreground">{refusal.validation.detail}</p>
+            <p className="text-xs text-muted-foreground">{refusal.validation.detail} <ErrorAlchemyMenu error={refusal.validation.detail} /></p>
           ) : null}
         </div>
 

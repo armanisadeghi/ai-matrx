@@ -31,6 +31,7 @@ import {
   isBattleModeId,
   type BattleModeId,
 } from "./battleRoutes";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface UseBattleRouteArgs {
   mode: BattleModeId;
@@ -187,6 +188,7 @@ export function BattleRouteNotice({
       <span className="min-w-0 flex-1">
         This battle could not be opened: {status.message}
       </span>
+      <ErrorAlchemyMenu operation="Open this battle" />
       <AppLink
         href={battleModeBasePath(mode)}
         className="shrink-0 text-primary hover:underline"

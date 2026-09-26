@@ -35,6 +35,7 @@ import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { acceptHrEmployeeInvite } from "@/features/hr/service";
 import { isHrDenied } from "@/features/hr/types";
 import { invitationSignUpHref } from "@/utils/auth/invitation-links";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function AcceptEmployeeInvitationPage() {
   const params = useParams();
@@ -137,7 +138,7 @@ export default function AcceptEmployeeInvitationPage() {
           <h2 className="mb-2 text-xl font-semibold text-foreground">
             This invitation can&apos;t be opened
           </h2>
-          <p className="mb-6 text-sm text-muted-foreground">{error}</p>
+          <p className="mb-6 text-sm text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
           <Button variant="outline" onClick={() => router.push("/dashboard")}>
             Go to your dashboard
           </Button>

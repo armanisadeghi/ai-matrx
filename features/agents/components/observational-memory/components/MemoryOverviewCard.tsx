@@ -26,6 +26,7 @@ import {
   selectMemoryMetadata,
 } from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
 import { formatDateTime, formatRelativeTime } from "./format";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface MemoryOverviewCardProps {
   conversationId: string;
@@ -139,6 +140,7 @@ export function MemoryOverviewCard({
             <span className="font-mono">{lastError.phase ?? "unknown"}</span>
             {" · "}
             {lastError.error ?? "No details"}
+            <ErrorAlchemyMenu error={lastError.error} />
           </div>
         </div>
       )}

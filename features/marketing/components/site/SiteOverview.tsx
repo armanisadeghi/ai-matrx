@@ -515,6 +515,7 @@ export function SiteOverview() {
                       {stepError.errorType ? (
                         <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">
                           {stepError.errorType}
+                          <ErrorAlchemyMenu error={stepError.errorType} />
                         </span>
                       ) : null}
                       <p className="break-words text-muted-foreground">
@@ -549,6 +550,7 @@ export function SiteOverview() {
                       {stepWarning.errorType ? (
                         <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">
                           {stepWarning.errorType}
+                          <ErrorAlchemyMenu error={stepWarning.errorType} />
                         </span>
                       ) : null}
                       <p className="break-words text-muted-foreground">

@@ -45,6 +45,7 @@ import {
   LIVE_CONVERSATION_VOICE_KEY,
   READ_ALOUD_VOICE_KEY,
 } from "./voices/voiceSettingDoors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export default function VoicesTab() {
   const settings = useUniversalSettings();
@@ -83,6 +84,7 @@ export default function VoicesTab() {
       {settings.error && (
         <SettingsCallout tone="error" title="Your voice choices could not be read">
           {settings.error}
+          <ErrorAlchemyMenu error={settings.error} />
         </SettingsCallout>
       )}
       {noOrganizationYet && (

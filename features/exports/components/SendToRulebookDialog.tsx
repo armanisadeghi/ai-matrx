@@ -339,6 +339,7 @@ export function SendToRulebookDialog({
                 <p className="mt-3 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>{sendError}</span>
+                  <ErrorAlchemyMenu error={sendError} />
                 </p>
               )}
             </div>

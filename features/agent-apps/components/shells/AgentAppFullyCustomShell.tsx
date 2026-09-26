@@ -230,6 +230,7 @@ export function AgentAppFullyCustomShell({
                 {compileError}
               </pre>
             </div>
+            <ErrorAlchemyMenu />
           </div>
         </div>
       </AgentAppTransferBoundary>

@@ -54,7 +54,7 @@ export default function OAuthCallback() {
               Authentication Error
               <ErrorAlchemyMenu />
             </h1>
-            <p className="text-gray-500 mt-2">{error}</p>
+            <p className="text-gray-500 mt-2">{error} <ErrorAlchemyMenu error={error} /></p>
           </div>
         </div>
     );

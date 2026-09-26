@@ -27,6 +27,7 @@ import type {
   RepeatedRegion,
   RepeatedRegionBbox,
 } from "@/features/pdf-extractor/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   sourcePayload: PdfSourcePayload | null;
@@ -229,6 +230,7 @@ export function RegionOverlayPreview({
               >
                 <span className="font-medium mb-1">Page {page}</span>
                 <span className="break-words">{state.error}</span>
+                <ErrorAlchemyMenu error={state.error} />
               </div>
             );
           }

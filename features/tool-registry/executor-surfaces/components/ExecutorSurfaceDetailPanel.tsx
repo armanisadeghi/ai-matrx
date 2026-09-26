@@ -30,6 +30,7 @@ import { AddToolBindingDialog } from "@/features/tool-registry/executor-surfaces
 import { SourceKindBadge } from "@/features/tool-call-visualization/admin/mcp-tools/source-kind-badge";
 import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   /**
@@ -258,6 +259,7 @@ export function ExecutorSurfaceDetailPanel({
         <div className="shrink-0 mx-3 mt-2 rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-xs text-destructive flex items-center gap-2">
           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">{error}</span>
+          <ErrorAlchemyMenu error={error} />
         </div>
       )}
 

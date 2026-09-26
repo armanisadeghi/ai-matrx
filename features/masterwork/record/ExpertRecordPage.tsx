@@ -398,6 +398,7 @@ export function ExpertRecordPage({
         {refusal.traceId ? (
           <p className="text-[11px] text-muted-foreground/70">
             Recorded as {refusal.traceId}
+            <ErrorAlchemyMenu error={refusal.traceId} />
           </p>
         ) : null}
       </div>

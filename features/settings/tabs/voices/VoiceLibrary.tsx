@@ -83,6 +83,7 @@ export function VoiceLibrary() {
             <Button variant="link" size="sm" className="h-auto p-0" onClick={reload}>
               Try again
             </Button>
+            <ErrorAlchemyMenu error={error} />
           </SettingsCallout>
         )}
         {rendered.error && (

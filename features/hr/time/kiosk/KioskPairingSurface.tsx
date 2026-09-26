@@ -33,6 +33,7 @@ import { claimKioskPairing } from "@/features/hr/time/api/service";
 
 import { kioskDeviceFingerprint, readKioskIdentity, storeKioskIdentity } from "./deviceIdentity";
 import { KioskFrame } from "./KioskFrame";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function KioskPairingSurface({ mockCase }: { mockCase?: HrFixtureCase }) {
   const router = useRouter();
@@ -141,7 +142,7 @@ export function KioskPairingSurface({ mockCase }: { mockCase?: HrFixtureCase }) 
         </div>
 
         {refusal && (
-          <p className="max-w-xl text-center text-xl text-foreground">{refusal}</p>
+          <p className="max-w-xl text-center text-xl text-foreground">{refusal} <ErrorAlchemyMenu error={refusal} /></p>
         )}
       </div>
     </KioskFrame>

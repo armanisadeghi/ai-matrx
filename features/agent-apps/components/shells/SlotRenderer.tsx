@@ -25,6 +25,7 @@ import type {
   AgentAppSlotCode,
 } from "@/features/agent-apps/types";
 import type { Json } from "@/types/database.types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SlotRendererProps<P extends Record<string, unknown>> {
   /** Slot identity. */
@@ -94,6 +95,7 @@ function SlotCompileError({
           {error}
         </pre>
       </div>
+      <ErrorAlchemyMenu />
     </div>
   );
 }

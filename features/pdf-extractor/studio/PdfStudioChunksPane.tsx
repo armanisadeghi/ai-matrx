@@ -324,6 +324,7 @@ function ErrorState({
       {error && (
         <p className="text-[11px] text-muted-foreground leading-snug">
           {error}
+          <ErrorAlchemyMenu error={error} />
         </p>
       )}
       <Button

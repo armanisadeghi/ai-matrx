@@ -32,6 +32,7 @@ import {
   subscribeToUnderstudyRefresh,
 } from "./refresh";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function UnderstudyCard({
   rulebookId,
@@ -164,6 +165,7 @@ export function UnderstudyCard({
               ? (refreshState.message ??
                 "This one is on us, and trying again will fail the same way until it is fixed.")
               : `Your rules are safe — nothing was lost. Try again, or reload the page; it costs nothing and takes a second.${refreshState.message ? ` ${refreshState.message}` : ""}`}
+            <ErrorAlchemyMenu error={refreshState.message} />
           </p>
           {refreshState.retryIsPointless ? null : (
             <Button
@@ -247,6 +249,7 @@ export function UnderstudyCard({
             {refreshState.message ? (
               <p className="mt-1 text-xs text-muted-foreground">
                 The last rebuild did not go through: {refreshState.message}
+                <ErrorAlchemyMenu error={refreshState.message} />
               </p>
             ) : null}
             {/* Same rule as the heal block: when the server said retrying is

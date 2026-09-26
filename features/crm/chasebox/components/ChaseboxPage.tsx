@@ -48,6 +48,7 @@ import {
 } from "../types";
 import { ChaseboxDraftDialog } from "./ChaseboxDraftDialog";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const PAGE_SIZE = 25;
 
@@ -279,6 +280,7 @@ export function ChaseboxPage() {
             <Button size="sm" variant="ghost" onClick={refresh}>
               Retry
             </Button>
+            <ErrorAlchemyMenu error={error} />
           </div>
         )}
       </div>

@@ -31,6 +31,7 @@ import { BLANK_AGENT_SEED } from "@/features/agents/constants/blank-agent";
 import { DesktopBuilderSkeleton } from "@/features/agents/components/builder/AgentBuilderSkeletons";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function CreateManualAgentClient() {
   const organizationId = useAppSelector(selectOrganizationId);
@@ -72,7 +73,7 @@ export function CreateManualAgentClient() {
             <p className="text-sm font-medium text-foreground">
               The agent was not created
             </p>
-            <p className="mt-1 text-sm text-muted-foreground">{error}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
           </div>
         </div>
       </div>

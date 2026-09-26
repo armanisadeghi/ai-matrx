@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import type { ExpandedArchetype } from "../archetypes";
 import type { PreviewRow, PreviewSummary, RouteState } from "../preview";
 import type { CommitResult } from "../service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Rendering every route of a 1000-page shape helps nobody; the cap is stated. */
 const RENDER_CAP = 400;
@@ -215,6 +216,7 @@ export function SetupPreviewColumn({
           <p className="mb-2 flex items-start gap-1.5 text-xs leading-relaxed text-destructive">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             {disabledReason}
+            <ErrorAlchemyMenu error={disabledReason} />
           </p>
         ) : null}
         <Button

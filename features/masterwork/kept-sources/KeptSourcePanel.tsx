@@ -24,6 +24,7 @@ import { getKeptSource } from "./service";
 import { ruleQuotes } from "./ruleQuotes";
 import type { KeptSource } from "./types";
 import type { RulebookRule } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type State =
   | { status: "loading" }
@@ -92,7 +93,7 @@ export function KeptSourcePanel({
     return (
       <div className="p-6">
         {back}
-        <p className="text-sm text-muted-foreground">{state.message}</p>
+        <p className="text-sm text-muted-foreground">{state.message} <ErrorAlchemyMenu error={state.message} /></p>
       </div>
     );
   }

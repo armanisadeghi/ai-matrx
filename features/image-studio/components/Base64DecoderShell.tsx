@@ -190,6 +190,7 @@ or just paste the raw base64 payload — we'll detect the format from the bytes.
           <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
             <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
             <p className="flex-1">{decodeError}</p>
+            <ErrorAlchemyMenu error={decodeError} />
           </div>
         )}
       </div>
@@ -265,6 +266,7 @@ or just paste the raw base64 payload — we'll detect the format from the bytes.
               <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
                 <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
                 <p className="flex-1">{saveError}</p>
+                <ErrorAlchemyMenu error={saveError} />
               </div>
             )}
 

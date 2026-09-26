@@ -676,14 +676,15 @@ export function BacklinkEnrichmentDetail({
                 </p>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
                   {jsonText(lastError.stage) ? (
-                    <span>Stage: {jsonText(lastError.stage)}</span>
+                    <span>Stage: {jsonText(lastError.stage)} <ErrorAlchemyMenu /></span>
                   ) : null}
                   {jsonNumber(lastError.status_code) !== null ? (
-                    <span>HTTP {jsonNumber(lastError.status_code)}</span>
+                    <span>HTTP {jsonNumber(lastError.status_code)} <ErrorAlchemyMenu /></span>
                   ) : null}
                   {jsonBoolean(lastError.retryable) !== null ? (
                     <span>
                       Retryable: {yesNo(jsonBoolean(lastError.retryable))}
+                      <ErrorAlchemyMenu />
                     </span>
                   ) : null}
                 </div>
@@ -706,6 +707,7 @@ export function BacklinkEnrichmentDetail({
                 ) : null}
               </div>
             </div>
+            <ErrorAlchemyMenu error={lastErrorMessage} />
           </SectionCard>
         ) : null}
 

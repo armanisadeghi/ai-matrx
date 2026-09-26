@@ -50,6 +50,7 @@ import {
   type SiteIntakeRunResult,
 } from "@/features/marketing/search-console/intake/intake-service";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const CLASS_META: Record<IntakeClass, { label: string; className: string }> = {
   money: {
@@ -409,6 +410,7 @@ export function SiteIntakeWizard() {
             <Button size="sm" variant="outline" onClick={() => void startInterview(false)}>
               Try again
             </Button>
+            <ErrorAlchemyMenu error={runError} />
           </div>
         ) : null}
 

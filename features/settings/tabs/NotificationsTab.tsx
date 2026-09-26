@@ -18,6 +18,7 @@ import {
   type NotificationEventSetting,
   type NotificationScope,
 } from "../notification-preferences";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // The canonical Notification System preferences tab: every event the platform
 // can tell you about, with your per-channel choice. Absence of a choice means
@@ -154,6 +155,7 @@ export default function NotificationsTab() {
       {loadError ? (
         <SettingsCallout tone="error" title="Notification settings unavailable">
           {loadError}
+          <ErrorAlchemyMenu error={loadError} />
         </SettingsCallout>
       ) : (
         <>

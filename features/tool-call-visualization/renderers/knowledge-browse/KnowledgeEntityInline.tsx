@@ -6,6 +6,7 @@ import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Inline renderer for `knowledge_browse(action="entity")` — the knowledge-graph
@@ -105,6 +106,7 @@ export function KnowledgeEntityInline({
             </div>
           ) : null}
         </div>
+        <ErrorAlchemyMenu error={entry.errorMessage} />
       </div>
     );
   }

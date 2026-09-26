@@ -35,6 +35,7 @@ import { MentionComposer } from "./MentionComposer";
 import { LinkRecordSheet } from "./LinkRecordSheet";
 import type { AnnotationSource } from "./types";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface CapturedSelection {
   anchor: TextAnchor;
@@ -213,7 +214,7 @@ export function AnnotatedContent({
       </div>
       {captureError && (
         <div role="status" className="fixed bottom-4 left-1/2 z-50 flex max-w-md -translate-x-1/2 items-start gap-2 rounded-lg border border-border bg-popover px-3 py-2 text-sm shadow-lg">
-          <span className="flex-1">{captureError}</span>
+          <span className="flex-1">{captureError} <ErrorAlchemyMenu /></span>
           <button type="button" aria-label="Dismiss" onClick={() => setCaptureError(null)} className="text-muted-foreground hover:text-foreground">
             <X className="h-4 w-4" aria-hidden />
           </button>

@@ -713,6 +713,7 @@ function LastCardStatus({ state }: { state: SaveState | undefined }) {
         <span>
           Last one didn&rsquo;t save — {state.message} Your answer is not lost:
           keep playing, and deal that kind of card again to say it once more.
+          <ErrorAlchemyMenu error={state.message} />
         </span>
       </span>
     );

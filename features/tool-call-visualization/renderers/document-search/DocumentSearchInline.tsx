@@ -10,6 +10,7 @@ import {
   RagSourceCard,
 } from "../knowledge-search/RagSourceCard";
 import { parseDocumentSearch } from "./parseDocumentSearch";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Inline renderer for `document_search` — the SAME visual grammar as
@@ -43,6 +44,7 @@ export function DocumentSearchInline({
             </div>
           ) : null}
         </div>
+        <ErrorAlchemyMenu error={data.errorMessage} />
       </div>
     );
   }

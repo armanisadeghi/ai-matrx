@@ -21,7 +21,8 @@ import {
   textExportItem,
 } from "@/components/agent-copy/export";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
-import { useEffect } from "react";
+import { useEffect, type Ref } from "react";
+import type { ContentTransferController } from "@ai-matrx/design-system/content-transfer";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { fetchModelIdentityById } from "@/features/ai-models/redux/modelRegistrySlice";
 import { selectActiveBattleColumns } from "./activeBattleColumns";
@@ -33,7 +34,12 @@ import {
   type BattleSnapshot,
 } from "./battleSnapshot";
 
-export function BattleAlchemy() {
+export function BattleAlchemy({
+  controllerRef,
+}: {
+  /** Lets the header open the prepare-and-export workspace from its phone sheet. */
+  controllerRef?: Ref<ContentTransferController>;
+} = {}) {
   const store = useAppStore();
   const dispatch = useAppDispatch();
   const columns = useAppSelector(selectActiveBattleColumns);
@@ -121,6 +127,7 @@ export function BattleAlchemy() {
       label={label}
       size="sm"
       triggerVariant="glass"
+      controllerRef={controllerRef}
       human={() => battleMarkdown(snapshot())}
       json={() => snapshot()}
       agent={() => payload(snapshot(), "everything")}

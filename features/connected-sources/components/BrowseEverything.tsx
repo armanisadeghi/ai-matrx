@@ -29,6 +29,7 @@ import { listConnectedAdapters } from "../api";
 import type { ConnectedAdapterRow } from "../types";
 import { createConnectedSourceListConfig } from "../browse/listConfig";
 import type { ConnectedBrowseReport } from "../browse/service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface ChosenTarget {
   adapter: string;
@@ -99,6 +100,7 @@ export function BrowseEverything() {
           <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
             <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{loadError}</span>
+            <ErrorAlchemyMenu error={loadError} />
           </div>
         ) : null}
 

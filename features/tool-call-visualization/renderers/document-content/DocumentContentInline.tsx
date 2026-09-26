@@ -15,6 +15,7 @@ import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
 import { resolveDocumentContentView } from "./documentContentView";
 import { useMediaResolution } from "@ai-matrx/media/core";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * Inline renderer for `document_content` — random access into a processed
@@ -235,6 +236,7 @@ export function DocumentContentInline({
             </div>
           ) : null}
         </div>
+        <ErrorAlchemyMenu error={entry.errorMessage} />
       </div>
     );
   }

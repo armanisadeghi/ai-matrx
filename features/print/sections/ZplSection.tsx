@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { useClipboard } from "@/hooks/useClipboard";
 import { Field, SectionShell, StatusChip, byteLength, controlClass } from "@/features/print/components/shared";
 import { SAMPLE_ZPL_LABELS } from "./sample-data";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ROLL_TEMPLATES: LabelTemplate[] = LABEL_TEMPLATES.filter((t) => t.kind === "roll");
 const DPI_OPTIONS: ZplDpi[] = [203, 300];
@@ -130,7 +131,7 @@ export function ZplSection() {
                             ? `Scannable — QR version ${verdict.version} at ${verdict.moduleSizeMm.toFixed(2)} mm per module, above the ${verdict.minModuleSizeMm} mm floor.`
                             : (verdict.message ?? "This payload will not scan reliably off this stock.")}
                     </StatusChip>
-                    {genError ? <StatusChip tone="warn">{genError}</StatusChip> : null}
+                    {genError ? <StatusChip tone="warn">{genError} <ErrorAlchemyMenu error={genError} /></StatusChip> : null}
                 </div>
 
                 <div className="min-w-0">

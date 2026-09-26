@@ -221,6 +221,7 @@ export function ConnectedAccountHealth({
               <p className="mt-1 text-xs text-destructive">
                 {account.statusReason}
                 {account.statusRemedy ? ` ${account.statusRemedy}` : ""}
+                <ErrorAlchemyMenu error={account.statusReason} />
               </p>
             ) : null}
             {/* A discovery outage is NOT a broken credential (N15): the account

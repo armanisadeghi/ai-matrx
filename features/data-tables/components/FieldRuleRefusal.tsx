@@ -30,6 +30,7 @@ import { RefusalNotice } from "@ai-matrx/records-ui";
 
 import { cn } from "@/lib/utils";
 import type { ColumnRuleRefusal } from "../validation-refusal";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function FieldRuleRefusal({
   refusal,
@@ -67,6 +68,7 @@ export function FieldRuleRefusal({
           {refusal.rules.length > 0 ? (
             <p className="opacity-80" data-matrx-column-rules="">
               {refusal.fieldDisplayName} accepts: {refusal.rules.join(" · ")}
+              <ErrorAlchemyMenu error={refusal.fieldDisplayName} />
             </p>
           ) : null}
         </div>

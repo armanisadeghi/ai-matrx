@@ -22,6 +22,7 @@ import { toast } from "@/lib/toast";
 import { useAppStore } from "@/lib/redux/hooks";
 import { requestPromptPreview } from "./service";
 import type { PromptPreview } from "./types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface PromptPreviewContentProps {
   conversationId: string;
@@ -99,7 +100,7 @@ export function PromptPreviewContent({
       ) : error ? (
         <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span className="leading-snug">{error}</span>
+          <span className="leading-snug">{error} <ErrorAlchemyMenu error={error} /></span>
         </div>
       ) : preview ? (
         <div className="flex flex-1 flex-col gap-3 overflow-y-auto pr-1">

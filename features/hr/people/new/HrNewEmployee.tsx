@@ -1127,6 +1127,7 @@ export function HrNewEmployee({
               {problems.length > 0 ? (
                 <span className="text-xs text-muted-foreground">
                   {problems[0].sentence}
+                  <ErrorAlchemyMenu />
                 </span>
               ) : null}
             </div>

@@ -220,6 +220,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
           r.error_type ? (
             <Badge variant="destructive" className="text-[10px]">
               {r.error_type}
+              <ErrorAlchemyMenu />
             </Badge>
           ) : (
             <span className="text-muted-foreground">—</span>

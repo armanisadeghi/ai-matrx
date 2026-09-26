@@ -29,6 +29,7 @@ import {
   sandboxMigrationMessage,
   type SandboxMigrationStatus,
 } from "./migrationResponse";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SandboxVersionHealthCardProps {
   sandboxId: string;
@@ -606,7 +607,7 @@ export function SandboxVersionHealthCard({
             : "flex items-center justify-between gap-2 rounded-md border border-muted-foreground/30 px-3 py-2 text-xs text-muted-foreground"
         }
       >
-        <span>Freshness unavailable: {loadState.message}</span>
+        <span>Freshness unavailable: {loadState.message} <ErrorAlchemyMenu error={loadState.message} /></span>
         <Button
           variant="ghost"
           size="xs"

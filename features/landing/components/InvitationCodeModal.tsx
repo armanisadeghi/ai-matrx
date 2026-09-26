@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Check, AlertCircle, Loader2 } from 'lucide-react';
 import { validateInvitationCode } from '../actions';
 import { cn } from '@/lib/utils';
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface InvitationCodeModalProps {
   open: boolean;
@@ -105,6 +106,7 @@ export function InvitationCodeModal({ open, onOpenChange }: InvitationCodeModalP
               <div className="flex items-center gap-2 text-sm text-destructive">
                 <AlertCircle className="h-4 w-4" />
                 <span>{error}</span>
+                <ErrorAlchemyMenu error={error} />
               </div>
             )}
           </div>

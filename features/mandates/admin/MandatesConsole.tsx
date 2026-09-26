@@ -178,6 +178,7 @@ import {
   StandingImpactStrip,
   type UngradedReason,
 } from "./impact-cells";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** MandateRow → the manifest's summary shape (surface scope + agent context). */
 function toMandateSummary(r: MandateRow): MandateSummary {
@@ -1623,6 +1624,7 @@ export function MandatesConsole() {
                   .
                 </div>
               </div>
+              <ErrorAlchemyMenu error={systemHomeRefusal} />
             </div>
           ) : null}
           <MandateCoverageBoard
@@ -1661,6 +1663,7 @@ export function MandatesConsole() {
                   A Mandate&apos;s goal lives in the aidream code declaration, not
                   in this database. Until it answers, the Goal column is blank
                   rather than wrong: {catalogueError}
+                  <ErrorAlchemyMenu error={catalogueError} />
                 </div>
               </div>
             </div>
@@ -1673,6 +1676,7 @@ export function MandatesConsole() {
                 <div className="text-muted-foreground">
                   Mandate rows still work, but code-to-agent drift cannot be
                   trusted until aidream answers: {codeTruthError}
+                  <ErrorAlchemyMenu error={codeTruthError} />
                 </div>
               </div>
             </div>

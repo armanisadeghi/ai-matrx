@@ -1644,6 +1644,7 @@ function TestResultPanel({ result }: { result: McpTestResult }) {
       {result.error && (
         <p className="text-[11px] font-mono">
           <strong>error:</strong> {result.error}
+          <ErrorAlchemyMenu error={result.error} />
         </p>
       )}
     </div>

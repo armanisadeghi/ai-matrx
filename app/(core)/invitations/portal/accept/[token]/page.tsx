@@ -191,7 +191,7 @@ export default function AcceptPortalInvitationPage() {
           This does not mean the link is dead — we simply could not look. Try again, and if it
           keeps happening ask whoever sent it to resend it.
         </p>
-        <p className="mb-6 break-words text-xs text-muted-foreground">{peekError}</p>
+        <p className="mb-6 break-words text-xs text-muted-foreground">{peekError} <ErrorAlchemyMenu error={peekError} /></p>
         <Button variant="outline" onClick={() => void look()}>
           Try again
         </Button>

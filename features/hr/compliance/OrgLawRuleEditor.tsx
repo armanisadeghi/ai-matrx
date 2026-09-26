@@ -42,6 +42,7 @@ import { isHrDenied, type HrDenied, type HrLawRuleClass, type HrLawValidationFin
 import { LawCitationLine } from "./LawRuleRow";
 import { flatParameterFields, type LawParamField } from "./law-parameters";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type LawJurisdictionOption = { key: string; name: string };
 
@@ -163,6 +164,7 @@ function RefusalPanel({
             {refusal.detail ?? "The server refused this configuration."}
           </p>
         )}
+        <ErrorAlchemyMenu />
       </div>
     );
   }
@@ -181,6 +183,7 @@ function RefusalPanel({
         ) : (
           <p className="text-sm text-foreground">
             {refusal.detail ?? "The server raised a warning about this configuration."}
+            <ErrorAlchemyMenu />
           </p>
         )}
         <Button type="button" variant="outline" size="sm" onClick={onSaveAnyway} disabled={busy}>

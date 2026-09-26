@@ -48,6 +48,7 @@ import {
   type AiVisibilityPanelRow,
   type PanelTrend,
 } from "./service";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface LoadedPanel {
   row: AiVisibilityPanelRow;
@@ -224,6 +225,7 @@ function PanelCard({
           <span title={row.last_error ?? undefined}>
             <span className="font-medium">Last run reported a problem: </span>
             {humanizeBackendError(row.last_error)}
+            <ErrorAlchemyMenu />
           </span>
         </div>
       ) : null}

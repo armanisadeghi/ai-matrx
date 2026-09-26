@@ -192,6 +192,7 @@ export const CredentialsModal: React.FC<CredentialsModalProps> = ({
           {message && !error && (
             <div className="rounded border border-emerald-300 bg-emerald-50 px-2 py-1 text-[11px] text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
               {message}
+              <ErrorAlchemyMenu error={message} />
             </div>
           )}
         </div>

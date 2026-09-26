@@ -430,6 +430,7 @@ export default function ProofRunsClient() {
             — they ship with the next aidream deploy. Nothing here is broken;
             there is just nothing to talk to yet.
           </p>
+          <ErrorAlchemyMenu error={loadError} />
         </div>
       ) : null}
 

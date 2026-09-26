@@ -112,7 +112,7 @@ export function TemplatesGalleryPanel() {
         <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
         <div className="text-sm">
           <div className="font-medium">Couldn't load templates <ErrorAlchemyMenu /></div>
-          <div className="text-xs text-muted-foreground">{error}</div>
+          <div className="text-xs text-muted-foreground">{error} <ErrorAlchemyMenu /></div>
           <button
             onClick={() => void refresh()}
             className="text-xs text-primary hover:underline mt-1"

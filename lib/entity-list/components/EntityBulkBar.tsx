@@ -29,6 +29,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { bulkCountLabel, type EntityBulkAction } from "../selection";
 import type { EntityListSelection } from "../useEntityListSelection";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function EntityBulkActions<TRow>({
   actions,
@@ -300,6 +301,7 @@ export function EntityBulkSelectAllBanner<TRow>({
           Only {bulkCountLabel(count, noun)} could be selected —{" "}
           {resolveError} Whatever a bulk action does now will touch exactly
           those {count === 1 ? "one" : count.toLocaleString()}.
+          <ErrorAlchemyMenu error={resolveError} />
         </span>
         <Button
           size="sm"

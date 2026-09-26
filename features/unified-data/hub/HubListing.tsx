@@ -25,6 +25,7 @@ import type { VisibilityLane } from "@ai-matrx/records-ui";
 
 import { emptyInLane, type HubCapability, type HubItem } from "./capabilities";
 import type { DoorFailure } from "./doors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export type HubListingState =
   | { phase: "reading" }
@@ -218,9 +219,10 @@ export function HubListing({
                   {capability.door} did not answer, so nothing was read — this is not an empty
                   list. {state.error.message}
                 </span>
+                <ErrorAlchemyMenu error={state.error.message} />
               </p>
               {state.error.hint ? (
-                <p className="mt-1 pl-5 text-xs text-muted-foreground">{state.error.hint}</p>
+                <p className="mt-1 pl-5 text-xs text-muted-foreground">{state.error.hint} <ErrorAlchemyMenu error={state.error.hint} /></p>
               ) : null}
             </div>
           ) : state.items.length === 0 ? (

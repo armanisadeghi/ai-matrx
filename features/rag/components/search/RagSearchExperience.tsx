@@ -2343,6 +2343,7 @@ function AgentChatTab({ scope }: { scope: Scope }) {
           The default chat agent could not be resolved
           {error ? ` — ${error}` : ""}. Check your override on the Mandates
           page, or try again shortly.
+          <ErrorAlchemyMenu />
         </p>
       </div>
     );

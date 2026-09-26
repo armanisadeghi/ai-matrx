@@ -99,6 +99,7 @@ import {
   isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
 } from "@/features/war-room/utils/renderPathTrace";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const _NO_LIVE_SOURCES: MessageCitationSource[] = [];
 const _selectNoLiveSources = () => _NO_LIVE_SOURCES;
@@ -537,6 +538,7 @@ export function AgentAssistantMessage({
     return (
       <div className="mt-1" data-message-id={messageId ?? undefined}>
         {failedError}
+        <ErrorAlchemyMenu error={failedError} />
       </div>
     );
   }

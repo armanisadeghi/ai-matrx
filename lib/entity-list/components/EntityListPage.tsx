@@ -150,6 +150,13 @@ export function EntityListPage<TRow>({
   clearsShellHeader = true,
 }: EntityListPageProps<TRow>) {
   const visibleScopes = scopes ?? config.scopes;
+  // 🚨 THE URL IS THE QUERY ON EVERY LIST PAGE (default ON since 2026-09-26).
+  // It used to be opt-in, and `/agents/all` and `/workflows/all` never opted
+  // in: `?scope=mine&q=seo` was ignored, the late registry default flipped
+  // the untouched scope to My Orgs, and Back restored nothing. A list page is
+  // a page — its lane and filters belong in its address. `urlState: false`
+  // is the explicit opt-out for a list that is NOT the page's own query.
+  const urlState = config.urlState !== false;
   const defaultHidden = defaultHiddenColumns(config.columns);
   const { prefs, setPrefs, reset } = useListViewPrefs(config.surfaceKey, {
     version: config.prefsVersion,
@@ -164,7 +171,7 @@ export function EntityListPage<TRow>({
   // both: the link stays truthful and the preference still persists.
   const urlParams = useUrlSearchParams();
   const prefsSort = { sort: prefs.sort, direction: prefs.direction };
-  const effectiveSort = config.urlState
+  const effectiveSort = urlState
     ? readSortFromParams(urlParams, prefsSort)
     : prefsSort;
 
@@ -183,7 +190,7 @@ export function EntityListPage<TRow>({
         ? { favoritesFirst: next.direction === "desc" }
         : {}),
     });
-    if (config.urlState) {
+    if (urlState) {
       commitUrlParams(sortToParamPatch(next), "push");
     }
   };
@@ -212,7 +219,7 @@ export function EntityListPage<TRow>({
         ? { favoritesFirst: nextDirection === "desc" }
         : {}),
     });
-    if (sortChanged && config.urlState) {
+    if (sortChanged && urlState) {
       commitUrlParams(sortToParamPatch(next), "push");
     }
   };
@@ -229,7 +236,7 @@ export function EntityListPage<TRow>({
     defaultFilters: config.defaultFilters,
     defaultScope,
     registryToken: config.registryToken,
-    urlState: config.urlState,
+    urlState: urlState,
     supportsArchived: config.supportsArchived !== false,
     searchSpansDefaultFilters: config.searchSpansDefaultFilters,
     view: {
@@ -696,7 +703,7 @@ export function EntityListPage<TRow>({
           onResetFilters={list.resetFilters}
           onResetView={() => {
             reset();
-            if (config.urlState)
+            if (urlState)
               commitUrlParams(
                 {
                   [ENTITY_LIST_URL_PARAMS.sort]: null,

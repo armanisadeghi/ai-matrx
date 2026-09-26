@@ -34,6 +34,7 @@ import { fcService } from "../../data/fcService";
 import { buildDeckOverviewRequest } from "../../data/podcastOverview";
 import type { FcSetRow, CardWithDetails } from "../../data/types";
 import { useFlashcardMandates } from "../../data/mandate-disclosure";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * WP3 gap 12 + Q15 lane 1 — deck-level per-card audio prep, ONE component for
@@ -262,6 +263,7 @@ export function AudioOverviewSection({
           <RefreshCw className="h-3 w-3" />
           Retry
         </Button>
+        <ErrorAlchemyMenu error={state.error} />
       </div>
     );
   }

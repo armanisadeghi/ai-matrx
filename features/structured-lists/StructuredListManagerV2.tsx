@@ -32,6 +32,7 @@ import {
 import type { UserListItem } from "@/features/user-lists/types";
 import { useStructuredLists, type PicklistSummary } from "./useStructuredLists";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface StructuredListManagerV2Props {
   /** Pin to a specific list and hide the switcher (e.g. in a modal). */
@@ -113,6 +114,7 @@ export function StructuredListManagerV2({
               <X className="size-3.5" />
             </button>
           </div>
+          <ErrorAlchemyMenu error={q.error} />
         </div>
       )}
     </div>

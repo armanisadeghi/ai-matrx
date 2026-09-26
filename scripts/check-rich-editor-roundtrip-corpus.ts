@@ -45,6 +45,7 @@
  *   … --limit 2000                    # first N rows per source (a quick run)
  *   … --json <file>                   # full report as JSON
  *   … --ids <id,id,…>                 # re-judge only these rows (ids as a failure prints them)
+ *   … --target clone                  # read the nightly dev clone (the full run belongs there)
  *
  * Exit 0 only when every row passes every check.
  */
@@ -54,6 +55,8 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import { EditorState, NodeSelection } from "@tiptap/pm/state";
 import { listIslands, tokenizeSource } from "@ai-matrx/content-ir/source";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { loadCloneDbEnv, loadCloneRef } from "./lib/migration-target";
+import { resolve } from "node:path";
 import { exitAfterDrain, installBlockingStdio } from "./lib/exit-after-drain";
 import {
   CORPUS_SOURCES,
@@ -517,17 +520,28 @@ function judge(text: string, stats: SourceStats): string | null {
 
 async function main(): Promise<number> {
   installBlockingStdio();
-  const env = loadDbEnv();
-  if ("missing" in env) {
-    console.error(
-      `UNMEASURED: no database connection — set ${env.missing.join(", ")} (looked in ${env.looked.join(", ") || "nothing"}).`,
-    );
-    return 2;
+  // The full corpus is a heavy comparison: it runs on the nightly dev CLONE
+  // (`--target clone`, the same rows as live as of last night). Live takes only
+  // bounded reads inside the production limits (statement_timeout 30s).
+  const onClone = argValue("--target") === "clone";
+  let env: Parameters<typeof connectDirect>[0] & { from: string };
+  if (onClone) {
+    const root = resolve(__dirname, "..");
+    env = loadCloneDbEnv(root, loadCloneRef(root));
+  } else {
+    const live = loadDbEnv();
+    if ("missing" in live) {
+      console.error(
+        `UNMEASURED: no database connection — set ${live.missing.join(", ")} (looked in ${live.looked.join(", ") || "nothing"}).`,
+      );
+      return 2;
+    }
+    env = live;
   }
-  console.log(`Database connection from ${env.from}; session READ ONLY.`);
+  console.log(`Database connection from ${env.from}${onClone ? " (the dev clone)" : ""}; session READ ONLY.`);
   const cx = await connectDirect(env, "rich-editor-roundtrip-corpus");
   await cx.query("set session characteristics as transaction read only");
-  await cx.query("set statement_timeout = '120s'");
+  await cx.query(`set statement_timeout = '${onClone ? "120s" : "30s"}'`);
 
   const report: Record<string, SourceStats> = {};
   const started = Date.now();

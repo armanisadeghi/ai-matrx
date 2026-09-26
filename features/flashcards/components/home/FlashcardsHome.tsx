@@ -63,6 +63,7 @@ import {
 } from "@/features/surfaces/manifests/education-flashcards.manifest";
 import { formatRelativeTime } from "@/utils/datetime";
 import { featureIntelligenceHref } from "@/features/mandates/feature-intelligence/hrefs";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const EDU_BASE = "/education/flashcards";
 const FAST_FIRE_BASE = "/education/fastfire";
@@ -608,6 +609,7 @@ export function FlashcardsHome() {
                 </p>
                 <p className="max-w-md text-xs text-muted-foreground">
                   {error}
+                  <ErrorAlchemyMenu />
                 </p>
               </div>
             ) : sets.length === 0 ? (

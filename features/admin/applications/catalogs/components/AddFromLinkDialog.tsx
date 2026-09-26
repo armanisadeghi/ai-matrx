@@ -53,6 +53,7 @@ import type {
   ResolveLinkResult,
   ResolvedFile,
 } from "@/features/admin/applications/catalogs/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const KIND_HINT_AUTO = "__auto__";
 
@@ -306,6 +307,7 @@ export function AddFromLinkDialog({
             <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-3 text-sm text-destructive">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <p>{state.message}</p>
+              <ErrorAlchemyMenu error={state.message} />
             </div>
           ) : null}
 

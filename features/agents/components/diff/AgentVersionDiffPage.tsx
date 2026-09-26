@@ -62,6 +62,7 @@ import {
 } from "@/features/agents/format";
 import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AgentVersionDiffPageProps {
   agentId: string;
@@ -338,6 +339,7 @@ export function AgentVersionDiffPage({
             attributes: { agent_id: agentId, has_error: true },
           })}
         />
+        <ErrorAlchemyMenu error={error} />
       </div>
     );
   }
@@ -701,6 +703,7 @@ export function AgentVersionDiffPage({
                 attributes: { agent_id: agentId, has_error: true },
               })}
             />
+            <ErrorAlchemyMenu error={snapshotError} />
           </div>
         )}
 

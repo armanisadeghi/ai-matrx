@@ -42,6 +42,7 @@ import {
   PdfSourcePicker,
   type PdfSourceState,
 } from "./PdfSourcePicker";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // react-pdf is heavy; lazy-load the previewer so the workbench itself
 // renders fast even when the user hasn't picked a PDF yet.
@@ -204,6 +205,7 @@ export function PdfWorkbench({
                   <pre className="whitespace-pre-wrap break-words font-mono text-xs">
                     {error}
                   </pre>
+                  <ErrorAlchemyMenu error={error} />
                 </div>
               ) : null}
 

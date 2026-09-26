@@ -93,6 +93,7 @@ export function EnrichingCardTile({ card }: { card: BulkEnrichCardState }) {
               {card.error || "Enrichment failed for this card."} This card is
               untouched — run it again and only it will be picked up.
             </span>
+            <ErrorAlchemyMenu error={card.error} />
           </p>
         ) : card.status === "empty" ? (
           <p className="text-xs text-muted-foreground">

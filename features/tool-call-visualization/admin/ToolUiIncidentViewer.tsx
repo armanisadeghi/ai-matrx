@@ -327,6 +327,7 @@ function IncidentCard({
                 </Label>
                 <pre className="text-[10px] bg-slate-100 dark:bg-slate-900 p-2 rounded overflow-auto max-h-40 whitespace-pre-wrap text-slate-600 dark:text-slate-400">
                   {incident.error_stack}
+                  <ErrorAlchemyMenu error={incident.error_stack} />
                 </pre>
               </div>
             )}

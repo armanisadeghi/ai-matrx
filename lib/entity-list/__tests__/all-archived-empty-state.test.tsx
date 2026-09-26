@@ -206,6 +206,10 @@ describe("an entity list whose live half is empty because everything is archived
   afterEach(() => {
     act(() => root.unmount());
     container.remove();
+    // The list page's query lives in the URL (urlState is on by default), and
+    // jsdom keeps one address for the whole file — reset it so a filter one
+    // case chose never leaks into the next.
+    window.history.replaceState(null, "", "/");
   });
 
   it("NEVER prints the static 'none yet' copy when archived rows exist", async () => {

@@ -86,6 +86,7 @@ const FilePickerWindow = dynamic(
 );
 import { useAppStore } from "@/lib/redux/hooks";
 import { fileHandler } from "@/features/files/handler/handler";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ── Public surface ───────────────────────────────────────────────────────
 
@@ -613,6 +614,7 @@ export function EmbeddedImageStudio({
           >
             Retry
           </button>
+          <ErrorAlchemyMenu error={autoFlowError} />
         </div>
       )}
 

@@ -195,7 +195,7 @@ export function PrinterCertificationNotice({
         <Alert variant="warning">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Failed-printer setting could not be read <ErrorAlchemyMenu /></AlertTitle>
-          <AlertDescription>{gate.knobProblem}</AlertDescription>
+          <AlertDescription>{gate.knobProblem} <ErrorAlchemyMenu error={gate.knobProblem} /></AlertDescription>
         </Alert>
       )}
     </div>

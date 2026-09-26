@@ -622,7 +622,7 @@ function ExceptionsBody({
     // door's own sentence and draw no control.
     return (
       <SettingsCallout tone="error" title="Who may set an exception could not be read">
-        <p>{doorError}</p>
+        <p>{doorError} <ErrorAlchemyMenu error={doorError} /></p>
         <p className="mt-2">
           Until it can be, no exception is offered here — the screen will not guess which door
           writes this setting.
@@ -633,7 +633,7 @@ function ExceptionsBody({
   if (status === "error") {
     return (
       <SettingsCallout tone="error" title="The exceptions could not be read">
-        <p>{message}</p>
+        <p>{message} <ErrorAlchemyMenu error={message} /></p>
         <div className="mt-3">
           <Button type="button" size="sm" variant="outline" onClick={onRetry}>
             Try again
