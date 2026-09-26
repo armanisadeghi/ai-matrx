@@ -132,7 +132,7 @@ export function useScanSaveFlow(
       if (!mountedRef.current) return;
       setNavigating(true);
       startTransition(() => {
-        router.push(`/tools/pdf-extractor/${docId}`);
+        router.push(`/knowledge/sources/${encodeURIComponent(docId)}`);
       });
     },
     [router],

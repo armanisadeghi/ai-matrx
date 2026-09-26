@@ -26,7 +26,7 @@ export function PdfStudioFileMenuExtras({
   doc,
   onRemoveFromExtractor,
 }: PdfStudioFileMenuExtrasProps) {
-  const studioHref = `/tools/pdf-extractor/${doc.id}`;
+  const studioHref = `/knowledge/sources/${encodeURIComponent(doc.id)}`;
 
   return (
     <>
@@ -37,7 +37,7 @@ export function PdfStudioFileMenuExtras({
               await navigator.clipboard.writeText(
                 resolveAbsoluteHref(studioHref),
               );
-              toast.success("Extractor link copied");
+              toast.success("Link copied");
             } catch {
               toast.error(
                 "Couldn't copy — your browser blocked clipboard access",
@@ -47,7 +47,7 @@ export function PdfStudioFileMenuExtras({
         }}
       >
         <LinkIcon className="mr-2 h-4 w-4" />
-        Copy extractor link
+        Copy link
       </DropdownMenuItem>
       <DropdownMenuItem
         className="text-destructive focus:text-destructive"

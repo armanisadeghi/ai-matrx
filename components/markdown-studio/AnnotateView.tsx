@@ -33,7 +33,7 @@ import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-c
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { fenceOpenerOf } from "@ai-matrx/content-ir/source";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import RichEditor from "@/components/rich-editor/RichEditor";
+import { ArchiveRecordButton } from "@/features/trash/components/ArchiveRecordButton";
 
 /** A heading, else the first line of prose — never a directive, fence or front-matter line. */
 function titleFrom(bufferTitle: string | null, buffer: string): string {
@@ -52,6 +52,7 @@ export function AnnotateView({
   buffer,
   bufferTitle,
   onOpenDocument,
+  onArchived,
 }: {
   /** The loaded content.document, when the studio has one open. */
   documentId: string | null;
@@ -59,11 +60,15 @@ export function AnnotateView({
   buffer: string;
   bufferTitle: string | null;
   onOpenDocument: (id: string) => void;
+  /** The open document was archived (it is restorable from Trash): close it. */
+  onArchived?: () => void;
 }) {
   const [doc, setDoc] = useState<LoadedDocument | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
 
   const reload = async (id: string) => {
@@ -161,43 +166,54 @@ export function AnnotateView({
     <AnnotationSidecarProvider source={source}>
       <div className="grid h-full min-h-0 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <section className="flex min-h-0 flex-col border-r border-border">
-          {/* While editing, the editor's own toolbar is the column's only header row. */}
-          {!editing && (
           <div className="flex items-center gap-2 border-b border-border px-3 py-1.5 text-xs">
             <span className="truncate font-medium text-foreground">{doc.title}</span>
             <span className="shrink-0 text-muted-foreground">version {doc.contentVersion}</span>
+            {/* The ONE shared archive control (features/trash) — the document is restorable from Trash. */}
+            <ArchiveRecordButton token="document" id={doc.id} what={`"${doc.title}"`} onArchived={onArchived} onRestored={() => onOpenDocument(doc.id)} className="h-7 px-2 text-xs" />
             <Button
               size="sm"
-              variant="outline"
+              variant={editing ? "default" : "outline"}
               className="ml-auto h-7 px-2 text-xs"
-              onClick={() => setEditing(true)}
+              onClick={() => {
+                setDraft(doc.body);
+                setEditing((e) => !e);
+              }}
             >
               <PencilLine className="mr-1 h-3.5 w-3.5" aria-hidden />
-              Edit text
+              {editing ? "Close editor" : "Edit text"}
             </Button>
           </div>
-          )}
-          {editing ? (
-            // THE ONE EDITOR (components/rich-editor) edits the document in place —
-            // never a private textarea (UI audit B, 2026-09-26). Its own toolbar
-            // carries Cancel and Save; the annotations are re-checked on save.
-            <div className="min-h-0 flex-1">
-              <RichEditor
-                imagePolicy="other"
-                value={doc.body}
-                defaultOutlineOpen={false}
-                surfaceName="matrx-user/markdown-studio"
-                onCancel={() => setEditing(false)}
-                cancelLabel="Close"
-                onNothingToSave={() => setEditing(false)}
-                onSave={async (next) => {
-                  await source.save!(next);
-                  setEditing(false);
-                  toast.success("Saved. Only the changed blocks were written; annotations were re-checked against the new text.");
-                }}
+          {editing && (
+            <div className="grid gap-1 border-b border-border p-2">
+              <textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                aria-label="Document text"
+                className="h-48 w-full resize-y rounded-md border border-input bg-background p-2 font-mono text-base md:text-xs"
               />
+              <div className="flex justify-end gap-1">
+                <Button
+                  size="sm"
+                  disabled={saving || draft === doc.body}
+                  onClick={async () => {
+                    setSaving(true);
+                    try {
+                      await source.save!(draft);
+                      setEditing(false);
+                      toast.success("Saved. Only the changed blocks were written; annotations were re-checked against the new text.");
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : String(e));
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                >
+                  {saving ? "Saving" : "Save"}
+                </Button>
+              </div>
             </div>
-          ) : (
+          )}
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
             <AnnotatedContent>
               <RichDocument imagePolicy="other"
@@ -209,7 +225,6 @@ export function AnnotateView({
               />
             </AnnotatedContent>
           </div>
-          )}
         </section>
         <AnnotationPanel className="min-h-0 border-t border-border lg:border-t-0" />
       </div>

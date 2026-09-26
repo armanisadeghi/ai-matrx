@@ -19,10 +19,11 @@
 import { useCallback, useRef, useState } from "react";
 import { BadgeDollarSign, Play } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import type {
-    EntityBulkAction,
-    EntityBulkActionResult,
-    EntityBulkSelection,
+import {
+    bulkFilterFromQuery,
+    type EntityBulkAction,
+    type EntityBulkActionResult,
+    type EntityBulkSelection,
 } from "@/lib/entity-list/selection";
 import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
 import { MediaApiError, createJob, estimateAction } from "../api";
@@ -48,6 +49,13 @@ export interface UseActionRunner {
     /** Job ids this mount started, newest first. The panel renders them. */
     startedJobIds: string[];
     dialog: React.ReactNode;
+    /**
+     * Run one declared Action on these rows through the SAME estimate-and-confirm
+     * dialog the selection bar uses (the per-row Transcribe of §8.6). Resolves with
+     * the started job's message, or `null` when the person cancelled or nothing
+     * started — the dialog already said why.
+     */
+    runOn: (action: ActionDeclaration, rows: VideoRow[]) => Promise<string | null>;
 }
 
 /**
@@ -240,6 +248,22 @@ export function useActionRunner(
         }
     }, [close, dispatch, estimate, libraryId, onJobStarted, params, pending]);
 
+    const runOn = useCallback(
+        async (action: ActionDeclaration, rows: VideoRow[]): Promise<string | null> => {
+            const result = await open(action, {
+                mode: "ids",
+                ids: rows.map((row) => row.id),
+                rows,
+                count: rows.length,
+                filter: bulkFilterFromQuery(DEFAULT_ENTITY_LIST_QUERY),
+            });
+            return result && typeof result === "object" && result.message
+                ? result.message
+                : null;
+        },
+        [open],
+    );
+
     const bulkActions: EntityBulkAction<VideoRow>[] = actions.map((action) => ({
         id: action.key,
         label: action.label,
@@ -268,5 +292,5 @@ export function useActionRunner(
         />
     );
 
-    return { bulkActions, startedJobIds, dialog };
+    return { bulkActions, startedJobIds, dialog, runOn };
 }

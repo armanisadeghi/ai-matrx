@@ -52,6 +52,14 @@ import { sourceVocabulary } from "../vocabulary";
 import { JobPanel } from "./JobPanel";
 import { LibraryMetricsHeader } from "./LibraryMetricsHeader";
 import { SourceDetailPanel } from "./SourceDetailPanel";
+import { CataloguedSourcesList } from "./CataloguedSourcesList";
+import { SourceStateCell } from "../catalog/SourceStateCell";
+import {
+    anyTranscribing,
+    catalogSourceState,
+    type SourceStateContext,
+} from "../catalog/sourceState";
+import { listsCataloguedSources } from "../catalog/cataloguedSources";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function LibraryPage({ libraryId }: { libraryId: string }) {
@@ -333,6 +341,45 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
 
     const runner = useActionRunner(libraryId, registry.actions, onJobStarted, vocabulary);
 
+    // §8.6 — rows this screen started a Transcribe for, watched until the server
+    // reports the run (queued/running) and then the Source id it landed as.
+    const [pendingTranscribe, setPendingTranscribe] = useState<Record<string, number>>({});
+    const registryActions = registry.actions;
+    const registryAnswered = !registry.loading || registryActions.length > 0;
+    const transcribable = library ? vocabulary.transcribable : null;
+    const runOn = runner.runOn;
+    const sourceCells = useMemo(() => {
+        const contextAt = (now: number): SourceStateContext => ({
+            pending: pendingTranscribe,
+            now,
+            actions: registryAnswered ? registryActions : undefined,
+            transcribable,
+        });
+        const transcribeAction = registryActions.find((action) => action.key === "transcribe");
+        const onTranscribe = transcribeAction
+            ? (row: VideoRow) => {
+                  void runOn(transcribeAction, [row]).then((message) => {
+                      if (!message) return;
+                      toast.success(message);
+                      setPendingTranscribe((current) => ({ ...current, [row.id]: Date.now() }));
+                  });
+              }
+            : undefined;
+        return {
+            contextAt,
+            onTranscribe,
+            renderSource: (row: VideoRow) => (
+                <SourceStateCell
+                    row={row}
+                    state={catalogSourceState(row, contextAt(Date.now()))}
+                    onTranscribe={onTranscribe}
+                />
+            ),
+            isTranscribing: (rows: readonly VideoRow[]) =>
+                anyTranscribing(rows, contextAt(Date.now())),
+        };
+    }, [pendingTranscribe, registryActions, registryAnswered, transcribable, runOn]);
+
     // D6 (jobs-bar cold-walk-12): a sync that just reported rows for THIS
     // Library and a table that still says "nothing catalogued" is the exact
     // defect — the banner and the table read two different sources, and
@@ -368,8 +415,11 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                 // actually trigger a fresh `GET …/videos`.
                 refreshToken: listGeneration,
                 syncReportsRows,
+                renderSource: sourceCells.renderSource,
+                isTranscribing: sourceCells.isTranscribing,
             }),
         [
+            sourceCells,
             dispatch,
             libraryId,
             organizationId,
@@ -397,6 +447,18 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                     fallbackLabel="Your libraries"
                 />
             </div>
+        );
+    }
+
+    // A web-capture Library files its Sources by edge; the catalog read cannot see them.
+    if (library && listsCataloguedSources(library.adapter)) {
+        return (
+            <>
+                <PageHeader>
+                    <h1 className="truncate text-sm font-medium">{library.name}</h1>
+                </PageHeader>
+                <CataloguedSourcesList libraryId={libraryId} organizationId={organizationId} />
+            </>
         );
     }
 
@@ -555,6 +617,16 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                             video={openVideo}
                             onClose={() => setOpenVideo(null)}
                             vocabulary={vocabulary}
+                            onTranscribe={
+                                sourceCells.onTranscribe &&
+                                catalogSourceState(openVideo, sourceCells.contextAt(Date.now()))
+                                    .kind === "not_yet"
+                                    ? (video) => {
+                                          setOpenVideo(null);
+                                          sourceCells.onTranscribe?.(video);
+                                      }
+                                    : undefined
+                            }
                         />
                     ) : null}
                 </DialogContent>

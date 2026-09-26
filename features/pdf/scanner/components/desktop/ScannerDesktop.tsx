@@ -293,7 +293,7 @@ export default function ScannerDesktop() {
   }, [session, flow]);
 
   const openDoc = useCallback(
-    (docId: string) => router.push(`/tools/pdf-extractor/${docId}`),
+    (docId: string) => router.push(`/knowledge/sources/${encodeURIComponent(docId)}`),
     [router],
   );
 

@@ -15,7 +15,9 @@ import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  searchParams: Promise<{ file?: string }>;
+  /** `?doc=<processed_documents.id>` opens that document in the PDF tools
+   *  (the Source screen's "PDF tools" action); `?file=` extracts a file. */
+  searchParams: Promise<{ file?: string; doc?: string }>;
 }
 
 export default async function PdfExtractorStudioPage({
@@ -23,11 +25,14 @@ export default async function PdfExtractorStudioPage({
 }: PageProps) {
   const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) return <PdfExtractorLanding />;
-  const { file } = await searchParams;
+  const { file, doc } = await searchParams;
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
       <Suspense fallback={null}>
-        <PdfStudioRouteClient initialSourceFileId={file} />
+        <PdfStudioRouteClient
+          initialDocumentId={doc}
+          initialSourceFileId={doc ? undefined : file}
+        />
       </Suspense>
     </div>
   );

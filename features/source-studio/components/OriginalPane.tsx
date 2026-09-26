@@ -16,7 +16,9 @@ import { PdfCldFileViewer } from "@/features/pdf-extractor/studio/PdfStudioReade
 import { VideoPreview } from "@/features/files/components/core/FilePreview/previewers/VideoPreview";
 import { AudioPreview } from "@/features/files/components/core/FilePreview/previewers/AudioPreview";
 import { fetchFileBlob } from "@/features/files/hooks/useFileBlob";
+import { rememberFileOrganization } from "@/features/files/api/fileOrganization";
 import {
+  snapshotDocument,
   snapshotHtml,
   textFragmentUrl,
   type OriginalView,
@@ -33,6 +35,11 @@ export interface OriginalPaneProps {
   seek: SeekRequest | null;
   /** The active portion's text — the live page opens at it. */
   passage: string | null;
+  /**
+   * The Source's organization. Its original bytes were stored for that
+   * organization, so every file read names it (never the active workspace).
+   */
+  organizationId: string;
 }
 
 export function OriginalPane({
@@ -42,7 +49,11 @@ export function OriginalPane({
   onPageChange,
   seek,
   passage,
+  organizationId,
 }: OriginalPaneProps) {
+  // Idempotent: tells the file client which organization reads this file, so
+  // the download never asks "which workspace?" for a Source it already names.
+  if ("fileId" in view) rememberFileOrganization(view.fileId, organizationId);
   switch (view.kind) {
     case "pdf":
       return (
@@ -174,16 +185,19 @@ function WebSnapshot({
     html: string | null;
     error: string | null;
   }>({ forId: null, html: null, error: null });
+  const [attempt, setAttempt] = useState(0);
+  const key = `${fileId}:${attempt}`;
 
   useEffect(() => {
     let cancelled = false;
+    const k = `${fileId}:${attempt}`;
     void (async () => {
       try {
         const text = await gunzipIfNeeded(await fetchFileBlob(fileId));
         if (cancelled) return;
         const html = snapshotHtml(text);
         setState({
-          forId: fileId,
+          forId: k,
           html,
           error: html
             ? null
@@ -192,7 +206,7 @@ function WebSnapshot({
       } catch (err) {
         if (!cancelled)
           setState({
-            forId: fileId,
+            forId: k,
             html: null,
             error: `The stored copy of this page could not be opened (${
               err instanceof Error ? err.message : String(err)
@@ -203,9 +217,9 @@ function WebSnapshot({
     return () => {
       cancelled = true;
     };
-  }, [fileId]);
+  }, [fileId, attempt]);
 
-  const settled = state.forId === fileId;
+  const settled = state.forId === key;
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-1.5 text-xs text-muted-foreground">
@@ -230,7 +244,7 @@ function WebSnapshot({
         <iframe
           title="Captured page"
           sandbox=""
-          srcDoc={state.html}
+          srcDoc={snapshotDocument(state.html, url)}
           className="min-h-0 w-full flex-1 bg-white"
         />
       ) : (
@@ -238,7 +252,14 @@ function WebSnapshot({
           {state.error}{" "}
           {url
             ? "Use “Open the live page” above to read it where it lives."
-            : "The captured text is in the Raw and Clean panes."}
+            : "The captured text is in the Raw and Clean panes."}{" "}
+          <button
+            type="button"
+            className="text-primary hover:underline"
+            onClick={() => setAttempt((a) => a + 1)}
+          >
+            Try again
+          </button>
         </Notice>
       )}
     </div>

@@ -115,6 +115,7 @@ import {
   useSources,
   type SourcesScope,
 } from "@/features/sources/hooks/useSources";
+import { useTranscriptEnds } from "@/features/sources/hooks/useTranscriptEnds";
 import {
   DEFAULT_SAVED_FILTER,
   SOURCE_KIND_LABEL,
@@ -129,6 +130,8 @@ import {
   sourceStage,
   stageCellState,
   STAGE_CELL_LABEL,
+  transcriptLengthWords,
+  transcriptSegmentCount,
   type SavedFilter,
   type SourceAttachment,
   type SourceFacts,
@@ -399,6 +402,13 @@ export function SourcesPage() {
     retrying: factsRetrying.has(id),
   });
   const visibleRows = applySavedFilter(rows, savedFilter);
+  // A transcript's length and segment count, from facts the Source holds.
+  const transcriptEnds = useTranscriptEnds(visibleRows);
+  const transcriptFacts = (r: SourceListRow) =>
+    transcriptLengthWords(
+      transcriptSegmentCount(r),
+      transcriptEnds.get(r.id) ?? null,
+    );
   const savedCount = rows.filter(isSourceSaved).length;
   const refresh = () => setRefreshKey((n) => n + 1);
   const byId = new Map(rows.map((r) => [r.id, r]));
@@ -666,8 +676,23 @@ export function SourcesPage() {
       id: "kind",
       header: "Kind",
       accessorFn: (r) => SOURCE_KIND_LABEL[sourceKindGroup(r.source_kind)],
+      cell: (r) => {
+        const length = transcriptFacts(r);
+        return (
+          <div className="min-w-0">
+            <span className="block truncate">
+              {SOURCE_KIND_LABEL[sourceKindGroup(r.source_kind)]}
+            </span>
+            {length ? (
+              <span className="block truncate text-[11px] text-muted-foreground">
+                {length}
+              </span>
+            ) : null}
+          </div>
+        );
+      },
       filter: "select",
-      width: 110,
+      width: 130,
     },
     {
       id: "captured",
@@ -1036,6 +1061,7 @@ export function SourcesPage() {
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
                   <span>
                     {SOURCE_KIND_LABEL[sourceKindGroup(r.source_kind)]}
+                    {transcriptFacts(r) ? ` · ${transcriptFacts(r)}` : ""}
                   </span>
                   <span>·</span>
                   <span>{captureWords(r)}</span>

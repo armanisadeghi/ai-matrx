@@ -267,7 +267,7 @@ export function LibraryPreviewPage({
     try {
       const newId = await forkProcessedDocument(documentId);
       toast.success("Created your editable copy");
-      router.push(`/tools/pdf-extractor/${newId}`);
+      router.push(`/tools/pdf-extractor?doc=${encodeURIComponent(newId)}`);
     } catch (e) {
       toast.error(
         e instanceof Error ? e.message : "Could not create your copy",

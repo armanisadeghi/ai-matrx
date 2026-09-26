@@ -65,9 +65,7 @@ export function FindReplacePanel({ showReplace, onFind, onReplace, onReplaceAll,
 
   return (
     <div
-      // A floating widget over the text's top-right corner (VS Code's find widget),
-      // never a row that pushes the document down (UI audit B, 2026-09-26).
-      className="matrx-touch-targets absolute inset-x-2 top-full z-30 mt-1 flex flex-col gap-1.5 rounded-lg border border-border bg-popover/95 px-2 py-1.5 text-sm shadow-lg backdrop-blur sm:left-auto sm:w-[34rem] sm:max-w-[calc(100%-1rem)]"
+      className="matrx-touch-targets flex flex-col gap-1.5 border-b border-border bg-card/95 px-3 py-2 text-sm backdrop-blur"
       role="search"
       onKeyDown={(event) => {
         if (event.key === "Escape") onClose();

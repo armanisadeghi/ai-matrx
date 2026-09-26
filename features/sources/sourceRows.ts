@@ -185,19 +185,35 @@ export function sourceKindGroup(sourceKind: string): SourceKindGroup {
 
 // ── How it was captured ──────────────────────────────────────────────────────
 
+/**
+ * Every `origin_client` the door writes (aidream `landing_types.py`), in the
+ * words the origin filter shows. A code this build has not heard of is shown
+ * as words too (`codeWords`), never raw.
+ */
 const CLIENT_WORDS: Record<string, string> = {
   web: "Web app",
-  extension: "Browser extension",
-  local: "Desktop app",
+  extension: "Extension",
+  local: "Desktop",
   cloud_browser: "Cloud browser",
-  agent: "An agent",
+  agent: "Agent",
   research: "Research",
-  crawl: "Site crawl",
+  crawl: "Crawl",
   upload: "Upload",
-  transcription: "Transcription",
+  transcription: "Transcript",
   youtube: "YouTube",
-  backfill: "Imported",
+  backfill: "Backfilled",
 };
+
+export const ORIGIN_CLIENTS: readonly string[] = Object.keys(CLIENT_WORDS);
+
+function codeWords(code: string): string {
+  const words = code.replace(/_/g, " ").trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+function clientWords(code: string): string {
+  return CLIENT_WORDS[code] ?? codeWords(code);
+}
 
 const METHOD_WORDS: Record<string, string> = {
   http: "direct fetch",
@@ -219,11 +235,9 @@ const METHOD_WORDS: Record<string, string> = {
 export function captureWords(
   row: Pick<SourceListRow, "origin_client" | "capture_method" | "source_kind">,
 ): string {
-  const client = row.origin_client
-    ? (CLIENT_WORDS[row.origin_client] ?? row.origin_client)
-    : null;
+  const client = row.origin_client ? clientWords(row.origin_client) : null;
   const method = row.capture_method
-    ? (METHOD_WORDS[row.capture_method] ?? row.capture_method)
+    ? (METHOD_WORDS[row.capture_method] ?? codeWords(row.capture_method))
     : null;
   if (client && method) return `${client} · ${method}`;
   if (client) return client;
@@ -235,11 +249,47 @@ export function captureWords(
 export function captureClientLabel(
   row: Pick<SourceListRow, "origin_client" | "source_kind">,
 ): string {
-  if (row.origin_client)
-    return CLIENT_WORDS[row.origin_client] ?? row.origin_client;
+  if (row.origin_client) return clientWords(row.origin_client);
   return sourceKindGroup(row.source_kind) === "file"
     ? "Upload"
     : "Not recorded";
+}
+
+// ── Transcript facts ─────────────────────────────────────────────────────────
+
+/**
+ * A transcript Source's segment count: its portions (one per segment, the
+ * door's `total_pages`). `null` for any other kind or when not recorded.
+ */
+export function transcriptSegmentCount(
+  row: Pick<SourceListRow, "source_kind" | "total_pages">,
+): number | null {
+  if (sourceKindGroup(row.source_kind) !== "transcript") return null;
+  return row.total_pages && row.total_pages > 0 ? row.total_pages : null;
+}
+
+function clock(ms: number): string {
+  const total = Math.floor(ms / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const sec = String(total % 60).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
+}
+
+/**
+ * "1:49 · 51 segments" from the facts the Source holds — the last segment's
+ * end (`locator.t1_ms`) and its segment count. Says only what it knows; `null`
+ * when it knows neither, so the cell shows nothing rather than a guess.
+ */
+export function transcriptLengthWords(
+  segments: number | null,
+  lastSegmentEndMs: number | null,
+): string | null {
+  const parts: string[] = [];
+  if (lastSegmentEndMs && lastSegmentEndMs > 0) parts.push(clock(lastSegmentEndMs));
+  if (segments && segments > 0)
+    parts.push(`${segments} ${segments === 1 ? "segment" : "segments"}`);
+  return parts.length ? parts.join(" · ") : null;
 }
 
 // ── Stage ────────────────────────────────────────────────────────────────────

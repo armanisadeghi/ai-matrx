@@ -9,6 +9,7 @@
  */
 
 import type { PortionLocatorRow } from "@/features/sources/portionLocator";
+import type { SeekRequest } from "@/lib/media/seek-request";
 
 // ── Routes ────────────────────────────────────────────────────────────────
 
@@ -112,7 +113,7 @@ export function portionStartMs(
 }
 
 /** A request to move a player (the one shape every seekable player takes). */
-export type { SeekRequest } from "@/lib/media/seek-request";
+export type { SeekRequest };
 
 // ── Original pane ─────────────────────────────────────────────────────────
 
@@ -367,4 +368,29 @@ export function sourceAsMarkdown(
     .map((p) => `## ${label(p)}\n\n${readableText(p).trim()}`)
     .join("\n\n");
   return `# ${name}\n\n${body}\n`;
+}
+
+/**
+ * The seek a portion click asks for: its start time when the Original pane
+ * holds a player (`canSeek`), else none — a page or a section never seeks.
+ */
+export function seekForPortion(
+  portion: Pick<PortionLocatorRow, "locator"> | null | undefined,
+  canSeek: boolean,
+  nonce: number,
+): SeekRequest | null {
+  const ms = portionStartMs(portion);
+  return canSeek && ms != null ? { seconds: ms / 1000, nonce } : null;
+}
+
+/**
+ * The snapshot ready for a sandboxed frame: a `<base>` pointing at the page's
+ * own address so its relative stylesheets and images resolve (scripts stay
+ * blocked by the sandbox). An existing `<base>` is left alone.
+ */
+export function snapshotDocument(html: string, url: string | null): string {
+  if (!url || /<base\s/i.test(html)) return html;
+  const base = `<base href="${url.replace(/"/g, "&quot;")}">`;
+  if (/<head[^>]*>/i.test(html)) return html.replace(/<head[^>]*>/i, (m) => `${m}${base}`);
+  return `${base}${html}`;
 }

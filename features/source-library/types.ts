@@ -26,7 +26,10 @@ export type MediaAdapter =
     | "outlook_mail"
     | "outlook_calendar"
     | "teams_chat"
-    | "google_picked_files";
+    | "google_picked_files"
+    /** Pages captured in a person's browser (capture ladder). Its Sources are
+     *  catalogued by `catalogued_source` edges, not listed by the catalog read. */
+    | "web_capture";
 export type LibraryKind = "channel" | "playlist";
 /**
  * THE PLATFORM'S OWN ENUM SPELLING, and it is not the one that reads naturally.
@@ -253,6 +256,15 @@ export interface ActionOutcome {
     at: string;
 }
 
+/** SOURCE-CONVERGENCE §1 rule 6 — the server's "not yet a Source" fact. */
+export interface NotYetASource {
+    reason: string;
+    /** The server's own sentence. Shown as written, never re-worded here. */
+    message: string;
+    /** The Action key that makes it a Source (today always `transcribe`). */
+    offered_action: string;
+}
+
 /** §4.2 — the Source row (one catalogued video today). */
 export interface VideoRow {
     id: string;
@@ -292,6 +304,20 @@ export interface VideoRow {
     transcript_status: TranscriptStatus;
     transcript_id: string | null;
     transcript_lane: TranscriptLane | null;
+    /**
+     * SOURCE-CONVERGENCE §1 rule 6 — the Source (`docproc.processed_documents`)
+     * this item's transcript landed as: what "Open" opens. `null` while there
+     * is no transcript, and also while a transcript exists that has not landed
+     * as a Source yet (the row then says so rather than offering Open).
+     */
+    processed_document_id: string | null;
+    /**
+     * Present exactly when the item has no transcript: it is a listing, NOT
+     * YET a Source, and `offered_action` names what makes it one. `null` once
+     * a transcript exists — and `null` from a server that predates the fact,
+     * which is why the row reads it as "unknown", never as "is a Source".
+     */
+    not_yet_a_source: NotYetASource | null;
     /**
      * §4.3 — every Action that has ever finished on this Source, keyed by Action
      * key. `{}` means nothing has ever run on it, which is why the column shows a

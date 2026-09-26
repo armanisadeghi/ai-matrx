@@ -114,6 +114,16 @@ export const PLATFORM_CONTEXT_VALUES = {
     typicalCharCount: 2000,
     sortOrder: 9996,
   },
+  surface_closed: {
+    name: "surface_closed",
+    label: "The screen this conversation started on is closed",
+    description:
+      "Present only when the screen this conversation is attached to (a window, dialog or page) has been closed since the conversation started. Its earlier values are gone and must not be treated as current; what is open now is in surface_chain and window_forms.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 200,
+    sortOrder: 9995,
+  },
   window_forms: {
     name: "window_forms",
     label: "Open windows with no registered surface",

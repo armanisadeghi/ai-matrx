@@ -554,7 +554,7 @@ export const pdfExtractorManifest: SurfaceManifest = {
     "PDF Extractor studio (/tools/pdf-extractor) — one-shot agent runs on a loaded PDF with a 4-way scope picker (full doc / current page / page range / browser selection). Parent of matrx-user/extractor-chunker.",
   readiness: "verified",
   label: "PDF Extractor",
-  urlPattern: "/tools/pdf-extractor/[documentId]",
+  urlPattern: "/tools/pdf-extractor",
   intro: `<surface_intro>
 The PDF Extractor studio is where a user reads and works a single processed PDF:
 the source PDF pane, the raw OCR text, the AI-cleaned text, and extraction output,

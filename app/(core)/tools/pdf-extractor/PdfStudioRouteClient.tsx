@@ -64,7 +64,7 @@ function ExistingFileExtractionGate({ fileId }: { fileId: string }) {
     void extraction
       .extract(fileId)
       .then((documentId) => {
-        router.replace(`/tools/pdf-extractor/${documentId}`);
+        router.replace(`/knowledge/sources/${encodeURIComponent(documentId)}`);
       })
       .catch(() => {
         // The hook exposes the captured error and retry affordance below.

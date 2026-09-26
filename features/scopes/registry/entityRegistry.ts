@@ -426,7 +426,7 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   processed_document: {
     Icon: FileText,
     labelPlural: "Processed Documents",
-    hrefFor: (id) => `/tools/pdf-extractor/${id}`,
+    hrefFor: (id) => `/knowledge/sources/${encodeURIComponent(id)}`,
   },
   conversation: {
     Icon: MessagesSquare,

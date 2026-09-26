@@ -231,7 +231,7 @@ export const extractorChunkerManifest: SurfaceManifest = {
   // `route-to-surface.ts` maps `/tools/pdf-extractor` to the PARENT on purpose
   // (see the manifest header); this surface has no client mount anywhere. Do
   // not add a mapping or mount a provider for it.
-  urlPattern: "/tools/pdf-extractor/[id]",
+  urlPattern: "/tools/pdf-extractor",
   intro: `<surface_intro>
 The Extractor Chunker runs ONE agent across a document chunk-by-chunk and persists
 every structured response anchored to the pages it came from. A Job declares the

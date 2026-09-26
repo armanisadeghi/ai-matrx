@@ -197,7 +197,10 @@ describe("wikilinks — real records or an honest create", () => {
     const missing = scope.querySelector('[data-wikilink="missing"]')!;
     expect(text(missing)).toContain("the glaze book");
     expect(missing.querySelector("a")).toBeNull();
-    expect(missing.querySelector("button")?.textContent).toContain("Create");
+    // The name itself is the create control — no separate "Create" word in the sentence.
+    expect(missing.tagName).toBe("BUTTON");
+    expect(missing.getAttribute("title")).toMatch(/Click to create it/);
+    expect(text(missing)).not.toContain("Create");
     expect(text(scope)).not.toContain("[[");
   });
 });

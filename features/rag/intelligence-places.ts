@@ -14,7 +14,7 @@ const K = MANDATE_KEYS;
 export const RAG_PLACES: FeaturePlaces = {
   feature: "rag",
   label: "Knowledge search",
-  roots: ["features/rag/components", "features/pdf-extractor"],
+  roots: ["features/rag/components", "features/pdf-extractor", "features/source-studio"],
   places: [
     {
       id: "search-pipeline",
@@ -28,7 +28,7 @@ export const RAG_PLACES: FeaturePlaces = {
       id: "pdf-studio",
       label: "PDF studio",
       trigger: "AI clean on a long document (page by page)",
-      urlPattern: "/tools/pdf-extractor/[id]",
+      urlPattern: "/tools/pdf-extractor",
       mandateKeys: [K.rag__pdf_page_cleaner],
       sources: ["features/pdf-extractor/studio/PdfStudioHeaderControls.tsx"],
     },

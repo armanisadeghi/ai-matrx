@@ -11,7 +11,7 @@
  * than as a thousand ids.
  */
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { ExternalLink, FileText, ListChecks } from "lucide-react";
 import type { AppDispatch } from "@/lib/redux/store";
 import type {
@@ -21,6 +21,7 @@ import type {
 } from "@/lib/entity-list/config";
 import type { EntityBulkAction } from "@/lib/entity-list/selection";
 import { catalogColumns } from "./columns";
+import { TRANSCRIBE_POLL_MS } from "./sourceState";
 import { createCatalogService } from "./service";
 import { actionLabel } from "../format";
 import { sourceVocabulary } from "../vocabulary";
@@ -65,6 +66,14 @@ export function createCatalogListConfig(options: {
      * ordinary empty state.
      */
     syncReportsRows?: boolean;
+    /** §8.6 — the page's renderer for the "is it a Source yet?" cell. */
+    renderSource?: (row: VideoRow) => React.ReactNode;
+    /**
+     * §8.6 — true while any of these rows is transcribing. The list then
+     * re-reads itself every few seconds until each one carries its Source id
+     * (or its run ends), so "Transcribing…" turns into "Source · Open" on its own.
+     */
+    isTranscribing?: (rows: readonly VideoRow[]) => boolean;
 }): EntityListConfig<VideoRow> {
     const {
         dispatch,
@@ -77,6 +86,8 @@ export function createCatalogListConfig(options: {
         library = null,
         refreshToken,
         syncReportsRows,
+        renderSource,
+        isTranscribing,
     } = options;
     const vocabulary = sourceVocabulary(library);
     // The Library's kind is only KNOWN once its row is here; until then the
@@ -85,8 +96,16 @@ export function createCatalogListConfig(options: {
     const kindKnown = library !== null;
 
     function useCatalogRowActions(
-        _list: EntityListController<VideoRow>,
+        list: EntityListController<VideoRow>,
     ): EntityRowActionsResult<VideoRow> {
+        const watching = isTranscribing ? isTranscribing(list.rows) : false;
+        const refresh = list.refresh;
+        useEffect(() => {
+            if (!watching) return undefined;
+            const id = window.setInterval(refresh, TRANSCRIBE_POLL_MS);
+            return () => window.clearInterval(id);
+        }, [watching, refresh]);
+
         const menuFor = useCallback(
             (row: VideoRow) => () => {
                 const outcome = row.last_action;
@@ -148,7 +167,7 @@ export function createCatalogListConfig(options: {
         scopes: [],
         service: createCatalogService(dispatch, libraryId),
         serviceKey: `media-catalog:${libraryId}:${organizationId ?? "none"}:${refreshToken ?? 0}`,
-        columns: catalogColumns({ actionLabels, vocabulary, kindKnown }),
+        columns: catalogColumns({ actionLabels, vocabulary, kindKnown, renderSource }),
         prefsVersion: 1,
         getRowId: (row) => row.id,
         getRowName: (row) => row.title,

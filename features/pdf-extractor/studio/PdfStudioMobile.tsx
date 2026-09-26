@@ -138,7 +138,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
 
   const onSelectDoc = useCallback(
     (s: { id: string }) => {
-      router.push(`/tools/pdf-extractor/${s.id}`);
+      router.push(`/tools/pdf-extractor?doc=${encodeURIComponent(s.id)}`);
       void selectDocById(s.id);
     },
     [router, selectDocById],
@@ -162,7 +162,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
     (docId: string) => {
       docsState.refresh();
       if (!activeDoc) {
-        router.push(`/tools/pdf-extractor/${docId}`);
+        router.push(`/tools/pdf-extractor?doc=${encodeURIComponent(docId)}`);
         void selectDocById(docId);
       }
     },
@@ -173,7 +173,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
     (newDocIds: string[]) => {
       docsState.refresh();
       if (!activeDoc && newDocIds[0]) {
-        router.push(`/tools/pdf-extractor/${newDocIds[0]}`);
+        router.push(`/tools/pdf-extractor?doc=${encodeURIComponent(newDocIds[0])}`);
         void selectDocById(newDocIds[0]);
       }
     },
@@ -203,7 +203,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
       // mobile shell reads the new per-page data without exposing the
       // parent/child concept. Same pattern as desktop.
       if (childDocId && childDocId !== activeDoc.id) {
-        router.replace(`/tools/pdf-extractor/${childDocId}`);
+        router.replace(`/tools/pdf-extractor?doc=${encodeURIComponent(childDocId)}`);
         await selectDocById(childDocId);
       } else {
         const fresh = await extractor.fetchDocument(activeDoc.id);

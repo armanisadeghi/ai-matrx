@@ -20,6 +20,7 @@
 import { postJson } from "@/lib/python-client";
 import { BackendApiError } from "@/lib/api/errors";
 import type { components } from "@/types/python-generated/api-types";
+import { sourceStudioPath } from "@/features/source-studio/sourceStudioModel";
 
 export type LandedSource = components["schemas"]["LandedSource"];
 export type LandingNotice = components["schemas"]["LandingNotice"];
@@ -97,13 +98,12 @@ export async function keepSource(
 }
 
 /**
- * Where a Source opens today. The one Source screen (`/knowledge/sources/[id]`)
- * arrives in SOURCE-CONVERGENCE Phase 2 and the viewer route then redirects to
- * it with its params; until then the live viewer is the honest door. One place
- * to change when it moves.
+ * Where a Source opens: the one Source screen (SOURCE-CONVERGENCE §8.2). Every
+ * old viewer route redirects there with its params; this is the one place a
+ * surface asks.
  */
 export function sourceHref(processedDocumentId: string): string {
-  return `/knowledge/viewer/${encodeURIComponent(processedDocumentId)}`;
+  return sourceStudioPath(processedDocumentId);
 }
 
 /**

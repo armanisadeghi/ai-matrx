@@ -245,7 +245,7 @@ export function FilePreview({
                   action: {
                     label: "Open extraction",
                     onClick: () =>
-                      router.push(`/tools/pdf-extractor/${documentId}`),
+                      router.push(`/knowledge/sources/${encodeURIComponent(documentId)}`),
                   },
                 });
               } catch (error: unknown) {

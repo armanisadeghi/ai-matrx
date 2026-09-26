@@ -2501,14 +2501,21 @@
   }
 }
 
-/* ── A destructive Alert's Alchemy Menu sits in its top-right corner (RC-B12).
+/* ── An Alert's Alchemy Menu sits in its top-right corner (RC-B12).
    The package's error slot (ErrorActionsProvider → components/errors/
-   PackageErrorActions.tsx) appends the menu as the Alert's last child; placed
-   here so the title and description keep their full lines, with room reserved
-   so text never runs under it. Unlayered on purpose: it must out-rank the
-   Alert's own `[&>svg~*]:pl-7` utility. */
-[data-slot="alert"][data-variant="destructive"]:has(> [data-error-alchemy-menu]) {
-  padding-right: 2.5rem;
+   PackageErrorActions.tsx) appends the menu as the Alert's last child. It
+   leaves the flow so it never adds a row, and the only room it takes is a
+   float the size of the menu on the FIRST text line — the lines below keep
+   their full width, so the box grows only if that first line was already
+   full (Arman 2026-09-26: a control never pushes content; the earlier
+   whole-box padding-right narrowed every line). Unlayered on purpose: it
+   must out-rank the Alert's own `[&>svg~*]:pl-7` utility. */
+[data-slot="alert"]:has(> [data-error-alchemy-menu]) > [data-slot="alert-title"]::before,
+[data-slot="alert"]:has(> [data-error-alchemy-menu]):not(:has(> [data-slot="alert-title"])) > [data-slot="alert-description"]::before {
+  content: "";
+  float: right;
+  width: 1.5rem;
+  height: 1lh;
 }
 [data-slot="alert"] > [data-error-alchemy-menu] {
   position: absolute;

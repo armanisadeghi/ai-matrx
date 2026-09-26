@@ -126,6 +126,9 @@ function wireVideo(overrides: Partial<VideoRow> = {}): VideoRow {
         transcript_status: "none",
         transcript_id: null,
         transcript_lane: null,
+        // Predates SOURCE-CONVERGENCE §1 rule 6: the wire carried neither key.
+        processed_document_id: null,
+        not_yet_a_source: null,
         // §4.3 — this fixture predates the projection, and the wire it was copied
         // from carried neither key. A Source nothing has run on is exactly this:
         // an empty map and no last action.

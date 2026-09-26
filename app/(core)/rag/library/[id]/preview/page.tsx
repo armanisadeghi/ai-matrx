@@ -1,39 +1,17 @@
+import { redirect } from "next/navigation";
+import { sourceStudioPath } from "@/features/source-studio/sourceStudioModel";
+
 /**
- * /knowledge/library/[id]/preview — robust document preview.
- *
- * Built on /knowledge/library/* endpoints (no /api/document/* dependency, no
- * react-pdf). 3 panes: pages list, page text, chunks + test-search.
+ * /rag/library/[id]/preview and /knowledge/library/[id]/preview — the old
+ * library preview. Redirects to the one Source screen with its params
+ * (`?page=`, `?chunk=`, `?assets=1`), SOURCE-CONVERGENCE §8.2.
  */
+interface PageProps {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
 
-"use client";
-
-import { useParams, useSearchParams } from "next/navigation";
-import { useMemo } from "react";
-import { LibraryPreviewPage } from "@/features/rag/components/library/LibraryPreviewPage";
-
-export default function Page() {
-  const params = useParams();
-  const searchParams = useSearchParams();
-  const documentId = useMemo(() => {
-    const raw = params?.id;
-    return Array.isArray(raw) ? raw[0] : (raw ?? null);
-  }, [params]);
-  // `?assets=1` — deep link from the file menu's "Knowledge assets" entry:
-  // land with the Knowledge Asset Builder drawer already open.
-  const initialAssetsOpen = searchParams?.get("assets") === "1";
-
-  if (!documentId) {
-    return (
-      <div className="grid place-items-center h-full text-sm text-muted-foreground">
-        Missing document id.
-      </div>
-    );
-  }
-
-  return (
-    <LibraryPreviewPage
-      documentId={documentId}
-      initialAssetsOpen={initialAssetsOpen}
-    />
-  );
+export default async function OldPreviewRedirect({ params, searchParams }: PageProps) {
+  const { id } = await params;
+  redirect(sourceStudioPath(id, await searchParams));
 }

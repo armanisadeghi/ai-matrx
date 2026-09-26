@@ -274,45 +274,54 @@ interface EntityMentionRow {
   kg_entities: { name: string; kind: string } | null;
 }
 
-/** Entity mentions read per page of this many rows. */
-const ENTITY_ROW_LIMIT = 1000;
+/** Chunk ids per mention read (keeps each request URL short and each query indexed). */
+const ENTITY_CHUNK_BATCH = 80;
 
-export function useSourceEntities(documentId: string | null): {
+/**
+ * The entities mentioned in the chunks on screen, read by chunk id (the
+ * `kg_chunk_entities.chunk_id` index) — a join-filter on the chunk's document
+ * timed out under RLS on a 17k-mention PDF. `truncated` when the Source has
+ * more chunks than the screen holds.
+ */
+export function useSourceEntities(
+  chunkIds: string[] | null,
+  totalChunks: number,
+): {
   entities: SourceEntity[];
   loading: boolean;
   error: string | null;
-  /** True when the mention read hit its ceiling and more exist. */
   truncated: boolean;
 } {
+  const idsKey = chunkIds ? chunkIds.join(",") : null;
   const [state, setState] = useState<{
-    forId: string | null;
+    forKey: string | null;
     entities: SourceEntity[];
     error: string | null;
-    truncated: boolean;
-  }>({ forId: null, entities: [], error: null, truncated: false });
+  }>({ forKey: null, entities: [], error: null });
 
   useEffect(() => {
-    if (!documentId) return undefined;
+    if (idsKey === null) return undefined;
+    const ids = idsKey ? idsKey.split(",") : [];
     let cancelled = false;
     void (async () => {
-      const { data, error } = await ragDb(supabase)
-        .from("kg_chunk_entities")
-        .select(
-          "chunk_id,entity_id,kg_entities(name,kind),kg_chunks!inner(processed_document_id)",
-        )
-        .eq("kg_chunks.processed_document_id", documentId)
-        .limit(ENTITY_ROW_LIMIT);
-      if (cancelled) return;
-      if (error) {
-        setState({
-          forId: documentId,
-          entities: [],
-          error: `The people, places and things found in this Source could not be read: ${error.message}`,
-          truncated: false,
-        });
-        return;
+      const rows: EntityMentionRow[] = [];
+      for (let i = 0; i < ids.length; i += ENTITY_CHUNK_BATCH) {
+        const { data, error } = await ragDb(supabase)
+          .from("kg_chunk_entities")
+          .select("chunk_id,entity_id,kg_entities(name,kind)")
+          .in("chunk_id", ids.slice(i, i + ENTITY_CHUNK_BATCH))
+          .limit(5000);
+        if (cancelled) return;
+        if (error) {
+          setState({
+            forKey: idsKey,
+            entities: [],
+            error: `The people, places and things found in this Source could not be read: ${error.message}`,
+          });
+          return;
+        }
+        rows.push(...((data ?? []) as unknown as EntityMentionRow[]));
       }
-      const rows = (data ?? []) as unknown as EntityMentionRow[];
       const byId = new Map<string, SourceEntity>();
       for (const r of rows) {
         const cur = byId.get(r.entity_id) ?? {
@@ -326,27 +335,27 @@ export function useSourceEntities(documentId: string | null): {
         if (!cur.chunkIds.includes(r.chunk_id)) cur.chunkIds.push(r.chunk_id);
         byId.set(r.entity_id, cur);
       }
-      setState({
-        forId: documentId,
-        entities: [...byId.values()].sort(
-          (a, b) => b.mentions - a.mentions || a.name.localeCompare(b.name),
-        ),
-        error: null,
-        truncated: rows.length >= ENTITY_ROW_LIMIT,
-      });
+      if (!cancelled)
+        setState({
+          forKey: idsKey,
+          entities: [...byId.values()].sort(
+            (a, b) => b.mentions - a.mentions || a.name.localeCompare(b.name),
+          ),
+          error: null,
+        });
     })();
     return () => {
       cancelled = true;
     };
-  }, [documentId]);
+  }, [idsKey]);
 
-  if (!documentId || state.forId !== documentId)
+  if (idsKey === null || state.forKey !== idsKey)
     return { entities: [], loading: true, error: null, truncated: false };
   return {
     entities: state.entities,
     loading: false,
     error: state.error,
-    truncated: state.truncated,
+    truncated: !!chunkIds && totalChunks > chunkIds.length,
   };
 }
 

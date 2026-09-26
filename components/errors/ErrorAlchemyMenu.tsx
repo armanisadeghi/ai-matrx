@@ -21,8 +21,7 @@ import {
 } from "@/components/errors/error-alchemy";
 import { useErrorSurfaceSnapshot } from "@/components/errors/useErrorSurfaceSnapshot";
 import { cn } from "@/lib/utils";
-import { useLayoutEffect, useRef, useState, type RefObject } from "react";
-import { createPortal } from "react-dom";
+import { useRef } from "react";
 import { getSnapshot as getCapturedErrors } from "@/lib/diagnostics/errorCaptureStore";
 
 export type ErrorAlchemyMenuProps = {
@@ -137,23 +136,11 @@ export function ErrorAlchemyMenu({
   const resolved: NonNullable<ErrorAlchemyMenuProps["input"]> = () =>
     withCalls(typeof input === "function" ? input() : input);
   const staticTitle = typeof input === "function" ? undefined : input.title;
-  const markerRef = useRef<HTMLSpanElement | null>(null);
-  const placement = useInlinePlacement(self, markerRef);
-  const menu = (
+  return (
     <span
       ref={self}
       data-error-alchemy-menu=""
-      data-placement={placement.target ? "moved" : placement.truncated ? "truncated" : "inline"}
-      className={cn(
-        // The menu rides the error's own line: one line tall (its buttons
-        // overflow it, centred), so it never grows the line or the box.
-        "inline-flex h-[1lh] shrink-0 items-center overflow-visible align-top",
-        placement.target && "ml-1",
-        // A truncating line hides anything in its text flow behind the "…",
-        // so there the menu leaves the flow and holds the line's right end.
-        placement.truncated && "absolute right-0 top-0 pl-1",
-        className,
-      )}
+      className={cn("inline-flex shrink-0", className)}
       onPointerEnter={surface.refresh}
       onFocus={surface.refresh}
     >
@@ -186,113 +173,83 @@ export function ErrorAlchemyMenu({
       />
     </span>
   );
-  return (
-    <>
-      <span ref={markerRef} hidden data-error-alchemy-anchor="" />
-      {placement.target ? createPortal(menu, placement.target) : menu}
-    </>
-  );
 }
 
-// ─── Placement: the menu sits at the END of the error's last line ───────────
-//
-// ~1,900 boxes put `<ErrorAlchemyMenu />` as their last child. When the child
-// before it is a block (a <p>, an AlertDescription, a <pre>), the menu would
-// wrap onto a line of its own and grow every error box by a row (UI audit C,
-// 2026-09-26). So after mount it moves itself — through a portal, React still
-// owns it — to the end of the last block's text. Inside a truncating cell
-// (`truncate`) it holds the visible right end instead of being clipped.
+/**
+ * Read an error render's text from the DOM at click time — for renders that
+ * pass their words as children (a destructive `Alert`). The menu's own text is
+ * excluded; a `[data-error-title]` / heading child becomes the title.
+ */
+const BLOCK_TAGS = new Set([
+  "P", "DIV", "LI", "UL", "OL", "SECTION", "ARTICLE", "HEADER", "FOOTER", "PRE",
+  "BLOCKQUOTE", "DD", "DT", "DL", "TR", "TABLE", "H1", "H2", "H3", "H4", "H5", "H6",
+]);
 
-type Placement = {
-  /** The block the menu was moved into, or null when it stays where it was written. */
-  target: Element | null;
-  /** Inside a truncating line: held at its visible right end. */
-  truncated: boolean;
-};
-
-const INLINE_DISPLAYS = /^(inline|contents|none)/;
-const NEVER_HOST = new Set(["svg", "button", "input", "textarea", "select", "img", "video", "canvas", "iframe", "table", "thead", "tbody", "tr", "ul", "ol"]);
-
-function isBlockish(el: Element): boolean {
-  const d = getComputedStyle(el).display;
-  return !!d && !INLINE_DISPLAYS.test(d);
-}
-
-function hasWords(el: Element): boolean {
-  return (el.textContent ?? "").trim().length > 0;
-}
-
-/** The deepest last block whose text ends the box — where the menu belongs. */
-function lastTextBlock(el: Element): Element | null {
-  if (NEVER_HOST.has(el.tagName.toLowerCase()) || !hasWords(el)) return null;
-  let node: Element = el;
-  for (let hops = 0; hops < 8; hops += 1) {
-    let last: Element | null = node.lastElementChild;
-    while (last && (last.hasAttribute("data-error-alchemy-anchor") || last.hasAttribute("data-error-alchemy-menu") || !hasWords(last))) {
-      last = last.previousElementSibling;
-    }
-    if (!last || !isBlockish(last) || NEVER_HOST.has(last.tagName.toLowerCase())) break;
-    // Text after the last block (e.g. "…<p/> trailing words") ends the box itself.
-    const trailing = last.nextSibling;
-    if (trailing && trailing.nodeType === 3 && (trailing.textContent ?? "").trim()) break;
-    node = last;
-  }
-  return node;
-}
-
-function placementTarget(marker: HTMLElement): Element | null {
-  const parent = marker.parentElement;
-  if (!parent) return null;
-  const pcs = getComputedStyle(parent);
-  // A trailing item in a flex ROW / grid already sits on the error's line.
-  if (/flex/.test(pcs.display) && !/column/.test(pcs.flexDirection)) return null;
-  if (/grid/.test(pcs.display)) return null;
-  let prev: Node | null = marker.previousSibling;
-  while (prev && prev.nodeType === 3 && !(prev.textContent ?? "").trim()) prev = prev.previousSibling;
-  if (!prev || prev.nodeType !== 1) return null;
-  const el = prev as Element;
-  if (!isBlockish(el) && !/flex/.test(pcs.display)) return null;
-  return lastTextBlock(el);
-}
-
-function truncates(el: Element): boolean {
-  const cs = getComputedStyle(el);
-  return cs.textOverflow === "ellipsis" || (cs.overflowX !== "visible" && cs.whiteSpace === "nowrap");
-}
-
-function useInlinePlacement(
-  self: RefObject<HTMLSpanElement | null>,
-  markerRef: RefObject<HTMLSpanElement | null>,
-): Placement {
-  const [state, setState] = useState<Placement>({ target: null, truncated: false });
-  useLayoutEffect(() => {
-    const marker = markerRef.current;
-    if (!marker || typeof getComputedStyle !== "function") return;
-    if (state.target && !state.target.isConnected) {
-      setState({ target: null, truncated: false });
+/**
+ * The words of a subtree, one entry per block element — `textContent` runs
+ * sibling paragraphs together ("couldn't loadYour workspace…", RC-B12 R2-3).
+ */
+function blockTexts(root: Node): string[] {
+  const blocks: string[] = [];
+  let current = "";
+  const flush = () => {
+    const text = tidySentence(current.replace(/\s+/g, " ").trim());
+    if (text) blocks.push(text);
+    current = "";
+  };
+  const walk = (node: Node) => {
+    if (node.nodeType === 3) {
+      current += node.textContent ?? "";
       return;
     }
-    const target = state.target ?? placementTarget(marker);
-    const host = target ?? self.current?.parentElement ?? null;
-    const truncated = !!host && (state.truncated || truncates(host));
-    if (target !== state.target || truncated !== state.truncated) {
-      setState({ target, truncated });
+    if (node.nodeType !== 1) return;
+    const tag = (node as Element).tagName;
+    if (tag === "BR") {
+      flush();
+      return;
     }
-  });
-  // Truncating host: the menu is absolutely placed at its right end, so the
-  // host makes room for it (the text's "…" moves left, the row keeps its height).
-  useLayoutEffect(() => {
-    const host = state.truncated ? (state.target ?? self.current?.parentElement ?? null) : null;
-    const menu = self.current;
-    if (!(host instanceof HTMLElement) || !menu) return;
-    const prev = { position: host.style.position, paddingRight: host.style.paddingRight };
-    if (getComputedStyle(host).position === "static") host.style.position = "relative";
-    const pad = parseFloat(getComputedStyle(host).paddingRight) || 0;
-    host.style.paddingRight = `${pad + menu.getBoundingClientRect().width}px`;
-    return () => {
-      host.style.position = prev.position;
-      host.style.paddingRight = prev.paddingRight;
-    };
-  }, [state.truncated, state.target, self]);
-  return state;
+    const block = BLOCK_TAGS.has(tag);
+    if (block) flush();
+    node.childNodes.forEach(walk);
+    if (block) flush();
+  };
+  walk(root);
+  flush();
+  return blocks;
+}
+
+/**
+ * A render that writes `{error}.` after a message that already ends in a
+ * full stop shows "try again.." — the copy says it once. A real ellipsis
+ * ("...") stays (RC-B12 round 4).
+ */
+export function tidySentence(text: string): string {
+  return text.replace(/(?<!\.)([.!?])\.(?!\.)/g, "$1");
+}
+
+/** Blocks joined as sentences: a block that ends without punctuation gets a period. */
+function joinBlocks(blocks: string[]): string {
+  return blocks
+    .map((text, i) => (i < blocks.length - 1 && !/[.!?:;…]$/.test(text) ? `${text}.` : text))
+    .join(" ");
+}
+
+export function readRenderedError(root: Element | null): ErrorAlchemyInput {
+  if (!root) return { message: "An error is shown on this page.", source: "alert" };
+  const clone = root.cloneNode(true) as Element;
+  // The menu and the render's own controls (Retry, Dismiss…) are not the error.
+  clone
+    .querySelectorAll("[data-error-alchemy-menu], button, [role=button]")
+    .forEach((n) => n.remove());
+  const titleEl = clone.querySelector("[data-error-title], h1, h2, h3, h4, h5, h6");
+  let title = titleEl ? joinBlocks(blockTexts(titleEl)) || undefined : undefined;
+  titleEl?.remove();
+  let blocks = blockTexts(clone);
+  // No heading: a short first block followed by more is the box's title.
+  if (!title && blocks.length > 1 && blocks[0].length <= 100) {
+    title = blocks[0];
+    blocks = blocks.slice(1);
+  }
+  const message = joinBlocks(blocks) || title || "An error is shown on this page.";
+  return { title: message === title ? undefined : title, message, source: "alert" };
 }

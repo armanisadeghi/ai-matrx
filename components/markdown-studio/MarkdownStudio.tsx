@@ -57,7 +57,7 @@ import { createMarkdownStudioScope } from "@/features/surfaces/manifests/markdow
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderToggle from "@/features/shell/components/header/variants/variants/HeaderToggle";
 import type { HeaderAction } from "@/features/shell/components/header/variants/types";
-import { ArchiveRecordDialog } from "@/features/trash/components/ArchiveRecordButton";
+import { ArchiveRecordButton } from "@/features/trash/components/ArchiveRecordButton";
 
 /**
  * The studio's two modes — the ONE vocabulary. `StudioMode` derives from it, so
@@ -86,7 +86,6 @@ export function MarkdownStudio() {
   const [sourcePickerOpen, setSourcePickerOpen] = useState(false);
   // Below lg only one pane shows; opening real content jumps to the preview.
   const [mobilePane, setMobilePane] = useState<"source" | "preview">("source");
-  const [archiveOpen, setArchiveOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState<PreviewMode>("rendered");
   // The real record currently loaded (read-only copy), if any.
   const [loadedSource, setLoadedSource] = useState<LoadedStudioContent | null>(
@@ -366,11 +365,6 @@ export function MarkdownStudio() {
         label: "Print / Save PDF",
         onPress: handlePrint,
       },
-      // The studio's own record kind is archivable where it is named (door law) —
-      // from the header's action set, never a button in the "Loaded" info strip.
-      ...(loadedSource?.kind === "document"
-        ? [{ icon: "Archive", label: "Archive document", onPress: () => setArchiveOpen(true) }]
-        : []),
       {
         icon: "BookOpen",
         label:
@@ -404,7 +398,6 @@ export function MarkdownStudio() {
     handleForkAction,
     handlePrint,
     mode,
-    loadedSource,
   ]);
 
   // Surface scope — built at trigger time (▶ Run), never on mount, so the
@@ -549,6 +542,10 @@ export function MarkdownStudio() {
               {STUDIO_SOURCES[loadedSource.kind].label} · read-only copy
             </Badge>
           )}
+          {loadedSource?.kind === "document" && (
+            // The studio's own record kind: archivable where it is named (door law), restorable from Trash.
+            <ArchiveRecordButton token="document" id={loadedSource.id} what={`"${contentLabel}"`} onArchived={handleClear} onRestored={() => void loadFromSource("document", loadedSource.id)} className="h-5 px-1.5 text-[10px]" />
+          )}
           {loadedSource?.notice && (
             <span className="hidden items-center gap-1 text-muted-foreground md:flex">
               <Info className="h-3 w-3" />
@@ -592,8 +589,30 @@ export function MarkdownStudio() {
           ) : mode === "studio" ? (
             <div className="flex h-full flex-col gap-2 p-3 lg:grid lg:grid-cols-2 lg:gap-3">
               {/* Phones get ONE full-height pane at a time — two stacked panes
-                  left the editor about two lines tall (RC-B1 verify D5). Each
-                  pane's own header switches to the other: no tab strip row. */}
+                  left the editor about two lines tall (RC-B1 verify D5). */}
+              <div
+                role="tablist"
+                aria-label="Studio pane"
+                className="flex shrink-0 items-center gap-0.5 self-start rounded-md border border-border bg-background/40 p-0.5 lg:hidden"
+              >
+                {(["source", "preview"] as const).map((pane) => (
+                  <button
+                    key={pane}
+                    type="button"
+                    role="tab"
+                    aria-selected={mobilePane === pane}
+                    onClick={() => setMobilePane(pane)}
+                    className={cn(
+                      "min-h-11 whitespace-nowrap rounded px-3 text-xs font-medium transition-colors",
+                      mobilePane === pane
+                        ? "bg-foreground text-background"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {pane === "source" ? "Source" : "Preview"}
+                  </button>
+                ))}
+              </div>
               <div
                 className={cn(
                   "min-h-0 flex-1 lg:block lg:h-full",
@@ -606,7 +625,6 @@ export function MarkdownStudio() {
                 onClear={handleClear}
                 onScroll={handleEditorScroll}
                 textareaRef={textareaRef}
-                onShowPreview={() => setMobilePane("preview")}
               />
               </div>
               <div
@@ -629,7 +647,6 @@ export function MarkdownStudio() {
                 onModeChange={setPreviewMode}
                 title={contentLabel}
                 onContentChange={handleChange}
-                onShowSource={() => setMobilePane("source")}
                 ref={previewScrollRef}
               />
               </div>
@@ -640,6 +657,7 @@ export function MarkdownStudio() {
               buffer={content}
               bufferTitle={loadedSampleName}
               onOpenDocument={(id) => void loadFromSource("document", id)}
+              onArchived={handleClear}
             />
           ) : mode === "editor" ? (
             <StudioEditorMode
@@ -674,18 +692,6 @@ export function MarkdownStudio() {
         onOpenChange={setTemplatesOpen}
         onSelect={handleLoadTemplate}
       />
-
-      {loadedSource?.kind === "document" && (
-        <ArchiveRecordDialog
-          open={archiveOpen}
-          onOpenChange={setArchiveOpen}
-          token="document"
-          id={loadedSource.id}
-          what={`"${contentLabel}"`}
-          onArchived={handleClear}
-          onRestored={() => void loadFromSource("document", loadedSource.id)}
-        />
-      )}
 
       {/* ── Save dialog ─────────────────────────────────────────────── */}
       <TextInputDialog

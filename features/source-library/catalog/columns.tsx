@@ -24,6 +24,8 @@ import {
 import type { VideoRow } from "../types";
 import { sourceVocabulary, type SourceVocabulary } from "../vocabulary";
 import { LENGTH_BUCKETS, PUBLISHED_BUCKETS } from "./service";
+import { SourceStateCell } from "./SourceStateCell";
+import { catalogSourceState } from "./sourceState";
 
 const KIND_TONE: Record<string, string> = {
     long: "border-border text-foreground",
@@ -396,8 +398,48 @@ export function lastActionColumn(
     };
 }
 
+/**
+ * SOURCE-CONVERGENCE §8.6 — whether this item IS a Source yet: "Source" with
+ * Open, "Transcribing…", or "Not yet a Source" with the server's offered
+ * Transcribe. `render` is supplied by the page (it owns the runner and the
+ * watch list); without it the cell still tells the truth and offers nothing.
+ */
+export function sourceStateColumn(
+    render?: (row: VideoRow) => React.ReactNode,
+): EntityColumnSpec<VideoRow> {
+    return {
+        id: "source_state",
+        label: "Source",
+        phone: "primary",
+        column: {
+            id: "source_state",
+            accessorKey: "processed_document_id",
+            header: "Source",
+            // The server has no `order=source` and no filter for it; say so.
+            sortable: false,
+            filter: false,
+            cell: (row) =>
+                render ? (
+                    render(row)
+                ) : (
+                    <SourceStateCell
+                        row={row}
+                        state={catalogSourceState(row, {
+                            pending: {},
+                            now: 0,
+                            actions: undefined,
+                            transcribable: null,
+                        })}
+                    />
+                ),
+        },
+    };
+}
+
 /** Every Sources column, with the Action labels the server published (§8). */
 export function catalogColumns(options?: {
+    /** §8.6 — the page's renderer for the Source cell (runner + watch list). */
+    renderSource?: (row: VideoRow) => React.ReactNode;
     actionLabels?: Record<string, string>;
     /** D6b — this Library's own words for the captions/transcript cells. */
     vocabulary?: SourceVocabulary;
@@ -409,6 +451,7 @@ export function catalogColumns(options?: {
 }): EntityColumnSpec<VideoRow>[] {
     return [
         ...buildBaseColumns(options?.vocabulary, options?.kindKnown ?? false),
+        sourceStateColumn(options?.renderSource),
         lastActionColumn(options?.actionLabels),
     ];
 }

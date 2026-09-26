@@ -60,6 +60,7 @@ import {
   RESUME_STREAM_CLOSING_MAX_RETRIES,
 } from "./resume-claims";
 import { selectContextPayload } from "../instance-context/instance-context.selectors";
+import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
 import { buildAmbientContext } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
 import {
   patchConversation,
@@ -221,8 +222,21 @@ export const resumeInstance = createAsyncThunk<
       // apply_context_objects. We rebuild from cached Redux state only (the
       // chips on this conversation + the ambient snapshot) — no heavy
       // pre-send refresh; the resume must open fast.
-      const chipContext = selectContextPayload(conversationId)(state);
-      const ambient = buildAmbientContext(state, conversationId);
+      // …except the surface tier: the resume usually follows a write the
+      // person just approved, and the launch-time snapshot would tell the
+      // agent the change never landed (found live 2026-09-26, ARE-010). Re-
+      // read the live screen first; a failure keeps the cached tier, loudly.
+      await dispatch(refreshSurfaceScope({ conversationId }))
+        .unwrap()
+        .catch((error: unknown) =>
+          console.error(
+            `[surfaces] resume-time scope refresh failed for conversation "${conversationId}" — resuming with the cached surface context`,
+            error,
+          ),
+        );
+      const freshState = getState() as RootState;
+      const chipContext = selectContextPayload(conversationId)(freshState);
+      const ambient = buildAmbientContext(freshState, conversationId);
       const context: Record<string, unknown> | undefined =
         chipContext || ambient
           ? { ...(ambient ?? {}), ...(chipContext ?? {}) }

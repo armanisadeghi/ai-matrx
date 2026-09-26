@@ -16,7 +16,10 @@ import { toast } from "@/lib/toast";
 import { getShortcutRecordFromState } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
-import { getSurfaceRuntimeForName } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  getSurfaceRuntimeForName,
+  wasSurfaceMountedThisSession,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
 import { withLiveSurfaceContext } from "@/features/surfaces/runtime/surface-chain";
@@ -66,6 +69,32 @@ export const refreshSurfaceScope = createAsyncThunk<
         );
         toast.error("Could not prepare this message", { description: message });
         throw new Error(message);
+      }
+      // THE SCREEN CLOSED (a window shut, the person navigated away): its
+      // launch-time values must not keep riding every turn as if it were
+      // still open. Replace the surface tier with what IS open now — the
+      // surface chain and any unregistered window — plus a plain statement
+      // that the conversation's own screen is gone (register ARE-010). A
+      // surface that never mounted a provider in this session (server-emitted)
+      // keeps its launch context, as before.
+      if (wasSurfaceMountedThisSession(surfaceName)) {
+        const label = getManifest(surfaceName)?.label ?? surfaceName;
+        const live = await withLiveSurfaceContext(surfaceName, {
+          surface_closed: `${label} (${surfaceName}), where this conversation started, has been closed. Its earlier values are gone; what is open now is listed in surface_chain and window_forms.`,
+        });
+        const closedResult = mapScopeToInstanceWithSurface(live, null, {}, [], [], null);
+        dispatch(
+          replaceSurfaceContextEntries({
+            conversationId,
+            entries: closedResult.contextEntries,
+          }),
+        );
+        return {
+          refreshed: true,
+          surfaceName,
+          variableCount: 0,
+          contextCount: closedResult.contextEntries.length,
+        };
       }
       if (process.env.NODE_ENV !== "production") {
         console.warn(

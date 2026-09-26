@@ -51,7 +51,7 @@ export interface PdfDocMenuContext {
 
 export function buildPdfDocMenu(ctx: PdfDocMenuContext): ItemMenuConfig {
   const { doc } = ctx;
-  const studioHref = `/tools/pdf-extractor/${doc.id}`;
+  const studioHref = `/knowledge/sources/${encodeURIComponent(doc.id)}`;
   const sourceHref = docSourceHref(doc);
   const canSetContext =
     doc.sourceKind === "cld_file" && !!doc.sourceId && !!ctx.onSetContext;

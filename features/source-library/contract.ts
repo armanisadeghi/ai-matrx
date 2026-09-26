@@ -71,6 +71,7 @@ import type {
     SyncEvent,
     VideoListResponse,
     VideoRow,
+    NotYetASource,
 } from "./types";
 
 /**
@@ -587,6 +588,27 @@ function latestOutcome(
 /* ───────────────────────────────────────────────── §4.2 sources ───────── */
 
 /**
+ * SOURCE-CONVERGENCE §1 rule 6 — tolerant: a server that predates the fact
+ * sends nothing (→ `null`, read by the row as "unknown"), and a fact without
+ * a sentence or an action is dropped rather than rendered half-said.
+ */
+export function parseNotYetASource(
+    payload: unknown,
+    _field: string,
+): NotYetASource | null {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+    const raw = payload as Record<string, unknown>;
+    const message = typeof raw.message === "string" ? raw.message.trim() : "";
+    const offered = typeof raw.offered_action === "string" ? raw.offered_action : "";
+    if (!message || !offered) return null;
+    return {
+        reason: typeof raw.reason === "string" ? raw.reason : "no_transcript",
+        message,
+        offered_action: offered,
+    };
+}
+
+/**
  * One catalogued Source.
  *
  * `caption_languages` keeps the THREE-STATE reading `types.ts` documents: a
@@ -635,6 +657,14 @@ export function parseVideoRow(payload: unknown, field: string): VideoRow {
             row.transcript_lane,
             `${field}.transcript_lane`,
         ) as VideoRow["transcript_lane"],
+        processed_document_id: optStr(
+            row.processed_document_id,
+            `${field}.processed_document_id`,
+        ),
+        not_yet_a_source: parseNotYetASource(
+            row.not_yet_a_source,
+            `${field}.not_yet_a_source`,
+        ),
         action_outcomes: actionOutcomes,
         last_action: latestOutcome(row.last_action, actionOutcomes, `${field}.last_action`),
         processing_status: optStr(row.processing_status, `${field}.processing_status`),

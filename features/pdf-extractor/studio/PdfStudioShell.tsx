@@ -369,7 +369,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       // PDF viewer and inspector appear without waiting for the full fetch.
       setActiveDoc(summaryToProvisionalDoc(summary));
       dispatch(setActiveDocId(summary.id));
-      router.push(`/tools/pdf-extractor/${summary.id}`);
+      router.push(`/tools/pdf-extractor?doc=${encodeURIComponent(summary.id)}`);
       void selectDocById(summary.id);
     },
     [router, selectDocById, dispatch],
@@ -496,7 +496,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         // the parent is no longer the row carrying the new data and we
         // don't want a back button to deposit the user on a stale doc.
         dispatch(setActiveDocId(childDocId));
-        router.replace(`/tools/pdf-extractor/${childDocId}`);
+        router.replace(`/tools/pdf-extractor?doc=${encodeURIComponent(childDocId)}`);
         await selectDocById(childDocId);
       } else {
         // Same-row update (no child created). Refresh in place.
@@ -603,7 +603,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     (docId: string) => {
       docsState.refresh();
       if (!activeDoc) {
-        router.push(`/tools/pdf-extractor/${docId}`);
+        router.push(`/tools/pdf-extractor?doc=${encodeURIComponent(docId)}`);
         void selectDocById(docId);
       }
     },
@@ -614,7 +614,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     (newDocIds: string[]) => {
       docsState.refresh();
       if (!activeDoc && newDocIds[0]) {
-        router.push(`/tools/pdf-extractor/${newDocIds[0]}`);
+        router.push(`/tools/pdf-extractor?doc=${encodeURIComponent(newDocIds[0])}`);
         void selectDocById(newDocIds[0]);
       }
     },

@@ -22,7 +22,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Highlighter, Link2, MessageSquarePlus, PencilLine } from "lucide-react";
+import { Highlighter, Link2, MessageSquarePlus, PencilLine, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -35,6 +35,7 @@ import { MentionComposer } from "./MentionComposer";
 import { LinkRecordSheet } from "./LinkRecordSheet";
 import type { AnnotationSource } from "./types";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface CapturedSelection {
   anchor: TextAnchor;
@@ -116,11 +117,7 @@ export function AnnotatedContent({
   const { source, api, instance, activeKey, setActiveKey, selection, setSelection } = ctx;
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const projection = useRef<SourceProjection | null>(null);
-  // A selection that cannot be pinned is said through the app's ONE toast (which
-  // carries the error menu itself) — never a private floating notice (UI audit B).
-  const setCaptureError = (message: string | null) => {
-    if (message) toast.error(message, { id: `annotation-capture-${instance}` });
-  };
+  const [captureError, setCaptureError] = useState<string | null>(null);
   useSidecarPaint(root, source.body, api.state.items, instance, activeKey, (p) => {
     projection.current = p;
   });
@@ -215,6 +212,14 @@ export function AnnotatedContent({
       >
         {children}
       </div>
+      {captureError && (
+        <div role="status" className="fixed bottom-4 left-1/2 z-50 flex max-w-md -translate-x-1/2 items-start gap-2 rounded-lg border border-border bg-popover px-3 py-2 text-sm shadow-lg">
+          <span className="flex-1">{captureError} <ErrorAlchemyMenu /></span>
+          <button type="button" aria-label="Dismiss" onClick={() => setCaptureError(null)} className="text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
+      )}
       {selection && <SelectionToolbar selection={selection} extraActions={extraActions} />}
     </div>
   );

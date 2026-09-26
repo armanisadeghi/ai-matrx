@@ -58,7 +58,7 @@ export default async function CloudFileDetailPage({ params }: PageProps) {
       { p_file: fileId },
     );
     if (typeof docId === "string" && docId) {
-      redirect(`/knowledge/viewer/${docId}`);
+      redirect(`/knowledge/sources/${encodeURIComponent(docId)}`);
     }
   }
 

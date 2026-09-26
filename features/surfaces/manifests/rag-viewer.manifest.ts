@@ -518,7 +518,7 @@ export const ragViewerManifest: SurfaceManifest = {
   readinessNote:
     "Manifest authored against the live /knowledge/viewer/[id] component and the emitter is wired via SurfaceRuntimeProvider (the page-text pane lifts its loaded page through onActivePageLoaded); not yet DB-synced and no live non-matching-name binding test run. The Knowledge Asset Builder drawer's derivation rollup stays undeclared — it loads inside KnowledgeAssetPanel and nothing lifts it to the route.",
   label: "Knowledge Document Viewer",
-  urlPattern: "/knowledge/viewer/[id]",
+  urlPattern: "/knowledge/sources/[id]",
   intro: `<surface_intro>
 This is the read surface for ONE processed document — a source (usually a PDF)
 that the Knowledge pipeline extracted into pages, cleaned, split into SEGMENTS, and

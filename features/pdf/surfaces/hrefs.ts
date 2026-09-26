@@ -7,7 +7,7 @@ import type { PdfSurfaceLinkIds } from "./registry";
  */
 export function buildPdfExtractorHref(ids: PdfSurfaceLinkIds): string {
   if (ids.processedDocumentId) {
-    return `/tools/pdf-extractor/${ids.processedDocumentId}`;
+    return `/knowledge/sources/${encodeURIComponent(ids.processedDocumentId)}`;
   }
   if (ids.fileId) {
     return `/tools/pdf-extractor?file=${encodeURIComponent(ids.fileId)}`;

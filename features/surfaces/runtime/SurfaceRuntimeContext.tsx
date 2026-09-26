@@ -293,11 +293,25 @@ export function getSurfaceRuntimeStack(): readonly SurfaceRuntimeValue[] {
  * (safe under nested providers / remounts). `depth` is the provider's nesting
  * depth in the React tree (see `SurfaceRuntimeDepthContext`); deeper wins.
  */
+/** Every surface that has had a live provider in this page session. */
+const mountedThisSession = new Set<string>();
+
+/**
+ * True when `surfaceName` had a live provider at some point in this page
+ * session. A conversation stamped with such a surface whose provider is gone
+ * now means the screen CLOSED (a window shut, the person navigated away) —
+ * unlike a server-emitted surface, which never mounts one at all.
+ */
+export function wasSurfaceMountedThisSession(surfaceName: string): boolean {
+  return mountedThisSession.has(surfaceName);
+}
+
 export function registerSurfaceRuntime(
   value: SurfaceRuntimeValue,
   depth = 0,
 ): () => void {
   const id = ++nextId;
+  mountedThisSession.add(value.surfaceName);
   const registered: SurfaceRuntimeValue = {
     ...value,
     getScope: withScopeContributions(value.surfaceName, value.getScope),

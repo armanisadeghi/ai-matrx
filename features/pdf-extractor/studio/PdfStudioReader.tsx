@@ -1242,7 +1242,7 @@ function TextPane({
         landed.processed_document_id !== doc.id
       ) {
         router.push(
-          `/tools/pdf-extractor/${encodeURIComponent(landed.processed_document_id)}`,
+          `/tools/pdf-extractor?doc=${encodeURIComponent(landed.processed_document_id)}`,
         );
       }
       return { error: null };

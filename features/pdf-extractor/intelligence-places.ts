@@ -14,13 +14,15 @@ const K = MANDATE_KEYS;
 export const PDF_PLACES: FeaturePlaces = {
   feature: "pdf",
   label: "PDF tools",
-  roots: ["features/pdf-extractor", "features/pdf"],
+  roots: ["features/pdf-extractor", "features/pdf", "features/source-studio"],
   places: [
     {
       id: "pdf-studio",
       label: "PDF studio",
       trigger: "Document actions: AI clean",
-      urlPattern: "/tools/pdf-extractor/[id]",
+      // A document opens on the Source screen; the PDF tools (AI clean,
+      // crop, templates) are the studio at `/tools/pdf-extractor?doc=<id>`.
+      urlPattern: "/tools/pdf-extractor",
       mandateKeys: [K.pdf__content_cleaner],
       sources: ["features/pdf-extractor/studio/PdfStudioHeaderControls.tsx"],
     },

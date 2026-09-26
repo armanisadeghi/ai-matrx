@@ -11,6 +11,7 @@ import {
   portionIndexForPage,
   portionStartMs,
   resolveOriginalView,
+  snapshotDocument,
   snapshotHtml,
   sourceStudioPath,
   textFragmentUrl,
@@ -172,5 +173,17 @@ describe("helpers", () => {
     ).toBe("<p>hi</p>");
     expect(snapshotHtml(JSON.stringify({ a: 1 }))).toBeNull();
     expect(snapshotHtml("plain")).toBeNull();
+  });
+});
+
+describe("snapshotDocument", () => {
+  it("adds a base so relative styles resolve; keeps an existing base", () => {
+    expect(snapshotDocument("<html><head><title>x</title></head></html>", "https://e.com/a")).toBe(
+      '<html><head><base href="https://e.com/a"><title>x</title></head></html>',
+    );
+    expect(snapshotDocument('<head><base href="/x"></head>', "https://e.com")).toBe(
+      '<head><base href="/x"></head>',
+    );
+    expect(snapshotDocument("<p>hi</p>", null)).toBe("<p>hi</p>");
   });
 });
