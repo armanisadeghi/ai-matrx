@@ -7,6 +7,11 @@ import {
 } from "@/lib/sandbox/orchestrator-routing";
 import type { SandboxTier, UserPersistenceResponse } from "@/types/sandbox";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
+import {
+  isOrganizationRequiredServerError,
+  organizationRequiredResponse,
+} from "@/lib/organizations/organizationRequiredResponse";
 
 /**
  * GET /api/sandbox/persistence
@@ -38,6 +43,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
+  let organizationId: string;
+  try {
+    organizationId = await ensureOrgIdServer(
+      supabase,
+      request.headers.get("X-Organization-Id")?.trim() || undefined,
+    );
+  } catch (error) {
+    if (isOrganizationRequiredServerError(error)) {
+      return organizationRequiredResponse(error);
+    }
+    throw error;
+  }
+
   const url = new URL(request.url);
   const tierFilter = url.searchParams.get("tier");
   const tiers: SandboxTier[] =
@@ -46,7 +64,7 @@ export async function GET(request: NextRequest) {
       : ["hosted", "ec2"];
 
   const tierInfos = await Promise.all(
-    tiers.map((tier) => readPersistenceTier(tier, user.id)),
+    tiers.map((tier) => readPersistenceTier(tier, user.id, organizationId)),
   );
   const total = tierInfos.reduce(
     (sum, info) =>
@@ -81,6 +99,19 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
+  let organizationId: string;
+  try {
+    organizationId = await ensureOrgIdServer(
+      supabase,
+      request.headers.get("X-Organization-Id")?.trim() || undefined,
+    );
+  } catch (error) {
+    if (isOrganizationRequiredServerError(error)) {
+      return organizationRequiredResponse(error);
+    }
+    throw error;
+  }
+
   const url = new URL(request.url);
   const tierFilter = url.searchParams.get("tier");
   if (tierFilter !== "hosted") {
@@ -111,7 +142,7 @@ export async function DELETE(request: NextRequest) {
     }
     try {
       const resp = await fetch(
-        `${target.url}/users/${encodeURIComponent(user.id)}/volume`,
+        `${target.url}/users/${encodeURIComponent(user.id)}/volume?organization_id=${encodeURIComponent(organizationId)}`,
         {
           method: "DELETE",
           headers: orchestratorJsonHeaders(target),

@@ -6,6 +6,7 @@ import type {
   UserPersistenceInfo,
   UserPersistenceResponse,
 } from "@/types/sandbox";
+import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
 
 interface UseUserPersistenceState {
   info: UserPersistenceResponse | null;
@@ -65,7 +66,7 @@ export function useUserPersistence(
           : tier
             ? `?tier=${tier}`
             : "";
-        const resp = await fetch(`/api/sandbox/persistence${qs}`, {
+        const resp = await fetchWithOrganization(`/api/sandbox/persistence${qs}`, {
           cache: "no-store",
         });
         if (!resp.ok) {
@@ -99,7 +100,7 @@ export function useUserPersistence(
     async (deleteTier: "hosted"): Promise<{ ok: boolean; error?: string }> => {
       const qs = `?tier=${deleteTier}`;
       try {
-        const resp = await fetch(`/api/sandbox/persistence${qs}`, {
+        const resp = await fetchWithOrganization(`/api/sandbox/persistence${qs}`, {
           method: "DELETE",
         });
         const body = (await resp.json().catch(() => ({}))) as {

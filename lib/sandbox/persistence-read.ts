@@ -89,6 +89,7 @@ export function normalizePersistenceInfo(
 export async function readPersistenceTier(
   tier: SandboxTier,
   userId: string,
+  organizationId: string,
 ): Promise<UserPersistenceInfo> {
   const target = resolveOrchestratorByTier(tier);
   if (!target.apiKey) {
@@ -103,7 +104,7 @@ export async function readPersistenceTier(
 
   try {
     const response = await fetch(
-      `${target.url}/users/${encodeURIComponent(userId)}/persistence`,
+      `${target.url}/users/${encodeURIComponent(userId)}/persistence?organization_id=${encodeURIComponent(organizationId)}`,
       {
         headers: orchestratorJsonHeaders(target),
         signal: AbortSignal.timeout(PERSISTENCE_READ_TIMEOUT_MS),
