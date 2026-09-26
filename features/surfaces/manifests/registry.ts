@@ -159,6 +159,7 @@ import { quickNoteSaveManifest } from "./quick-note-save.manifest";
 import { filePreviewManifest } from "./file-preview.manifest";
 import { imageViewerManifest } from "./image-viewer.manifest";
 import { tableSettingsManifest } from "./table-settings.manifest";
+import { workflowEmitManifest } from "./workflow-emit.manifest";
 import { imageUploaderManifest } from "./image-uploader.manifest";
 import { imagesManifest } from "./images.manifest";
 import { imageStudioManifest } from "./image-studio.manifest";
@@ -397,6 +398,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   filePreviewManifest,
   imageViewerManifest,
   tableSettingsManifest,
+  workflowEmitManifest,
   imageUploaderManifest,
   imagesManifest,
   imageStudioManifest,

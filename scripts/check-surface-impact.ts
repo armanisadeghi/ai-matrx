@@ -58,11 +58,32 @@
  * Exit codes: 0 clean (or findings without --strict) · 1 findings with
  * --strict · 2 unexpected error · 3 no DB credentials (skipped, loud).
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(__dirname, "..");
+
+/**
+ * Surfaces declared as JSON by aidream (SMS, voice, the platform defaults and,
+ * until ALC-18, the extension and desktop rows) — owners that are not
+ * manifests. Read from the sibling checkout; absent → announced, and every
+ * such row then reports as unowned rather than silently passing.
+ */
+function loadServerDeclarationNames(): Set<string> {
+  const dir = resolve(ROOT, "..", "aidream", "aidream", "services", "tooling", "surface_declarations");
+  if (!existsSync(dir)) {
+    console.warn(`[surface-impact] server declarations not found at ${dir}; their rows will report as unowned.`);
+    return new Set();
+  }
+  const names = new Set<string>();
+  for (const file of readdirSync(dir)) {
+    if (!file.endsWith(".json")) continue;
+    const parsed = JSON.parse(readFileSync(resolve(dir, file), "utf8")) as { surfaceName?: unknown };
+    if (typeof parsed.surfaceName === "string") names.add(parsed.surfaceName);
+  }
+  return names;
+}
 
 const C = {
   reset: "\x1b[0m",
@@ -83,6 +104,7 @@ interface Finding {
     | "EMPTY_TARGET"
     | "ORPHAN_WRITE_TWIN"
     | "SURFACE_ORPHANED"
+    | "SURFACE_UNOWNED"
     | "ORPHAN_SHORTCUT"
     | "ORPHAN_FEATURE_ROW"
     | "SHADOWED_VALUE"
@@ -723,9 +745,11 @@ async function main() {
     }
   }
 
-  // 5) surfaces alive in the DB with no manifest
+  // 5) surfaces alive in the DB with no declaring owner (CONTRACT §2.1a):
+  //    no manifest here AND no server-side JSON declaration in aidream.
+  const serverDeclared = loadServerDeclarationNames();
   for (const s of surfaces) {
-    if (!s.is_active || codeBySurface.has(s.name)) continue;
+    if (!s.is_active || codeBySurface.has(s.name) || serverDeclared.has(s.name)) continue;
     const boundHere = assocs.filter((a) => a.target_id === s.id).length;
     const valueCount = dbValuesBySurface.get(s.name)?.size ?? 0;
     if (boundHere > 0 || valueCount > 0) {
@@ -735,6 +759,14 @@ async function main() {
         surface: s.name,
         detail: `active DB surface with NO manifest — ${boundHere} agent binding(s), ${valueCount} value row(s) still live`,
         fix: `Create the manifest (surface-authoring) or retire the surface deliberately: migrate its bindings first, then deactivate the row.`,
+      });
+    } else {
+      findings.push({
+        kind: "SURFACE_UNOWNED",
+        severity: "warn",
+        surface: s.name,
+        detail: "active DB surface with no declaring owner (no manifest, no server JSON declaration) — nothing consumes it",
+        fix: "Declare it (a manifest, or a JSON declaration in aidream/services/tooling/surface_declarations) or archive the row (is_active = false; never delete).",
       });
     }
   }
