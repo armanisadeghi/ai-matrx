@@ -73,7 +73,6 @@ export function SettingsTabContentImpl({ tabId, basePath }: Props) {
     // The agent-writable preferences, read straight from the slices the
     // settings controls read. Not scoped to the open tab: an agent can see
     // (and change) these from anywhere in Settings.
-    const display = state.userPreferences.display;
     const textGeneration = state.userPreferences.textGeneration;
     const voice = state.userPreferences.voice;
     const baseScope = createSettingsScope({
@@ -85,13 +84,6 @@ export function SettingsTabContentImpl({ tabId, basePath }: Props) {
       is_admin_view: isAdmin,
       is_saving: isSaving,
       theme_mode: state.theme.mode,
-      accent_theme: display.theme,
-      display_layout: {
-        dashboard_layout: display.dashboardLayout,
-        sidebar_layout: display.sidebarLayout,
-        header_layout: display.headerLayout,
-        window_mode: display.windowMode,
-      },
       text_generation_style: {
         tone: textGeneration.tone,
         creativity: textGeneration.creativityLevel,
@@ -104,7 +96,6 @@ export function SettingsTabContentImpl({ tabId, basePath }: Props) {
       assistant_name: state.userPreferences.assistant.name,
       voice_persona: {
         emotion: voice.emotion,
-        wake_word: voice.wakeWord,
       },
       ...(activeTab
         ? {

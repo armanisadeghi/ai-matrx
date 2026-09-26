@@ -24,7 +24,6 @@ import {
   CircuitBoard,
   Layers,
   Settings as SettingsIcon,
-  Eye,
   Sun,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -78,7 +77,6 @@ const nodes: SettingsTreeNode[] = [
         icon: Layers,
         description: "Spacing preset",
       },
-      { id: "appearance.accent", label: "Accent color", icon: Eye },
     ],
   },
   {

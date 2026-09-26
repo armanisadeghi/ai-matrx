@@ -14,23 +14,6 @@ describe("matrx-user/settings write-target handlers", () => {
       writes: [{ path: "theme.mode", value: "dark" }],
     },
     {
-      target: "accent_theme",
-      value: "forest",
-      writes: [
-        { path: "userPreferences.display.theme", value: "forest" },
-      ],
-    },
-    {
-      target: "display_layout",
-      value: { sidebar_layout: "collapsed" },
-      writes: [
-        {
-          path: "userPreferences.display.sidebarLayout",
-          value: "collapsed",
-        },
-      ],
-    },
-    {
       target: "text_generation_style",
       value: { tone: "formal" },
       writes: [
@@ -53,22 +36,21 @@ describe("matrx-user/settings write-target handlers", () => {
     },
     {
       target: "voice_persona",
-      value: { emotion: "  calm  ", wake_word: "  Matrx  " },
-      writes: [
-        { path: "userPreferences.voice.emotion", value: "calm" },
-        { path: "userPreferences.voice.wakeWord", value: "Matrx" },
-      ],
+      value: { emotion: "calm" },
+      writes: [{ path: "userPreferences.voice.emotion", value: "calm" }],
     },
   ] as const;
 
   const refused = [
     { target: "theme_mode", value: "violet" },
-    { target: "accent_theme", value: "violet" },
-    { target: "display_layout", value: { unsupported: "compact" } },
     { target: "text_generation_style", value: { tone: "wobbly" } },
     { target: "language_defaults", value: { voice: "xx" } },
     { target: "assistant_name", value: "   " },
     { target: "voice_persona", value: { emotion: 42 } },
+    // "cheerful" used to be silently accepted and silently ignored by
+    // Cartesia — the write handler now refuses anything outside the
+    // enum Cartesia actually supports (settings-truth-audit, 2026-09-25).
+    { target: "voice_persona", value: { emotion: "cheerful" } },
   ] as const;
 
   it("has one handler for every declared target and no undeclared handler", () => {

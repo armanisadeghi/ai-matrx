@@ -1,14 +1,11 @@
 import {
-  ACCENT_THEME_ENUM_TEXT,
   ASSISTANT_NAME_MAX_LENGTH,
-  DISPLAY_LAYOUT_FIELDS,
   LANGUAGE_PATCH_FIELDS,
   TEXT_STYLE_FIELDS,
   THEME_MODE_ENUM_TEXT,
-  VOICE_EMOTION_MAX_LENGTH,
-  VOICE_WAKE_WORD_MAX_LENGTH,
-  isAccentTheme,
+  VOICE_EMOTION_ENUM_TEXT,
   isThemeMode,
+  isVoiceEmotion,
   type EnumPatchField,
 } from "@/features/settings/agent-writable-settings";
 
@@ -87,26 +84,6 @@ export function createSettingsWriteHandlers(
         );
       commit("theme_mode", [{ path: "theme.mode", value }]);
     },
-    accent_theme: (value: unknown) => {
-      if (!isAccentTheme(value))
-        throw new Error(
-          `accent_theme expects one of: ${ACCENT_THEME_ENUM_TEXT}. Got ${JSON.stringify(value)}.`,
-        );
-      commit("accent_theme", [
-        { path: "userPreferences.display.theme", value },
-      ]);
-    },
-    display_layout: (value: unknown) => {
-      const patch = requirePatch(
-        "display_layout",
-        value,
-        DISPLAY_LAYOUT_FIELDS.map((field) => field.key),
-      );
-      commit(
-        "display_layout",
-        resolveEnumPatch("display_layout", patch, DISPLAY_LAYOUT_FIELDS),
-      );
-    },
     text_generation_style: (value: unknown) => {
       const patch = requirePatch(
         "text_generation_style",
@@ -141,31 +118,21 @@ export function createSettingsWriteHandlers(
       ]);
     },
     voice_persona: (value: unknown) => {
-      const patch = requirePatch("voice_persona", value, [
-        "emotion",
-        "wake_word",
-      ]);
+      // wake_word was retired from this contract (settings-truth-audit,
+      // 2026-09-25): there is no wake-word detection in the frontend, so an
+      // agent "setting" it used to save a value nothing ever read.
+      const patch = requirePatch("voice_persona", value, ["emotion"]);
       const writes: PendingWrite[] = [];
-      if ("emotion" in patch)
+      if ("emotion" in patch) {
+        if (!isVoiceEmotion(patch.emotion))
+          throw new Error(
+            `voice_persona.emotion expects one of: ${VOICE_EMOTION_ENUM_TEXT}. Got ${JSON.stringify(patch.emotion)}.`,
+          );
         writes.push({
           path: "userPreferences.voice.emotion",
-          value: requireText(
-            "voice_persona.emotion",
-            patch.emotion,
-            VOICE_EMOTION_MAX_LENGTH,
-            { allowEmpty: true },
-          ),
+          value: patch.emotion,
         });
-      if ("wake_word" in patch)
-        writes.push({
-          path: "userPreferences.voice.wakeWord",
-          value: requireText(
-            "voice_persona.wake_word",
-            patch.wake_word,
-            VOICE_WAKE_WORD_MAX_LENGTH,
-            { allowEmpty: true },
-          ),
-        });
+      }
       commit("voice_persona", writes);
     },
   };

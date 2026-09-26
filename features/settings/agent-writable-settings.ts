@@ -58,62 +58,15 @@ export type ThemeMode = (typeof THEME_MODE_OPTIONS)[number]["value"];
 export const THEME_MODE_ENUM_TEXT = enumText(THEME_MODE_OPTIONS);
 export const isThemeMode = isOneOf(THEME_MODE_OPTIONS);
 
-// ── Accent theme (userPreferences.display.theme) ──────────────────────────
-
-export const ACCENT_THEME_OPTIONS = [
-  { value: "default", label: "Default" },
-  { value: "night", label: "Night" },
-  { value: "forest", label: "Forest" },
-  { value: "ocean", label: "Ocean" },
-  { value: "sunset", label: "Sunset" },
-] as const satisfies readonly SettingOption[];
-
-export type AccentTheme = (typeof ACCENT_THEME_OPTIONS)[number]["value"];
-export const ACCENT_THEME_ENUM_TEXT = enumText(ACCENT_THEME_OPTIONS);
-export const isAccentTheme = isOneOf(ACCENT_THEME_OPTIONS);
-
-// ── Shell layout family (userPreferences.display.*) ───────────────────────
-// Four independent selects that live in ONE "Layout" section of the
-// Appearance tab and are chosen together as a single presentation decision —
-// hence one bundled write target with four optional keys.
-
-export const DASHBOARD_LAYOUT_OPTIONS = [
-  { value: "default", label: "Default" },
-  { value: "compact", label: "Compact" },
-  { value: "spacious", label: "Spacious" },
-  { value: "grid", label: "Grid" },
-] as const satisfies readonly SettingOption[];
-
-export const SIDEBAR_LAYOUT_OPTIONS = [
-  { value: "default", label: "Default" },
-  { value: "collapsed", label: "Auto-collapse" },
-  { value: "expanded", label: "Always expanded" },
-  { value: "floating", label: "Floating" },
-] as const satisfies readonly SettingOption[];
-
-export const HEADER_LAYOUT_OPTIONS = [
-  { value: "default", label: "Default" },
-  { value: "compact", label: "Compact" },
-  { value: "minimal", label: "Minimal" },
-  { value: "expanded", label: "Expanded" },
-] as const satisfies readonly SettingOption[];
-
-export const WINDOW_MODE_OPTIONS = [
-  { value: "default", label: "Default" },
-  { value: "fullscreen", label: "Fullscreen" },
-  { value: "windowed", label: "Windowed" },
-  { value: "minimal", label: "Minimal" },
-] as const satisfies readonly SettingOption[];
-
-export const DASHBOARD_LAYOUT_ENUM_TEXT = enumText(DASHBOARD_LAYOUT_OPTIONS);
-export const SIDEBAR_LAYOUT_ENUM_TEXT = enumText(SIDEBAR_LAYOUT_OPTIONS);
-export const HEADER_LAYOUT_ENUM_TEXT = enumText(HEADER_LAYOUT_OPTIONS);
-export const WINDOW_MODE_ENUM_TEXT = enumText(WINDOW_MODE_OPTIONS);
-
-export const isDashboardLayout = isOneOf(DASHBOARD_LAYOUT_OPTIONS);
-export const isSidebarLayout = isOneOf(SIDEBAR_LAYOUT_OPTIONS);
-export const isHeaderLayout = isOneOf(HEADER_LAYOUT_OPTIONS);
-export const isWindowMode = isOneOf(WINDOW_MODE_OPTIONS);
+// NOTE: an "accent theme" overlay (userPreferences.display.theme) and a
+// four-select "shell layout" family (userPreferences.display.dashboardLayout
+// / sidebarLayout / headerLayout / windowMode) used to live here. The
+// settings-truth-audit sweep (2026-09-25) found zero readers for any of the
+// five — no CSS overlay, no shell component branching on any of them — so
+// both the UI (AppearanceTab's Accent theme select and Layout section) and
+// their agent write targets (`accent_theme`, `display_layout`) were removed.
+// Stored `userPreferences.display.*` values are left alone (never delete
+// user data); see `common-docs/projects/settings-truth-sweep/lanes/appearance.md`.
 
 // ── Text-generation style (userPreferences.textGeneration.*) ──────────────
 
@@ -225,34 +178,6 @@ export interface EnumPatchField {
   enumText: string;
 }
 
-/** `display_layout` — the Appearance tab's four Layout selects. */
-export const DISPLAY_LAYOUT_FIELDS: readonly EnumPatchField[] = [
-  {
-    key: "dashboard_layout",
-    path: "userPreferences.display.dashboardLayout",
-    guard: isDashboardLayout,
-    enumText: DASHBOARD_LAYOUT_ENUM_TEXT,
-  },
-  {
-    key: "sidebar_layout",
-    path: "userPreferences.display.sidebarLayout",
-    guard: isSidebarLayout,
-    enumText: SIDEBAR_LAYOUT_ENUM_TEXT,
-  },
-  {
-    key: "header_layout",
-    path: "userPreferences.display.headerLayout",
-    guard: isHeaderLayout,
-    enumText: HEADER_LAYOUT_ENUM_TEXT,
-  },
-  {
-    key: "window_mode",
-    path: "userPreferences.display.windowMode",
-    guard: isWindowMode,
-    enumText: WINDOW_MODE_ENUM_TEXT,
-  },
-];
-
 /** `text_generation_style` — tone + creativity. */
 export const TEXT_STYLE_FIELDS: readonly EnumPatchField[] = [
   {
@@ -285,7 +210,30 @@ export const LANGUAGE_PATCH_FIELDS: readonly EnumPatchField[] =
 
 /** Max length for the assistant name (`userPreferences.assistant.name`). */
 export const ASSISTANT_NAME_MAX_LENGTH = 60;
-/** Max length for the voice emotion hint (`userPreferences.voice.emotion`). */
-export const VOICE_EMOTION_MAX_LENGTH = 80;
-/** Max length for the voice wake word (`userPreferences.voice.wakeWord`). */
-export const VOICE_WAKE_WORD_MAX_LENGTH = 40;
+
+// ── Voice emotion (slice: userPreferences.voice.emotion, synced) ──────────
+// Cartesia's `generation_config.emotion` only accepts a small, specific
+// vocabulary — a free-text hint ("cheerful", "calm") used to be accepted
+// here and silently ignored by Cartesia (settings-truth-audit, 2026-09-25).
+// This list is the one place the accepted values are declared; the Voice
+// input tab, the agent-writable contract prose, and the write-handler guard
+// below all read it instead of re-typing the words.
+export const VOICE_EMOTION_OPTIONS = [
+  { value: "", label: "None (natural delivery)" },
+  { value: "neutral", label: "Neutral" },
+  { value: "happy", label: "Happy" },
+  { value: "excited", label: "Excited" },
+  { value: "enthusiastic", label: "Enthusiastic" },
+  { value: "calm", label: "Calm" },
+  { value: "serene", label: "Serene" },
+  { value: "curious", label: "Curious" },
+  { value: "confident", label: "Confident" },
+  { value: "determined", label: "Determined" },
+  { value: "sad", label: "Sad" },
+  { value: "angry", label: "Angry" },
+  { value: "sarcastic", label: "Sarcastic" },
+] as const satisfies readonly SettingOption[];
+
+export type VoiceEmotion = (typeof VOICE_EMOTION_OPTIONS)[number]["value"];
+export const VOICE_EMOTION_ENUM_TEXT = enumText(VOICE_EMOTION_OPTIONS);
+export const isVoiceEmotion = isOneOf(VOICE_EMOTION_OPTIONS);

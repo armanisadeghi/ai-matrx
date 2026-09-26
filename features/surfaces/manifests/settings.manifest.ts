@@ -82,19 +82,13 @@ import type {
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import {
-  ACCENT_THEME_ENUM_TEXT,
   ASSISTANT_NAME_MAX_LENGTH,
   CREATIVITY_LEVEL_ENUM_TEXT,
-  DASHBOARD_LAYOUT_ENUM_TEXT,
-  HEADER_LAYOUT_ENUM_TEXT,
   LANGUAGE_DEFAULT_KEYS_TEXT,
   LANGUAGE_ENUM_TEXT,
-  SIDEBAR_LAYOUT_ENUM_TEXT,
   TEXT_TONE_ENUM_TEXT,
   THEME_MODE_ENUM_TEXT,
-  VOICE_EMOTION_MAX_LENGTH,
-  VOICE_WAKE_WORD_MAX_LENGTH,
-  WINDOW_MODE_ENUM_TEXT,
+  VOICE_EMOTION_ENUM_TEXT,
 } from "@/features/settings/agent-writable-settings";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -304,27 +298,6 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "preferences",
   },
   {
-    name: "accent_theme",
-    label: "Accent theme",
-    description: `Current accent color scheme overlay: ${ACCENT_THEME_ENUM_TEXT}.`,
-    valueType: "string",
-    alwaysAvailable: true,
-    typicalCharCount: 7,
-    sortOrder: 610,
-    group: "preferences",
-  },
-  {
-    name: "display_layout",
-    label: "Shell layout",
-    description:
-      "How the app shell is arranged, as one object: { dashboard_layout, sidebar_layout, header_layout, window_mode }. The four presentation selects in the Appearance tab's Layout section.",
-    valueType: "object",
-    alwaysAvailable: true,
-    typicalCharCount: 120,
-    sortOrder: 620,
-    group: "preferences",
-  },
-  {
     name: "text_generation_style",
     label: "Text generation style",
     description:
@@ -359,8 +332,7 @@ const surfaceSpecific: SurfaceValue[] = [
   {
     name: "voice_persona",
     label: "Voice persona",
-    description:
-      'Spoken-reply persona as one object: { emotion, wake_word }. `emotion` is a free-text delivery hint ("cheerful", "calm"); `wake_word` is the phrase that activates the assistant. Either may be empty.',
+    description: `Spoken-reply persona as one object: { emotion }. \`emotion\` is one of: ${VOICE_EMOTION_ENUM_TEXT}.`,
     valueType: "object",
     alwaysAvailable: true,
     typicalCharCount: 60,
@@ -398,28 +370,6 @@ const writeTargets: SurfaceWriteTarget[] = [
     sortOrder: 600,
   },
   {
-    name: "accent_theme",
-    label: "Accent theme",
-    description: `Set the accent color scheme overlay. Expects exactly one of: ${ACCENT_THEME_ENUM_TEXT}. Saved to the user's account.`,
-    valueType: "string",
-    updatesValue: "accent_theme",
-    mode: "entity",
-    applyPolicy: "ask",
-    group: "preferences",
-    sortOrder: 610,
-  },
-  {
-    name: "display_layout",
-    label: "Shell layout",
-    description: `Change how the app shell is arranged. Expects an OBJECT with any subset of these keys — send only the ones you want to change, the rest are left alone: dashboard_layout (${DASHBOARD_LAYOUT_ENUM_TEXT}), sidebar_layout (${SIDEBAR_LAYOUT_ENUM_TEXT}), header_layout (${HEADER_LAYOUT_ENUM_TEXT}), window_mode (${WINDOW_MODE_ENUM_TEXT}). At least one key is required; an unknown key or an out-of-vocabulary value is refused and NOTHING is applied. Saved to the user's account.`,
-    valueType: "object",
-    updatesValue: "display_layout",
-    mode: "entity",
-    applyPolicy: "ask",
-    group: "preferences",
-    sortOrder: 620,
-  },
-  {
     name: "text_generation_style",
     label: "Text generation style",
     description: `Set the default writing style for text-generation surfaces. Expects an OBJECT with any subset of: tone (${TEXT_TONE_ENUM_TEXT}), creativity (${CREATIVITY_LEVEL_ENUM_TEXT}). Send only the keys you want to change; at least one is required. Saved to the user's account.`,
@@ -455,7 +405,7 @@ const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "voice_persona",
     label: "Voice persona",
-    description: `Set how spoken replies are delivered. Expects an OBJECT with any subset of: emotion (free-text delivery hint like "cheerful" or "calm", max ${VOICE_EMOTION_MAX_LENGTH} characters), wake_word (the phrase that activates the assistant, max ${VOICE_WAKE_WORD_MAX_LENGTH} characters). Both are plain text, not JSON and not JSON-encoded. Send only the keys you want to change; at least one is required. Pass an empty string to clear a field. Saved to the user's account.`,
+    description: `Set how spoken replies are delivered. Expects an OBJECT with: emotion, one of ${VOICE_EMOTION_ENUM_TEXT}. Not JSON-encoded — send the object directly. Saved to the user's account.`,
     valueType: "object",
     updatesValue: "voice_persona",
     mode: "entity",
@@ -493,14 +443,6 @@ export interface SettingsSectionEntry {
  * Type-safe payload helper — the "a UI cannot lie" enforcement.
  * Required keys ↔ every `alwaysAvailable: true` value above.
  */
-/** The agent-writable preference block, as emitted and as written back. */
-export interface SettingsDisplayLayout {
-  dashboard_layout: string;
-  sidebar_layout: string;
-  header_layout: string;
-  window_mode: string;
-}
-
 /** `text_generation_style` — the writing-style defaults. */
 export interface SettingsTextGenerationStyle {
   tone: string;
@@ -514,10 +456,9 @@ export interface SettingsLanguageDefaults {
   flashcards: string;
 }
 
-/** `voice_persona` — free-text spoken-reply persona. */
+/** `voice_persona` — spoken-reply delivery emotion (`VOICE_EMOTION_OPTIONS`). */
 export interface SettingsVoicePersona {
   emotion: string;
-  wake_word: string;
 }
 
 export function createSettingsScope(values: {
@@ -526,8 +467,6 @@ export function createSettingsScope(values: {
   is_admin_view: boolean;
   is_saving: boolean;
   theme_mode: string;
-  accent_theme: string;
-  display_layout: SettingsDisplayLayout;
   text_generation_style: SettingsTextGenerationStyle;
   language_defaults: SettingsLanguageDefaults;
   assistant_name: string;
