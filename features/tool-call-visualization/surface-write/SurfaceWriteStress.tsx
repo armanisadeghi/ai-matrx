@@ -42,6 +42,8 @@ const NEW = "Blood pressure is taken seated after five minutes of rest, on the l
 interface Stress {
   running: boolean;
   longTasks: number[];
+  longTaskStarts: number[];
+  runStartedAt: number | null;
   worstFrameGapMs: number;
   diffMountedAt: number | null;
   diffUnmountsAfterMount: number;
@@ -62,6 +64,8 @@ export function SurfaceWriteStress() {
     const stress: Stress = {
       running: false,
       longTasks: [],
+      longTaskStarts: [],
+      runStartedAt: null,
       worstFrameGapMs: 0,
       diffMountedAt: null,
       diffUnmountsAfterMount: 0,
@@ -72,7 +76,10 @@ export function SurfaceWriteStress() {
     try {
       observer = new PerformanceObserver((list) => {
         if (!stress.running) return;
-        for (const e of list.getEntries()) stress.longTasks.push(Math.round(e.duration));
+        for (const e of list.getEntries()) {
+          stress.longTasks.push(Math.round(e.duration));
+          stress.longTaskStarts.push(Math.round(e.startTime));
+        }
       });
       observer.observe({ type: "longtask", buffered: false });
     } catch {
@@ -124,6 +131,8 @@ export function SurfaceWriteStress() {
     if (stress) {
       stress.running = true;
       stress.longTasks = [];
+      stress.longTaskStarts = [];
+      stress.runStartedAt = performance.now();
       stress.worstFrameGapMs = 0;
       stress.diffMountedAt = null;
       stress.diffUnmountsAfterMount = 0;

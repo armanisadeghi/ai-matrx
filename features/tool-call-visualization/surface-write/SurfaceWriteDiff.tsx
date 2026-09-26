@@ -29,7 +29,12 @@
 
 import { useDeferredValue, useState } from "react";
 
-import { DiffViewer, TextDiff, type TextDiffView } from "@ai-matrx/diff/react";
+import {
+  DiffViewer,
+  LARGE_INPUT_CHARS,
+  TextDiff,
+  type TextDiffView,
+} from "@ai-matrx/diff/react";
 import MarkdownStream from "@/components/MarkdownStream";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
@@ -74,6 +79,12 @@ export function SurfaceWriteDiff({
   const before = useDeferredValue(receipt.before);
   const after = useDeferredValue(receipt.after);
   const language = diffLanguageOf(receipt);
+  // Code on a desktop, or any change too large for the light engine, goes to
+  // the code-editor diff: it computes off the main thread, so a 200 KB write
+  // never freezes the transcript (measured on the stress utility).
+  const heavy =
+    (!!language && !isMobile) ||
+    receipt.before.length + receipt.after.length > LARGE_INPUT_CHARS;
   const canPreview =
     receipt.contentFormat === "markdown" || receipt.contentFormat === "text";
 
@@ -128,17 +139,23 @@ export function SurfaceWriteDiff({
             />
           </div>
         </div>
-      ) : language && !isMobile ? (
-        <DiffViewer
-          original={before}
-          modified={after}
-          language={language}
-          engine="auto"
-          defaultView={view === "split" ? "split" : "inline"}
-          originalLabel="Before"
-          modifiedLabel="After"
-          className="max-h-96"
-        />
+      ) : heavy ? (
+        <div>
+          <div className="flex items-center justify-end border-b border-border/60 px-2 py-1">
+            {slot}
+          </div>
+          {/* Monaco needs a definite height (CodeDiff note). */}
+          <DiffViewer
+            original={before}
+            modified={after}
+            language={language}
+            engine="auto"
+            defaultView={view === "split" && !isMobile ? "split" : "inline"}
+            originalLabel="Before"
+            modifiedLabel="After"
+            className="h-96"
+          />
+        </div>
       ) : (
         <>
           {isMobile ? (
