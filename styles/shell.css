@@ -1572,6 +1572,14 @@ body[style*="pointer-events: none"] .shell-header .pointer-events-auto {
   scroll-padding-bottom: var(--shell-fixed-alert-clearance);
 }
 
+/* The design-system's icon-sized Alchemy trigger also reaches whole-page
+   context-menu regions in older installed package builds. A region must keep
+   its natural width so Settings and other wrapped pages remain usable. */
+.shell-main [data-alchemy-trigger="context"] {
+  width: auto;
+  height: auto;
+}
+
 /* A full-page route may own vertical scrolling instead of .shell-main. Keep
    document-sticky content flush with the header's actual edge. Reserving the
    translucent fade tail here leaves a visible strip of scrolling content
