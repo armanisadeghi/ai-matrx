@@ -340,7 +340,7 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "voice.input",
     "label": "Emotion / tone",
-    "description": "Applied to every Cartesia voice (read-aloud, live conversation, Listen panel). Only the values Cartesia actually supports are offered — a free-text word like 'cheerful' used to be accepted here and silently ignored.",
+    "description": "Applied to your read-aloud voice, spoken replies, and the Listen panel — every surface that speaks through Cartesia. Live voice conversation runs on a different engine (xAI Realtime) and doesn't read this. Only the values Cartesia actually supports are offered — a free-text word like 'cheerful' used to be accepted here and silently ignored.",
     "controlId": "settings-control-voice-emotion-tone"
   },
   {
@@ -348,12 +348,6 @@ export const staticSettingsControlIndex = [
     "label": "Microphone & speaker",
     "description": "Choose which microphone and speaker AI Matrx uses.",
     "controlId": "settings-control-devices-microphone-speaker"
-  },
-  {
-    "tabId": "voice.input",
-    "label": "Voice playground",
-    "description": "Preview voices and tune cadence.",
-    "controlId": "settings-control-advanced-voice-playground"
   },
   {
     "tabId": "communication.email",

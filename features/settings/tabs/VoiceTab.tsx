@@ -1,6 +1,6 @@
 "use client";
 
-import { Mic, ExternalLink } from "lucide-react";
+import { Mic } from "lucide-react";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import { SettingsButton } from "@/components/official/settings/primitives/SettingsButton";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
@@ -37,7 +37,7 @@ export default function VoiceTab() {
         />
         <SettingsSelect
           label="Emotion / tone"
-          description="Applied to every Cartesia voice (read-aloud, live conversation, Listen panel). Only the values Cartesia actually supports are offered — a free-text word like 'cheerful' used to be accepted here and silently ignored."
+          description="Applied to your read-aloud voice, spoken replies, and the Listen panel — every surface that speaks through Cartesia. Live voice conversation runs on a different engine (xAI Realtime) and doesn't read this. Only the values Cartesia actually supports are offered — a free-text word like 'cheerful' used to be accepted here and silently ignored."
           value={emotion}
           onValueChange={setEmotion}
           options={VOICE_EMOTION_OPTIONS}
@@ -61,16 +61,16 @@ export default function VoiceTab() {
         />
       </SettingsSection>
 
-      <SettingsSection title="Advanced">
-        <SettingsLink
-          label="Voice playground"
-          description="Preview voices and tune cadence."
-          href="/demos/general/voice/voice-manager"
-          actionLabel="Open"
-          icon={ExternalLink}
-          last
-        />
-      </SettingsSection>
+      {/* An "Advanced → Voice playground" section used to link to
+          /demos/general/voice/voice-manager — a (dev)-group route that is
+          dead in production, and one that (per its own admin-tester source)
+          doesn't even preview voices the way its label promised (that's
+          VoicesTab, already linked above). The real production playground,
+          /chat/voice/playground, is a different thing entirely — live
+          xAI Realtime conversation tuning, not Cartesia voice/cadence
+          preview — so pointing there would just trade one wrong promise
+          for another. Removed rather than relinked to a mismatch
+          (settings-truth-audit, 2026-09-25). */}
     </>
   );
 }
