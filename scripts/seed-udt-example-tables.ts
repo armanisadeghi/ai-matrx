@@ -26,7 +26,7 @@
  * and the refusal is printed verbatim.
  *
  * THE DEPENDENT COLUMN NEEDS A SHARED LIST. `StructuredListBinding.groupFromField`
- * (lib/field-formats/types.ts) narrows a column's options to the group its
+ * (`@ai-matrx/design-system/field-formats` types) narrows a column's options to the group its
  * controlling cell names, and groups live on a structured list's items — so the
  * script first creates ONE list, "Example: Teams by Department", and binds both
  * Team columns to it. The list is made `visibility = 'public'` because

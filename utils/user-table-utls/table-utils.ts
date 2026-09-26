@@ -73,7 +73,7 @@ export interface TableField extends FieldDefinition {
   /**
    * Free-form per-column config. `metadata.format` holds the column's display
    * format ({id, options}) — read it with `resolveFieldFormat` from
-   * `@/lib/field-formats/format`, never by hand. See `lib/field-formats/FEATURE.md`.
+   * `@ai-matrx/design-system/field-formats`, never by hand. See `lib/field-formats/FEATURE.md`.
    */
   metadata?: Record<string, unknown> | null;
   /**

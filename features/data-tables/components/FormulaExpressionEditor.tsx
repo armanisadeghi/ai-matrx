@@ -3,7 +3,7 @@
  *
  * The `formula` field format (`lib/field-formats`) stores `{ expression,
  * resultFormat }` in the column's format options; the grid computes the value
- * per row (`features/data-tables/formulas.ts`). This editor is the ONE place
+ * per row (`@ai-matrx/design-system/formulas`). This editor is the ONE place
  * that authors the expression: a text box with live parse feedback (the error
  * and the position it points at), the table's other columns as one-click
  * `{Display Name}` chips, the function list, and "shows as" for the result.

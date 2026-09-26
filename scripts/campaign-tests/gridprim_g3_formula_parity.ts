@@ -6,7 +6,7 @@
  * practice actually keeps: the balance due after the deposit, the fee with the 3% card
  * surcharge, "Call owner" on a no-show, the recheck date two weeks out, the
  * last four of the owner's phone for the voicemail script, and so on. Every one of them is
- * worked out TWICE here — by `features/data-tables/formulas.ts` (the browser evaluator the
+ * worked out TWICE here — by `@ai-matrx/design-system/formulas` (the browser evaluator the
  * /data grid runs today) and by the store (`custom.formula_parse` then `custom.formula_eval`)
  * — over the SAME ten appointments, and every answer must agree: the same value, or both a
  * refusal with the same sentence.
