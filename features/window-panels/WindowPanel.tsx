@@ -19,6 +19,7 @@ assertLazyLoaded("features/window-panels/WindowPanel.tsx");
  */
 
 import React, { useCallback, useEffect, useId, useRef, useState } from "react";
+import { announceLayerFront } from "@ai-matrx/design-system";
 import { createPortal } from "react-dom";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 import {
@@ -536,6 +537,17 @@ export function WindowPanel({
   const dispatch = useAppDispatch();
   const windowsHidden = useAppSelector(selectWindowsHidden);
   const isDebugMode = useAppSelector(selectIsDebugMode);
+
+  // THE FRONT-MOST LAYER (design-system `announceLayerFront`): a window that
+  // opens or comes to the front tells every windowed Dialog, which steps
+  // behind it — so an agent window opened from the Agents menu over Table
+  // settings is usable (register ai-reachable-everywhere, ARE-010). The
+  // manager raises `zIndex` exactly when this window becomes the top one.
+  useEffect(() => {
+    announceLayerFront(
+      document.querySelector(`[data-window-id="${CSS.escape(id)}"]`),
+    );
+  }, [id, zIndex]);
 
   // On mobile, only the topmost non-minimized window is rendered visible.
   const allWindows = useAppSelector(selectAllWindows);
@@ -1427,6 +1439,7 @@ export function WindowPanel({
     const el = (
       <div
         data-window-panel=""
+        data-window-id={id}
         className={cn(
           "fixed inset-0 flex flex-col",
           "bg-card/98 backdrop-blur-md border border-border shadow-2xl",
@@ -1457,6 +1470,7 @@ export function WindowPanel({
     <div
       ref={fitContent ? fitContentRef : undefined}
       data-window-panel=""
+        data-window-id={id}
       className={cn(
         "fixed overflow-visible",
         motionStyles.enter,
