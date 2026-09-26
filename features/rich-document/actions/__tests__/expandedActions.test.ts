@@ -10,6 +10,7 @@ import { getAction, resolveActions } from "../registry";
 import { parseFirstMarkdownTable, tableToDelimited } from "../markdownTable";
 import { chatContext, RICH_MESSAGE } from "../../test-utils/chatContext";
 import type { RichDocumentActionContext } from "../../types";
+import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 
 function noteContext(
   overrides: Partial<RichDocumentActionContext> = {},
@@ -17,7 +18,7 @@ function noteContext(
   const chat = chatContext("assistant");
   return {
     ...chat,
-    source: { type: "note", mode: "identity", noteId: "note-1", sourceId: "s-1" },
+    source: noteIdentityContentSource("00000000-0000-4000-8000-000000000001", "s-1"),
     extensions: { type: "note", isOwner: true },
     callbacks: {},
     ...overrides,

@@ -9,7 +9,9 @@ const allowedConstructorFile = "features/notes/richDocumentSource.ts";
 // .wt/ and .coldwalk*/ are parked checkouts other lanes leave in the shared
 // tree; scanning them re-reports files the tracked tree already fixed (it
 // halted release 2026-09-18 on four .wt copies of richDocumentSource.ts).
-const ignoredDirectories = new Set([".git", ".next", "node_modules", ".matrx", ".wt", ".claude"]);
+// work/ and tmp/ are gitignored scratch (lockfile repairs, type-sync copies) —
+// the same stale-copy class.
+const ignoredDirectories = new Set([".git", ".next", "node_modules", ".matrx", ".wt", ".claude", "work", "tmp"]);
 const isIgnoredDirectory = (name) => ignoredDirectories.has(name) || name.startsWith(".coldwalk");
 const sourceExtensions = new Set([".ts", ".tsx"]);
 
