@@ -402,9 +402,16 @@ uv run python db/apply_migrations.py --source campaign --only <file>.sql --targe
   elsewhere is refused too.
 - Refused with `--check`, `--rerun`, `--mark-applied`, `--accept-drift`, `--all` and both
   self-tests.
-- At `--target production` the runner additionally reads the **rehearsal branch** and refuses
-  unless that `--lane` holds its `campaign_watch.build_lock` row there. That is concurrency
-  control between lanes (§4.14), not a rehearsal claim.
+- At `--target production` the authorisation is (lane DB-TOOLS-NO-BRANCH, 2026-09-25): an explicit
+  `--lane`; the `-- based-on:` hashes recomputed against production immediately before the file
+  runs; and the PAIR (the file + its `migrations/inverse/<name>_down.sql`) read from the **dev
+  clone's** ledger and printed — "ledgered on the clone, byte-identical", "DIFFERENT bytes", or "not
+  ledgered" — as information only (§6a). `pnpm db:apply` prints it on `--dry-run` too. Until that
+  date the runner read the **rehearsal branch** for a `campaign_watch.build_lock` row held by the
+  lane; the branch was deleted 2026-09-26 00:30Z, so every campaign file was refused at production
+  and lanes applied by hand. Proof: `pnpm check:campaign-auth:self-test`.
+  *(Note, DB-TOOLS-NO-BRANCH 2026-09-25: aidream's `db/apply_migrations.py` still reads the branch
+  for this build_lock row (`branch_dsn`, ~line 3559) — the same defect, not fixed by this lane.)*
 
 ### 6a. 🚨 THE REHEARSAL COPY IS NOT A GATE (owner ruling, 2026-09-18)
 
