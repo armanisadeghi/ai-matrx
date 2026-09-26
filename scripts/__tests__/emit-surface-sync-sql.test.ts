@@ -32,10 +32,16 @@ describe("surface manifest SQL emitter", () => {
       const start = sql.indexOf(`INSERT INTO ui.${table} (`);
       if (start < 0) continue;
       mirrors += 1;
-      const segment = sql.slice(start, sql.indexOf(";", start));
-      expect(segment).toContain("organization_id, visibility");
-      expect(segment).toContain(`'${SYSTEM_ORG}', 'public'`);
-      const onConflict = segment.slice(segment.indexOf("ON CONFLICT"));
+      // Values may contain ";" inside quoted descriptions, so the statement is
+      // bounded by its own ON CONFLICT clause, which ends at ";" + newline.
+      const conflictAt = sql.indexOf("ON CONFLICT", start);
+      expect(conflictAt).toBeGreaterThan(start);
+      const insert = sql.slice(start, conflictAt);
+      expect(insert).toContain("organization_id, visibility");
+      expect(insert).toContain(`'${SYSTEM_ORG}', 'public'`);
+      const end = sql.indexOf(";\n", conflictAt);
+      const onConflict = sql.slice(conflictAt, end < 0 ? undefined : end);
+      expect(onConflict).toContain("DO UPDATE SET");
       expect(onConflict).not.toMatch(/organization_id\s*=/);
       expect(onConflict).not.toMatch(/visibility\s*=/);
     }
