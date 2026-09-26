@@ -78,7 +78,7 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
   const [autoAttempt, setAutoAttempt] = useState(1);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const keyIsAuto = typedMandateKey.trim() === "";
-  const keyNamespace = softMandateNamespace(level === "organization" ? "organization" : "user", orgName);
+  const keyNamespace = softMandateNamespace(level === "organization" ? "organization" : "user");
   const mandateKey = keyIsAuto ? keyFromName(label, autoAttempt, keyNamespace) : typedMandateKey;
   const [goal, setGoal] = useState("");
   const [draftInputs, setDraftInputs] = useState<DraftInput[]>([

@@ -11,7 +11,7 @@ jest.mock("@/lib/api/call-api", () => ({ callApi: jest.fn() }));
 
 import { memberCountsFromAnswer, memberScopeArgs } from "../service";
 import { memberRowFromWire, type MandateMemberWireRow } from "../rpc";
-import { canRemoveMemberRow } from "../listConfig";
+import { canRemoveMemberRow, canShareMemberRow, memberMandateListConfig } from "../listConfig";
 import { memberMandateRecordHref, newSoftMandateHref } from "../routes";
 import {
   parseRecordTabFrom,
@@ -141,6 +141,25 @@ describe("who may remove", () => {
     expect(
       canRemoveMemberRow(orgRow, { level: "organization", orgId: ORG, canManageOrg: true, onChanged: () => {} }),
     ).toBe(true);
+  });
+});
+
+describe("who may share, and the lane order", () => {
+  const mine = { ...memberRowFromWire(wire), origin: "soft" as const, isSystem: false, createdByMe: true };
+  it("the creator shares their own soft mandate — on any seat; nobody shares a system or code mandate", () => {
+    expect(canShareMemberRow(mine)).toBe(true);
+    expect(canShareMemberRow({ ...mine, organizationId: ORG })).toBe(true);
+    expect(canShareMemberRow({ ...mine, createdByMe: false })).toBe(false);
+    expect(canShareMemberRow(memberRowFromWire(wire))).toBe(false);
+  });
+  it("lanes read mine · orgs · shared · public (+ system), the agents and workflows order", () => {
+    expect(memberMandateListConfig({ level: "person", onChanged: () => {} }).scopes).toEqual([
+      "mine",
+      "orgs",
+      "shared",
+      "public",
+      "system",
+    ]);
   });
 });
 

@@ -88,6 +88,13 @@ interface ShareModalProps {
    * `iam.invitations` row, the platform's one invitation primitive.
    */
   outsideShare?: { organizationId: string; tableId: string };
+  /**
+   * The thing lives in its owner's PERSONAL workspace. "Everyone in <workspace>" then means
+   * nobody useful (a personal workspace has no team), so the lane control does not offer it —
+   * sharing goes to named people (or everyone in a real organization, from the People tab) or
+   * Public. A thing already in that lane still shows it, so the current state never lies.
+   */
+  personalHome?: boolean;
 }
 
 /**
@@ -121,6 +128,7 @@ export function ShareModal({
   resourceNoun,
   isOwner: isOwnerOverride,
   outsideShare,
+  personalHome = false,
 }: ShareModalProps) {
   const [activeTab, setActiveTab] = useState<
     "users" | "public" | "access"
@@ -430,6 +438,7 @@ export function ShareModal({
                   whoCanSee={whoCanSee}
                   canChange={isOwner}
                   onChoose={setWhoCanSee}
+                  offerOrganization={!personalHome}
                 />
                 {/* Current user permissions */}
                 <div>

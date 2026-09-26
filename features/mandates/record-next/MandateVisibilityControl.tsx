@@ -7,10 +7,12 @@
 // picker. The same dialog shares a note, an agent or a workflow.
 //
 // SHARE ≠ MOVE (2026-09-25). Sharing never changes the mandate's home or owner:
-//   People tab        → a grant to that person (iam.permissions)
-//   Organizations tab → a grant to that organization; its members see it under
-//                       "Organizations" and can bind it at their own level
-//   Public tab        → visibility public; everyone sees it under "Public"
+//   People tab → a grant to each person named; "Add everyone in <organization>" names each
+//                current member (a share names PEOPLE, never an organization — SHARE-PEOPLE-ONLY);
+//                they see it under "Shared" and can bind it at their own level
+//   Public tab → visibility public; everyone sees it under "Public"
+// A mandate homed in my personal workspace is not offered "Everyone in <workspace>" in the
+// lane control (nobody else is in it); one homed in an organization is.
 // `mandate` is in platform.shareable_resource_registry (mandate_share_without_move.sql),
 // and mandate.definition's RLS honours the grants through iam.has_access('mandate', …).
 // Proof from each viewer's seat: `pnpm check:mandate-sharing-lanes`.
@@ -22,6 +24,8 @@ import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { invalidateMandateCache } from "@/features/mandates/service";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import type { MandateWorkspaceData } from "@/features/mandates/workspace/useMandateWorkspaceData";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectPersonalOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 type Mandate = MandateWorkspaceData["mandate"];
 
@@ -38,6 +42,7 @@ export function MandateVisibilityControl({
   onChanged: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const personalOrgId = useAppSelector(selectPersonalOrganizationId);
   const isPublic = mandate.visibility === "public" || mandate.visibility === "link";
   const Icon = isPublic ? Globe : mandate.visibility === "personal" ? Lock : Share2;
 
@@ -65,6 +70,8 @@ export function MandateVisibilityControl({
           resourceId={mandate.id}
           resourceName={mandateDisplayName(mandate.mandate_key, mandate.label)}
           resourceNoun="mandate"
+          organizationId={mandate.organization_id ?? undefined}
+          personalHome={Boolean(personalOrgId) && mandate.organization_id === personalOrgId}
         />
       ) : null}
     </>

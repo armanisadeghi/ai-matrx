@@ -48,6 +48,11 @@ export interface WhoCanSeeThisProps {
   canChange: boolean;
   /** `useSharing().setWhoCanSee`. */
   onChoose: (choice: LaneChoice) => Promise<ShareActionResult>;
+  /**
+   * False when the thing's home is its owner's personal workspace: "Everyone in <workspace>" is
+   * then not offered (it is still shown when it is already the state). Default true.
+   */
+  offerOrganization?: boolean;
 }
 
 interface Option {
@@ -57,7 +62,12 @@ interface Option {
   icon: typeof Lock;
 }
 
-export function WhoCanSeeThis({ whoCanSee, canChange, onChoose }: WhoCanSeeThisProps) {
+export function WhoCanSeeThis({
+  whoCanSee,
+  canChange,
+  onChoose,
+  offerOrganization = true,
+}: WhoCanSeeThisProps) {
   const { orgs } = useNavTree();
   const [pending, setPending] = useState<LaneChoice | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -79,18 +89,22 @@ export function WhoCanSeeThis({ whoCanSee, canChange, onChoose }: WhoCanSeeThisP
     {
       choice: "mine",
       label: "Only people I share it with",
-      says: "You and the people named below. Nobody else in the organization.",
+      says: offerOrganization
+        ? "You and the people named below. Nobody else in the organization."
+        : "You and the people named below.",
       icon: Lock,
     },
-    {
+  ];
+  if (offerOrganization || whoCanSee.choice === "organization") {
+    options.push({
       choice: "organization",
       label: `Everyone in ${orgName}`,
       says: level
         ? `Every member, as ${level}. This is the organization's default.`
         : "Every member. This is the organization's default.",
       icon: Building2,
-    },
-  ];
+    });
+  }
   if (whoCanSee.worldOffered || whoCanSee.choice === "world") {
     options.push({
       choice: "world",
@@ -99,7 +113,7 @@ export function WhoCanSeeThis({ whoCanSee, canChange, onChoose }: WhoCanSeeThisP
       icon: Globe,
     });
   }
-  const current = options.find((o) => o.choice === whoCanSee.choice) ?? options[1];
+  const current = options.find((o) => o.choice === whoCanSee.choice) ?? options[options.length - 1];
 
   const apply = async (choice: LaneChoice) => {
     setConfirming(false);

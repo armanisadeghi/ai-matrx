@@ -162,6 +162,27 @@ describe("the control and Current Access", () => {
     expect(host.textContent).not.toContain("Anyone with the link");
   });
 
+  it("a thing homed in its owner's personal workspace is not offered Everyone in <workspace>", () => {
+    const mineLane: WhoCanSee = { ...orgLane, choice: "mine", membersReachNow: false };
+    act(() =>
+      root.render(
+        <WhoCanSeeThis whoCanSee={mineLane} canChange onChoose={jest.fn()} offerOrganization={false} />,
+      ),
+    );
+    expect(radio("mine")?.getAttribute("aria-checked")).toBe("true");
+    expect(radio("organization")).toBeNull();
+    expect(host.textContent).not.toContain("Everyone in");
+  });
+
+  it("…but when it is already in that lane, the current state is still shown", () => {
+    act(() =>
+      root.render(
+        <WhoCanSeeThis whoCanSee={orgLane} canChange onChoose={jest.fn()} offerOrganization={false} />,
+      ),
+    );
+    expect(radio("organization")?.getAttribute("aria-checked")).toBe("true");
+  });
+
   it("3. Only people I share it with, while members reach it, asks in one sentence and applies on confirm", async () => {
     const onChoose = jest.fn(async () => ({ success: true, message: "Only the people it is shared with reach this table now." }));
     act(() => root.render(<WhoCanSeeThis whoCanSee={orgLane} canChange onChoose={onChoose} />));

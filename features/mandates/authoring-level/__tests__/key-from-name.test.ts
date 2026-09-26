@@ -29,7 +29,7 @@ function serverAccepts(key: string): boolean {
 }
 
 const personal = softMandateNamespace("user");
-const org = softMandateNamespace("organization", "Rincon Field Services");
+const org = softMandateNamespace("organization");
 
 test.each([
   ["Goal writer", personal, "personal.goal_writer"],
@@ -37,7 +37,7 @@ test.each([
   ["Café résumé", personal, "personal.cafe_resume"],
   ["2024 plan", personal, "personal.mandate_2024_plan"],
   ["Research assistant", personal, "personal.research"],
-  ["Dispatch summary", org, "org_rincon_field_services.dispatch_summary"],
+  ["Dispatch summary", org, "organization.dispatch_summary"],
 ])("%p in %p → %p, and the server accepts it", (name, namespace, key) => {
   expect(keyFromName(name, 1, namespace)).toBe(key);
   expect(serverAccepts(keyFromName(name, 1, namespace))).toBe(true);
@@ -46,13 +46,6 @@ test.each([
 test("a taken key is bumped, still accepted", () => {
   expect(keyFromName("Goal writer", 3, personal)).toBe("personal.goal_writer_3");
   expect(serverAccepts(keyFromName("Goal writer", 3, personal))).toBe(true);
-});
-
-test("an organization with no usable name, or one named like plumbing, still gets an accepted namespace", () => {
-  for (const orgName of ["", "!!!", "Internal", "Custom", "Test", "123 Holdings"]) {
-    const key = keyFromName("Weekly recap", 1, softMandateNamespace("organization", orgName));
-    expect(serverAccepts(key)).toBe(true);
-  }
 });
 
 test("a name with nothing to make a key from makes none (Advanced opens)", () => {
