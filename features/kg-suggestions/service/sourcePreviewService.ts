@@ -435,7 +435,8 @@ async function fetchProcessedDocument(
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (error || !data) return null;
+  if (error) throw error;
+  if (!data) return null;
   return data as ProcessedDocLite;
 }
 
@@ -448,12 +449,13 @@ function clipBody(body: string): { text: string; truncated: boolean } {
 
 async function loadNote(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("note", id);
-  const { data } = await supabase
+  const { data, error } = await supabase
     .schema("workbench").from("notes")
     .select("label, content, updated_at")
     .is("deleted_at", null)
     .eq("id", id)
     .maybeSingle();
+  if (error) throw error;
   if (!data) return { ...doc, notFound: true };
   doc.title = data.label?.trim() || "Untitled note";
   doc.bodyKind = "markdown";
@@ -471,12 +473,13 @@ async function loadNote(id: string): Promise<SourcePreviewDoc> {
 
 async function loadTask(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("task", id);
-  const { data } = await workspaceDb(supabase)
+  const { data, error } = await workspaceDb(supabase)
     .from("tasks")
     .select("title, description, created_at")
     .is("deleted_at", null)
     .eq("id", id)
     .maybeSingle();
+  if (error) throw error;
   if (!data) return { ...doc, notFound: true };
   doc.title = data.title?.trim() || "Untitled task";
   const created = formatDate(data.created_at);
@@ -492,12 +495,13 @@ async function loadTask(id: string): Promise<SourcePreviewDoc> {
 
 async function loadProject(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("project", id);
-  const { data } = await workspaceDb(supabase)
+  const { data, error } = await workspaceDb(supabase)
     .from("projects")
     .select("name, description, created_at")
     .is("deleted_at", null)
     .eq("id", id)
     .maybeSingle();
+  if (error) throw error;
   if (!data) return { ...doc, notFound: true };
   doc.title = data.name?.trim() || "Untitled project";
   const created = formatDate(data.created_at);
@@ -533,12 +537,13 @@ function reconstructTranscript(segments: unknown): string | null {
 
 async function loadTranscript(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("transcript", id);
-  const { data } = await supabase
+  const { data, error } = await supabase
     .schema("transcripts")
     .from("transcripts")
     .select("title, description, segments, created_at")
     .eq("id", id)
     .maybeSingle();
+  if (error) throw error;
   if (!data) return { ...doc, notFound: true };
   doc.title = data.title?.trim() || "Untitled transcript";
   const created = formatDate(data.created_at);
@@ -555,12 +560,13 @@ async function loadTranscript(id: string): Promise<SourcePreviewDoc> {
 
 async function loadConversation(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("conversation", id);
-  const { data } = await supabase
+  const { data, error } = await supabase
     .schema("chat")
     .from("conversation")
     .select("title, description, created_at")
     .eq("id", id)
     .maybeSingle();
+  if (error) throw error;
   if (!data) {
     // Maybe the ingested transcript of the conversation exists.
     return loadViaProcessedDocument("conversation", id, doc);
@@ -581,12 +587,13 @@ async function loadConversation(id: string): Promise<SourcePreviewDoc> {
 
 async function loadFile(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("cld_file", id);
-  const { data } = await filesDb(supabase)
+  const { data, error } = await filesDb(supabase)
     .from("files")
     .select("file_name, mime_type, size_bytes, created_at")
     .eq("id", id)
     .is("deleted_at", null)
     .maybeSingle();
+  if (error) throw error;
   if (data) {
     doc.title = data.file_name?.trim() || "File";
     if (data.mime_type) doc.meta.push({ label: "Type", value: data.mime_type });
@@ -602,12 +609,13 @@ async function loadFile(id: string): Promise<SourcePreviewDoc> {
 
 async function loadCodeFile(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("code_file", id);
-  const { data } = await supabase
+  const { data, error } = await supabase
     .schema("code").from("code_files")
     .select("name, path, content, language, updated_at")
     .is("deleted_at", null)
     .eq("id", id)
     .maybeSingle();
+  if (error) throw error;
   if (!data) return { ...doc, notFound: true };
   doc.title = data.name?.trim() || data.path?.trim() || "Code file";
   doc.bodyKind = "code";
@@ -660,35 +668,31 @@ async function loadViaProcessedDocument(
 }
 
 /**
- * Load the full previewable source document for a suggestion. Always resolves
- * (never throws) — failures degrade to a `notFound` doc so the UI can still
- * show the snippet + a link-out.
+ * Load the full previewable source document for a suggestion. A missing row
+ * resolves to a `notFound` doc; a FAILED read rejects, so the preview can say
+ * the read failed (with a retry) instead of claiming the source is gone.
  */
 export async function loadSourcePreview(
   kind: string,
   id: string,
 ): Promise<SourcePreviewDoc> {
-  try {
-    switch (kind) {
-      case "note":
-        return await loadNote(id);
-      case "task":
-        return await loadTask(id);
-      case "project":
-        return await loadProject(id);
-      case "transcript":
-        return await loadTranscript(id);
-      case "conversation":
-      case "cx_message":
-        return await loadConversation(id);
-      case "cld_file":
-        return await loadFile(id);
-      case "code_file":
-        return await loadCodeFile(id);
-      default:
-        return await loadViaProcessedDocument(kind, id, emptyDoc(kind, id));
-    }
-  } catch {
-    return { ...emptyDoc(kind, id), notFound: true };
+  switch (kind) {
+    case "note":
+      return await loadNote(id);
+    case "task":
+      return await loadTask(id);
+    case "project":
+      return await loadProject(id);
+    case "transcript":
+      return await loadTranscript(id);
+    case "conversation":
+    case "cx_message":
+      return await loadConversation(id);
+    case "cld_file":
+      return await loadFile(id);
+    case "code_file":
+      return await loadCodeFile(id);
+    default:
+      return await loadViaProcessedDocument(kind, id, emptyDoc(kind, id));
   }
 }

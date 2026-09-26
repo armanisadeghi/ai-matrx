@@ -8,7 +8,7 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRead } from "@/components/read-state/useRead";
 import {
   loadSourcePreview,
   type SourcePreviewDoc,
@@ -26,8 +26,7 @@ function getDoc(kind: string, id: string): Promise<SourcePreviewDoc> {
   if (existing) return existing;
   const p = loadSourcePreview(kind, id);
   cache.set(key, p);
-  // `loadSourcePreview` never rejects, but stay safe: drop on failure so a
-  // later open can retry.
+  // A failed read rejects: drop it so a retry (or a later open) reads again.
   p.catch(() => cache.delete(key));
   return p;
 }
@@ -35,39 +34,23 @@ function getDoc(kind: string, id: string): Promise<SourcePreviewDoc> {
 export interface UseSourcePreviewDocResult {
   doc: SourcePreviewDoc | null;
   loading: boolean;
+  /** The read failed (not "not found") — say so instead of the empty preview. */
+  error: unknown;
+  /** Read the source again after a failure. */
+  retry: () => void;
 }
 
 export function useSourcePreviewDoc(
   kind: string,
   id: string,
 ): UseSourcePreviewDocResult {
-  const [doc, setDoc] = useState<SourcePreviewDoc | null>(null);
-  const [loading, setLoading] = useState(true);
-  const keyRef = useRef(keyOf(kind, id));
-
-  useEffect(() => {
-    let active = true;
-    const key = keyOf(kind, id);
-    keyRef.current = key;
-    setLoading(true);
-    setDoc(null);
-    getDoc(kind, id)
-      .then((res) => {
-        if (active && keyRef.current === key) {
-          setDoc(res);
-          setLoading(false);
-        }
-      })
-      .catch(() => {
-        if (active && keyRef.current === key) {
-          setDoc(null);
-          setLoading(false);
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [kind, id]);
-
-  return { doc, loading };
+  const read = useRead(() => getDoc(kind, id), [kind, id]);
+  return {
+    // Only the current source's answer — never the previous source's body
+    // while the next one loads.
+    doc: read.status === "ready" ? (read.data ?? null) : null,
+    loading: read.isLoading,
+    error: read.error,
+    retry: read.retry,
+  };
 }

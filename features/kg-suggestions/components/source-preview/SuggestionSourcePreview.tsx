@@ -36,6 +36,7 @@ import {
   type SourcePreviewDoc,
 } from "@/features/kg-suggestions/service/sourcePreviewService";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export interface SuggestionSourcePreviewProps {
   kind: string;
@@ -71,7 +72,7 @@ export function SuggestionSourcePreview({
   title,
   className,
 }: SuggestionSourcePreviewProps) {
-  const { doc, loading } = useSourcePreviewDoc(kind, id);
+  const { doc, loading, error, retry } = useSourcePreviewDoc(kind, id);
   const kindLabel = sourceKindLabel(kind);
   const displayTitle =
     doc?.title ??
@@ -137,7 +138,7 @@ export function SuggestionSourcePreview({
 
       {/* Body */}
       <div className="min-h-0 flex-1">
-        <PreviewBody doc={doc} loading={loading} snippet={snippet} />
+        <PreviewBody doc={doc} loading={loading} error={error} onRetry={retry} snippet={snippet} />
       </div>
     </div>
   );
@@ -146,10 +147,14 @@ export function SuggestionSourcePreview({
 function PreviewBody({
   doc,
   loading,
+  error,
+  onRetry,
   snippet,
 }: {
   doc: SourcePreviewDoc | null;
   loading: boolean;
+  error: unknown;
+  onRetry: () => void;
   snippet: string | null;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -173,6 +178,10 @@ function PreviewBody({
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
+  }
+
+  if (error) {
+    return <ReadFailure error={error} what="this source" onRetry={onRetry} />;
   }
 
   if (body) {
