@@ -37,13 +37,15 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { extractErrorMessage } from "@/utils/errors";
 import {
-  ALL_ACCESSIBLE_DRIVE,
+  allAccessibleDriveBrowseState,
+  folderDriveBrowseCriteria,
   type DriveBrowseCriteria,
   driveBrowseIsAvailable,
   driveFileTypeLabel,
   incompleteSearchNotice,
   nextDriveBrowseInput,
   openFreshGoogleDriveFile,
+  openGoogleDriveBlankTab,
 } from "./drive-browser";
 
 const FOLDER_MIME_TYPE = "application/vnd.google-apps.folder";
@@ -71,8 +73,9 @@ export function GoogleDriveLibrary() {
   const capabilities = useGoogleCapabilities();
   const [connectionId, setConnectionId] = useState("");
   const [search, setSearch] = useState("");
-  const [criteria, setCriteria] =
-    useState<DriveBrowseCriteria>(ALL_ACCESSIBLE_DRIVE);
+  const [criteria, setCriteria] = useState<DriveBrowseCriteria>(
+    allAccessibleDriveBrowseState().criteria,
+  );
   const [page, setPage] = useState<DriveBrowsePage | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -118,7 +121,9 @@ export function GoogleDriveLibrary() {
 
   function chooseConnection(id: string) {
     setConnectionId(id);
-    setCriteria(ALL_ACCESSIBLE_DRIVE);
+    const reset = allAccessibleDriveBrowseState();
+    setSearch(reset.search);
+    setCriteria(reset.criteria);
     setPage(null);
     setAccess(null);
     setError(null);
@@ -146,6 +151,15 @@ export function GoogleDriveLibrary() {
 
   async function openInGoogle(fileId: string) {
     if (!organizationId || !connectionId) return;
+    const tab = openGoogleDriveBlankTab((url, target) =>
+      window.open(url, target),
+    );
+    if (!tab) {
+      setError(
+        "Your browser blocked the new Google Drive tab. Allow popups and try again.",
+      );
+      return;
+    }
     setCheckingFileId(fileId);
     setError(null);
     setAccess(null);
@@ -154,13 +168,19 @@ export function GoogleDriveLibrary() {
         selectedConnectionId: connectionId,
         check: () =>
           checkGoogleDriveFileAccess({ organizationId, connectionId, fileId }),
-        open: (url) => window.open(url, "_blank", "noopener,noreferrer"),
+        tab,
       });
     } catch (caught) {
       setError(extractErrorMessage(caught));
     } finally {
       setCheckingFileId(null);
     }
+  }
+
+  function browseAllAccessibleFiles() {
+    const reset = allAccessibleDriveBrowseState();
+    setSearch(reset.search);
+    void load({ criteria: reset.criteria });
   }
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
@@ -268,7 +288,7 @@ export function GoogleDriveLibrary() {
               type="button"
               variant="outline"
               disabled={!connectionId || loading}
-              onClick={() => void load({ criteria: ALL_ACCESSIBLE_DRIVE })}
+              onClick={browseAllAccessibleFiles}
             >
               Browse all accessible Drive files
             </Button>
@@ -279,7 +299,7 @@ export function GoogleDriveLibrary() {
                 type="button"
                 size="sm"
                 variant="ghost"
-                onClick={() => void load({ criteria: ALL_ACCESSIBLE_DRIVE })}
+                onClick={browseAllAccessibleFiles}
                 disabled={loading}
               >
                 <ChevronLeft className="mr-1 h-4 w-4" /> All accessible files
@@ -362,11 +382,10 @@ export function GoogleDriveLibrary() {
                           disabled={loading}
                           onClick={() =>
                             void load({
-                              criteria: {
-                                search: criteria.search,
-                                folderId: file.id,
-                                folderName: file.name,
-                              },
+                              criteria: folderDriveBrowseCriteria(
+                                file.id,
+                                file.name,
+                              ),
                             })
                           }
                         >
