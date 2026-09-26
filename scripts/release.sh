@@ -647,7 +647,7 @@ after_watch_rollout() {
 # stop: the build is already live, and the only thing at risk is the next text.
 after_publish_route_manifest() {
     local out rc=0
-    out="$(cd "$REPO_ROOT" && pnpm -s route-manifest:sync 2>&1)" || rc=$?
+    out="$(cd "$REPO_ROOT" && ROUTE_MANIFEST_SOURCE_SHA="$RELEASE_SHA" pnpm -s route-manifest:sync 2>&1)" || rc=$?
     printf '%s\n' "$out" >>"${RELEASE_LOG_FILE:-/dev/null}"
     if (( rc != 0 )); then
         SHIP_FINDINGS_JSON="$ROLLOUT_JSON" ship_finding "ERROR" "Route manifest" \

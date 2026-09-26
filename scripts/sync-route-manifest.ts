@@ -22,6 +22,10 @@ import path from "node:path";
 import dotenv from "dotenv";
 import { getAdminSupabaseClient } from "../utils/supabase/getScriptClient";
 import type { RouteManifest } from "../lib/route-manifest/generate";
+import {
+  resolveRouteManifestSourceSha,
+  ROUTE_MANIFEST_SOURCE_SHA_ENV,
+} from "./lib/route-manifest-source-sha";
 
 const REPO_ROOT = path.resolve(__dirname, "..");
 const MANIFEST = path.join(REPO_ROOT, "lib", "route-manifest", "manifest.generated.json");
@@ -41,8 +45,25 @@ function headSha(): string {
   }
 }
 
+function verifiedCommitSha(sha: string): string {
+  try {
+    return execFileSync("git", ["rev-parse", "--verify", `${sha}^{commit}`], {
+      cwd: REPO_ROOT,
+    })
+      .toString()
+      .trim();
+  } catch {
+    throw new Error(`${ROUTE_MANIFEST_SOURCE_SHA_ENV} does not resolve to a local commit`);
+  }
+}
+
 async function main() {
   const manifest = JSON.parse(readFileSync(MANIFEST, "utf8")) as RouteManifest;
+  const sourceSha = resolveRouteManifestSourceSha(
+    process.env[ROUTE_MANIFEST_SOURCE_SHA_ENV],
+    headSha,
+    verifiedCommitSha,
+  );
   if (manifest.version !== 1) {
     throw new Error(`route manifest version ${manifest.version} — this script writes version 1`);
   }
@@ -56,13 +77,13 @@ async function main() {
   const { data, error } = await supabase.schema("platform").rpc("sync_route_manifest", {
     p_app: manifest.app,
     p_routes: manifest.routes,
-    p_source_sha: headSha(),
+    p_source_sha: sourceSha,
   });
   if (error) throw new Error(`sync_route_manifest failed: ${error.message}`);
 
   const row = Array.isArray(data) ? data[0] : data;
   console.log(
-    `route manifest synced (${manifest.app} @ ${headSha().slice(0, 8)}): ` +
+    `route manifest synced (${manifest.app} @ ${sourceSha.slice(0, 8)}): ` +
       `+${row?.inserted ?? 0} inserted, ~${row?.updated ?? 0} updated, -${row?.removed ?? 0} removed`,
   );
 }
