@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b3_25_files_machine_written_prefixes — un-enrolls files.machine_written_prefixes from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'files' and table_name = 'machine_written_prefixes' and is_active);
+select iam.apply_rls('files', 'machine_written_prefixes', (select token from platform.entity_types where schema_name = 'files' and table_name = 'machine_written_prefixes' and is_active), (select rls_variant from platform.entity_types where schema_name = 'files' and table_name = 'machine_written_prefixes' and is_active));

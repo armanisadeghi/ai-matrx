@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b3_10_workbench_udt_datasets — un-enrolls workbench.udt_datasets from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'workbench' and table_name = 'udt_datasets' and is_active);
+select iam.apply_rls('workbench', 'udt_datasets', (select token from platform.entity_types where schema_name = 'workbench' and table_name = 'udt_datasets' and is_active), (select rls_variant from platform.entity_types where schema_name = 'workbench' and table_name = 'udt_datasets' and is_active));

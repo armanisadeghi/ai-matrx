@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b3_02_hr_provider_binding — un-enrolls hr.provider_binding from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'hr' and table_name = 'provider_binding' and is_active);
+select iam.apply_rls('hr', 'provider_binding', (select token from platform.entity_types where schema_name = 'hr' and table_name = 'provider_binding' and is_active), (select rls_variant from platform.entity_types where schema_name = 'hr' and table_name = 'provider_binding' and is_active));

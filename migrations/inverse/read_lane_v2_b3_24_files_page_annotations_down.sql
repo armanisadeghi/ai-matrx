@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b3_24_files_page_annotations — un-enrolls files.page_annotations from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'files' and table_name = 'page_annotations' and is_active);
+select iam.apply_rls('files', 'page_annotations', (select token from platform.entity_types where schema_name = 'files' and table_name = 'page_annotations' and is_active), (select rls_variant from platform.entity_types where schema_name = 'files' and table_name = 'page_annotations' and is_active));

@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b3_57_platform_assists — un-enrolls platform.assists from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'platform' and table_name = 'assists' and is_active);
+select iam.apply_rls('platform', 'assists', (select token from platform.entity_types where schema_name = 'platform' and table_name = 'assists' and is_active), (select rls_variant from platform.entity_types where schema_name = 'platform' and table_name = 'assists' and is_active));

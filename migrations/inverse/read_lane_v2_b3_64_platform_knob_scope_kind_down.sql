@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b3_64_platform_knob_scope_kind — un-enrolls platform.knob_scope_kind from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'platform' and table_name = 'knob_scope_kind' and is_active);
+select iam.apply_rls('platform', 'knob_scope_kind', (select token from platform.entity_types where schema_name = 'platform' and table_name = 'knob_scope_kind' and is_active), (select rls_variant from platform.entity_types where schema_name = 'platform' and table_name = 'knob_scope_kind' and is_active));

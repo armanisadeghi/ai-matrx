@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b3_36_scheduler_sch_run — un-enrolls scheduler.sch_run from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'scheduler' and table_name = 'sch_run' and is_active);
+select iam.apply_rls('scheduler', 'sch_run', (select token from platform.entity_types where schema_name = 'scheduler' and table_name = 'sch_run' and is_active), (select rls_variant from platform.entity_types where schema_name = 'scheduler' and table_name = 'sch_run' and is_active));

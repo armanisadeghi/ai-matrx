@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b3_39_media_library_item — un-enrolls media.library_item from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'media' and table_name = 'library_item' and is_active);
+select iam.apply_rls('media', 'library_item', (select token from platform.entity_types where schema_name = 'media' and table_name = 'library_item' and is_active), (select rls_variant from platform.entity_types where schema_name = 'media' and table_name = 'library_item' and is_active));

@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b3_37_custom_io_outbox — un-enrolls custom.io_outbox from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'custom' and table_name = 'io_outbox' and is_active);
+select iam.apply_rls('custom', 'io_outbox', (select token from platform.entity_types where schema_name = 'custom' and table_name = 'io_outbox' and is_active), (select rls_variant from platform.entity_types where schema_name = 'custom' and table_name = 'io_outbox' and is_active));

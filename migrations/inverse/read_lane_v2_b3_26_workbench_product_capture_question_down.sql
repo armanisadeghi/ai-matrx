@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b3_26_workbench_product_capture_question — un-enrolls workbench.product_capture_question from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'workbench' and table_name = 'product_capture_question' and is_active);
+select iam.apply_rls('workbench', 'product_capture_question', (select token from platform.entity_types where schema_name = 'workbench' and table_name = 'product_capture_question' and is_active), (select rls_variant from platform.entity_types where schema_name = 'workbench' and table_name = 'product_capture_question' and is_active));

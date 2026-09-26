@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b3_62_web_gsc_page_stat — un-enrolls web.gsc_page_stat from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'web' and table_name = 'gsc_page_stat' and is_active);
+select iam.apply_rls('web', 'gsc_page_stat', (select token from platform.entity_types where schema_name = 'web' and table_name = 'gsc_page_stat' and is_active), (select rls_variant from platform.entity_types where schema_name = 'web' and table_name = 'gsc_page_stat' and is_active));

@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b3_63_transcripts_studio_sessions — un-enrolls transcripts.studio_sessions from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'transcripts' and table_name = 'studio_sessions' and is_active);
+select iam.apply_rls('transcripts', 'studio_sessions', (select token from platform.entity_types where schema_name = 'transcripts' and table_name = 'studio_sessions' and is_active), (select rls_variant from platform.entity_types where schema_name = 'transcripts' and table_name = 'studio_sessions' and is_active));

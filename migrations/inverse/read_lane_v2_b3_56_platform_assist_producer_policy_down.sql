@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b3_56_platform_assist_producer_policy — un-enrolls platform.assist_producer_policy from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'platform' and table_name = 'assist_producer_policy' and is_active);
+select iam.apply_rls('platform', 'assist_producer_policy', (select token from platform.entity_types where schema_name = 'platform' and table_name = 'assist_producer_policy' and is_active), (select rls_variant from platform.entity_types where schema_name = 'platform' and table_name = 'assist_producer_policy' and is_active));

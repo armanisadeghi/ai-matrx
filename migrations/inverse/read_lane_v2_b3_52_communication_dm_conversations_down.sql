@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b3_52_communication_dm_conversations — un-enrolls communication.dm_conversations from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'communication' and table_name = 'dm_conversations' and is_active);
+select iam.apply_rls('communication', 'dm_conversations', (select token from platform.entity_types where schema_name = 'communication' and table_name = 'dm_conversations' and is_active), (select rls_variant from platform.entity_types where schema_name = 'communication' and table_name = 'dm_conversations' and is_active));

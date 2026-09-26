@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b3_03_rag_library_docs — un-enrolls rag.library_docs from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'rag' and table_name = 'library_docs' and is_active);
+select iam.apply_rls('rag', 'library_docs', (select token from platform.entity_types where schema_name = 'rag' and table_name = 'library_docs' and is_active), (select rls_variant from platform.entity_types where schema_name = 'rag' and table_name = 'library_docs' and is_active));

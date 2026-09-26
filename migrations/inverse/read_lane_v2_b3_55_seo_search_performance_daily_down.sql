@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b3_55_seo_search_performance_daily — un-enrolls seo.search_performance_daily from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'seo' and table_name = 'search_performance_daily' and is_active);
+select iam.apply_rls('seo', 'search_performance_daily', (select token from platform.entity_types where schema_name = 'seo' and table_name = 'search_performance_daily' and is_active), (select rls_variant from platform.entity_types where schema_name = 'seo' and table_name = 'search_performance_daily' and is_active));

@@ -1,0 +1,3 @@
+-- chair-step: inverse of read_lane_v2_b3_07_workspace_war_rooms — un-enrolls workspace.war_rooms from read-lane v2 and regenerates it back to the set-form read lane.
+delete from iam.read_lane_v2_rollout where token = (select token from platform.entity_types where schema_name = 'workspace' and table_name = 'war_rooms' and is_active);
+select iam.apply_rls('workspace', 'war_rooms', (select token from platform.entity_types where schema_name = 'workspace' and table_name = 'war_rooms' and is_active), (select rls_variant from platform.entity_types where schema_name = 'workspace' and table_name = 'war_rooms' and is_active));
