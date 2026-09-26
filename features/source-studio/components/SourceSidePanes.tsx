@@ -3,10 +3,7 @@
 /**
  * The Source screen's right rail (SOURCE-CONVERGENCE §8.2): Chunks with a
  * test-search box (the existing in-document search route), Entities, and
- * what the Source is attached to. (`AssociationCardGrid` cannot anchor on a
- * `processed_document` — the associations package's primary-entity types do
- * not include it — so the attachments come from the Sources page's own facts
- * read and attaching goes through the Save panel's registry picker.) A chunk, a search hit or
+ * what the Source is attached to. (the association grid in filed-under mode) A chunk, a search hit or
  * an entity goes to its portion — and, for a transcript with a player, seeks
  * to the segment's time. Absent or honest: a Source with no chunks says
  * "Not yet searchable" with the action that makes it searchable.
@@ -14,12 +11,9 @@
 
 import { useState } from "react";
 import { Loader2, SearchX } from "lucide-react";
-import Link from "next/link";
-import * as associationsRoot from "@ai-matrx/associations";
 import {
   AssociationCardGrid,
   PrimaryEntityProvider,
-  type PrimaryEntity,
 } from "@ai-matrx/associations/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,19 +25,11 @@ import {
   DocumentSearchSummary,
 } from "@/features/rag/components/library/DocumentSearch";
 import type { UseDocumentSearch } from "@/features/rag/hooks/useDocumentSearch";
-import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
-import {
-  attachmentTypeWords,
-  type SourceAttachment,
-} from "@/features/sources/sourceRows";
 import type {
   SourceChunk,
   SourceEntity,
 } from "@/features/source-studio/hooks/useSourceData";
-import {
-  displayableLabel,
-  type EntitiesState,
-} from "@/features/source-studio/sourceStudioModel";
+import type { EntitiesState } from "@/features/source-studio/sourceStudioModel";
 
 /** What an empty Entities pane says — never "none found" unless extraction ran. */
 function entitiesEmptySentence(state: EntitiesState, notSearchable: boolean): string {
@@ -95,13 +81,6 @@ export interface SourceSidePanesProps {
   /** Whether extraction ran — "none found" is only said after it did. */
   entitiesState: EntitiesState;
   onEntityGo: (entity: SourceEntity) => void;
-  /**
-   * What the Source is attached to (`source_list_facts.attachments`, the same
-   * read the Sources page shows); null when it could not be read.
-   */
-  attachments: SourceAttachment[] | null;
-  /** Open the Save panel's attach picker. */
-  onAttach: (() => void) | null;
   /** The Source the filed-under grid anchors on (its head capture). */
   source: { id: string; orgId: string | null; label: string } | null;
 }
@@ -339,96 +318,32 @@ function EntitiesTab({
 }
 
 /**
- * `@ai-matrx/associations` 0.11.0 ships the filed-under mode
- * (`direction: "outgoing"`): the grid lists what the Source is filed under and
- * its "+" files it (`processed_document → container`, the edge the door
- * writes). Until the installed package carries it, the list below stands in —
- * and says so. Delete the fallback once the app is on 0.11.0.
+ * "Attached to" is the platform's association grid in filed-under mode
+ * (`@ai-matrx/associations` >= 0.11.0): it lists the containers the Source is
+ * filed under and "+" files it (`processed_document → container`, the same
+ * role-less edge the landing door writes).
  */
-const FILED_UNDER_SUPPORTED = "isAssociationTargetType" in associationsRoot;
-
-function AssociationsTab(props: SourceSidePanesProps) {
-  const { source } = props;
-  if (!FILED_UNDER_SUPPORTED || !source) {
-    return <AttachmentsListFallback {...props} />;
+function AssociationsTab({ source }: SourceSidePanesProps) {
+  if (!source) {
+    return (
+      <p className="p-3 text-sm text-muted-foreground">
+        Loading what this Source is filed under…
+      </p>
+    );
   }
-  // Typed against the installed package; 0.11.0's PrimaryFiledEntity accepts
-  // it directly and this conversion becomes a no-op.
-  const primary = {
-    type: "processed_document",
-    id: source.id,
-    orgId: source.orgId,
-    label: source.label,
-    direction: "outgoing",
-  } as unknown as PrimaryEntity;
   return (
     <div className="h-full min-w-0 overflow-y-auto overflow-x-hidden p-3">
-      <PrimaryEntityProvider value={primary}>
+      <PrimaryEntityProvider
+        value={{
+          type: "processed_document",
+          id: source.id,
+          orgId: source.orgId,
+          label: source.label,
+          direction: "outgoing",
+        }}
+      >
         <AssociationCardGrid />
       </PrimaryEntityProvider>
-    </div>
-  );
-}
-
-function AttachmentsListFallback({ attachments, onAttach }: SourceSidePanesProps) {
-  return (
-    <div className="h-full min-w-0 overflow-y-auto overflow-x-hidden">
-      <div className="space-y-2 p-3">
-        {attachments === null ? (
-          <p className="text-sm text-muted-foreground">
-            What this Source is attached to could not be read.
-            <ErrorAlchemyMenu />
-          </p>
-        ) : attachments.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Not attached to anything yet.
-          </p>
-        ) : (
-          <ul className="space-y-1" data-testid="source-attachments">
-            {attachments.map((a) => {
-              const info = tryGetEntityInfo(a.target_type);
-              const href = info?.hrefFor?.(a.target_id) ?? null;
-              const Icon = info?.Icon;
-              const label =
-                displayableLabel(a.label) ?? attachmentTypeWords(a.target_type);
-              const body = (
-                <span className="flex min-w-0 items-center gap-2">
-                  {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
-                  <span className="truncate">{label}</span>
-                  <Badge variant="outline" className="ml-auto shrink-0 px-1 py-0 text-[10px]">
-                    {attachmentTypeWords(a.target_type)}
-                  </Badge>
-                </span>
-              );
-              return (
-                <li key={`${a.target_type}:${a.target_id}`}>
-                  {href ? (
-                    <Link
-                      href={href}
-                      className="block rounded-md border border-border px-2 py-1.5 text-sm hover:bg-accent"
-                    >
-                      {body}
-                    </Link>
-                  ) : (
-                    <div className="rounded-md border border-border px-2 py-1.5 text-sm">
-                      {body}
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        {onAttach && (
-          <Button size="sm" variant="outline" onClick={onAttach}>
-            Attach to a project, topic or Library
-          </Button>
-        )}
-        <p className="text-[11px] text-muted-foreground" data-testid="filed-under-fallback">
-          Showing a simple list: this build's association package predates
-          filed-under cards (needs @ai-matrx/associations 0.11.0).
-        </p>
-      </div>
     </div>
   );
 }

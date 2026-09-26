@@ -3,7 +3,7 @@
  * transcript chunks had `ner_extracted_at` NULL (provider key refused) while
  * the pane claimed "No people, places or things were found".
  */
-import { displayableLabel, entitiesState } from "@/features/source-studio/sourceStudioModel";
+import { entitiesState } from "@/features/source-studio/sourceStudioModel";
 
 describe("entitiesState", () => {
   it("server state wins, including the failure sentence", () => {
@@ -20,9 +20,5 @@ describe("entitiesState", () => {
     expect(entitiesState(null, { total: 0, extracted: 0 })).toEqual({ kind: "not_run" });
     expect(entitiesState(null, { total: 10, extracted: 10 })).toEqual({ kind: "done" });
     expect(entitiesState(null, null)).toEqual({ kind: "unknown" });
-  });
-  it("codes are not names", () => {
-    expect(displayableLabel("catalogued_source")).toBeNull();
-    expect(displayableLabel("Launch plan")).toBe("Launch plan");
   });
 });

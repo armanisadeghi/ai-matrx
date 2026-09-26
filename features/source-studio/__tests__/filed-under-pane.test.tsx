@@ -1,8 +1,7 @@
 /**
  * "Attached to" uses the platform primitive: when the installed
- * `@ai-matrx/associations` has the filed-under mode (0.11.0), the pane renders
- * AssociationCardGrid anchored on the Source with `direction: "outgoing"`;
- * before that it shows the list and SAYS it is the stand-in.
+ * the pane renders AssociationCardGrid anchored on the Source with
+ * `direction: "outgoing"` (`@ai-matrx/associations` 0.11.0 filed-under mode).
  */
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -10,12 +9,6 @@ import { createRoot } from "react-dom/client";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const seen: { primary: unknown }[] = [];
-let hasFiledUnder = true;
-jest.mock("@ai-matrx/associations", () => ({
-  get isAssociationTargetType() {
-    return hasFiledUnder ? () => true : undefined;
-  },
-}));
 jest.mock("@ai-matrx/associations/react", () => {
   const React = jest.requireActual("react");
   const Ctx = React.createContext(null);
@@ -62,8 +55,6 @@ function props(): SourceSidePanesProps {
     entitiesTruncated: false,
     entitiesState: { kind: "done" },
     onEntityGo: () => undefined,
-    attachments: [],
-    onAttach: () => undefined,
     source: { id: "src-1", orgId: "org-1", label: "A Source" },
   };
 }

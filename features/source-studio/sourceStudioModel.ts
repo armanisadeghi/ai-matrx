@@ -470,10 +470,3 @@ export function entitiesState(
   if (chunks.total === 0 || chunks.extracted === 0) return { kind: "not_run" };
   return { kind: "done" };
 }
-
-/** A stored label that is a code (`catalogued_source`) is never shown as a name. */
-export function displayableLabel(label: string | null | undefined): string | null {
-  const l = label?.trim();
-  if (!l) return null;
-  return /^[a-z0-9]+(_[a-z0-9]+)+$/.test(l) ? null : l;
-}
