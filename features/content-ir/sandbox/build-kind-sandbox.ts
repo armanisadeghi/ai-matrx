@@ -62,6 +62,10 @@ const ALIAS: Record<string, string> = {
     __dirname,
     "runtime/FrameAlchemyDisclosure.ts",
   ),
+  "@/components/errors/useErrorSurfaceSnapshot": resolve(
+    __dirname,
+    "runtime/FrameErrorSurfaceSnapshot.ts",
+  ),
   "@/features/google-workspace/export/sendToGoogle": resolve(
     __dirname,
     "runtime/FrameSendToGoogle.ts",
