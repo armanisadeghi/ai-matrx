@@ -188,6 +188,12 @@ apply_one() {  # apply_one <source> <filename> <repo> <relpath> <runner> <select
 direct_one() {  # direct_one <source> <filename> <repo> <relpath> direct|record
   local source="$1" filename="$2" repo="$3" relpath="$4" mode="$5" ck note
   ck="$(shasum -a 256 "$repo/$relpath" | cut -d' ' -f1)"
+  # 🚨 THE ROW CARRIES PRODUCTION'S CHECKSUM (lane CLONE-LEDGER-VERDICTS, 2026-09-26). aidream ledgers
+  # the sha256 of the bytes with the EOF whitespace stripped, so a raw-bytes hash written under the
+  # aidream label never equals production's and the file stays in the delta forever (1043/1044/1045
+  # carried direct on the first run). The planner already proved the committed bytes hash to
+  # production's checksum in one of the two spellings; that checksum is the one written.
+  [ -n "${PLAN_CHECKSUM:-}" ] && ck="$PLAN_CHECKSUM"
   note="$(night_readonly_psql "${PROD_ARGS[@]}" --sql "select coalesce(chair_step, '') from public._schema_migrations where source = '$source' and filename = '$filename'" 2>/dev/null | head -1)"
   note="${note//\$cnote\$/}"   # dollar-quoted below; the one sequence that could end it is removed
   local ledger="insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms, chair_step, applied_by_lane)
@@ -591,7 +597,7 @@ APPLIED=0; FAILED=0; REPAIRED=0; SUPERSEDED=0; FAILED_NAMES=(); SUPERSEDED_NAMES
 while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner selector reapply reason applied_at inverse owner; do
   [ "$kind" = "APPLY" ] || continue
   local_rc=0
-  JUDGED_AS_OF="$applied_at"
+  JUDGED_AS_OF="$applied_at"; PLAN_CHECKSUM="$checksum"
   # The files this plan re-runs AFTER this one (a later owner that is itself about to run again).
   awk -F$'\x1f' -v f="$filename" 'seen && $1 == "APPLY" { print $3 } $3 == f { seen = 1 }' "$WORK/plan.tsv" > "$WORK/pending.txt"
   if [ "$runner" != "frontend" ] && is_projection "$repo/$relpath"; then
