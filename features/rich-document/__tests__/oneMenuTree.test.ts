@@ -194,12 +194,14 @@ describe("one registry tree behind every menu", () => {
       const src = fs.readFileSync(path.join(__dirname, rel), "utf8");
       expect(src).toMatch(/buildMenuTree\(/);
     }
-    // The phone sheet renders the desktop model — never its own tree.
-    const mobile = fs.readFileSync(
-      path.join(__dirname, "../../context-menu-v3/components/MobileMenuContent.tsx"),
+    // The phone sheet, the right-click and the palette are the Alchemy
+    // package's layouts over ONE model built from the ONE engine (ALC-15 S3).
+    const content = fs.readFileSync(
+      path.join(__dirname, "../../context-menu-v3/components/AlchemyMenuContent.tsx"),
       "utf8",
     );
-    expect(mobile).toMatch(/buildMenuModel\(/);
-    expect(mobile).not.toMatch(/copyVariantActions|placementSubmenu\(/);
+    expect(content).toMatch(/buildMenuModel\(/);
+    expect(content).toMatch(/@ai-matrx\/alchemy\/react\/sheet/);
+    expect(content).not.toMatch(/copyVariantActions|placementSubmenu\(/);
   });
 });

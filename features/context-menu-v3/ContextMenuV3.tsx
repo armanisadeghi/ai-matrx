@@ -19,18 +19,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu/context-menu";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Slot } from "@radix-ui/react-slot";
-import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   FloatingSelectionIcon,
@@ -114,32 +103,19 @@ function yieldsToNativeTextMenu(target: EventTarget | null): boolean {
   return false;
 }
 
-// Tiny placeholder for the (~0.5s) MenuContent chunk load on first open only.
-function MenuContentSkeleton() {
-  return (
-    <div className="px-2 py-3 space-y-2" aria-busy="true">
-      <div className="h-3 w-24 rounded bg-muted animate-pulse" />
-      <div className="h-3 w-32 rounded bg-muted animate-pulse" />
-      <div className="h-3 w-20 rounded bg-muted animate-pulse" />
-    </div>
-  );
-}
-
-// The single heavy boundary. ssr:false keeps it (and everything beneath:
-// react-icons, launchers, data hooks) off the server render and out of the
-// shell's chunk; the conditional mount (Radix renders content only when open)
-// defers the client fetch to first engagement. One boundary, no stacking.
-const MenuContent = dynamic(() => import("./components/MenuContent"), {
+// THE single heavy boundary (T1 + T1e). ssr:false keeps it — the engine hook,
+// the agent fetch, the package renderers — off the server render and out of
+// the shell's chunk; it mounts on first open only. One boundary for the
+// right-click, the floating icon, the phone sheet and the palette (ALC-15 S3:
+// the package draws all four from one registry).
+const AlchemyMenuContent = dynamic(() => import("./components/AlchemyMenuContent"), {
   ssr: false,
-  loading: () => <MenuContentSkeleton />,
 });
 
-// The mobile renderer — a 70dvh bottom-sheet drill-down. Same lazy boundary as
-// MenuContent; only one of the two is rendered (the shell picks by viewport).
-const MobileMenuContent = dynamic(
-  () => import("./components/MobileMenuContent"),
-  { ssr: false, loading: () => <MenuContentSkeleton /> },
-);
+type OpenMenu = {
+  mode: "context" | "sheet" | "palette";
+  point: { x: number; y: number };
+};
 
 export function ContextMenuV3({
   children,
@@ -195,6 +171,11 @@ export function ContextMenuV3({
   const [showFloatingIcon, setShowFloatingIcon] = useState(false);
   const isMobile = useIsMobile();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  // Where the desktop menu anchors (pointer, ⋯ button, floating icon) and a
+  // counter so every open mounts a fresh engine over a fresh click target.
+  const [menuPoint, setMenuPoint] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [openSeq, setOpenSeq] = useState(0);
 
   const capturedSelection = useRef<CapturedSelection | null>(null);
   const selectionLocked = useRef(false);
@@ -459,9 +440,9 @@ export function ContextMenuV3({
       setFallbackContent(target.value ?? "");
     } else {
       let containerElement = containerEl;
-      if (!containerElement.hasAttribute("data-radix-context-menu-trigger")) {
+      if (!containerElement.hasAttribute("data-alchemy-trigger")) {
         const trigger = containerElement.querySelector(
-          "[data-radix-context-menu-trigger]",
+          "[data-alchemy-trigger]",
         );
         if (trigger instanceof HTMLElement) containerElement = trigger;
       }
@@ -488,8 +469,14 @@ export function ContextMenuV3({
     // stopPropagation here aborts the asChild-composed Radix handler on nested
     // rows, leaving the row with no menu at all.
     if (e.defaultPrevented) return;
+    // The innermost eligible trigger owns the gesture: preventing here is what
+    // makes every outer shell yield (and hides the native menu).
+    e.preventDefault();
     captureContext(e.target as HTMLElement, e.currentTarget as HTMLElement);
+    setMenuPoint({ x: e.clientX, y: e.clientY });
+    setOpenSeq((n) => n + 1);
     setMenuOpen(true);
+    onMenuOpenChange?.(true);
   };
 
   const handleMenuClose = () => {
@@ -543,6 +530,9 @@ export function ContextMenuV3({
         : null;
     resolvePerTargetContext(container);
     setFallbackContent(extractElementText(container));
+    const anchor = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setMenuPoint({ x: anchor.left, y: anchor.bottom + 4 });
+    setOpenSeq((n) => n + 1);
     setDropdownOpen(true);
   };
 
@@ -579,6 +569,7 @@ export function ContextMenuV3({
       const info = touchStart.current;
       if (!info) return;
       captureContext(info.target, info.container);
+      setOpenSeq((n) => n + 1);
       setSheetOpen(true);
     }, 480);
   };
@@ -616,6 +607,7 @@ export function ContextMenuV3({
     });
     resolvePerTargetContext(container);
     setFallbackContent(extractElementText(container));
+    setOpenSeq((n) => n + 1);
     setSheetOpen(true);
   };
 
@@ -690,180 +682,116 @@ export function ContextMenuV3({
   // users). The surface name + revision now live in the surface submenu the
   // engine builds (`surfaceSection`), admin-only for the revision.
 
-  // ── Mobile: a 70dvh bottom-sheet drill-down (long-press / floating icon) ──
-  if (isMobile) {
-    // The mobile trigger props. Attached WITHOUT a wrapper element whenever we
-    // can (see below); the props themselves are identical either way.
-    const mobileTriggerProps = {
-      onContextMenu: (e: React.MouseEvent<HTMLElement>) => {
-        if (suppressed) return; // native menu shows
-        // Same rule as the desktop capture guard below: a read-only menu
-        // never steals a live text field's native menu.
+  // ── The palette (every action, type to filter — Linear) ──────────────────
+  // ⌘/Ctrl+Shift+K inside the wrapped surface opens it over the same target.
+  const handlePaletteKey = (e: React.KeyboardEvent<HTMLElement>) => {
+    if (suppressed) return;
+    if (!(e.metaKey || e.ctrlKey) || !e.shiftKey || e.key.toLowerCase() !== "k") return;
+    if (e.defaultPrevented) return;
+    e.preventDefault();
+    captureContext(e.target as HTMLElement, e.currentTarget);
+    setOpenSeq((n) => n + 1);
+    setPaletteOpen(true);
+    onMenuOpenChange?.(true);
+  };
+
+  const mode: "context" | "sheet" | "palette" | null = sheetOpen
+    ? "sheet"
+    : paletteOpen
+      ? "palette"
+      : menuOpen || dropdownOpen
+        ? "context"
+        : null;
+  const closeActive = () => {
+    if (sheetOpen) handleSheetOpenChange(false);
+    else if (paletteOpen) {
+      setPaletteOpen(false);
+      onMenuOpenChange?.(false);
+      handleMenuClose();
+    } else if (dropdownOpen) handleDropdownClose(false);
+    else {
+      onMenuOpenChange?.(false);
+      handleMenuClose();
+    }
+  };
+
+  // The trigger props — merged ONTO the single child via Radix `Slot` (no
+  // wrapper element: a `<div>` between `<tbody>` and a wrapped `<tr>` is
+  // illegal), falling back to a `display:contents` wrapper for a Fragment or
+  // multi-child payload, where a `<div>` is always legal.
+  const triggerProps = {
+    "data-alchemy-trigger": "context",
+    // Radix-compatible open state, for styles that key on it.
+    "data-state": mode ? "open" : "closed",
+    onContextMenuCapture: (e: React.MouseEvent<HTMLElement>) => {
+      // CAPTURE: a read-only menu never steals a live text field's native menu.
+      if (!isEditable && yieldsToNativeTextMenu(e.target)) e.stopPropagation();
+    },
+    onContextMenu: (e: React.MouseEvent<HTMLElement>) => {
+      if (isMobile) {
+        if (suppressed) return;
         if (!isEditable && yieldsToNativeTextMenu(e.target)) return;
-        // Match the long-press path: a nested row trigger wins over its
-        // surrounding list-level trigger instead of opening both sheets.
+        // A nested row trigger wins over its surrounding list-level trigger.
         e.stopPropagation();
         e.preventDefault();
         captureContext(e.target as HTMLElement, e.currentTarget);
+        setOpenSeq((n) => n + 1);
         setSheetOpen(true);
-      },
-      onTouchStart: handleTouchStart,
-      onTouchMove: handleTouchMove,
-      onTouchEnd: handleTouchEnd,
-      onTouchCancel: handleTouchEnd,
-    };
+        return;
+      }
+      handleContextMenu(e);
+    },
+    onMouseDown: isMobile ? undefined : handleMouseDown,
+    onKeyDown: handlePaletteKey,
+    ...(isMobile
+      ? {
+          onTouchStart: handleTouchStart,
+          onTouchMove: handleTouchMove,
+          onTouchEnd: handleTouchEnd,
+          onTouchCancel: handleTouchEnd,
+        }
+      : {}),
+  };
 
-    // A WRAPPER ELEMENT IS NOT ALWAYS LEGAL. `display:contents` costs no layout
-    // box, but it is still a `<div>` in the DOM — and when the wrapped child is
-    // a `<tr>` (the canonical list shell wraps every row) that div sits between
-    // `<tbody>` and `<tr>`, which no element may do: React logs hydration
-    // errors and the browser reparents the table. So when `children` is a
-    // single element we merge the handlers and the selection-owner ref ONTO
-    // that element via Radix `Slot` — exactly what the desktop branch already
-    // gets from `ContextMenuTrigger asChild`, and it composes (never clobbers)
-    // any handler/ref the child already has. Slot throws on anything but a
-    // single element, and cloning props onto a Fragment is invalid, so both
-    // fall back to the wrapper — where a `<div>` was always going to be legal
-    // anyway, since a Fragment/multi-child payload cannot be a lone `<tr>`.
-    return (
-      <MenuPresenceProvider value={true}>
-    <RegistryMenuSourceProvider value={contentSource ?? null}>
+  const floatingOpen = isMobile ? sheetOpen : dropdownOpen;
+
+  return (
+    <MenuPresenceProvider value={true}>
+      <RegistryMenuSourceProvider value={contentSource ?? null}>
         {canSlotChildren ? (
-          <Slot ref={setSelectionOwner} {...mobileTriggerProps}>
+          <Slot ref={setSelectionOwner} {...triggerProps}>
             {children}
           </Slot>
         ) : (
-          // Multi-children / Fragment fallback: display:contents → no layout
-          // box, but still receives bubbled touch events from the wrapped
-          // children (preserves the surface's layout).
-          <div
-            ref={setSelectionOwner}
-            style={{ display: "contents" }}
-            {...mobileTriggerProps}
-          >
+          <div ref={setSelectionOwner} style={{ display: "contents" }} {...triggerProps}>
             {children}
           </div>
         )}
 
         {enableFloatingIcon &&
-          shouldRenderFloatingIcon(
-            selectionRect,
-            showFloatingIcon,
-            sheetOpen,
-          ) && (
+          shouldRenderFloatingIcon(selectionRect, showFloatingIcon, floatingOpen) && (
             <FloatingSelectionIcon
               selectionRect={selectionRect}
               visible={showFloatingIcon}
-              dropdownOpen={sheetOpen}
-              onOpen={handleOpenFloatingMobile}
+              dropdownOpen={floatingOpen}
+              onOpen={isMobile ? handleOpenFloatingMobile : handleOpenFloating}
               onDismiss={() => setShowFloatingIcon(false)}
             />
           )}
 
-        <Drawer open={sheetOpen} onOpenChange={handleSheetOpenChange}>
-          <DrawerContent className="flex h-[70dvh] flex-col p-0">
-            <DrawerTitle className="sr-only">Context menu</DrawerTitle>
-            {sheetOpen && (
-              <div className="min-h-0 flex-1">
-                <MobileMenuContent
-                  {...menuContentProps}
-                  onClose={() => setSheetOpen(false)}
-                />
-              </div>
-            )}
-          </DrawerContent>
-        </Drawer>
+        {mode ? (
+          <AlchemyMenuContent
+            key={openSeq}
+            {...menuContentProps}
+            mode={mode}
+            point={menuPoint}
+            open
+            onOpenChange={(open) => {
+              if (!open) closeActive();
+            }}
+          />
+        ) : null}
       </RegistryMenuSourceProvider>
-    </MenuPresenceProvider>
-    );
-  }
-
-  return (
-    <MenuPresenceProvider value={true}>
-    <RegistryMenuSourceProvider value={contentSource ?? null}>
-      <ContextMenu
-        onOpenChange={(open) => {
-          onMenuOpenChange?.(open);
-          if (!open) handleMenuClose();
-        }}
-      >
-        <ContextMenuTrigger
-          asChild
-          disabled={suppressed}
-          ref={setSelectionOwner}
-          // CAPTURE, and it has to be. Radix's own open handler is composed
-          // into the trigger's bubble-phase `onContextMenu`, so returning early
-          // from ours does not stop it, and `preventDefault()` would kill the
-          // native menu too — the exact thing we are trying to preserve.
-          // Stopping propagation during capture skips every remaining listener
-          // on this element, ours and Radix's, and leaves the event otherwise
-          // untouched, so the browser shows its own menu.
-          onContextMenuCapture={(e) => {
-            if (!isEditable && yieldsToNativeTextMenu(e.target))
-              e.stopPropagation();
-          }}
-          onMouseDown={handleMouseDown}
-          onContextMenu={handleContextMenu}
-        >
-          {canSlotChildren ? (
-            children
-          ) : (
-            <div style={{ display: "contents" }}>{children}</div>
-          )}
-        </ContextMenuTrigger>
-        {/* z-[9999]: menus must layer above floating WindowPanels (z >= 1000). */}
-        {/* max-h + overflow-y-auto: a long menu (30 rows on /notes measured
-            1136px in a 900px viewport) used to run off the bottom of the
-            screen with its tail unreachable — Radix only flips/shifts, it
-            never shrinks. The available-height var is what Radix leaves us. */}
-        <ContextMenuContent
-          className={`z-[9999] w-64 max-h-[var(--radix-context-menu-content-available-height)] overflow-y-auto ${className ?? ""}`}
-          onCloseAutoFocus={onCloseAutoFocus}
-          // A context menu can appear before the originating secondary-button
-          // release. Radix treats an item pointer-up without an item
-          // pointer-down as a click for assistive input, so that release could
-          // select whichever command rendered beneath it. Consume only the
-          // secondary release; primary clicks and keyboard selection still
-          // follow Radix's normal item path.
-          onPointerUpCapture={(event) => {
-            if (event.button === 2) event.preventDefault();
-          }}
-        >
-          <MenuContent variant="context" {...menuContentProps} />
-        </ContextMenuContent>
-      </ContextMenu>
-
-      {enableFloatingIcon && (
-        <DropdownMenu open={dropdownOpen} onOpenChange={handleDropdownClose}>
-          <DropdownMenuTrigger asChild>
-            {shouldRenderFloatingIcon(
-              selectionRect,
-              showFloatingIcon,
-              dropdownOpen,
-            ) ? (
-              <FloatingSelectionIcon
-                selectionRect={selectionRect}
-                visible={showFloatingIcon}
-                dropdownOpen={dropdownOpen}
-                onOpen={handleOpenFloating}
-                onDismiss={() => setShowFloatingIcon(false)}
-              />
-            ) : (
-              <span style={{ display: "none" }} aria-hidden="true" />
-            )}
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="z-[9999] w-64 max-h-[var(--radix-dropdown-menu-content-available-height)] overflow-y-auto"
-            align="center"
-            side="bottom"
-            sideOffset={5}
-            onCloseAutoFocus={onCloseAutoFocus}
-          >
-            <MenuContent variant="dropdown" {...menuContentProps} />
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-    </RegistryMenuSourceProvider>
     </MenuPresenceProvider>
   );
 }

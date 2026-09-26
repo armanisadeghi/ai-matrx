@@ -2,7 +2,14 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { NonEditableContextMenu } from "./NonEditableContextMenu";
 
-jest.mock("next/dynamic", () => () => () => null);
+jest.mock("next/dynamic", () => () => (props: { mode: string; sourceFeature: string }) => {
+  const ReactModule = require("react");
+  return ReactModule.createElement("div", {
+    "data-testid": "alchemy-menu",
+    "data-mode": props.mode,
+    "data-source": props.sourceFeature,
+  });
+});
 jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
 jest.mock("@/features/agents/hooks/useWidgetHandle", () => ({
   useOptionalWidgetHandle: () => null,
@@ -60,6 +67,11 @@ describe("ContextMenuV3 nested desktop triggers", () => {
 
     expect(inner.getAttribute("data-state")).toBe("open");
     expect(outer.getAttribute("data-state")).toBe("closed");
+    // One menu, the innermost one — the Alchemy engine for the inner surface.
+    const menus = [...document.querySelectorAll('[data-testid="alchemy-menu"]')];
+    expect(menus.map((m) => [m.getAttribute("data-source"), m.getAttribute("data-mode")])).toEqual([
+      ["code-editor", "context"],
+    ]);
   });
 
   it("wraps multiple desktop children without violating the Radix slot contract", () => {

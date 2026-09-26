@@ -2,7 +2,14 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { NonEditableContextMenu } from "./NonEditableContextMenu";
 
-jest.mock("next/dynamic", () => () => () => null);
+jest.mock("next/dynamic", () => () => (props: { mode: string; sourceFeature: string }) => {
+  const ReactModule = require("react");
+  return ReactModule.createElement("div", {
+    "data-testid": "alchemy-menu",
+    "data-mode": props.mode,
+    "data-source": props.sourceFeature,
+  });
+});
 jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => true }));
 jest.mock("@/features/agents/hooks/useWidgetHandle", () => ({
   useOptionalWidgetHandle: () => null,
@@ -62,11 +69,12 @@ describe("ContextMenuV3 mobile long-press trigger", () => {
       trigger.dispatchEvent(touchEvent("touchstart", 120, 240));
       jest.advanceTimersByTime(479);
     });
-    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.querySelector('[data-testid="alchemy-menu"]')).toBeNull();
 
     act(() => {
       jest.advanceTimersByTime(1);
     });
-    expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+    // The package's bottom sheet (T1m) over the one engine.
+    expect(document.querySelector('[data-testid="alchemy-menu"]')?.getAttribute("data-mode")).toBe("sheet");
   });
 });

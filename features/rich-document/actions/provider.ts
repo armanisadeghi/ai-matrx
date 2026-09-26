@@ -44,7 +44,7 @@ export const RICH_DOCUMENT_PROVIDER_ID = "rich-document";
 /** The write target every source adapter serves (edit, delete, regenerate, fork…). */
 export const RICH_DOCUMENT_SOURCE_TARGET = "rich_document_source";
 
-const SOURCE_WRITE_TARGET: WriteTarget = {
+export const SOURCE_WRITE_TARGET: WriteTarget = {
   name: RICH_DOCUMENT_SOURCE_TARGET,
   label: "This content",
   description: "The record the content came from, changed through its source adapter.",
@@ -100,6 +100,11 @@ export function getAllActions(): RichDocumentAction[] {
 
 // ── Section + order from the existing menu hierarchy ─────────────────────────
 
+/** The one id for a named menu group, shared with the context-menu provider. */
+export function richDocumentSectionId(label: string): string {
+  return `rd:${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+}
+
 let placementCache: Map<string, { order: number; section?: { id: string; label: string; icon?: string } }> | null = null;
 function placementOf(id: string) {
   placementCache ??= buildPlacement();
@@ -117,7 +122,7 @@ function buildPlacement() {
         map.set(id, {
           order,
           section: {
-            id: `rd:${section.submenu.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+            id: richDocumentSectionId(section.submenu),
             label: section.submenu,
             ...(icon ? { icon } : {}),
           },
@@ -146,8 +151,19 @@ export interface RichDocumentTargetHost {
 }
 
 function hostOf(target: ClickTarget): RichDocumentTargetHost | null {
-  const host = target.host as RichDocumentTargetHost | undefined;
-  return host && host.kind === "rich-document" ? host : null;
+  const host = target.host as (Partial<RichDocumentTargetHost> & { richDocument?: RichDocumentTargetHost }) | undefined;
+  if (!host) return null;
+  if (host.kind === "rich-document") return host as RichDocumentTargetHost;
+  // A composite host (the right-click target carries both providers' halves).
+  return host.richDocument?.kind === "rich-document" ? host.richDocument : null;
+}
+
+/** The rich-document half of a composite host, for hosts that build one. */
+export function richDocumentTargetHost(
+  ctx: RichDocumentActionContext,
+  options: { getCtx?: () => RichDocumentActionContext; extra?: readonly RichDocumentAction[] } = {},
+): RichDocumentTargetHost {
+  return { kind: "rich-document", ctx, getCtx: options.getCtx ?? (() => ctx), extra: options.extra ?? [] };
 }
 
 /** THE ClickTarget for a rich-document context. */
