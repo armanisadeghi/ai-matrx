@@ -75,6 +75,10 @@
  *   pnpm db:apply migrations/foo.sql --reapply  re-execute a file whose ledger
  *                                               row holds a DIFFERENT checksum
  *   pnpm db:apply migrations/foo.sql --statement-timeout=30min   raise the budget
+ *   pnpm db:apply migrations/foo.sql --unrehearsed-emergency "<reason>"
+ *                                               apply at production with NO rule-27 record;
+ *                                               the reason is written into the ledger row
+ *   pnpm db:apply --rehearsal-gate-self-test    prove the RULE27-GATE record logic RED then GREEN
  *   pnpm db:apply --policy-only-self-test       prove the POLICY-LOCK policy-only rule RED then GREEN
  *   pnpm db:apply --window-class-self-test      prove the TRIGGER-LOCK window-class rule RED then GREEN
  *   pnpm db:apply --ground-gate-self-test       prove the inverse ground gate RED then GREEN
@@ -110,6 +114,20 @@
  *     it, and it is read BEFORE the header checks so a confirmed `-- chair-step:` never
  *     reaches it. The one remedy is a NEW migration, judged and ledgered on its own bytes.
  *   - a ledger row with a different checksum, without --reapply
+ *   - 🚨 RULE27-GATE (2026-09-26): at `--target production`, a file whose CURRENT bytes are not
+ *     already ledgered and have no passing rule-27 record — `migrations/rehearsed/<sha256>.json`,
+ *     written by `pnpm db:rehearse <file> --target clone` only after up -> inverse -> up passed.
+ *     The release sweep applied `rca5d_c_definer_doors_ask_each_record.sql` to production six
+ *     minutes after a commit that said "rehearsal pending", and every sidebar load timed out for
+ *     51 minutes. Ledgered bytes are grandfathered; `--reapply` of CHANGED bytes is gated;
+ *     `--dry-run` does not soften it. aidream's runner (which the sweep uses) refuses the same
+ *     files from the same records (db/migration_rehearsal.py). The one door is
+ *     `--unrehearsed-emergency "<reason>"`, announced in red and written into the ledger row's
+ *     `chair_step`. Proof: `pnpm db:apply --rehearsal-gate-self-test`. Library:
+ *     scripts/lib/migration-rehearsal.ts.
+ *   - (not a refusal) a ledger row in aidream's checksum form, sha256(sql.rstrip()), IS these
+ *     bytes: both forms are accepted, so this runner no longer calls a sweep-applied file
+ *     "not the bytes that ran" (CS-30's class; rca5d_c's false drift, 2026-09-26).
  *   - absent connection credentials (never a quiet downgrade to a weaker path)
  *   - 🚨 DD-220: a file that REPLACES a function body already live without saying
  *     which body it was written against, or saying so with a hash the catalogue
@@ -136,6 +154,7 @@ import { execFileSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
@@ -196,6 +215,16 @@ import {
   POLICY_MIXED_GRANDFATHERED,
 } from "./lib/migration-target";
 import { confirmChairStep } from "./lib/chair-step";
+import {
+  EMERGENCY_FLAG,
+  emergencyNote,
+  emergencyReasonProblem,
+  fileSha256,
+  loadRecord,
+  recordPath,
+  rehearsalRefusal,
+  writeRecord,
+} from "./lib/migration-rehearsal";
 import {
   attributionColumnsPresent,
   attributionJson,
@@ -614,6 +643,10 @@ async function ledgerRow(
 /**
  * A CAMPAIGN FILE MAY LAND ON THE MAIN DATABASE BEHIND ITS OWN LANE LOCK.
  *
+ * 🚨 SUPERSEDED IN PART 2026-09-26 (FOUND_DEFECTS "RULE27-GATE"): the BRANCH LEDGER ROW read
+ * below is still information only, but every production apply now needs a passing rule-27
+ * record for the file's exact bytes (scripts/lib/migration-rehearsal.ts), checked in applyFile.
+ *
  * 🚨 THE REHEARSAL COPY IS NOT A GATE (owner ruling, 2026-09-18: *"we have no
  * production. It's all just dev… All of your work should just go live"*). Until
  * then this function ALSO demanded a `public._schema_migrations` row on the branch
@@ -831,6 +864,12 @@ interface ApplyOpts {
    *  re-record. Judged together with the file being applied; see the kernel pairing
    *  refusal in applyFile. */
   pairedWith?: readonly string[];
+  /** `--unrehearsed-emergency <reason>` — apply at production WITHOUT a passing rule-27 record
+   *  for these exact bytes. Announced in red and written into the ledger row. */
+  unrehearsedEmergency?: string | null;
+  /** INTERNAL ONLY (never reachable from the command line): the --self-test scratch file, which
+   *  the self-test itself creates and drops. The reason is printed when it is used. */
+  rehearsalGateExempt?: string;
 }
 
 /** Apply ONE file. The whole of db:apply lives here so --self-test exercises
@@ -924,7 +963,8 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
         `  The ONE route to either database is the plan's own command:\n` +
         `    pnpm db:apply ${relative(ROOT, path)} --source ${CAMPAIGN_SOURCE} --target branch --lane <lane>\n` +
         `  and, while this lane holds its campaign_watch.build_lock row, the same file with\n` +
-        `  --target production. A rehearsal on the copy is a convenience, never a precondition.\n` +
+        `  --target production — once \`pnpm db:rehearse\` has written its rule-27 record (see\n` +
+        `  scripts/lib/migration-rehearsal.ts; the branch ledger row itself is still information only).\n` +
         `  Refusing by LOCATION, before its header is read.`,
     );
     return 1;
@@ -1619,14 +1659,21 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       );
     }
 
+    // THE LEDGER HOLDS ONE OF TWO HASHES OF THE SAME BYTES (CS-30): this runner writes
+    // sha256(sql); aidream's writes sha256(sql.rstrip()). Comparing against only the first made
+    // this runner say "the file on disk is not the bytes that ran" about every file the release
+    // sweep applied with a trailing newline — rca5d_c on 2026-09-26 (8abf1a83 IS these bytes).
+    const ledgerHoldsTheseBytes =
+      existing !== null &&
+      (existing.checksum === checksum || existing.checksum === sha256(sql.replace(/\s+$/, "")));
     if (existing) {
-      if (existing.checksum === checksum && !reapply) {
+      if (ledgerHoldsTheseBytes && !reapply) {
         console.log(
           `${TAG.ok}Already applied, byte-identical (ledgered ${existing.applied_at}). Nothing to do.`,
         );
         return 0;
       }
-      if (existing.checksum === checksum) {
+      if (ledgerHoldsTheseBytes) {
         // --reapply means EXECUTE THESE BYTES AGAIN. Until 2026-09-16 it did
         // nothing when the ledgered checksum MATCHED, so the one workflow the
         // campaign's rollback rule depends on — run a file's down-migration,
@@ -1656,6 +1703,40 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
         `${TAG.warn}--reapply: re-executing these bytes over ledgered ${existing.checksum.slice(0, 12)} ` +
           `(applied ${existing.applied_at}).`,
       );
+    }
+
+    // ── RULE 27 IS A GATE AT PRODUCTION (scripts/lib/migration-rehearsal.ts) ──────
+    // Incident 2026-09-26: rca5d_c reached production through the release sweep before its
+    // rehearsal and timed out every sidebar load for 51 minutes. Bytes the ledger already
+    // holds are grandfathered; anything else needs a passing rule-27 record for its exact
+    // bytes. --dry-run does not soften it.
+    let emergencyLedgerNote: string | null = null;
+    if (target === "production" && !ledgerHoldsTheseBytes) {
+      const why = rehearsalRefusal(path, filename);
+      if (why && opts.rehearsalGateExempt) {
+        console.log(`${TAG.warn}rule-27 gate not applied: ${opts.rehearsalGateExempt}`);
+      } else if (why && opts.unrehearsedEmergency) {
+        emergencyLedgerNote = emergencyNote(opts.unrehearsedEmergency, fileSha256(path));
+        console.warn(
+          `${C.red}${C.bold}!! UNREHEARSED EMERGENCY${C.reset}${C.red} — ${filename} goes to ` +
+            `PRODUCTION with no passing rule-27 record. Written into its ledger row:\n` +
+            `   ${emergencyLedgerNote}${C.reset}`,
+        );
+      } else if (why) {
+        console.error(
+          `${TAG.fail}${why}\n` +
+            `  Nothing was applied. In a true emergency the owning session may name the file with ` +
+            `${EMERGENCY_FLAG} "<reason>" — the reason is written into the ledger row.`,
+        );
+        return 1;
+      } else {
+        const rec = loadRecord(path)!;
+        console.log(
+          `${TAG.ok}rule 27 passed for these exact bytes ${C.dim}— ${rec.role}, rehearsed ` +
+            `${rec.rehearsed_at} on ${rec.clone_ref} by ${rec.rehearsed_by} ` +
+            `(${relative(ROOT, recordPath(path, rec.sha256))})${C.reset}`,
+        );
+      }
     }
 
     // ── ATTACK-5 finding 3: the header-less file on production ───────────────
@@ -1790,7 +1871,16 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     // column is added idempotently on the one path that writes it, so the record of
     // who waived the additive rule and why outlives the command that named it.
     // Nullable, no default, no live reader — every other insert names its columns.
-    const chairStepLog = chairStepConfirmed
+    const chairStepValue =
+      [
+        chairStepConfirmed
+          ? `${chairStepConfirmed} — named with --confirm-chair-step by ${process.env.USER ?? "unknown"}`
+          : null,
+        emergencyLedgerNote,
+      ]
+        .filter(Boolean)
+        .join(" | ") || null;
+    const chairStepLog = chairStepValue
       ? `alter table public._schema_migrations add column if not exists chair_step text;\n`
       : ``;
     // 🚨 THE CLONE'S LEDGER IS PRODUCTION'S LEDGER PLUS REHEARSAL ROWS, AND THE
@@ -1906,22 +1996,20 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     const buildLedgerUpsert = (attr: typeof attrParts | null) =>
       chairStepLog +
       `insert into public._schema_migrations (source, filename, checksum, duration_ms` +
-      (chairStepConfirmed ? `, chair_step` : ``) +
+      (chairStepValue ? `, chair_step` : ``) +
       (rehearsalMark ? `, rehearsal_on` : ``) +
       (attr ? `, ${attr.cols.join(", ")}` : ``) +
       `)\n` +
       `values (${lit(SOURCE)}, ${lit(filename)}, ${lit(checksum)},\n` +
       `        greatest(1, (extract(epoch from clock_timestamp()\n` +
       `                     - current_setting('matrx.db_apply_t0')::timestamptz) * 1000)::int)` +
-      (chairStepConfirmed
-        ? `,\n        ${lit(`${chairStepConfirmed} — named with --confirm-chair-step by ${process.env.USER ?? "unknown"}`)}`
-        : ``) +
+      (chairStepValue ? `,\n        ${lit(chairStepValue)}` : ``) +
       (rehearsalMark ? `,\n        ${lit(rehearsalMark)}` : ``) +
       (attr ? `,\n        ${attr.values.join(",\n        ")}` : ``) +
       `)\n` +
       `on conflict (source, filename) do update set\n` +
       `  checksum = excluded.checksum, applied_at = now(), duration_ms = excluded.duration_ms` +
-      (chairStepConfirmed ? `, chair_step = excluded.chair_step` : ``) +
+      (chairStepValue ? `, chair_step = excluded.chair_step` : ``) +
       // A row COPIED FROM PRODUCTION that a rehearsal overwrites must stop looking like
       // production's row the moment it is overwritten. That is the whole conflict case.
       (rehearsalMark ? `, rehearsal_on = excluded.rehearsal_on` : ``) +
@@ -2327,6 +2415,9 @@ async function selfTest(statementTimeout: string, argv: readonly string[]): Prom
     cloneRefPath: cloneRefOverride(argv),
     campaignSource: false,
     lane: null,
+    // The scratch files this self-test writes, applies and drops again inside schema
+    // zz_db_apply_selftest — only reachable from here, never from the command line.
+    rehearsalGateExempt: `db:apply --self-test scratch file in schema ${SELFTEST_SCHEMA}, created and dropped by this self-test`,
   };
 
   try {
@@ -2689,6 +2780,75 @@ const TARGET_SELFTEST_SCRATCH_RE =
  *   GREEN-2 a file with NO policy DDL at all, doing plenty else — the rule does not fire, and
  *          a rule that fired on every migration would simply be turned off.
  */
+/**
+ * `pnpm db:apply --rehearsal-gate-self-test` — the rule-27 gate, RED then GREEN, with no
+ * database: a planted file in a throwaway migrations/ is refused, a passing record for its
+ * exact bytes admits it, and every way a record can be wrong refuses again.
+ */
+function rehearsalGateSelfTest(): number {
+  const dir = mkdtempSync(join(tmpdir(), "rehearsal-gate-"));
+  let failures = 0;
+  const check = (label: string, refused: boolean, wantRefused: boolean) => {
+    const ok = refused === wantRefused;
+    if (!ok) failures += 1;
+    console.log(`${ok ? TAG.ok : TAG.fail}${label} — ${refused ? "REFUSED" : "admitted"}`);
+  };
+  try {
+    writeFileSync(join(dir, "package.json"), "{}\n");
+    const mig = join(dir, "migrations");
+    const inv = join(mig, "inverse");
+    mkdirSync(inv, { recursive: true });
+    const up = join(mig, "zz_gate_probe.sql");
+    const down = join(inv, "zz_gate_probe_down.sql");
+    writeFileSync(up, "create schema if not exists zz_gate_probe;\n");
+    writeFileSync(down, "-- chair-step: probe inverse\ndrop schema if exists zz_gate_probe;\n");
+    const refused = (f: string) => rehearsalRefusal(f, basename(f)) !== null;
+
+    check("RED-1 planted file, no record", refused(up), true);
+    check("RED-1 its inverse, no record", refused(down), true);
+    const msg = rehearsalRefusal(up, "zz_gate_probe.sql") ?? "";
+    const named = msg.includes("pnpm db:rehearse migrations/zz_gate_probe.sql --target clone");
+    if (!named) failures += 1;
+    console.log(`${named ? TAG.ok : TAG.fail}RED-1 the refusal names the exact rehearse command`);
+    const legs = { up: 1, inverse: 1, up_again: 1 };
+    writeRecord(up, { role: "up", pairedWith: down, cloneRef: "self-test", legsMs: legs, tool: "self-test" });
+    writeRecord(down, { role: "inverse", pairedWith: up, cloneRef: "self-test", legsMs: legs, tool: "self-test" });
+    check("GREEN-1 record for these exact bytes", refused(up), false);
+    check("GREEN-1 inverse record (migrations/rehearsed/, not inverse/rehearsed/)", refused(down), false);
+
+    writeFileSync(up, "create schema if not exists zz_gate_probe;\n ");
+    check("RED-2 one byte changed after the rehearsal", refused(up), true);
+    writeFileSync(up, "create schema if not exists zz_gate_probe;\n");
+    check("GREEN-2 original bytes back", refused(up), false);
+
+    const rp = recordPath(up, fileSha256(up));
+    const good = readFileSync(rp, "utf8");
+    const tamper = (patch: Record<string, unknown>) =>
+      writeFileSync(rp, JSON.stringify({ ...JSON.parse(good), ...patch }));
+    tamper({ passed: false });
+    check("RED-3 record says passed=false", refused(up), true);
+    tamper({ target: "production" });
+    check("RED-4 record taken anywhere but the clone", refused(up), true);
+    tamper({ sha256: "0".repeat(64) });
+    check("RED-5 record body names other bytes", refused(up), true);
+    writeFileSync(rp, "{not json");
+    check("RED-6 malformed record", refused(up), true);
+    writeFileSync(rp, good);
+    check("GREEN-3 record restored", refused(up), false);
+
+    check("RED-7 emergency with no real reason", emergencyReasonProblem("because") !== null, true);
+    check("GREEN-4 emergency with a reason", emergencyReasonProblem("sign-in outage, fix forward now") !== null, false);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+  console.log(
+    failures
+      ? `${TAG.fail}rehearsal-gate self-test: ${failures} failure(s)`
+      : `${TAG.ok}rehearsal-gate self-test: RED then GREEN on every arm`,
+  );
+  return failures ? 1 : 0;
+}
+
 function policyOnlySelfTest(): number {
   const red = `
     set local lock_timeout = '2s';
@@ -5228,6 +5388,7 @@ async function main(): Promise<number> {
     return amendIdempotent(resolve(ROOT, given), parseTargetFlag(argv), statementTimeout);
   }
 
+  if (argv.includes("--rehearsal-gate-self-test")) return rehearsalGateSelfTest();
   if (argv.includes("--policy-only-self-test")) return policyOnlySelfTest();
   if (argv.includes("--window-class-self-test")) return windowClassSelfTest();
   if (argv.includes("--ground-gate-self-test")) return groundGateSelfTest();
@@ -5287,9 +5448,20 @@ async function main(): Promise<number> {
   // `--target branch` (space form) leaves "branch" in argv as a bare word; it is
   // the flag's VALUE, never the migration file. Same for --source and --lane.
   const valueIdxs = new Set<number>();
-  for (const flag of ["--target", "--source", "--lane", "--statement-timeout", "--branch-ref", "--clone-ref"]) {
+  for (const flag of ["--target", "--source", "--lane", "--statement-timeout", "--branch-ref", "--clone-ref", EMERGENCY_FLAG]) {
     const i = argv.indexOf(flag);
     if (i >= 0 && argv[i + 1] && !argv[i + 1]!.startsWith("--")) valueIdxs.add(i + 1);
+  }
+  // `--unrehearsed-emergency <reason>`: the one door past the rule-27 gate, production only.
+  const unrehearsedEmergency = valueOf(EMERGENCY_FLAG);
+  if (argv.some((a) => a === EMERGENCY_FLAG || a.startsWith(`${EMERGENCY_FLAG}=`))) {
+    const problem =
+      emergencyReasonProblem(unrehearsedEmergency ?? "") ??
+      (target !== "production" ? `${EMERGENCY_FLAG} only means something at --target production.` : null);
+    if (problem) {
+      console.error(`${TAG.fail}${problem}`);
+      return 1;
+    }
   }
   // `--confirm-chair-step <file.sql>` (repeatable, or `=` form): the basenames this command
   // NAMES. A chair step runs only when its own basename is among them — scripts/lib/chair-step.ts.
@@ -5339,6 +5511,7 @@ async function main(): Promise<number> {
     cloneRefPath: cloneRefOverride(argv),
     confirmedChairSteps,
     pairedWith,
+    unrehearsedEmergency,
   });
 }
 

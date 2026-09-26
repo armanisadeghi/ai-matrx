@@ -386,6 +386,15 @@ uv run python db/apply_migrations.py --source campaign --only <file>.sql --targe
 
 ### 6a. 🚨 THE REHEARSAL COPY IS NOT A GATE (owner ruling, 2026-09-18)
 
+> 🚨 **SUPERSEDED IN PART 2026-09-26 (FOUND_DEFECTS D351 "RULE27-GATE").** What this section
+> removed — the campaign BRANCH ledger row as a precondition — stays removed. But the release
+> sweep then applied an unrehearsed file (`rca5d_c`) to production and timed out every sidebar
+> load for 51 minutes, so every production apply, in both runners, now needs a passing rule-27
+> record for the file's exact bytes (`migrations/rehearsed/<sha256>.json`, written by
+> `pnpm db:rehearse` after up → inverse → up passes). Ledgered bytes are grandfathered; the one
+> door is `--unrehearsed-emergency "<reason>"`, written into the ledger row. This is a byte-level
+> precondition, not a header judgement, so `--judge-only` and the corpus are unchanged.
+
 **A file may be applied to the main database WITHOUT a prior rehearsal ledger row and WITHOUT a
 matching rehearsal checksum.** Both runners used to refuse a campaign production apply unless the
 branch carried a `public._schema_migrations` row for the same basename whose checksum was
