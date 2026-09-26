@@ -369,6 +369,36 @@ interface FileCtx {
   importSources: Map<string, { module: string; exported: string }>;
 }
 
+/**
+ * `tr.insert(at, island)` / `view.state.tr.insert(at, paragraph)` — a document
+ * model's `insert(position, content)`, which shares the method name with
+ * supabase-js. The two are told apart structurally: a supabase-js
+ * `.insert(values, options?)` / `.upsert(values, options?)` takes its options
+ * as an object literal, and its chain has a `.from(` in it; a document model's
+ * insert has NO `.from(` anywhere in the chain and a second argument that is
+ * content, not an options literal. Only consulted when the table is already
+ * unresolvable, so a real `.from(x).insert(...)` never takes this exit.
+ */
+function isDocumentModelInsert(node: ts.CallExpression): boolean {
+  if (node.arguments.length < 2) return false;
+  if (ts.isObjectLiteralExpression(unwrap(node.arguments[1]))) return false;
+  let current: ts.Expression = (node.expression as ts.PropertyAccessExpression).expression;
+  for (;;) {
+    current = unwrap(current);
+    if (ts.isCallExpression(current)) {
+      const callee = current.expression;
+      if (ts.isPropertyAccessExpression(callee) && callee.name.text === "from") return false;
+      current = callee;
+    } else if (ts.isPropertyAccessExpression(current)) {
+      current = current.expression;
+    } else if (ts.isElementAccessExpression(current)) {
+      current = current.expression;
+    } else {
+      return true;
+    }
+  }
+}
+
 function unwrap(node: ts.Expression): ts.Expression {
   let current: ts.Expression = node;
   for (;;) {
@@ -1068,6 +1098,21 @@ export function classifyPayload(
       return { status: "UNRESOLVED", reason: "payload is mapped by a callback this resolver cannot settle" };
     }
     if (ts.isIdentifier(callee)) {
+      // THE BILLING OWNER SEAM. `ownerPayload(ref, rest)` writes `{[ref.column]:
+      // ref.value, ...rest}`, and `ref` only ever comes from `billingOwnerRef()`,
+      // which on the organization side THROWS `BillingOrganizationRequiredError`
+      // when the request named no organization — it never substitutes one. The
+      // billing mirror tables (`billing.customer` / `subscription` /
+      // `connect_account`) carry `organization_id` and no `user_id` since
+      // W1-ORG-APPLY (ec0c095035), so the live column IS the organization.
+      const source = ctx.importSources.get(callee.text);
+      if (
+        source &&
+        source.exported === "ownerPayload" &&
+        /(^|\/)billingOwner$/.test(source.module)
+      ) {
+        return { status: "CARRIES", reason: "billing owner seam (billingOwnerRef refuses without an organization)" };
+      }
       if (ctx.imported.has(callee.text)) {
         return {
           status: "UNRESOLVED",
@@ -1121,7 +1166,9 @@ export function scanSource(
       const known = table && index.known.has(table);
       const orgScoped = table && index.orgScoped.has(table);
 
-      if (known && !orgScoped) {
+      if (!table && isDocumentModelInsert(node)) {
+        // A ProseMirror/TipTap `tr.insert(pos, node)` — not a database write.
+      } else if (known && !orgScoped) {
         // The table has no organization_id column at all — nothing to carry.
       } else {
         const payload = node.arguments[0];
@@ -1482,6 +1529,46 @@ function selfTest(): number {
   if (narrowedHits.length !== 0) {
     console.error(
       `[check:org-insert-scope] SELF-TEST FAILED — a write after \`if (!organizationId) return\` still reads as nullable (${narrowedHits
+        .map((h) => `${h.line}:${h.status}:${h.reason}`)
+        .join(", ")}).`,
+    );
+    return 1;
+  }
+
+  // A document model's `insert(pos, node)` is not a write; a billing-seam payload
+  // carries its organization. Neither may be flagged …
+  const notWrites = [
+    'import { ownerPayload } from "./billingOwner";',
+    "export function footnote(tr: any, at: number, island: unknown, view: any, p: any) {",
+    "  tr.insert(at, island);",
+    "  view.state.tr.insert(at, p.create(null));",
+    "}",
+    "export async function mirror(db: any, owner: any, id: string) {",
+    '  await db.schema("chat").from("artifact").upsert(ownerPayload(owner, { id }), { onConflict: "organization_id" });',
+    "}",
+  ].join("\n");
+  const notWriteHits = scanSource("not-writes.ts", notWrites, index);
+  if (notWriteHits.length !== 0) {
+    console.error(
+      `[check:org-insert-scope] SELF-TEST FAILED — a document-model insert or the billing owner seam was flagged (${notWriteHits
+        .map((h) => `${h.line}:${h.status}:${h.reason}`)
+        .join(", ")}).`,
+    );
+    return 1;
+  }
+  // … but the same two-argument shape on a `.from()` chain, and an `ownerPayload`
+  // from any OTHER module, still are.
+  const stillWrites = [
+    'import { ownerPayload } from "./somewhereElse";',
+    "export async function w(db: any, row: unknown, opts: unknown, owner: any) {",
+    "  await db.from(pickTable()).insert(row, opts);",
+    '  await db.schema("chat").from("artifact").insert(ownerPayload(owner, {}));',
+    "}",
+  ].join("\n");
+  const stillHits = scanSource("still-writes.ts", stillWrites, index);
+  if (stillHits.length !== 2) {
+    console.error(
+      `[check:org-insert-scope] SELF-TEST FAILED — expected 2 UNRESOLVED writes past the document-model and billing-seam exits, got ${stillHits.length} (${stillHits
         .map((h) => `${h.line}:${h.status}:${h.reason}`)
         .join(", ")}).`,
     );
