@@ -36,7 +36,7 @@ jest.mock("@/utils/supabase/client", () => ({
   supabase: {
     schema: () => ({
       from: (t: string) =>
-        query(t, { id: ORG, name: "Northwind Recycling", abbreviation: "NR", slug: "northwind", is_personal: false, settings: {}, created_by: null, archived_at: null }),
+        query(t, { id: ORG, name: "Northwind Recycling", abbreviation: "NR", slug: "northwind", settings: {}, created_by: null, archived_at: null }),
     }),
   },
 }));

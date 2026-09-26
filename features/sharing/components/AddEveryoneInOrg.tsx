@@ -33,7 +33,6 @@ import {
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectPersonalOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import type {
   PermissionLevel,
   ShareActionResult,
@@ -86,17 +85,8 @@ export function AddEveryoneInOrg({
   onDone,
   defaultOrgId,
 }: AddEveryoneInOrgProps) {
-  const { orgs: allOrgs } = useNavTree();
+  const { orgs } = useNavTree();
   const me = useAppSelector(selectUserId);
-  // A PERSONAL WORKSPACE IS NOT A TEAM (2026-09-26). Offering one only ever led to "Nobody else
-  // is in …". Same rule the Share dialog's `personalHome` applies to "My organization". Two
-  // shapes reach this list: the viewer's own workspace (appContext's personal organization) and
-  // any row the nav tree marks `is_personal` — which includes its synthetic "Personal" bucket
-  // (id 00000000-…0001, not an organization at all), seen live on localhost as the first choice.
-  const personalOrgId = useAppSelector(selectPersonalOrganizationId);
-  const orgs = allOrgs.filter(
-    (o) => o.id !== personalOrgId && (o as { is_personal?: boolean }).is_personal !== true,
-  );
   const [open, setOpen] = useState(false);
   const [orgId, setOrgId] = useState("");
   const [members, setMembers] = useState<OrgMemberPerson[] | null>(null);
@@ -172,8 +162,7 @@ export function AddEveryoneInOrg({
     if (granted > 0) onDone?.();
   };
 
-  // Nobody to add from anywhere (only a personal workspace): the control is absent, never a
-  // picker with nothing in it.
+  // No organization to add from: the control is absent, never a picker with nothing in it.
   if (orgs.length === 0) return null;
 
   if (!open) {

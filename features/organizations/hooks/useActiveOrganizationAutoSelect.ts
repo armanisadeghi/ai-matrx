@@ -6,8 +6,8 @@
 // This hook existed to make sure "boot ends with a selection". Two seconds
 // after bootstrap resolved, if nothing was selected, it SILENTLY dispatched
 // `chooseActiveOrganization` for whichever organization it could name —
-// applying the stated default-org preference first, then the person's own
-// personal workspace. It logged a warning nobody reads and moved on.
+// applying the stated default-org preference first, then whichever
+// organization the person owned. It logged a warning nobody reads and moved on.
 //
 // That is precisely the thing the ruling forbids, and it is the worst-shaped
 // version of it: a timer, in a hook, that picks the organization a person's
@@ -49,7 +49,7 @@ import type { OrgNode } from "@/features/scopes/types";
  * The organization this boot may select WITHOUT asking, or null.
  *
  * There is exactly one: the person's only membership. Every other case — a
- * stated default, their personal workspace, "the first one" — is a choice, and
+ * stated default, the one they created, "the first one" — is a choice, and
  * a choice belongs to the person (2026-09-19 ruling). Kept as a named,
  * exported function so the rule is testable and so the guard
  * (`scripts/check-no-default-organization.ts`) has one place to watch for a

@@ -11,7 +11,7 @@ import { ENDPOINTS } from "@/lib/api/endpoints";
 import { parseHttpError } from "@/lib/api/errors";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { buildHeaders, postNdjson, resolveBaseUrl } from "@/lib/python-client";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { ImageDocumentDetectedData } from "@/types/python-generated/stream-events";
 
 import type {

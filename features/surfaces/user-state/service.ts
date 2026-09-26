@@ -8,7 +8,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 
 /** A surface_key → state map for one (user, feature). '_default' is the global. */

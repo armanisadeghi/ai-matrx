@@ -33,7 +33,7 @@ import type {
 import type { Database } from "@/types/database.types";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { writeOne } from "@/utils/supabase/writeOne";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 const TAB_ID_PREFIX = "code-file:";
 

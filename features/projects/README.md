@@ -26,7 +26,7 @@ organizations → projects → project_members → auth.users
 | `created_by`      | uuid  | FK → auth.users                                                                   |
 | `settings`        | jsonb | Extensible config                                                                 |
 
-> **Every project belongs to exactly one organization, and organizations are equal** — law: `common-docs/policies/access-ladder.md`. There is no personal project and no personal organization. `createProject` writes to the organization the person selected (`ensureOrgId` holds and asks when none is selected); nothing substitutes one. Code that still reads `organizations.is_personal` — `usePersonalProjects`, `getPersonalProjectBySlug`, the `is_personal_project` surface custom, `NavProject.is_personal` — is a live defect against the law and goes with the flag; never build on it.
+> **Every project belongs to exactly one organization, and organizations are equal** — law: `common-docs/policies/access-ladder.md`. There is no personal project and no personal organization. `createProject` writes to the organization the person selected (`ensureOrgId` holds and asks when none is selected); nothing substitutes one. Any code that still reads `organizations.is_personal` is a defect against the law and goes with the flag; never build on it.
 
 ### `project_members`
 

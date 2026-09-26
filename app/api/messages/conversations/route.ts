@@ -307,8 +307,8 @@ export async function POST(request: NextRequest) {
     // We can use lookup_user_by_email or just try to create - RLS will handle invalid users
 
     // 🚨 THE CONVERSATION IS FILED IN THE ORGANIZATION THE CALLER IS ACTING IN.
-    // This used to call `current_personal_org_id` — the personal-org RPC that
-    // belongs to lib/organizations/personalOrg.ts alone — so a conversation
+    // This used to call the old own-organization lookup — the own-org RPC that
+    // belongs to lib/organizations/ensureOrgId.ts alone — so a conversation
     // between two people landed in the CREATOR'S private workspace, which
     // nobody chose and the other participant does not share. The caller states
     // the organization on `X-Organization-Id` (the header every Matrx client

@@ -338,7 +338,7 @@ export function buildAdminRows(sources: MandateAdminSources): MandateAdminRow[] 
           "Organization",
       isSystem,
       // Refined by the database answer (owner_level); the org/person split
-      // needs the organization's is_personal flag, which only it reads.
+      // needs the organization type, which only it reads.
       ownerLevel: isSystem ? "system" : "org",
       createdAt: mandate.created_at ?? null,
       origin,

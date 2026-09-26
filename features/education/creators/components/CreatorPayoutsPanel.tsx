@@ -24,7 +24,7 @@ import { BadgeDollarSign, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectPersonalOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { GuidedChecklist } from "@/lib/guided-setup/components/GuidedChecklist";
 import { SPLIT_LABEL } from "@/lib/stripe/connect";
 import {
@@ -113,15 +113,8 @@ export function CreatorPayoutsPanel() {
     [status, refresh, createAccount, openStripe],
   );
 
-  /**
-   * A creator's payout account is THEIRS, not their current workspace's, so the
-   * run is anchored to their personal org — switching the active org must not
-   * hand them a different setup state for the same Stripe account. So this
-   * reads `personal_organization_id` DELIBERATELY, by name: it is the subject
-   * of the panel, not a fallback for a missing active organization. Until it
-   * is known the checklist runs unscoped rather than borrowing a workspace.
-   */
-  const organizationId = useAppSelector(selectPersonalOrganizationId);
+  /** The checklist runs in the organization the person has selected. */
+  const organizationId = useAppSelector(selectOrganizationId);
 
   async function onOpenDashboard() {
     setBusy(true);

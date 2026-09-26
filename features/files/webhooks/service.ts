@@ -9,7 +9,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
 import { filesDb } from "@/features/files/filesDb";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
-import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type {
   CreateWebhookInput,
   UpdateWebhookInput,
@@ -63,11 +63,10 @@ export async function createWebhook(
   // workspace, chosen by a trigger nobody can see. This surface genuinely
   // offers the choice: the manager's "org-wide" toggle (WebhooksManager,
   // shown only when an organization is selected) sends that organization;
-  // leaving it off means "my own events", which IS the person's own
-  // workspace — so we name it, rather than let the trigger guess it.
+  // otherwise the webhook is filed in the organization the person has
+  // selected, or they are asked to choose one.
   // common-docs/policies/context-is-carried-never-rebuilt.md
-  // org-fallback-deliberate: the person's own workspace is the "my own events" choice the org-wide toggle leaves off
-  const organizationId = input.organization_id ?? (await resolvePersonalOrgId());
+  const organizationId = await ensureOrgId(input.organization_id);
   // The door mints the secret and returns the whole row once — including it. `owner_id` is
   // stamped from `auth.uid()` inside the door, so it is not sent from here either.
   const { data, error } = await filesDb(supabase)

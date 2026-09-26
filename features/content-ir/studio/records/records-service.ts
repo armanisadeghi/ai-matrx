@@ -101,13 +101,12 @@ function db() {
  * read, not a cheap one.
  */
 export async function readableOrganizations(): Promise<
-  { id: string; name: string; isPersonal: boolean }[]
+  { id: string; name: string }[]
 > {
   const orgs = await getUserOrganizations();
   return orgs.map((o) => ({
     id: o.id,
     name: o.name,
-    isPersonal: o.isPersonal,
   }));
 }
 
@@ -144,7 +143,7 @@ export async function creatorNames(
  */
 async function blendedOrgIds(): Promise<string[]> {
   const orgs = await readableOrganizations();
-  return orgs.filter((o) => !o.isPersonal).map((o) => o.id);
+  return orgs.map((o) => o.id);
 }
 
 /** Narrow the raw enum text without widening an unknown value to "confirmed". */
@@ -388,7 +387,7 @@ export async function countKindRecordsByScope(
   args: Omit<ListKindRecordsArgs, "sort" | "direction" | "page" | "pageSize" | "scope">,
 ): Promise<RecordScopeCounts> {
   const userId = await currentUserId();
-  const orgs = (await readableOrganizations()).filter((o) => !o.isPersonal);
+  const orgs = await readableOrganizations();
   const orgIds = orgs.map((o) => o.id);
 
 

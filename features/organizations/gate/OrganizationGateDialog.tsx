@@ -53,7 +53,6 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 interface PickerRow {
   id: string;
   name: string;
-  is_personal: boolean;
   slug?: string;
   role?: string;
 }
@@ -64,12 +63,10 @@ export interface WorkspaceChoice extends PickerRow {
 }
 
 /**
- * THE CHOICES THIS DIALOG MAY OFFER (review 2026-09-25). Two rules:
- *  · another person's personal workspace is never listed — being a member of
- *    it gives you access to what is in it, not a place to file your own work
- *    (a personal row is offered only to its owner);
- *  · two workspaces with the same name are told apart (their address), so
- *    "Rincon Plumbing Co" twice is never a coin toss. Same id twice = once.
+ * THE CHOICES THIS DIALOG MAY OFFER (review 2026-09-25). Every organization
+ * the person belongs to is a place they may file their work — organizations
+ * are equal. Two workspaces with the same name are told apart (their address),
+ * so "Rincon Plumbing Co" twice is never a coin toss. Same id twice = once.
  * Pure — exported for tests.
  */
 export function workspaceChoices(rows: readonly PickerRow[]): WorkspaceChoice[] {
@@ -77,8 +74,7 @@ export function workspaceChoices(rows: readonly PickerRow[]): WorkspaceChoice[] 
   const kept = rows.filter((row) => {
     if (seen.has(row.id)) return false;
     seen.add(row.id);
-    // A prefetched row carries no role; only a known non-owner is dropped.
-    return !(row.is_personal && row.role !== undefined && row.role !== "owner");
+    return true;
   });
   const byName = new Map<string, number>();
   for (const row of kept) {
@@ -115,8 +111,8 @@ export function OrganizationGateDialog() {
     if (open) setPrefetched(getPrefetchedOrganizationsForPendingRequest());
   }, [open]);
 
-  // The scope tree is the richer, canonical source (role, projects, the
-  // platform's own is_personal) and wins the instant it has anything. Until
+  // The scope tree is the richer, canonical source (role, projects) and
+  // wins the instant it has anything. Until
   // it does, a non-empty prefetched list lets the dialog show real choices
   // immediately instead of "Loading your organizations…" — the whole point of
   // carrying them on the refusal in the first place.
@@ -125,7 +121,6 @@ export function OrganizationGateDialog() {
     ? prefetched!.map((org) => ({
         id: org.id,
         name: org.name,
-        is_personal: false,
       }))
     : organizations;
   const loading =
@@ -159,11 +154,9 @@ export function OrganizationGateDialog() {
     };
   }, [store]);
 
-  const sorted = workspaceChoices(displayList).sort((a, b) => {
-    // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-    if (a.is_personal !== b.is_personal) return a.is_personal ? 1 : -1;
-    return a.name.localeCompare(b.name);
-  });
+  const sorted = workspaceChoices(displayList).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
 
   const cancel = () => {
     setOpen(false);
@@ -251,11 +244,6 @@ export function OrganizationGateDialog() {
                       </span>
                     ) : null}
                   </span>
-                  {org.is_personal ? (
-                    <span className="ml-2 shrink-0 text-xs text-muted-foreground">
-                      Personal
-                    </span>
-                  ) : null}
                 </button>
               );
             })

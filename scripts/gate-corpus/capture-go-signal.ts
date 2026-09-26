@@ -86,7 +86,7 @@ export const OBJECTS: readonly CaptureTarget[] = [
   // custom/entity_custom_fields_guard — the one standard Entity table W1-STORE names.
   { knob: "custom/entity_custom_fields_guard", kind: "table", id: "crm.party" },
   // custom/signup_provisioning_guard — the trigger every signup runs.
-  { knob: "custom/signup_provisioning_guard", kind: "function", id: "public._provision_new_user_personal_org" },
+  { knob: "custom/signup_provisioning_guard", kind: "function", id: "public._provision_new_user_organization" },
   { knob: "custom/signup_provisioning_guard", kind: "trigger", id: "auth.users:on_auth_user_created" },
   // custom/row_versions_guard
   { knob: "custom/row_versions_guard", kind: "table", id: "history.row_versions" },

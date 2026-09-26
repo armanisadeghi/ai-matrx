@@ -207,9 +207,7 @@ export async function fetchAccountAddons(): Promise<AccountAddon[]> {
 
 /**
  * Every organization the caller can see, for the grant picker and for naming
- * the org on each add-on row. Personal orgs are included on purpose: a
- * `personal-pro` account IS an org here, and it is the likeliest recipient of
- * a points add-on.
+ * the org on each add-on row.
  */
 export async function fetchOrganizationOptions(
   // THE ARCHIVED-ITEMS LAW: the default HIDES archived organizations — an
@@ -224,7 +222,7 @@ export async function fetchOrganizationOptions(
       let query = supabase
         .schema("iam")
         .from("organizations")
-        .select("id, name, slug, is_personal, archived_at", { count: "exact" });
+        .select("id, name, slug, archived_at", { count: "exact" });
       if (archiveFilter === "active") query = query.is("archived_at", null);
       else if (archiveFilter === "archived")
         query = query.not("archived_at", "is", null);
@@ -236,7 +234,7 @@ export async function fetchOrganizationOptions(
     },
     { label: "iam.organizations (account add-ons)" },
   );
-  return rows.map((row) => ({ ...row, is_personal: row.is_personal === true }));
+  return rows;
 }
 
 /**

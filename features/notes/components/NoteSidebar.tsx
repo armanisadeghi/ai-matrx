@@ -61,7 +61,6 @@ import { selectUser } from "@/lib/redux/slices/userSlice";
 import {
   selectOrganizationId,
   selectOrganizationName,
-  selectPersonalOrganizationId,
   selectScopeSelectionsContext,
   selectProjectId,
   selectProjectName,
@@ -194,7 +193,6 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   // ── Active context for filtering + grouping labels ──────────────────
   const activeOrgId = useAppSelector(selectOrganizationId);
   const resolveOrganization = useNewNoteOrganization();
-  const personalOrgId = useAppSelector(selectPersonalOrganizationId);
   const activeProjectId = useAppSelector(selectProjectId);
   const activeTaskId = useAppSelector(selectTaskId);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
@@ -215,7 +213,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
 
   // ── Filter notes by active context (org + scopes + project + task) ─
   //
-  // Org rule (see `noteMatchesActiveOrgContext`): active org OR personal org.
+  // Org rule (see `noteMatchesActiveOrgContext`): the active org.
   // Historical notes were stamped onto the personal org at retrofit time, so
   // a strict active-org-only filter zeros every folder count whenever the
   // user is working in a company org. Other company orgs stay excluded.
@@ -227,7 +225,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
     if (activeOrgId) {
       homeless = result.filter((n) => n.organization_id == null);
       result = result.filter((n) =>
-        noteMatchesActiveOrgContext(n, activeOrgId, personalOrgId),
+        noteMatchesActiveOrgContext(n, activeOrgId),
       );
     }
     if (scopeFilteredNoteIds)
@@ -251,7 +249,6 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   }, [
     allNotes,
     activeOrgId,
-    personalOrgId,
     scopeFilteredNoteIds,
     activeProjectId,
     activeTaskId,

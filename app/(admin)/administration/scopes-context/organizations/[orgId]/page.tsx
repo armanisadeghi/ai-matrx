@@ -59,7 +59,6 @@ export default function AdminOrganizationScopesPage() {
         <ScopeManagerPage
           organizationId={orgId}
           organizationName={org?.name ?? ""}
-          isPersonal={org?.is_personal}
           adminLane
         />
       </div>

@@ -154,7 +154,6 @@ export default function AcceptInvitationPage() {
             slug: "",
             createdAt: "",
             updatedAt: "",
-            isPersonal: false,
           }
         : undefined;
       const organization =

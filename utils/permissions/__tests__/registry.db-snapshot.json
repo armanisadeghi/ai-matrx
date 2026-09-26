@@ -77,6 +77,17 @@
     "is_active": true
   },
   {
+    "resource_type": "agent_term_list",
+    "table_name": "term_list",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Term List",
+    "url_path_template": "/resources/term-lists",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "anon_form",
     "table_name": "anon_form",
     "id_column": "id",
@@ -759,6 +770,17 @@
     "is_active": true
   },
   {
+    "resource_type": "document",
+    "table_name": "document",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Document",
+    "url_path_template": "/documents/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "egress_device",
     "table_name": "egress_device",
     "id_column": "id",
@@ -921,6 +943,17 @@
     "display_label": "File Page",
     "url_path_template": "/files/{id}",
     "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "files_sync_mapping",
+    "table_name": "sync_mappings",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Sync Mapping",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
     "is_active": true
   },
   {
@@ -1716,6 +1749,17 @@
     "is_active": true
   },
   {
+    "resource_type": "kg_suggestion_ack",
+    "table_name": "kg_suggestion_ack",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "KG Suggestion Ack",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "kg_sweep_queue",
     "table_name": "kg_sweep_queue",
     "id_column": "id",
@@ -1837,6 +1881,17 @@
     "is_active": true
   },
   {
+    "resource_type": "mcp_user_conn",
+    "table_name": "mcp_user_conn",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "MCP user connection",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "media_catalog_setting",
     "table_name": "catalog_setting",
     "id_column": "id",
@@ -1942,6 +1997,17 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Notification",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "notification_channel_preference",
+    "table_name": "notification_channel_preference",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Notification Channel Preference",
     "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
@@ -2723,6 +2789,28 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Study Plan Day",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "study_reminder_context",
+    "table_name": "study_reminder_context",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Study Reminder Context",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "study_reminder_delivery",
+    "table_name": "study_reminder_delivery",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Study Reminder Delivery",
     "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true

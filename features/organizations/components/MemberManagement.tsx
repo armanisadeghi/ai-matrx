@@ -6,7 +6,7 @@
  * Thin by design: it fetches org members with the org hooks and supplies the
  * org-specific role rules — one owner per organization (ownership moves only
  * through Transfer ownership), admins manage admins and members but never the
- * owner, personal orgs are read-only. The list UI, quick actions, and dialogs
+ * owner. The list UI, quick actions, and dialogs
  * live in the shared panel so the org and project members surfaces stay in
  * lock-step. See components/membership/MembersPanel.tsx.
  */
@@ -41,7 +41,6 @@ interface MemberManagementProps {
   organizationName?: string;
   userRole: OrgRole;
   isOwner: boolean;
-  isPersonal: boolean;
   /** Slug (or id) used to carry the employer context into every HR door. */
   orgSlugOrId?: string;
 }
@@ -57,7 +56,6 @@ export function MemberManagement({
   organizationName,
   userRole,
   isOwner,
-  isPersonal,
   orgSlugOrId,
 }: MemberManagementProps) {
   const { members, loading, error, refresh } =
@@ -140,7 +138,6 @@ export function MemberManagement({
         organizationName={organizationName}
         userRole={userRole}
         isOwner={isOwner}
-        isPersonal={isPersonal}
         operationLoading={operationLoading}
         ownerCount={ownerCount}
         onChangeRole={handleChangeRole}
@@ -157,7 +154,6 @@ function OrganizationMembersPanel({
   organizationName,
   userRole,
   isOwner,
-  isPersonal,
   operationLoading,
   ownerCount,
   onChangeRole,
@@ -169,7 +165,6 @@ function OrganizationMembersPanel({
   organizationName?: string;
   userRole: OrgRole;
   isOwner: boolean;
-  isPersonal: boolean;
   operationLoading: boolean;
   ownerCount: number;
   onChangeRole: (member: PanelMember, role: MembershipRole) => Promise<void>;
@@ -179,7 +174,7 @@ function OrganizationMembersPanel({
   const memberEmployeeCopyDetails = useMemberEmployeeCopyDetails();
   const viewerId = useAppSelector(selectUserId);
   // SHARE-LANE-2: an owner or admin governs a member's personal Tables by transferring them.
-  const viewerGoverns = !isPersonal && (isOwner || userRole === "admin");
+  const viewerGoverns = isOwner || userRole === "admin";
   const people = members.map((m) => ({
     id: m.userId,
     name: m.user?.displayName ?? m.user?.email ?? "A member",
@@ -222,15 +217,14 @@ function OrganizationMembersPanel({
       // this in mbr_remove / mbr_update_role — these predicates mirror it, they
       // do not invent a second rule.
       canManageMember={(member) =>
-        !isPersonal &&
-        (isOwner || (userRole === "admin" && member.role !== "owner"))
+        isOwner || (userRole === "admin" && member.role !== "owner")
       }
       // R21: one owner per organization. "Make Owner" does not exist as a role
       // change — the database refuses it and names Transfer ownership, so the
       // menu item is ABSENT rather than present-and-failing.
       canAssignRole={(_member, role) => role !== "owner"}
       canTransferOwnership={(member) =>
-        !isPersonal && isOwner && member.role !== "owner"
+        isOwner && member.role !== "owner"
       }
       onTransferOwnership={onTransferOwnership}
       isLastOwner={(member) => member.role === "owner" && ownerCount === 1}
@@ -241,16 +235,6 @@ function OrganizationMembersPanel({
         id: organizationId,
         name: organizationName,
       }}
-      footerNotice={
-        isPersonal ? (
-          <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
-            <p className="text-sm text-purple-800 dark:text-purple-200">
-              <strong>Personal Organization:</strong> This is your personal
-              space. You cannot add or remove members.
-            </p>
-          </div>
-        ) : undefined
-      }
     />
   );
 }

@@ -19,7 +19,7 @@ import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import { mergeJsonColumn, type JsonObject } from "@ai-matrx/data/db";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { resolveChildOrgId } from "@/lib/organizations/childOrganization";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
@@ -55,7 +55,7 @@ interface SetMetadataRow {
 /**
  * Resolve the org for a flashcard write. The canonical `ensureOrgId` rides the
  * user's ACTIVE org (header selection, else personal) and never returns null —
- * it screams + falls back to the personal-org RPC if Redux somehow lacks it, so
+ * it screams + falls back to the own-org RPC if Redux somehow lacks it, so
  * a write is never blocked on an unhydrated store.
  */
 function resolveOrgId(explicit?: string): Promise<string> {
@@ -955,7 +955,7 @@ export const fcService = {
       // organization. The `_inherit_org` trigger would copy it, but a row never
       // depends on a trigger to choose its tenant: with the card unreadable
       // this refuses, rather than letting `public._stamp_org_default` file the
-      // layer in the writer's personal workspace.
+      // layer in the writer's own organization.
       // common-docs/policies/context-is-carried-never-rebuilt.md
       const { data: card, error: cardError } = await EDU()
         .from("fc_card")

@@ -12,8 +12,8 @@
  *
  * 🚨 WHY THIS IS NOT A DEFAULT-ORGANIZATION RUNG (the thing the guards refuse).
  * `check-no-default-organization` exists because nothing may PICK an
- * organization for a person out of a cookie, a saved preference, or their
- * personal workspace — each of those is the platform GUESSING. A link's `org=`
+ * organization for a person out of a cookie, a saved preference, or "their
+ * first organization" — each of those is the platform GUESSING. A link's `org=`
  * is the opposite of a guess: it is an explicit, externally-stated,
  * per-navigation instruction that names ONE organization, and it is honoured
  * only when the person is already a member of it. Nothing is substituted when

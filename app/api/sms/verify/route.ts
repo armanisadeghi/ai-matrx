@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
-import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
+import { ensureOrgIdServer } from "@/lib/organizations/ensureOrgId";
 import {
   isOrganizationRequiredServerError,
   organizationRequiredResponse,
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
         // Until 2026-09-19 this was resolved further down, AFTER Twilio had
         // already checked the code, and it resolved by calling
         // `ensureOrgIdServer(supabase, undefined)` — the server stamping the
-        // consent and preference rows with the person's personal workspace
+        // consent and preference rows with the person's own organization
         // because the request named no organization. Both halves were wrong.
         // The ruling (Arman, 2026-09-19) is that nothing below the boundary
         // may PICK an organization; and a refusal that arrives after

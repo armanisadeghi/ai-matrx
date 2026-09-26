@@ -2,7 +2,7 @@
  * Surface manifest — Projects (`matrx-user/projects`).
  *
  * Project management views (route `/projects`). The user browses projects in
- * the active organization (or personal space) and opens one to work on it.
+ * the active organization and opens one to work on it.
  * The primary emitter is the project workspace (`ProjectWorkspace` at
  * `/projects/[projectId]`), which emits the active project's live state via
  * `buildProjectsContextData`
@@ -46,7 +46,7 @@ const groups: SurfaceValueGroup[] = [
     key: "org_context",
     label: "Organization context",
     sortOrder: 400,
-    description: "The organization (or personal space) the project belongs to.",
+    description: "The organization the project belongs to.",
   },
   {
     key: "list_context",
@@ -158,22 +158,10 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "project_identity",
   },
   {
-    // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-    name: "is_personal_project",
-    label: "Is personal project",
-    description:
-      "True when the active project belongs to the user's personal space rather than an organization. False otherwise.",
-    valueType: "boolean",
-    alwaysAvailable: false,
-    typicalCharCount: 5,
-    sortOrder: 350,
-    group: "project_identity",
-  },
-  {
     name: "active_project",
     label: "Active project",
     description:
-      "The composite active-project object: { id, name, slug, description, status, priority, start_date, target_date, is_personal, organization_id, organization_name, created_at }. Mirrors the individual identity values as one group value (completeness law). Empty when none is selected.",
+      "The composite active-project object: { id, name, slug, description, status, priority, start_date, target_date, organization_id, organization_name, created_at }. Mirrors the individual identity values as one group value (completeness law). Empty when none is selected.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 900,
@@ -267,7 +255,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_organization_id",
     label: "Active organization ID",
     description:
-      "UUID of the organization context the projects are scoped to. Empty when in personal space.",
+      "UUID of the organization context the projects are scoped to. Empty when none is selected.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,
@@ -278,7 +266,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_organization_name",
     label: "Active organization name",
     description:
-      "Name of the active organization. Empty when in personal space.",
+      "Name of the active organization. Empty when none is selected.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 80,
@@ -457,7 +445,7 @@ export const projectsManifest: SurfaceManifest = {
   intro: `<surface_intro>
 You are on the Projects surface: the user's project workspaces and project list. The primary mount is a single project's workspace — the active_project_* values describe the ONE project the user has open, with its people (members, viewer_role), its activity (open/done task counts, attached resource counts), and its organization context.
 The baseline content value is the project's description — the primary body the user reads and edits here; selection is whatever page text the user has highlighted.
-is_personal_project distinguishes personal-space projects from organization projects. On the list mount, project_list carries the visible rows and project_list_filters explains how they were selected; when those values are absent, you are on a single project workspace.
+On the list mount, project_list carries the visible rows and project_list_filters explains how they were selected; when those values are absent, you are on a single project workspace.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -488,7 +476,6 @@ export function createProjectsScope(values: {
   active_project_start_date?: string;
   active_project_target_date?: string;
   active_project_created_at?: string;
-  is_personal_project?: boolean;
   active_project?: Record<string, unknown>;
   member_count?: number;
   members?: ProjectsScopeMember[];

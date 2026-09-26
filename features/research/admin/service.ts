@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/client";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { Json, TablesUpdate } from "@/types/database.types";
 import type { ResearchTemplate } from "../types";
 import type {

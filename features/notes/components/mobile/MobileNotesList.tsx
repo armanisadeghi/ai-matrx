@@ -39,7 +39,6 @@ import {
 } from "../../redux/thunks";
 import {
   selectOrganizationId,
-  selectPersonalOrganizationId,
   selectProjectId,
   selectTaskId,
   selectScopeSelectionsContext,
@@ -79,7 +78,6 @@ export default function MobileNotesList({
 
   // Active context for filtering
   const activeOrgId = useAppSelector(selectOrganizationId);
-  const personalOrgId = useAppSelector(selectPersonalOrganizationId);
   const activeProjectId = useAppSelector(selectProjectId);
   const activeTaskId = useAppSelector(selectTaskId);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
@@ -105,7 +103,7 @@ export default function MobileNotesList({
     });
     if (activeOrgId)
       result = result.filter((n) =>
-        noteMatchesActiveOrgContext(n, activeOrgId, personalOrgId),
+        noteMatchesActiveOrgContext(n, activeOrgId),
       );
     if (scopeFilteredNoteIds)
       result = result.filter((n) => scopeFilteredNoteIds.has(n.id));
@@ -116,7 +114,6 @@ export default function MobileNotesList({
   }, [
     notes,
     activeOrgId,
-    personalOrgId,
     scopeFilteredNoteIds,
     activeProjectId,
     activeTaskId,

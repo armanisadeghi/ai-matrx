@@ -57,7 +57,6 @@ export default function ScopeItemPage() {
           orgSlugOrId={orgSlugOrId}
           orgName={org.name}
           orgSlug={org.slug}
-          orgIsPersonal={org.isPersonal}
           typeParam={typeId}
           scopeParam={scopeId}
           itemParam={itemId}

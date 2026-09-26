@@ -19,7 +19,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
 
 export type FeedbackRating = "up" | "down" | null;

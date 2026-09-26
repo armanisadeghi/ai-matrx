@@ -40,7 +40,7 @@ jest.mock("@/lib/redux/store-singleton", () => ({
   }),
 }));
 
-import { ensureOrgId } from "../personalOrg";
+import { ensureOrgId } from "../ensureOrgId";
 import {
   markOrgBootstrapResolved,
   resetOrgBootstrapGate,

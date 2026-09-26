@@ -80,7 +80,7 @@ import {
   selectOrganizationId,
   selectOrganizationName,
 } from "@/lib/redux/slices/appContextSlice";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { supabase } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
 import { writeOne } from "@/utils/supabase/writeOne";

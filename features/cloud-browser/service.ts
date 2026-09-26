@@ -338,7 +338,7 @@ function mapProfile(
     lastStoppedAt: row.last_stopped_at,
     expiresAt: row.expires_at,
     accessLevel,
-    isPersonalDefault: mine && row.owner_type === "user" && row.is_default,
+    isOwnDefault: mine && row.owner_type === "user" && row.is_default,
   };
 }
 /**
@@ -768,7 +768,7 @@ export async function loadSnapshot(
   let selected =
     profiles.find((item) => item.id === pinnedRun?.profile_id) ??
     profiles.find((item) => item.id === requestedProfileId) ??
-    profiles.find((item) => item.isPersonalDefault) ??
+    profiles.find((item) => item.isOwnDefault) ??
     profiles[0];
   // First-ever open: this creates the profile AND its first run. Keep that run
   // id — re-deriving it below would start a SECOND browser and 503 against the
@@ -777,7 +777,7 @@ export async function loadSnapshot(
   if (!selected && !requestedRunId) {
     openedRunId = await startRun();
     profiles = await listProfiles();
-    selected = profiles.find((item) => item.isPersonalDefault) ?? profiles[0];
+    selected = profiles.find((item) => item.isOwnDefault) ?? profiles[0];
   }
   if (!selected)
     throw new Error("Cloud Browser could not create your browser profile.");

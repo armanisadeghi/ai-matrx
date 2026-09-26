@@ -57,12 +57,12 @@ export default async function AdminSystemAgentDetailLayout({
   // here is almost always a mistake (e.g. global-binding your own agent when
   // you meant its system twin). Make it impossible to miss: banner + tinted
   // background for the whole detail area.
-  const isPersonalAgent = agent.agentType !== "builtin";
+  const isUserAgent = agent.agentType !== "builtin";
 
   return (
     <SystemAgentSurfaceEmitter agentId={id}>
       <AgentHydratorServer agentId={id} />
-      {isPersonalAgent ? (
+      {isUserAgent ? (
         <div className="flex h-full flex-col overflow-hidden bg-amber-500/10">
           <div className="shrink-0 border-b border-amber-500/40 bg-amber-500/20 px-4 py-1.5 text-center text-xs font-medium text-amber-900 dark:text-amber-200">
             NOT A SYSTEM AGENT — &ldquo;{agent.name}&rdquo; is a personal agent

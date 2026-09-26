@@ -463,8 +463,8 @@ async function fetchResolutionVerdict(
   // THE ORGANIZATION IS PART OF THE QUESTION (D-R1). Wait for the active-org
   // bootstrap — `useMandate`/`useMandateSet` resolve on mount, inside the very
   // window that used to burn refused requests — and then read the SELECTED org.
-  // Deliberately never `getActiveOrgId()`: its personal-org fallback would
-  // resolve on the personal workspace while a company org is actually selected,
+  // Deliberately never `getActiveOrgId()`: its own-org fallback would
+  // resolve on the own organization while a company org is actually selected,
   // which under this ruling is a DIFFERENT AGENT running.
   const organizationId = options.organizationId ?? (await selectedOrganizationFor(mandateKey));
 

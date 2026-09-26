@@ -1939,7 +1939,7 @@ export function MandateDetailView({
       />
 
       {/* THE PROVISION — the offered values themselves, not just the key.
-          Same renderer the personal workspace uses. */}
+          Same renderer the person-level page uses. */}
       <MandateProvisionPanel row={row} />
 
       <StatusBanner

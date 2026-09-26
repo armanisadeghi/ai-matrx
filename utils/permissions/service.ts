@@ -178,8 +178,7 @@ export interface ResourceVisibility {
   whoCanSee?: WhoCanSee | null;
   /**
    * The thing's OWN organization, read off its row (never the active one). Null when its table
-   * names none or the read could not say. The Share dialog compares it with the viewer's
-   * personal workspace (`personalHome`).
+   * names none or the read could not say.
    */
   homeOrganizationId?: string | null;
 }

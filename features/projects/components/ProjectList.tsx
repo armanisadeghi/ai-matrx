@@ -5,7 +5,7 @@ import { Puzzle, Plus, Search, Loader2 } from 'lucide-react';
 import { Input } from '@ai-matrx/design-system';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { useOrgProjects, usePersonalProjects } from '../hooks';
+import { useOrgProjects, useUserProjects } from '../hooks';
 import { ProjectCard } from './ProjectCard';
 import { CreateProjectModal } from './CreateProjectModal';
 import { filterAndSortBySearch } from '@ai-matrx/kit/search-scoring';
@@ -22,9 +22,9 @@ export function ProjectList({ organizationId, orgSlug, canCreate = false }: Proj
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const orgResult = useOrgProjects(organizationId ?? undefined);
-  const personalResult = usePersonalProjects();
+  const allResult = useUserProjects();
 
-  const { projects, loading, error, refresh } = organizationId ? orgResult : personalResult;
+  const { projects, loading, error, refresh } = organizationId ? orgResult : allResult;
 
   const filteredProjects = searchTerm
     ? filterAndSortBySearch(projects, searchTerm, [

@@ -59,7 +59,7 @@ jest.mock("@/features/access-gate/service/accessDeniedContext", () => ({
     isOwner: false,
     entity: { token: "record", label: "table", title: "My case notes" },
     owner: { userId: DR, displayName: "Dr. Reyes", avatarUrl: null, creatorHandle: null },
-    organization: { id: ORG, name: "Cedar Hollow Veterinary", isPersonal: false, viewerIsMember: true },
+    organization: { id: ORG, name: "Cedar Hollow Veterinary", viewerIsMember: true },
     ancestor: null,
     request: null,
     canRequest: true,

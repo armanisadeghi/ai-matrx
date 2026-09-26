@@ -4,7 +4,7 @@
  * ProjectWorkspace — the reimagined project home at /projects/[projectId].
  *
  * Mirrors OrgWorkspace, but the container is a project. Sections:
- *   - Hero: name, org/personal + role badges, members, scope chips, stats, actions
+ *   - Hero: name, org + role badges, members, scope chips, stats, actions
  *   - Tasks: ProjectTaskList (grouped Open/Done, nested subtasks, quick-add)
  *   - Associated resources: the canonical association grid (AssociationCardGrid
  *     under a PrimaryEntityProvider) — attach/detach writes platform.associations
@@ -12,7 +12,7 @@
  *   - Scopes & Knowledge: EntityScopeTagger + knowledge-graph deep link
  *   - Advanced: ProjectReferencesPanel (every table FK-ing the project)
  *
- * Resolves the project by UUID (param) or slug. Handles org-less (personal) projects.
+ * Resolves the project by UUID (param) or slug. Handles org-less projects.
  */
 
 import React from "react";
@@ -95,7 +95,6 @@ export function ProjectWorkspace() {
   const [org, setOrg] = React.useState<{
     name: string;
     slug: string;
-    isPersonal: boolean;
   } | null>(null);
   const [taskCounts, setTaskCounts] = React.useState<{
     open: number;
@@ -113,7 +112,7 @@ export function ProjectWorkspace() {
       }
       const o = await getOrganizationBySlugOrId(project.organizationId);
       if (!cancelled && o)
-        setOrg({ name: o.name, slug: o.slug, isPersonal: o.isPersonal });
+        setOrg({ name: o.name, slug: o.slug });
     })();
     return () => {
       cancelled = true;
@@ -145,7 +144,7 @@ export function ProjectWorkspace() {
       if (resolved?.organizationId) {
         const o = await getOrganizationBySlugOrId(resolved.organizationId);
         if (!cancelled && o)
-          setOrg({ name: o.name, slug: o.slug, isPersonal: o.isPersonal });
+          setOrg({ name: o.name, slug: o.slug });
       }
     })();
     return () => {
@@ -238,7 +237,7 @@ export function ProjectWorkspace() {
 
   const contextData = buildProjectsContextData({
     project,
-    org: org ? { name: org.name, isPersonal: org.isPersonal } : null,
+    org: org ? { name: org.name } : null,
     memberCount: members.length,
     members: members.map((m) => ({
       userId: m.userId,

@@ -5,7 +5,7 @@ import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { applyListScope } from "@/lib/list-scope/applyListScope";
 import { defaultListScopeFor } from "@/lib/list-scope";
 import type { ListScope } from "@/lib/list-scope/types";

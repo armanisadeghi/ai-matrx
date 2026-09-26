@@ -56,7 +56,7 @@ display time instead. Design: `common-docs/projects/rich-content-unification/ASS
 
 `platform.associations` is the M2M association edge. It does **NOT** absorb two adjacent single-home domains. Leave them alone:
 
-- **`iam.permissions`** = access control / RLS visibility / sharing (`share_resource_with_org`, `has_permission`, the ONE resolver `iam.has_access`/`has_access_for`, the `shareable_resource_registry`). Deleting/repointing it tears out who-can-see-what. **KEEP.** (`check_resource_access` was retired 2026-07-15 — never reference or preserve it.)
+- **`iam.permissions`** = access control / RLS visibility / sharing (`share_resource_with_user` — a share names a person; `share_resource_with_org` refuses — plus `grant_org_availability` for organization configuration, `has_permission`, the ONE resolver `iam.has_access`/`has_access_for`, the `shareable_resource_registry`). Deleting/repointing it tears out who-can-see-what. **KEEP.** (`check_resource_access` was retired 2026-07-15 — never reference or preserve it.)
 - **`iam.memberships`** = org/project membership (`mbr_*`). **KEEP.**
 
 If a relationship answers *"who is allowed to see/do this?"* → it's `iam.*`, not associations. If it answers *"what content/containers is this attached to?"* → it's `platform.associations`. When unsure, ask; do not guess and migrate a permissions grant into an association edge.

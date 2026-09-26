@@ -134,7 +134,7 @@ function explanation(context: AccessDeniedContext): string {
   switch (context.status) {
     case "denied": {
       const owner =
-        context.organization && !context.organization.isPersonal
+        context.organization
           ? context.organization.name
           : context.owner?.displayName;
       // Only promise the panel when it will actually render. `canRequest` is
@@ -261,10 +261,7 @@ export function AccessDeniedView({
 }) {
   const router = useRouter();
   const signInHref = useLoginHref();
-  // A personal workspace IS its owner — naming it just repeats them back.
-  const showOrg = Boolean(
-    context.organization && !context.organization.isPersonal,
-  );
+  const showOrg = Boolean(context.organization);
   const ancestor = context.ancestor;
   const ancestorInfo = ancestor ? tryGetEntityInfo(ancestor.token) : null;
   const ancestorHref = ancestorInfo?.hrefFor?.(ancestor?.id ?? "") ?? null;

@@ -352,7 +352,7 @@ export const EDU_TOOLS: EduToolEntry[] = [
     accessTier: "free",
     visionRef: "W2-class-hub.md (Wave 2 — per-class hub); VISION §14 Collaboration",
     capabilities: [
-      "Add the courses you take; each class is a scope in your personal workspace",
+      "Add the courses you take; each class is a scope in your organization",
       "Tag decks, quizzes, notes, media, and files to a class (ClassPicker → local scope tags)",
       "Per-class hub aggregates everything tagged to it + the class's exam dates",
       "Plan around a class's exams (deep-links into the study planner)",

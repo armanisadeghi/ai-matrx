@@ -8,7 +8,7 @@ import type {
   ReviewQueueUpdate,
   ReviewStatus,
 } from "@/features/admin/agent-review/types";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 
 /**

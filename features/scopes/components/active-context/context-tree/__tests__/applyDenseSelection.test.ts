@@ -25,8 +25,6 @@ const orgs: OrgNode[] = [
     name: "Acme",
     abbreviation: "ACM",
     slug: "acme",
-    // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-    is_personal: false,
     role: "member",
     projects: [],
     scope_types: [
@@ -67,7 +65,7 @@ const orgs: OrgNode[] = [
 ];
 
 const projects: AssignableProject[] = [
-  { id: "proj-1", name: "Launch", orgId: "org-1", isPersonal: false },
+  { id: "proj-1", name: "Launch", orgId: "org-1" },
 ];
 const tasks: AssignableTask[] = [
   {

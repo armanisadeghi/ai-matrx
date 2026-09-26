@@ -539,7 +539,7 @@ export function useHrDisclosureClaimed(): boolean {
  *
  * `useHrContextResolver` legitimately rescues a person whose asked-for employer
  * cannot do HR — without it, a multi-employer admin whose global active org is her
- * personal workspace lands in an empty HR with no way in. But an unannounced swap is
+ * own organization lands in an empty HR with no way in. But an unannounced swap is
  * the same defect as a link that quietly changes employer, which is the one thing
  * every URL rule in `routes.ts` exists to prevent. So the rescue always says so.
  *

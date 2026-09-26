@@ -187,10 +187,10 @@ export async function consumeEntitlement(
   // added in the 2026-09-19 review). This used to call the THREE-argument
   // `billing.entitlement_consume`, which has no organization parameter at all
   // and filled the ledger row's `organization_id` with
-  // `public.ensure_personal_organization(auth.uid())` inside the function. So
+  // the old own-organization provisioner inside the function. So
   // every metered action a person took from the browser — while working
   // inside a team organization they had explicitly selected — was billed to a
-  // personal workspace nobody chose. A billing query picking an organization
+  // own organization nobody chose. A billing query picking an organization
   // is precisely what the ruling names, and it survived the first pass because
   // the substitution lives in SQL, where no TypeScript guard was looking.
   //

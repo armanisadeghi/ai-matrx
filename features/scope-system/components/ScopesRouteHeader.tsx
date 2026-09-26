@@ -420,7 +420,6 @@ export function ScopesRouteHeader() {
         <ScopeBreadcrumb
           orgSlugOrId={orgSlugOrId}
           orgName={org.name}
-          orgIsPersonal={org.is_personal}
           backHref={backHref}
           orgOptions={orgOptions}
           showScopesCrumb={top === "scopes"}

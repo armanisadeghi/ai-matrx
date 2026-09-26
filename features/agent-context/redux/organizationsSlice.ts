@@ -39,8 +39,6 @@ export interface OrgRecord {
   name: string;
   abbreviation?: string;
   slug: string;
-  // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-  is_personal: boolean;
   role: string;
   // full-data only:
   description?: string | null;
@@ -83,7 +81,7 @@ export const fetchOrg = createAsyncThunk(
     const { data, error } = await supabase
       .schema("iam").from("organizations")
       .select(
-        "id, name, abbreviation, slug, description, logo_url, is_personal, settings, created_at",
+        "id, name, abbreviation, slug, description, logo_url, settings, created_at",
       )
       .eq("id", orgId)
       .single();
@@ -160,7 +158,6 @@ const organizationsSlice = createSlice({
         name: org.name,
         abbreviation: org.abbreviation,
         slug: org.slug,
-        is_personal: org.is_personal,
         role: org.role,
       }));
       orgsAdapter.upsertMany(state, records);
@@ -274,10 +271,6 @@ export const selectOrgIsFullData = createSelector(
   },
 );
 
-export const selectPersonalOrg = createSelector(
-  [selectAllOrgs],
-  (orgs) => orgs.find((o) => o.is_personal) ?? null,
-);
 
 /** Resolve a route segment (UUID or slug) to an organization record. */
 export const selectOrgBySlugOrId = createSelector(

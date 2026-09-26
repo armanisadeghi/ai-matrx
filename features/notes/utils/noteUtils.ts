@@ -5,29 +5,16 @@ import { DEFAULT_FOLDER_NAMES } from "../constants/defaultFolders";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 
 /**
- * Whether a note belongs in the active-org sidebar/list view.
- *
- * After the org retrofit, historical notes were stamped onto the user's
- * **personal** organization, while most users keep a company org as their
- * active/default. Filtering strictly on `activeOrgId` then zeros every
- * folder count even though the notes still exist (and show up in
- * unfiltered surfaces like FolderQuickPick).
- *
- * Rule: visible when the note's org matches the active org OR the user's
- * personal org. Other company orgs stay hidden. Callers still handle the
- * null-org ("homeless") case separately.
+ * Whether a note belongs in the active-org sidebar/list view: visible when the
+ * note's org matches the active org. Callers still handle the null-org
+ * ("homeless") case separately.
  */
 export function noteMatchesActiveOrgContext(
   note: { organization_id: string | null },
   activeOrgId: string | null,
-  personalOrgId: string | null,
 ): boolean {
   if (!activeOrgId) return true;
-  const orgId = note.organization_id;
-  if (orgId == null) return false;
-  if (orgId === activeOrgId) return true;
-  if (personalOrgId != null && orgId === personalOrgId) return true;
-  return false;
+  return note.organization_id != null && note.organization_id === activeOrgId;
 }
 
 /**

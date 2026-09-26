@@ -5,8 +5,7 @@ import type {
 import { formatOrgDisplayName } from "@/features/scopes/utils/formatOrgDisplayName";
 
 export type ProjectsByOrgDisplayGroup = {
-  // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-  org: { id: string; name: string; is_personal: boolean };
+  org: { id: string; name: string };
   projects: FlatProject[];
 };
 
@@ -30,7 +29,6 @@ export function groupProjectsByOrgDisplay(
       org: {
         id: org.id,
         name: formatOrgDisplayName(org),
-        is_personal: org.is_personal,
       },
       projects: projects.sort((a, b) => a.name.localeCompare(b.name)),
     });

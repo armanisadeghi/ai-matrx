@@ -78,7 +78,6 @@ describe("organization keyword-value route identity", () => {
         slug: routeOrg,
         createdAt: "2026-09-12T00:00:00Z",
         updatedAt: "2026-09-12T00:00:00Z",
-        isPersonal: false,
       },
       organizationId: resolvedId,
       role: "admin",

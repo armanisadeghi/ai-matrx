@@ -9,7 +9,7 @@ jest.mock("@/lib/api/typed-client", () => ({
   apiPost: jest.fn(),
   apiMultipart: jest.fn(),
 }));
-jest.mock("@/lib/organizations/personalOrg", () => ({
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: jest.fn().mockResolvedValue("org-1"),
 }));
 

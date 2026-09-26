@@ -43,7 +43,7 @@ jest.mock("@/utils/auth/getUserId", () => ({
   getUserId: () => holder.userId,
   requireUserId: () => holder.userId,
 }));
-jest.mock("@/lib/organizations/personalOrg", () => ({
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: async (id: string | null | undefined) => id,
 }));
 // THE PLANTED DEFECT (only with INTEG_PLANT_UNPLACED=1): the scope's table id comes back

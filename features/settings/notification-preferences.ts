@@ -9,31 +9,22 @@
 // the server can never disagree.
 //
 // ─────────────────────────────────────────────────────────────────────────────
-// 🚨 A PREFERENCE IS PER EMPLOYER (hr_l3_116, Arman's 2026-08-29 doctrine).
+// 🚨 A PREFERENCE BELONGS TO ONE ORGANIZATION (hr_l3_116, access ladder T-3).
 //
-// Everything an org-signed-up person does in a business context scopes to that
-// organization, so a switch about an employer's events governs THAT EMPLOYER.
-// Someone employed by two companies who turns "leave decided" off used to
-// silence both with one switch and had no way to say "not from A, still from B".
+// Everything a person does scopes to an organization, so a switch about an
+// organization's events governs THAT organization. Someone in two companies who
+// turns "leave decided" off in A still hears it from B.
 //
 // The server's ladder is nearest-wins:
 //
-//     the user's row for THIS employer
-//   → the user's row on their own PERSONAL organization  (their default everywhere)
-//   → the organization's override
+//     the person's row for the EVENT'S organization
+//   → the person's most recently updated row for that event in ANY of their
+//     organizations
 //   → the event's platform default
 //
 // So `organization_id` on a row is not bookkeeping — it is the row's meaning.
-// A row on the personal organization is the cross-org default; a row on any
-// other organization governs that employer only. (It is the personal org and not
-// `NULL` because NULL organizations are banned platform-wide and the ban is
-// enforced by release-blocking ratchets; see hr_l3_116 §1.)
-//
-// WHAT THIS SURFACE SHOWS. A person with fewer than two employers sees exactly
-// what they saw before — one set of switches, writing their personal-organization
-// row, which the ladder applies everywhere. The employer selector appears only for
-// the multi-employer population the ruling is about, because that is the only
-// population for whom the distinction is real.
+// A write names the organization the person chose (the scope picker, or their
+// active organization); with none chosen it HOLDS and asks (`ensureOrgId`).
 // ─────────────────────────────────────────────────────────────────────────────
 //
 // Cross-repo truth: common-docs/projects/notification-system/HANDOFF.md.
@@ -41,9 +32,8 @@
 import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
-import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
-import { fetchHrContext } from "@/features/hr/service";
-import { isHrGranted } from "@/features/hr/types";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { getUserOrganizations } from "@/features/organizations/service";
 
 export type NotificationEventTypeRow =
   Database["communication"]["Tables"]["notification_event_type"]["Row"];
@@ -58,14 +48,10 @@ export const NOTIFICATION_CHANNELS: ReadonlyArray<{ key: string; label: string }
   { key: "sms", label: "Text message" },
 ];
 
-/**
- * One place a switch can be set. `isGlobal` marks the person's own organization —
- * the row the ladder falls back to in every employer that has no row of its own.
- */
+/** One place a switch can be set: an organization the person belongs to. */
 export interface NotificationScope {
   organizationId: string;
   label: string;
-  isGlobal: boolean;
 }
 
 export interface NotificationEventSetting {
@@ -80,8 +66,8 @@ export interface NotificationEventSetting {
   availableChannels: Record<string, boolean>;
   /**
    * Per channel: true when this scope has NO row of its own and the value shown
-   * came from the person's cross-org default (or the event default). Flipping
-   * such a switch creates the employer's own row.
+   * came from the person's choice in another organization (or the event
+   * default). Flipping such a switch creates this organization's own row.
    */
   inherited: Record<string, boolean>;
 }
@@ -123,63 +109,43 @@ export function notificationChannelAvailability(config: unknown): Record<string,
 }
 
 /**
- * The scopes this person can set preferences in: always their own default, plus
- * one entry per employer they can do HR in.
- *
- * 🚨 This is NOT a cross-employer HR view — `features/hr/shared/useHrContext.ts`
- * rightly forbids merging employers' HR data into one screen. Nothing here reads
- * an employer's data; it reads the LIST of employers so a person can be asked
- * which one a notification switch is about. Asking is the whole point: a switch
- * that silently governs an unnamed set of employers is the defect being fixed.
+ * The scopes this person can set preferences in — every organization they
+ * belong to — and the one to open first: the organization they are working in.
+ * With none chosen, `ensureOrgId` holds and asks; nothing is picked for them.
  */
-export async function loadNotificationScopes(): Promise<NotificationScope[]> {
-  const [personalOrgId, hrContext] = await Promise.all([
-    resolvePersonalOrgId(),
-    // The door-aligned wrapper, not a raw `.rpc()`: `fetchHrContext` is the ONE
-    // caller of `hr_my_context` and carries the verified wire alignment.
-    fetchHrContext(),
+export async function loadNotificationScopes(): Promise<{
+  scopes: NotificationScope[];
+  initialOrganizationId: string;
+}> {
+  const [organizations, initialOrganizationId] = await Promise.all([
+    getUserOrganizations(),
+    ensureOrgId(null),
   ]);
-
-  const scopes: NotificationScope[] = [
-    // org-fallback-deliberate: this is the 'Everywhere (my default)' scope in
-    //   the picker — the person's own cross-organization default, named as such in
-    //   the UI
-    { organizationId: personalOrgId, label: "Everywhere (my default)", isGlobal: true },
-  ];
-
-  // A denied or failed HR door is NOT an error here: a person with no HR at all
-  // still has notification preferences, and they get the default-everywhere
-  // screen. Only the employer picker depends on this call.
-  if (isHrGranted(hrContext)) {
-    for (const employer of hrContext.data.employers ?? []) {
-      // The personal organization is never an employer, but if it ever appeared it
-      // would collide with the global scope and silently shadow it.
-      if (!employer.organization_id || employer.organization_id === personalOrgId) continue;
-      scopes.push({
-        organizationId: employer.organization_id,
-        label: employer.name || "Employer",
-        isGlobal: false,
-      });
-    }
+  const scopes: NotificationScope[] = organizations.map((org) => ({
+    organizationId: org.id,
+    label: org.name,
+  }));
+  if (!scopes.some((scope) => scope.organizationId === initialOrganizationId)) {
+    scopes.unshift({ organizationId: initialOrganizationId, label: "Current organization" });
   }
-  return scopes;
+  return { scopes, initialOrganizationId };
 }
 
 /**
  * Load every enabled event with the caller's effective choices IN ONE SCOPE.
  *
- * The read walks the same ladder the server does — employer row, then the
- * personal-organization row, then the event default — so what the screen shows is
- * what the send path will decide. Getting that wrong is worse than showing
- * nothing: a switch that displays "off" while the server sends is a lie the person
- * only discovers by receiving the message.
+ * The read walks the same ladder the server does — this organization's row,
+ * then the person's most recently updated row in any organization, then the
+ * event default — so what the screen shows is what the send path will decide.
+ * Getting that wrong is worse than showing nothing: a switch that displays
+ * "off" while the server sends is a lie the person only discovers by receiving
+ * the message.
  */
 export async function loadNotificationSettings(
-  scopeOrganizationId?: string | null,
+  scopeOrganizationId: string,
 ): Promise<NotificationEventSetting[]> {
-  const [personalOrgId, { data: events, error: eventsError }, { data: prefs, error: prefsError }] =
+  const [{ data: events, error: eventsError }, { data: prefs, error: prefsError }] =
     await Promise.all([
-      resolvePersonalOrgId(),
       supabase
         .schema("communication")
         .from("notification_event_type")
@@ -190,27 +156,26 @@ export async function loadNotificationSettings(
       supabase
         .schema("communication")
         .from("notification_preference")
-        // `organization_id` is which employer the row governs — selecting it is not
-        // optional now that more than one row per (event, channel) can exist.
-        .select("event_key,channel,enabled,organization_id,deleted_at")
+        // `organization_id` is which organization the row governs; `updated_at`
+        // picks the most recent choice elsewhere, exactly as the server does.
+        .select("event_key,channel,enabled,organization_id,updated_at,deleted_at")
         .is("deleted_at", null),
     ]);
   if (eventsError) throw eventsError;
   if (prefsError) throw prefsError;
 
-  // DELIBERATE personal-organization read, by name — not a fallback for a
-  // missing selection. "No employer named" is this surface's way of saying
-  // "my default everywhere", and the platform STORES that default as the row
-  // on the person's own personal organization (hr_l3_116 §1, the ladder's
-  // second rung, described in this file's header).
-  // org-fallback-deliberate: absent employer means the person's own cross-organization default row
-  const scopeId = scopeOrganizationId ?? personalOrgId;
   const scoped = new Map<string, boolean>();
-  const global = new Map<string, boolean>();
+  const latestElsewhere = new Map<string, { enabled: boolean; updatedAt: string }>();
   for (const pref of prefs ?? []) {
     const key = `${pref.event_key}:${pref.channel}`;
-    if (pref.organization_id === scopeId) scoped.set(key, Boolean(pref.enabled));
-    if (pref.organization_id === personalOrgId) global.set(key, Boolean(pref.enabled));
+    if (pref.organization_id === scopeOrganizationId) {
+      scoped.set(key, Boolean(pref.enabled));
+      continue;
+    }
+    const seen = latestElsewhere.get(key);
+    if (!seen || pref.updated_at > seen.updatedAt) {
+      latestElsewhere.set(key, { enabled: Boolean(pref.enabled), updatedAt: pref.updated_at });
+    }
   }
 
   return (events ?? []).flatMap((event) => {
@@ -223,7 +188,7 @@ export async function loadNotificationSettings(
       const mapKey = `${event.event_key}:${key}`;
       const own = scoped.get(mapKey);
       inherited[key] = own === undefined;
-      channels[key] = own ?? global.get(mapKey) ?? Boolean(defaults[key]);
+      channels[key] = own ?? latestElsewhere.get(mapKey)?.enabled ?? Boolean(defaults[key]);
     }
     return [{
       eventKey: event.event_key,
@@ -238,11 +203,9 @@ export async function loadNotificationSettings(
 }
 
 /**
- * Record the caller's explicit choice for one (event, channel) IN ONE SCOPE.
- *
- * `organizationId` omitted means the person's own default everywhere — the
- * personal organization, which is what this surface has always written and what
- * `public._stamp_org_default` fills in for any writer that names no organization.
+ * Record the caller's explicit choice for one (event, channel) IN ONE
+ * ORGANIZATION. `organizationId` omitted means the organization the person is
+ * working in; with none chosen, `ensureOrgId` holds and asks.
  */
 export async function setNotificationPreference(
   eventKey: string,
@@ -250,9 +213,9 @@ export async function setNotificationPreference(
   enabled: boolean,
   organizationId?: string | null,
 ): Promise<void> {
-  const [{ data: auth, error: authError }, personalOrgId] = await Promise.all([
+  const [{ data: auth, error: authError }, scopeOrganizationId] = await Promise.all([
     getClaimsUser(supabase),
-    resolvePersonalOrgId(),
+    ensureOrgId(organizationId),
   ]);
   if (authError) throw authError;
   const userId = auth.user?.id;
@@ -267,18 +230,12 @@ export async function setNotificationPreference(
         event_key: eventKey,
         channel,
         enabled,
-        // DELIBERATE personal-organization read, by name (same rule as the
-        // loader above): omitting `organizationId` means "my default
-        // everywhere", which IS the row on the person's own organization.
-        // A missing ACTIVE selection never reaches here — the caller either
-        // names an employer or is asking for their own default.
-        // org-fallback-deliberate: absent employer means the person's own cross-organization default row
-        organization_id: organizationId ?? personalOrgId,
+        organization_id: scopeOrganizationId,
         created_by: userId,
         deleted_at: null,
       },
-      // Must name the organization: the unique key became
-      // (user_id, organization_id, event_key, channel) in hr_l3_116, and an
+      // Must name the organization: the unique key is
+      // (user_id, organization_id, event_key, channel) (hr_l3_116), and an
       // on_conflict target that does not match a unique index is rejected outright.
       { onConflict: "user_id,organization_id,event_key,channel" },
     );
@@ -286,10 +243,10 @@ export async function setNotificationPreference(
 }
 
 /**
- * Drop this employer's own row so the switch goes back to inheriting the person's
- * default everywhere.
+ * Drop this organization's own row so the switch goes back to following the
+ * person's choice elsewhere (or the event default).
  *
- * Without this the employer view is a one-way door: once a switch is touched, the
+ * Without this the organization view is a one-way door: once a switch is touched, the
  * row pins that value forever and "same as my default" becomes unsayable — which
  * is the difference between an override and a fork.
  */

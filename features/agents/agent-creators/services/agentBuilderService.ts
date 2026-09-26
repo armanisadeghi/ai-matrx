@@ -12,7 +12,7 @@ import { stripNullish } from "@/utils/supabase/payload";
 // path (`agentDefinitionToInsert`) already refuses a row with no organization;
 // this path must not be the quiet one. Law:
 // common-docs/policies/context-is-carried-never-rebuilt.md.
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";

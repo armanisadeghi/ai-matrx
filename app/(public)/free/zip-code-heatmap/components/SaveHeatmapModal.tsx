@@ -18,7 +18,7 @@ import {
 import { supabase } from '@/utils/supabase/client';
 import { getClaimsUser } from '@/utils/supabase/claimsUser';
 import { useLoginHref } from '@/hooks/auth/useLoginHref';
-import { ensureOrgId } from '@/lib/organizations/personalOrg';
+import { ensureOrgId } from '@/lib/organizations/ensureOrgId';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ZipCodeData } from '../page';
 import type { ColorScaleOptions } from './ColorScaleSelector';

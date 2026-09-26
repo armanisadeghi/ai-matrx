@@ -55,7 +55,6 @@ export default function ScopeEditPage() {
           orgId={org.id}
           orgSlugOrId={orgSlugOrId}
           orgName={org.name}
-          orgIsPersonal={org.isPersonal}
           typeParam={typeId}
           scopeParam={scopeId}
           canManage={canManage}

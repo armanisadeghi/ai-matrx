@@ -38,7 +38,7 @@ import {
 } from "@/features/mandates/list-door";
 import type { MandateListRow } from "./types";
 
-/** One organization the caller belongs to — a personal workspace included. */
+/** One organization the caller belongs to — a own organization included. */
 export interface MandateHomeOrganization {
   id: string;
   name: string;

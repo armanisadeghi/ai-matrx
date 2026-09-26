@@ -14,8 +14,6 @@ export interface SSRShellOrganization {
   id: string;
   name: string;
   slug: string;
-  // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-  is_personal: boolean;
   role: string;
 }
 
@@ -26,12 +24,10 @@ export interface SSRShellData {
   ai_models: AIModel[];
   context_menu: ContextMenuRow[];
   sms_unread_total: number;
-  /** The user's never-null personal org (iam.personal_org_id). */
-  personal_organization_id: string | null;
   /**
    * The resolved EXPLICIT active org (default-if-member → only-org → null).
    * Null is intentional — the signal the UI uses to nudge the user to pick
-   * one. Nothing substitutes the personal org for it: surfaces read
+   * one. Nothing substitutes another org for it: surfaces read
    * `selectOrganizationId` and fail closed, so null means the UI asks.
    */
   active_organization_id: string | null;
@@ -71,7 +67,6 @@ export async function getSSRShellData(
         ai_models: [],
         context_menu: [],
         sms_unread_total: 0,
-        personal_organization_id: null,
         active_organization_id: null,
         organizations: [],
       };
@@ -88,7 +83,6 @@ export async function getSSRShellData(
       ai_models: [],
       context_menu: [],
       sms_unread_total: 0,
-      personal_organization_id: null,
       active_organization_id: null,
       organizations: [],
     };

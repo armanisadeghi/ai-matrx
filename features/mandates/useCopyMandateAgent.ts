@@ -27,7 +27,7 @@ import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { AppDispatch } from "@/lib/redux/store";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
-import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import {
   duplicateAgent,
   duplicateAgentVersion,
@@ -109,12 +109,9 @@ export function useCopyMandateAgent(): {
       // Dispatch inside each branch so each thunk action keeps its own type
       // (a ternary between two different thunks has no single dispatch
       // overload).
-      // "Copy & Update" makes the person's OWN copy — homed in their own
-      // workspace, never a question about which organization it is for.
-      // org-fallback-deliberate: every caller copies "into your account"; only
-      // an organization seat names its own org, otherwise the copy is homed by
-      // name in the person's own workspace (308e1badb7).
-      const home = source.organizationId || (await resolvePersonalOrgId());
+      // An organization seat names its own org; otherwise the copy is homed in
+      // the organization the person has selected (asked when none is).
+      const home = await ensureOrgId(source.organizationId || null);
       const newId = await duplicateMandateAgent(dispatch, {
         ...source,
         organizationId: home,

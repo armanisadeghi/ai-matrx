@@ -26,7 +26,6 @@ const MARKER = "orgBootstrapResolved";
 const COMPANION_KEYS = [
   "organization_id",
   "organization_name",
-  "personal_organization_id",
   "scope_selections",
   "active_scope_type_ids",
   "project_id",

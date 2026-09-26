@@ -89,7 +89,7 @@ import {
   sourceRefusalSentence,
 } from "@/features/sources/api/sourcesApi";
 import { processSourceNow } from "@/features/sources/api/processNow";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { downloadFile, exportFilename } from "@/components/agent-copy/export";

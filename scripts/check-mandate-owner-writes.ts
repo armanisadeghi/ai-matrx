@@ -115,11 +115,12 @@ async function main(): Promise<void> {
     const personal = (
       await client.query<{ id: string }>(
         `select o.id from iam.organizations o join iam.organization_member om on om.organization_id = o.id
-          where om.user_id = $1 and o.is_personal and om.role = 'owner' limit 1`,
+          where om.user_id = $1 and om.role = 'owner' and o.archived_at is null
+          order by o.created_at limit 1`,
         [member],
       )
     ).rows[0]?.id;
-    if (!sys || !personal) fail("UNMEASURED: no system organization, or no personal organization for the member.");
+    if (!sys || !personal) fail("UNMEASURED: no system organization, or no organization the member owns.");
 
     // ── Fixture: one organization, an OWNER and a plain MEMBER ─────────────────
     await asOperator(client);

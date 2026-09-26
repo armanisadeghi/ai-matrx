@@ -9,7 +9,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 
 export const canvasItemStateService = {

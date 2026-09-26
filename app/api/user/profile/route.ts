@@ -15,7 +15,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import type { UserAccountData, UserAccountPatch } from "@/features/user-profile/types";
 import { EMPTY_ACCOUNT_DATA } from "@/features/user-profile/types";
-import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
+import { ensureOrgIdServer } from "@/lib/organizations/ensureOrgId";
 import {
   isOrganizationRequiredServerError,
   organizationRequiredResponse,
@@ -176,8 +176,8 @@ export async function PATCH(request: NextRequest) {
     // 🚨 THE ORGANIZATION QUESTION IS SETTLED BEFORE ANYTHING IS WRITTEN.
     // Until 2026-09-19 the profiles upsert read
     // `ensureOrgIdServer(supabase, null)`, which ended in the
-    // `current_personal_org_id()` RPC — the server stamping the row with the
-    // person's personal workspace because the request named no organization.
+    // the old own-organization lookup — the server stamping the row with the
+    // person's own organization because the request named no organization.
     // The old comment called that deliberate ("a per-person singleton, PK =
     // the user id"), but the primary key is what makes the row a singleton;
     // `organization_id` is still a tenant, and picking it here is exactly the
@@ -197,7 +197,7 @@ export async function PATCH(request: NextRequest) {
     // for the compiler and NOT enough for `check:org-insert-scope`, which
     // follows the payload value back through its declaration: a nullable
     // anywhere in that chain is a write that MAY send null, and a null here
-    // is `public._stamp_org_default` stamping the writer's personal workspace
+    // is `public._stamp_org_default` stamping the writer's own organization
     // — precisely the substitution this handler just stopped making. So the
     // resolve and the write live in ONE branch, the binding is `const` and
     // `string`, and there is no path by which an absent organization reaches

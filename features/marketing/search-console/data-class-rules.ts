@@ -24,7 +24,7 @@ import type {
 } from "@/features/marketing/search-console/lib/class-rules";
 import { makeAssertData } from "@/utils/errors";
 import { writeOne } from "@/utils/supabase/writeOne";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);

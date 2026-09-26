@@ -11,7 +11,7 @@
  * person assigns it in the Mandate Holder tab, exactly as the agent copy.
  */
 
-import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { useState } from "react";
 import { toast } from "@/lib/toast";
 import { duplicateWorkflow } from "@/features/workflow-runtime/browse/service";
@@ -28,8 +28,8 @@ export function useCopyMandateWorkflow(): {
   const copyWorkflowAndOpen = async (workflowId: string) => {
     setCopying(true);
     try {
-      // The person's OWN copy: homed in their own workspace, no workspace question.
-      const copy = await duplicateWorkflow(workflowId, await resolvePersonalOrgId());
+      // The copy is homed in the organization the person has selected (asked when none is).
+      const copy = await duplicateWorkflow(workflowId, await ensureOrgId(null));
       toast.success(
         `Copied into "${copy.name}". Assign it in the Mandate Holder tab to use it for this job.`,
       );

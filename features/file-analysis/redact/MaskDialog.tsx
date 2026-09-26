@@ -68,7 +68,7 @@ export function MaskDialog({ fileId, open, onOpenChange }: MaskDialogProps) {
   // The EXPLICIT active org. Escrow is an ORGANIZATION recovery path, so with
   // no organization selected `escrowSessionKey` refuses and the handoff dialog
   // says the key exists only in this browser — never a key quietly escrowed to
-  // a personal workspace the user never chose.
+  // a own organization the user never chose.
   const organizationId = useAppSelector(selectOrganizationId);
 
   const handleRun = async () => {

@@ -134,7 +134,7 @@ type Stat = {
   preview: { id: string; title: string }[];
 };
 type SortKey = "name" | "org" | "open" | "done" | "updated";
-type OrgMap = Map<string, { name: string; slug: string; isPersonal: boolean }>;
+type OrgMap = Map<string, { name: string; slug: string }>;
 
 type ProjectListRow = Pick<
   Tables<{ schema: "workspace" }, "projects">,
@@ -237,15 +237,8 @@ export function ProjectsHub({
     orgMap.set(organization.id, {
       name: organization.name,
       slug: organization.slug,
-      isPersonal: organization.isPersonal,
     });
   }
-
-  // A project is "personal" iff its owning org is the user's personal org.
-  // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-  // ctx_projects.is_personal no longer exists; personal-ness is org-derived.
-  const isPersonalProject = (organizationId: string | null) =>
-    !!organizationId && orgMap.get(organizationId)?.isPersonal === true;
 
   // Projects (RLS-filtered, nav-tree-independent).
   const [projects, setProjects] = React.useState<ProjectWithRole[]>([]);
@@ -296,9 +289,6 @@ export function ProjectsHub({
             description: r.description ?? null,
             organizationId: r.organization_id ?? null,
             createdBy: r.created_by ?? null,
-            // Personal-ness is org-derived (see isPersonalProject); the project
-            // row no longer carries is_personal. Resolved against orgMap at render.
-            isPersonal: false,
             status: projectStatus(r.status),
             priority: r.priority ?? null,
             startDate: r.start_date ?? null,
@@ -507,13 +497,8 @@ export function ProjectsHub({
   const filterOrgName = orgFilterId
     ? (orgMap.get(orgFilterId)?.name ?? "this organization")
     : null;
-  // "Personal" is org-driven: a project is personal iff its owning org is the
-  // user's personal org (organizations.is_personal). Every project now has an
-  // org, so org-less is no longer the signal.
-  const personal = filtered.filter((p) => isPersonalProject(p.organizationId));
-  const teams = filtered.filter((p) => !isPersonalProject(p.organizationId));
   const teamGroups = new Map<string, ProjectWithRole[]>();
-  for (const project of teams) {
+  for (const project of filtered) {
     const key = project.organizationId ?? "unassigned";
     const group = teamGroups.get(key) ?? [];
     group.push(project);
@@ -594,7 +579,7 @@ export function ProjectsHub({
       ...buildProjectsContextData({
         project,
         org: organization
-          ? { name: organization.name, isPersonal: organization.isPersonal }
+          ? { name: organization.name }
           : null,
         taskCounts:
           stat && !statsReadFailed
@@ -875,20 +860,6 @@ export function ProjectsHub({
               </div>
             ) : (
               <>
-                {personal.length > 0 && (
-                  <Section title="Personal" count={personal.length}>
-                    {personal.map((p) => (
-                      <ProjectHubCard
-                        key={p.id}
-                        project={p}
-                        stat={stats.get(p.id)}
-                        orgMap={orgMap}
-                        statsReadFailed={statsReadFailed}
-                        accent="bg-primary"
-                      />
-                    ))}
-                  </Section>
-                )}
                 {groupedTeams.map(([organizationId, organizationProjects]) => (
                   <Section
                     key={organizationId}

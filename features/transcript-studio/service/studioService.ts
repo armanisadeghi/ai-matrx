@@ -14,7 +14,7 @@ import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { NEW_SESSION_DEFAULT_TITLE, DEFAULT_MODULE_ID } from "../constants";
 import type {
   AssistantConversationRef,
@@ -55,7 +55,7 @@ type ServerSupabaseClient = SupabaseClient<Database>;
 // read once per session and reused: it cannot change under a session, and
 // re-resolving it per write is how a long recording ends up split across two
 // organizations. A session with no organization refuses, by name, with the
-// remedy — it never falls back to a personal workspace.
+// remedy — it never falls back to a own organization.
 const sessionOrganizationIds = new Map<string, Promise<string>>();
 
 async function sessionOrganizationId(sessionId: string): Promise<string> {

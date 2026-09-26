@@ -23,7 +23,7 @@ jest.mock("@/utils/supabase/client", () => ({
     schema: () => ({ from: () => fromChain }),
   },
 }));
-jest.mock("@/lib/organizations/personalOrg", () => ({ ensureOrgId: async () => "org-1" }));
+jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: async () => "org-1" }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "user-1" }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "user-1" }));
 

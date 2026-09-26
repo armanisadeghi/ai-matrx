@@ -153,8 +153,6 @@ export function useCreateOrganization() {
             id: org.id,
             name: org.name,
             slug: org.slug,
-            // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-            is_personal: org.is_personal ?? false,
             role: org.role,
             description: org.description,
             logo_url: org.logo_url,
@@ -199,10 +197,6 @@ export function useCreateProject() {
             name: proj.name,
             slug: proj.slug,
             organization_id: proj.organization_id,
-            // Personal-ness is org-derived and no longer on HierarchyProject;
-            // the invalidateAndRefetchFullContext below re-hydrates the correct
-            // value from the nav tree (RPC-derived). Default false until then.
-            is_personal: false,
             open_task_count: 0,
             total_task_count: 0,
             scope_tags: [],

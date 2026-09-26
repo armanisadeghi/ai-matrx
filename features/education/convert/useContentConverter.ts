@@ -10,7 +10,7 @@
 
 import { useCallback } from "react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { runConvert } from "./registry";
 import "./generators"; // ensure generators are registered even if index.ts wasn't imported
 import type {

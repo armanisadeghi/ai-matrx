@@ -41,7 +41,6 @@ jest.mock("@/lib/redux/store-singleton", () => ({
     getState: () => ({
       appContext: {
         organization_id: organizationId,
-        personal_organization_id: null,
       },
     }),
   }),

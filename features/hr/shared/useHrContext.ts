@@ -273,7 +273,7 @@ export function useHrContextResolver(
         // 🚨 SCOPE TO THE PERSON'S REAL HR EMPLOYER, OR AN ADMIN IS LOCKED OUT.
         // `useHrPersona().can` reads `active.capabilities`, so if `active` is null OR resolved
         // to an org where HR is OFF, every HR control is hidden — the inverse of a leak. This
-        // bit a real admin (Priya): her global `activeOrgId` was her personal workspace
+        // bit a real admin (Priya): her global `activeOrgId` was her own organization
         // (module off), so `active` came back with an EMPTY capability set while she holds 21
         // capabilities in her actual workplace. When exactly ONE of her employers has HR on,
         // that is unambiguously her HR context — re-fetch for it. (The server applies the same

@@ -78,7 +78,7 @@ export function useUploadAgentResources(
     // The file and the conversation will be joined later, so the upload must
     // land in the SAME workspace the conversation will. Resolving it here —
     // asking the person if nothing is selected — is what stops an attachment
-    // from silently filing itself in a personal workspace nobody chose.
+    // from silently filing itself in a own organization nobody chose.
     //
     // Declining is not an error: no chips are staged, nothing is uploaded, and
     // the composer is untouched.

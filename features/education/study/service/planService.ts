@@ -20,7 +20,7 @@
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { StudyResult } from "../types";
 import type {
   PlanDraft,

@@ -66,10 +66,8 @@ export function OrganizationList() {
       ])
     : organizations;
 
-  // ONE list, every organization under its own name and the viewer's real role.
-  // The Personal/Team split grouped on `is_personal`, so belonging to two
-  // personal organizations put both under "Personal Space" — or, worse, hid one
-  // entirely, since `find` returns a single match (Arman, 2026-09-11).
+  // ONE list, every organization under its own name and the viewer's real role
+  // (Arman, 2026-09-11).
   const kpis = organizationKpis(organizations);
 
   // Loading state

@@ -195,7 +195,7 @@ export async function updateOrganization(
     // THROUGH THE DOOR. `iam` is not a client-writable schema (DOORS-ONLY-3):
     // `public.org_update` asks the same question org_update_policy asked — platform
     // admin, or iam.is_org_manager — and then reads SEVEN keys out of the patch, so
-    // `is_personal`, `created_by` and `slug` are not reachable from a browser at all.
+    // `created_by` and `slug` are not reachable from a browser at all.
     // A refusal is now an ERROR with a sentence, not the zero-row no-op DD-048 had to
     // detect by asking for the row back.
     const { data: row, error } = await supabase.rpc("org_update", {
@@ -246,18 +246,13 @@ export async function deleteOrganization(
   orgId: string,
 ): Promise<OperationResult> {
   try {
-    // Check if personal org
+    // The archive door confirms by name.
     const { data: org } = await supabase
       .schema("iam")
       .from("organizations")
-      // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-      .select("is_personal, name")
+      .select("name")
       .eq("id", orgId)
       .single();
-
-    if (org?.is_personal) {
-      return { success: false, error: "Cannot delete personal organization" };
-    }
 
     // 🚨 THIS IS AN ARCHIVE, AND IT WAS A HARD DELETE. `DELETE FROM iam.organizations`
     // took the organization's memberships, its data and its audit trail with it and there
@@ -443,13 +438,11 @@ export async function getUserOrganizations(
     };
   });
 
-  // Sort: live before archived, then personal first, then by name.
+  // Sort: live before archived, then by name.
   return orgs.sort((a, b) => {
     const aArchived = Boolean(a.archivedAt);
     const bArchived = Boolean(b.archivedAt);
     if (aArchived !== bArchived) return aArchived ? 1 : -1;
-    if (a.isPersonal && !b.isPersonal) return -1;
-    if (!a.isPersonal && b.isPersonal) return 1;
     return a.name.localeCompare(b.name);
   });
 }
@@ -1035,7 +1028,6 @@ function transformOrganizationFromDb(dbRecord: OrganizationRow): Organization {
     createdAt: dbRecord.created_at ?? "",
     updatedAt: dbRecord.updated_at ?? "",
     createdBy: dbRecord.created_by,
-    isPersonal: dbRecord.is_personal ?? false,
     settings: isJsonObject(dbRecord.settings) ? dbRecord.settings : {},
     archivedAt: dbRecord.archived_at,
     archivedBy: dbRecord.archived_by,

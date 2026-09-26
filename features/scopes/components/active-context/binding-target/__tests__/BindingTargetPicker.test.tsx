@@ -13,9 +13,9 @@ import type { OrgNode } from "@/features/scopes/types";
 
 const fixture = {
   orgs: [
-    { id: "org-castellano", name: "Castellano & Reyes, LLP", slug: "castellano-reyes", is_personal: false, scope_types: [] },
+    { id: "org-castellano", name: "Castellano & Reyes, LLP", slug: "castellano-reyes", scope_types: [] },
   ] as unknown as OrgNode[],
-  projects: [{ id: "proj-renewal", name: "Meridian renewal", orgId: "org-castellano", isPersonal: false }],
+  projects: [{ id: "proj-renewal", name: "Meridian renewal", orgId: "org-castellano" }],
   tasks: [{ id: "task-draft", title: "Draft the renewal letter", projectId: "proj-renewal", orgId: "org-castellano", status: "incomplete" }],
   treeStatus: "ready" as const,
   treeError: null,

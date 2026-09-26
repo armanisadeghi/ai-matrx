@@ -24,7 +24,7 @@
 //                   └── conversations
 //
 // Stored fields are nullable during boot and while the picker has no selection.
-// Null does NOT authorize a personal/system fallback: outbound compute refuses
+// Null does NOT authorize any fallback organization: outbound compute refuses
 // before networking until an organization is selected or explicitly supplied
 // from the durable entity being acted on. Setting org narrows scope; setting
 // project narrows further; etc.
@@ -64,16 +64,6 @@ export interface AppContextState {
   organization_name: string | null;
 
   /**
-   // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-   * The user's PERSONAL organization id (is_personal = true). Set once at
-   * shell hydration by the active-org bootstrap; it is NOT the active org and
-   * is NEVER reset by setOrganization. It identifies the personal workspace
-   * for surfaces whose product contract explicitly names that workspace; it
-   * is not permission for the API transport to choose an organization.
-   */
-  personal_organization_id: string | null;
-
-  /**
    * Scope selections — MULTI-SELECT (2026-06-12). Keyed by scope id; value is
    * the same scope id (map shape kept for type-compatibility; null values are
    * tolerated and ignored). Any number of scopes across any scope types can
@@ -110,8 +100,8 @@ export interface AppContextState {
    * True once the active-org bootstrap has run to completion (whether or not it
    * selected an org). The UI gates the "no org" cues (red avatar ring + the
    * drop-down reminder) on this so they only appear after we genuinely know the
-   * user has no org — never as a flash during boot before the default/personal
-   * org has had a chance to resolve. Set only by bootstrapActiveOrganization.
+   * user has no org — never as a flash during boot before the organization
+   * question has had a chance to resolve. Set only by bootstrapActiveOrganization.
    */
   orgBootstrapResolved: boolean;
 
@@ -121,8 +111,8 @@ export interface AppContextState {
    *
    * `orgBootstrapResolved: true` with no organization used to mean exactly one
    * thing to every screen: "you belong to nothing, pick one". It was also what
-   * an ABORTED fetch, a page that never went idle, a thrown membership read and
-   * a degraded `current_personal_org_id()` all landed on — so a person who is a
+   * an ABORTED fetch, a page that never went idle, and a thrown membership
+   * read all landed on — so a person who is a
    * member of thirteen organizations was told, for 24 seconds, to select one
    * (V-23 NEW-2, seat-proven 2026-09-18). A read that FAILED is not an answer.
    *
@@ -143,7 +133,6 @@ export interface AppContextState {
 export const appContextInitialState: AppContextState = {
   organization_id: null,
   organization_name: null,
-  personal_organization_id: null,
   scope_selections: {},
   active_scope_type_ids: [],
   project_id: null,
@@ -231,13 +220,6 @@ const appContextSlice = createSlice({
       state.task_id = null;
       state.task_name = null;
       // conversation_id deliberately preserved — see above.
-    },
-    /**
-     * Set the user's personal org id. Independent of the active org — does NOT
-     * touch organization_id or reset any descendants. Set once at hydration.
-     */
-    setPersonalOrganization: (state, action: PayloadAction<string | null>) => {
-      state.personal_organization_id = action.payload;
     },
     setScopeSelections: (
       state,
@@ -332,9 +314,6 @@ const appContextSlice = createSlice({
         state.organization_id = action.payload.organization_id;
       if (action.payload.organization_name !== undefined)
         state.organization_name = action.payload.organization_name;
-      if (action.payload.personal_organization_id !== undefined)
-        state.personal_organization_id =
-          action.payload.personal_organization_id;
       if (action.payload.scope_selections !== undefined)
         state.scope_selections = action.payload.scope_selections;
       if (action.payload.active_scope_type_ids !== undefined)
@@ -354,7 +333,7 @@ const appContextSlice = createSlice({
   },
   extraReducers: (builder) => {
     // Sync engine rehydrate — `appContextPolicy` (warm-cache) persists the org
-    // identity fields (organization_id / _name / personal_organization_id) to
+    // identity fields (organization_id / _name) to
     // IDB→LS keyed by identity, and on boot the engine reads them back (cache
     // primary, else `remote.fetch` → resolveActiveOrgContext) and dispatches
     // REHYDRATE. This is what makes the active org PRESENT before any
@@ -384,9 +363,6 @@ const appContextSlice = createSlice({
         state.orgBootstrapFailure =
           loaded.organization_id != null ? null : loaded.orgBootstrapFailure;
       }
-      if (loaded.personal_organization_id !== undefined) {
-        state.personal_organization_id = loaded.personal_organization_id;
-      }
       // Respect an org the user has already actively selected this session
       // (deep-link / restored context beat the async refresh here).
       if (state.organization_id == null) {
@@ -404,7 +380,6 @@ const appContextSlice = createSlice({
 export const {
   setOrganization,
   resolveOrganizationForBlockedAction,
-  setPersonalOrganization,
   setScopeSelections,
   addActiveScope,
   removeActiveScope,
@@ -428,10 +403,6 @@ export const selectOrganizationId = (
   state: StateWithAppContext,
 ): string | null => state.appContext.organization_id;
 
-export const selectPersonalOrganizationId = (
-  state: StateWithAppContext,
-): string | null => state.appContext.personal_organization_id;
-
 /**
  * True when the user has EXPLICITLY chosen an active org. False means compute
  * requests are blocked unless the caller supplies a durable entity org; the UI
@@ -444,7 +415,7 @@ export const selectHasExplicitOrganization = (
 /**
  * True once the active-org bootstrap has finished resolving. Gate the "no org"
  * UI cues (red avatar ring + drop-down reminder) on this so they never flash
- * during boot before the default/personal org has had a chance to load.
+ * during boot before the organization question has had a chance to load.
  */
 export const selectOrgBootstrapResolved = (
   state: StateWithAppContext,
@@ -530,8 +501,8 @@ export const selectAppContext = (state: StateWithAppContext): AppContextState =>
 // citizen of the unified sync engine — the same machinery behind userPreferences
 // / userProfile. This REPLACES the old ActiveOrgBootstrap island + per-launch
 // multi-round-trip bootstrap. It:
-//   - persists the org IDENTITY fields (organization_id / _name /
-//     personal_organization_id) to IDB→localStorage, keyed by identity, so on a
+//   - persists the org IDENTITY fields (organization_id / _name) to
+//     IDB→localStorage, keyed by identity, so on a
 //     hard refresh the active org rehydrates BEFORE any service/selector runs —
 //     impossible to be missing;
 //   - on cold-boot (and after `staleAfter`) runs `remote.fetch` →
@@ -558,7 +529,6 @@ export const appContextPolicy = definePolicy<AppContextState>({
     actions: [
       "appContext/setOrganization",
       "appContext/resolveOrganizationForBlockedAction",
-      "appContext/setPersonalOrganization",
       "appContext/setFullContext",
       "appContext/clearContext",
     ],
@@ -567,12 +537,10 @@ export const appContextPolicy = definePolicy<AppContextState>({
   partialize: [
     "organization_id",
     "organization_name",
-    "personal_organization_id",
   ],
   serialize: (state) => ({
     organization_id: state.organization_id,
     organization_name: state.organization_name,
-    personal_organization_id: state.personal_organization_id,
   }),
   deserialize: (raw) => {
     if (!raw || typeof raw !== "object") return {};
@@ -601,7 +569,6 @@ export const appContextPolicy = definePolicy<AppContextState>({
     return {
       organization_id,
       organization_name,
-      personal_organization_id: str(r.personal_organization_id),
       orgBootstrapResolved: r.orgBootstrapResolved === true,
       // The fourth state rides the remote result through `deserialize` (the
       // engine runs it over BOTH the cached record and the fetch body). A
@@ -696,7 +663,7 @@ export const appContextPolicy = definePolicy<AppContextState>({
         return unreadable("the organization read was cancelled before it ran");
       }
       if (!resolved) {
-        // A genuine empty answer: no memberships, and no personal org either.
+        // A genuine empty answer: no memberships.
         return answered({
           orgBootstrapResolved: true,
           orgBootstrapFailure: null,
@@ -710,9 +677,9 @@ export const appContextPolicy = definePolicy<AppContextState>({
           setOrganization({ id: organizationId, name: organizationName }),
         );
       });
-      // A DEGRADED resolve is unreadable too: the resolver reached its last
-      // rung only because `current_personal_org_id()` failed, so "none of your
-      // thirteen organizations is selected" is a guess, not a reading.
+      // A DEGRADED resolve is unreadable too: "none of your thirteen
+      // organizations is selected" after a failed read is a guess, not a
+      // reading.
       if (unreadableReason && context.organization_id == null) {
         return unreadable(unreadableReason);
       }
@@ -723,16 +690,15 @@ export const appContextPolicy = definePolicy<AppContextState>({
       } satisfies Partial<AppContextState>);
     },
     // A cached appContext record with NO org in it is not an answer — it is
-    // the absence of one, and `ensureOrgId` screams (and pays a personal-org
-    // RPC) on every org-scoped write until it is filled. The engine persists
+    // the absence of one, and `ensureOrgId` holds and asks on every org-scoped write until it is filled. The engine persists
     // post-reducer state on every mutation, so any appContext change made
     // before the first fetch landed writes exactly such a hollow record; left
     // to the default "a cache hit suppresses the cold-boot fetch" rule, that
     // record then poisons every subsequent boot until `staleAfter` (5 min).
     // Declaring sufficiency makes the boot reconcile instead.
     //
-    // Sufficiency is the ACTIVE org — a record carrying only the personal org
-    // is still hollow. That is the shape every "I have no org selected" boot
+    // Sufficiency is the ACTIVE org. A record without one is still hollow.
+    // That is the shape every "I have no org selected" boot
     // writes, so accepting it suppressed the one fetch that reads the user's
     // durable default-org preference: the user starred a default, and every
     // subsequent boot restored the org-less cache and nudged them to pick one

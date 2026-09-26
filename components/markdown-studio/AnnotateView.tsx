@@ -27,7 +27,7 @@ import {
   type LoadedDocument,
 } from "@/features/rich-document/annotations/documentSource";
 import type { AnnotationSource } from "@/features/rich-document/annotations/types";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";

@@ -57,7 +57,7 @@
  * THE SECOND RULE — THE FOURTH STATE IS NOT THE REFUSAL (R37, 2026-09-18)
  * ----------------------------------------------------------------------
  * There are FOUR states, not three: the read can FAIL. On a cold load whose
- * Supabase calls failed, `current_personal_org_id()` answered `TypeError:
+ * Supabase calls failed, the old own-organization lookup answered `TypeError:
  * Failed to fetch` and the import control went straight from "Checking which
  * organization you are working in…" to "Select an organization before
  * importing Google Tasks.", disabled, and stayed there for 24 seconds — to a

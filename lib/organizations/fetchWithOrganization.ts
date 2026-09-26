@@ -5,11 +5,11 @@
 //
 // THE GAP THIS CLOSES (2026-09-19)
 // --------------------------------
-// The 2026-09-19 ruling took the `current_personal_org_id()` fallback out of
+// The 2026-09-19 ruling took the server-side fallback organization out of
 // five route handlers: `app/api/user/profile`, `app/api/user/email-preferences`,
 // `app/api/sms/preferences`, `app/api/sms/verify` and
-// `app/api/cms/access-context` used to let the SERVER file the write in the
-// caller's personal workspace when the request named no organization. They now
+// `app/api/cms/access-context` used to let the SERVER choose the organization
+// when the request named none. They now
 // refuse, with a 400 whose body carries the caller's memberships.
 //
 // That is only half an answer, and the wrong half on its own. Every caller of

@@ -50,7 +50,7 @@ import {
   type GetTableResult,
 } from "@/utils/user-table-utls/table-utils";
 import { whereANewTableIsBorn } from "./data-source/where-a-table-is-born";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import type {
   BulkOp,

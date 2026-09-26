@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
-import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
+import { ensureOrgIdServer } from "@/lib/organizations/ensureOrgId";
 import {
   isOrganizationRequiredServerError,
   organizationRequiredResponse,
@@ -223,8 +223,7 @@ async function resolvedPayload(
     const { data, error } = await admin
       .schema("iam")
       .from("organizations")
-      // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-      .select("id, name, is_personal")
+      .select("id, name")
       .eq("id", target.site.organization_id)
       .maybeSingle();
     if (error) throw error;
@@ -232,7 +231,6 @@ async function resolvedPayload(
       organization = {
         id: data.id,
         name: data.name,
-        is_personal: data.is_personal,
         viewer_is_member: caller.memberOrgIds.includes(data.id),
       };
     }
@@ -351,8 +349,8 @@ async function createRequest(
   // not a member of it yet, which is the whole point of the request — so it
   // needs a tenant of the requester's own. Until 2026-09-19 that tenant was
   // resolved here by `ensureOrgIdServer(mainSupabase, null)`, i.e. the
-  // `current_personal_org_id()` RPC: the server picking the requester's
-  // personal workspace because the request named none. The 2026-09-19 ruling
+  // the old own-organization lookup: the server picking the requester's
+  // own organization because the request named none. The 2026-09-19 ruling
   // (Arman) forbids that pick wherever it happens — "no data read, no write,
   // no API route may PICK an organization for the user". A person who works
   // in a team organization and asks for access to a partner's website should

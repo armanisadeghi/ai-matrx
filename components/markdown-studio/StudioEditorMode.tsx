@@ -14,7 +14,7 @@ import Link from "next/link";
 import { Archive, CopyPlus, ExternalLink, Loader2 } from "lucide-react";
 import RichEditor from "@/components/rich-editor/RichEditor";
 import { NotesAPI } from "@/features/notes/service/notesApi";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { toast } from "@/lib/toast";
 import type { ContentSource } from "@/features/rich-document/types";
 import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";

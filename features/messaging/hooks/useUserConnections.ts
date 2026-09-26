@@ -141,7 +141,6 @@ export function useUserConnections(
     id: org.id,
     name: org.name,
     role: org.role,
-    isPersonal: org.isPersonal,
   }));
   const fetchKey =
     currentUserId && !orgsLoading
@@ -236,7 +235,6 @@ interface ScopeOrg {
   id: string;
   name: string;
   role: OrganizationWithRole["role"];
-  isPersonal: boolean;
 }
 
 // Extract unique users from conversations
@@ -315,7 +313,7 @@ async function fetchOrgConnections(
 
       if (
         org.id !== invitationOrganizationId ||
-        !canManageInvitations(org.role, org.isPersonal)
+        !canManageInvitations(org.role)
       ) {
         continue;
       }

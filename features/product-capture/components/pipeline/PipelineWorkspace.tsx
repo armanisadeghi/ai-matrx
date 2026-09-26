@@ -37,8 +37,8 @@ export function PipelineWorkspace({
   initialItemId: string | null;
 }) {
   // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE: this read
-  // `organization_id ?? personal_organization_id`, so with no organization
-  // selected the pipeline showed the PERSONAL workspace's items as the organization's.
+  // `organization_id ?? the person's own organization id`, so with no organization
+  // selected the pipeline showed the OWN organization's items as the organization's.
   const organizationId = useAppSelector(selectOrganizationId);
   const isMobile = useIsMobile();
 

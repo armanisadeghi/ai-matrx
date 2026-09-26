@@ -4,7 +4,7 @@
  *
  * Ruling (Arman, 2026-09-19): nothing but the org picker and pure UI display
  * may read a default organization, and no write may substitute one — not a
- * cookie, not a preference, not the personal organization, not the system
+ * cookie, not a preference, not the own organization, not the system
  * organization.
  *
  *   "one missed org check that should have just failed turns into 50 in a
@@ -98,7 +98,7 @@ describe("an inbound SMS takes its organization from the number's registration",
 
   it("REFUSES when nothing registers the number — it does not invent a home", () => {
     // 🚨 THE WHOLE POINT. Before 2026-09-19 this case returned the routed
-    // person's personal workspace, and before that the platform's own system
+    // person's own organization, and before that the platform's own system
     // organization. Both filed a real customer conversation in a tenant nobody
     // chose. If this test ever stops throwing, a substitution has come back.
     expect(() =>

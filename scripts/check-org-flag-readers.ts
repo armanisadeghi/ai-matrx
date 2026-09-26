@@ -15,8 +15,9 @@
  * files (frozen history; a new one that ADDS a reader is refused by the database guard at
  * apply), generated types (they mirror the live column until it is dropped), and this guard.
  *
- * THE BASELINE IS A RATCHET THAT ONLY SHRINKS. `scripts/org-flag-readers-baseline.json` holds
- * the per-file counts of 2026-09-26. A file not in it, or a count above it, is NEW and exits 1.
+ * THE BASELINE IS A RATCHET THAT ONLY SHRINKS, AND IT IS EMPTY: access-ladder T-3 (2026-09-26)
+ * dropped the column and cleared every reader, so `scripts/org-flag-readers-baseline.json` is `{}`
+ * and ANY reference fails. A file not in it, or a count above it, is NEW and exits 1.
  * There is no opt-out comment. `--write` ratchets the baseline DOWN to what is still present
  * (never up).
  *
@@ -38,9 +39,30 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BASELINE_FILE = join(ROOT, "scripts", "org-flag-readers-baseline.json");
 
-/** Assembled so this file never names the flag itself. */
+/**
+ * THE CONCEPT, not only the column (access-ladder T-3, 2026-09-26: the column is DROPPED and this
+ * ratchet sits at zero). Every name the retired organization type ever had in code: the flag, its
+ * derived aliases, the personal-organization id helpers, their provisioning twin, and their
+ * TS/Python spellings. Assembled so this file never names any of them itself.
+ */
+const J = (...parts: string[]) => parts.join("");
 const FLAG = ["is", "personal"].join("_");
-const FLAG_RE = new RegExp(`(?<![A-Za-z0-9_])${FLAG}(?![A-Za-z0-9_])`, "g");
+const CONCEPT_NAMES = [
+  FLAG,
+  J("resource_", FLAG),
+  J(FLAG, "_home"),
+  J(FLAG, "_dependents"),
+  J("personal", "_org_id"),
+  J("current_", "personal", "_org_id"),
+  J("ensure_", "personal", "_organization"),
+  J("personal", "_organization_id"),
+  J("personal", "OrgId"),
+  J("personal", "OrganizationId"),
+  J("resolve", "Personal", "OrgId"),
+  J("peek", "Personal", "OrgId"),
+  J("is", "Personal"),
+];
+const FLAG_RE = new RegExp(`(?<![A-Za-z0-9_])(?:${CONCEPT_NAMES.join("|")})(?![A-Za-z0-9_])`, "g");
 
 const EXTENSIONS = ["*.ts", "*.tsx", "*.js", "*.mjs", "*.cjs", "*.sql", "*.py"];
 
@@ -48,6 +70,13 @@ const EXTENSIONS = ["*.ts", "*.tsx", "*.js", "*.mjs", "*.cjs", "*.sql", "*.py"];
 export function isExcluded(file: string): boolean {
   return (
     file === "scripts/check-org-flag-readers.ts" ||
+    // Guards whose refusal lists must spell the retired names to refuse them.
+    file === "scripts/check-org-fallback-shapes.ts" ||
+    file === "scripts/check-no-default-organization.ts" ||
+    file === "scripts/check-no-default-organization-sql.ts" ||
+    // Frozen history (like migrations) and built bundles (regenerated from their packages).
+    file.startsWith("scripts/campaign-tests/") ||
+    file.startsWith("public/") ||
     file.startsWith("migrations/") ||
     file.startsWith("supabase/migrations/") ||
     file === "types/database.types.ts" ||
@@ -122,9 +151,10 @@ function selfTest(): number {
     { name: "sql predicate", source: `where o.${w} is true and x.${w}`, want: 2 },
     { name: "comment still counts", source: `// reads ${w}`, want: 1 },
     { name: "python attribute", source: `org["${w}"]`, want: 1 },
-    { name: "longer identifier is not the flag", source: `iam.${w}_dependents(); resource_${w}x`, want: 0 },
-    { name: "prefixed identifier is not the flag", source: `resource_${w}`, want: 0 },
-    { name: "unrelated", source: `const personal = true;`, want: 0 },
+    { name: "derived alias counts", source: `container.resource_${w}, l.${w}_home`, want: 2 },
+    { name: "helper names count", source: CONCEPT_NAMES.slice(4).join(" "), want: CONCEPT_NAMES.length - 4 },
+    { name: "a different concept is not the flag", source: `score.${w}_best; resource_${w}x`, want: 0 },
+    { name: "unrelated", source: `const personal = true; personalityStyle`, want: 0 },
   ];
   let failed = 0;
   for (const c of cases) {
@@ -138,7 +168,9 @@ function selfTest(): number {
     ["types/database.types.ts", true],
     ["types/python-generated/api-types.ts", true],
     ["features/organizations/service.ts", false],
-    ["scripts/campaign-tests/x.sql", false],
+    ["scripts/campaign-tests/x.sql", true],
+    ["public/kind-sandbox.js", true],
+    ["scripts/check-org-fallback-shapes.ts", true],
   ];
   for (const [file, want] of exclusions) {
     const ok = isExcluded(file) === want;
@@ -199,7 +231,7 @@ function main(): number {
   if (verdict.newSites.length > 0) {
     console.log(
       `FAIL: new reference to the deprecated organization flag. Organizations are unlimited and equal (common-docs/policies/access-ladder.md); ` +
-        `for "the organization created at signup" read the person's memberships, for a default organization read iam.default_organization_id(person). Remove the reference.`,
+        `the organization a person acts in is their explicit choice, and a missing one is a hold they resolve. Remove the reference.`,
     );
     for (const site of verdict.newSites) {
       console.log(`  NEW  ${site.file}  (${site.count} reference${site.count === 1 ? "" : "s"}, baseline ${site.baseline})`);

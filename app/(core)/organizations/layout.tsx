@@ -5,7 +5,7 @@ import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/organizations", {
   title: "Organizations",
-  description: "Your personal workspace and team organizations.",
+  description: "The organizations you belong to.",
   letter: "O",
 });
 
@@ -24,7 +24,7 @@ export default async function OrganizationsLayout({
       <ModuleSignInGate
         title="Organizations"
         route="/organizations"
-        description="Your personal workspace and team organizations — members, scopes, and settings in one place."
+        description="The organizations you belong to — members, scopes, and settings in one place."
         icon={Building2}
       />
     );

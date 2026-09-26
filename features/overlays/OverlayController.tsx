@@ -829,6 +829,10 @@ const AttachResourceDialog = lazyOverlay(
   () => import("@/features/connectors/AttachResourceDialog"),
   { ssr: false },
 );
+const SendToAgentDialog = lazyOverlay(
+  () => import("@/features/agents/components/send-to-agent/SendToAgentDialog"),
+  { ssr: false },
+);
 const AddToRulebookDialog = lazyOverlay(
   () => import("@/features/masterwork/oracle/AddToRulebookDialog"),
   { ssr: false },
@@ -1348,6 +1352,9 @@ export default function OverlayController() {
     masterworkYourWordsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "masterworkYourWordsWindow"),
     ),
+    sendToAgentDialog: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "sendToAgentDialog"),
+    ),
     addToRulebookDialog: useAppSelector((s) =>
       selectIsOverlayOpen(s, "addToRulebookDialog"),
     ),
@@ -1785,6 +1792,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     masterworkYourWordsWindow: useAppSelector((s) =>
       selectOverlayData(s, "masterworkYourWordsWindow"),
+    ) as Record<string, unknown> | null,
+    sendToAgentDialog: useAppSelector((s) =>
+      selectOverlayData(s, "sendToAgentDialog"),
     ) as Record<string, unknown> | null,
     addToRulebookDialog: useAppSelector((s) =>
       selectOverlayData(s, "addToRulebookDialog"),
@@ -3234,6 +3244,38 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "masterworkYourWordsWindow" }))
             }
             rulebookId={rulebookId}
+          />
+        );
+      })()}
+
+      {/* sendToAgentDialog — "Send to another agent…" from a response's ⋯
+          menu: pick an agent, choose the destination, open it unsent. */}
+      {(() => {
+        const isOpen = isOpenById.sendToAgentDialog;
+        const data = dataById.sendToAgentDialog as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <SendToAgentDialog
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "sendToAgentDialog" }))
+            }
+            initialContent={
+              typeof data?.initialContent === "string"
+                ? data.initialContent
+                : null
+            }
+            initialSourceTitle={
+              typeof data?.initialSourceTitle === "string"
+                ? data.initialSourceTitle
+                : null
+            }
+            initialOrganizationId={
+              typeof data?.initialOrganizationId === "string"
+                ? data.initialOrganizationId
+                : null
+            }
           />
         );
       })()}

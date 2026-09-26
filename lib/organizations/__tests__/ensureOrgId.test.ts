@@ -1,7 +1,7 @@
 /**
  * ensureOrgId.test.ts — the org-resolution contract for org-scoped writes.
  *
- * SUT: `ensureOrgId` (lib/organizations/personalOrg.ts) together with the real
+ * SUT: `ensureOrgId` (lib/organizations/ensureOrgId.ts) together with the real
  * `getActiveOrgId` it reads and the real appContext reducer. The doubles are
  * the Supabase RPC (network) and the store singleton's `_sync.boot` (warm-cache
  * hydration, an external engine). The boot-answer gate
@@ -12,17 +12,10 @@
  *
  * THE LAW (common-docs/policies/context-is-carried-never-rebuilt.md): the
  * organization a write acts in is the one the user SELECTED. Nothing below the
- * boundary invents, defaults or substitutes it — so there is no
- * personal-organization rung any more (2026-09-17). These tests pin the two
+ * boundary invents, defaults or substitutes it (2026-09-17). These tests pin the two
  * halves that matter: the selected organization wins, and a missing selection
  * REFUSES with the typed error every surface already renders, having touched no
  * network at all.
- *
- * What this replaces: the TRANSITIONAL cases that pinned the old loud,
- * self-repairing personal-org fallback (FE-T01). That fallback filed a person's
- * write into a workspace they never chose; boot has explicitly SELECTED the
- * personal workspace since 2026-09-12 (`resolveActiveOrgContext` rung b), so an
- * empty selection now means genuinely unresolved.
  */
 
 import { jest } from "@jest/globals";
@@ -59,20 +52,18 @@ jest.mock("@/lib/redux/store-singleton", () => ({
   }),
 }));
 
-import { ensureOrgId, clearPersonalOrgIdCache } from "../personalOrg";
+import { ensureOrgId } from "../ensureOrgId";
 import { getActiveOrgId, requireSelectedOrgId } from "../activeOrg";
 import {
   markOrgBootstrapResolved,
   resetOrgBootstrapGate,
 } from "../orgBootstrapGate";
 
-const PERSONAL = "11111111-1111-1111-1111-111111111111";
 const SELECTED = "22222222-2222-2222-2222-222222222222";
 const OTHER = "33333333-3333-3333-3333-333333333333";
 
 describe("ensureOrgId", () => {
   beforeEach(() => {
-    clearPersonalOrgIdCache();
     store = makeAppContextStore();
     rpc.mockReset();
     boot.mockReset();
@@ -86,30 +77,25 @@ describe("ensureOrgId", () => {
   });
 
   // Break caught: any resolver choosing an org over the caller's explicit one.
-  it("returns the caller's explicit org even when Redux holds a different selected and personal org", async () => {
-    store.dispatch(
-      setFullContext({ organization_id: OTHER, personal_organization_id: PERSONAL }),
-    );
+  it("returns the caller's explicit org even when Redux holds a different selected org", async () => {
+    store.dispatch(setFullContext({ organization_id: OTHER }));
 
     await expect(ensureOrgId(SELECTED)).resolves.toBe(SELECTED);
     expect(rpc).not.toHaveBeenCalled();
   });
 
-  // Break caught: a personal-org default outranking the org the user selected.
+  // Break caught: any default outranking the org the user selected.
   it("uses the SELECTED org, with no RPC", async () => {
-    store.dispatch(
-      setFullContext({ organization_id: SELECTED, personal_organization_id: PERSONAL }),
-    );
+    store.dispatch(setFullContext({ organization_id: SELECTED }));
 
     await expect(ensureOrgId(undefined)).resolves.toBe(SELECTED);
     expect(rpc).not.toHaveBeenCalled();
   });
 
-  // THE LAW. Break caught: the personal-org backstop coming back in any form —
-  // from Redux, from the cache, or from the RPC.
-  it("REFUSES when nothing is selected, even though a personal org is known", async () => {
-    store.dispatch(setFullContext({ personal_organization_id: PERSONAL }));
-    rpc.mockResolvedValue({ data: PERSONAL, error: null });
+  // THE LAW. Break caught: a fallback organization coming back in any form —
+  // from Redux, from a cache, or from an RPC.
+  it("REFUSES when nothing is selected, even though an RPC would answer", async () => {
+    rpc.mockResolvedValue({ data: OTHER, error: null });
 
     await expect(ensureOrgId(undefined)).rejects.toBeInstanceOf(
       OrganizationContextError,
@@ -180,20 +166,17 @@ describe("getActiveOrgId", () => {
     store = makeAppContextStore();
   });
 
-  // Break caught: the `?? personal_organization_id` rung returning. This read
-  // is the one every service callsite and `ensureOrgId` sit on, so a fallback
-  // here re-opens the whole class in one line.
-  it("is null when nothing is selected, even with a personal org in state", () => {
-    store.dispatch(setFullContext({ personal_organization_id: PERSONAL }));
+  // Break caught: any fallback rung returning. This read is the one every
+  // service callsite and `ensureOrgId` sit on, so a fallback here re-opens the
+  // whole class in one line.
+  it("is null when nothing is selected", () => {
 
     expect(getActiveOrgId()).toBeNull();
     expect(() => requireSelectedOrgId()).toThrow(OrganizationContextError);
   });
 
   it("returns the selected organization", () => {
-    store.dispatch(
-      setFullContext({ organization_id: SELECTED, personal_organization_id: PERSONAL }),
-    );
+    store.dispatch(setFullContext({ organization_id: SELECTED }));
 
     expect(getActiveOrgId()).toBe(SELECTED);
     expect(requireSelectedOrgId()).toBe(SELECTED);

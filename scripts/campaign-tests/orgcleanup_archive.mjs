@@ -228,7 +228,7 @@ if (cmd === "list") {
   const { data: live, error: liveErr } = await sb
     .schema("iam")
     .from("organizations")
-    .select("id, name, slug, settings, created_by, is_personal, is_system")
+    .select("id, name, slug, settings, created_by, is_system")
     .is("archived_at", null);
   if (liveErr) throw new Error(`could not read the live organizations: ${liveErr.message}`);
 
@@ -240,8 +240,8 @@ if (cmd === "list") {
   let classified = 0;
   let archived = 0;
   for (const org of candidates.sort((a, b) => a.name.localeCompare(b.name))) {
-    if (org.is_personal || org.is_system) {
-      forArman.push([org, "personal or system organization — the door refuses it by design"]);
+    if (org.is_system) {
+      forArman.push([org, "system organization — the door refuses it by design"]);
       continue;
     }
     const { data: members, error: memErr } = await sb
@@ -298,7 +298,7 @@ if (cmd === "list") {
   const { data: live, error: liveErr } = await sb
     .schema("iam")
     .from("organizations")
-    .select("id, name, slug, settings, created_by, created_at, is_personal, is_system")
+    .select("id, name, slug, settings, created_by, created_at, is_system")
     .is("archived_at", null);
   if (liveErr) throw new Error(`could not read the live organizations: ${liveErr.message}`);
 
@@ -307,7 +307,7 @@ if (cmd === "list") {
   let classified = 0;
   let archived = 0;
   for (const fam of FIXTURE_FAMILIES) {
-    const members = live.filter((o) => (o.name ?? "").startsWith(fam.family) && !o.is_personal);
+    const members = live.filter((o) => (o.name ?? "").startsWith(fam.family));
     if (members.length === 0) continue;
     const keep = fixtureSlug(fam.family);
     const keeper = members.find((o) => o.slug === keep);

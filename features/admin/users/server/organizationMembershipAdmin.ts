@@ -30,17 +30,14 @@ export async function loadAdminOrganizationDirectory(
     .schema("iam")
     .from("organizations")
     .select(
-      // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-      "id, name, abbreviation, slug, description, website, created_at, created_by, is_personal, is_system, archived_at",
+      "id, name, abbreviation, slug, description, website, created_at, created_by, is_system, archived_at",
     );
   if (archiveFilter === "active")
     organizationsQuery = organizationsQuery.is("archived_at", null);
   else if (archiveFilter === "archived")
     organizationsQuery = organizationsQuery.not("archived_at", "is", null);
   const [organizationsResult, membershipsResult] = await Promise.all([
-    organizationsQuery
-      .order("is_personal", { ascending: true })
-      .order("name", { ascending: true }),
+    organizationsQuery.order("name", { ascending: true }),
     admin
       .schema("iam")
       .from("organization_member")
@@ -115,7 +112,6 @@ export async function loadAdminOrganizationDirectory(
       website: row.website ?? null,
       created_at: row.created_at ?? null,
       created_by: row.created_by ?? null,
-      is_personal: row.is_personal === true,
       is_system: row.is_system,
       archived_at: row.archived_at ?? null,
       member_count: counts.members,

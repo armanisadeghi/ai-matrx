@@ -8,7 +8,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { PcArticle, PcArticleKind } from "./types";
 
 export const articleService = {

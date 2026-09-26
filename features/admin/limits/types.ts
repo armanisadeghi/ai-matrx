@@ -207,7 +207,6 @@ export interface OrganizationOption {
   id: string;
   name: string;
   slug: string;
-  is_personal: boolean;
 }
 
 /** One org's current plan assignment (`billing.org_plan`, via `org_plan_list`). */

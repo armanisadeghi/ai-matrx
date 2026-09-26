@@ -9,7 +9,7 @@ import type { AgentShortcut } from "../types";
 import { fetchFullShortcut } from "../thunks";
 import type { Database } from "@/types/database.types";
 import type { ValueMappingMap } from "@/features/surfaces/types";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 /**
  * Whitelist of `agx_shortcut` columns the RPC accepts in its `p_overrides`

@@ -5,7 +5,7 @@
  * React hooks for project management in components.
  * Mirrors features/organizations/hooks.ts
  *
- * NOTE: Listing hooks (useUserProjects / useOrgProjects / usePersonalProjects)
+ * NOTE: Listing hooks (useUserProjects / useOrgProjects)
  * read from the Redux nav tree (`get_user_full_context`) — the same source the
  * agent-context hierarchy cascade uses. This keeps `/projects`,
  * `/organizations/[slug]/projects`, and any wizard view in lock-step. Mutations elsewhere
@@ -63,11 +63,7 @@ function roleForOrgProject(orgRole: string): ProjectRole {
 }
 
 function projectsFromOrg(org: NavOrganization): ProjectWithRole[] {
-  // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-  const isPersonalOrg = org.is_personal === true;
-  const role: ProjectRole = isPersonalOrg
-    ? "owner"
-    : roleForOrgProject(org.role);
+  const role: ProjectRole = roleForOrgProject(org.role);
   return org.projects.map((p) => ({
     id: p.id,
     name: p.name,
@@ -75,7 +71,6 @@ function projectsFromOrg(org: NavOrganization): ProjectWithRole[] {
     description: null,
     organizationId: org.id,
     createdBy: null,
-    isPersonal: !!p.is_personal,
     // Nav-tree projects don't carry status/priority/dates; default until the
     // workspace fetches the full row. Consumers here don't render them.
     status: "active",
@@ -130,31 +125,6 @@ export function useUserProjects() {
     projects,
     loading: isLoading,
     error: isError ? (error ?? "Failed to fetch projects") : null,
-    refresh,
-  };
-}
-
-export function usePersonalProjects() {
-  const dispatchThunk = useDispatchThunk();
-  const { orgs, isLoading, isError, error } = useNavTree();
-
-  const projects = useMemo<ProjectWithRole[]>(() => {
-    const out: ProjectWithRole[] = [];
-    for (const org of orgs) {
-      if (!org.is_personal) continue;
-      out.push(...projectsFromOrg(org));
-    }
-    return out.sort((a, b) => a.name.localeCompare(b.name));
-  }, [orgs]);
-
-  const refresh = useCallback(() => {
-    void dispatchThunk(invalidateAndRefetchFullContext());
-  }, [dispatchThunk]);
-
-  return {
-    projects,
-    loading: isLoading,
-    error: isError ? (error ?? "Failed to fetch personal projects") : null,
     refresh,
   };
 }

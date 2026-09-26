@@ -212,7 +212,7 @@ export function DealsPage() {
   // belongs to in arbitrary order, so `orgIds[0]` pointed the create dialog's
   // party search (and the deal itself) at whichever org happened to be first —
   // searching an org the user was not even looking at, returning nothing.
-  // The EXPLICIT active org, and nothing else: neither the personal workspace
+  // The EXPLICIT active org, and nothing else: neither the own organization
   // nor `orgIds[0]` may stand in for an organization the user did not choose.
   // With none selected the create dialog refuses by name and Save view is
   // disabled with its reason — never a deal filed somewhere nobody picked.

@@ -12,7 +12,7 @@ jest.mock("@/utils/supabase/client", () => ({
 jest.mock("@/features/scopes/service/associationsService", () => ({
   associationsService: { add: jest.fn(async () => ({ ok: true })) },
 }));
-jest.mock("@/lib/organizations/personalOrg", () => ({
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
   // Stands in for the SELECTED organization when the caller passes none.
   ensureOrgId: jest.fn(async (explicit?: string) => explicit ?? SELECTED_ORG),
 }));

@@ -16,7 +16,7 @@
 // 🚨 THIS IS NOT A DEFAULT-ORGANIZATION RUNG, AND THE DISTINCTION IS THE WHOLE
 // POINT. `scripts/check-no-default-organization.ts` exists because NOTHING may
 // PICK an organization for a person out of a stored preference, a cookie, or
-// their personal workspace:
+// "their first organization":
 //
 //   "one missed org check that should have just failed turns into 50 in a
 //    month and 5,000 in a year, and suddenly we don't have orgs any more, we

@@ -16,7 +16,7 @@ import {
   releasePhoneNumber,
   listPhoneNumbers,
 } from '@/lib/sms/numbers';
-import { ensureOrgIdServer } from '@/lib/organizations/personalOrg';
+import { ensureOrgIdServer } from '@/lib/organizations/ensureOrgId';
 import {
   isOrganizationRequiredServerError,
   organizationRequiredResponse,

@@ -4,7 +4,7 @@
 
 import { db } from "./supabase-typed";
 import { writeOne } from "@/utils/supabase/writeOne";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type {
   CxAgentTaskRow,
   CxAgentTaskStatus,

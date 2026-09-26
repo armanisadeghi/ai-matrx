@@ -7,7 +7,7 @@ import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { tryWriteOne, writeOne } from "@/utils/supabase/writeOne";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { DEFAULT_SESSION_TITLE } from "./constants";
 import { listThreadIdsForRoom } from "./service/readApi";
 import * as assoc from "./service/associations";

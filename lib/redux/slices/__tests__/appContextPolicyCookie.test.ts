@@ -24,7 +24,6 @@ const ORG_B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const cached = {
   organization_id: ORG_A,
   organization_name: "Acme",
-  personal_organization_id: null,
 };
 
 beforeEach(() => {

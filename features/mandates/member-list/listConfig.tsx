@@ -18,7 +18,6 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { softDeleteMandate } from "@/features/mandates/admin/service";
 import { invalidateMandateCache } from "@/features/mandates/service";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectPersonalOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import type {
   EntityListConfig,
@@ -105,7 +104,6 @@ export function memberMandateListConfig(
   ): EntityRowActionsResult<MandateMemberRow> {
     const [peekId, setPeekId] = useState<string | null>(null);
     const [shareRow, setShareRow] = useState<MandateMemberRow | null>(null);
-    const personalOrgId = useAppSelector(selectPersonalOrganizationId);
     const menuFor = (row: MandateMemberRow) => (): ItemMenuConfig => {
       const href = hrefFor(row);
       return {
@@ -188,7 +186,6 @@ export function memberMandateListConfig(
               resourceId={shareRow.id}
               resourceName={shareRow.name}
               resourceNoun="mandate"
-              personalHome={Boolean(personalOrgId) && shareRow.organizationId === personalOrgId}
             />
           ) : null}
         </>

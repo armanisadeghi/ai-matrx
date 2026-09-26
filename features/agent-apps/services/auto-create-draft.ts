@@ -20,7 +20,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne, writeOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { operationFailed } from "@/utils/errors";
 import type { Json } from "@/types/database.types";
 import type { AppMetadata } from "../types";
@@ -96,7 +96,7 @@ export async function createGenerationDraft(
   };
 
   // THE APP IS FILED IN THE ORGANIZATION THE PERSON SELECTED. It used to
-  // resolve their PERSONAL organization through `ensure_personal_organization`
+  // resolve their OWN organization through the old own-organization provisioner
   // — which is why all 96 live `app.definition` rows sit in their creator's
   // private workspace, invisible to the team they built the app for.
   // `ensureOrgId` reads the selection (joining store hydration first) and

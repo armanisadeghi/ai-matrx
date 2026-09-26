@@ -131,7 +131,7 @@ async function startItem(id: string): Promise<void> {
   // never a raw "Select an organization" error on the item. Declining the
   // picker is an answer, not a failure: the item is dropped quietly.
   try {
-    const { ensureOrgId } = await import("@/lib/organizations/personalOrg");
+    const { ensureOrgId } = await import("@/lib/organizations/ensureOrgId");
     await ensureOrgId(null);
   } catch (err) {
     if (stale()) return;

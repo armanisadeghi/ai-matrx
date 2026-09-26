@@ -10,7 +10,7 @@
 import { guardedUpdate, readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import type { Database, Json } from "@/types/database.types";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import {

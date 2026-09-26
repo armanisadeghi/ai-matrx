@@ -23,14 +23,14 @@ import { NextRequest } from "next/server";
 import { withClaims } from "@/test-utils/supabase-auth";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
-import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
+import { ensureOrgIdServer } from "@/lib/organizations/ensureOrgId";
 import { POST } from "./route";
 
 jest.mock("@/utils/supabase/server", () => ({ createClient: jest.fn() }));
 jest.mock("@/utils/supabase/adminClient", () => ({
   createAdminClient: jest.fn(),
 }));
-jest.mock("@/lib/organizations/personalOrg", () => ({
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
   ensureOrgIdServer: jest.fn(),
 }));
 

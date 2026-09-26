@@ -235,7 +235,7 @@ export const launchAgentExecution = createAsyncThunk<
       const questionOrganizationId =
         organizationId ??
         selectedOrganizationId ??
-        (await (await import("@/lib/organizations/personalOrg")).ensureOrgId(null));
+        (await (await import("@/lib/organizations/ensureOrgId")).ensureOrgId(null));
       const resolved = await resolveMandate(mandateKey, { organizationId: questionOrganizationId });
       resolvedMandate = resolved;
       agentId = resolved.agentId;

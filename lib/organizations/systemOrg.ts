@@ -70,8 +70,7 @@ async function resolveByKey(
 
 /**
  * Synchronous peek at the memoized system organization id, or null when nothing
- * has resolved it yet in this process. Mirrors `peekPersonalOrgId` in
- * personalOrg.ts, and is primed by `resolveSystemOrgId` above — there is no
+ * has resolved it yet in this process. Primed by `resolveSystemOrgId` above — there is no
  * second source and no hardcoded UUID. For the synchronous callers that can
  * only ASK "is this row the platform's own?" (a pure classifier inside a
  * render, for instance); anything that can await calls the resolver.

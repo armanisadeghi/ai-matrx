@@ -61,7 +61,6 @@ export interface AssignableProject {
   id: string;
   name: string;
   orgId: string | null;
-  isPersonal: boolean;
 }
 
 export async function fetchAssignableProjects(): Promise<AssignableProject[]> {
@@ -71,7 +70,6 @@ export async function fetchAssignableProjects(): Promise<AssignableProject[]> {
       id: p.id,
       name: p.name,
       orgId: p.organizationId,
-      isPersonal: p.isPersonal,
     }));
   });
 }

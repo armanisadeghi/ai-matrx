@@ -56,7 +56,6 @@ export default function ScopeTypePage() {
           typeId={typeId}
           orgName={org.name}
           orgSlug={org.slug}
-          orgIsPersonal={org.isPersonal}
           canManage={canManage}
         />
       </div>

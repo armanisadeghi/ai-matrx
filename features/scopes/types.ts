@@ -226,8 +226,6 @@ export interface OrgNode {
   name: string;
   abbreviation: string;
   slug: string;
-  // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-  is_personal: boolean;
   /**
    * Classified as a lane's scratch organization in
    * `iam.organizations.settings.test_fixture`. The org picker hides these
@@ -410,6 +408,9 @@ export interface TemplateScopeTypeDetail {
   fields: TemplateItemField[];
 }
 
+/** `context.templates.audience`: who a template is written for. */
+export type TemplateAudience = "individual" | "organization";
+
 export interface ContextTemplate {
   id: string;
   key: string;
@@ -418,7 +419,8 @@ export interface ContextTemplate {
   category: string;
   icon: string;
   is_active: boolean;
-  is_personal: boolean;
+  /** Who the template is written for (`context.templates.audience`). */
+  audience: TemplateAudience;
   sort_order: number;
   scope_type_count: number;
   context_item_count: number;
@@ -435,7 +437,7 @@ export interface FlatTemplateScopeType extends TemplateScopeTypeDetail {
   template_key: string;
   template_name: string;
   template_category: string;
-  template_is_personal: boolean;
+  template_audience: TemplateAudience;
 }
 
 // ─── Mutation params (the sanctioned SECURITY DEFINER write family) ────
@@ -612,7 +614,6 @@ export interface ResolvedSuggestionTarget {
     id: string;
     name: string;
     slug: string;
-    is_personal: boolean;
   };
   scope_type: {
     id: string;

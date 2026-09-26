@@ -73,20 +73,47 @@ const LEXER_OPTIONS = { gfm: true, breaks: false, pedantic: false } as const;
  * reading: marked has already dedented the item's lines when it lexes them.)
  */
 class RuleTableTokenizer extends Tokenizer {
+  /**
+   * Headers (with their delimiter row) the rule refuses IN CONTEXT but would open
+   * on their own: a table written right under a list item's or quote's text is a
+   * lazy continuation of that text in GFM. marked lexes an item's lines already
+   * dedented, where that context is gone — so the segment's own lines decide,
+   * keyed by the header and delimiter bytes. A key that also opens a real table
+   * in the segment is left to marked (ambiguous, never guessed).
+   */
+  private readonly lazyHeaders: ReadonlySet<string>;
+
   // The rule judges the stored bytes: an inline island (`</artifact>`, a variable)
   // stands in the lexed text as a placeholder, so each line is restored first.
-  constructor(private readonly islands: readonly SourceIsland[]) {
+  constructor(
+    private readonly islands: readonly SourceIsland[],
+    segmentText: string,
+  ) {
     super();
+    const stored = segmentText.split("\n").map((line) => restorePlaceholders(line, islands));
+    const lazy = new Set<string>();
+    const real = new Set<string>();
+    for (let i = 0; i + 1 < stored.length; i += 1) {
+      const key = headerKey(stored, i);
+      if (tableStartsAt(stored, i)) real.add(key);
+      else if (tableStartsAt(stored.slice(i).map((line) => line.trimStart()), 0)) lazy.add(key);
+    }
+    for (const key of real) lazy.delete(key);
+    this.lazyHeaders = lazy;
   }
 
   override table(src: string): Tokens.Table | undefined {
     const lines = src.split("\n");
     const stored = lines.map((line) => restorePlaceholders(line, this.islands));
+    if (this.lazyHeaders.has(headerKey(stored, 0))) return undefined;
     if (!tableStartsAt(stored, 0)) return undefined;
     const end = findTableEnd(stored, 0);
     return super.table(lines.slice(0, end).join("\n") + (end < lines.length ? "\n" : ""));
   }
 }
+
+/** A table header's identity for the lazy check: header and delimiter bytes, trimmed. */
+const headerKey = (lines: readonly string[], i: number): string => `${(lines[i] ?? "").trim()}\n${(lines[i + 1] ?? "").trim()}`;
 
 /** Reason string that marks a held-as-source page-break directive line. */
 export const PAGE_BREAK_REASON = "page break";
@@ -530,7 +557,7 @@ export function parseProseBlock(
   for (const segment of segments) {
     let tokens: Token[];
     try {
-      tokens = new Lexer({ ...LEXER_OPTIONS, tokenizer: new RuleTableTokenizer(islands) }).lex(segment.text);
+      tokens = new Lexer({ ...LEXER_OPTIONS, tokenizer: new RuleTableTokenizer(islands, segment.text) }).lex(segment.text);
     } catch {
       return { children: [], lockedReason: "markdown the parser could not read" };
     }

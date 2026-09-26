@@ -2488,12 +2488,12 @@ async function runProbeCore(
     await db.query("reset role");
     const resolved = await resolveIds(db, catalog, ids);
     // 🚨 DD-209. ONE STANDING RULE FOR BOTH ARMS. DD-208 taught the WRITE arm that
-    // a personal organization this very call minted FOR THE CALLER is the caller's
+    // a own organization this very call minted FOR THE CALLER is the caller's
     // own — and the ROWS arm below was left comparing against the stale snapshot.
     // So `public.league_set_opt_in(p_opted_in, p_display_name)`, whose only
-    // arguments are benign and which calls `iam.personal_org_id(auth.uid())`,
+    // arguments are benign and which calls the old own-organization lookup,
     // came back a FAIL for the org-less caller: it returned the membership row it
-    // had just minted into that caller's OWN brand-new personal organization
+    // had just minted into that caller's OWN brand-new own organization
     // (measured 2026-09-14: created_by = the caller, membership role = owner).
     // Two arms judging standing two ways is how a gate cries wolf, so they now ask
     // the same question.
@@ -2700,8 +2700,8 @@ const OWNER_COLS = ["user_id", "created_by", "actor_user_id", "owner_id", "updat
 /**
  * 🚨 DD-208. The caller's standing is a SNAPSHOT taken before the probe, and one
  * legitimate door class moves it: a door that calls
- * `public.ensure_personal_organization(auth.uid())` creates the caller's OWN
- * personal organization inside the probe transaction, then writes the caller's
+ * the old own-organization provisioner creates the caller's OWN
+ * own organization inside the probe transaction, then writes the caller's
  * own row into it. Against the stale snapshot that reads as "an organization the
  * caller has no standing in" — and `billing.entitlement_consume` was FAILED for
  * exactly that, on an organization id that never existed outside a rolled-back
@@ -2711,7 +2711,7 @@ const OWNER_COLS = ["user_id", "created_by", "actor_user_id", "owner_id", "updat
  * `billing.usage_ledger.std_select` (`user_id = auth.uid()`).
  *
  * So an organization also counts as the caller's when this very call MINTED it
- * WITH the caller as its creator and owner. That is the personal-org shape and
+ * WITH the caller as its creator and owner. That is the own-org shape and
  * nothing else: a door writing into a pre-existing victim organization cannot
  * reach this arm, because the victim's organization row was not written by this
  * call. Re-reading membership alone would NOT be safe — a door that enrolled the

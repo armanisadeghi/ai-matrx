@@ -59,15 +59,12 @@ export function HierarchyFilter({
   const orgOptions: FilterOption[] = filteredOrgs.map(org => ({
     id: org.id,
     label: org.name,
-    // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-    sublabel: org.is_personal ? 'Personal' : undefined,
     count: org.project_count,
   }));
 
   const projectOptions: FilterOption[] = filteredProjects.map(project => ({
     id: project.id,
     label: project.name,
-    sublabel: project.is_personal ? 'Personal' : undefined,
     count: project.topic_count,
   }));
 

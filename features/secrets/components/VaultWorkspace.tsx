@@ -131,9 +131,7 @@ export function VaultWorkspace({
     routedHomeScope?.kind === "organization"
       ? routedHomeScope.organizationId
       : null;
-  const availableOrganizations = organizations.filter(
-    (org) => !org.isPersonal || org.id === routedHomeOrganizationId,
-  );
+  const availableOrganizations = organizations;
   // Switching to the Organization tab acts in the organization the person
   // SELECTED — never the first one they happen to belong to. A
   // first-membership pick showed (and let them write) another tenant's
@@ -149,8 +147,7 @@ export function VaultWorkspace({
       ?.id ?? null;
   /**
    * 🚨 THE ORGANIZATION TAB IS NEVER A DEAD CONTROL (lane ACCESS-FIX-18, VERIFIER-18 M4). With
-   * no usable selection — none picked, or the one picked is a personal workspace, which has no
-   * Organization list — pressing it used to raise a toast and change nothing; clicked twice on
+   * no usable selection — pressing it used to raise a toast and change nothing; clicked twice on
    * production, "nothing says why". Now it opens the organization's credentials:
    *   · the organization the person is working in, when it has a list;
    *   · the one organization they belong to, when there is exactly one;

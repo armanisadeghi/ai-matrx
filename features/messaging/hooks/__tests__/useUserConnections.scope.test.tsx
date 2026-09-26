@@ -89,8 +89,8 @@ jest.mock("@ai-matrx/messaging/react", () => ({
 
 const ORGANIZATIONS_RESULT = {
   organizations: [
-    { id: MINE, name: "This Organization", role: "owner", isPersonal: false },
-    { id: THEIRS, name: "The Other Company", role: "member", isPersonal: false },
+    { id: MINE, name: "This Organization", role: "owner" },
+    { id: THEIRS, name: "The Other Company", role: "member" },
   ],
   loading: false,
 };

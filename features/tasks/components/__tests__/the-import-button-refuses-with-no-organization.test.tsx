@@ -3,7 +3,7 @@
  *
  * THE DEFECT THIS PINS. Main (`5195c909`) deleted
  * `selectEffectiveOrganizationId` — the selector that quietly substituted the
- * personal workspace whenever nothing was explicitly selected — because the
+ * own organization whenever nothing was explicitly selected — because the
  * platform law forbids inventing an organization below the boundary. This
  * component read that selector to build the overlay `data` it hands
  * `useOpenGoogleTasksImport`. Swapping straight to `selectOrganizationId`

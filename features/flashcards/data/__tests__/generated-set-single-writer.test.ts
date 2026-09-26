@@ -21,7 +21,7 @@ jest.mock("@/utils/supabase/client", () => ({
 jest.mock("@/features/scopes/service/associationsService", () => ({
   associationsService: { add: jest.fn() },
 }));
-jest.mock("@/lib/organizations/personalOrg", () => ({
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: jest.fn(async (explicit?: string) => explicit ?? "org-1"),
 }));
 

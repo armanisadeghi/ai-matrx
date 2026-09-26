@@ -7,7 +7,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { Database, Json } from "@/types/database.types";
 import type { CodeFile, CodeFolder } from "../redux/code-files.types";
 

@@ -14,7 +14,7 @@ jest.mock("../adapters/cartesiaAdapter", () => ({ cartesiaAdapter: { start } }))
 jest.mock("../adapters/catalogAdapter", () => ({ catalogAdapter: { start } }));
 
 const ensureOrgId = jest.fn();
-jest.mock("@/lib/organizations/personalOrg", () => ({ ensureOrgId: (...a: unknown[]) => ensureOrgId(...a) }));
+jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: (...a: unknown[]) => ensureOrgId(...a) }));
 
 import { OrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 

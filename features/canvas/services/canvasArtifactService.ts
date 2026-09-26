@@ -12,7 +12,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import {
   isRecordUnavailableError,
@@ -648,7 +648,7 @@ export const canvasArtifactService = {
       // Scope columns: a chat row inherits its organization and task from the
       // conversation it belongs to; a non-chat row acts in the organization the
       // person SELECTED (`ensureOrgId` throws `OrganizationContextError` when
-      // there is none — it never substitutes the personal workspace). The
+      // there is none — it never substitutes the own organization). The
       // organization is NEVER left for `public._stamp_org_default` to choose.
       // common-docs/policies/context-is-carried-never-rebuilt.md
       // A feature table may not depend on a project FK — project membership,

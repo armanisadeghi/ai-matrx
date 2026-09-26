@@ -16,15 +16,14 @@
 // wants to force a resolve imperatively. New code should NOT call it; the
 // policy already keeps the org present and fresh.
 //
-// Why the eslint-disable below: setOrganization / setPersonalOrganization are
-// appContextSlice WRITE actions, gated to Surface-A active-context components
+// Why the eslint-disable below: setOrganization is an
+// appContextSlice WRITE action, gated to Surface-A active-context components
 // (eslint.config.mjs `appContextWriteSyntaxRestrictions`). This module is a
 // legitimate Surface-A writer — switching the global active org IS its job.
 
 // eslint-disable-next-line no-restricted-syntax -- Surface A: canonical active-org switcher + back-compat bootstrap
 import {
   setOrganization,
-  setPersonalOrganization,
   setOrgBootstrapResolved,
   setOrgBootstrapFailure,
 } from "@/lib/redux/slices/appContextSlice";
@@ -69,9 +68,6 @@ export const bootstrapActiveOrganization =
         dispatch(setOrgBootstrapFailure(null));
       }
 
-      if (resolved.personal_organization_id) {
-        dispatch(setPersonalOrganization(resolved.personal_organization_id));
-      }
       // Respect an org already actively selected (deep-link / restored context).
       if (!getState().appContext.organization_id && resolved.organization_id) {
         dispatch(

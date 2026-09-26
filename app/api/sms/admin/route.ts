@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
           } else {
             // org-fallback-deliberate: an admin↔external-phone thread runs on
             //   the PLATFORM's own Twilio number and has no tenant — it used to
-            //   land in the acting admin's personal workspace, where the next
+            //   land in the acting admin's own organization, where the next
             //   admin could not see the conversation they are continuing.
             const organizationId = await resolveSystemOrgId(adminSupabase);
             const { data: newConv } = await adminSupabase

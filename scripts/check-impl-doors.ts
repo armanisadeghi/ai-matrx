@@ -109,7 +109,7 @@
  *         rpc/cx_canvas_toggle_favorite -> 42501 "permission denied for table
  *                 canvas_items", hint "GRANT UPDATE ON canvas.canvas_items TO anon;"
  *         rpc/wsp_upsert_system_task    -> 42501 "permission denied for FUNCTION
- *                 ensure_personal_organization" — an internal helper the caller
+ *                 the old own-organization provisioner" — an internal helper the caller
  *                 never named, and an accidental reason
  *         rpc/reorder_keywords          -> 204 NO CONTENT. It RAN, and returned
  *                 success, because the body's first branch returns before it

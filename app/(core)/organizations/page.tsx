@@ -129,8 +129,7 @@ function OrgCard({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = React.useTransition();
-  // Every organization shows the viewer's REAL role in it. Nothing is relabelled
-  // because the row carries `is_personal`.
+  // Every organization shows the viewer's REAL role in it.
   const meta = ROLE_META[org.role];
   const RoleIcon = meta.icon;
   const href = `/organizations/${org.slug}`;
@@ -423,11 +422,8 @@ export default function OrganizationsPage() {
       ])
     : organizations;
 
-  // ONE list, every organization under its own name. The personal/teams split
-  // grouped on `is_personal`, so a user who belonged to two personal
-  // organizations saw both under a "Personal" heading with no way to tell them
-  // apart (Arman, 2026-09-11: use the real name, always).
-  const teamCount = organizations.filter((o) => !o.isPersonal).length;
+  // ONE list, every organization under its own name (Arman, 2026-09-11: use
+  // the real name, always).
   const kpis = organizationKpis(organizations);
 
   // ── Surface runtime (matrx-user/organizations, list mode) ───────────────
@@ -449,8 +445,6 @@ export default function OrganizationsPage() {
           description: o.description ?? null,
           website: o.website ?? null,
           role: o.role,
-          // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-          is_personal: o.isPersonal,
           member_count: o.memberCount ?? null,
           created_at: o.createdAt,
           scope_type_count: scopeTypes.length,
@@ -534,7 +528,6 @@ export default function OrganizationsPage() {
                 <OrganizationsStats
                   loading={loading}
                   organizationCount={organizations.length}
-                  teamCount={teamCount}
                 />
               </div>
 

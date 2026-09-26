@@ -51,7 +51,7 @@ import type { Organization } from "@/features/organizations/types";
 interface ScopesManagerProps {
   organization: Pick<
     Organization,
-    "id" | "name" | "slug" | "logoUrl" | "isPersonal"
+    "id" | "name" | "slug" | "logoUrl"
   >;
   role?: string | null;
 }
@@ -171,11 +171,6 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
               >
                 {organization.name}
               </Link>
-              {organization.isPersonal && (
-                <Badge variant="secondary" className="text-[10px]">
-                  Personal
-                </Badge>
-              )}
               {role && (
                 <Badge variant="outline" className="text-[10px] capitalize">
                   {role}
@@ -237,10 +232,7 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
 
       {scopeTypes.length === 0 ? (
         <Card className="p-6 md:p-8">
-          <ScopeOnboarding
-            orgId={organization.id}
-            isPersonal={organization.isPersonal ?? undefined}
-          />
+          <ScopeOnboarding orgId={organization.id} />
         </Card>
       ) : (
         <>
@@ -371,7 +363,6 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
         open={galleryOpen}
         onOpenChange={setGalleryOpen}
         orgId={organization.id}
-        personalOnly={organization.isPersonal ? true : undefined}
       />
       <ReorderDialog
         open={reorderTypesOpen}

@@ -34,7 +34,7 @@ import {
   updateCodeFile,
   fetchCodeFileById,
 } from "@/features/code-files/service/codeFilesService";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { selectUserId, selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import type { components } from "@/types/python-generated/api-types";
 import type { Database } from "@/types/database.types";

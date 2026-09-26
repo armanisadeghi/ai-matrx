@@ -50,15 +50,11 @@ jest.mock("@/utils/supabase/client", () => ({
   }),
 }));
 
-function installContext(
-  organizationId: string | null,
-  personalOrganizationId: string | null = null,
-): void {
+function installContext(organizationId: string | null): void {
   setStoreSingleton({
     getState: () => ({
       appContext: {
         organization_id: organizationId,
-        personal_organization_id: personalOrganizationId,
       },
     }),
   } as never);
@@ -535,8 +531,8 @@ describe("Vault and Authenticator organization transport", () => {
     });
   });
 
-  test("personal organization identity never substitutes for request context", async () => {
-    installContext(null, ORGANIZATION_ID);
+  test("no selected organization is never substituted for request context", async () => {
+    installContext(null);
 
     await expect(fetchAuthenticators()).rejects.toThrow(
       "Select an organization before sending this request.",

@@ -48,11 +48,6 @@ export interface WhoCanSeeThisProps {
   canChange: boolean;
   /** `useSharing().setWhoCanSee`. */
   onChoose: (choice: LaneChoice) => Promise<ShareActionResult>;
-  /**
-   * False when the thing's home is its owner's personal workspace: "Everyone in <workspace>" is
-   * then not offered (it is still shown when it is already the state). Default true.
-   */
-  offerOrganization?: boolean;
 }
 
 interface Option {
@@ -66,7 +61,6 @@ export function WhoCanSeeThis({
   whoCanSee,
   canChange,
   onChoose,
-  offerOrganization = true,
 }: WhoCanSeeThisProps) {
   const { orgs } = useNavTree();
   const [pending, setPending] = useState<LaneChoice | null>(null);
@@ -89,22 +83,18 @@ export function WhoCanSeeThis({
     {
       choice: "mine",
       label: "Only people I share it with",
-      says: offerOrganization
-        ? "You and the people named below. Nobody else in the organization."
-        : "You and the people named below.",
+      says: "You and the people named below. Nobody else in the organization.",
       icon: Lock,
     },
-  ];
-  if (offerOrganization || whoCanSee.choice === "organization") {
-    options.push({
+    {
       choice: "organization",
       label: `Everyone in ${orgName}`,
       says: level
         ? `Every member, as ${level}. This is the organization's default.`
         : "Every member. This is the organization's default.",
       icon: Building2,
-    });
-  }
+    },
+  ];
   if (whoCanSee.worldOffered || whoCanSee.choice === "world") {
     options.push({
       choice: "world",

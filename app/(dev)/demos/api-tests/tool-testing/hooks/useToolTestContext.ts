@@ -117,7 +117,7 @@ export function useToolTestContext(): UseToolTestContextReturn {
       if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
       // The route files the conversation in the admitted organization and
       // refuses without one — carry the selected organization, never let the
-      // server fall back to a personal workspace.
+      // server fall back to a own organization.
       if (!selectedOrganizationId) {
         throw operationFailed(
           'create a test conversation',

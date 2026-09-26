@@ -32,7 +32,7 @@ import {
   type MandateBindingPrincipalInput,
 } from "../overrides";
 import { duplicateMandateAgent } from "../useCopyMandateAgent";
-import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { fetchMandateLadder } from "../workspace/useMandateLadder";
 import { parseConsumptionMap, type ConsumptionMap } from "../provision-shapes";
 import type { HolderDraft } from "@/features/bindings/ScopeHolderBar";
@@ -130,13 +130,11 @@ export function useIntelligenceActions(seat: IntelligenceSeat) {
     let copyId: string | null = null;
     try {
       const running = await runningAnswer(row, seat);
-      // Where the copy lives: the organization this seat manages, or — on a
-      // personal page — the person's OWN workspace. A personal action never
-      // asks "Which workspace is this for?" (review 2026-09-25).
-      const home =
-        seat.level === "organization" && seat.organizationId
-          ? seat.organizationId
-          : await resolvePersonalOrgId();
+      // Where the copy lives: the organization this seat manages, or the
+      // organization the person has selected (they are asked when none is).
+      const home = await ensureOrgId(
+        seat.level === "organization" ? seat.organizationId : null,
+      );
       // A topic's old per-record agent is a run-scope override. The server
       // runs it verbatim, without the underlying org/user rung's settings.
       // Copy that behavior rather than silently importing rung settings.

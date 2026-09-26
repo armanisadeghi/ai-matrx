@@ -35,7 +35,7 @@ jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({
   ErrorAlchemyMenu: () => null,
 }));
 const mockEnsureOrgId = jest.fn(async () => "org1");
-jest.mock("@/lib/organizations/personalOrg", () => ({
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: () => mockEnsureOrgId(),
 }));
 const mockToastError = jest.fn();

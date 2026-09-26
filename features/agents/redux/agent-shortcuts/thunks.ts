@@ -22,7 +22,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { pgErrorToError } from "@ai-matrx/data";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { toGlobalOwnershipRecord } from "@/lib/organizations/globalOwnership";
 import type { AppDispatch, RootState } from "@/lib/redux/store";

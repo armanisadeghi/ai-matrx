@@ -61,7 +61,7 @@ Every read and write goes through the `public.org_admin_*` RPC family; each RPC 
 - `/admin/users/[userId]` — member detail: identity, status actions, usage metrics, controls, resource summary
 - `/admin/users/[userId]/resources` — read-only member resource inventory
 
-**Surfaced from:** `OrgManage` header → "Manage users" button (owners/admins). `OrgManage` still hides it, org Trash and Delete for an `is_personal` organization — a live defect against the law (organizations are equal); it goes with the flag.
+**Surfaced from:** `OrgManage` header → "Manage users" button (owners/admins).
 
 **Feature code** (`features/organizations/admin/`):
 

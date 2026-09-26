@@ -123,7 +123,7 @@ async function main(): Promise<void> {
       const loosenedOpen = (await client.query<OpenRow>(SELF_TEST_OPEN)).rows;
       if (loosenedOpen.length === 0) {
         fail(
-          "SELF-TEST FAILED — with `is_personal` dropped from the predicate the first census " +
+          "SELF-TEST FAILED — with `names_a_person` dropped from the predicate the first census " +
             "still returned nothing. The three relations ruled NOT personal do carry the §6e " +
             "arm, so this predicate is no longer finding it in live policy text and the guard " +
             "is measuring nothing.",
@@ -166,7 +166,7 @@ async function main(): Promise<void> {
       fail(
         `${unruled.length} relation(s) look like people and nobody has ruled on them:\n${named}\n` +
           "  Add a row to iam.personal_data_relations() saying whether it holds a natural " +
-          "person's identity, and WHY. `is_personal = false` is a legitimate answer for a " +
+          "person's identity, and WHY. `names_a_person = false` is a legitimate answer for a " +
           "business's own published address — it still has to say so. Do not narrow the " +
           "census to make this go away.",
       );

@@ -5,7 +5,7 @@
 // WHOSE JOB IS THIS? — the HOME cell, on every mandate row.
 //
 // 🚨 WHY IT EXISTS (one-resolution FIX-R3/W1, 2026-09-08). A mandate's home is
-// its ORGANIZATION (DESIGN-one-resolution.md D-R3), and a personal workspace is
+// its ORGANIZATION (DESIGN-one-resolution.md D-R3), and a own organization is
 // just an organization. `/mandates` blends the platform's own jobs with every
 // organization the caller belongs to — 400+ platform jobs beside a handful an
 // organization added — and until now nothing on a row said which was which. A

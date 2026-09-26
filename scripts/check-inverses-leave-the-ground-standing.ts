@@ -225,8 +225,8 @@ export interface FileFacts {
 /**
  * A NAME INSIDE A REFUSAL SENTENCE IS NOT A DEPENDENCY (lane SIGNUP-DOOR, 2026-09-22).
  *
- * DEFAULT-ORG-3 retired `public.create_personal_organization` by replacing its body with one
- * that RAISES, and the message names the live path: "…through public._provision_new_user_personal_org,
+ * DEFAULT-ORG-3 retired the old own-organization creator by replacing its body with one
+ * that RAISES, and the message names the live path: "…through the signup provisioner,
  * which routes to iam.provision_signup_organization…". Read as a dependency, that sentence made
  * W1-ORG's inverse look like it was demolishing something DORG-3's body needs, and clause (d)
  * said so — about a body that does nothing but raise. A retirement sentence that names its

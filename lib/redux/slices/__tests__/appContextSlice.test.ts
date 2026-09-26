@@ -12,7 +12,6 @@ describe("appContext organization resolution", () => {
         {
           organization_id: null,
           organization_name: null,
-          personal_organization_id: null,
           orgBootstrapResolved: false,
         },
         { fromRehydrate: true },
@@ -31,7 +30,6 @@ describe("appContext organization resolution", () => {
         {
           organization_id: "org-default",
           organization_name: "Default org",
-          personal_organization_id: "org-personal",
           orgBootstrapResolved: false,
         },
         { fromRehydrate: true },
@@ -50,7 +48,6 @@ describe("appContext organization resolution", () => {
         {
           organization_id: null,
           organization_name: null,
-          personal_organization_id: "org-personal",
           orgBootstrapResolved: true,
         },
         { fromRehydrate: true },

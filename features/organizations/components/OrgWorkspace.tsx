@@ -234,8 +234,6 @@ export function OrgWorkspace() {
       org_abbreviation: organization.abbreviation,
       org_description: organization.description ?? undefined,
       org_website: organization.website ?? undefined,
-      // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-      org_is_personal: organization.isPersonal,
       org_created_at: organization.createdAt,
       org_summary: {
         id: organization.id,
@@ -244,7 +242,6 @@ export function OrgWorkspace() {
         abbreviation: organization.abbreviation,
         description: organization.description ?? null,
         website: organization.website ?? null,
-        is_personal: organization.isPersonal,
         created_at: organization.createdAt,
       },
       viewer_role: userRole ?? undefined,
@@ -341,10 +338,6 @@ export function OrgWorkspace() {
     org_abbreviation: async (value: unknown) => {
       if (typeof value !== "string")
         throw new Error("org_abbreviation expects a string.");
-      if (organization.isPersonal)
-        throw new Error(
-          "org_abbreviation refused: a personal workspace is always abbreviated ME.",
-        );
       const next = value.trim();
       const validation = validateOrganizationAbbreviation(next);
       if (!validation.valid)
@@ -398,9 +391,6 @@ export function OrgWorkspace() {
                     {organization.name}
                   </h1>
                   <div className="flex items-center gap-2 flex-wrap mt-1.5">
-                    {organization.isPersonal && (
-                      <Badge variant="secondary">Personal</Badge>
-                    )}
                     {userRole && (
                       <Badge variant="outline" className="text-xs capitalize">
                         You: {userRole}
@@ -605,7 +595,6 @@ export function OrgWorkspace() {
             <Card className="p-6 md:p-8">
               <ScopeOnboarding
                 orgId={organization.id}
-                isPersonal={organization.isPersonal ?? undefined}
                 onChanged={() => {
                   dispatch(ensureScopeTree());
                 }}
@@ -690,7 +679,6 @@ export function OrgWorkspace() {
             open={galleryOpen}
             onOpenChange={setGalleryOpen}
             orgId={organization.id}
-            personalOnly={organization.isPersonal ? true : undefined}
           />
         </>
       )}

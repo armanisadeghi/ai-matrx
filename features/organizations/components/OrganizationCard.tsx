@@ -55,11 +55,8 @@ export function OrganizationCard({
   const navigate = useSettingsNavigate();
   const [isNavigating, setIsNavigating] = useState(false);
 
-  // `isPersonalOrg` answers ONE question: is this somebody's private workspace,
-  // which the platform does not let outsiders administer? It gates ACTIONS only.
-  // It never changes what this card SAYS — the name, the abbreviation and the
-  // role badge are the organization's own, on every card, for every viewer.
-  const isPersonalOrg = organization.isPersonal;
+  // The name, the abbreviation and the role badge are the organization's own,
+  // on every card, for every viewer.
   const role = organization.role;
 
   // Get role icon and color. Every organization shows the viewer's REAL role.
@@ -222,15 +219,11 @@ export function OrganizationCard({
             agent={() =>
               buildOrganizationCardPayload({
                 org: organization,
-                kpis: kpis ?? {
-                  workspaces: 1,
-                  teams: organization.isPersonal ? 0 : 1,
-                  personal: organization.isPersonal ? 1 : 0,
-                },
+                kpis: kpis ?? { organizations: 1 },
               })
             }
           />
-          {canManageSettings && !isPersonalOrg && (
+          {canManageSettings && (
             <Button
               asChild
               variant="ghost"
@@ -250,27 +243,7 @@ export function OrganizationCard({
             </Button>
           )}
 
-          {isPersonalOrg && (
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/30"
-            >
-              <Link
-                href={settingsPath}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  handleNavigate(event);
-                }}
-              >
-                View
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Link>
-            </Button>
-          )}
-
-          {!canManageSettings && !isPersonalOrg && (
+          {!canManageSettings && (
             <Button
               asChild
               variant="ghost"

@@ -32,7 +32,7 @@ import {
   asOrganizationId,
   asUserId,
 } from "@ai-matrx/messaging/react";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { createClient } from "@/utils/supabase/client";
 import { isJsonObject } from "@/types/json";
 import type { MessageActionData } from "@/features/messaging/types";

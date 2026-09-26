@@ -45,8 +45,6 @@ export const PROJECTS_CONTEXT_MENU_PROPS = {
 export interface ProjectsContextOrgInfo {
   /** Display name of the active organization, when the project has one. */
   name?: string | null;
-  /** True when the org row is the user's personal space (not a real org). */
-  isPersonal?: boolean;
 }
 
 /** Open / done task counts the workspace tracks for the active project. */
@@ -233,18 +231,10 @@ export function buildProjectsContextData(
   const hasSelection = selectionText.length > 0;
   const description = project?.description ?? "";
 
-  // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-  // `is_personal_project` follows the project's own flag first; fall back to
-  // the resolved org's personal flag when the project flag is unset.
-  const isPersonal = projectOpen
-    ? (project.isPersonal ?? org?.isPersonal ?? false)
-    : undefined;
-
   const surround: Record<string, unknown> = {
     project_open: projectOpen,
     project_status: project?.status ?? undefined,
     project_priority: project?.priority ?? undefined,
-    is_personal_project: isPersonal,
     organization_name: org?.name ?? undefined,
     member_count: memberCount,
     open_task_count: taskCounts?.open,
@@ -273,7 +263,6 @@ export function buildProjectsContextData(
         priority: project.priority || undefined,
         start_date: project.startDate || undefined,
         target_date: project.targetDate || undefined,
-        is_personal: isPersonal,
         organization_id: project.organizationId || undefined,
         organization_name: org?.name || undefined,
         created_at: project.createdAt || undefined,
@@ -303,7 +292,6 @@ export function buildProjectsContextData(
     active_project_created_at: projectOpen
       ? project.createdAt || undefined
       : undefined,
-    is_personal_project: isPersonal,
     active_project: activeProject,
 
     // ── People ───────────────────────────────────────────────────────────

@@ -276,7 +276,7 @@ export function isMandateTestResult(
 /**
  * Run ONE candidate against inputs typed right now, with no stored test case —
  * the "Try it now" path that makes a cold mandate (no exemplars) benchable at
- * all, and the same path the personal workspace runs a job on. The server
+ * all, and the same path the own organization runs a job on. The server
  * persists nothing for an ad-hoc run; the admin bench's
  * `saveAdHocResultAsExemplar` turns a good one into the mandate's first real
  * test case.

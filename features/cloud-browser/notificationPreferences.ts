@@ -26,7 +26,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { writeOne } from "@/utils/supabase/writeOne";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";

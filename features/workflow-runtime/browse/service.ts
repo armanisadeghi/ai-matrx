@@ -26,7 +26,7 @@ import type {
   EntityScopeCounts,
 } from "@/lib/entity-list/types";
 import { scopeOrgId } from "@/lib/list-scope/types";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { WorkflowBrowseRow, WorkflowRowEdit } from "./types";
 
 function pgError(error: { message?: string; code?: string }): Error {

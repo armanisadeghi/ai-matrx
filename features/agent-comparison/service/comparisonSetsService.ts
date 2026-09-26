@@ -8,7 +8,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { writeOne } from "@/utils/supabase/writeOne";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type {
   ComparisonEntryRow,
   ComparisonSetRow,

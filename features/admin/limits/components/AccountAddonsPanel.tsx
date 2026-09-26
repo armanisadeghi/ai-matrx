@@ -242,18 +242,6 @@ const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
     accessorFn: (row) => row.org?.slug ?? "",
   },
   {
-    id: "personal_organization",
-    header: "Personal organization",
-    accessorFn: (row) =>
-      row.org ? (row.org.is_personal ? "personal" : "shared") : "unknown",
-    filter: "select",
-    filterOptions: [
-      { value: "personal", label: "Personal" },
-      { value: "shared", label: "Shared" },
-      { value: "unknown", label: "Unknown" },
-    ],
-  },
-  {
     id: "organization_readability",
     header: "Organization access",
     accessorFn: (row) => (row.org ? "readable" : "not_readable"),
@@ -933,14 +921,6 @@ function GrantAddonDialog({
                           <span className="truncate font-mono text-xs text-muted-foreground">
                             {row.slug}
                           </span>
-                          {row.is_personal && (
-                            <Badge
-                              variant="secondary"
-                              className="ml-auto shrink-0 px-1 py-0 text-[10px]"
-                            >
-                              personal
-                            </Badge>
-                          )}
                         </CommandItem>
                       ))}
                     </CommandGroup>

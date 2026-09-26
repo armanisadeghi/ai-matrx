@@ -45,6 +45,29 @@ function inferType(value: unknown): ContextObjectType {
 }
 
 /**
+ * The server's RICH ENVELOPE form of a context value — an object carrying its
+ * own `content` plus optional `type` / `label` / `description` /
+ * `max_inline_chars` (aidream `ContextManifest.build`). The envelope already
+ * says what it is, so the entry takes its type and label from it instead of
+ * reporting "json" and the bare key.
+ */
+function envelopeFacts(value: unknown): {
+  type?: ContextObjectType;
+  label?: string;
+} {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const v = value as Record<string, unknown>;
+  if (!("content" in v)) return {};
+  return {
+    type:
+      typeof v.type === "string"
+        ? (v.type as ContextObjectType)
+        : inferType(v.content),
+    label: typeof v.label === "string" && v.label.trim() ? v.label : undefined,
+  };
+}
+
+/**
  * Context keys that belong to ONE turn: they ride with the next message and
  * are consumed when it is sent (the sent user message keeps them in its
  * frozen `context_snapshot`). A quoted passage is the canonical case — it
@@ -101,12 +124,13 @@ const instanceContextSlice = createSlice({
         state.byConversationId[conversationId] = {};
       }
       const context = state.byConversationId[conversationId];
+      const envelope = envelopeFacts(value);
       context[key] = {
         key,
         value,
         slotMatched,
-        type: type ?? inferType(value),
-        label: label ?? key,
+        type: type ?? envelope.type ?? inferType(value),
+        label: label ?? envelope.label ?? key,
       };
     },
 
@@ -144,12 +168,13 @@ const instanceContextSlice = createSlice({
       }
       const context = state.byConversationId[conversationId];
       for (const entry of entries) {
+        const envelope = envelopeFacts(entry.value);
         context[entry.key] = {
           key: entry.key,
           value: entry.value,
           slotMatched: entry.slotMatched ?? false,
-          type: entry.type ?? inferType(entry.value),
-          label: entry.label ?? entry.key,
+          type: entry.type ?? envelope.type ?? inferType(entry.value),
+          label: entry.label ?? envelope.label ?? entry.key,
         };
       }
     },

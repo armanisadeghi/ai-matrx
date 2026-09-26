@@ -98,8 +98,6 @@ export interface AccessDeniedOwner {
 export interface AccessDeniedOrganization {
   id: string;
   name: string | null;
-  /** A personal workspace: its "admins" are just the owner, so we never name it as a team. */
-  isPersonal: boolean;
   /**
    * Whether the VIEWER can open the org. Usually false here — being outside it
    * is often why they're denied — and a link into a second locked door is a

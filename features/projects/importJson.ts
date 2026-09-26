@@ -14,7 +14,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 
 // ─────────────────────────────────────────────────────────────────────────────

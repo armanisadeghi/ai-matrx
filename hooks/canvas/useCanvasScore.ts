@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { toast } from "@/lib/toast";
@@ -102,7 +102,7 @@ export function useCanvasScore(canvasId: string) {
 
       const isHighScore =
         !canvas?.high_score || request.score > canvas.high_score;
-      const isPersonalBest = !bestScore || request.score > bestScore.score;
+      const isNewBest = !bestScore || request.score > bestScore.score;
 
       // Calculate XP (simplified)
       let xpEarned = 5; // Base XP for playing
@@ -114,8 +114,7 @@ export function useCanvasScore(canvasId: string) {
         score,
         rank,
         is_high_score: isHighScore,
-        // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-        is_personal_best: isPersonalBest,
+        is_personal_best: isNewBest,
         xp_earned: xpEarned,
         achievements_unlocked: [],
       } as SubmitScoreResponse;

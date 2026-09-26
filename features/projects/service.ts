@@ -16,7 +16,7 @@ import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { pgErrorToError } from "@ai-matrx/data";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import {
@@ -50,7 +50,7 @@ import { emailErrorMessage } from "@/lib/email/error-message";
 
 /**
  * Resolve the organization this write acts in: the caller's explicit id, else
- * the one the person has SELECTED. There is no personal-organization fallback
+ * the one the person has SELECTED. There is no fallback organization
  * — `ensureOrgId` refuses instead, and that refusal is re-thrown UNCHANGED so
  * `isOrganizationRequiredError` can still recognise it upstream (wrapping it in
  * `pgErrorToError` used to erase the class and leave the surface with a
@@ -162,7 +162,7 @@ export async function updateProject(
     if (updates.description !== undefined)
       updateData.description = updates.description;
     if (updates.settings !== undefined) updateData.settings = updates.settings;
-    // Move to a different org. Null means the owner's personal org.
+    // Move to a different org. Null means the organization the person has selected.
     if (updates.organizationId !== undefined) {
       updateData.organization_id = await resolveOrganizationId(
         updates.organizationId,
@@ -283,41 +283,12 @@ export async function getProjectBySlug(
   }
 }
 
-export async function getPersonalProjectBySlug(
-  slugOrId: string,
-): Promise<Project | null> {
-  try {
-    const userId = requireUserId();
-    const organizationId = await resolveOrganizationId(null);
-
-    const base = workspaceDb(supabase)
-      .from("projects")
-      .select("*")
-      .is("deleted_at", null)
-      .eq("organization_id", organizationId)
-      .eq("created_by", userId);
-
-    const query = UUID_PATTERN.test(slugOrId)
-      ? base.eq("id", slugOrId)
-      : base.eq("slug", slugOrId);
-
-    const { data, error } = await query.maybeSingle();
-    if (error) throw pgErrorToError(error);
-    return data ? transformProjectFromDb(data) : null;
-  } catch (error) {
-    console.error("Error fetching personal project by slug:", error);
-    return null;
-  }
-}
-
 /**
  * Load the current user's project memberships and the matching project rows in
  * one pass — the canonical replacement for the old project-member junction
  * join (`role` + project). Reads
  * memberships from `membershipsService.forUser('project')`, loads those
- // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
- * projects from `ctx_projects` (joining `organizations(is_personal)` so the
- * personal filter works), and batches member counts via
+ * projects from `ctx_projects`, and batches member counts via
  * `membershipsService.counts` (replacing the per-project N+1 count queries).
  */
 async function loadUserProjectsWithRole(): Promise<ProjectWithRole[]> {
@@ -352,29 +323,6 @@ async function loadUserProjectsWithRole(): Promise<ProjectWithRole[]> {
     return [];
   }
 
-  // `organizations.is_personal` lives in `public.organizations`. PostgREST
-  // embedding is single-schema, so a `workspace.projects → public.organizations`
-  // embed fails ("no relationship in schema cache"). Fetch the orgs separately
-  // and map `is_personal` back by organization_id.
-  const orgIds = Array.from(
-    new Set(
-      (projectRows ?? [])
-        .map((r: Record<string, unknown>) => r.organization_id as string | null)
-        .filter((id): id is string => Boolean(id)),
-    ),
-  );
-  const personalByOrg = new Map<string, boolean>();
-  if (orgIds.length > 0) {
-    const { data: orgs } = await supabase
-      .schema("iam")
-      .from("organizations")
-      .select("id, is_personal")
-      .in("id", orgIds);
-    for (const o of orgs ?? []) {
-      personalByOrg.set(o.id as string, o.is_personal === true);
-    }
-  }
-
   const countsResult = await membershipsService.counts("project", projectIds);
   const countById = new Map<string, number>();
   if (!isScopesRpcErr(countsResult)) {
@@ -387,7 +335,6 @@ async function loadUserProjectsWithRole(): Promise<ProjectWithRole[]> {
     const proj = transformProjectFromDb(row);
     return {
       ...proj,
-      isPersonal: personalByOrg.get(row.organization_id as string) ?? false,
       role: roleById.get(proj.id) ?? ("member" as ProjectRole),
       memberCount: countById.get(proj.id) ?? 0,
     };
@@ -403,11 +350,7 @@ export async function getOrgProjects(
       (p) => p.organizationId === organizationId,
     );
 
-    return projects.sort((a, b) => {
-      if (a.isPersonal && !b.isPersonal) return -1;
-      if (!a.isPersonal && b.isPersonal) return 1;
-      return a.name.localeCompare(b.name);
-    });
+    return projects.sort((a, b) => a.name.localeCompare(b.name));
   } catch (error: unknown) {
     const err = error as { code?: string; message?: string };
     if (err?.code === "42P01" || err?.message?.includes("does not exist"))
@@ -449,22 +392,6 @@ export async function isProjectSlugAvailable(
   } catch (error) {
     console.error("Error checking project slug availability:", error);
     return false;
-  }
-}
-
-export async function getPersonalProjects(): Promise<ProjectWithRole[]> {
-  try {
-    requireUserId();
-    // A project is personal iff its owning org is the user's personal org
-    // (organizations.is_personal). ctx_projects no longer stores is_personal;
-    // transformProjectFromDb derives isPersonal from the joined org.
-    const projects = (await loadUserProjectsWithRole()).filter(
-      (p) => p.isPersonal,
-    );
-    return projects.sort((a, b) => a.name.localeCompare(b.name));
-  } catch (error) {
-    console.error("Error in getPersonalProjects:", error);
-    return [];
   }
 }
 
@@ -944,11 +871,6 @@ export async function getProjectReferencesDetailed(
 // ============================================================================
 
 function transformProjectFromDb(dbRecord: Record<string, unknown>): Project {
-  // Personal-ness is org-derived (organizations.is_personal); ctx_projects no
-  // longer stores it. If the caller joined `organizations(is_personal)` we read
-  // it; otherwise we default to false (callers that need it must join the org).
-  const org = dbRecord.organizations as
-    { is_personal?: boolean | null } | null | undefined;
   return {
     id: dbRecord.id as string,
     name: dbRecord.name as string,
@@ -956,7 +878,6 @@ function transformProjectFromDb(dbRecord: Record<string, unknown>): Project {
     description: (dbRecord.description as string) ?? null,
     organizationId: (dbRecord.organization_id as string) ?? null,
     createdBy: (dbRecord.created_by as string) ?? null,
-    isPersonal: org?.is_personal === true,
     status: ((dbRecord.status as string) ?? "active") as Project["status"],
     priority: (dbRecord.priority as Project["priority"]) ?? null,
     startDate: (dbRecord.start_date as string) ?? null,

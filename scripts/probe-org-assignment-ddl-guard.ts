@@ -39,14 +39,14 @@ DO $$ BEGIN
   BEGIN EXECUTE 'CREATE FUNCTION public._dd154_direct_assign() RETURNS trigger LANGUAGE plpgsql AS $f$ BEGIN NEW.organization_id := gen_random_uuid(); RETURN NEW; END $f$';
     RAISE EXCEPTION 'probe failed: direct assignment function was accepted';
   EXCEPTION WHEN check_violation THEN NULL; END;
-  BEGIN EXECUTE 'CREATE FUNCTION public._dd154_helper_assign() RETURNS trigger LANGUAGE plpgsql AS $f$ BEGIN NEW.organization_id := public.current_personal_org_id(); RETURN NEW; END $f$';
+  BEGIN EXECUTE 'CREATE FUNCTION public._dd154_helper_assign() RETURNS trigger LANGUAGE plpgsql AS $f$ BEGIN NEW.organization_id := auth.uid(); RETURN NEW; END $f$';
     RAISE EXCEPTION 'probe failed: direct helper assignment function was accepted';
   EXCEPTION WHEN check_violation THEN NULL; END;
 END $$;
 
 -- Negative: a direct organization default cannot be added or recreated.
 DO $$ BEGIN
-  BEGIN EXECUTE 'ALTER TABLE public._dd154_org_guard_probe ALTER COLUMN organization_id SET DEFAULT public.current_personal_org_id()';
+  BEGIN EXECUTE 'ALTER TABLE public._dd154_org_guard_probe ALTER COLUMN organization_id SET DEFAULT auth.uid()';
     RAISE EXCEPTION 'probe failed: organization default was accepted';
   EXCEPTION WHEN check_violation THEN NULL; END;
 END $$;
@@ -57,7 +57,7 @@ END $$;
 ALTER TABLE platform.output_feedback ADD COLUMN _dd154_unrelated integer;
 ALTER TABLE platform.output_feedback ALTER COLUMN organization_id DROP DEFAULT;
 DO $$ BEGIN
-  BEGIN EXECUTE 'ALTER TABLE platform.output_feedback ALTER COLUMN organization_id SET DEFAULT current_personal_org_id()';
+  BEGIN EXECUTE 'ALTER TABLE platform.output_feedback ALTER COLUMN organization_id SET DEFAULT auth.uid()';
     RAISE EXCEPTION 'probe failed: recreated historical default was accepted';
   EXCEPTION WHEN check_violation THEN NULL; END;
 END $$;

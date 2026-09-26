@@ -203,7 +203,7 @@ export default function SitesListPage() {
 
   // THE ACTIVE ORG, EXPLICITLY. A site belongs to the company the user is
   // working in; with no organization selected there is no honest answer, so
-  // the site is never filed into a personal workspace nobody asked for.
+  // the site is never filed into a own organization nobody asked for.
   //
   // 🚨 BUT REFUSING IS NOT AN ANSWER EITHER (Arman, 2026-09-19). Until today
   // this control went DEAD with no organization selected — the button was

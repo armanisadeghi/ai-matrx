@@ -1,8 +1,8 @@
 /**
  * Surface manifest — Organizations (`matrx-user/organizations`).
  *
- * Drives `/organizations` (the launcher listing the user's personal workspace
- * and team orgs) and the `/organizations/[orgId]` workspace subtree (org home:
+ * Drives `/organizations` (the launcher listing every organization the user
+ * belongs to) and the `/organizations/[orgId]` workspace subtree (org home:
  * identity, members, Context & Scopes, resource grid, contributions — plus the
  * per-resource tabs: projects, scopes, shortcuts, files, notes, tasks,
  * workflows, tables).
@@ -106,7 +106,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "org_abbreviation",
     label: "Abbreviation",
     description:
-      "The 2-3 letter compact label of the open organization (personal workspaces are always ME). Absent when no org is open.",
+      "The 2-3 letter compact label of the open organization. Absent when no org is open.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 3,
@@ -136,18 +136,6 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "org_identity",
   },
   {
-    // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-    name: "org_is_personal",
-    label: "Is personal workspace",
-    description:
-      "True when the open organization is the user's personal workspace rather than a team. Absent when no org is open.",
-    valueType: "boolean",
-    alwaysAvailable: false,
-    typicalCharCount: 5,
-    sortOrder: 360,
-    group: "org_identity",
-  },
-  {
     name: "org_created_at",
     label: "Created at",
     description:
@@ -162,7 +150,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "org_summary",
     label: "Organization summary",
     description:
-      "Composite of the open organization's identity as one object: { id, slug, name, abbreviation, description, website, is_personal, created_at }. Mirrors the individual org_identity values (completeness law). Absent when no org is open.",
+      "Composite of the open organization's identity as one object: { id, slug, name, abbreviation, description, website, created_at }. Mirrors the individual org_identity values (completeness law). Absent when no org is open.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 400,
@@ -323,7 +311,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "organization_count",
     label: "Organization count",
     description:
-      "How many organizations (personal + teams) the user belongs to. Emitted on the list view; absent inside a workspace.",
+      "How many organizations the user belongs to. Emitted on the list view; absent inside a workspace.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 2,
@@ -334,7 +322,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "organizations_summary",
     label: "Your organizations",
     description:
-      "One entry per organization the user belongs to: { id, name, slug, abbreviation, description, website, role, is_personal, member_count, created_at, scope_type_count, scope_count }. Emitted on the list view as the FULL list (the active search filter is not applied); absent inside a workspace.",
+      "One entry per organization the user belongs to: { id, name, slug, abbreviation, description, website, role, member_count, created_at, scope_type_count, scope_count }. Emitted on the list view as the FULL list (the active search filter is not applied); absent inside a workspace.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 900,
@@ -374,7 +362,7 @@ const surfaceSpecific: SurfaceValue[] = [
  * - `org_slug` — the org's permanent URL identity; the form itself marks it
  *   read-only ("cannot be changed after creation") and inbound links depend on
  *   it. Identity, not authored content.
- * - `org_id` / `org_created_at` / `org_is_personal` — facts about the row.
+ * - `org_id` / `org_created_at` — facts about the row.
  * - Membership (`members_summary`, `viewer_role`, `can_manage`) — who belongs
  *   to an organization and what they may do is a permissions decision; an
  *   agent must never grant, remove, or re-role a person.
@@ -417,7 +405,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "org_abbreviation",
     label: "Abbreviation",
     description:
-      "Sets the compact 2–3 letter label shown anywhere the full organization name will not fit. Value: a plain string of exactly 2 or 3 UPPERCASE A–Z letters — no digits, spaces, or punctuation. Persists immediately. Fails when no organization is open, the viewer is not an owner/admin, or the organization is a personal workspace (those are always ME).",
+      "Sets the compact 2–3 letter label shown anywhere the full organization name will not fit. Value: a plain string of exactly 2 or 3 UPPERCASE A–Z letters — no digits, spaces, or punctuation. Persists immediately. Fails when no organization is open, the viewer is not an owner/admin.",
     valueType: "string",
     updatesValue: "org_abbreviation",
     mode: "entity",
@@ -451,7 +439,7 @@ export const organizationsManifest: SurfaceManifest = {
   label: "Organizations",
   urlPattern: "/organizations",
   intro: `<surface_intro>
-You are on the Organizations surface: where the user manages their workspaces — a personal workspace plus any team organizations — and everything each one contains.
+You are on the Organizations surface: where the user manages the organizations they belong to and everything each one contains.
 Read current_view first. On "list" the user is choosing between organizations: organizations_summary carries every org they belong to, and no single org is active (org_id and everything in the Organization identity, Membership, and Resources groups is absent). On "workspace" one organization is open: its identity, the viewer's role (viewer_role / can_manage), its members, its attached resources, and its scope dimensions are available once loaded.
 Scope types are the organization's user-authored context dimensions (Client, Department, Case, …) — the most important part of the org's knowledge model. scope_types_summary tells you which dimensions exist and how many scope values each holds.
 Respect viewer_role: only owners and admins (can_manage true) manage members, settings, and contribution review; never propose admin-only actions for plain members.
@@ -491,7 +479,6 @@ export interface OrganizationsOrgEntry {
   description: string | null;
   website: string | null;
   role: string;
-  is_personal: boolean;
   member_count: number | null;
   created_at: string;
   scope_type_count: number;
@@ -514,7 +501,6 @@ export function createOrganizationsScope(values: {
   org_abbreviation?: string;
   org_description?: string;
   org_website?: string;
-  org_is_personal?: boolean;
   org_created_at?: string;
   org_summary?: {
     id: string;
@@ -523,7 +509,6 @@ export function createOrganizationsScope(values: {
     abbreviation: string;
     description: string | null;
     website: string | null;
-    is_personal: boolean;
     created_at: string;
   };
   viewer_role?: string;

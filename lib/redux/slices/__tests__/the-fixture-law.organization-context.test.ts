@@ -30,7 +30,6 @@ const HAND_SPELLED = `
 const composing = {
   organization_id: null,
   organization_name: null,
-  personal_organization_id: null,
   scope_selections: { s1: "s1" },
   active_scope_type_ids: ["t1"],
   project_id: "p1",

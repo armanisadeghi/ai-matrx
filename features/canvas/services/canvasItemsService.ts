@@ -5,7 +5,7 @@ import {
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { buildSearchOr } from "@/utils/supabase-search";
 import type { Database } from "@/types/database.types";
 import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";

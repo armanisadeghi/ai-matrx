@@ -58,7 +58,6 @@ export interface ScopeBreadcrumbTrailNode {
 export interface ScopeBreadcrumbProps {
   orgSlugOrId: string;
   orgName: string;
-  orgIsPersonal: boolean;
   trail?: ScopeBreadcrumbTrailNode[];
   /** When set, Back navigates here instead of `router.back()`. */
   backHref?: string;
@@ -276,7 +275,6 @@ function MobileBreadcrumbDrawer({ levels }: { levels: Level[] }) {
 export function ScopeBreadcrumb({
   orgSlugOrId,
   orgName,
-  orgIsPersonal,
   trail = [],
   backHref,
   orgLinkHref = orgScopesHref(orgSlugOrId),
@@ -291,7 +289,7 @@ export function ScopeBreadcrumb({
   const router = useRouter();
   const isMobile = useIsMobile();
 
-  const orgLabel = orgIsPersonal ? "Personal workspace" : orgName;
+  const orgLabel = orgName;
 
   // Normalize org + optional Scopes hub + trail into a single level list.
   const levels: Level[] = [

@@ -1040,8 +1040,8 @@ PYINJ
     [ -n "$id" ] && [ -n "$name" ] || continue
     abbr="$(print -r -- "$name" | awk '{for(i=1;i<=NF&&i<=4;i++) printf "%s", toupper(substr($i,1,1))}')"
     sn="${name//\'/\'\'}"
-    print -r -- "insert into iam.organizations (name, slug, abbreviation, description, is_personal, is_system, created_by, updated_by, settings)"
-    print -r -- "select '$sn', '$id', '$abbr', '${ind//\'/\'\'}', false, false, u.id, u.id, jsonb_build_object('cleanupTag','$tag','test_fixture',true,'useCaseId','$id') from auth.users u where u.email = 'admin@admin.com'"
+    print -r -- "insert into iam.organizations (name, slug, abbreviation, description, is_system, created_by, updated_by, settings)"
+    print -r -- "select '$sn', '$id', '$abbr', '${ind//\'/\'\'}', false, u.id, u.id, jsonb_build_object('cleanupTag','$tag','test_fixture',true,'useCaseId','$id') from auth.users u where u.email = 'admin@admin.com'"
     print -r -- "on conflict do nothing;"
   done
   print -r -- "commit;"

@@ -389,7 +389,7 @@ export const ORG_UNAVAILABLE_HEADLINE =
  * 🚨 THE FOURTH STATE — THE ORGANIZATION READ ITSELF FAILED (R37, 2026-09-18).
  * `ORGANIZATION_REQUIRED` above is a claim about this person's memberships, and
  * it may only be made once they have been READ. When the read failed — an
- * aborted fetch, a thrown membership read, a degraded `current_personal_org_id()`
+ * aborted fetch, a thrown membership read, a degraded the old own-organization lookup
  * — nobody looked, so telling the admin mid-trial to pick an organization is a
  * claim nobody verified, and leaving the panel on `{ status: "loading" }` is a
  * skeleton that never resolves. This is the sentence for that state: it says

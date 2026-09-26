@@ -50,7 +50,7 @@ export const FIXTURE_PROFILES: CloudBrowserProfile[] = [
     lastStoppedAt: null,
     expiresAt: null,
     accessLevel: "admin",
-    isPersonalDefault: true,
+    isOwnDefault: true,
   },
   {
     id: "bp_org_infra",
@@ -71,7 +71,7 @@ export const FIXTURE_PROFILES: CloudBrowserProfile[] = [
     lastStoppedAt: minsAgo(40),
     expiresAt: null,
     accessLevel: "editor",
-    isPersonalDefault: false,
+    isOwnDefault: false,
   },
   {
     id: "bp_shared_client",
@@ -92,7 +92,7 @@ export const FIXTURE_PROFILES: CloudBrowserProfile[] = [
     lastStoppedAt: daysAgo(3),
     expiresAt: new Date(Date.now() + 20 * 60_000).toISOString(),
     accessLevel: "viewer",
-    isPersonalDefault: false,
+    isOwnDefault: false,
   },
 ];
 

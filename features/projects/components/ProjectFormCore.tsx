@@ -4,7 +4,7 @@
  * ProjectFormCore
  *
  * The chrome-less project-creation form — name, slug (auto-generated +
- * availability-checked), description, and owner (org / personal) selection,
+ * availability-checked), description, and owning organization selection,
  * plus the create-and-refresh submit flow. This is the single source of truth
  * for "create a project": render it inside whatever chrome you need.
  *
@@ -61,12 +61,11 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Represents the organization chosen in the form; null resolves to personal org. */
+/** The organization chosen in the form; null resolves to the selected organization (asked when none). */
 export type OrgContext = {
   id: string;
   name: string;
   slug: string;
-  isPersonal: boolean;
 } | null;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -130,8 +129,6 @@ export function OrgSelector({
     id: string;
     name: string;
     slug: string;
-    // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-    is_personal: boolean;
     role: string;
   }[];
   orgsLoading: boolean;
@@ -141,10 +138,7 @@ export function OrgSelector({
   isMobile: boolean;
 }) {
   // Every organization is listed under its own name, in one list, with the
-  // viewer's real role. There is no synthesised "Personal" entry: it printed the
-  // word "Personal" in place of the real name and was resolved with
-  // `find(is_personal)`, so a user who belonged to two personal organizations
-  // got one unnameable row and no way to choose the other (Arman, 2026-09-11).
+  // viewer's real role.
   const label = selectedOrg?.name ?? "Select an organization";
   const Icon = selectedOrg ? Building2 : User;
 
@@ -193,7 +187,6 @@ export function OrgSelector({
                 id: org.id,
                 name: org.name,
                 slug: org.slug,
-                isPersonal: org.is_personal,
               })
             }
             className={cn("gap-2", selectedOrg?.id === org.id && "bg-accent")}
@@ -255,9 +248,8 @@ export function ProjectFormCore({
         id: initialOrgId,
         name: "",
         slug: initialOrgSlug,
-        isPersonal: false,
       };
-    return { id: initialOrgId, name: "", slug: "", isPersonal: false };
+    return { id: initialOrgId, name: "", slug: "" };
   };
 
   const [selectedOrg, setSelectedOrg] = useState<OrgContext>(resolveInitialOrg);
@@ -271,7 +263,6 @@ export function ProjectFormCore({
         id: found.id,
         name: found.name,
         slug: found.slug,
-        isPersonal: found.is_personal,
       });
     }
   }, [orgs, initialOrgId]);
@@ -313,7 +304,7 @@ export function ProjectFormCore({
       const result = await createProject({
         name,
         slug,
-        // Undefined resolves to the user's personal org in the canonical service.
+        // Undefined resolves through ensureOrgId in the canonical service.
         organizationId: selectedOrg?.id ?? undefined,
         description: description || undefined,
       });
@@ -328,10 +319,10 @@ export function ProjectFormCore({
             ? {
                 label: "Open Settings",
                 onClick: () => {
-                  // Personal projects always use UUID — slug is only unique
-                  // inside an org, so the personal route segment is `[id]`.
+                  // Slug is only unique inside an org; without the org slug the
+                  // route segment is the project id.
                   const base =
-                    !result.project!.isPersonal && selectedOrg?.slug
+                    selectedOrg?.slug
                       ? `/organizations/${selectedOrg.slug}/projects/${result.project!.slug ?? result.project!.id}/settings`
                       : `/projects/${result.project!.id}/settings`;
                   router.push(base);
@@ -353,7 +344,7 @@ export function ProjectFormCore({
     }
   };
 
-  const slugPrefix = selectedOrg?.slug && !selectedOrg.isPersonal
+  const slugPrefix = selectedOrg?.slug
     ? `/organizations/${selectedOrg.slug}/projects/`
     : "/projects/";
 

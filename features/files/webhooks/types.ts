@@ -61,10 +61,9 @@ export interface CreateWebhookInput {
   target_url: string;
   description?: string | null;
   /**
-   * The organization the webhook is filed in and fans out to. Omit it for the
-   * "my own events" choice and the service names the person's OWN workspace
-   * explicitly (`resolvePersonalOrgId`) — the row is never left NULL for
-   * `public._stamp_org_default` to fill in silently.
+   * The organization the webhook is filed in and fans out to. Omit it and the
+   * service uses the organization the person has selected (`ensureOrgId`,
+   * which asks when none is) — the row is never left NULL.
    * common-docs/policies/context-is-carried-never-rebuilt.md
    */
   organization_id?: string | null;

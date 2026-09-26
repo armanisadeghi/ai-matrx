@@ -84,7 +84,7 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
   schema,
 }) => {
   // The EXPLICIT active org — a Shape is registered for the organization the
-  // user is working in, never silently into their personal workspace.
+  // user is working in, never silently into their own organization.
   // `handleCreate` already refuses and says so when there is none.
   const organizationId = useAppSelector(selectOrganizationId);
 

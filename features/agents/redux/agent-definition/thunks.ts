@@ -56,7 +56,7 @@ import type { Database } from "@/types/database.types";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import {
   selectModelById,
   type AIModelRecord,

@@ -54,7 +54,6 @@ export default function ScopeTypeEditPage() {
           orgId={org.id}
           orgSlugOrId={orgSlugOrId}
           orgName={org.name}
-          orgIsPersonal={org.isPersonal}
           typeParam={typeId}
           canManage={canManage}
         />

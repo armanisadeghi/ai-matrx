@@ -33,7 +33,6 @@ function directoryOf(rows: { id: string; name: string; slug: string; member_coun
       website: null,
       created_at: null,
       created_by: null,
-      is_personal: false,
       is_system: false,
       archived_at: null,
       member_count: r.member_count ?? 0,

@@ -85,7 +85,7 @@ export async function sendAndLogSms(options: SendSmsOptions & {
   // 🚨 THE MESSAGE TAKES ITS PARENT CONVERSATION'S ORGANIZATION, AND REFUSES
   // WHEN THE PARENT CANNOT BE READ. The third argument used to be a preference
   // rather than a requirement, so an unreadable or missing conversation sent
-  // the row to the SENDER'S personal workspace instead of the thread's tenant.
+  // the row to the SENDER'S own organization instead of the thread's tenant.
   // common-docs/policies/context-is-carried-never-rebuilt.md rule 4.
   const organizationId = parentConversation?.organization_id ?? "";
   if (!organizationId) {
@@ -178,7 +178,7 @@ export async function sendNotificationSms(options: {
   // 🚨 THE ENROLMENT NAMES THE ORGANIZATION (2026-09-19 ruling; corrected in
   // the 2026-09-19 review). This used to be
   // `resolveOrgIdForUserServer(supabase, userId)` — the notified person's
-  // PERSONAL workspace, an organization nobody chose, stamped onto the
+  // OWN organization, an organization nobody chose, stamped onto the
   // notification log and the suppression check by the server.
   //
   // It never had to be resolved from the person at all. The enrolment row we

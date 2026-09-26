@@ -6,7 +6,7 @@ import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import type { Json } from "@/types/database.types";
 import { asJsonObject, mergeJsonColumn } from "@ai-matrx/data/db";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type {
   PcShow,
   PcEpisode,

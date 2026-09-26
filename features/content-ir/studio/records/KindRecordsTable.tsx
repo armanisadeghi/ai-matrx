@@ -112,12 +112,12 @@ const RECORD_SCOPES = ["orgs", "mine"] as const;
  * cannot hold the viewer's rows.
  *
  * "My Orgs" means "organizations you belong to", and `readableOrganizations()`
- * excludes PERSONAL organizations (they have no teammates). So for a user whose
+ * excludes OWN organization (they have no teammates). So for a user whose
  * only organization is their own personal one — which is every brand-new
  * account, and was `test@test.com` in Test's Org — the default scope is empty
  * FOREVER: `My Orgs 0` beside `Mine 7`, with an empty state saying nothing had
  * been produced, seconds after they pressed Save in chat (V-42 §3.2, root cause
- * measured 2026-09-12: `iam.organizations.is_personal = true`).
+ * measured 2026-09-12: an organization-type flag).
  *
  * The scope SEMANTICS are the platform's and are not touched here — the counts
  * were right, the landing was wrong. So exactly once, before the person has

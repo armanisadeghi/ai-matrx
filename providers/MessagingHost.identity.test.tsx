@@ -196,7 +196,7 @@ jest.mock("@/lib/api/matrx-transport", () => ({
   createMatrxTransport: () => ({ stream: async () => undefined }),
 }));
 
-jest.mock("@/lib/organizations/personalOrg", () => ({
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: async () => ORG,
 }));
 

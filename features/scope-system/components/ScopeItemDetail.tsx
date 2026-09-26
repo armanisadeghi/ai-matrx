@@ -52,7 +52,6 @@ interface ScopeItemDetailProps {
   orgSlugOrId: string;
   orgName: string;
   orgSlug: string;
-  orgIsPersonal: boolean;
   typeParam: string;
   scopeParam: string;
   itemParam: string;

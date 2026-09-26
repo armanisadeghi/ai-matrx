@@ -47,7 +47,7 @@
 // AND NOTHING SUBSTITUTES AN ORGANIZATION (Arman, 2026-09-19, F2). Once the columns
 // have moved, every one of these writes needs an organization, and it comes from the
 // CALLER - the `X-Organization-Id` header the person's client already sends. This
-// module never picks one, never falls back to a personal workspace and never reads
+// module never picks one, never falls back to a own organization and never reads
 // `iam.default_organization_id`. When the organization is missing it refuses with a
 // sentence that says what to do, and the route answers with the standard
 // organization-required envelope so the picker can open.

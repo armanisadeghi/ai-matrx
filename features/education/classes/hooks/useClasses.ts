@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectPersonalOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   CLASS_SCOPE_TYPE_SLUG,
   CLASS_SCOPE_TYPE_SEED,
@@ -68,7 +68,7 @@ const emptySettings = (): ClassSettings => ({
 
 export function useClasses(): UseClassesReturn {
   const dispatch = useAppDispatch();
-  const orgId = useAppSelector(selectPersonalOrganizationId);
+  const orgId = useAppSelector(selectOrganizationId);
 
   const typesLoaded = useAppSelector((s) =>
     orgId ? selectScopeTypesLoadedForOrg(s, orgId) : false,

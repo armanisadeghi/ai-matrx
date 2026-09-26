@@ -1,4 +1,4 @@
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import type { AgentScope } from "./constants";
 

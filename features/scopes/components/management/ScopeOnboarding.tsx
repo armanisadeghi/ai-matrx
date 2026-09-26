@@ -14,9 +14,6 @@ import {
   Building2,
   Users,
   MapPin,
-  Baby,
-  PawPrint,
-  Target,
   Plus,
   LayoutTemplate,
   Boxes,
@@ -102,59 +99,14 @@ const PRO_DIMENSIONS: PreviewDimension[] = [
   },
 ];
 
-const PERSONAL_DIMENSIONS: PreviewDimension[] = [
-  {
-    key: "kids",
-    icon: Baby,
-    tone: "text-sky-600 dark:text-sky-400",
-    singular: "Kid",
-    plural: "Kids",
-    rows: ["Ava", "Sara"],
-    columns: [
-      { name: "Age", samples: ["15", "12"] },
-      { name: "Grade", samples: ["10", "7"] },
-      { name: "School", samples: ["Lincoln High", "Oak Middle"] },
-    ],
-  },
-  {
-    key: "pets",
-    icon: PawPrint,
-    tone: "text-amber-600 dark:text-amber-400",
-    singular: "Pet",
-    plural: "Pets",
-    rows: ["Rex", "Luna"],
-    columns: [
-      { name: "Species", samples: ["Dog", "Cat"] },
-      { name: "Vet", samples: ["Dr. Smith", "Dr. Patel"] },
-      { name: "Age", samples: ["4", "2"] },
-    ],
-  },
-  {
-    key: "goals",
-    icon: Target,
-    tone: "text-violet-600 dark:text-violet-400",
-    singular: "Goal",
-    plural: "Goals",
-    rows: ["Run a 5K", "Read 12 books"],
-    columns: [
-      { name: "Target date", samples: ["Jun 2026", "Dec 2026"] },
-      { name: "Status", samples: ["In progress", "Not started"] },
-      { name: "Progress", samples: ["60%", "2 of 12"] },
-    ],
-  },
-];
-
 interface ScopeOnboardingProps {
   orgId: string;
-  /** Personal orgs get a personal-flavored ghost board + personal templates. */
-  isPersonal?: boolean;
   /** Fired after anything is created so the host can react. */
   onChanged?: () => void;
 }
 
 export function ScopeOnboarding({
   orgId,
-  isPersonal,
   onChanged,
 }: ScopeOnboardingProps) {
   const dispatch = useAppDispatch();
@@ -164,7 +116,7 @@ export function ScopeOnboarding({
   >(null);
   const [creatingKey, setCreatingKey] = useState<string | null>(null);
 
-  const dimensions = isPersonal ? PERSONAL_DIMENSIONS : PRO_DIMENSIONS;
+  const dimensions = PRO_DIMENSIONS;
 
   async function addDimension(dim: PreviewDimension) {
     setCreatingKey(dim.key);
@@ -203,13 +155,10 @@ export function ScopeOnboarding({
       {/* Lead-with framing — concrete before jargon */}
       <div className="max-w-2xl">
         <h2 className="text-2xl font-bold text-foreground">
-          What does {isPersonal ? "your life" : "your organization"} revolve
-          around?
+          What does your organization revolve around?
         </h2>
         <p className="text-sm text-muted-foreground mt-2">
-          {isPersonal
-            ? "Most people organize things around their kids, their pets, their goals. Pick the ones that fit and your assistant will keep track of the details for each."
-            : "Most teams organize everything around a few things — their clients, their departments, their locations. Set up the ones that fit and your assistant will keep the details for each in one place."}
+          {"Most teams organize everything around a few things — their clients, their departments, their locations. Set up the ones that fit and your assistant will keep the details for each in one place."}
         </p>
         <p className="text-xs text-muted-foreground/80 mt-1.5">
           These are called <span className="font-medium">scopes</span>.
@@ -267,7 +216,6 @@ export function ScopeOnboarding({
         open={drawerMode !== null}
         onOpenChange={(o) => !o && setDrawerMode(null)}
         orgId={orgId}
-        personalOnly={isPersonal ? true : undefined}
         initialMode={drawerMode ?? "templates"}
         onApplied={onChanged}
       />

@@ -55,7 +55,6 @@ export default function ContextItemHubPage() {
           orgId={org.id}
           orgSlugOrId={orgSlugOrId}
           orgName={org.name}
-          orgIsPersonal={org.isPersonal}
           typeParam={typeId}
           itemParam={itemId}
           canManage={canManage}

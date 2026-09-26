@@ -29,26 +29,19 @@ function lines(
     .join("\n");
 }
 
-/** The launcher's leading stats: N workspaces · M teams. */
+/** The launcher's leading stat: N organizations. */
 export interface OrganizationKpis {
-  workspaces: number;
-  teams: number;
-  personal: number;
+  organizations: number;
 }
 
 export function organizationKpis(
   organizations: OrganizationWithRole[],
 ): OrganizationKpis {
-  const personal = organizations.filter((o) => o.isPersonal).length;
-  return {
-    workspaces: organizations.length,
-    teams: organizations.length - personal,
-    personal,
-  };
+  return { organizations: organizations.length };
 }
 
 export function organizationKpiLine(kpis: OrganizationKpis): string {
-  return `${kpis.workspaces} workspace${kpis.workspaces === 1 ? "" : "s"} · ${kpis.teams} team${kpis.teams === 1 ? "" : "s"}`;
+  return `${kpis.organizations} organization${kpis.organizations === 1 ? "" : "s"}`;
 }
 
 /** One org, as the card renders it. */
@@ -85,8 +78,6 @@ export function organizationRow(
     slug: org.slug,
     abbreviation: org.abbreviation,
     role: org.role,
-    // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-    is_personal: org.isPersonal,
     member_count: org.memberCount ?? null,
     description: org.description ?? null,
     website: org.website ?? null,
@@ -107,7 +98,6 @@ export function buildOrganizationListPayload(input: {
   searchQuery?: string;
 }): AgentPayloadInput {
   const { organizations, searchQuery } = input;
-  const kpis = organizationKpis(organizations);
   return {
     kind: "organizations-list",
     location: ORGANIZATIONS_LOCATION,
@@ -118,8 +108,6 @@ export function buildOrganizationListPayload(input: {
     summary: organizationListHuman(organizations),
     attributes: {
       rows: organizations.length,
-      teams: kpis.teams,
-      personal: kpis.personal,
     },
     context: {
       search_query: searchQuery || undefined,
@@ -163,12 +151,10 @@ export function buildOrganizationCardPayload(input: {
       id: org.id,
       slug: org.slug,
       role: org.role,
-      is_personal: org.isPersonal,
       member_count: org.memberCount,
     },
     context: {
-      list_workspaces: kpis.workspaces,
-      list_teams: kpis.teams,
+      list_organizations: kpis.organizations,
     },
   };
 }

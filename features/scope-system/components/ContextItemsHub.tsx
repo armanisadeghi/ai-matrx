@@ -7,7 +7,6 @@ import {
   ArrowUpDown,
   ArrowUpRight,
   Building2,
-  Home,
   ListChecks,
   Loader2,
   PanelsTopLeft,
@@ -81,7 +80,6 @@ interface ContextItemsHubProps {
   orgId: string;
   orgSlugOrId: string;
   orgName: string;
-  orgIsPersonal: boolean;
   /** Present → one scope type's items (full add/reorder). Absent → all of the org's
    * types, grouped (the "drop the type filter" view that forces type headers). */
   typeParam?: string;
@@ -192,8 +190,6 @@ export function AllContextItemsHub() {
         name: org.name,
         slug: org.slug,
         abbreviation: org.abbreviation ?? "",
-        // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-        is_personal: org.is_personal,
         role: org.role,
         scope_type_count: types.length,
         scope_count: org.scopes.length,
@@ -328,12 +324,8 @@ function OrgContextItemsBlock({
         href={`/organizations/${org.slug}/context-items`}
         className="group inline-flex items-center gap-2 text-lg font-bold text-foreground hover:text-primary"
       >
-        {org.is_personal ? (
-          <Home className="h-4 w-4 text-muted-foreground" />
-        ) : (
-          <Building2 className="h-4 w-4 text-muted-foreground" />
-        )}
-        {org.is_personal ? "Personal workspace" : org.name}
+        <Building2 className="h-4 w-4 text-muted-foreground" />
+        {org.name}
         <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
       </Link>
 
@@ -367,7 +359,6 @@ function ContextItemsTypeView({
   orgId,
   orgSlugOrId,
   orgName,
-  orgIsPersonal,
   typeParam,
   canManage,
 }: ContextItemsHubProps & { typeParam: string }) {
@@ -556,7 +547,6 @@ function ContextItemsOrgView({
   orgId,
   orgSlugOrId,
   orgName,
-  orgIsPersonal,
   canManage,
 }: ContextItemsHubProps) {
   const scopeTypes = useAppSelector((s) => selectScopeTypesByOrg(s, orgId));
@@ -574,7 +564,7 @@ function ContextItemsOrgView({
           </div>
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {orgIsPersonal ? "Personal workspace" : orgName}
+              {orgName}
             </p>
             <h1 className="text-2xl font-bold text-foreground leading-tight">
               All context items
