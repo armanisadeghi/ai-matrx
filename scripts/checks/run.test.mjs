@@ -167,3 +167,50 @@ test("--skip-live-db runs no live-db or unclassified row and says so in one line
   assert.deepEqual(header, { ran: ["repo-gate", "clone-gate"], skipped_live_db: ["live-gate", "unknown-gate"] });
   assert.equal(findings.length, 0);
 });
+
+// 2026-09-25: fifteen release findings read only "ELIFECYCLE Command failed with exit code 1" —
+// the title was the LAST line of output, which for every `pnpm <script>` row is pnpm's own
+// trailer. A title must say WHAT the check found: its headline and the first offender.
+test("a failing row's title is its headline and first offender, never pnpm's ELIFECYCLE trailer", () => {
+  const row = { label: "Record-naming toasts carry their record" };
+  const out = [
+    "> app-matrx@0.4.2354 check:record-toasts:strict /repo",
+    "> tsx scripts/check-record-toasts.ts --strict",
+    "",
+    "[check:record-toasts] 336 record-naming toast(s) outside the helper; 90 NOT baselined.",
+    "  components/agent-copy/useExportActions.ts:27  toast.success(`Created`) — route it through recordToast",
+    "  lib/durable-run/durableRunDialogClose.ts:58  toast.info(`still running`) — route it through recordToast",
+    " ELIFECYCLE  Command failed with exit code 1.",
+  ].join("\n");
+  const verdict = judge(row, 1, out);
+  assert.doesNotMatch(verdict.title, /ELIFECYCLE|Command failed/);
+  assert.match(verdict.title, /^Record-naming toasts carry their record: 336 record-naming/);
+  assert.match(verdict.title, / \u2014 first useExportActions\.ts:27$/, "the first offender is named");
+  assert.ok(verdict.title.length <= 100);
+  assert.equal(verdict.count, 2, "count is the offenders listed, not 1");
+});
+
+test("a headline ending in a colon carries its first item; tsc errors name their file", () => {
+  const pkgs = judge({ label: "Every @ai-matrx package is declared and installed at npm latest" }, 1, [
+    "✓ @ai-matrx/alchemy@0.3.6 is npm latest.",
+    "@ai-matrx install-graph check failed:",
+    "  - STALE: @ai-matrx/agents@0.13.10 is in the graph; npm latest is 0.13.13.",
+    "  - STALE: @ai-matrx/content-ir@0.18.4 is in the graph; npm latest is 0.18.5.",
+    " ELIFECYCLE  Command failed with exit code 1.",
+  ].join("\n"));
+  assert.match(pkgs.title, /install-graph check failed: STALE: @ai-matrx\//);
+  const tsc = judge({ label: "TypeScript type-check" }, 2, [
+    "features/a/b.tsx(12,5): error TS2322: Type 'string' is not assignable to type 'number'.",
+    "lib/c.ts(3,1): error TS2304: Cannot find name 'x'.",
+    " ELIFECYCLE  Command failed with exit code 2.",
+  ].join("\n"));
+  assert.match(tsc.title, /^TypeScript type-check: features\/a\/b\.tsx\(12,5\): error TS2322/);
+  assert.equal(tsc.count, 2);
+});
+
+test("the same defect with a different first offender keeps its fingerprint", () => {
+  assert.equal(
+    fingerprint("x", "Gate: 3 findings — first features/a/b.ts:12"),
+    fingerprint("x", "Gate: 4 findings — first lib/c/d.tsx:7"),
+  );
+});

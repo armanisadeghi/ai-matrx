@@ -140,7 +140,9 @@ export function oneLine(text, limit = 100) {
 }
 
 export function fingerprint(check, title) {
-  const normalized = title.toLowerCase().replace(/\d+/g, "N").replace(/\s+/g, " ").trim();
+  // A file location is WHERE, not WHAT: fixing the first offender must not make the same defect
+  // look new on the next release.
+  const normalized = title.replace(LOCATION_G, "LOC").toLowerCase().replace(/\d+/g, "N").replace(/\s+/g, " ").trim();
   return createHash("sha1").update(`${check}\n${normalized}`).digest("hex");
 }
 
@@ -194,6 +196,44 @@ export function manifestRows({ manifestPath, extras = true, classes } = {}) {
   return parseRows(lines, classes);
 }
 
+// Lines a failing row prints that are never its finding: pnpm's script echo and ELIFECYCLE
+// trailer (2026-09-25: fifteen findings were titled only "ELIFECYCLE Command failed with exit
+// code 1" because the title was the LAST line), node's warnings, and the check's own passes.
+const NOISE = /^\s*(?:ELIFECYCLE\b|ERR_PNPM_|npm (?:ERR!|error)|> |\(node:\d+\)|\(Use `node --trace|Warning: |✓|✔|PASS\b|\[self-test\]\s+PASS\b|(?:\[[\w:.-]+\]\s*)?OK\b)/;
+// `path/to/file.ts:12`, `path/to/file.tsx(12,5)` or `path/to/file.ts` — the offender a line names.
+const LOCATION_SRC = String.raw`(?:[\w@.\[\]()+-]+\/)+[\w@.\[\]+-]+\.[a-z]{1,5}(?::\d+(?::\d+)?|\(\d+,\d+\))?`;
+const LOCATION = new RegExp(LOCATION_SRC);
+const LOCATION_G = new RegExp(LOCATION_SRC, "g");
+
+/** The label without a trailing parenthetical, so the finding itself fits the 100-char title. */
+function shortLabel(label) {
+  const bare = plain(label).replace(/\s*\([^)]*\)\s*$/, "").trim() || plain(label).trim();
+  if (bare.length <= 40) return bare;
+  return `${bare.slice(0, 40).replace(/\s+\S*$/, "")}…`;
+}
+
+/** A check's own name prefix ("[check:x]", "check:x —") repeats the label; a bullet is not content. */
+function stripPrefix(line) {
+  return line.trim().replace(/^\[[\w:.-]+\]\s*/, "").replace(/^check:[\w:.-]+\s*(?:—|:|-)\s*/, "").replace(/^(?:[-•*✗✘❌]|🚨)\s*/u, "");
+}
+
+/** A location short enough for a title: the file name, with its folder when the name is generic. */
+function locationName(location) {
+  const parts = location.split("/");
+  const base = parts.at(-1);
+  return /^(?:page|layout|route|index|types|constants|utils|service|hooks)\./.test(base) && parts.length > 1 ? parts.slice(-2).join("/") : base;
+}
+
+/** Title = label, headline, and the first offender when the headline does not already name one. */
+function composeTitle(label, headline, location, limit = 100) {
+  const head = `${shortLabel(label)}: ${oneLine(headline, 10_000)}`;
+  if (!location || headline.includes(locationName(location))) return oneLine(head, limit);
+  const tail = ` — first ${locationName(location)}`;
+  const room = limit - tail.length;
+  if (room < 40) return oneLine(head, limit);
+  return `${oneLine(head, room)}${tail}`;
+}
+
 /** Verdict for one row's output: null when clean, else {title, count}. */
 export function judge(row, code, output) {
   const text = plain(output);
@@ -203,9 +243,34 @@ export function judge(row, code, output) {
   // other line, and a self-test that does not say PASS, still counts.
   const screams = lines.filter((l) => SCREAM.test(l) && !/\[self-test\]\s+PASS\b/.test(l));
   if (code === 0 && screams.length === 0) return null;
-  const first = screams[0] ?? lines.at(-1) ?? (code === null ? "no output" : `exit ${code}`);
-  const title = oneLine(`${row.label}: ${first}`);
-  return { title, count: Math.max(1, screams.length) };
+  if (screams.length) return { title: oneLine(`${row.label}: ${screams[0]}`), count: screams.length };
+  const signal = lines.filter((l) => !NOISE.test(l));
+  if (!signal.length) {
+    const last = lines.at(-1) ?? (code === null ? "no output" : `exit ${code}`);
+    return { title: oneLine(`${row.label}: ${last}`), count: 1 };
+  }
+  // The headline: the first top-level line that introduces an indented list (a composite check
+  // prints its passing sub-checks first), else the first top-level line, else the first line.
+  const nested = (l) => /^\s{2,}/.test(l);
+  let at = signal.findIndex((l, i) => !nested(l) && signal[i + 1] !== undefined && nested(signal[i + 1]));
+  if (at < 0) at = Math.max(0, signal.findIndex((l) => !nested(l)));
+  let headline = stripPrefix(signal[at]);
+  // "check failed:" says nothing until its first item follows it.
+  if (/:$/.test(headline) && headline.length < 60 && signal[at + 1]) headline = `${headline} ${stripPrefix(signal[at + 1])}`;
+  const offenders = [...new Set(signal.filter((l) => l !== signal[at]).map((l) => l.match(LOCATION)?.[0]).filter(Boolean))];
+  const headlineLocation = headline.match(LOCATION)?.[0];
+  if (headlineLocation) offenders.unshift(headlineLocation);
+  // Count what the check listed: its offenders, else its bulleted items, else the headline's number.
+  const bullets = [];
+  for (const l of signal.slice(at + 1)) {
+    if (!nested(l)) break;
+    if (/^\s*[-•*✗✘]\s/.test(l)) bullets.push(l);
+  }
+  const counted = Number(headline.match(/\b(\d+)\b/)?.[1] ?? 0);
+  return {
+    title: composeTitle(row.label, headline, offenders[0]),
+    count: Math.max(1, offenders.length ? new Set(offenders).size : bullets.length || counted || 1),
+  };
 }
 
 function writeLog(id, text) {
