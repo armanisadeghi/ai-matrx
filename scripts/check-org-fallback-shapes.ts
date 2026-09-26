@@ -7,10 +7,10 @@
  * below the boundary invents, defaults, or substitutes it. No
  * personal-organization fallback, no system-organization fallback, no database
  * trigger choosing a tenant." Redux `appContext.organization_id` is the
- * selection, settled once at bootstrap by `lib/organizations/resolveActiveOrgContext.ts`
- * — and boot is TOTAL (rung b explicitly SELECTS the user's own personal
- * workspace when nothing else applies), so an empty selection means genuinely
- * unresolved, never "we could have used their personal workspace".
+ * selection, settled at bootstrap by `lib/organizations/resolveActiveOrgContext.ts`
+ * only from what is not a choice (a link, this device's remembered choice, a
+ * sole membership), so an empty selection means genuinely unresolved and the
+ * write HOLDS and asks.
  *
  * THE CLASS this guards: the shapes that made a write land in a workspace the
  * person never chose, silently — `organization_id ?? personal_organization_id`
@@ -48,18 +48,18 @@
  *      `organizations.at(0)`, `memberships.find(...)?.organization_id` — feeding
  *      an organization target. "Whichever org happens to be first" is a
  *      substitution exactly like the personal one; it just has no name.
- *   6. `supabase.rpc("current_personal_org_id")` called anywhere but the ONE
- *      primitive that owns that question.
+ *   6. `supabase.rpc(<a retired fallback-organization RPC>)` called ANYWHERE —
+ *      the RPC was deleted from the database (access ladder T-3), so there is
+ *      no owner left and any call is a reintroduction.
  *
- * Rules 4-6 do not apply inside the three primitives that legitimately resolve
- * these organizations — `lib/organizations/personalOrg.ts`, `systemOrg.ts` and
- * `resolveActiveOrgContext.ts` (boot rung b SELECTS the personal workspace on
- * purpose). Everywhere else they are the defect.
+ * Rules 4-5 do not apply inside the two primitives that legitimately resolve
+ * organizations — `lib/organizations/systemOrg.ts` (the platform's own) and
+ * `resolveActiveOrgContext.ts` (the boot ladder). Everywhere else they are the
+ * defect.
  *
  * THE ONE EXEMPTION, and it is never silent: a line that deliberately reads the
- * person's OWN workspace by name (a per-person singleton such as a profile or
- * a notification preference), or the PLATFORM's own (a shipped catalog row, an
- * error ledger), carries
+ * PLATFORM's own organization by name (a shipped catalog row, an error ledger)
+ * carries
  *
  *     // org-fallback-deliberate: <reason, at least 10 characters>
  *
@@ -67,7 +67,7 @@
  * (A fixed two-line window punished the honest case: the longer the reason,
  * the further the marker was pushed from the code it explains, so a
  * seven-line justification read as a violation.) Grep that marker to census
- * every deliberate personal- or system-organization read in the repo.
+ * every deliberate system-organization read in the repo.
  *
  * WHAT IT CANNOT SEE (never let a green run imply more than it proves)
  *   • A substitution assembled elsewhere and passed in as a plain argument.
@@ -138,10 +138,10 @@ const SUBSTITUTE_NAMES = new Set([
 /**
  * Calls that RESOLVE one of those organizations — the BROWSER family and, since
  * 2026-09-17, the SERVER family, which was invisible to this guard while it
- * held only the three browser names. `lib/organizations/personalOrg.ts` hosts
- * both: `resolveOrgIdForUserServer` (:183) answers "personal, else the SYSTEM
- * organization" for a user id, and it was answering it for route handlers that
- * had a perfectly good admitted organization on the request.
+ * held only the three browser names. `resolveOrgIdForUserServer` answered
+ * "their own, else the SYSTEM organization" for a user id, and it was answering
+ * it for route handlers that had a perfectly good admitted organization on the
+ * request. All of these are retired; a name growing back is a reintroduction.
  */
 const SUBSTITUTE_CALLS = new Set([
   "peekPersonalOrgId",
@@ -152,12 +152,12 @@ const SUBSTITUTE_CALLS = new Set([
 
 /**
  * Calls that substitute ONLY when they are not given an organization to carry.
- * `ensureOrgIdServer(client, orgId)` (personalOrg.ts:156) returns `orgId` when
- * there is one and otherwise RESOLVES THE PERSONAL ORGANIZATION through
- * `current_personal_org_id()`. So `ensureOrgIdServer(client, admittedOrgId)` is
- * a carry and `ensureOrgIdServer(client)` / `(client, undefined)` /
- * `(client, null)` is the personal-workspace substitution wearing the same
- * name. The map value is the index of the organization argument.
+ * `ensureOrgIdServer(client, orgId)` (lib/organizations/ensureOrgId.ts) returns
+ * `orgId` when there is one and otherwise REFUSES. It once resolved a fallback
+ * organization instead, so `ensureOrgIdServer(client)` / `(client, undefined)` /
+ * `(client, null)` is still flagged: a caller that does not carry the
+ * organization is relying on a substitution that no longer exists. The map
+ * value is the index of the organization argument.
  */
 const CONDITIONAL_SUBSTITUTE_CALLS = new Map<string, number>([
   ["ensureOrgIdServer", 1],
@@ -166,18 +166,16 @@ const CONDITIONAL_SUBSTITUTE_CALLS = new Map<string, number>([
 const DELIBERATE_MARKER = "org-fallback-deliberate:";
 
 /**
- * The RPC that answers "which organization is this user's own workspace?".
- * Exactly one module may ask it; everywhere else, calling it IS the
- * substitution, whatever the result gets named.
+ * A fallback-organization RPC deleted from the database (access ladder T-3).
+ * No module may call it; a call anywhere is a reintroduction.
  */
-const PERSONAL_ORG_RPC = "current_personal_org_id";
+const RETIRED_FALLBACK_ORG_RPC = "current_personal_org_id";
 
 /**
- * The three primitives that legitimately resolve the personal / system
- * organization. Rules 4-6 are suspended inside them and nowhere else.
+ * The two primitives that legitimately resolve an organization. Rules 4-5 are
+ * suspended inside them and nowhere else; rule 6 has no home.
  */
 const PRIMITIVE_FILES = new Set([
-  "lib/organizations/personalOrg.ts",
   "lib/organizations/systemOrg.ts",
   "lib/organizations/resolveActiveOrgContext.ts",
 ]);
@@ -194,7 +192,7 @@ export interface Finding {
     | "eq-filter"
     | "statement-substitution"
     | "first-membership-pick"
-    | "personal-org-rpc";
+    | "retired-org-rpc";
   snippet: string;
 }
 
@@ -623,9 +621,8 @@ export function scanSource(relPath: string, source: string): Finding[] {
       }
     }
 
-    // 6. The personal-organization RPC, called outside its ONE owner.
+    // 6. A retired fallback-organization RPC, called anywhere.
     if (
-      !inPrimitive &&
       ts.isCallExpression(node) &&
       ts.isPropertyAccessExpression(node.expression) &&
       node.expression.name.text === "rpc" &&
@@ -635,9 +632,9 @@ export function scanSource(relPath: string, source: string): Finding[] {
       if (
         (ts.isStringLiteral(rpcName) ||
           ts.isNoSubstitutionTemplateLiteral(rpcName)) &&
-        rpcName.text === PERSONAL_ORG_RPC
+        rpcName.text === RETIRED_FALLBACK_ORG_RPC
       ) {
-        record(node, "personal-org-rpc");
+        record(node, "retired-org-rpc");
       }
     }
 
@@ -693,7 +690,7 @@ function* walk(dir: string): Generator<string> {
 /** Cheap text pre-filter — the AST pass only runs on files that could match. */
 function couldMatch(source: string): boolean {
   if (source.includes(DELETED_SELECTOR)) return true;
-  if (source.includes(PERSONAL_ORG_RPC)) return true;
+  if (source.includes(RETIRED_FALLBACK_ORG_RPC)) return true;
   for (const name of SUBSTITUTE_NAMES) if (source.includes(name)) return true;
   for (const name of SUBSTITUTE_CALLS) if (source.includes(name)) return true;
   // The conditional family too — a prefilter that does not know a rule's token
@@ -778,7 +775,7 @@ function selfTest(): number {
         // the personal organization server-side read as compliant.
         label: "`ensureOrgIdServer(client, undefined)` — the SERVER personal-org resolver",
         code: [
-          'import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";',
+          'import { ensureOrgIdServer } from "@/lib/organizations/ensureOrgId";',
           "export async function create(supabase: any, title: string) {",
           "  const organizationId = await ensureOrgIdServer(supabase, undefined);",
           '  await supabase.from("tasks").insert({ title, organization_id: organizationId });',
@@ -788,7 +785,7 @@ function selfTest(): number {
       {
         label: "`ensureOrgIdServer(client, null)` inside a payload property",
         code: [
-          'import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";',
+          'import { ensureOrgIdServer } from "@/lib/organizations/ensureOrgId";',
           "export async function create(supabase: any, title: string) {",
           '  await supabase.from("tasks").insert({ title, organization_id: await ensureOrgIdServer(supabase, null) });',
           "}",
@@ -797,7 +794,7 @@ function selfTest(): number {
       {
         label: "`ensureOrgIdServer(client, parent?.organization_id)` — the parent may not be readable",
         code: [
-          'import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";',
+          'import { ensureOrgIdServer } from "@/lib/organizations/ensureOrgId";',
           "export async function reply(supabase: any, parent: { organization_id: string } | null) {",
           "  const organizationId = await ensureOrgIdServer(supabase, parent?.organization_id);",
           "  return organizationId;",
@@ -830,7 +827,7 @@ function selfTest(): number {
         label: "a branch that substitutes (`isGlobal ? system : ensureOrgIdServer(c, null)`)",
         code: [
           'import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";',
-          'import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";',
+          'import { ensureOrgIdServer } from "@/lib/organizations/ensureOrgId";',
           "export async function stamp(supabase: any, isGlobal: boolean) {",
           "  const organizationId = isGlobal",
           "    ? await resolveSystemOrgId(supabase)",
@@ -889,29 +886,28 @@ function selfTest(): number {
     }
 
     // Clean code: the selected organization, and a DELIBERATE, marked read of
-    // the person's own workspace. Neither may be flagged.
+    // the platform's own organization. Neither may be flagged.
     const clean = [
       'import { getActiveOrgId } from "@/lib/organizations/activeOrg";',
-      'import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";',
+      'import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";',
       "export async function payload(explicit: string | null) {",
       "  const organizationId = explicit ?? getActiveOrgId();",
       '  if (!organizationId) throw new Error("Select an organization before sending this request.");',
       "  return { organization_id: organizationId };",
       "}",
-      "export async function ownDefault(employerOrganizationId: string | null) {",
-      "  const personalOrgId = await resolvePersonalOrgId();",
-      "  // org-fallback-deliberate: absent employer means the person's own cross-organization default row",
-      "  return { organization_id: employerOrganizationId ?? personalOrgId };",
+      "export async function catalogRow(client: any) {",
+      "  // org-fallback-deliberate: a shipped catalog row belongs to the platform's own organization",
+      "  return { organization_id: await resolveSystemOrgId(client) };",
       "}",
       // A long, well-argued deliberate read: the marker is five lines above the
       // code it explains, and it must still exempt it.
-      "export async function ownDismissal() {",
-      "  // org-fallback-deliberate: a dismissal is the signed-in person's own",
-      "  // cross-organization preference, scoped to auth.uid() by RLS, so it",
-      "  // belongs in their own workspace whatever organization is selected —",
-      "  // re-filing it under the active org would split one person's",
-      "  // \"never show me this again\" across tenants.",
-      "  const organizationId = await resolvePersonalOrgId();",
+      "export async function errorLedger(client: any) {",
+      "  // org-fallback-deliberate: the platform error ledger is written by the",
+      "  // platform itself, not on behalf of any person, so it lives in the",
+      "  // platform's own organization whatever organization is selected —",
+      "  // filing it under the active org would scatter one ledger across",
+      "  // tenants.",
+      "  const organizationId = await resolveSystemOrgId(client);",
       "  return organizationId;",
       "}",
       "export function pickFromRequest(explicitOrgId: string | null, requestOrgId: string | null) {",
@@ -920,7 +916,7 @@ function selfTest(): number {
       "}",
       // A server write that CARRIES the admitted organization into the same
       // resolver is the compliant shape — the guard must not chase the name.
-      'import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";',
+      'import { ensureOrgIdServer } from "@/lib/organizations/ensureOrgId";',
       "export async function carried(supabase: any, admittedOrgId: string) {",
       "  const organizationId = await ensureOrgIdServer(supabase, admittedOrgId);",
       "  return organizationId;",
@@ -936,27 +932,26 @@ function selfTest(): number {
       return 1;
     }
 
-    // The three primitives legitimately resolve these organizations — the same
-    // shapes inside them must NOT be flagged, or the guard bans its own remedy.
-    const primitive = [
-      "export async function resolvePersonalOrgId(supabase: any) {",
+    // The retired RPC has NO home: the same call inside a primitive file (and
+    // inside the module that used to own it) is still flagged.
+    const formerOwner = [
+      "export async function resolveOwnOrgId(supabase: any) {",
       '  const { data } = await supabase.rpc("current_personal_org_id");',
-      "  let personalOrgId = data as string | null;",
-      "  return personalOrgId;",
+      "  return data as string | null;",
       "}",
     ].join("\n");
-    const primitiveHits = scanSource("lib/organizations/personalOrg.ts", primitive);
-    if (primitiveHits.length !== 0) {
-      console.error(
-        `[check:org-fallback-shapes] SELF-TEST FAILED — the guard flagged the primitive that OWNS the personal organization (${primitiveHits
-          .map((h) => `${h.line}:${h.kind}`)
-          .join(", ")}); it would ban the canonical answer to its own remedy.`,
-      );
-      return 1;
+    for (const home of ["lib/organizations/systemOrg.ts", "lib/organizations/ensureOrgId.ts"]) {
+      const homeHits = scanSource(home, formerOwner);
+      if (!homeHits.some((h) => h.kind === "retired-org-rpc")) {
+        console.error(
+          `[check:org-fallback-shapes] SELF-TEST FAILED — the retired organization RPC was NOT flagged inside ${home}; it has no legal home.`,
+        );
+        return 1;
+      }
     }
 
     console.log(
-      `[check:org-fallback-shapes] self-test OK — flags all ${cases.length} substitution shapes (expression, statement-form, first-membership pick and the raw personal-org RPC), passes the selected-organization path, a marked deliberate personal-organization read and the primitives that own these organizations.`,
+      `[check:org-fallback-shapes] self-test OK — flags all ${cases.length} substitution shapes (expression, statement-form, first-membership pick and the retired organization RPC, which has no home), and passes the selected-organization path and a marked deliberate platform-organization read.`,
     );
     return 0;
   } finally {
@@ -1004,7 +999,7 @@ function main(): number {
     console.error(
       "\nTHE LAW: common-docs/policies/context-is-carried-never-rebuilt.md — the organization is READ below the boundary, never invented, defaulted or substituted.\n" +
         "Fix: take the organization the user SELECTED (`selectOrganizationId` in React, `getActiveOrgId()` outside it, `ensureOrgId(explicit)` for a write) and REFUSE when there is none — `OrganizationContextError` with \"Select an organization before sending this request.\", which every surface already renders as `OrganizationRequiredNotice`.\n" +
-        "If the row genuinely belongs to the person's OWN workspace, read the personal organization BY NAME and say why on the line above:\n" +
+        "If the row genuinely belongs to the PLATFORM's own organization, read it BY NAME (`resolveSystemOrgId`) and say why on the line above:\n" +
         `  // ${DELIBERATE_MARKER} <reason, at least 10 characters>\n`,
     );
     return 1;

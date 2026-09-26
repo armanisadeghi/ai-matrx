@@ -5,8 +5,8 @@
  * Ruling (Arman, 2026-09-19): a "default organization" is at most a per-client
  * DISPLAY preference. Nothing but the org picker and pure UI display may read
  * it. No data read, write, API route, boot ladder, TRIGGER or BILLING QUERY may
- * pick or substitute one — not a cookie, not a preference, not the personal
- * organization, not the system organization.
+ * pick or substitute one — not a cookie, not a preference, not "the one they
+ * created", not the system organization.
  *
  *   "one missed org check that should have just failed turns into 50 in a
  *    month and 5,000 in a year, and suddenly we don't have orgs any more, we
@@ -42,11 +42,13 @@
  *     Doctrine keeps, R9–R12/DD-045) and the picker may read it — but a
  *     migration that puts it in a function, view, policy or default is putting
  *     a platform-chosen organization back into a decision path.
- *  7. SUBSTITUTING THE PERSONAL ORGANIZATION. `ensure_personal_organization` or
- *     `current_personal_org_id` in executable SQL. These answer "which
- *     organization?" with "their personal one", which is the substitution
- *     itself. Satisfying a NOT NULL column is an argument for making the CALLER
- *     supply the value, never for inventing one.
+ *  7. A RETIRED FALLBACK-ORGANIZATION RPC. `ensure_personal_organization` or
+ *     `current_personal_org_id` in executable SQL — a call OR a re-creation.
+ *     Both were deleted from the database (access ladder T-3: organizations are
+ *     equal and none has a type); they answered "which organization?" with one
+ *     nobody chose. Satisfying a NOT NULL column is an argument for making the
+ *     CALLER supply the value, never for inventing one. Ledgered history that
+ *     only re-defined them (no call) stays readable as history.
  *  8. ATTACHING THE STAMPING TRIGGER. `CREATE TRIGGER … _stamp_org_default`.
  *     Parent-inherit (`platform.inherit_org_from_parent`, which copies the
  *     PARENT ROW's organization and leaves NULL for the NOT NULL constraint to
@@ -114,7 +116,7 @@
  * `pg_get_functiondef` through the same stripping, against the same RULES — and
  * prints the ones still carrying it BY NAME. Two declared ways out: the display
  * preference itself (CENSUS_PRIMITIVES, named one by one) and a body that says, in
- * its own body, `-- personal-organization-creation: <schema.fn> — <why>`.
+ * its own body, `-- signup-organization-creation: <schema.fn> — <why>`.
  * `scripts/no-default-organization-live-bodies.ratchet.json` forgives nothing; it
  * says which lane owns each remaining body, only ever shrinks, and a live body
  * missing from it is reported louder because nobody owns it.
@@ -188,14 +190,14 @@ const RULES: Rule[] = [
   },
   {
     id: 7,
-    what: "substitutes the caller's personal organization in executable SQL",
+    what: "calls or re-creates a retired fallback-organization RPC in executable SQL",
     pattern: /\b(?:ensure_personal_organization|current_personal_org_id)\s*\(/i,
     remedy:
-      "Make the caller name the organization and REFUSE when it does not (a 23502 with a hint reads as an honest failure; a silently mis-tenanted row does not). Satisfying NOT NULL is not a reason to invent a tenant. The function's own CREATE OR REPLACE header is the primitive, not a call, and is not this rule.",
+      "Make the caller name the organization and REFUSE when it does not (a 23502 with a hint reads as an honest failure; a silently mis-tenanted row does not). Satisfying NOT NULL is not a reason to invent a tenant. These RPCs were deleted (access ladder T-3); re-creating one is a reintroduction too.",
   },
   {
     id: 8,
-    what: "attaches the personal-org stamping trigger `_stamp_org_default`",
+    what: "attaches the fallback-org stamping trigger `_stamp_org_default`",
     pattern: /create\s+trigger\s+_stamp_org_default\b/i,
     remedy:
       "Use platform.inherit_org_from_parent (it copies the PARENT ROW's organization and leaves NULL for the NOT NULL constraint to catch) or leave the column to the constraint. _stamp_org_default calls ensure_personal_organization(actor) — it CHOOSES a tenant.",
@@ -257,17 +259,23 @@ interface Violation {
   detail: string;
 }
 
-export function scanSource(rel: string, source: string): Violation[] {
+export function scanSource(
+  rel: string,
+  source: string,
+  options: { ledgered?: boolean } = {},
+): Violation[] {
   const code = executableSql(source);
   const lines = code.split("\n");
   const found: Violation[] = [];
   for (const rule of RULES) {
     for (let i = 0; i < lines.length; i++) {
       if (!rule.pattern.test(lines[i])) continue;
-      // CREATE FUNCTION current_personal_org_id() is the primitive's own
-      // header. A call is `select current_personal_org_id()` / `:= ensure_…()`.
-      // Treating the header as a call flags every rewrite of the primitive.
+      // LEDGERED HISTORY ONLY: a file that already ran and merely RE-DEFINED one
+      // of the retired RPCs (its own CREATE header, no call) is frozen history
+      // from when the function existed. Anywhere else a CREATE of it is a
+      // reintroduction, because the function was deleted (access ladder T-3).
       if (
+        options.ledgered === true &&
         rule.id === 7 &&
         /create\s+(?:or\s+replace\s+)?function\s+(?:[\w]+\.)?(?:ensure_personal_organization|current_personal_org_id)\s*\(/i.test(
           lines[i],
@@ -325,24 +333,45 @@ function loadAllowlist(): Record<string, { rules: number[]; reason: string }> {
   }
 }
 
+/**
+ * The migration files that ALREADY RAN (`migrations/LEDGER.json`, written by
+ * `pnpm db:apply`, never by hand). Their bytes are frozen history; the guard
+ * reads them under the rules of the day they ran where a rule has since
+ * tightened (the legacy creation marker, a retired RPC's own CREATE header).
+ */
+export function loadLedgeredFiles(root = ROOT): Set<string> {
+  try {
+    const parsed = JSON.parse(readFileSync(join(root, SCAN_DIR, "LEDGER.json"), "utf8")) as {
+      files?: Record<string, unknown>;
+    };
+    return new Set(Object.keys(parsed.files ?? {}));
+  } catch {
+    return new Set();
+  }
+}
+
 export function scan(
   allowlist = loadAllowlist(),
   root = ROOT,
+  ledgered: Set<string> = loadLedgeredFiles(root),
 ): Violation[] {
   const violations: Violation[] = [];
   for (const [rel, source] of collectFiles(root)) {
-    // A file whose header declares `-- personal-organization-creation: <schema.fn>`
-    // and really does replace that function is writing a CREATION site: the
+    const isLedgered = ledgered.has(rel);
+    // A file whose header declares `-- signup-organization-creation: <schema.fn>`
+    // (or, in LEDGERED history only, the retired spelling
+    // `-- personal-organization-creation:`) and really does replace that
+    // function is writing a CREATION site: the
     // organization it makes IS the answer, so rule 7 does not apply to it. Rules
     // 6 and 8 still do — creating a workspace is never a reason to read somebody's
     // stated default or to attach the stamping trigger. The claim is only half
     // settled here; the other half is the CENSUS, which requires the same
     // declaration in the LIVE body.
-    const declared = declaredCreationSites(source);
+    const declared = declaredCreationSites(source, { acceptLegacy: isLedgered });
     const creationHolds =
       declared.length > 0 &&
       declared.every((d) => replacesFunction(executableSql(source), d.fn));
-    for (const v of scanSource(rel, source)) {
+    for (const v of scanSource(rel, source, { ledgered: isLedgered })) {
       if (v.rule === 7 && creationHolds) continue;
       const entry = allowlist[rel];
       if (entry && entry.rules.includes(v.rule)) continue;
@@ -490,10 +519,11 @@ export async function readCatalog(functions: string[]): Promise<CatalogVerdict[]
 //     states; forbidding it from naming itself would forbid the preference from
 //     existing. Named one by one, with the reason, never a pattern.
 //
-//   • `-- personal-organization-creation: <schema.fn> — <why>` INSIDE THE BODY.
-//     Creating a person's own personal organization at provisioning is not
-//     substituting one: the organization being created IS the answer, and there
-//     is nothing to guess. The declaration lives in the body, so
+//   • `-- signup-organization-creation: <schema.fn> — <why>` INSIDE THE BODY.
+//     Creating the organization a person signs up with is not substituting
+//     one: the organization being created IS the answer, and there is nothing
+//     to guess. (The retired spelling `personal-organization-creation` is NOT
+//     accepted in a live body — access ladder T-3 renamed it there.) The declaration lives in the body, so
 //     `pg_get_functiondef` carries it and the claim is read off the live
 //     database rather than off a promise in a file.
 //
@@ -524,11 +554,26 @@ export const CENSUS_PRIMITIVES: Record<string, string> = {
     "order to police it.",
 };
 
-/** `-- personal-organization-creation: <schema.fn> — <why>`, in a file or in a live body. */
-export function declaredCreationSites(source: string): { fn: string; why: string }[] {
+/**
+ * `-- signup-organization-creation: <schema.fn> — <why>`, in a file or in a live
+ * body. The retired spelling `-- personal-organization-creation:` is honoured
+ * only with `acceptLegacy` — i.e. inside an already-ledgered migration file,
+ * whose frozen bytes cannot be re-spelled. A live body or a new file must use
+ * the current marker.
+ */
+export function declaredCreationSites(
+  source: string,
+  options: { acceptLegacy?: boolean } = {},
+): { fn: string; why: string }[] {
+  const marker = options.acceptLegacy
+    ? "(?:signup|personal)-organization-creation"
+    : "signup-organization-creation";
   return [
     ...source.matchAll(
-      /^\s*--\s*personal-organization-creation:\s*([A-Za-z_][\w$]*\.[A-Za-z_][\w$]*)\s*(?:[-—–:]\s*)?(.*)$/gim,
+      new RegExp(
+        `^\\s*--\\s*${marker}:\\s*([A-Za-z_][\\w$]*\\.[A-Za-z_][\\w$]*)\\s*(?:[-—–:]\\s*)?(.*)$`,
+        "gim",
+      ),
     ),
   ].map((m) => ({ fn: m[1]!.toLowerCase(), why: (m[2] ?? "").trim() }));
 }
@@ -541,7 +586,7 @@ export interface CensusEntry {
   readonly qualified: string;
   /** Which RULES its executable body matched. */
   readonly rules: number[];
-  /** The `-- personal-organization-creation:` reason found in the body, if any. */
+  /** The `-- signup-organization-creation:` reason found in the body, if any. */
   readonly creationDeclared: string | null;
 }
 
@@ -577,21 +622,11 @@ export async function readLiveCensus(): Promise<CensusEntry[]> {
     for (const r of rows) {
       const code = executableSql(r.def);
       const lines = code.split("\n");
-      const rules = RULES.filter((rule) =>
-        lines.some((l) => {
-          // The primitive's own CREATE header is not a call — same carve-out the
-          // file scan makes, for the same reason.
-          if (
-            rule.id === 7 &&
-            /create\s+(?:or\s+replace\s+)?function\s+(?:[\w]+\.)?(?:ensure_personal_organization|current_personal_org_id)\s*\(/i.test(
-              l,
-            )
-          ) {
-            return false;
-          }
-          return rule.pattern.test(l);
-        }),
-      ).map((rule) => rule.id);
+      // No carve-out for a retired RPC's own CREATE header: the functions were
+      // deleted, so a live body that defines one IS the reintroduction.
+      const rules = RULES.filter((rule) => lines.some((l) => rule.pattern.test(l))).map(
+        (rule) => rule.id,
+      );
       if (rules.length === 0) continue;
       // The declaration is read from the RAW definition: `executableSql` strips
       // comments, and the declaration is deliberately a comment so that it
@@ -668,7 +703,7 @@ export function censusVerdict(
 export function reportCensus(v: CensusVerdict): number {
   for (const c of v.creation) {
     console.log(
-      `check-no-default-organization-sql: ${c.sig} CREATES the personal organization it names — ` +
+      `check-no-default-organization-sql: ${c.sig} CREATES the organization a person signs up with — ` +
         `declared in its own body: ${c.why}`,
     );
   }
@@ -680,7 +715,7 @@ export function reportCensus(v: CensusVerdict): number {
   if (v.open.length === 0 && v.stale.length === 0) {
     console.log(
       "check-no-default-organization-sql: THE CENSUS IS CLEAN — every live function body in the " +
-        "database was read, and none of them answers 'which organization?' with the caller's own.",
+        "database was read, and none of them answers 'which organization?' with one nobody chose.",
     );
     return 0;
   }
@@ -688,7 +723,7 @@ export function reportCensus(v: CensusVerdict): number {
     console.error(
       `\ncheck-no-default-organization-sql: THE LIVE CATALOGUE STILL CARRIES THE SHAPE.\n` +
         `Every function body in the database was read. These answer "which organization?"\n` +
-        `with the caller's own personal workspace, or read a stated default to route a write:\n`,
+        `with one nobody chose, or read a stated default to route a write:\n`,
     );
     for (const o of v.open) {
       console.error(
@@ -702,9 +737,9 @@ export function reportCensus(v: CensusVerdict): number {
     console.error(
       `\n  Remedy: the organization comes from the record, from the membership ladder, or from the\n` +
         `  door's own argument — and where none of those answers, the call is REFUSED (23502 naming\n` +
-        `  the argument). A body that legitimately CREATES a person's personal organization at\n` +
-        `  provisioning says so in its own body:\n` +
-        `      -- personal-organization-creation: <schema.fn> — <why the created org IS the answer>\n`,
+        `  the argument). A body that legitimately CREATES the organization a person signs up\n` +
+        `  with says so in its own body:\n` +
+        `      -- signup-organization-creation: <schema.fn> — <why the created org IS the answer>\n`,
     );
   }
   for (const sig of v.stale) {
@@ -746,19 +781,28 @@ $$;`,
   // Parent-inherit is explicitly fine: it CARRIES an organization.
   "__self_test_ok_inherit__.sql": `create trigger _inherit_org before insert on child.table
   for each row execute function platform.inherit_org_from_parent('parent','table','parent_id');`,
-  // Rewriting the primitive's own header is not a caller substituting a tenant.
-  "__self_test_ok_define__.sql": `create or replace function public.current_personal_org_id()
-returns uuid language sql as $$
-  select iam.personal_org_id((select auth.uid()));
-$$;`,
-  // A DECLARED CREATION SITE that really does replace what it names. Creating the
-  // person's own personal organization at provisioning is not substituting one.
-  "__self_test_ok_creation__.sql": `-- personal-organization-creation: zz_selftest.provision — the organization being created IS the answer.
+  // A DECLARED CREATION SITE (current marker) that really does replace what it
+  // names. Creating the organization a person signs up with is not substituting
+  // one.
+  "__self_test_ok_creation__.sql": `-- signup-organization-creation: zz_selftest.provision — the organization being created IS the answer.
 create or replace function zz_selftest.provision() returns trigger language plpgsql as $$
 begin
   perform public.ensure_personal_organization(new.id);
   return new;
 end $$;`,
+  // LEDGERED HISTORY: the retired marker spelling, in a file that already ran,
+  // is still honoured — its frozen bytes cannot be re-spelled.
+  "__self_test_ok_legacy_ledgered__.sql": `-- personal-organization-creation: zz_selftest.provision_old — the organization being created IS the answer.
+create or replace function zz_selftest.provision_old() returns trigger language plpgsql as $$
+begin
+  perform public.ensure_personal_organization(new.id);
+  return new;
+end $$;`,
+  // LEDGERED HISTORY: re-defining the RPC while it still existed (no call).
+  "__self_test_ok_define_ledgered__.sql": `create or replace function public.current_personal_org_id()
+returns uuid language sql as $$
+  select iam.personal_org_id((select auth.uid()));
+$$;`,
 };
 
 /**
@@ -766,6 +810,10 @@ end $$;`,
  * of these carries it and must STILL be flagged.
  */
 const CREATION_NEAR_MISSES: Record<string, number> = {
+  // The RETIRED marker spelling in a NEW (unledgered) file is not a declaration.
+  "__self_test_creation_legacy_new__.sql": 7,
+  // Re-creating a deleted RPC in a NEW file is a reintroduction.
+  "__self_test_creation_redefine_new__.sql": 7,
   // Declares a function it does not touch — the header points at nothing.
   "__self_test_creation_empty__.sql": 7,
   // Declares creation and then reads somebody's STATED default (rule 6), which is
@@ -774,13 +822,23 @@ const CREATION_NEAR_MISSES: Record<string, number> = {
 };
 
 const CREATION_NEAR_MISS_BODIES: Record<string, string> = {
-  "__self_test_creation_empty__.sql": `-- personal-organization-creation: zz_selftest.not_here — claims a creation site it never writes.
+  "__self_test_creation_legacy_new__.sql": `-- personal-organization-creation: zz_selftest.provision_new — the retired spelling, written today.
+create or replace function zz_selftest.provision_new() returns trigger language plpgsql as $$
+begin
+  perform public.ensure_personal_organization(new.id);
+  return new;
+end $$;`,
+  "__self_test_creation_redefine_new__.sql": `create or replace function public.current_personal_org_id()
+returns uuid language sql as $$
+  select null::uuid;
+$$;`,
+  "__self_test_creation_empty__.sql": `-- signup-organization-creation: zz_selftest.not_here — claims a creation site it never writes.
 create or replace function zz_selftest.something_entirely_else() returns trigger language plpgsql as $$
 begin
   new.organization_id := public.ensure_personal_organization(new.created_by);
   return new;
 end $$;`,
-  "__self_test_creation_reads_default__.sql": `-- personal-organization-creation: zz_selftest.provision_reads — provisioning does not read a preference.
+  "__self_test_creation_reads_default__.sql": `-- signup-organization-creation: zz_selftest.provision_reads — provisioning does not read a preference.
 create or replace function zz_selftest.provision_reads() returns trigger language plpgsql as $$
 begin
   new.organization_id := iam.default_organization_id(new.id);
@@ -871,8 +929,16 @@ function selfTest(): number {
     })) {
       writeFileSync(join(dir, name), body, "utf8");
     }
-    // Scan with an EMPTY allowlist so frozen history cannot mask the plants.
-    const found = scan({}, box);
+    // Scan with an EMPTY allowlist so frozen history cannot mask the plants. The
+    // two `_ledgered__` plants are marked as already-applied history.
+    const found = scan(
+      {},
+      box,
+      new Set([
+        `${SCAN_DIR}/__self_test_ok_legacy_ledgered__.sql`,
+        `${SCAN_DIR}/__self_test_ok_define_ledgered__.sql`,
+      ]),
+    );
     for (const name of Object.keys(PLANTS)) {
       const rule = Number(name.match(/r(\d+)/)![1]);
       const hit = found.some((v) => v.file.endsWith(name) && v.rule === rule);
@@ -981,6 +1047,18 @@ function selfTest(): number {
     );
     console.log = quiet.log;
     console.error = quiet.error;
+    // A LIVE body is read with the current marker only: the retired spelling
+    // declares nothing there (access ladder T-3 renamed it in the database).
+    const legacyBody =
+      "-- personal-organization-creation: public._provision_new_user_organization — created at signup";
+    const currentBody =
+      "-- signup-organization-creation: public._provision_new_user_organization — created at signup";
+    say(
+      declaredCreationSites(legacyBody).length === 0 &&
+        declaredCreationSites(currentBody).length === 1 &&
+        declaredCreationSites(legacyBody, { acceptLegacy: true }).length === 1,
+      "census: a live body declares creation ONLY with the current marker; the retired spelling counts only in ledgered files",
+    );
     say(redCode === 1, `census: a dirty catalogue exits ${redCode} (expected 1)`);
     say(greenCode === 0, `census: a clean catalogue exits ${greenCode} (expected 0)`);
   } finally {
