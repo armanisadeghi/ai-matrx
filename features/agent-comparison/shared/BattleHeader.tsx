@@ -110,15 +110,25 @@ export function BattleHeader({
   return (
     <RouteHeader
       left={
-        // On a phone the mode switcher needs the room; the name is still the
-        // tab title and the sheet title of the actions menu.
-        <span
-          className="text-sm font-medium truncate max-sm:hidden"
-          title={title}
-          data-testid="battle-header-title"
-        >
-          {title}
-        </span>
+        isMobile ? (
+          // A phone's header zone is ~200px: the centered mode switcher only
+          // gets the width left after the WIDER flank, so the actions button
+          // sits on the (otherwise empty) left to balance Submit all.
+          <BattleActionsMenu
+            ariaLabel="Battle actions"
+            actions={allActions}
+            inlineCount={inlineCount}
+            sheetTitle={title}
+          />
+        ) : (
+          <span
+            className="text-sm font-medium truncate"
+            title={title}
+            data-testid="battle-header-title"
+          >
+            {title}
+          </span>
+        )
       }
       center={<BattleModeNav />}
       // Siblings, never one wrapper: RouteHeader folds each item on its own
@@ -128,17 +138,22 @@ export function BattleHeader({
       right={
         <>
           {extra}
-          <BattleActionsMenu
-            ariaLabel="Battle actions"
-            actions={allActions}
-            inlineCount={inlineCount}
-            sheetTitle={title}
-          />
-          <span className="max-sm:hidden" aria-label="Blind test">
-            <BlindControls compact />
-          </span>
+          {!isMobile && (
+            <BattleActionsMenu
+              ariaLabel="Battle actions"
+              actions={allActions}
+              inlineCount={inlineCount}
+              sheetTitle={title}
+            />
+          )}
+          {!isMobile && (
+            <span aria-label="Blind test">
+              <BlindControls compact />
+            </span>
+          )}
+          {/* Stays mounted on a phone (hidden) so the sheet item can open it. */}
           <span
-            className="max-sm:hidden"
+            className={isMobile ? "hidden" : undefined}
             aria-label="Copy, transform or export this battle"
           >
             <BattleAlchemy controllerRef={alchemyRef} />

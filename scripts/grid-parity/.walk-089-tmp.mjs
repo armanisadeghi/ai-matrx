@@ -87,32 +87,8 @@ const shot = async (page, name) => {
   notes.push({ where: "first load @1600", snapshot: pageSnapshot.hasErrorBoundary ? "error boundary present" : "no error boundary" });
 
 
-  const debugInfo2 = await page.evaluate(() => {
-    const found = [];
-    for (const el of document.querySelectorAll('button, a, [role="button"]')) {
-      const label = (el.getAttribute('aria-label') || el.getAttribute('title') || el.textContent || '').trim();
-      if (/table settings|choose and reorder columns/i.test(label)) {
-        found.push({ tag: el.tagName, label: label.slice(0,60), attrSrc: el.getAttribute('aria-label') ? 'aria-label' : (el.getAttribute('title') ? 'title' : 'text'), outer: el.outerHTML.slice(0,250) });
-      }
-    }
-    return found;
-  });
-  console.log("DEBUG2", JSON.stringify(debugInfo2));
-
-  const debugInfo = await page.evaluate(() => {
-    const found = [];
-    for (const el of document.querySelectorAll('button')) {
-      const label = el.getAttribute('aria-label') || '';
-      if (/table settings|choose and reorder columns/i.test(label)) {
-        found.push({ label, disabled: el.disabled, visible: el.offsetParent !== null, outer: el.outerHTML.slice(0,150) });
-      }
-    }
-    return found;
-  });
-  console.log("DEBUG_BUTTONS", JSON.stringify(debugInfo));
-
   // Open the Settings rail.
-  const settingsBtn = page.locator('button[aria-label="Table settings"]').first();
+  const settingsBtn = page.locator('button[title="Table settings"]').first();
   if (await settingsBtn.count()) {
     await settingsBtn.click();
     await sleep(1200);
@@ -122,7 +98,7 @@ const shot = async (page, name) => {
   await shot(page, "1-settings-open-1600");
 
   // Put a personal look pending: hide one column via the Columns popover.
-  const columnsBtn = page.locator('button[aria-label^="Choose and reorder columns"]').first();
+  const columnsBtn = page.locator('button[title^="Choose and reorder columns"]').first();
   if (await columnsBtn.count()) {
     await columnsBtn.click();
     await sleep(800);

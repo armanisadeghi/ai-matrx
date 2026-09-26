@@ -312,7 +312,7 @@ function containsCarrier(node: ts.Node): boolean {
  */
 function hasSiblingMenu(box: JsxLike): boolean {
   const parent = box.parent;
-  if (!parent || !ts.isJsxElement(parent)) return false;
+  if (!parent || !(ts.isJsxElement(parent) || ts.isJsxFragment(parent))) return false;
   return parent.children.some(
     (child) =>
       (ts.isJsxSelfClosingElement(child) || ts.isJsxElement(child)) &&

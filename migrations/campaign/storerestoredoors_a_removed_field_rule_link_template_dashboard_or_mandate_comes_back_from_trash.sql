@@ -531,9 +531,8 @@ begin
 end
 $function$;
 
-revoke all on function public._trash_store_children(uuid, uuid, uuid, text, integer) from public, anon, authenticated;
-revoke all on function public._trash_store_title(uuid, uuid) from public, anon, authenticated;
-revoke all on function public._trash_store_restore(uuid, uuid) from public, anon, authenticated;
+-- (No client grant: the DDL guard clears PUBLIC's default EXECUTE on a new SECURITY DEFINER function
+-- at birth, and the three door rows below declare them server_only.)
 
 -- ── 4. TRASH LISTS THEM, COUNTS THEM AND RESTORES THEM THROUGH THEIR DOORS ─────────────────────
 create or replace function public._trash_kind_rows(p_uid uuid, p_org uuid, p_member uuid, p_kinds text[], p_limit integer, p_offset integer)
@@ -1375,12 +1374,6 @@ select d.schema_name, d.function_name, iam.door_identity_args(d.fn), d.argtypes,
                       and x.identity_argtypes = d.argtypes);
 
 -- ── 6. THE GRANTS ─────────────────────────────────────────────────────────────────────────────
-revoke all on function custom.field_restore(uuid, uuid) from public, anon;
-revoke all on function custom.rule_restore(uuid, uuid) from public, anon;
-revoke all on function custom.relation_restore(uuid, uuid) from public, anon;
-revoke all on function custom.doc_template_restore(uuid, uuid) from public, anon;
-revoke all on function custom.dashboard_restore(uuid, uuid) from public, anon;
-revoke all on function mandate.definition_restore(uuid) from public, anon;
 grant execute on function custom.field_restore(uuid, uuid) to authenticated, service_role;
 grant execute on function custom.rule_restore(uuid, uuid) to authenticated, service_role;
 grant execute on function custom.relation_restore(uuid, uuid) to authenticated, service_role;

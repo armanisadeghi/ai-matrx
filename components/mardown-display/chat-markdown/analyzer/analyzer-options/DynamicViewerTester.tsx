@@ -63,7 +63,7 @@ class ViewerErrorBoundary extends React.Component<
                             </details>
                         )}
                     </div>
-                  <ErrorAlchemyMenu error={this.state.error.message} />
+                  <ErrorAlchemyMenu error={this.state.error} />
                 </div>
             );
         }

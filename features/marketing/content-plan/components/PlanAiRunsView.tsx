@@ -314,10 +314,12 @@ export function PlanAiRunsView({
                         ) : null}
                       </div>
                       {Object.keys(detail.data.error).length > 0 ? (
-                        <Section title="Error">
-                          {JSON.stringify(detail.data.error, null, 2)}
-                          <ErrorAlchemyMenu />
-                        </Section>
+                        <>
+                          <ErrorAlchemyMenu className="float-right" error={detail.data.error} operation="Run this AI step" />
+                          <Section title="Error">
+                            {JSON.stringify(detail.data.error, null, 2)}
+                          </Section>
+                        </>
                       ) : null}
                       <Section title="Result">
                         {JSON.stringify(detail.data.result, null, 2)}
