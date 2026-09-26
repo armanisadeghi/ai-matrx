@@ -48,6 +48,7 @@ import {
 import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import { Dropcursor, Focus, Gapcursor, Placeholder, UndoRedo } from "@tiptap/extensions";
 import { MarkdownTextPaste } from "./paste-markdown";
+import { ClipboardPlainText } from "./clipboard-text";
 
 /** A fidelity attribute: never rendered, never inherited by a split. */
 const mdAttr = () => ({ default: null, rendered: false, keepOnSplit: false });
@@ -386,6 +387,7 @@ export function createRichEditorExtensions(
     Dropcursor,
     Placeholder.configure({ placeholder: options.placeholder ?? "Write…" }),
     MarkdownTextPaste.configure({ onNotice: options.onPasteNotice ?? null }),
+    ClipboardPlainText,
   ];
   // NO PASTE RULES, anywhere. Tiptap runs every mark's paste rule over the
   // whole changed range of a paste or a DROP — and a block drag's changed range
