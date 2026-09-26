@@ -218,7 +218,7 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
         {loading && !rows ? (
           <div className="h-32 animate-pulse rounded-md border border-border bg-muted/40" />
         ) : null}
-        {!loading && rows && rows.length === 0 ? (
+        {!loading && !loadError && rows && rows.length === 0 ? (
           <div className="flex min-h-28 items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <LineChart className="h-4 w-4" />

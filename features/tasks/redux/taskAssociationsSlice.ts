@@ -89,6 +89,8 @@ export interface TaskAssociationsState {
   byEntityKey: Record<string, TaskForEntityRef[]>; // key = `${entity_type}:${entity_id}`
   loadingByTaskId: Record<string, boolean>;
   loadingByEntityKey: Record<string, boolean>;
+  /** The last failed read per entity (cleared when a read starts) — a failed read is never "no tasks". */
+  errorByEntityKey: Record<string, string | null>;
   error: string | null;
 }
 
@@ -97,6 +99,7 @@ const initialState: TaskAssociationsState = {
   byEntityKey: {},
   loadingByTaskId: {},
   loadingByEntityKey: {},
+  errorByEntityKey: {},
   error: null,
 };
 
@@ -490,19 +493,21 @@ const slice = createSlice({
         state.error = action.error.message ?? "Failed to load associations";
       })
       .addCase(fetchTasksForEntity.pending, (state, action) => {
-        state.loadingByEntityKey[
-          entityKey(action.meta.arg.entityType, action.meta.arg.entityId)
-        ] = true;
+        const key = entityKey(action.meta.arg.entityType, action.meta.arg.entityId);
+        state.loadingByEntityKey[key] = true;
+        state.errorByEntityKey[key] = null;
       })
       .addCase(fetchTasksForEntity.fulfilled, (state, action) => {
         state.byEntityKey[action.payload.key] = action.payload.tasks;
         state.loadingByEntityKey[action.payload.key] = false;
+        state.errorByEntityKey[action.payload.key] = null;
       })
       .addCase(fetchTasksForEntity.rejected, (state, action) => {
-        state.loadingByEntityKey[
-          entityKey(action.meta.arg.entityType, action.meta.arg.entityId)
-        ] = false;
-        state.error = action.error.message ?? "Failed to load tasks for entity";
+        const key = entityKey(action.meta.arg.entityType, action.meta.arg.entityId);
+        const message = action.error.message ?? "Failed to load tasks for entity";
+        state.loadingByEntityKey[key] = false;
+        state.errorByEntityKey[key] = message;
+        state.error = message;
       });
   },
 });
@@ -568,3 +573,9 @@ export const selectTasksForEntityLoading =
   (entityType: string, entityId: string) =>
   (s: StateWithAssoc): boolean =>
     !!s.taskAssociations.loadingByEntityKey[entityKey(entityType, entityId)];
+
+/** The entity's last task read failed (its message), or null. */
+export const selectTasksForEntityError =
+  (entityType: string, entityId: string) =>
+  (s: StateWithAssoc): string | null =>
+    s.taskAssociations.errorByEntityKey?.[entityKey(entityType, entityId)] ?? null;

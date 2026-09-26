@@ -12,11 +12,13 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { CalendarClock, ListTodo } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchTasksForEntity,
   selectTasksForEntity,
   selectTasksForEntityLoading,
+  selectTasksForEntityError,
 } from "@/features/tasks/redux/taskAssociationsSlice";
 import QuickCreateTaskButton from "@/features/tasks/widgets/QuickCreateTaskButton";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
@@ -35,6 +37,13 @@ export function PageTasksCard({ page }: { page: MarketingPage }) {
   const loading = useAppSelector(
     selectTasksForEntityLoading("web_page", page.id),
   );
+  const loadError = useAppSelector(
+    selectTasksForEntityError("web_page", page.id),
+  );
+  const reload = () =>
+    void dispatch(
+      fetchTasksForEntity({ entityType: "web_page", entityId: page.id }),
+    );
   useEffect(() => {
     void dispatch(
       fetchTasksForEntity({ entityType: "web_page", entityId: page.id }),
@@ -82,6 +91,8 @@ export function PageTasksCard({ page }: { page: MarketingPage }) {
       <div className="grid gap-1.5 p-3">
         {loading && tasks.length === 0 ? (
           <div className="h-16 animate-pulse rounded-lg border border-border bg-muted/40" />
+        ) : loadError && tasks.length === 0 ? (
+          <ReadFailure error={loadError} what="this page's tasks" className="m-0" onRetry={reload} />
         ) : tasks.length === 0 ? (
           <p className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
             <ListTodo className="h-4 w-4" />

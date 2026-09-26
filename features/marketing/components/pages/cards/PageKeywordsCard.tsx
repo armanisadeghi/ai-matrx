@@ -42,6 +42,7 @@ import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
 import type { KeywordSuggestion } from "@/features/marketing/seo/keyword/types";
 import type { MarketingPage } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { PageTaskButton } from "@/features/marketing/components/pages/PageTaskButton";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
@@ -299,9 +300,18 @@ export function PageKeywordsCard({
               <Loader2 className="h-3 w-3 animate-spin" />
             ) : null}
           </div>
+          {board.isError ? (
+            <ReadFailure
+              error={board.error}
+              what="this page's keywords"
+              className="mb-1.5"
+              onRetry={() => void board.refetch()}
+            />
+          ) : null}
           {supporting.length === 0 &&
           pendingPhrases.length === 0 &&
-          !board.isLoading ? (
+          !board.isLoading &&
+          !board.isError ? (
             <p className="text-xs text-muted-foreground">
               No supporting keywords attached yet. Add them below — the Page
               Analyzer also attaches what it discovers.

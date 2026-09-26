@@ -803,6 +803,7 @@ function BrandCards({
     return (
       <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center">
         <Landmark className="mx-auto h-8 w-8 text-muted-foreground" />
+        {/* read-gate-exempt: BrandCards renders only in the parent's non-error branch; a failed brands read shows QueryError there instead */}
         <p className="mt-3 text-sm font-medium text-foreground">
           No brands yet
         </p>
@@ -855,6 +856,7 @@ function BrandCards({
                   </Link>
                 ))
               ) : (
+                // read-gate-exempt: a field of one loaded brand row (it has no sites), not the answer of a read
                 <span className="text-xs text-muted-foreground">
                   No website connected
                 </span>
