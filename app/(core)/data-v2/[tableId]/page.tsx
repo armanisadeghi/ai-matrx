@@ -47,6 +47,8 @@ import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/Unif
 import { SheetLayout } from "@/features/data-tables/components/SheetLayout";
 import { runRowAgentAction, type RowAgentActionTarget } from "@/features/unified-data/row-agent-action/rowAgentAction";
 import { toast } from "@/lib/toast";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { copyAgain } from "@/features/unified-data/cutover/copyAgain";
 import {
   ROW_CHANGE_AGENT_LABEL,
   useRowChangeAgentOffer,
@@ -601,7 +603,22 @@ export default function UnifiedDataTableRoute({
    * may test it end to end, agents and integrations keep writing the older table, and the switch
    * replaces the test edits with the older table's rows. Absent for every other table.
    */
-  const copyEvaluation = useTableCopyEvaluation(object.state === "found" ? tableId : null);
+  const [copyVersion, setCopyVersion] = useState(0);
+  const copyEvaluation = useTableCopyEvaluation(object.state === "found" ? tableId : null, copyVersion);
+  const dispatchCopy = useAppDispatch();
+  /** "Copy this table again" (lane COPY-AGAIN-DOOR): the mover's rerun for this one table. */
+  const copyThisTableAgain = () => {
+    const id = toast.loading("Copying this table again from the older table…");
+    void copyAgain(
+      dispatchCopy,
+      { tableId, ...(object.state === "found" ? { organizationId: object.organizationId } : {}) },
+      (p) => toast.loading(p.says, { id }),
+    ).then((answer) => {
+      if (answer.ok) toast.success(answer.says, { id });
+      else toast.error("This table was not copied again", { id, description: answer.says });
+      setCopyVersion((v) => v + 1);
+    });
+  };
   const testCopyExtras =
     copyEvaluation.state === "test-copy"
       ? [
@@ -625,6 +642,7 @@ export default function UnifiedDataTableRoute({
               });
             },
           },
+          { key: "copy-again", label: "Copy this table again", onSelect: copyThisTableAgain },
         ]
       : [];
   const rowChangeExtras =
