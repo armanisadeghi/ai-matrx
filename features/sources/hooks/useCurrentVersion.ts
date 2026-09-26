@@ -1,8 +1,10 @@
 "use client";
 
 /**
- * Resolve a Source's current version before its screen reads pages or chunks
- * (see `features/sources/currentVersion.ts`). Direct Supabase under RLS.
+ * Resolve a Source's current version before its screen reads pages or chunks,
+ * through the SAME server fact the Sources page reads
+ * (`docproc.source_list_facts`: newest recapture in the chain, then its live
+ * edit). Direct Supabase under RLS; no client-side version rule.
  *
  * While resolving, `loading` is true and the screen reads nothing — it never
  * shows the pre-edit text first. If the lookup fails the screen shows the
@@ -12,10 +14,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
 import {
-  resolveSourceVersions,
+  versionsFromFacts,
   type SourceVersions,
-  type VersionRow,
 } from "@/features/sources/currentVersion";
+import {
+  sourceFactsFromRow,
+  type SourceFactsRow,
+} from "@/features/sources/sourceRows";
 
 export interface UseCurrentVersion {
   loading: boolean;
@@ -47,27 +52,18 @@ export function useCurrentVersion(documentId: string): UseCurrentVersion {
     };
     void (async () => {
       try {
-        const docs = supabase.schema("docproc").from("processed_documents");
-        const { data, error } = await docs
-          .select("id,canonical_clean_id,derivation_kind,parent_processed_id")
-          .eq("id", documentId)
-          .maybeSingle();
+        const { data, error } = await supabase
+          .schema("docproc")
+          .rpc("source_list_facts", { p_ids: [documentId] });
         if (error) throw error;
-        if (!data) return settle(fallback);
-        const row = data as VersionRow;
-        let cleanAlive = false;
-        if (row.canonical_clean_id && row.canonical_clean_id !== row.id) {
-          const { data: clean, error: cleanError } = await supabase
-            .schema("docproc")
-            .from("processed_documents")
-            .select("id")
-            .eq("id", row.canonical_clean_id)
-            .is("deleted_at", null)
-            .maybeSingle();
-          if (cleanError) throw cleanError;
-          cleanAlive = !!clean;
-        }
-        settle(resolveSourceVersions(row, cleanAlive));
+        const row = ((data ?? []) as SourceFactsRow[]).find(
+          (r) => r.processed_document_id === documentId,
+        );
+        // Not readable (or gone): the access gate below answers that.
+        if (!row) return settle(fallback);
+        const facts = sourceFactsFromRow(row);
+        if (!facts) throw new Error("current version not reported");
+        settle(versionsFromFacts(facts));
       } catch {
         settle(
           fallback,

@@ -1,51 +1,33 @@
 /**
  * features/sources/currentVersion.ts
  *
- * Which document a Source screen shows (SOURCE-CONVERGENCE §1 rule 4). A
- * person's edit is a `manual_curation` document the capture's
- * `canonical_clean_id` points at; that edit is the CURRENT version — what
- * people read and what AI searches — so a viewer opened on the capture shows
- * the edit, with the original one switch away. Pure: tested directly.
+ * Which document a Source screen shows (SOURCE-CONVERGENCE §1 rule 4, §8).
+ * There is ONE current-version rule and it lives on the server:
+ * `docproc.source_list_facts` resolves any version id — an older capture, the
+ * head, an edit — to the Source's head (newest live recapture) and its current
+ * version (the head's live edit, else the head). The Sources page and every
+ * Source screen read that fact; nothing here re-derives it. Pure.
  */
 
-export interface VersionRow {
-  id: string;
-  canonical_clean_id: string | null;
-  derivation_kind: string;
-  parent_processed_id: string | null;
-}
+import type { SourceFacts } from "@/features/sources/sourceRows";
 
 export interface SourceVersions {
-  /** The capture the edit was made on (or the document itself). */
+  /** The Source's newest capture — what "View original" shows. */
   originalId: string;
-  /** What people read: the live edit, else the original. */
+  /** What people read and AI searches: the head's live edit, else the head. */
   currentId: string;
   /** True when a live edit is the current version. */
   edited: boolean;
 }
 
-/**
- * `row` is the requested document; `cleanAlive` says whether the document its
- * `canonical_clean_id` names is live. Opening the edit itself resolves to the
- * same pair, so both ids land on one screen.
- */
-export function resolveSourceVersions(
-  row: VersionRow,
-  cleanAlive: boolean,
+export function versionsFromFacts(
+  facts: Pick<SourceFacts, "headDocumentId" | "currentDocumentId">,
 ): SourceVersions {
-  if (row.derivation_kind === "manual_curation" && row.parent_processed_id)
-    return {
-      originalId: row.parent_processed_id,
-      currentId: row.id,
-      edited: true,
-    };
-  if (row.canonical_clean_id && row.canonical_clean_id !== row.id && cleanAlive)
-    return {
-      originalId: row.id,
-      currentId: row.canonical_clean_id,
-      edited: true,
-    };
-  return { originalId: row.id, currentId: row.id, edited: false };
+  return {
+    originalId: facts.headDocumentId,
+    currentId: facts.currentDocumentId,
+    edited: facts.currentDocumentId !== facts.headDocumentId,
+  };
 }
 
 /** The id the screen reads, given the person's "view original" choice. */

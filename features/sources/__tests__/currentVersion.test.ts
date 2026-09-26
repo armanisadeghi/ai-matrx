@@ -1,55 +1,25 @@
 import {
-  resolveSourceVersions,
+  versionsFromFacts,
   viewedDocumentId,
 } from "@/features/sources/currentVersion";
 
-const capture = {
-  id: "cap",
-  canonical_clean_id: "edit",
-  derivation_kind: "recapture",
-  parent_processed_id: "older",
-};
-
-describe("which version a Source screen shows", () => {
-  it("a capture with a live edit shows the edit; the original is one switch away", () => {
-    const v = resolveSourceVersions(capture, true);
-    expect(v).toEqual({ originalId: "cap", currentId: "edit", edited: true });
-    expect(viewedDocumentId(v, false)).toBe("edit");
-    expect(viewedDocumentId(v, true)).toBe("cap");
-  });
-
-  it("an edit that was trashed is not current", () => {
-    expect(resolveSourceVersions(capture, false)).toEqual({
-      originalId: "cap",
-      currentId: "cap",
-      edited: false,
+describe("which version a Source screen shows (from source_list_facts)", () => {
+  it("a head with a live edit shows the edit; the head is one switch away", () => {
+    const v = versionsFromFacts({
+      headDocumentId: "head",
+      currentDocumentId: "edit",
     });
+    expect(v).toEqual({ originalId: "head", currentId: "edit", edited: true });
+    expect(viewedDocumentId(v, false)).toBe("edit");
+    expect(viewedDocumentId(v, true)).toBe("head");
   });
 
-  it("opening the edit itself resolves to the same pair", () => {
-    expect(
-      resolveSourceVersions(
-        {
-          id: "edit",
-          canonical_clean_id: null,
-          derivation_kind: "manual_curation",
-          parent_processed_id: "cap",
-        },
-        false,
-      ),
-    ).toEqual({ originalId: "cap", currentId: "edit", edited: true });
-  });
-
-  it("an unedited Source is its own current version", () => {
-    const v = resolveSourceVersions(
-      {
-        id: "a",
-        canonical_clean_id: null,
-        derivation_kind: "initial_extract",
-        parent_processed_id: null,
-      },
-      false,
-    );
+  it("an unedited Source is its own current version, and the switch is inert", () => {
+    const v = versionsFromFacts({
+      headDocumentId: "a",
+      currentDocumentId: "a",
+    });
+    expect(v.edited).toBe(false);
     expect(viewedDocumentId(v, true)).toBe("a");
   });
 });

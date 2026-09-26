@@ -52,15 +52,26 @@ describe("the Sources page's saved filter", () => {
     const rows = [
       row({ id: "captured-unsaved" }),
       row({ id: "captured-saved", kept_at: "2026-09-26T01:00:00Z" }),
-      row({ id: "uploaded-file", source_kind: "cld_file", origin_client: null, capture_method: null }),
+      row({
+        id: "uploaded-file",
+        source_kind: "cld_file",
+        origin_client: null,
+        capture_method: null,
+      }),
       row({ id: "agent-fetch", origin_client: "agent" }),
     ];
-    expect(applySavedFilter(rows, DEFAULT_SAVED_FILTER).map((r) => r.id)).toEqual(["captured-saved", "uploaded-file"]);
-    expect(applySavedFilter(rows, "all").map((r) => r.id)).toEqual(rows.map((r) => r.id));
+    expect(
+      applySavedFilter(rows, DEFAULT_SAVED_FILTER).map((r) => r.id),
+    ).toEqual(["captured-saved", "uploaded-file"]);
+    expect(applySavedFilter(rows, "all").map((r) => r.id)).toEqual(
+      rows.map((r) => r.id),
+    );
   });
 
   it("an uploaded file counts as saved; an unsaved extension capture does not", () => {
-    expect(isSourceSaved(row({ source_kind: "cld_file", origin_client: "upload" }))).toBe(true);
+    expect(
+      isSourceSaved(row({ source_kind: "cld_file", origin_client: "upload" })),
+    ).toBe(true);
     expect(isSourceSaved(row({ origin_client: "extension" }))).toBe(false);
   });
 });
@@ -69,11 +80,22 @@ describe("one row per Source", () => {
   it("drops a version superseded by a recapture and every derived copy", () => {
     const rows = [
       row({ id: "old" }),
-      row({ id: "new", derivation_kind: "recapture", parent_processed_id: "old" }),
-      row({ id: "cleaned-copy", derivation_kind: "manual_curation", parent_processed_id: "new" }),
+      row({
+        id: "new",
+        derivation_kind: "recapture",
+        parent_processed_id: "old",
+      }),
+      row({
+        id: "cleaned-copy",
+        derivation_kind: "manual_curation",
+        parent_processed_id: "new",
+      }),
       row({ id: "other" }),
     ];
-    expect(currentVersionsOnly(rows).map((r) => r.id)).toEqual(["new", "other"]);
+    expect(currentVersionsOnly(rows).map((r) => r.id)).toEqual([
+      "new",
+      "other",
+    ]);
   });
 });
 
@@ -87,6 +109,7 @@ function facts(over: Partial<SourceFacts>): SourceFacts {
     currentHasEntities: false,
     staleChunkCount: 0,
     indexing: false,
+    headDocumentId: "id",
     ...over,
   };
 }
@@ -105,13 +128,17 @@ describe("stage — read from the version people read", () => {
   });
 
   it("says Indexing… while the current version has a job open", () => {
-    expect(sourceStage(facts({ indexing: true, staleChunkCount: 2 }))).toBe("indexing");
+    expect(sourceStage(facts({ indexing: true, staleChunkCount: 2 }))).toBe(
+      "indexing",
+    );
     expect(SOURCE_STAGE_LABEL.indexing).toBe("Indexing…");
   });
 
   it("is searchable only when the current version has chunks", () => {
     expect(sourceStage(facts({ currentChunkCount: 3 }))).toBe("searchable");
-    expect(sourceStage(facts({ currentChunkCount: 3, currentHasEntities: true }))).toBe("entities");
+    expect(
+      sourceStage(facts({ currentChunkCount: 3, currentHasEntities: true })),
+    ).toBe("entities");
     expect(SOURCE_STAGE_LABEL.searchable).toBe("Searchable");
   });
 
@@ -134,9 +161,15 @@ describe("reading the facts row", () => {
         current_has_entities: false,
         stale_chunk_count: 2,
         indexing: false,
+        head_document_id: "h",
       }),
     ).toEqual(
-      facts({ chunkCount: 2, currentDocumentId: "e", staleChunkCount: 2 }),
+      facts({
+        chunkCount: 2,
+        currentDocumentId: "e",
+        staleChunkCount: 2,
+        headDocumentId: "h",
+      }),
     );
   });
 
@@ -155,19 +188,45 @@ describe("reading the facts row", () => {
 describe("a row's status cell", () => {
   const f = facts({ currentChunkCount: 2 });
   it("shows the stage whenever the row's facts were read — even if another batch failed", () => {
-    expect(stageCellState(f, { loading: false, failed: false, retrying: false })).toBe("searchable");
+    expect(
+      stageCellState(f, { loading: false, failed: false, retrying: false }),
+    ).toBe("searchable");
   });
   it("says checking while the read is in flight", () => {
-    expect(stageCellState(undefined, { loading: true, failed: false, retrying: false })).toBe("checking");
+    expect(
+      stageCellState(undefined, {
+        loading: true,
+        failed: false,
+        retrying: false,
+      }),
+    ).toBe("checking");
   });
   it("offers a retry — never 'Unknown' — when this row's batch failed", () => {
-    expect(stageCellState(undefined, { loading: false, failed: true, retrying: false })).toBe("read_failed");
+    expect(
+      stageCellState(undefined, {
+        loading: false,
+        failed: true,
+        retrying: false,
+      }),
+    ).toBe("read_failed");
     expect(STAGE_CELL_LABEL.read_failed).toBe("Couldn't read status");
   });
   it("a settled row with no facts is a failed read too", () => {
-    expect(stageCellState(undefined, { loading: false, failed: false, retrying: false })).toBe("read_failed");
+    expect(
+      stageCellState(undefined, {
+        loading: false,
+        failed: false,
+        retrying: false,
+      }),
+    ).toBe("read_failed");
   });
   it("says retrying while its retry runs", () => {
-    expect(stageCellState(undefined, { loading: false, failed: true, retrying: true })).toBe("checking");
+    expect(
+      stageCellState(undefined, {
+        loading: false,
+        failed: true,
+        retrying: true,
+      }),
+    ).toBe("checking");
   });
 });

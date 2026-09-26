@@ -85,6 +85,8 @@ export interface SourceFacts {
   staleChunkCount: number;
   /** An intelligence job for the current version is pending or running. */
   indexing: boolean;
+  /** The Source's newest capture (the head of the recapture chain). */
+  headDocumentId: string;
 }
 
 export interface SourceFactsRow {
@@ -97,6 +99,7 @@ export interface SourceFactsRow {
   current_has_entities?: boolean | null;
   stale_chunk_count?: number | null;
   indexing?: boolean | null;
+  head_document_id?: string | null;
 }
 
 function asAttachments(value: unknown): SourceAttachment[] {
@@ -128,7 +131,8 @@ export function sourceFactsFromRow(r: SourceFactsRow): SourceFacts | null {
     typeof r.current_chunk_count !== "number" ||
     typeof r.stale_chunk_count !== "number" ||
     typeof r.indexing !== "boolean" ||
-    typeof r.current_has_entities !== "boolean"
+    typeof r.current_has_entities !== "boolean" ||
+    typeof r.head_document_id !== "string"
   )
     return null;
   return {
@@ -140,6 +144,7 @@ export function sourceFactsFromRow(r: SourceFactsRow): SourceFacts | null {
     currentHasEntities: r.current_has_entities ?? false,
     staleChunkCount: r.stale_chunk_count,
     indexing: r.indexing,
+    headDocumentId: r.head_document_id,
   };
 }
 

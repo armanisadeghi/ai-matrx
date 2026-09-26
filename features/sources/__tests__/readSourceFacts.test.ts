@@ -23,6 +23,7 @@ function factsRow(id: string) {
     current_has_entities: false,
     stale_chunk_count: 0,
     indexing: false,
+    head_document_id: id,
   };
 }
 
