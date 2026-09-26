@@ -26,6 +26,14 @@
  * collapse a pane via keyboard.
  */
 
+import { useRouter } from "next/navigation";
+import {
+  editSource,
+  sourceRefusalSentence,
+} from "@/features/sources/api/sourcesApi";
+import { toast } from "@/lib/toast";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import React, {
   useEffect,
   useRef,
@@ -62,9 +70,6 @@ import { buildPdfSource } from "@/features/pdf/utils/source";
 import { parsePagesInput } from "@/features/pdf/utils/pages";
 import { PdfAiContent } from "../components/PdfAiContent";
 import { saveDerivative } from "@/features/pdf/services/saveDerivative";
-import { supabase } from "@/utils/supabase/client";
-import { docprocDb } from "@/utils/supabase/docprocDb";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectViewedJobForFile } from "@/features/page-extraction/redux/selectors";
@@ -1196,6 +1201,54 @@ function TextPane({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc.id]);
 
+  const router = useRouter();
+  /**
+   * One page's edit, saved as a new version of the whole document through
+   * `POST /sources/{id}/edit` (the door stores exactly the body it is given,
+   * so every page goes: the edited one with its new text, the rest as they
+   * read in this pane). The answer names the new version; the studio then
+   * opens it, so what the person sees is what was saved.
+   */
+  const saveEditThroughDoor = async (
+    pageId: string,
+    text: string,
+  ): Promise<{ error: string | null }> => {
+    const ordered = [...pages].sort((a, b) => a.pageIndex - b.pageIndex);
+    const portions = ordered.map((p, i) => {
+      const current =
+        overrides.get(p.id) ??
+        (field === "cleaned" ? p.cleanedText || p.rawText : p.rawText);
+      return {
+        ordinal: i + 1,
+        kind: "page" as const,
+        text: p.id === pageId ? text : current,
+        locator: { page: p.pageNumber },
+        method: "manual",
+      };
+    });
+    try {
+      const organizationId = await ensureOrgId(doc.organizationId);
+      const landed = await editSource(doc.id, portions, { organizationId });
+      const notice = landed.notices?.[0]?.message;
+      toast.success(
+        notice ?? "Your edit was saved as a new version; the original is kept.",
+      );
+      if (
+        landed.processed_document_id &&
+        landed.processed_document_id !== doc.id
+      ) {
+        router.push(
+          `/tools/pdf-extractor/${encodeURIComponent(landed.processed_document_id)}`,
+        );
+      }
+      return { error: null };
+    } catch (err) {
+      if (isOrganizationSelectionCancelled(err))
+        return { error: "Choose an organization to save this edit." };
+      return { error: sourceRefusalSentence(err) };
+    }
+  };
+
   const handleDraftChange = useCallback(
     (pageId: string, text: string | null) => {
       setDrafts((prev) => {
@@ -1465,6 +1518,7 @@ function TextPane({
                         return next;
                       });
                     }}
+                    onSaveEdit={saveEditThroughDoor}
                     onReClean={async () => {
                       await onRunPipeline();
                       onRefreshPages();
@@ -1574,6 +1628,7 @@ function PageBlock({
   draft,
   onDraftChange,
   onSaved,
+  onSaveEdit,
   onReClean,
 }: {
   page: PdfPageRow;
@@ -1591,6 +1646,11 @@ function PageBlock({
   draft: string | null;
   onDraftChange: (pageId: string, text: string | null) => void;
   onSaved: (pageId: string, savedText: string) => void;
+  /** Saves this page's edit through the Source door; resolves with a sentence on refusal. */
+  onSaveEdit: (
+    pageId: string,
+    text: string,
+  ) => Promise<{ error: string | null }>;
   onReClean: () => Promise<void>;
 }) {
   const editing = draft !== null;
@@ -1604,23 +1664,12 @@ function PageBlock({
   async function handleSave() {
     setSaving(true);
     setSaveError(null);
-    // Literal-keyed update objects (not computed keys) so the typed docproc
-    // client can validate the column names against the generated schema.
-    const patch =
-      field === "cleaned"
-        ? { cleaned_text: editText, cleaned_char_count: editText.length }
-        : { raw_text: editText, raw_char_count: editText.length };
-    const { error } = await tryWriteOne(
-      docprocDb(supabase)
-        .from("processed_document_pages")
-        .update(patch)
-        .eq("id", page.id)
-        .select("id"),
-      { action: "save", noun: "page" },
-    );
+    // Through the door (SOURCE-CONVERGENCE §1 rule 4): the edit becomes a new
+    // version beside the original — pages are never rewritten in place.
+    const result = await onSaveEdit(page.id, editText);
     setSaving(false);
-    if (error) {
-      setSaveError(error.message);
+    if (result.error) {
+      setSaveError(result.error);
     } else {
       onDraftChange(page.id, null);
       onSaved(page.id, editText);

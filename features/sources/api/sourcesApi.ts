@@ -26,6 +26,32 @@ export type LandingNotice = components["schemas"]["LandingNotice"];
 export type SourceAttachTarget = components["schemas"]["AttachTarget"];
 export type KeepSourceBody = components["schemas"]["KeepBody"];
 export type SourceLandingBody = components["schemas"]["SourceLanding"];
+export type EditSourceBody = components["schemas"]["EditBody"];
+export type SourcePortion = components["schemas"]["Portion"];
+
+export function sourceEditPath(processedDocumentId: string): string {
+  return `/sources/${encodeURIComponent(processedDocumentId)}/edit`;
+}
+
+/**
+ * A person's edit of a Source's text, through the door (§1 rule 4): the door
+ * mints a `manual_curation` version beside the original and makes it the
+ * version people read. `portions` is the WHOLE body (every portion, in
+ * order) — the door stores exactly what it is given. The answer's
+ * `processed_document_id` is the NEW version; `new_version_of` the original.
+ */
+export async function editSource(
+  processedDocumentId: string,
+  portions: SourcePortion[],
+  options: { organizationId: string },
+): Promise<LandedSource> {
+  const { data } = await postJson<LandedSource, EditSourceBody>(
+    sourceEditPath(processedDocumentId),
+    { portions },
+    { organizationId: options.organizationId },
+  );
+  return data;
+}
 
 export const SOURCE_LAND_PATH = "/sources/land";
 
