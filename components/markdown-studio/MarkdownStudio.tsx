@@ -967,6 +967,12 @@ export function MarkdownStudio() {
         sharedLoading={shared.isLoading}
         onLoadShared={handleLoadShared}
         canManageShared={isAdmin}
+        onArchiveShared={async (sample) => {
+          await shared.remove(sample.id);
+          if (loadedRef?.lib === "shared" && loadedRef.id === sample.id) {
+            setLoadedRef(null);
+          }
+        }}
       />
       <SourcePickerPanel
         open={sourcePickerOpen}

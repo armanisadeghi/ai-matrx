@@ -53,6 +53,8 @@ interface SampleLibrarySheetProps {
   onLoadShared?: (sample: MarkdownSample) => void;
   /** Admin lane: shared samples are editable (Update / Edit details in the studio). */
   canManageShared?: boolean;
+  /** Admin lane: archive (soft-delete) a shared sample. */
+  onArchiveShared?: (sample: MarkdownSample) => Promise<void>;
 }
 
 export function SampleLibrarySheet({
@@ -64,6 +66,7 @@ export function SampleLibrarySheet({
   sharedLoading = false,
   onLoadShared,
   canManageShared = false,
+  onArchiveShared,
 }: SampleLibrarySheetProps) {
   const { samples, isLoading, error, update, remove } =
     useUserMarkdownSamples();
@@ -340,6 +343,34 @@ export function SampleLibrarySheet({
                             <Badge variant="default" className="h-4 px-1.5 text-[10px] font-medium">
                               loaded
                             </Badge>
+                          )}
+                          {canManageShared && onArchiveShared && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="ml-auto h-6 w-6 shrink-0 p-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const ok = await confirm({
+                                  title: "Remove this shared sample?",
+                                  description: `${archiveConfirmSentence(`"${sample.name}"`)} Everyone stops seeing it as a starter sample.`,
+                                  variant: "destructive",
+                                  confirmLabel: "Remove",
+                                });
+                                if (!ok) return;
+                                try {
+                                  await onArchiveShared(sample);
+                                  dismissRecordToasts({ type: "markdown_sample", id: sample.id });
+                                  toast.success(`Removed "${sample.name}" from the shared library`);
+                                } catch (err) {
+                                  toast.error(err instanceof Error ? err.message : "Failed to remove the sample");
+                                }
+                              }}
+                              title="Remove from the shared library"
+                              aria-label={`Remove ${sample.name} from the shared library`}
+                            >
+                              <Trash2 className="h-3 w-3 text-destructive" />
+                            </Button>
                           )}
                         </div>
                         {sample.description && (

@@ -93,31 +93,49 @@ export type Database = {
           content: string
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           description: string
           detected_blocks: string[]
           id: string
+          metadata: Json
           name: string
+          organization_id: string
           updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           content?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string
           detected_blocks?: string[]
           id?: string
+          metadata?: Json
           name: string
+          organization_id: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           content?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string
           detected_blocks?: string[]
           id?: string
+          metadata?: Json
           name?: string
+          organization_id?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -18086,6 +18104,7 @@ export type Database = {
         Args: { p_inbound_message_id: string }
         Returns: string
       }
+      calendar_event_is_trusted_server: { Args: never; Returns: boolean }
       channel_readiness_say: { Args: { p_channel: string }; Returns: Json }
       claim_notifications_for_render: {
         Args: {
@@ -25856,6 +25875,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _source_facts_may_read: { Args: { p_doc: string }; Returns: boolean }
+      _source_facts_may_read_any: {
+        Args: { p_id: string; p_type: string }
+        Returns: boolean
+      }
       recompute_canonical_for_file: {
         Args: { p_file_id: string }
         Returns: undefined

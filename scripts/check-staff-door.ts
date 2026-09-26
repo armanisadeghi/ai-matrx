@@ -116,11 +116,9 @@ const C = { b: "\x1b[1m", d: "\x1b[2m", r: "\x1b[31m", g: "\x1b[32m", y: "\x1b[3
  */
 const RESIDUE_TOKENS: ReadonlySet<string> = new Set([
   "user_analysis_preference", "user_form_profile", "user_preference", "wbx_guidance",
-  // admin_markdown_sample — ADDED 2026-09-18 (staff_door_six_tokens_dd137b_2026_09_18): platform-
-  // operator tooling content (admin.admin_markdown_samples) read by the admin markdown tester as a
-  // super admin. The table has NO organization_id, so no class lane but the staff lane can describe
-  // it; the staff lane IS the table. The reason is stored on the registry row and printed below.
-  "admin_markdown_sample",
+  // ~~admin_markdown_sample~~ — REMOVED 2026-09-26: admin_markdown_samples_shared_catalogue.sql
+  // canonicalized the table (system variant, data_class public, Matrx System org); its class
+  // lanes now describe it and the staff lane is no longer the table.
 ]);
 
 function loadEnv(): { url: string; key: string } | null {
