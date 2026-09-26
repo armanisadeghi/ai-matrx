@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-26T12:58:06.673Z",
+  "generated_at": "2026-09-26T13:08:16.561Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4483,6 +4483,12 @@
       "filename": "stagerules_a_gate_says_what_it_does_when_it_says_no.sql",
       "checksum": "19429f6bc0c42f864629d57106f109d0e01218799d608ea28b3b9717430be326",
       "applied_at": "2026-09-21 01:38:56.51551+00"
+    },
+    "migrations/campaign/storedoorsdecidered_a_term_list_a_person_archives_is_in_trash.sql": {
+      "source": "matrx-frontend",
+      "filename": "storedoorsdecidered_a_term_list_a_person_archives_is_in_trash.sql",
+      "checksum": "e2b1fb5ea7b07811a619fd00b10f8ba7c45736c7c3439dee5f7feeab70c52873",
+      "applied_at": "2026-09-26 13:08:15.69255+00"
     },
     "migrations/campaign/storedoorsdecidered_record_comment_doors_and_the_knob_reader_decide_in_their_own_body.sql": {
       "source": "matrx-frontend",

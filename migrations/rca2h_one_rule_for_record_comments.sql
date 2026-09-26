@@ -1,4 +1,10 @@
 -- rca2h_one_rule_for_record_comments
+-- NOTE 2026-09-26 (lane STORE-DOORS-DECIDE-RED): the three custom.io_comment* doors this file patched
+-- lost their only census-visible decision (has_visibility) and asked nothing about p_organization_id;
+-- they now ask custom.assert_client_may_reach in their own body — see
+-- migrations/campaign/storedoorsdecidered_record_comment_doors_and_the_knob_reader_decide_in_their_own_body.sql.
+-- The row rule here (platform.detail_parent_access_for) is unchanged. This file's bytes differ from the
+-- ledgered apply (04:31Z, checksum 3da8a74a5a95): the fingerprint block below was added afterwards.
 -- based-on: iam.has_access_for_base(uuid, text, uuid, permission_level, boolean, text[]) cd55cecb5c837fa0c22382f55c192a6c7befeb34c99d4fb73c97e28444bd9212
 -- based-on: iam._apply_rls_unchecked(text, text, text, text) bf478df1ca3b95728d93e630ca7b57b25f278ef9dea066c21638ca4be464fd28
 -- based-on: iam.verify_canonical(text, text, text, text) 12c6f216423cbed4838c3ba9f32d0721a8b17c84825372fc0a3a96c905e49127

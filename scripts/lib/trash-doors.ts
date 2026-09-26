@@ -218,6 +218,12 @@ export const TRASH_COVERAGE_EXEMPT: Readonly<Record<string, string>> = {
     "No door archives a leave policy: HR ends one with hr.leave_policy_deactivate, which sets is_active " +
     "= false after deciding every balance on it (freeze / pay out / migrate). The one archived row is " +
     "the HRB-017 verification fixture (2026-08-28).",
+  // ── derived rows that come back only with their source (lane STORE-DOORS-DECIDE-RED, 2026-09-26) ─
+  "entity:scrape_parsed_page":
+    "The web identity row of a Source, never shown as an item and never archived by a person: it is " +
+    "trashed and restored with the Source it points at (scrape_parsed_page.processed_document_id, the " +
+    "cascade edge aidream 1240 declares), and the Source (processed_document) is the Trash kind. Measured " +
+    "2026-09-26: every archived parsed page's Source was archived with it.",
 };
 
 export function judgeTrashCoverage(
