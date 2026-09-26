@@ -38,6 +38,7 @@ import {
   rememberGoogleConnection,
 } from "@/features/google-workspace/connection";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export interface GoogleResourcePickerProps {
   onBack: () => void;
@@ -117,6 +118,12 @@ export function GoogleResourcePicker({
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
           Checking your Google account…
         </div>
+      ) : inventory.isError && !inventory.data ? (
+        <ReadFailure
+          error={inventory.error}
+          what="your Google connections and files"
+          onRetry={() => void inventory.refetch()}
+        />
       ) : !selectedConnection ? (
         // The pitch, not an error. This is the whole reason the row is offered
         // to people who have not connected anything.

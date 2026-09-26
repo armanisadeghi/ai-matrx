@@ -158,41 +158,37 @@ export async function getUserProjects(): Promise<DatabaseProject[]> {
  * Get projects with their tasks — optimized single JOIN query
  */
 export async function getProjectsWithTasks(): Promise<ProjectWithTasks[]> {
-  try {
-    const userId = requireUserId();
+  const userId = requireUserId();
 
-    const membersResult = await membershipsService.forUser("project");
-    const memberProjectIds = isScopesRpcErr(membersResult)
-      ? []
-      : membersResult.data.memberships.map((m) => m.containerId);
+  const membersResult = await membershipsService.forUser("project");
+  const memberProjectIds = isScopesRpcErr(membersResult)
+    ? []
+    : membersResult.data.memberships.map((m) => m.containerId);
 
-    // Fetch with tasks joined
-    let query = workspaceDb(supabase)
-      .from("projects")
-      .select(`*, tasks(*)`)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false });
+  // Fetch with tasks joined
+  let query = workspaceDb(supabase)
+    .from("projects")
+    .select(`*, tasks(*)`)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
 
-    if (memberProjectIds.length > 0) {
-      query = query.or(
-        `created_by.eq.${userId},id.in.(${memberProjectIds.join(",")})`,
-      );
-    } else {
-      query = query.eq("created_by", userId);
-    }
-
-    const { data: projects, error: projectsError } = await query;
-
-    if (projectsError) {
-      console.error("Error fetching projects with tasks:", projectsError);
-      return [];
-    }
-
-    return (projects ?? []) as unknown as ProjectWithTasks[];
-  } catch (error) {
-    console.error("Exception fetching projects with tasks:", error);
-    return [];
+  if (memberProjectIds.length > 0) {
+    query = query.or(
+      `created_by.eq.${userId},id.in.(${memberProjectIds.join(",")})`,
+    );
+  } else {
+    query = query.eq("created_by", userId);
   }
+
+  const { data: projects, error: projectsError } = await query;
+
+  // A failed read THROWS: `[]` would read as "no projects" (useProjectsWithTasks
+  // exposes it as `error`).
+  if (projectsError) {
+    throw new Error(`Couldn't load your projects and tasks: ${projectsError.message}`);
+  }
+
+  return (projects ?? []) as unknown as ProjectWithTasks[];
 }
 
 /**

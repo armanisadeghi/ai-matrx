@@ -113,7 +113,7 @@ export function useTasks() {
       data.forEach(observe);
       setTasks(data);
     } catch (err) {
-      setError('Failed to load tasks');
+      setError(err instanceof Error ? err.message : 'Failed to load tasks');
       console.error(err);
     } finally {
       setLoading(false);
@@ -426,7 +426,7 @@ export function useProjectsWithTasks() {
       }
       setProjects(data);
     } catch (err) {
-      setError('Failed to load projects with tasks');
+      setError(err instanceof Error ? err.message : 'Failed to load projects with tasks');
       console.error(err);
     } finally {
       setLoading(false);

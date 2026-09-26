@@ -24,6 +24,7 @@ import { useTasks } from "@/features/tasks/hooks/useTaskManager";
 import { getTaskById } from "@/features/tasks/services/taskService";
 import { useOpenTaskQuickCreateWindow } from "@/features/overlays/openers/taskQuickCreateWindow";
 import { cn } from "@/lib/utils";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export function WarRoomTaskPicker({
   value,
@@ -38,7 +39,7 @@ export function WarRoomTaskPicker({
   allowClear?: boolean;
   className?: string;
 }) {
-  const { tasks, loading, refresh } = useTasks();
+  const { tasks, loading, error: tasksError, refresh } = useTasks();
   const openCreateTask = useOpenTaskQuickCreateWindow();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -128,6 +129,8 @@ export function WarRoomTaskPicker({
             <p className="px-3 py-2 text-xs text-muted-foreground">
               Loading tasks…
             </p>
+          ) : tasksError && tasks.length === 0 ? (
+            <ReadFailure error={tasksError} what="your tasks" onRetry={() => void refresh()} className="m-2" />
           ) : filtered.length === 0 ? (
             <p className="px-3 py-2 text-xs text-muted-foreground">
               {tasks.length === 0 ? "No tasks yet." : "No match."}

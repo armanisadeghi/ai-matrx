@@ -20,6 +20,7 @@ import type { ProjectWithTasks, DatabaseTask } from "@/features/tasks/types";
 import { filterAndSortBySearch, matchesSearch } from "@ai-matrx/kit/search-scoring";
 import { usePickerInputFocus } from "./usePickerInputFocus";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface TasksResourcePickerProps {
   onBack: () => void;
@@ -34,7 +35,7 @@ export function TasksResourcePicker({
   onBack,
   onSelect,
 }: TasksResourcePickerProps) {
-  const { projects, loading } = useProjectsWithTasks();
+  const { projects, loading, error: projectsError, refresh } = useProjectsWithTasks();
   const searchInputRef = usePickerInputFocus();
   const [selectedProject, setSelectedProject] =
     useState<ProjectWithTasks | null>(null);
@@ -240,6 +241,8 @@ export function TasksResourcePicker({
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
           </div>
+        ) : projectsError && projects.length === 0 ? (
+          <ReadFailure error={projectsError} what="your projects and tasks" onRetry={() => void refresh()} />
         ) : selectedProject ? (
           // Show tasks in project
           <div className="p-1">

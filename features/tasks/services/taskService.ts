@@ -182,29 +182,23 @@ export async function quickCreateTask(
  * Get all tasks for the current user
  */
 export async function getUserTasks(scope?: ListScopeWord): Promise<DatabaseTask[]> {
-  try {
-    const userId = requireUserId();
-    // DD-137c / §3.3: the `task` token is registered `organization`, so this opens on the
-    // organization's tasks. RLS decides what is readable; this decides only where it starts.
-    const ownerOnly = await scopeToOwner("task", scope);
-    let taskQuery = workspaceDb(supabase)
-      .from("tasks")
-      .select("*")
-      .is("deleted_at", null);
-    if (ownerOnly) taskQuery = taskQuery.eq("created_by", userId);
-    const { data, error } = await taskQuery
-      .order("created_at", { ascending: false });
+  // A failed read THROWS: `[]` would read as "you have no tasks" in every
+  // list and picker built on it (useTasks exposes it as `error`).
+  const userId = requireUserId();
+  // DD-137c / §3.3: the `task` token is registered `organization`, so this opens on the
+  // organization's tasks. RLS decides what is readable; this decides only where it starts.
+  const ownerOnly = await scopeToOwner("task", scope);
+  let taskQuery = workspaceDb(supabase)
+    .from("tasks")
+    .select("*")
+    .is("deleted_at", null);
+  if (ownerOnly) taskQuery = taskQuery.eq("created_by", userId);
+  const { data, error } = await taskQuery
+    .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching tasks:", error.message);
-      return [];
-    }
+  if (error) throw new Error(`Couldn't load your tasks: ${error.message}`);
 
-    return data || [];
-  } catch (error) {
-    console.error("Exception fetching tasks:", error);
-    return [];
-  }
+  return data || [];
 }
 
 /**

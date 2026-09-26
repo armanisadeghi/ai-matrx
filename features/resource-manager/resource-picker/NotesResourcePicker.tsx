@@ -12,6 +12,7 @@ import {
 import type { Note } from "@/features/notes/types";
 import { usePickerInputFocus } from "./usePickerInputFocus";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface NotesResourcePickerProps {
   onBack: () => void;
@@ -22,7 +23,7 @@ export function NotesResourcePicker({
   onBack,
   onSelect,
 }: NotesResourcePickerProps) {
-  const { notes, isLoading } = useNotes();
+  const { notes, isLoading, error: notesError, refreshNotes } = useNotes();
   const searchInputRef = usePickerInputFocus();
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -116,6 +117,8 @@ export function NotesResourcePicker({
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
           </div>
+        ) : notesError && notes.length === 0 ? (
+          <ReadFailure error={notesError} what="your notes" onRetry={refreshNotes} />
         ) : selectedFolder ? (
           // Show notes in folder
           <div className="p-1">

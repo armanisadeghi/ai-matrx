@@ -32,6 +32,7 @@ import {
 } from "@/features/scopes/components/context-assignment/data";
 import { clearWorkingContext } from "./context-tree/applyDenseSelection";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 
 export interface ActiveContextPanelProps {
   checkboxVariant?: ContextCheckboxVariant;
@@ -64,12 +65,20 @@ export function ActiveContextPanel({
   const [projectNames, setProjectNames] = useState<Record<string, string>>({});
   const [taskNames, setTaskNames] = useState<Record<string, string>>({});
   useEffect(() => {
-    void fetchAssignableProjects().then((ps) =>
-      setProjectNames(Object.fromEntries(ps.map((p) => [p.id, p.name]))),
-    );
-    void fetchAssignableTasks().then((ts) =>
-      setTaskNames(Object.fromEntries(ts.map((t) => [t.id, t.title]))),
-    );
+    void fetchAssignableProjects()
+      .then((ps) =>
+        setProjectNames(Object.fromEntries(ps.map((p) => [p.id, p.name]))),
+      )
+      .catch((err: unknown) =>
+        toast.error(err instanceof Error ? err.message : "Couldn't load project names"),
+      );
+    void fetchAssignableTasks()
+      .then((ts) =>
+        setTaskNames(Object.fromEntries(ts.map((t) => [t.id, t.title]))),
+      )
+      .catch((err: unknown) =>
+        toast.error(err instanceof Error ? err.message : "Couldn't load task names"),
+      );
   }, []);
 
   function apply(sel: ContextSelection) {
