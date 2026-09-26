@@ -190,10 +190,17 @@ export function MermaidViewport({
 
     // Re-fit on new content unless the user has taken manual control (via refs,
     // so a frame-height change never re-injects and wipes scroll).
+    // 🚨 The fit READS layout (frame size). Read synchronously here, every
+    // diagram mounting in one commit forced its own full-document layout right
+    // after the previous one's write — a 1 MB document with dozens of diagrams
+    // spent 13-22 s in this line (the markdown-tester crash, 2026-09-26). In a
+    // frame callback every diagram's read shares ONE layout.
+    let frame = 0;
     if (userAdjustedRef.current) applyScaleRef.current(scaleRef.current);
-    else fitRef.current();
+    else frame = requestAnimationFrame(() => fitRef.current());
 
     return () => {
+      if (frame) cancelAnimationFrame(frame);
       onSvgMounted?.(null);
     };
   }, [svg, onSvgMounted]);

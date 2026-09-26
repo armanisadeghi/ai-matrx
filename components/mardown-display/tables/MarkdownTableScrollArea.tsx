@@ -42,7 +42,10 @@ export function MarkdownTableScrollArea({
       );
     };
 
-    updateEdges();
+    // No synchronous first read: the ResizeObserver below reports once as soon
+    // as it observes, after layout. Reading scrollWidth here forced a layout of
+    // the whole document per table mounting (the markdown-tester crash,
+    // 2026-09-26: ~3 s on a 1 MB document).
     viewport.addEventListener("scroll", updateEdges, { passive: true });
 
     const resizeObserver = new ResizeObserver(updateEdges);

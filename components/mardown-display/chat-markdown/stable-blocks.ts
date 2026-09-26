@@ -13,7 +13,11 @@
 // and React skips that whole subtree. Only the block that actually changed
 // renders again. Guard: components/markdown-studio/__tests__/stress-budget.test.tsx.
 
-import type { RenderBlock } from "./block-registry/BlockRenderer";
+/** Anything a splitter hands a renderer: a typed chunk of the document. */
+interface BlockLike {
+  type: string;
+  content: string;
+}
 
 /** Deep structural equality for the plain-data fields a block carries. */
 function sameValue(a: unknown, b: unknown): boolean {
@@ -37,7 +41,7 @@ function sameValue(a: unknown, b: unknown): boolean {
 }
 
 /** Same block data, field by field (content strings compare by value). */
-export function sameBlock(a: RenderBlock, b: RenderBlock): boolean {
+export function sameBlock<T extends BlockLike>(a: T, b: T): boolean {
   if (a === b) return true;
   if (a.type !== b.type || a.content !== b.content) return false;
   return sameValue(a, b);
@@ -49,12 +53,12 @@ export function sameBlock(a: RenderBlock, b: RenderBlock): boolean {
  * occurrence, so identity survives blocks shifting position. Returns `prev`
  * itself when nothing changed at all.
  */
-export function reuseUnchangedBlocks(
-  prev: readonly RenderBlock[],
-  next: readonly RenderBlock[],
-): RenderBlock[] {
-  if (prev.length === 0) return next as RenderBlock[];
-  const pool = new Map<string, RenderBlock[]>();
+export function reuseUnchangedBlocks<T extends BlockLike>(
+  prev: readonly T[],
+  next: readonly T[],
+): T[] {
+  if (prev.length === 0) return next as T[];
+  const pool = new Map<string, T[]>();
   for (const b of prev) {
     const key = `${b.type}\u0001${b.content}`;
     const list = pool.get(key);
@@ -67,7 +71,7 @@ export function reuseUnchangedBlocks(
     if (list) {
       const at = list.findIndex((p) => sameBlock(p, b));
       if (at !== -1) {
-        const hit = list[at] as RenderBlock;
+        const hit = list[at] as T;
         list.splice(at, 1);
         if (hit !== prev[i]) allReused = false;
         return hit;
@@ -76,5 +80,5 @@ export function reuseUnchangedBlocks(
     allReused = false;
     return b;
   });
-  return allReused ? (prev as RenderBlock[]) : out;
+  return allReused ? (prev as T[]) : out;
 }

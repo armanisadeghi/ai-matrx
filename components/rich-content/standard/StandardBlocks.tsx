@@ -23,7 +23,8 @@
 // through ONE dynamic edge (RichContentStandardImpl).
 // ─────────────────────────────────────────────────────────────────────────
 
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useState } from "react";
+import { reuseUnchangedBlocks } from "@/components/mardown-display/chat-markdown/stable-blocks";
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import type { SplitterBlock } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
@@ -249,9 +250,16 @@ export function StandardBlocks({
   // engine above: the tail is held back (stream-holdback.ts) and every
   // MarkdownCore leaf below heals half-arrived inline syntax (stream-heal.ts).
   const live = useMarkdownStreaming() || !!isStreaming;
-  const blocks = splitContentIntoBlocksV2(
+  const split = splitContentIntoBlocksV2(
     live ? healStreamingTail(source) : source,
   );
+  // THE UNCHANGED-BLOCK LAW (chat-markdown/stable-blocks.ts): hand every block
+  // whose data did not change its previous object, so an edit or a stream
+  // chunk re-renders only the block that changed. Derived-state update: it
+  // settles in one extra pass because the next reuse returns `stable` itself.
+  const [stable, setStable] = useState(split);
+  const blocks = reuseUnchangedBlocks(stable, split);
+  if (blocks !== stable) setStable(blocks);
   return (
     <MarkdownStreamingProvider value={live}>
       {/* One numbering for the whole document, however many blocks it splits into. */}
