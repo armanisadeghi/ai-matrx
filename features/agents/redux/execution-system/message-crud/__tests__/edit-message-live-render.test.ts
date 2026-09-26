@@ -12,6 +12,9 @@ const rpcReturns = jest.fn();
 jest.mock("@/utils/supabase/client", () => ({
   supabase: {
     rpc: jest.fn(() => ({ returns: rpcReturns })),
+    // Module-load only: war-room/service.ts binds `workspaceDb(supabase)` when the
+    // stream thunks import it. This suite's path never queries a schema.
+    schema: jest.fn(() => ({})),
   },
 }));
 
