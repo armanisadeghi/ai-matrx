@@ -39,3 +39,18 @@ export function viewedDocumentId(
     ? versions.originalId
     : versions.currentId;
 }
+
+/**
+ * When the Source was saved — a property of the Source (its head), never of
+ * the version on screen: a person's edit (`manual_curation`) never carries
+ * `kept_at`. `headKeptAt` is the head row's own value: `undefined` while
+ * unread (the answer is then unknown, never "Not saved").
+ */
+export function sourceKeptAt(
+  viewed: { id: string; kept_at: string | null },
+  headId: string,
+  headKeptAt: string | null | undefined,
+): string | null | undefined {
+  if (viewed.id === headId) return viewed.kept_at;
+  return headKeptAt;
+}

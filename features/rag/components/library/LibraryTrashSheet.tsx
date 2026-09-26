@@ -40,19 +40,12 @@ import { restoreFileDirect } from "@/features/files/api/direct";
 import { supabase } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
-
-interface TrashRow {
-  id: string;
-  name: string | null;
-  source_kind: string;
-  source_id: string;
-  derivation_kind: string;
-  total_pages: number | null;
-  deleted_at: string;
-  deleted_via: string | null;
-  file_name: string | null;
-  hidden_chunks: number;
-}
+import {
+  groupTrashRows,
+  piecesWords,
+  type TrashGroup,
+  type TrashRow,
+} from "@/features/rag/components/library/trashGroups";
 
 interface LibraryTrashSheetProps {
   open: boolean;
@@ -121,23 +114,34 @@ export function LibraryTrashSheet({
     }
   };
 
-  const handlePurge = async (row: TrashRow) => {
+  const handlePurge = async (group: TrashGroup) => {
+    const row = group.head;
     const proceed = await confirm({
       title: `Permanently delete "${row.name ?? "document"}"?`,
-      description: `Erases the document, its pages, ${RAG_VOCAB.segmentsShort.toLowerCase()}, and embeddings forever. This cannot be undone.`,
+      description: `Erases ${group.versions > 1 ? `all ${group.versions} versions of this Source` : "the document"}, its pages, ${RAG_VOCAB.segmentsShort.toLowerCase()}, and embeddings forever. This cannot be undone.`,
       variant: "destructive",
       confirmLabel: "Delete forever",
     });
     if (!proceed) return;
     setBusyId(row.id);
     try {
-      const { error } = await ragDb(supabase).rpc("fn_purge_library_document", {
-        p_id: row.id,
-      });
-      if (error) {
-        throw new Error(
-          "We couldn't permanently delete this document. You may not be allowed to delete it.",
-        );
+      // Children before parents: a person's edits, then recaptures, then the first capture.
+      const order = (id: string) => {
+        const kind = rows?.find((r) => r.id === id)?.derivation_kind;
+        return kind === "manual_curation" ? 0 : kind === "recapture" ? 1 : 2;
+      };
+      const ids = [...group.ids].sort((a, b) => order(a) - order(b));
+      for (const [i, id] of ids.entries()) {
+        const { error } = await ragDb(supabase).rpc("fn_purge_library_document", {
+          p_id: id,
+        });
+        if (error) {
+          throw new Error(
+            i === 0
+              ? "We couldn't permanently delete this document. You may not be allowed to delete it."
+              : `${i} of ${ids.length} versions were deleted forever; the rest could not be. You may not be allowed to delete them.`,
+          );
+        }
       }
       toast.success(`Permanently deleted "${row.name ?? "document"}"`);
       await finishMutation();
@@ -175,12 +179,13 @@ export function LibraryTrashSheet({
             </div>
           ) : (
             <ul className="space-y-1.5">
-              {rows.map((row) => {
+              {groupTrashRows(rows).map((group) => {
+                const row = group.head;
                 const busy = busyId === row.id;
                 const isFamily = row.deleted_via === "file_cascade";
                 return (
                   <li
-                    key={row.id}
+                    key={group.key}
                     className="flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-2"
                   >
                     <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -193,10 +198,13 @@ export function LibraryTrashSheet({
                           {new Date(row.deleted_at).toLocaleString()}
                         </span>
                         <span>·</span>
-                        <span>
-                          {row.hidden_chunks}{" "}
-                          {RAG_VOCAB.segmentsShort.toLowerCase()}
-                        </span>
+                        {group.versions > 1 ? (
+                          <>
+                            <span>{group.versions} versions</span>
+                            <span>·</span>
+                          </>
+                        ) : null}
+                        <span>{piecesWords(group.hiddenChunks)}</span>
                         {isFamily && (
                           <Badge
                             variant="outline"
@@ -229,7 +237,7 @@ export function LibraryTrashSheet({
                         variant="ghost"
                         className="h-7 gap-1 px-2 text-xs text-destructive hover:text-destructive"
                         disabled={busy}
-                        onClick={() => handlePurge(row)}
+                        onClick={() => handlePurge(group)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         Purge

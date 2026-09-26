@@ -70,6 +70,7 @@ import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamic
 import { KnowledgeAssetPanel } from "@/features/rag/components/library/KnowledgeAssetPanel";
 import { PaneHeader } from "@/features/pdf-extractor/studio/PdfStudioReader";
 import { useCurrentVersion } from "@/features/sources/hooks/useCurrentVersion";
+import { useSourceKept } from "@/features/sources/hooks/useSourceKept";
 import { viewedDocumentId } from "@/features/sources/currentVersion";
 import {
   PORTION_KIND_WORD,
@@ -285,6 +286,8 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
   const stage = facts ? sourceStage(facts) : null;
   const currentId = version.versions?.currentId ?? documentId;
   const headId = version.versions?.originalId ?? documentId;
+  // Saved is the Source's (its head's), never the edited version's.
+  const keptRead = useSourceKept(doc ? { id: doc.id, kept_at: doc.kept_at } : null, headId);
   const url = doc ? sourceUrl(doc) : null;
 
   const refreshAll = () => {
@@ -292,6 +295,7 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
     portionsRead.reload();
     chunksRead.reload();
     libraryDoc.reload();
+    keptRead.reload();
   };
 
   const processNow = async () => {
@@ -376,7 +380,7 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
 
   const isWeb = doc?.source_kind === "scrape_parsed_page";
   const isPdf = view?.kind === "pdf";
-  const kept = !!doc?.kept_at;
+  const kept = !!keptRead.keptAt;
 
   const actions = doc
     ? [
@@ -540,9 +544,11 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
           entityStatus={
             doc ? (
               <span className="flex items-center gap-1">
-                <Badge variant={kept ? "secondary" : "outline"} className="px-1.5 py-0 text-[10px]">
-                  {kept ? "Saved" : "Not saved"}
-                </Badge>
+                {keptRead.keptAt !== undefined ? (
+                  <Badge variant={kept ? "secondary" : "outline"} className="px-1.5 py-0 text-[10px]">
+                    {kept ? "Saved" : "Not saved"}
+                  </Badge>
+                ) : null}
                 {stage && viewingCurrent && (
                   <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
                     {SOURCE_STAGE_LABEL[stage]}
