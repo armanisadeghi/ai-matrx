@@ -120,6 +120,71 @@ export const FINDINGS_CHECKS = [
     accept: null,
     noAccept: "This check is accepted by an inline `// access-errors: ok — <reason>` marker on the flagged line or the line above it (a source edit you make by hand), never a key list. An adapter would go in scripts/findings/registry.mjs.",
   },
+  // ── Batch 2 (2026-09-26). None has an adapter: each list is a TypeScript module, a code set, a
+  // register row, or a ratchet whose own law says it ONLY SHRINKS by a hand edit carrying a reason.
+  {
+    id: "no-dead-ends-door-law",
+    watch: /(^(app|features|components|lib)\/.*\.tsx?$)|^scripts\/dead-ends\//,
+    fix: "Make the named record open (EntityRef / peek / window) or ship the fix for the detected problem — invoke the `no-dead-ends` skill.",
+    accept: null,
+    noAccept: "The allowlist is a TypeScript module (scripts/dead-ends/allowlist.ts, DEAD_END_ALLOWLIST: { file, rule?, reason }) — a hand edit with a reason. An adapter would append to that array.",
+  },
+  {
+    id: "type-escape-hatch-ratchet",
+    watch: /(\.tsx?$)|^scripts\/type-escape-baseline\.json$/,
+    fix: "Remove the new escape hatch (as unknown as, any, @ts-ignore …) by fixing the type against the generated types — invoke the `type-safety` skill.",
+    accept: null,
+    noAccept: "A per-category COUNT ratchet (scripts/type-escape-baseline.json) that only shrinks: there is no per-site entry to accept.",
+  },
+  {
+    id: "ui-primitives-check",
+    watch: /^(app|features|components)\/.*\.tsx$/,
+    fix: "Use the official primitive the check names (components/official/, @/components/ui/*) instead of the raw element.",
+    accept: null,
+    noAccept: "Exemptions are code sets inside scripts/check-ui-primitives.ts, not a key list: every item is new.",
+  },
+  {
+    id: "settings-new-knob-shaped-constants-ratchet",
+    watch: /(\.(tsx?|py)$)|^scripts\/settings-hardcoded-allowlist\.json$/,
+    fix: "Register the value in platform.feature_knob and read it through the resolution API (lib/knobs/featureKnobs.ts; aidream services/feature_knobs), or add a `KNOB MIRROR` comment when it mirrors a knob.",
+    accept: null,
+    noAccept: "scripts/settings-hardcoded-allowlist.json ONLY SHRINKS by its own law (`_how`): a new entry is a human's hand edit with a reason, never a command.",
+  },
+  {
+    id: "package-logic-re-grown-outside-its-package",
+    watch: /(\.tsx?$)|^scripts\/check-package-twins/,
+    fix: "Import the logic from its @ai-matrx package instead of re-growing it here (the check names the package and export).",
+    accept: null,
+    noAccept: "Keys name the register row and list that covers the file (census / shapeCensus / inputCensus in scripts/check-package-twins.mjs); census entries are hand edits to that register.",
+  },
+  {
+    id: "scroll-chain-clipped-tables-lists",
+    watch: /^(app|features|components)\/.*\.tsx$/,
+    fix: "Make every ancestor of the `flex-1 min-h-0` scroll area `flex flex-col` (the break is usually in another file) and consume useClippedContentGuard (lib/layout/).",
+    accept: null,
+    noAccept: "scripts/check-scroll-chain.ts has no allowlist or baseline: every item is new.",
+  },
+  {
+    id: "canonical-agent-model-pickers",
+    watch: /\.tsx?$/,
+    fix: "Use the ONE agent picker (@ai-matrx/agents/catalog/react) or the canonical model picker instead of a local one.",
+    accept: null,
+    noAccept: "Only an inline exemption in the source file (scripts/check-canonical-pickers.ts documents it) — no key list.",
+  },
+  {
+    id: "surfaces-running-an-agent-without-naming-it",
+    watch: /(^(app|features|components)\/.*\.tsx?$)|^features\/surfaces\/manifests\//,
+    fix: "Register the surface's fixed job in the top Agents menu (manifest agentRole with mandateKey, or useDeclaredSurfaceMandates) — invoke the `agent-disclosure` skill; never add visible page content.",
+    accept: null,
+    noAccept: "scripts/check-agent-disclosure.ts has no allowlist or baseline: every item is new.",
+  },
+  {
+    id: "route-metadata-and-favicons",
+    watch: /^app\/.*(page|layout)\.tsx$/,
+    fix: "Export route metadata via createRouteMetadata / createDynamicRouteMetadata with a favicon — invoke the `route-metadata-favicons` skill.",
+    accept: null,
+    noAccept: "scripts/check-route-metadata.ts has no allowlist or baseline: every item is new.",
+  },
 ];
 
 export const byId = (id) => FINDINGS_CHECKS.find((c) => c.id === id);
