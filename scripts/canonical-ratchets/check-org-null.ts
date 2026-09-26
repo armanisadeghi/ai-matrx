@@ -43,6 +43,15 @@
  *   pnpm check:org-null --update-baseline
  *   pnpm check:org-null --json
  *
+ * CANONICAL-FIRST TRIAGE (Arman, 2026-09-25, common-docs/policies/
+ * canonical-first-triage.md). The snapshot marks every table `certified`
+ * (audit.summary certified, or canonical machinery — migration
+ * org_null_ratchet_certified.sql). Growth or a new nullable column on a
+ * CERTIFIED table is a major defect and blocks; on an uncertified table, while
+ * certified ones are clean, it is printed as the canonicalization queue and
+ * never blocks. A snapshot without the key is read as certified (fails closed).
+ * Twin: aidream scripts/check_org_null.py (its --self-test proves the split).
+ *
  * Exit codes: 0 pass / advisory / creds absent · 1 growth in --strict · 2 unreadable.
  */
 import { readFileSync, writeFileSync } from "node:fs";
@@ -62,6 +71,8 @@ interface NullRow {
   null_rows: number;
   /** true when the DDL guard's entity-looking-or-registered test also matches. */
   guarded_class: boolean;
+  /** canonical-certified or machinery (absent on an older RPC → treated as true). */
+  certified?: boolean;
 }
 /** A live CHECK constraint mentioning organization_id — the EVIDENCE half of an
  *  exemption. Added to the snapshot 2026-08-29 (migration
@@ -78,7 +89,7 @@ interface OrgNullSnapshot {
   ddl_guard_attached: boolean;
   null_org_rows_total: number;
   null_org_rows: NullRow[];
-  nullable_org_columns: { schema: string; table: string }[];
+  nullable_org_columns: { schema: string; table: string; certified?: boolean }[];
   org_constraints?: OrgConstraint[];
 }
 interface KnownWriter {
@@ -232,16 +243,30 @@ async function pull(): Promise<OrgNullSnapshot | null> {
 function report(snap: OrgNullSnapshot, base: Baseline): boolean {
   const liveCols = snap.nullable_org_columns.map(key).sort();
   const baseCols = new Set(base.nullable_org_columns);
-  const newCols = liveCols.filter((c) => !baseCols.has(c));
+  const certified = new Map<string, boolean>(
+    [...snap.nullable_org_columns, ...snap.null_org_rows].map((t) => [key(t), t.certified ?? true]),
+  );
+  const isCertified = (ref: string) => certified.get(ref) ?? true;
+  // Same exclusions as the aidream twin: history.* copies its source row (null
+  // org included), and a table whose live CHECK requires a NULL org cannot be
+  // flipped NOT NULL — neither is a nullable-org birth.
+  const { honoured: exemptTables } = honourExemptions(base, snap);
+  const bornCols = liveCols.filter(
+    (c) => !baseCols.has(c) && !c.startsWith("history.") && !exemptTables.has(c),
+  );
+  const newCols = bornCols.filter(isCertified);
+  const queueCols = bornCols.filter((c) => !isCertified(c));
   const fixedCols = [...baseCols].filter((c) => !liveCols.includes(c)).sort();
   const rowGrowth = snap.null_org_rows_total - base.null_org_rows_total;
   const known = new Map(base.known_null_org_writers.map((w) => [w.table, w.reason]));
   const { honoured, broken } = honourExemptions(base, snap);
   // Growth never blocks when it is attributable to a KNOWN live writer, or to a
   // table whose NULL is demanded by a live CHECK constraint. Everything else does.
-  const unexplained = snap.null_org_rows
+  const grown = snap.null_org_rows
     .map((r) => ({ ref: key(r), delta: r.null_rows - (base.null_org_rows_by_table[key(r)] ?? 0) }))
     .filter((r) => r.delta > 0 && !known.has(r.ref) && !honoured.has(r.ref));
+  const unexplained = grown.filter((r) => isCertified(r.ref));
+  const queueRows = grown.filter((r) => !isCertified(r.ref));
   let blocking = false;
 
   console.log("");
@@ -340,9 +365,14 @@ function report(snap: OrgNullSnapshot, base: Baseline): boolean {
         `  ${C.dim}by-constraint (verified live):${C.reset} ${b.ref} +${b.delta} ${C.dim}— ${honoured.get(b.ref)!.constraint}${C.reset}`,
       );
     }
+    for (const q of queueRows) {
+      console.log(
+        `  ${C.yellow}canonicalization queue:${C.reset} ${q.ref} +${q.delta} ${C.dim}— uncertified; not a finding while certified tables are clean${C.reset}`,
+      );
+    }
     if (!unexplained.length) {
       console.log(
-        `  ${C.dim}Every new row is a KNOWN live writer or a verified by-constraint table. Not blocking.${C.reset}`,
+        `  ${C.dim}No new NULL-org row on a certified table. Not blocking.${C.reset}`,
       );
     } else {
       for (const u of unexplained) console.log(`  ${C.red}unexplained: ${u.ref} +${u.delta}${C.reset}`);
@@ -365,6 +395,11 @@ function report(snap: OrgNullSnapshot, base: Baseline): boolean {
     `  ${C.bold}tables that still ALLOW a NULL organization_id${C.reset}  ` +
       `${C.dim}${liveCols.length} live · ${base.nullable_org_columns.length} baseline${C.reset}`,
   );
+  for (const c of queueCols) {
+    console.log(
+      `  ${C.yellow}~ ${c}${C.reset}  ${C.dim}nullable, uncertified — canonicalization queue (does not block)${C.reset}`,
+    );
+  }
   if (newCols.length) {
     blocking = blocking || STRICT;
     console.log("");

@@ -1,10 +1,9 @@
 {
   "_comment": "NO NULL ORG (owner ruling 2026-08-21, db-rules FEATURE.md §2/§6e). Seeded from LIVE, not from zero — the gate's job is preventing growth, not forcing an instant cleanup, and it must never be able to block a release on the legacy backlog. `null_org_rows_total` may only go DOWN; `nullable_org_columns` may only SHRINK. Raising either is an Arman decision; agents shrink them with --update-baseline.",
-  "seeded_at": "2026-08-29T08:07:16.280665+00:00",
-  "null_org_rows_total": 12413,
+  "seeded_at": "2026-09-26T05:09:03.656492+00:00",
+  "null_org_rows_total": 1802,
   "nullable_org_columns": [
     "dictionary.dict_entries",
-    "docproc.processed_documents",
     "education.study_structured_section",
     "platform._bak_assoc_file_processed_document_20260812",
     "platform.assists",
@@ -53,19 +52,17 @@
   ],
   "null_org_rows_by_table": {
     "dictionary.dict_entries": 7,
-    "docproc.processed_documents": 124,
     "platform.assists": 54,
-    "platform.associations": 4,
+    "platform.associations": 1,
     "platform.entity_grants": 5,
     "platform.share_links": 1,
     "rag.data_stores": 2,
-    "rag.embedding_cache": 11818,
-    "rag.retrieval_audit": 104,
-    "users.credential_items": 72,
-    "users.integration_connections": 14,
-    "users.user_secrets": 157,
+    "users.credential_items": 526,
+    "users.integration_connections": 21,
+    "users.user_secrets": 1101,
     "workbench.udt_structured_list_items": 43,
-    "workbench.udt_structured_lists": 8
+    "workbench.udt_structured_lists": 8,
+    "docproc.processed_document_pages": 33
   },
   "_ops_capture_lane_paid_at": "2026-08-21"
 }
