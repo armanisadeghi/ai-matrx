@@ -148,10 +148,14 @@ function fieldLabel(el: Element): string {
   // The common "<Label/> then <Input/>" pair with no htmlFor: the nearest
   // preceding label in the same small group.
   let node: Element | null = el;
-  for (let depth = 0; node && depth < 3; depth++, node = node.parentElement) {
+  // Six levels: a styled picker's button sits a few wrappers below the group
+  // that holds its label ("Shows as" in Add New Column was read as "").
+  for (let depth = 0; node && depth < 6; depth++, node = node.parentElement) {
     let sibling = node.previousElementSibling;
     while (sibling) {
-      const label = sibling.matches("label") ? sibling : sibling.querySelector("label");
+      const label = sibling.matches("label, [data-slot='label']")
+        ? sibling
+        : sibling.querySelector("label, [data-slot='label']");
       if (label) return text(label);
       sibling = sibling.previousElementSibling;
     }
@@ -376,6 +380,27 @@ function applyChange(el: Element, value: unknown) {
   }
   // role="switch" / "checkbox" buttons toggle on click.
   if ((el.getAttribute("aria-checked") === "true") !== value) (el as HTMLElement).click();
+}
+
+/**
+ * The same write, with each change carrying the field's on-screen label, so
+ * the approval card reads "Column Name → Region", never the machine key.
+ * Unknown windows or fields pass through unchanged — the handler refuses them.
+ */
+export function labelWindowFormWrite(value: unknown): unknown {
+  if (!value || typeof value !== "object") return value;
+  const record = value as Record<string, unknown>;
+  if (typeof record.window !== "string" || !Array.isArray(record.changes)) return value;
+  const form = readWindowForms().find((f) => f.title === record.window);
+  if (!form) return value;
+  return {
+    ...record,
+    changes: (record.changes as unknown[]).map((entry) => {
+      const change = entry as Record<string, unknown> | null;
+      const field = change && form.fields.find((f) => f.key === change.field);
+      return field && field.label ? { label: field.label, ...change } : entry;
+    }),
+  };
 }
 
 /**

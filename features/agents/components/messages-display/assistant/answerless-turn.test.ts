@@ -41,6 +41,12 @@ describe("isAnswerlessTurn", () => {
     ).toBe(false);
   });
 
+  it("stays silent while the run waits on the person (an approval card is open)", () => {
+    expect(
+      isAnswerlessTurn({ ...settledEmptyAnswer, awaitingPerson: true }),
+    ).toBe(false);
+  });
+
   it("stays silent on a failed turn — the error card speaks for it", () => {
     expect(isAnswerlessTurn({ ...settledEmptyAnswer, failed: true })).toBe(
       false,

@@ -83,6 +83,7 @@ import {
   AssistantMessageFooter,
 } from "./AssistantMessageFooter";
 import { AssistantNoAnswer } from "./AssistantNoAnswer";
+import { selectInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { countPersonVisibleParts, isAnswerlessTurn } from "./answerless-turn";
 import { retryConversationTurn } from "@/features/agents/redux/execution-system/message-crud/retry-turn.thunk";
 import { commitInlineContentEdit } from "@/features/agents/redux/execution-system/message-crud/commit-inline-edit.thunk";
@@ -447,9 +448,11 @@ export function AgentAssistantMessage({
 
   // A run that finished and produced NOTHING says so, in words, with a remedy —
   // never an empty bubble wearing a like/copy/speak bar (see answerless-turn.ts).
+  const instanceStatus = useAppSelector(selectInstanceStatus(conversationId));
   const answerless = isAnswerlessTurn({
     isTurnAnswer,
     isStreamActive,
+    awaitingPerson: instanceStatus === "paused",
     failed,
     coldMarkdownReady,
     messageId,

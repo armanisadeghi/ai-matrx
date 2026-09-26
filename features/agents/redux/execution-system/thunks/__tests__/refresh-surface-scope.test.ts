@@ -262,4 +262,35 @@ describe("refreshSurfaceScope — live provider values at submit", () => {
     });
     expect(mockFetchSurfaceBindingLayers).not.toHaveBeenCalled();
   });
+
+  test("a screen that closed since launch stops sending its old values; what is open now is sent instead", async () => {
+    const store = makeStore();
+    seedConversation(store);
+    store.dispatch(
+      patchConversation({ conversationId: CONVERSATION_ID, surfaceName: "matrx-user/table-settings" }),
+    );
+    // The window was open when the conversation started, then closed.
+    const closeWindow = registerSurfaceRuntime(
+      { surfaceName: "matrx-user/table-settings", layer: true, getScope: () => ({ settings_tab: "actions" }) },
+      1001,
+    );
+    closeWindow();
+    const unregisterPage = registerSurfaceRuntime(
+      { surfaceName: "matrx-user/data-tables", getScope: () => ({ table_name: "Warehouse inventory" }) },
+      1,
+    );
+    try {
+      await (store.dispatch as unknown as AppDispatch)(
+        refreshSurfaceScope({ conversationId: CONVERSATION_ID }),
+      ).unwrap();
+      const entries =
+        (store.getState() as unknown as RootState).instanceContext.byConversationId[CONVERSATION_ID] ?? {};
+      expect(String(entries.surface_closed?.value)).toContain("has been closed");
+      const chain = entries.surface_chain?.value as Array<{ surface: string }>;
+      expect(chain.map((level) => level.surface)).toEqual(["matrx-user/data-tables"]);
+      expect(entries.settings_tab).toBeUndefined();
+    } finally {
+      unregisterPage();
+    }
+  });
 });

@@ -129,6 +129,13 @@ export interface AnswerlessTurnInput {
    * from the database, which has no stream behind it.
    */
   streamedAnswerBlockCount: number;
+  /**
+   * True while the run is suspended waiting on the person — an approval card
+   * for a page write, a client tool. The turn has not finished, so it must
+   * never say it "finished without writing an answer" (seen live 2026-09-26
+   * under a pending "Formula for one step" card). Optional: absent = false.
+   */
+  awaitingPerson?: boolean;
 }
 
 /**
@@ -138,6 +145,7 @@ export interface AnswerlessTurnInput {
 export function isAnswerlessTurn(input: AnswerlessTurnInput): boolean {
   if (!input.isTurnAnswer) return false;
   if (input.isStreamActive) return false;
+  if (input.awaitingPerson) return false;
   if (input.failed) return false;
   if (!input.coldMarkdownReady) return false;
   if (!input.messageId) return false;

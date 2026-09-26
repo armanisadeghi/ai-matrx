@@ -45,6 +45,7 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import {
   applyWindowFormChanges,
   hasWindowForms,
+  labelWindowFormWrite,
   WINDOW_FORM_TARGET,
   WINDOW_FORM_TARGET_NAME,
 } from "./window-forms";
@@ -724,6 +725,8 @@ async function applyWindowFormWrite(
 ): Promise<SurfaceWriteResult> {
   const target = WINDOW_FORM_TARGET;
   const primary = getSurfaceRuntimeStack()[0];
+  // The person approves what they can read: each change names its field.
+  rawValue = labelWindowFormWrite(rawValue);
   const surfaceName = primary?.surfaceName ?? "";
   if ((opts?.origin ?? "user") === "agent") {
     const verdict = await agentWriteAllowed(
