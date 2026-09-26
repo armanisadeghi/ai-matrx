@@ -10,7 +10,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Copy, FileText } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, Copy, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { FileAnalysisResultRow } from "@/features/file-analysis/api/file-analysis";
@@ -71,7 +71,9 @@ export function TextContent({ results, onJumpToPage, initialPage = 1 }: Props) {
     );
   }
 
+  const ocrState = describeOcrState(ocrResult);
   const page = merged.find((p) => p.page_number === active) ?? merged[0];
+  const pageOcrPending = ocrState.pendingPages.has(page.page_number);
   const display = page.text_ocr ?? page.text ?? "";
   const totalChars = merged.reduce(
     (acc, p) => acc + ((p.text_ocr ?? p.text ?? "").length),
@@ -142,14 +144,34 @@ export function TextContent({ results, onJumpToPage, initialPage = 1 }: Props) {
         ) : null}
       </div>
 
+      {ocrState.notice ? (
+        <div
+          role="status"
+          className="flex items-start gap-1.5 border-b border-border bg-amber-500/10 px-3 py-1.5 text-[11px] text-amber-800 dark:text-amber-200"
+        >
+          <AlertTriangle className="mt-px h-3 w-3 shrink-0" />
+          <span>{ocrState.notice}</span>
+        </div>
+      ) : null}
+
       <div className="min-h-0 flex-1 overflow-y-auto bg-background px-4 py-3 text-sm leading-relaxed">
+        {pageOcrPending ? (
+          <div className="mb-2 text-[11px] italic text-muted-foreground">
+            Text recognition did not reach this page in the last run — showing the
+            PDF&apos;s own text.
+          </div>
+        ) : null}
         {display ? (
           <pre className="whitespace-pre-wrap break-words font-sans text-[13px] leading-[1.6] text-foreground">
             {display}
           </pre>
         ) : (
           <div className="text-xs italic text-muted-foreground">
-            No text on this page (likely image-only — OCR may still be running).
+            {!ocrResult
+              ? "No text on this page. It is likely image-only; text recognition has not run on it yet."
+              : ocrResult.status === "failed" || pageOcrPending
+                ? "No text on this page. It is likely image-only, and text recognition did not reach it."
+                : "No text on this page. It is likely image-only, and text recognition found no words on it."}
           </div>
         )}
       </div>
@@ -191,6 +213,50 @@ function SourceBadge({
         : ""}
     </span>
   );
+}
+
+/**
+ * What the OCR detector actually achieved, in words a person can act on. The
+ * detector is time-bounded (matrx-files, 2026-09-26): on a large document it
+ * stops starting pages at its budget and reports `complete: false` with the
+ * pages it did not reach, and a run that still fails carries its error. The
+ * Text tab used to show neither — a failed or partial OCR looked finished.
+ */
+function describeOcrState(ocrResult: FileAnalysisResultRow | undefined): {
+  notice: string | null;
+  pendingPages: Set<number>;
+} {
+  const pendingPages = new Set<number>();
+  if (!ocrResult) return { notice: null, pendingPages };
+  if (ocrResult.status === "failed") {
+    const reason = ocrResult.error?.split("\n")[0]?.trim();
+    return {
+      notice: `Text recognition (OCR) did not finish${reason ? ` (${reason})` : ""}. The text shown is the PDF's own text layer; use Refresh to try again.`,
+      pendingPages,
+    };
+  }
+  const summary = asObject<Record<string, unknown>>(ocrResult.summary);
+  const payload = asObject<{ pages_pending?: unknown }>(ocrResult.payload);
+  if (Array.isArray(payload?.pages_pending)) {
+    for (const p of payload.pages_pending) {
+      if (typeof p === "number") pendingPages.add(p);
+    }
+  }
+  if (summary?.complete === false) {
+    const done = typeof summary.pages_ocred === "number" ? summary.pages_ocred : 0;
+    const requested =
+      typeof summary.pages_requested === "number" ? summary.pages_requested : done + pendingPages.size;
+    const pending = requested - done;
+    const why =
+      summary.stopped_reason === "ocr_binary_missing"
+        ? "the OCR engine is not available on the server"
+        : "it reached its time limit for one run";
+    return {
+      notice: `Text recognition read ${done} of ${requested} pages that needed it — ${why}. The other ${pending} page${pending === 1 ? "" : "s"} show the PDF's own text.`,
+      pendingPages,
+    };
+  }
+  return { notice: null, pendingPages };
 }
 
 function EmptyHint({ message }: { message: string }) {
