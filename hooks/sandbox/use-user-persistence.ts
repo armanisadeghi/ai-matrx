@@ -94,7 +94,6 @@ export function useUserPersistence(
         });
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- organizationId re-reads on a switch
     [tier, organizationId],
   );
 
