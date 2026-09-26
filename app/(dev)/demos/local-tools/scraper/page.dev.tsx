@@ -761,6 +761,7 @@ function ResultCard({
             <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
           </div>
         )}
+        {/* read-gate-exempt: null result means this comparison has not run; a failed scrape arrives as a result carrying its error */}
         {!isLoading && !result && (
           <p className="text-xs text-muted-foreground text-center py-6">
             No result

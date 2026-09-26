@@ -35,6 +35,7 @@ import { toast } from "@/lib/toast";
 import { useServerConfig } from "../_shared/useServerConfig";
 import { ServerBar } from "../_shared/ServerBar";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -375,8 +376,8 @@ export default function ToolsDemoClient() {
           </div>
         )}
 
-        {/* Load error */}
-        {loadError && (
+        {/* Load error over tools already on screen; with none, the tool pane says it. */}
+        {loadError && tools.length > 0 && (
           <div className="flex-shrink-0 mx-3 mt-2 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
             <div className="flex items-start gap-2">
               <X className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
@@ -416,7 +417,15 @@ export default function ToolsDemoClient() {
                 </Badge>
               </div>
 
-              {tools.length === 0 && !loadingTools ? (
+              {loadError && tools.length === 0 && !loadingTools ? (
+                <div className="flex-1 overflow-auto">
+                  <ReadFailure
+                    error={new Error(loadError)}
+                    what="the tool list"
+                    onRetry={() => void loadTools()}
+                  />
+                </div>
+              ) : tools.length === 0 && !loadingTools ? (
                 <div className="flex-1 flex items-center justify-center p-3">
                   <div className="text-center space-y-3">
                     <Wrench className="h-10 w-10 mx-auto opacity-20" />

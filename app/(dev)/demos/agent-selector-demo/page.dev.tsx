@@ -17,9 +17,11 @@ import {
   AgentSortPanel,
   AgentTagsPanel,
   SearchInput,
+  useAgentCatalogState,
   useAgentListCore,
   type RightPanel,
 } from "@ai-matrx/agents/catalog/react";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import type { AgentSummary } from "@ai-matrx/agents/catalog";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import {
@@ -382,6 +384,7 @@ function CardGridDemo() {
       setDrawerOpen(false);
     },
   });
+  const catalogError = useAgentCatalogState((state) => state.error);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useState(() => {
@@ -440,6 +443,10 @@ function CardGridDemo() {
         <p className="col-span-full text-xs text-muted-foreground text-center py-8">
           Loading...
         </p>
+      ) : catalogError && agents.length === 0 ? (
+        <div className="col-span-full">
+          <ReadFailure error={new Error(catalogError)} what="the agent catalog" onRetry={ensureLoaded} />
+        </div>
       ) : agents.length === 0 ? (
         <p className="col-span-full text-xs text-muted-foreground text-center py-8">
           No agents found

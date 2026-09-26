@@ -112,6 +112,7 @@ export default function ToolTestingClient() {
   // ─── Tool list state ─────────────────────────────────────────────────────
   const [tools, setTools] = useState<ToolDefinition[]>([]);
   const [loadingTools, setLoadingTools] = useState(false);
+  const [toolsError, setToolsError] = useState<unknown>(null);
   const [selectedToolName, setSelectedToolName] = useState<string | null>(null);
 
   // ─── Argument form state ─────────────────────────────────────────────────
@@ -137,8 +138,10 @@ export default function ToolTestingClient() {
     try {
       const data = await fetchToolsFromDatabase();
       setTools(data);
+      setToolsError(null);
       toast.success(`Loaded ${data.length} tools`);
     } catch (err) {
+      setToolsError(err);
       toast.error(err instanceof Error ? err.message : "Failed to load tools");
     } finally {
       setLoadingTools(false);
@@ -567,6 +570,8 @@ export default function ToolTestingClient() {
               <ToolListSidebar
                 tools={tools}
                 loading={loadingTools}
+                error={toolsError}
+                onRetry={() => void loadTools()}
                 selectedTool={selectedToolName}
                 onSelectTool={handleSelectTool}
               />

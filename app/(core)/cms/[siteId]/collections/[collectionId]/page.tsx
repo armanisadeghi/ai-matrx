@@ -85,6 +85,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const FILTERS: { value: CollectionItemFilter; label: string }[] = [
   { value: "all", label: "All" },
@@ -657,7 +658,8 @@ export default function CollectionItemsPage() {
           </div>
         )}
 
-        {error && (
+        {/* With rows on screen a failed refresh is said above them; with none, the table slot says it. */}
+        {error && items.length > 0 && (
           <div className="text-sm text-destructive flex items-center gap-2 p-3 rounded-md bg-destructive/10">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
@@ -670,6 +672,12 @@ export default function CollectionItemsPage() {
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
+        ) : error && items.length === 0 ? (
+          <ReadFailure
+            error={new Error(error)}
+            what="this collection's items"
+            onRetry={() => void refreshItems()}
+          />
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center gap-3 text-muted-foreground py-16">
             <Inbox className="h-10 w-10 opacity-30" />

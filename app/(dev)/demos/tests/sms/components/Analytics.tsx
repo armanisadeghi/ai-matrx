@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, RefreshCw, AlertCircle, MessageSquare, Send, TrendingUp, Clock } from 'lucide-react';
+import { ReadFailure } from '@/components/read-state/ReadFailure';
+import { Loader2, RefreshCw, MessageSquare, Send, TrendingUp, Clock } from 'lucide-react';
 
 interface AnalyticsData {
   totalMessages: number;
@@ -86,10 +86,7 @@ export default function Analytics() {
       </div>
 
       {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <ReadFailure error={new Error(error)} what="your SMS analytics" onRetry={() => void fetchAnalytics()} className="m-0" />
       )}
 
       {analytics && (
@@ -218,6 +215,7 @@ export default function Analytics() {
                       <span className="text-sm font-medium">{count}</span>
                     </div>
                   ))}
+                  {/* read-gate-exempt: a field of the analytics that loaded (inside analytics &&); a failed read shows ReadFailure above */}
                   {Object.keys(analytics.messagesByType).length === 0 && (
                     <p className="text-sm text-muted-foreground text-center py-4">
                       No data available

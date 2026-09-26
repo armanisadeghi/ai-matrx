@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Save, CheckCircle2, AlertCircle, Settings } from 'lucide-react';
 import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface Preferences {
   phone_number: string | null;
@@ -29,7 +30,8 @@ interface Preferences {
 
 export default function NotificationPreferences() {
   const [preferences, setPreferences] = useState<Preferences | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 
@@ -42,14 +44,12 @@ export default function NotificationPreferences() {
 
       if (response.ok) {
         setPreferences(data.data || data.preferences);
+        setLoadError(null);
       } else {
-        setResult({ success: false, message: data.msg || data.error || 'Failed to fetch preferences' });
+        setLoadError(new Error(data.msg || data.error || 'Failed to fetch preferences'));
       }
     } catch (error) {
-      setResult({
-        success: false,
-        message: error instanceof Error ? error.message : 'Network error',
-      });
+      setLoadError(error);
     } finally {
       setLoading(false);
     }
@@ -98,6 +98,10 @@ export default function NotificationPreferences() {
         </CardContent>
       </Card>
     );
+  }
+
+  if (loadError && !preferences) {
+    return <ReadFailure error={loadError} what="your SMS notification preferences" onRetry={() => void fetchPreferences()} />;
   }
 
   if (!preferences) {
@@ -262,6 +266,7 @@ export default function NotificationPreferences() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Enable Quiet Hours</Label>
+                {/* read-gate-exempt: static help text describing the quiet-hours switch, not the answer of any read */}
                 <p className="text-sm text-muted-foreground">
                   No messages during specified hours
                 </p>

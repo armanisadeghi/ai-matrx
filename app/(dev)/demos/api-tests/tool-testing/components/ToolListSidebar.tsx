@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import type { ToolDefinition } from '@/features/tool-call-visualization/testing/types';
 import { filterAndSortBySearch } from '@ai-matrx/kit/search-scoring';
+import { ReadFailure } from '@/components/read-state/ReadFailure';
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   web: Globe,
@@ -28,6 +29,9 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
 interface ToolListSidebarProps {
   tools: ToolDefinition[];
   loading: boolean;
+  /** The tool list's read failure, when it failed — the list is then not "empty". */
+  error?: unknown;
+  onRetry?: () => void;
   selectedTool: string | null;
   onSelectTool: (toolName: string) => void;
 }
@@ -35,6 +39,8 @@ interface ToolListSidebarProps {
 export function ToolListSidebar({
   tools,
   loading,
+  error,
+  onRetry,
   selectedTool,
   onSelectTool,
 }: ToolListSidebarProps) {
@@ -120,6 +126,8 @@ export function ToolListSidebar({
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
+          ) : error && tools.length === 0 ? (
+            <ReadFailure error={error} what="the tool list" onRetry={onRetry} />
           ) : filtered.length === 0 ? (
             <div className="text-center py-8 text-xs text-muted-foreground">
               {tools.length === 0 ? 'No tools loaded' : 'No tools match your search'}

@@ -41,6 +41,7 @@ import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/Su
 import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
 import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 function maskKey(key: string): string {
   if (key.length <= 8) return "••••••••";
@@ -340,7 +341,8 @@ export default function CollectionsPage() {
 
         <SiteDataKeyCard />
 
-        {error && (
+        {/* With rows on screen a failed refresh is said above them; with none, the list slot says it. */}
+        {error && collections.length > 0 && (
           <div className="text-sm text-destructive flex items-center gap-2 p-3 rounded-md bg-destructive/10">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
@@ -348,7 +350,13 @@ export default function CollectionsPage() {
           </div>
         )}
 
-        {collections.length === 0 ? (
+        {error && collections.length === 0 ? (
+          <ReadFailure
+            error={new Error(error)}
+            what="this site's collections"
+            onRetry={() => void refresh()}
+          />
+        ) : collections.length === 0 ? (
           <div className="flex flex-col items-center gap-3 text-muted-foreground py-16">
             <Database className="h-10 w-10 opacity-30" />
             <p className="text-sm">No collections yet</p>

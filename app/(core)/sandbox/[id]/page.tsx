@@ -758,6 +758,7 @@ export default function SandboxDetailPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm font-mono">
+                  {/* read-gate-exempt: a field of the sandbox row that loaded; a failed read returns the AccessGate (with retry) at `if (!instance)` above */}
                   {instance.last_heartbeat_at
                     ? new Date(instance.last_heartbeat_at).toLocaleString()
                     : "No heartbeat yet"}
