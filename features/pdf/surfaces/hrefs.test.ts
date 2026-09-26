@@ -1,13 +1,18 @@
 import { buildPdfExtractorHref } from "./hrefs";
 
 describe("buildPdfExtractorHref", () => {
-  it("opens an existing processed document directly", () => {
+  it("opens an existing processed document directly, on THE Source screen", () => {
+    // Every old viewer route, /tools/pdf-extractor/[id] included, redirects to
+    // /knowledge/sources/<processed_document_id> (SOURCE-CONVERGENCE §8.2).
     expect(
       buildPdfExtractorHref({
         fileId: "file-id",
         processedDocumentId: "document-id",
       }),
-    ).toBe("/tools/pdf-extractor/document-id");
+    ).toBe("/knowledge/sources/document-id");
+    expect(
+      buildPdfExtractorHref({ fileId: null, processedDocumentId: "a/b c" }),
+    ).toBe("/knowledge/sources/a%2Fb%20c");
   });
 
   it("preserves an unprocessed cloud file id", () => {
