@@ -544,7 +544,7 @@ export function MarkdownStudio() {
           )}
           {loadedSource?.kind === "document" && (
             // The studio's own record kind: archivable where it is named (door law), restorable from Trash.
-            <ArchiveRecordButton token="document" id={loadedSource.id} what={`"${contentLabel}"`} onArchived={() => setLoadedSource(null)} className="h-5 px-1.5 text-[10px]" />
+            <ArchiveRecordButton token="document" id={loadedSource.id} what={`"${contentLabel}"`} onArchived={handleClear} onRestored={() => void loadFromSource("document", loadedSource.id)} className="h-5 px-1.5 text-[10px]" />
           )}
           {loadedSource?.notice && (
             <span className="hidden items-center gap-1 text-muted-foreground md:flex">
@@ -657,7 +657,7 @@ export function MarkdownStudio() {
               buffer={content}
               bufferTitle={loadedSampleName}
               onOpenDocument={(id) => void loadFromSource("document", id)}
-              onArchived={() => setLoadedSource(null)}
+              onArchived={handleClear}
             />
           ) : mode === "editor" ? (
             <StudioEditorMode

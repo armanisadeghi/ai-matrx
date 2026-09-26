@@ -170,7 +170,7 @@ export function AnnotateView({
             <span className="truncate font-medium text-foreground">{doc.title}</span>
             <span className="shrink-0 text-muted-foreground">version {doc.contentVersion}</span>
             {/* The ONE shared archive control (features/trash) — the document is restorable from Trash. */}
-            <ArchiveRecordButton token="document" id={doc.id} what={`"${doc.title}"`} onArchived={onArchived} className="h-7 px-2 text-xs" />
+            <ArchiveRecordButton token="document" id={doc.id} what={`"${doc.title}"`} onArchived={onArchived} onRestored={() => onOpenDocument(doc.id)} className="h-7 px-2 text-xs" />
             <Button
               size="sm"
               variant={editing ? "default" : "outline"}

@@ -13,13 +13,14 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "@/lib/toast";
 import { archiveConfirmSentence } from "../archiveCopy";
-import { archiveRecord } from "../service";
+import { archiveRecord, restoreFromTrash } from "../service";
 
 export function ArchiveRecordButton({
   token,
   id,
   what,
   onArchived,
+  onRestored,
   className,
 }: {
   /** Registered entity token (platform.entity_types). */
@@ -28,6 +29,8 @@ export function ArchiveRecordButton({
   /** The thing as a person says it: "this document", `"Kiln log"`. */
   what: string;
   onArchived?: () => void;
+  /** It came back through Undo — show it again. */
+  onRestored?: () => void;
   className?: string;
 }) {
   const [confirming, setConfirming] = useState(false);
@@ -48,8 +51,18 @@ export function ArchiveRecordButton({
           setBusy(true);
           try {
             await archiveRecord(token, id, what);
-            toast.success(`Archived. You can restore ${what} from Trash.`);
             onArchived?.();
+            // Said, and undoable right here — the surface has already moved it off screen.
+            toast.success(`Archived ${what}. It's in Trash until you restore it.`, {
+              action: {
+                label: "Undo",
+                onClick: () => {
+                  void restoreFromTrash(token, id)
+                    .then(() => { toast.success(`Restored ${what}.`); onRestored?.(); })
+                    .catch((e: unknown) => toast.error(e instanceof Error ? e.message : String(e)));
+                },
+              },
+            });
           } catch (e) {
             toast.error(e instanceof Error ? e.message : String(e));
           } finally {
