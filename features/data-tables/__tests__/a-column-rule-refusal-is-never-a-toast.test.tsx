@@ -29,6 +29,20 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 const upsertCell = jest.fn();
+// The cell edits through ProTextarea (the one text field); its AI/menu chrome
+// needs the app store, which this suite does not mount. The refusal contract
+// under test lives in the cell, so the field is its plain textarea here.
+jest.mock("@/components/official/ProTextarea", () => {
+  const React = jest.requireActual<typeof import("react")>("react");
+  const ProTextarea = React.forwardRef<HTMLTextAreaElement, Record<string, unknown>>(
+    function ProTextarea(props, ref) {
+      const { autoGrow: _a, showCopyButton: _c, enableVoice: _v, ...rest } = props;
+      return React.createElement("textarea", { ...rest, ref });
+    },
+  );
+  return { ProTextarea };
+});
+
 jest.mock("../service", () => ({
   upsertCell: (...args: unknown[]) => upsertCell(...args),
 }));

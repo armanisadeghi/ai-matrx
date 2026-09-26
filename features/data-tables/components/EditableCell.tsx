@@ -45,7 +45,7 @@ import { RefusalNotice } from "@ai-matrx/records-ui";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input, Popover, PopoverAnchor, PopoverContent } from "@ai-matrx/design-system";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 
 import { parseFieldInput } from "@/lib/field-formats/format";
@@ -532,13 +532,12 @@ export function EditableCell({
 
   if (editorKind === "textarea") {
     return (
-      <Textarea
-        ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+      <CellTextEditor
+        inputRef={inputRef as React.RefObject<HTMLTextAreaElement>}
         value={draft === null || draft === undefined ? "" : String(draft)}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={(next) => setDraft(next)}
         onKeyDown={handleKey}
-        onBlur={() => void commitEdit()}
-        onClick={(e) => e.stopPropagation()}
+        onCommit={() => void commitEdit()}
         disabled={saving}
         rows={4}
         className={cn(editorClass, "min-h-8 resize-none")}
@@ -683,8 +682,8 @@ export function EditableCell({
 
   // string / json / array — multi-line capable
   return (
-    <Textarea
-      ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+    <CellTextEditor
+      inputRef={inputRef as React.RefObject<HTMLTextAreaElement>}
       value={
         draft === null || draft === undefined
           ? ""
@@ -692,10 +691,9 @@ export function EditableCell({
             ? JSON.stringify(draft, null, 2)
             : String(draft)
       }
-      onChange={(e) => setDraft(e.target.value)}
+      onChange={(next) => setDraft(next)}
       onKeyDown={handleKey}
-      onBlur={() => void commitEdit()}
-      onClick={(e) => e.stopPropagation()}
+      onCommit={() => void commitEdit()}
       disabled={saving}
       rows={dataType === "json" || dataType === "array" ? 4 : 1}
       className={cn(editorClass, "min-h-0 resize-none leading-normal")}
@@ -904,4 +902,64 @@ function valuesEqual(a: unknown, b: unknown): boolean {
     }
   }
   return false;
+}
+
+
+/**
+ * A text cell edits through ProTextarea — the platform's one text field, so a
+ * cell gets the same "…" menu as every field (the one registry tree: Clean up,
+ * Help with this, copy/save/share…) (RC-B6 round 2). Blur still commits the
+ * edit — except when focus moved to the field's own controls or its menu,
+ * which is the person using the field, not leaving it.
+ */
+function CellTextEditor({
+  inputRef,
+  value,
+  onChange,
+  onKeyDown,
+  onCommit,
+  disabled,
+  rows,
+  className,
+  style,
+}: {
+  inputRef: React.RefObject<HTMLTextAreaElement>;
+  value: string;
+  onChange: (next: string) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  onCommit: () => void;
+  disabled: boolean;
+  rows: number;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  return (
+    <div ref={wrapRef} data-cell-text-editor="" onClick={(e) => e.stopPropagation()}>
+      <ProTextarea
+        ref={inputRef}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
+        onBlur={(e) => {
+          const next = e.relatedTarget as Element | null;
+          if (
+            next &&
+            (wrapRef.current?.contains(next) ||
+              next.closest("[data-radix-popper-content-wrapper]"))
+          ) {
+            return;
+          }
+          onCommit();
+        }}
+        disabled={disabled}
+        rows={rows}
+        autoGrow={false}
+        showCopyButton={false}
+        enableVoice={false}
+        className={className}
+        style={style}
+      />
+    </div>
+  );
 }
