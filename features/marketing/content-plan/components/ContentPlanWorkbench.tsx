@@ -1085,6 +1085,8 @@ export function ContentPlanWorkbench({
           <PlanDriftBar
             model={drift.model}
             isLoading={drift.isLoading}
+            error={drift.error}
+            onRetry={drift.retry}
             isRefreshing={drift.isRefreshing}
             onOpen={(filter) => {
               setDriftFilter(filter);

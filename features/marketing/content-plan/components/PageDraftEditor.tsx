@@ -90,6 +90,7 @@ import {
 } from "../lib/page-draft";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 /**
  * The guided AI actions offered over content that already exists. Each runs the
@@ -493,6 +494,17 @@ export function PageDraftEditor({
       <p className="text-[11px] text-muted-foreground">
         Loading this page&rsquo;s content&hellip;
       </p>
+    );
+  }
+
+  if (artifacts.isError && !resolved && !dirty) {
+    return (
+      <ReadFailure
+        error={artifacts.error}
+        what="this page's content"
+        className="m-0"
+        onRetry={() => void artifacts.refetch()}
+      />
     );
   }
 

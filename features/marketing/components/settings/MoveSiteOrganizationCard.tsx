@@ -44,6 +44,7 @@ import {
 } from "@/features/marketing/data/move-site-org";
 import { orgNameDistinguisher } from "@/features/scopes/utils/formatOrgDisplayName";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const BRAND_CHOICES: { value: BrandAction; label: string; detail: string }[] = [
   {
@@ -76,7 +77,7 @@ export function MoveSiteOrganizationCard({ site }: { site: MarketingSite }) {
   // The scope tree is the platform's list of orgs the user belongs to — the
   // same source the global org picker reads. This card only READS it; global
   // active context is written by Surface A components alone.
-  const { organizations, status } = useScopeTree();
+  const { organizations, status, error: orgsError, refresh: refreshOrgs } = useScopeTree();
   useEffect(() => {
     void dispatch(ensureScopeTree({}));
   }, [dispatch]);
@@ -180,9 +181,11 @@ export function MoveSiteOrganizationCard({ site }: { site: MarketingSite }) {
                   placeholder={
                     loading
                       ? "Loading your organizations…"
-                      : destinations.length
-                        ? "Choose an organization"
-                        : "No other organization available"
+                      : orgsError
+                        ? "Couldn't load your organizations"
+                        : destinations.length
+                          ? "Choose an organization"
+                          : "No other organization available"
                   }
                 />
               </SelectTrigger>
@@ -220,7 +223,14 @@ export function MoveSiteOrganizationCard({ site }: { site: MarketingSite }) {
           the time.
         </p>
 
-        {!loading && destinations.length === 0 ? (
+        {orgsError && destinations.length === 0 ? (
+          <ReadFailure
+            error={orgsError}
+            what="your organizations"
+            className="m-0"
+            onRetry={() => void refreshOrgs()}
+          />
+        ) : !loading && destinations.length === 0 ? (
           <p className="text-[11px] leading-4 text-muted-foreground">
             You are only a member of this site&apos;s current organization, so
             there is nowhere to move it yet. Join or create another organization

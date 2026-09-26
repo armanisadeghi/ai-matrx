@@ -79,6 +79,7 @@ import {
   type StepStaleness,
 } from "../lib/pipeline-staleness";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const EMPTY_STEPS: ReadonlyMap<string, never> = new Map<string, never>();
 
@@ -322,6 +323,16 @@ export function StepArtifactView({
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
       </p>
+    );
+  }
+  if (artifacts.isError && !current) {
+    return (
+      <ReadFailure
+        error={artifacts.error}
+        what={`${stepLabel}'s output`}
+        className="m-0"
+        onRetry={() => void artifacts.refetch()}
+      />
     );
   }
   if (!current) {

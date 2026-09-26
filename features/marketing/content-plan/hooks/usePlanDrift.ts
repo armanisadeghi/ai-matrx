@@ -267,6 +267,8 @@ export function usePlanDrift(
     isRefreshing: reality.isRunning,
     isPaired: cmsPages.map !== null,
     error: cmsPages.error ?? reality.error ?? null,
+    /** Re-read both witnesses (after a failed read). */
+    retry: () => void invalidate(),
     busyRepairId,
     repairsFor,
     publishPending,

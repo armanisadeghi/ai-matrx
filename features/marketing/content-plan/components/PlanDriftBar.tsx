@@ -17,6 +17,7 @@ import { CheckCircle2, Loader2, Radar, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { cn } from "@/lib/utils";
 
@@ -27,12 +28,17 @@ import type { DriftFilter } from "./PlanDriftSheet";
 export function PlanDriftBar({
   model,
   isLoading,
+  error,
+  onRetry,
   isRefreshing,
   onOpen,
   onSyncAlignment,
 }: {
   model: PlanDriftModel;
   isLoading: boolean;
+  /** A witness read (site pages / crawl report) failed — no verdict is honest. */
+  error?: unknown;
+  onRetry?: () => void;
   isRefreshing: boolean;
   onOpen: (filter: DriftFilter) => void;
   onSyncAlignment: () => void;
@@ -42,6 +48,19 @@ export function PlanDriftBar({
       <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground">
         <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
         Checking the plan against the live site&hellip;
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="border-b border-border px-3 py-1.5">
+        <ReadFailure
+          error={error}
+          what="the plan's comparison with the live site"
+          className="m-0"
+          onRetry={onRetry}
+        />
       </div>
     );
   }
