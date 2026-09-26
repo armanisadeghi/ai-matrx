@@ -265,12 +265,18 @@ export const staticSettingsControlIndex = [
     "tabId": "voice.voices",
     "label": "Read-aloud speed",
     "description": "1.0 is the voice's natural pace. Our default is 1.2.",
-    "controlId": "settings-control-read-aloud-speed-and-language-read-aloud-speed"
+    "controlId": "settings-control-how-your-read-aloud-voice-speaks-read-aloud-speed"
   },
   {
     "tabId": "voice.voices",
     "label": "Read-aloud language",
-    "controlId": "settings-control-read-aloud-speed-and-language-read-aloud-language"
+    "controlId": "settings-control-how-your-read-aloud-voice-speaks-read-aloud-language"
+  },
+  {
+    "tabId": "voice.voices",
+    "label": "Read-aloud emotion",
+    "description": "The tone your read-aloud voice speaks in — the chat speaker, the Listen panel and spoken replies. Live conversation uses a different engine and is not affected.",
+    "controlId": "settings-control-how-your-read-aloud-voice-speaks-read-aloud-emotion"
   },
   {
     "tabId": "voice.voices",
@@ -293,14 +299,8 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "voice.input",
     "label": "Voices you hear",
-    "description": "Your read-aloud voice, your live conversation voice, and every other voice AI Matrx speaks with — each with a sample.",
+    "description": "Your read-aloud voice (with its speed, language and emotion), your live conversation voice, and every other voice AI Matrx speaks with — each with a sample.",
     "controlId": "settings-control-voice-voices-you-hear"
-  },
-  {
-    "tabId": "voice.input",
-    "label": "Emotion / tone",
-    "description": "Applied to your read-aloud voice, spoken replies, and the Listen panel — every surface that speaks through Cartesia. Live voice conversation runs on a different engine (xAI Realtime) and doesn't read this. Only the values Cartesia actually supports are offered — a free-text word like 'cheerful' used to be accepted here and silently ignored.",
-    "controlId": "settings-control-voice-emotion-tone"
   },
   {
     "tabId": "voice.input",
