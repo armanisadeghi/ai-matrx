@@ -21,6 +21,7 @@ import { parseCallApiError } from "@/lib/api/errors";
 import { createClient } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { invalidateMandateCache } from "@/features/mandates/service";
+import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
 import type { CreateMandateInput, DraftInput } from "@/features/mandates/authoring/service";
 import type { MandateListLevel } from "@/features/mandates/member-list/types";
 
@@ -74,14 +75,18 @@ export async function createSoftMandate(
   input: CreateSoftMandateInput,
 ): Promise<CreatedSoftMandate> {
   await requireAuthenticatedSupabaseSession(createClient());
+  // Where the request is filed. An organization mandate names its organization. A personal
+  // mandate is filed BY NAME in the person's own workspace (the server homes it there anyway) —
+  // a personal create never stops at "Select an organization" (the same rule as a personal
+  // binding and a personal copy, 308e1badb7).
+  const home =
+    input.level === "organization" ? (input.organizationId ?? null) : await resolvePersonalOrgId();
   const result = await dispatch(
     callApi({
       path: "/mandates/soft",
       method: "POST",
       body: softMandateBody(input),
-      ...(input.level === "organization" && input.organizationId
-        ? { scopeOverrides: { organization_id: input.organizationId } }
-        : {}),
+      ...(home ? { scopeOverrides: { organization_id: home } } : {}),
     }),
   );
   if (result.error) throw new Error(parseCallApiError(result.error).userMessage);
