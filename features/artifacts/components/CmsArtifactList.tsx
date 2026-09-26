@@ -66,10 +66,6 @@ import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { ARTIFACTS_SURFACE_NAME } from "@/features/surfaces/manifests/artifacts.manifest";
-import {
-  selectCanvasIsOpen,
-  selectCurrentCanvasItem,
-} from "@/features/canvas/redux/canvasSlice";
 import { buildArtifactListScope } from "@/features/artifacts/lib/artifacts-scope";
 
 const ARTIFACT_ICONS: Record<ArtifactType, React.FC<{ className?: string }>> = {
@@ -172,8 +168,6 @@ export function CmsArtifactList() {
   const fetchStatus = useAppSelector(selectArtifactFetchStatus);
   const fetchError = useAppSelector(selectArtifactFetchError);
   const allArtifacts = useAppSelector(selectAllArtifacts);
-  const canvasIsOpen = useAppSelector(selectCanvasIsOpen);
-  const currentCanvasItem = useAppSelector(selectCurrentCanvasItem);
 
   const [filters, setFilters] = useState<FilterState>({
     type: "all",
@@ -290,9 +284,6 @@ export function CmsArtifactList() {
       visible: filtered,
       fetchStatus,
       fetchError,
-      openCanvasItemId: canvasIsOpen
-        ? (currentCanvasItem?.savedItemId ?? null)
-        : null,
     });
 
   const isLoading = fetchStatus === "loading";
