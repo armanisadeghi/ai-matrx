@@ -505,6 +505,12 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "Lane NAV-FIX's RED TWIN for the sidebar gate: it wires the gate the OLD way (a synchronous Redux read inside useEffect(…, [])) and FAILS, which is what proves the real hook's four green clauses are load-bearing. It is excluded from `pnpm test` by jest.config.ts and serves no request, so it is tooling and must not be gated — a red twin held behind the campaign switch would go quiet exactly when the campaign is off, which is when a regression would land unseen. Registered by lane APPROVAL-KNOB, which found `check:campaign-entry-points` exiting 1 on origin/main for this one unregistered file.",
     },
     {
+        id: "kit-install",
+        file: "features/kits/hooks/useKitInstall.ts",
+        kind: "runtime",
+        why: "A kit (a starter set of tables a person installs from the kits page) lands its tables in the record store, so the install hook asks this organization's switch (`UNIFIED_DATA_CAMPAIGN.check`) before it offers Install and says 'could not check' rather than installing into a store that is off. Registered by lane data-tables-grid-overhaul, which found this test red on main for this one unregistered importer.",
+    },
+    {
         id: "entity-custom-fields",
         file: "features/unified-data/components/EntityCustomFields.tsx",
         kind: "runtime",

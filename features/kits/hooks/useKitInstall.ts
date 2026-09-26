@@ -48,7 +48,7 @@ export function useKitInstall(manifest: KitManifest) {
   const store = useUnifiedDataCampaign({
     organizationId,
     organizationState: org.organizationState,
-    storeSwitch: UNIFIED_DATA_CAMPAIGN.check,
+    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
   });
 
   const [runId] = useState(newRunId);
