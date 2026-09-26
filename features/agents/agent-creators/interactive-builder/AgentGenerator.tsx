@@ -455,9 +455,18 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
           jsonExtraction: HOLDER_DRAFT_JSON_EXTRACTION,
           sourceFeature: "agent-generator",
           ...(ownerOrganizationId ? { organizationId: ownerOrganizationId } : {}),
-          ...(authoringModel
-            ? { config: { llmOverrides: { model: authoringModel } } }
-            : {}),
+          // 🚨 PRESSING GENERATE IS THE RUN (2026-09-26). This panel renders
+          // the result itself (`direct`) and has no second "send" control, so
+          // the launch must run now. Without `autoRun: true` the thunk seeded
+          // a conversation, found the job's binding silent on auto-run, and
+          // returned waiting for a user action this screen never offers —
+          // Generate did nothing, with no request and no error. (The old
+          // shortcut path carried autoRun on its shortcut row.)
+          config: {
+            autoRun: true,
+            displayMode: "direct",
+            ...(authoringModel ? { llmOverrides: { model: authoringModel } } : {}),
+          },
           onConversationCreated: (id) => setConversationId(id),
         });
         return;
