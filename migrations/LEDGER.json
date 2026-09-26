@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-26T08:40:46.525Z",
+  "generated_at": "2026-09-26T08:49:13.323Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -5041,6 +5041,12 @@
       "filename": "trash2_trash_reads_by_person_and_organization_indexes.sql",
       "checksum": "036aa1f3b599dbf02f64223ef98b38007c4f68c82428dca8cbc8f7fe4c1851ce",
       "applied_at": "2026-09-25 22:59:37.007856+00"
+    },
+    "migrations/campaign/trashcoverage2_a_restored_item_brings_back_its_copied_context_tags.sql": {
+      "source": "matrx-frontend",
+      "filename": "trashcoverage2_a_restored_item_brings_back_its_copied_context_tags.sql",
+      "checksum": "c0a7ac8cecc9faef0ce873ae1f81439c3b6d835519a8abe99d9f6bab45fb0ec5",
+      "applied_at": "2026-09-26 08:49:12.380644+00"
     },
     "migrations/campaign/trashcoverage2_every_archivable_thing_a_person_sees_is_in_trash.sql": {
       "source": "matrx-frontend",
