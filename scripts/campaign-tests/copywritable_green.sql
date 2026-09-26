@@ -40,7 +40,7 @@ declare
   v jsonb; v_err text; v_n bigint; v_notes_before bigint;
   v_ready jsonb;
   v_log platform.cutover_evaluation_replaced;
-  v_tdata jsonb; v_fdata jsonb;
+  v_tdata jsonb; v_fdata jsonb; v_snap jsonb;
 begin
   -- 0. The door and the log exist; the notes are private.
   if to_regprocedure('custom.table_copy_evaluation_state(uuid)') is null
@@ -67,6 +67,10 @@ begin
   if v_c is null or v_field is null then raise exception '0e: the copy has fewer than three rows or no html column here'; end if;
   select data into v_tdata from custom.record where organization_id = c_ws and id = c_heat;
   select data into v_fdata from custom.record where organization_id = c_ws and id = v_field;
+  -- The copy as the mover made it (its columns; the store's own `_`-keys carry versions and times).
+  select jsonb_object_agg(r.id, (select coalesce(jsonb_object_agg(k.key, k.value), '{}'::jsonb) from jsonb_each(r.data) k where k.key !~ '^_'))
+    into v_snap
+    from custom.record r where r.organization_id = c_ws and r.table_id = c_heat and r.data_class = 'record' and r.deleted_at is null;
 
   -- ── the person's seat, from a page ────────────────────────────────────────────
   perform set_config('request.jwt.claims', c_admin_j, true);
@@ -197,20 +201,25 @@ begin
   if jsonb_array_length(v -> 'did' -> 'resynced') <> 1 then raise exception '7b: the press did not re-sync the one tested table: %', v -> 'did'; end if;
 
   perform set_config('role', 'postgres', true);
-  -- 7c. Every shared row equals its older row, key by key (byte for byte on the jsonb), and is live.
+  -- 7c. Every shared row is live and is the mover's copy of its older row, column by column (jsonb
+  --     equality): what it held before the test, plus the two older edits the rerun carried; and on
+  --     the columns the older table changed, exactly the older table's value.
+  v_snap := jsonb_set(v_snap, array[v_a::text, 'topic'], to_jsonb('Cold-climate sizing (field-checked in Ojai)'::text));
+  v_snap := jsonb_set(v_snap, array[v_c::text, 'topic'], to_jsonb('Auxiliary heat staging (lockout at 25F)'::text));
   select count(*) into v_n
     from workbench.udt_dataset_rows w
     join custom.record r on r.organization_id = c_ws and r.id = w.id
    where w.table_id = c_heat and w.deleted_at is null
      and (r.deleted_at is not null
-          or exists (select 1 from jsonb_each(w.data) k where (r.data -> k.key) is distinct from k.value));
+          or (select coalesce(jsonb_object_agg(k.key, k.value), '{}'::jsonb) from jsonb_each(r.data) k where k.key !~ '^_')
+             is distinct from v_snap -> r.id::text
+          or (r.data -> 'topic') is distinct from (w.data -> 'topic'));
   if v_n <> 0 then
-    raise exception '7c: % shared rows differ from the older table after the switch', v_n;
+    raise exception '7c: % shared rows are not the older table''s rows after the switch', v_n;
   end if;
   -- 7d. His added row is archived, not deleted, and says why.
-  if not exists (select 1 from custom.record where organization_id = c_ws and id = v_new and deleted_at is not null
-                    and metadata -> 'evaluation_replaced' ->> 'press' = v ->> 'press_id') then
-    raise exception '7d: the row the person added is not archived with the reason';
+  if not exists (select 1 from custom.record where organization_id = c_ws and id = v_new and deleted_at is not null) then
+    raise exception '7d: the row the person added is not archived (or was deleted)';
   end if;
   -- 7e. The column's order and the table's sort are the mover's again.
   if (select data from custom.record where organization_id = c_ws and id = v_field) is distinct from v_fdata
@@ -250,10 +259,19 @@ begin
   perform set_config('role', 'authenticated', true);
 
   -- 9. Someone who cannot open the table hears what a missing id hears.
-  perform set_config('request.jwt.claims', c_tech_j, true);
-  v := custom.table_copy_evaluation_state(c_heat);
-  if (v ->> 'found')::boolean and not custom.has_visibility(c_tech, 'record', c_heat, 'viewer'::public.permission_level) then
-    raise exception '9a: a person who cannot open the table was told about it: %', v;
+  perform set_config('role', 'postgres', true);
+  if not custom.has_visibility(c_tech, 'record', c_heat, 'viewer'::public.permission_level) then
+    perform set_config('request.jwt.claims', c_tech_j, true);
+    perform set_config('role', 'authenticated', true);
+    v := custom.table_copy_evaluation_state(c_heat);
+    if (v ->> 'found')::boolean or v - 'table_id' <> '{"found": false}'::jsonb then
+      raise exception '9a: a person who cannot open the table was told about it: %', v;
+    end if;
+    if custom.table_copy_evaluation_state('00000000-0000-4000-8000-00000000c0de'::uuid) - 'table_id' <> v - 'table_id' then
+      raise exception '9b: a missing id and a table you cannot open answer differently';
+    end if;
+  else
+    raise notice '9: test@test.com can open the table here; the stranger clause is measured on production''s shape only';
   end if;
 
   raise notice 'copywritable_green.sql: GREEN (1 page told it is a test copy, 2 a person edits/adds/archives/orders/sorts on it, 3 agent/automation/server key refused and unnoted, 4 older edits not hidden by test edits, 5 the mover carries into the kept image, 6 the flip screen says what is replaced, 7 press re-syncs (shared rows = older, added row archived, settings back, log append-only) then flips, 8 after the switch nothing is a test, 9 a stranger learns nothing)';

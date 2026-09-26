@@ -61,6 +61,10 @@ create index if not exists cutover_evaluation_write_table
 
 alter table platform.cutover_evaluation_write enable row level security;
 revoke all on platform.cutover_evaluation_write from public, anon, authenticated, service_role;
+-- Our own admin database access is never removed (policy: our-own-admin-database-access.md).
+drop policy if exists platform_admin_read on platform.cutover_evaluation_write;
+create policy platform_admin_read on platform.cutover_evaluation_write for select to authenticated
+  using ((select public.is_platform_admin()));
 
 create table if not exists platform.cutover_evaluation_replaced (
   id                 uuid primary key default gen_random_uuid(),
@@ -87,6 +91,9 @@ create index if not exists cutover_evaluation_replaced_org on platform.cutover_e
 
 alter table platform.cutover_evaluation_replaced enable row level security;
 revoke all on platform.cutover_evaluation_replaced from public, anon, authenticated, service_role;
+drop policy if exists platform_admin_read on platform.cutover_evaluation_replaced;
+create policy platform_admin_read on platform.cutover_evaluation_replaced for select to authenticated
+  using ((select public.is_platform_admin()));
 
 create or replace function platform._cutover_evaluation_replaced_is_append_only()
 returns trigger
@@ -840,12 +847,11 @@ begin
       end if;
       v_found := false;
       if v_e.created then
-        -- Made on the copy by a person, with no older row: ARCHIVED, never deleted.
+        -- Made on the copy by a person, with no older row: ARCHIVED, never deleted. Its id is in
+        -- this table's log row (archived_ids), which is where the reason is kept (metadata is the
+        -- platform's own column, never a note).
         update custom.record r
-           set deleted_at = coalesce(r.deleted_at, v_at),
-               metadata = coalesce(r.metadata, '{}'::jsonb) || jsonb_build_object('evaluation_replaced', jsonb_build_object(
-                 'press', p_press, 'at', v_at,
-                 'why', 'Added to the test copy before the Data tables switch; the older table had no such row, so the switch archived it.'))
+           set deleted_at = coalesce(r.deleted_at, v_at)
          where r.organization_id = p_org and r.id = v_e.record_id;
         if v_e.data_class = 'record' then
           v_arch := v_arch + 1; v_ids := v_ids || v_e.record_id;
