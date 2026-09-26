@@ -37,6 +37,21 @@ const WORD_REPLACEMENTS: Record<string, string> = {
   ts: "TS",
 };
 
+const UUID_SEGMENT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * A crumb for a record's own address whose name the page has not published (yet):
+ * the record's KIND, from the list it sits under — "Organization" under
+ * "Organizations" — never its uuid title-cased ("884d1ce8 7b49 4fba …", VERIFIER-25).
+ */
+export function identifierCrumbLabel(segment: string, parentLabel: string | undefined): string | null {
+  if (!UUID_SEGMENT.test(segment)) return null;
+  const parent = (parentLabel ?? "").trim();
+  if (/ies$/i.test(parent)) return `${parent.slice(0, -3)}y`;
+  if (/s$/i.test(parent) && !/ss$/i.test(parent)) return parent.slice(0, -1);
+  return "Record";
+}
+
 function titleCase(segment: string): string {
   const base = segment
     .replace(/[_-]/g, " ")
@@ -171,7 +186,8 @@ export function getAdminCrumbs(
       label:
         !node && i === 2 && segments[1] === "mandates"
           ? "Mandate"
-          : (node?.label ?? titleCase(segment)),
+          : (node?.label ??
+            (identifierCrumbLabel(segment, crumbs[crumbs.length - 1]?.label) ?? titleCase(segment))),
       isPage: node?.isPage ?? false,
       isLast,
       children: node?.children ?? [],

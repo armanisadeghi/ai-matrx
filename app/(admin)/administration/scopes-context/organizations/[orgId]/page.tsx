@@ -12,11 +12,15 @@ import { useParams } from "next/navigation";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { ScopeManagerPage } from "@/features/agent-context/components/scope-admin/ScopeManagerPage";
 import { AdminPageCapture } from "@/components/agent-copy/page-capture/AdminPageCapture";
+import { useRecordTitle } from "@/lib/record-title/record-title";
 
 export default function AdminOrganizationScopesPage() {
   const params = useParams();
   const orgId = params.orgId as string;
   const org = useAppSelector((s) => s.scopesTree.organizations[orgId]);
+  // The breadcrumb and the tab say the organization's name, from the organizations
+  // index this console already loads — never its id (VERIFIER-25).
+  useRecordTitle(org?.name);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
