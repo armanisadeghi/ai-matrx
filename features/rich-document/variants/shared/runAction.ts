@@ -49,7 +49,7 @@ export function resolveActionDisplay(
       : undefined;
   return {
     label: resolveActionLabel(action.label, ctx),
-    Icon: action.icon,
+    Icon: action.stateIcon?.(ctx)?.icon ?? action.icon,
     iconColor: action.iconColor,
     isDisabled,
     disabledReason,

@@ -48,7 +48,8 @@ export function PrimaryButtons(props: PrimaryButtonsProps): React.ReactElement {
   return (
     <div className={cn("inline-flex items-center gap-0.5", className)}>
       {primary.map((action) => {
-        const Icon = action.icon;
+        const live = action.stateIcon?.(ctxForLabels) ?? null;
+        const Icon = live?.icon ?? action.icon;
         const labelText = resolveActionLabel(action.label, ctxForLabels);
         const disabledResult = action.disabled?.(ctxForLabels);
         const isDisabled =
@@ -92,6 +93,7 @@ export function PrimaryButtons(props: PrimaryButtonsProps): React.ReactElement {
                 <Icon
                   className={cn(
                     iconSize,
+                    live?.spin && "animate-spin",
                     // A toggle is colored only while ON; muted otherwise.
                     active === false ? "text-muted-foreground" : action.iconColor,
                   )}

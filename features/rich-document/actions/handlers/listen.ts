@@ -11,7 +11,7 @@
 // lookup until someone listens — and a click that finds no bound agent says
 // so instead of doing nothing.
 
-import { AudioLines, Headphones, Volume2 } from "lucide-react";
+import { AudioLines, Headphones, Loader2, Pause, Play, Volume2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { primeAudioOutput } from "@/features/audio/unlock";
 import { openListenSummaryWindowAction } from "@/features/overlays/openers/listenSummaryWindow";
@@ -116,9 +116,18 @@ const announcedSpeechErrors = new Set<string>();
 function speechStatus(ctx: RichDocumentActionContext): SpeechStatus {
   if (!playbackApi) return null;
   const snap = playbackApi.getPlaybackSnapshot();
-  const item = snap.items.find(
-    (i) => i.id === snap.currentId && i.text === contentForDestination(ctx),
-  );
+  const text = contentForDestination(ctx);
+  // The current item wins; otherwise this content's newest live item (queued
+  // behind another utterance, or enqueued before the queue picked it up).
+  const item =
+    snap.items.find((i) => i.id === snap.currentId && i.text === text) ??
+    [...snap.items]
+      .reverse()
+      .find(
+        (i) =>
+          i.text === text &&
+          (i.status === "queued" || i.status === "loading"),
+      );
   if (!item) return null;
   if (item.status === "playing") return "playing";
   if (item.status === "paused") return "paused";
@@ -160,6 +169,13 @@ registerAction({
   order: -1,
   preserveSelection: true,
   visible: (ctx) => ctx.content.trim().length > 0,
+  stateIcon: (ctx) => {
+    const status = speechStatus(ctx);
+    if (status === "playing") return { icon: Pause };
+    if (status === "paused") return { icon: Play };
+    if (status === "busy") return { icon: Loader2, spin: true };
+    return null;
+  },
   active: (ctx) => {
     const status = speechStatus(ctx);
     return status === "playing" || status === "paused";

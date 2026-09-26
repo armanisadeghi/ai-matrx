@@ -430,6 +430,13 @@ export interface RichDocumentAction {
    */
   active?: (ctx: RichDocumentActionContext) => boolean;
   /**
+   * A toggle's live glyph (read-aloud: Pause while playing, Play while paused,
+   * a spinner while starting). Null/absent = the static `icon`.
+   */
+  stateIcon?: (
+    ctx: RichDocumentActionContext,
+  ) => { icon: LucideIcon; spin?: boolean } | null;
+  /**
    * Subscribe to whatever `active`/`label` read (a module store). Called by
    * the renderer; returns the unsubscribe. May also start a hydration read.
    */
