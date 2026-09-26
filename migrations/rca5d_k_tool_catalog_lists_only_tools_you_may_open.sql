@@ -1,4 +1,3 @@
--- draft: rc-a5d-deep catalog batch of the definer-door census; remove when rehearsed + suite green
 -- RC-A5d census, batch 6 (catalogs) — THE TOOL CATALOG LISTS ONLY TOOLS THE CALLER MAY OPEN.
 -- Register row RC-A5d. Census: aidream db/tests/test_definer_doors_ask_each_record.py (backlog).
 --
