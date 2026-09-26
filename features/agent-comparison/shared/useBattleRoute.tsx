@@ -48,6 +48,9 @@ export type BattleRouteStatus =
   | { kind: "loading"; setId: string }
   | { kind: "error"; setId: string; message: string };
 
+/** One shared object, so "already ready" never schedules another render. */
+const READY: BattleRouteStatus = { kind: "ready" };
+
 export function useBattleRoute({
   mode,
   urlSetId,
@@ -59,7 +62,7 @@ export function useBattleRoute({
   const [status, setStatus] = useState<BattleRouteStatus>(() =>
     urlSetId && urlSetId !== activeSetId
       ? { kind: "loading", setId: urlSetId }
-      : { kind: "ready" },
+      : READY,
   );
   // Held for the whole load: the mode's loader clears the active battle before
   // it rebuilds it, and the screen → URL direction must not chase that.
@@ -76,7 +79,7 @@ export function useBattleRoute({
   // URL → screen.
   useEffect(() => {
     if (!urlSetId || urlSetId === activeRef.current) {
-      if (loadingFor.current === null) setStatus({ kind: "ready" });
+      if (loadingFor.current === null) setStatus(READY);
       return;
     }
     if (loadingFor.current === urlSetId) return;
@@ -98,7 +101,7 @@ export function useBattleRoute({
           return;
         }
         await loadRef.current(urlSetId);
-        if (stillWanted()) setStatus({ kind: "ready" });
+        if (stillWanted()) setStatus(READY);
       } catch (err) {
         if (stillWanted()) {
           setStatus({
