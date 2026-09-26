@@ -34,6 +34,8 @@ export interface OrgContributableItems {
   alreadyShared: Set<string>;
   justShared: Set<string>;
   loading: boolean;
+  /** The items read failed — the view shows this, never "you don't own any". */
+  error: unknown;
   sharingId: string | null;
   /** True when this entry can be contributed at all. */
   contributable: boolean;
@@ -52,6 +54,7 @@ export function useOrgContributableItems(
   const [alreadyShared, setAlreadyShared] = React.useState<Set<string>>(new Set());
   const [justShared, setJustShared] = React.useState<Set<string>>(new Set());
   const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<unknown>(null);
   const [sharingId, setSharingId] = React.useState<string | null>(null);
   const [reloadTick, setReloadTick] = React.useState(0);
 
@@ -72,6 +75,7 @@ export function useOrgContributableItems(
     ) {
       setItems([]);
       setAlreadyShared(new Set());
+      setError(null);
       return undefined;
     }
     const table = entityInfo.table;
@@ -80,6 +84,7 @@ export function useOrgContributableItems(
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setError(null);
       setItems([]);
       setJustShared(new Set());
       try {
@@ -116,8 +121,9 @@ export function useOrgContributableItems(
         setAlreadyShared(sharedIds);
       } catch (err) {
         if (!cancelled) {
-          console.error("[useOrgContributableItems] load failed:", err);
-          toast.error("Couldn't load your items for this kind.");
+          // The consuming view renders this failure (ReadFailure, with the
+          // menu) in place of the list — no toast on top of it.
+          setError(err ?? new Error("The read failed"));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -167,6 +173,7 @@ export function useOrgContributableItems(
     alreadyShared,
     justShared,
     loading,
+    error,
     sharingId,
     contributable,
     share,

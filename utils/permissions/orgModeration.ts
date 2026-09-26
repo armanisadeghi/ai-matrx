@@ -70,10 +70,8 @@ export async function listOrgShareGrants(
     .eq("granted_to_organization_id", orgId)
     .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error("[orgModeration] listOrgShareGrants failed:", error.message);
-    return [];
-  }
+  // A failed read throws: an empty array would read as "no contributions".
+  if (error) throw new Error(`Couldn't load the organization's shared items: ${error.message}`);
 
   return (data ?? []).map((row) => {
     const r = row as Record<string, unknown>;
@@ -114,13 +112,8 @@ export async function listOrgSharedIdsForTable(
     .eq("granted_to_organization_id", orgId)
     .eq("resource_type", tableName)
     .neq("status", "rejected");
-  if (error) {
-    console.error(
-      "[orgModeration] listOrgSharedIdsForTable failed:",
-      error.message,
-    );
-    return new Set();
-  }
+  // A failed read throws: an empty set would mark nothing as already shared.
+  if (error) throw new Error(`Couldn't load what is already shared with the organization: ${error.message}`);
   return new Set(
     (data ?? []).map((r) => String((r as { resource_id: string }).resource_id)),
   );

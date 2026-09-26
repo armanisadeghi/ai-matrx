@@ -27,6 +27,7 @@ import {
   type OrgResourceEntry,
 } from "../resource-catalogue";
 import { useOrgContributableItems } from "../hooks/useOrgContributableItems";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface ContributeResourceSheetProps {
   open: boolean;
@@ -152,6 +153,12 @@ export function ContributeResourceSheet({
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
+            ) : mine.error ? (
+              <ReadFailure
+                error={mine.error}
+                what={`your ${selected.labelPlural.toLowerCase()}`}
+                onRetry={mine.reload}
+              />
             ) : filtered.length === 0 ? (
               <div className="text-center py-12">
                 <selected.icon className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />

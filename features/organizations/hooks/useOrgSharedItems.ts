@@ -34,6 +34,8 @@ export interface OrgSharedItem {
 export interface OrgSharedItemsResult {
   items: OrgSharedItem[];
   loading: boolean;
+  /** The team-items read failed — the view shows this, never "nothing here". */
+  error: unknown;
   reload: () => void;
 }
 
@@ -43,18 +45,21 @@ export function useOrgSharedItems(
 ): OrgSharedItemsResult {
   const [items, setItems] = React.useState<OrgSharedItem[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<unknown>(null);
   const [reloadTick, setReloadTick] = React.useState(0);
 
   React.useEffect(() => {
     if (!orgId || !entry) {
       setItems([]);
       setLoading(false);
+      setError(null);
       return undefined;
     }
     let cancelled = false;
 
     (async () => {
       setLoading(true);
+      setError(null);
       const titleCol = entry.titleColumn ?? "id";
 
       try {
@@ -71,7 +76,8 @@ export function useOrgSharedItems(
             .limit(500);
           if (entry.archivedColumn) q = q.eq(entry.archivedColumn as never, false);
           if (entry.deletedAtColumn) q = q.is(entry.deletedAtColumn as never, null);
-          const { data } = await q;
+          const { data, error: ownedError } = await q;
+          if (ownedError) throw ownedError;
           // MATRX-EXCEPTION: table + title column are resolved from the org
           // resource catalogue at runtime (any cardable kind), so the row
           // shape cannot be a compile-time DbRpcRow guard.
@@ -105,10 +111,11 @@ export function useOrgSharedItems(
             .map((g) => g.resourceId)
             .filter((id) => !ownedById.has(id));
           if (sharedIds.length > 0 && entry.table) {
-            const { data } = await db
+            const { data, error: sharedError } = await db
               .from(entry.table as never)
               .select(`id, ${titleCol}`)
               .in("id", sharedIds);
+            if (sharedError) throw sharedError;
             const titleById = new Map<string, string>();
             // MATRX-EXCEPTION: same runtime-resolved table/column as above.
             const sharedRows = (data ?? []) as unknown as Array<Record<string, unknown>>;
@@ -134,6 +141,7 @@ export function useOrgSharedItems(
         if (!cancelled) {
           console.error("[useOrgSharedItems] load failed:", err);
           setItems([]);
+          setError(err ?? new Error("The read failed"));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -150,5 +158,5 @@ export function useOrgSharedItems(
     setReloadTick((t) => t + 1);
   }
 
-  return { items, loading, reload };
+  return { items, loading, error, reload };
 }

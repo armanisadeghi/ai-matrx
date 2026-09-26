@@ -42,6 +42,7 @@ import {
   ORG_RESOURCE_CATALOGUE,
   type OrgResourceEntry,
 } from "../resource-catalogue";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface OrgShareReviewCardProps {
   orgId: string;
@@ -72,6 +73,7 @@ export function OrgShareReviewCard({
 }: OrgShareReviewCardProps) {
   const [grants, setGrants] = React.useState<HydratedGrant[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<unknown>(null);
   const [busyId, setBusyId] = React.useState<string | null>(null);
 
   const memberName = React.useCallback(
@@ -85,7 +87,16 @@ export function OrgShareReviewCard({
 
   const load = React.useCallback(async () => {
     setLoading(true);
-    const raw = await listOrgShareGrants(orgId);
+    setLoadError(null);
+    let raw: Awaited<ReturnType<typeof listOrgShareGrants>>;
+    try {
+      raw = await listOrgShareGrants(orgId);
+    } catch (err) {
+      setGrants([]);
+      setLoadError(err ?? new Error("The read failed"));
+      setLoading(false);
+      return;
+    }
 
     // Hydrate titles in one query per table.
     const byTable = new Map<string, string[]>();
@@ -209,6 +220,8 @@ export function OrgShareReviewCard({
         <div className="flex items-center justify-center py-10">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
+      ) : loadError ? (
+        <ReadFailure error={loadError} what="this organization's member contributions" onRetry={() => void load()} />
       ) : grants.length === 0 ? (
         <div className="text-center py-8 border-2 border-dashed border-border rounded-lg">
           <p className="text-sm text-muted-foreground">

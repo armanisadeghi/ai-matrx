@@ -19,6 +19,7 @@ import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { OrgResourceEntry } from "../resource-catalogue";
 import type { ContainerColumn } from "../hooks/useContainerInventory";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface Item {
   id: string;
@@ -40,6 +41,8 @@ export function ContainerResourceSheet({
 }) {
   const [items, setItems] = React.useState<Item[]>([]);
   const [loading, setLoading] = React.useState(false);
+  const [loadError, setLoadError] = React.useState<unknown>(null);
+  const [reloadKey, setReloadKey] = React.useState(0);
   const [query, setQuery] = React.useState("");
 
   React.useEffect(() => {
@@ -50,6 +53,7 @@ export function ContainerResourceSheet({
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setLoadError(null);
       setQuery("");
       const titleCol = entry.titleColumn ?? "id";
       try {
@@ -87,6 +91,7 @@ export function ContainerResourceSheet({
         if (!cancelled) {
           console.error("[ContainerResourceSheet] load failed:", err);
           setItems([]);
+          setLoadError(err ?? new Error("The read failed"));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -95,7 +100,7 @@ export function ContainerResourceSheet({
     return () => {
       cancelled = true;
     };
-  }, [open, entry, column, value]);
+  }, [open, entry, column, value, reloadKey]);
 
   if (!entry) return null;
   const Icon = entry.icon;
@@ -163,6 +168,12 @@ export function ContainerResourceSheet({
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
+          ) : loadError ? (
+            <ReadFailure
+              error={loadError}
+              what={`this ${column === "project_id" ? "project" : "task"}'s ${entry.labelPlural.toLowerCase()}`}
+              onRetry={() => setReloadKey((n) => n + 1)}
+            />
           ) : filtered.length === 0 ? (
             <div className="text-center py-12">
               <Icon className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />

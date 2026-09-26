@@ -64,6 +64,7 @@ import {
   useOrgContributableItems,
   type MyItem,
 } from "../hooks/useOrgContributableItems";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   useOrgSharedItems,
   type OrgSharedItem,
@@ -293,6 +294,12 @@ export function OrgResourceDetail() {
 
               {shared.loading ? (
                 <Loading />
+              ) : shared.error ? (
+                <ReadFailure
+                  error={shared.error}
+                  what={`the ${entry.labelPlural.toLowerCase()} shared with ${org.name}`}
+                  onRetry={shared.reload}
+                />
               ) : shared.items.length === 0 ? (
                 <Empty
                   icon={<Icon className="h-7 w-7 text-muted-foreground" />}
@@ -349,6 +356,12 @@ export function OrgResourceDetail() {
                   </div>
                   {mine.loading ? (
                     <Loading />
+                  ) : mine.error ? (
+                    <ReadFailure
+                      error={mine.error}
+                      what={`your ${entry.labelPlural.toLowerCase()}`}
+                      onRetry={mine.reload}
+                    />
                   ) : filteredMine.length === 0 ? (
                     <Empty
                       icon={<Icon className="h-7 w-7 text-muted-foreground" />}
