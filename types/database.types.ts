@@ -15869,6 +15869,10 @@ export type Database = {
           organization_id: string
           organizer_email: string | null
           provider: string
+          source_calendar_key: string | null
+          source_connection_owner_id: string | null
+          source_connection_owner_type: string | null
+          source_provider_subject: string | null
           starts_at: string | null
           sync_status: string
           sync_status_reason: string | null
@@ -15898,6 +15902,10 @@ export type Database = {
           organization_id: string
           organizer_email?: string | null
           provider?: string
+          source_calendar_key?: string | null
+          source_connection_owner_id?: string | null
+          source_connection_owner_type?: string | null
+          source_provider_subject?: string | null
           starts_at?: string | null
           sync_status?: string
           sync_status_reason?: string | null
@@ -15927,6 +15935,10 @@ export type Database = {
           organization_id?: string
           organizer_email?: string | null
           provider?: string
+          source_calendar_key?: string | null
+          source_connection_owner_id?: string | null
+          source_connection_owner_type?: string | null
+          source_provider_subject?: string | null
           starts_at?: string | null
           sync_status?: string
           sync_status_reason?: string | null
@@ -25857,6 +25869,7 @@ export type Database = {
           current_document_id: string
           current_has_entities: boolean
           has_entities: boolean
+          head_document_id: string
           indexing: boolean
           processed_document_id: string
           stale_chunk_count: number
@@ -61705,6 +61718,219 @@ export type Database = {
         }
         Relationships: []
       }
+      check_item: {
+        Row: {
+          accept_basis: string | null
+          check_id: string
+          created_at: string
+          created_by: string | null
+          db_accept_reason: string | null
+          deleted_at: string | null
+          file: string | null
+          first_seen_run_id: string | null
+          fixed_at: string | null
+          handed_off_at: string | null
+          handed_off_to: string | null
+          id: string
+          item_key: string
+          last_transition_run_id: string | null
+          line: number | null
+          metadata: Json
+          organization_id: string
+          review_after: string | null
+          rule: string | null
+          state: string
+          title: string | null
+          unit_key: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          accept_basis?: string | null
+          check_id: string
+          created_at?: string
+          created_by?: string | null
+          db_accept_reason?: string | null
+          deleted_at?: string | null
+          file?: string | null
+          first_seen_run_id?: string | null
+          fixed_at?: string | null
+          handed_off_at?: string | null
+          handed_off_to?: string | null
+          id?: string
+          item_key: string
+          last_transition_run_id?: string | null
+          line?: number | null
+          metadata?: Json
+          organization_id: string
+          review_after?: string | null
+          rule?: string | null
+          state: string
+          title?: string | null
+          unit_key: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          accept_basis?: string | null
+          check_id?: string
+          created_at?: string
+          created_by?: string | null
+          db_accept_reason?: string | null
+          deleted_at?: string | null
+          file?: string | null
+          first_seen_run_id?: string | null
+          fixed_at?: string | null
+          handed_off_at?: string | null
+          handed_off_to?: string | null
+          id?: string
+          item_key?: string
+          last_transition_run_id?: string | null
+          line?: number | null
+          metadata?: Json
+          organization_id?: string
+          review_after?: string | null
+          rule?: string | null
+          state?: string
+          title?: string | null
+          unit_key?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "check_item_check_id_fkey"
+            columns: ["check_id"]
+            isOneToOne: false
+            referencedRelation: "proof_check"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "check_item_first_seen_run_id_fkey"
+            columns: ["first_seen_run_id"]
+            isOneToOne: false
+            referencedRelation: "check_run"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "check_item_last_transition_run_id_fkey"
+            columns: ["last_transition_run_id"]
+            isOneToOne: false
+            referencedRelation: "check_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      check_run: {
+        Row: {
+          applied: boolean
+          apply_note: string | null
+          check_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          duration_ms: number | null
+          exit_code: number | null
+          findings_count: number
+          finished_at: string | null
+          git_sha: string | null
+          headline: string | null
+          host: string | null
+          id: string
+          known_count: number
+          metadata: Json
+          new_count: number
+          organization_id: string
+          peak_rss_mb: number | null
+          run_scope: string
+          scan_complete: boolean
+          skipped_reason: string | null
+          started_at: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          verdict: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          applied?: boolean
+          apply_note?: string | null
+          check_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          duration_ms?: number | null
+          exit_code?: number | null
+          findings_count?: number
+          finished_at?: string | null
+          git_sha?: string | null
+          headline?: string | null
+          host?: string | null
+          id?: string
+          known_count?: number
+          metadata?: Json
+          new_count?: number
+          organization_id: string
+          peak_rss_mb?: number | null
+          run_scope: string
+          scan_complete?: boolean
+          skipped_reason?: string | null
+          started_at: string
+          status: string
+          updated_at?: string
+          updated_by?: string | null
+          verdict?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          applied?: boolean
+          apply_note?: string | null
+          check_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          duration_ms?: number | null
+          exit_code?: number | null
+          findings_count?: number
+          finished_at?: string | null
+          git_sha?: string | null
+          headline?: string | null
+          host?: string | null
+          id?: string
+          known_count?: number
+          metadata?: Json
+          new_count?: number
+          organization_id?: string
+          peak_rss_mb?: number | null
+          run_scope?: string
+          scan_complete?: boolean
+          skipped_reason?: string | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          verdict?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "check_run_check_id_fkey"
+            columns: ["check_id"]
+            isOneToOne: false
+            referencedRelation: "proof_check"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       db_host_sample: {
         Row: {
           commit_limit_bytes: number | null
@@ -61949,88 +62175,124 @@ export type Database = {
       }
       proof_check: {
         Row: {
+          command: string | null
           consecutive_failures: number
           created_at: string
           created_by: string | null
           custom_fields: Json
           deleted_at: string | null
           description: string
+          fix_kind: string | null
           id: string
           is_active: boolean
+          itemized: boolean
+          kind: string
           label: string
+          last_applied_run_id: string | null
+          last_applied_started_at: string | null
           last_live_run_at: string | null
           last_live_verdict: string | null
           last_run_at: string | null
           last_verdict: string | null
           latest_recording_run_id: string | null
+          level: string | null
           live_every_seconds: number
           max_cost_usd: number
           metadata: Json
           organization_id: string
+          reads_class: string | null
+          repo: string | null
           slug: string
           source_app: string
           source_feature: string
+          stable_id: string | null
           surface: string
+          timeout_seconds: number | null
           updated_at: string
           updated_by: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
+          watch: string | null
         }
         Insert: {
+          command?: string | null
           consecutive_failures?: number
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
           description: string
+          fix_kind?: string | null
           id?: string
           is_active?: boolean
+          itemized?: boolean
+          kind?: string
           label: string
+          last_applied_run_id?: string | null
+          last_applied_started_at?: string | null
           last_live_run_at?: string | null
           last_live_verdict?: string | null
           last_run_at?: string | null
           last_verdict?: string | null
           latest_recording_run_id?: string | null
+          level?: string | null
           live_every_seconds: number
           max_cost_usd: number
           metadata?: Json
           organization_id: string
+          reads_class?: string | null
+          repo?: string | null
           slug: string
           source_app: string
           source_feature: string
+          stable_id?: string | null
           surface: string
+          timeout_seconds?: number | null
           updated_at?: string
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
+          watch?: string | null
         }
         Update: {
+          command?: string | null
           consecutive_failures?: number
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
           deleted_at?: string | null
           description?: string
+          fix_kind?: string | null
           id?: string
           is_active?: boolean
+          itemized?: boolean
+          kind?: string
           label?: string
+          last_applied_run_id?: string | null
+          last_applied_started_at?: string | null
           last_live_run_at?: string | null
           last_live_verdict?: string | null
           last_run_at?: string | null
           last_verdict?: string | null
           latest_recording_run_id?: string | null
+          level?: string | null
           live_every_seconds?: number
           max_cost_usd?: number
           metadata?: Json
           organization_id?: string
+          reads_class?: string | null
+          repo?: string | null
           slug?: string
           source_app?: string
           source_feature?: string
+          stable_id?: string | null
           surface?: string
+          timeout_seconds?: number | null
           updated_at?: string
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
+          watch?: string | null
         }
         Relationships: []
       }
@@ -62383,6 +62645,48 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_catalog_upsert: {
+        Args: {
+          p_category: string
+          p_command: string
+          p_label: string
+          p_level: string
+          p_repo: string
+          p_stable_id: string
+        }
+        Returns: Json
+      }
+      check_item_db_accept: {
+        Args: {
+          p_check_id: string
+          p_item_key: string
+          p_reason: string
+          p_review_after: string
+        }
+        Returns: string
+      }
+      check_items_apply_run: {
+        Args: {
+          p_confirm_mass_fix?: boolean
+          p_headline: string
+          p_items: Json
+          p_run_id: string
+          p_verdict: string
+        }
+        Returns: Json
+      }
+      check_items_hand_off: {
+        Args: { p_to: string; p_unit_key: string }
+        Returns: number
+      }
+      check_items_release: {
+        Args: { p_reason: string; p_unit_key: string }
+        Returns: number
+      }
+      check_run_record: {
+        Args: { p_check_id: string; p_run: Json }
+        Returns: string
+      }
       db_host_activity: { Args: never; Returns: Json }
       db_long_transactions: {
         Args: { p_min_age_seconds: number }
@@ -71949,6 +72253,14 @@ export type Database = {
         Returns: string
       }
       _mint_share_short_alias: { Args: { p_share_id: string }; Returns: string }
+      _older_list_moved_by_switch: {
+        Args: { p_list_id: string }
+        Returns: boolean
+      }
+      _older_table_moved_by_switch: {
+        Args: { p_table_id: string }
+        Returns: boolean
+      }
       _output_feedback_subject_org: {
         Args: { p_subject_id: string; p_subject_type: string }
         Returns: string
@@ -72494,6 +72806,15 @@ export type Database = {
       }
       cutover_seams: { Args: { p_organization_id: string }; Returns: Json }
       cutover_tables_copied: { Args: { p_org: string }; Returns: Json }
+      data_tables_switched_for_me: {
+        Args: never
+        Returns: {
+          organization_id: string
+          organization_name: string
+          switched_at: string
+          switched_by: string
+        }[]
+      }
       dd166_table_rung_scope_rows_ok: { Args: never; Returns: Json }
       ddl_guard_ack: {
         Args: {
@@ -73933,6 +74254,16 @@ export type Database = {
         Returns: string
       }
       token_is_detail: { Args: { p_token: string }; Returns: boolean }
+      trash_hides: {
+        Args: {
+          p_deleted_at: string
+          p_owner: string
+          p_token: string
+          p_user: string
+        }
+        Returns: boolean
+      }
+      trash_is_owner_only: { Args: { p_token: string }; Returns: boolean }
       undeclared_carrying_cycles: {
         Args: never
         Returns: {
@@ -90595,12 +90926,14 @@ export type Database = {
         Row: {
           agent_id: string | null
           auth_mode: string
+          created_at: string
           custom_fields: Json
           id: string
           mandate_key: string | null
           max_concurrent: number
           max_runtime_seconds: number
           metadata: Json
+          organization_id: string
           persistent_conversation_id: string | null
           prompt: string
           variables: Json
@@ -90608,12 +90941,14 @@ export type Database = {
         Insert: {
           agent_id?: string | null
           auth_mode?: string
+          created_at?: string
           custom_fields?: Json
           id: string
           mandate_key?: string | null
           max_concurrent?: number
           max_runtime_seconds?: number
           metadata?: Json
+          organization_id: string
           persistent_conversation_id?: string | null
           prompt: string
           variables?: Json
@@ -90621,12 +90956,14 @@ export type Database = {
         Update: {
           agent_id?: string | null
           auth_mode?: string
+          created_at?: string
           custom_fields?: Json
           id?: string
           mandate_key?: string | null
           max_concurrent?: number
           max_runtime_seconds?: number
           metadata?: Json
+          organization_id?: string
           persistent_conversation_id?: string | null
           prompt?: string
           variables?: Json
@@ -112893,6 +113230,7 @@ export type Database = {
         Args: { p_name: string; p_organization_id: string }
         Returns: string
       }
+      older_table_moved_to: { Args: { p_id: string }; Returns: Json }
       udt_dataset_access: {
         Args: {
           p_required?: Database["public"]["Enums"]["permission_level"]
@@ -112919,6 +113257,18 @@ export type Database = {
           row_id: string
           words: string
         }[]
+      }
+      udt_structured_list_archive: {
+        Args: {
+          p_list_id: string
+          p_moved_to_table_id: string
+          p_reason?: string
+        }
+        Returns: Json
+      }
+      udt_structured_list_unarchive: {
+        Args: { p_list_id: string }
+        Returns: Json
       }
     }
     Enums: {
