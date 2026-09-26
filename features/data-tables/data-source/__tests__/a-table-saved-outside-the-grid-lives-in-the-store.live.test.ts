@@ -48,7 +48,7 @@ jest.mock("@/utils/supabase/client", () => ({
   createClient: () => client,
 }));
 // The active organization is UI state (the org picker); the suite acts in admin's Workspace.
-jest.mock("@/lib/organizations/personalOrg", () => ({
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: async (id: string | null | undefined) => id ?? ORG,
 }));
 // `resolveUniqueDatasetName` reads the signed-in id from the Redux session.

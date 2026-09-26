@@ -16,7 +16,7 @@ import type {
   TargetKind,
 } from "@/features/education/convert/types";
 import { useContentConverter } from "@/features/education/convert/useContentConverter";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { useIngest } from "./useIngest";
 import type {
   IngestProgress,

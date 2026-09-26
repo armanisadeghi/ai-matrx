@@ -407,7 +407,7 @@ function selfTest(): number {
     }
   `;
   const silent = `
-    import { ensureOrgId } from "@/lib/organizations/personalOrg";
+    import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
     export async function save(row: Row) {
       try { await write({ ...row, organization_id: await ensureOrgId(null) }); }
       catch (e) { console.error("[save]", e); }

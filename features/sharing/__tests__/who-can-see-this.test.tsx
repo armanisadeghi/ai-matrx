@@ -50,7 +50,7 @@ jest.mock("@/utils/supabase/client", () => ({
   },
 }));
 jest.mock("@/features/agent-context/hooks/useNavTree", () => ({
-  useNavTree: () => ({ orgs: [{ id: ORG, name: "Oak & River", is_personal: false }], isLoading: false }),
+  useNavTree: () => ({ orgs: [{ id: ORG, name: "Oak & River" }], isLoading: false }),
 }));
 
 import { getResourceVisibility, setStoreLane, type WhoCanSee } from "@/utils/permissions/service";
@@ -160,27 +160,6 @@ describe("the control and Current Access", () => {
     expect(radio("mine")?.getAttribute("aria-checked")).toBe("false");
     expect(radio("world")).toBeNull();
     expect(host.textContent).not.toContain("Anyone with the link");
-  });
-
-  it("a thing homed in its owner's personal workspace is not offered Everyone in <workspace>", () => {
-    const mineLane: WhoCanSee = { ...orgLane, choice: "mine", membersReachNow: false };
-    act(() =>
-      root.render(
-        <WhoCanSeeThis whoCanSee={mineLane} canChange onChoose={jest.fn()} offerOrganization={false} />,
-      ),
-    );
-    expect(radio("mine")?.getAttribute("aria-checked")).toBe("true");
-    expect(radio("organization")).toBeNull();
-    expect(host.textContent).not.toContain("Everyone in");
-  });
-
-  it("…but when it is already in that lane, the current state is still shown", () => {
-    act(() =>
-      root.render(
-        <WhoCanSeeThis whoCanSee={orgLane} canChange onChoose={jest.fn()} offerOrganization={false} />,
-      ),
-    );
-    expect(radio("organization")?.getAttribute("aria-checked")).toBe("true");
   });
 
   it("3. Only people I share it with, while members reach it, asks in one sentence and applies on confirm", async () => {

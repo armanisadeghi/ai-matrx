@@ -6,7 +6,7 @@
  */
 jest.mock("@/components/rich-editor/RichEditor", () => ({ __esModule: true, default: () => null }));
 jest.mock("@/features/notes/service/notesApi", () => ({ NotesAPI: {} }));
-jest.mock("@/lib/organizations/personalOrg", () => ({ ensureOrgId: jest.fn() }));
+jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: jest.fn() }));
 jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
 jest.mock("@/lib/organizations/organizationRefusalToast", () => ({ presentOrganizationRefusal: () => false }));
 

@@ -10,7 +10,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { fail } from "@/features/education/study/service/serviceError";
 import type { StudyResult } from "@/features/education/study/types";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import {
   mapAgeBandWrite,

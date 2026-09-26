@@ -16,7 +16,7 @@ import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 import {
   archiveTermList,

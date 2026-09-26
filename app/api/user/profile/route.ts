@@ -15,7 +15,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import type { UserAccountData, UserAccountPatch } from "@/features/user-profile/types";
 import { EMPTY_ACCOUNT_DATA } from "@/features/user-profile/types";
-import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
+import { ensureOrgIdServer } from "@/lib/organizations/ensureOrgId";
 import {
   isOrganizationRequiredServerError,
   organizationRequiredResponse,

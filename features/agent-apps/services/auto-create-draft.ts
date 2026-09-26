@@ -20,7 +20,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne, writeOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { operationFailed } from "@/utils/errors";
 import type { Json } from "@/types/database.types";
 import type { AppMetadata } from "../types";

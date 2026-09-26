@@ -26,7 +26,7 @@ import { createClient } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { operationFailed } from "@/utils/errors";
 import { readAllRows } from "@ai-matrx/data/db";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { Database } from "@/types/database.types";
 import { mandateNotes } from "@/lib/supabase/mandateStorage";
 

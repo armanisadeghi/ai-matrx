@@ -36,7 +36,7 @@ import { operationFailed } from "@/utils/errors";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { suppressSupabaseErrorCapture } from "@/lib/diagnostics/supabaseErrorCapture";
 import { getUserId } from "@/utils/auth/getUserId";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import {
   normalizeAudioType,
   audioExtensionForType,

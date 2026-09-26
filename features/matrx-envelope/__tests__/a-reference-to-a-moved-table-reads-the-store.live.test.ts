@@ -44,7 +44,7 @@ jest.mock("@/utils/supabase/client", () => ({
 jest.mock("@/lib/organizations/activeOrg", () => ({ getActiveOrgId: () => ORG }));
 // The scope resolvers are not under test and their service reads `supabase.auth` at load.
 jest.mock("@/features/scopes/service/scopesService", () => ({ scopesService: {} }));
-jest.mock("@/lib/organizations/personalOrg", () => ({
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: async (id: string | null | undefined) => id ?? ORG,
 }));
 

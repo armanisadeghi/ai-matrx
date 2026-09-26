@@ -1,5 +1,5 @@
 import { apiMultipart, apiPost } from "@/lib/api/typed-client";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { components } from "@/types/python-generated/api-types";
 import type { TranscriptionOptions, TranscriptionResult } from "../types";
 import { CATALOG_VOICES } from "@/features/audio/service/engines";

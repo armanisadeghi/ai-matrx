@@ -1,4 +1,4 @@
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import {
   addInstanceTab,
   markTabInteraction,
@@ -6,7 +6,7 @@ import {
 } from "./slice";
 import { copyNote } from "./thunks";
 
-jest.mock("@/lib/organizations/personalOrg", () => ({
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: jest.fn(),
 }));
 

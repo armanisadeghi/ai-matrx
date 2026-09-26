@@ -19,7 +19,7 @@ import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import { mergeJsonColumn, type JsonObject } from "@ai-matrx/data/db";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { resolveChildOrgId } from "@/lib/organizations/childOrganization";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { tryWriteOne } from "@/utils/supabase/writeOne";

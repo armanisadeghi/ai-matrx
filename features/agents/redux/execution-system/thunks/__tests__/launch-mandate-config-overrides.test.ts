@@ -81,7 +81,7 @@ import { defaultPresentation } from "@/features/bindings/treatment-shape";
 // HELD AND SET: with no organization selected, the launch asks through the one
 // gate (ensureOrgId) — mocked here so the answer is a fact of the test.
 const mockEnsureOrgId = jest.fn(async () => "org-picked-by-the-person");
-jest.mock("@/lib/organizations/personalOrg", () => ({
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: () => mockEnsureOrgId(),
 }));
 

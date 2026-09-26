@@ -20,7 +20,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { describeWriteFailure } from "@/lib/errors/writeFailure";

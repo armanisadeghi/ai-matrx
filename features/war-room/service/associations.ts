@@ -27,7 +27,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { isContentSourceEdge } from "@/features/scopes/service/associationEdges";
 import { isScopesRpcErr } from "@/features/scopes/types";

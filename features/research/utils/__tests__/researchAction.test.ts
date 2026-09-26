@@ -4,7 +4,7 @@
  * platform's workspace prompt first, and every outcome is said out loud.
  */
 const mockEnsureOrgId = jest.fn();
-jest.mock("@/lib/organizations/personalOrg", () => ({
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: (...a: unknown[]) => mockEnsureOrgId(...a),
 }));
 const mockToastError = jest.fn();

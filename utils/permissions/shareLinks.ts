@@ -18,7 +18,7 @@ import type { PermissionLevel } from "./types";
 import { toDbPermissionLevel } from "./levels";
 import { isJsonObject } from "@/types/json";
 import { operationFailed } from "@/utils/errors";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 export interface ShareLink {
   id: string;

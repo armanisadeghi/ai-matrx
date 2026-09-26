@@ -21,7 +21,7 @@ import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { associationsDataSource } from "@/features/scopes/host/associationsStore";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { getUserId } from "@/utils/auth/getUserId";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import {

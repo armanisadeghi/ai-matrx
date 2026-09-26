@@ -17,7 +17,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase as browserSupabase } from "@/utils/supabase/client";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { operationFailed } from "@/utils/errors";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
 import type { Database } from "@/types/database.types";

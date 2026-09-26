@@ -4,7 +4,7 @@
 import { useEffect } from 'react';
 import { useAppSelector } from "@/lib/redux/hooks";
 import { supabase } from '@/utils/supabase/client';
-import { ensureOrgId } from '@/lib/organizations/personalOrg';
+import { ensureOrgId } from '@/lib/organizations/ensureOrgId';
 import { captureError } from '@/lib/diagnostics/errorCaptureStore';
 
 export function usePreferenceSync() {

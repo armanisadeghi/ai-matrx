@@ -15,7 +15,6 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectOrganizationId,
   selectOrganizationName,
-  selectPersonalOrganizationId,
 } from "@/lib/redux/slices/appContextSlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useUserRole } from "@/features/organizations/hooks";
@@ -42,11 +41,10 @@ const NO_CONTEXT = {};
 export function CardOptionsDemo() {
   const activeOrgId = useAppSelector(selectOrganizationId);
   const activeOrgName = useAppSelector(selectOrganizationName);
-  const personalOrgId = useAppSelector(selectPersonalOrganizationId);
   const userId = useAppSelector(selectUserId);
   const { organizationState } = useOrganizationRequired();
   const { isAdmin, loading: roleLoading } = useUserRole(activeOrgId ?? undefined);
-  const canManageOrg = Boolean(activeOrgId) && activeOrgId !== personalOrgId && isAdmin;
+  const canManageOrg = Boolean(activeOrgId) && isAdmin;
   const [level, setLevel] = useState<IntelligenceLevel>("person");
   const seatLevel: IntelligenceLevel = canManageOrg ? level : "person";
   const orgLevel = seatLevel === "organization";

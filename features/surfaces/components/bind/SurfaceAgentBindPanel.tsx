@@ -55,7 +55,7 @@ import {
   listAgentSurfaceBindings,
   type AgentSurfaceBinding,
 } from "@/features/surfaces/services/bind-agent-to-surface.service";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type {
   SurfaceValue,
   ValueMapping,

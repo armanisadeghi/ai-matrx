@@ -19,7 +19,6 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectOrganizationId,
   selectOrganizationName,
-  selectPersonalOrganizationId,
 } from "@/lib/redux/slices/appContextSlice";
 import { useUserRole } from "@/features/organizations/hooks";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
@@ -72,11 +71,10 @@ export function FeatureIntelligence({
   // ("unavailable") settles the seat exactly like an answered one (R37).
   const { organizationState } = useOrganizationRequired();
   const activeOrgName = useAppSelector(selectOrganizationName);
-  const personalOrgId = useAppSelector(selectPersonalOrganizationId);
   const userId = useAppSelector(selectUserId);
   const { isAdmin, loading: roleLoading } = useUserRole(activeOrgId ?? undefined);
   const canManageOrg =
-    Boolean(activeOrgId) && activeOrgId !== personalOrgId && isAdmin;
+    Boolean(activeOrgId) && isAdmin;
 
   const [level, setLevel] = useState<IntelligenceLevel>("person");
   const seatLevel: IntelligenceLevel = canManageOrg ? level : "person";

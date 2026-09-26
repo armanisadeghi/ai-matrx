@@ -11,7 +11,7 @@
 import { withDisplayTitle } from "@/components/markdown-core/plain-title";
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type {

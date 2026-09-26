@@ -4,7 +4,7 @@ import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { toast } from "@/lib/toast";
 import { getSharedWithMe } from "@/utils/permissions/service";

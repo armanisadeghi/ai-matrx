@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { sanitizeFieldName, validateFieldName } from "./field-name-sanitizer";
 import { parseTableMetadata } from "@/features/data-tables/types";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { OrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 // Valid data types according to the backend schema

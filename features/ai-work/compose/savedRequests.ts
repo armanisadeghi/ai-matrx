@@ -43,7 +43,7 @@ import { createClient } from "@/utils/supabase/client";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import type { Json } from "@/types/database.types";
 import type { WorkDestinationId } from "./destinations";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { SHORTCUT_RPCS, shortcutTable } from "@/lib/supabase/shortcutStorage";
 
 /** The one platform-seeded category that marks a shortcut row as a saved request. */

@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { usePdfClient } from "@/features/pdf/api/client";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { NewCardInput } from "@/features/flashcards/data/types";

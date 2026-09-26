@@ -51,12 +51,10 @@ jest.mock("@/utils/supabase/client", () => ({
   supabase: { rpc },
 }));
 jest.mock("@/features/agent-context/hooks/useNavTree", () => ({
-  useNavTree: () => ({ orgs: [{ id: ORG, name: "Oak & River", is_personal: false }], isLoading: false }),
+  useNavTree: () => ({ orgs: [{ id: ORG, name: "Oak & River" }], isLoading: false }),
 }));
 jest.mock("@/lib/redux/hooks", () => ({
-  // The viewer has a personal workspace that is not ORG, so the picker still offers ORG.
-  useAppSelector: (sel: (s: unknown) => unknown) =>
-    sel({ appContext: { personal_organization_id: "personal-workspace-of-the-viewer" } }),
+  useAppSelector: (sel: (s: unknown) => unknown) => sel({ appContext: {} }),
 }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => ME }));
 

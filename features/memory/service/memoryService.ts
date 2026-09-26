@@ -14,7 +14,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { Database } from "@/types/database.types";
 
 export type UserMemoryRow = Database["users"]["Tables"]["user_memory"]["Row"];

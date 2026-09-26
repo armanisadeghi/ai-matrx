@@ -13,15 +13,15 @@ jest.mock("../service", () => ({
   invalidateMandateCache: jest.fn(),
 }));
 
-// The workspace the person has selected, and their personal organization —
-// the two answers a personal write can take (overrides.ts, personalWriteContext).
+// The workspace the person has selected, and the organization they choose when
+// asked — the two answers a user-rung write can take (overrides.ts).
 const selectedOrg = { id: null as string | null };
 jest.mock("@/lib/api/organization-admission", () => ({
   peekSelectedOrganizationId: () => selectedOrg.id,
   waitForOrganizationAdmission: jest.fn(async () => undefined),
 }));
-jest.mock("@/lib/organizations/personalOrg", () => ({
-  resolvePersonalOrgId: jest.fn(async () => "personal-org-id"),
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
+  ensureOrgId: jest.fn(async () => "org-the-person-chose"),
 }));
 
 const callApiMock = jest.mocked(callApi);
@@ -64,7 +64,7 @@ describe("mandate binding organization context", () => {
     },
   );
 
-  it("keeps personal bindings on the ambient request organization when one is selected", async () => {
+  it("keeps user-rung bindings on the ambient request organization when one is selected", async () => {
     selectedOrg.id = TARGET_ORGANIZATION_ID;
     await removeMandateBinding(dispatchWith({}), "podcast.multihost_script", {
       principalType: "user",
@@ -75,7 +75,7 @@ describe("mandate binding organization context", () => {
     );
   });
 
-  it("writes a personal binding in the personal organization when no workspace is selected", async () => {
+  it("asks for an organization for a user-rung binding when none is selected", async () => {
     selectedOrg.id = null;
     await removeMandateBinding(dispatchWith({}), "podcast.multihost_script", {
       principalType: "user",
@@ -83,7 +83,7 @@ describe("mandate binding organization context", () => {
 
     expect(callApiMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        scopeOverrides: { organization_id: "personal-org-id" },
+        scopeOverrides: { organization_id: "org-the-person-chose" },
       }),
     );
   });

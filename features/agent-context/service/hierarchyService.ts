@@ -5,7 +5,7 @@ import { archiveOrganization as archiveOrganizationDoor } from "@/features/organ
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { writeOne } from "@/utils/supabase/writeOne";
 import { requireUserId, getUserEmail } from "@/utils/auth/getUserId";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { Database } from "@/types/database.types";
 import { createProject as createProjectCanonical } from "@/features/projects/service";
 import { membershipsService } from "@/features/organizations/service/membershipsService";

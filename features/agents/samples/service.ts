@@ -22,7 +22,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { writeOne } from "@/utils/supabase/writeOne";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { Database } from "@/types/database.types";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import { readAllRows } from "@ai-matrx/data/db";

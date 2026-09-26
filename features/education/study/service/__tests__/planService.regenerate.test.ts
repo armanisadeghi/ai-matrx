@@ -86,7 +86,7 @@ jest.mock("@/utils/supabase/client", () => ({
   },
 }));
 jest.mock("@/utils/auth/getUserId", () => ({ requireUserId: () => "user-1" }));
-jest.mock("@/lib/organizations/personalOrg", () => ({ ensureOrgId: async () => "org-1" }));
+jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: async () => "org-1" }));
 
 import { planService } from "../planService";
 import type { PlanDraft } from "../../planner/types";

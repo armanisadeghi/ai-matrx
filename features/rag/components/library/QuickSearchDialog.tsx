@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Search as SearchIcon, ExternalLink } from "lucide-react";
 import { apiPost, buildPath } from "@/lib/api/typed-client";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { components } from "@/types/python-generated/api-types";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

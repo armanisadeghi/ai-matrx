@@ -10,7 +10,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { writeOne } from "@/utils/supabase/writeOne";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { PcStudioRun } from "@/features/podcasts/types";
 import type { PodcastGenerateRequest } from "@/features/podcasts/generator/types";
 import type { Database } from "@/types/database.types";

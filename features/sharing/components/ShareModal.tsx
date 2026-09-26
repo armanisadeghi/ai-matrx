@@ -88,13 +88,6 @@ interface ShareModalProps {
    * `iam.invitations` row, the platform's one invitation primitive.
    */
   outsideShare?: { organizationId: string; tableId: string };
-  /**
-   * The thing lives in its owner's PERSONAL workspace. "Everyone in <workspace>" then means
-   * nobody useful (a personal workspace has no team), so the lane control does not offer it —
-   * sharing goes to named people (or everyone in a real organization, from the People tab) or
-   * Public. A thing already in that lane still shows it, so the current state never lies.
-   */
-  personalHome?: boolean;
 }
 
 /**
@@ -128,7 +121,6 @@ export function ShareModal({
   resourceNoun,
   isOwner: isOwnerOverride,
   outsideShare,
-  personalHome = false,
 }: ShareModalProps) {
   const [activeTab, setActiveTab] = useState<
     "users" | "public" | "access"
@@ -263,7 +255,6 @@ export function ShareModal({
     visibility: resourceVisibility,
     organizationDefault,
     whoCanSee,
-    personalHome: resolvedPersonalHome,
     setWhoCanSee,
     setVisibility,
     loading,
@@ -282,11 +273,6 @@ export function ShareModal({
     // notification is filed there and never asks which workspace this is for.
     organizationId ?? null,
   );
-
-  // PERSONAL HOME, FOR EVERY KIND (2026-09-26): `useSharing` reads the thing's own organization
-  // with its visibility and compares it with the viewer's personal workspace, so a host no
-  // longer has to remember to say it. A host that knows better may still pass `personalHome`.
-  const isPersonalHome = personalHome || resolvedPersonalHome === true;
 
   // Filter permissions by type for each tab
   const userPermissions = permissions.filter((p) => p.grantedToUserId);
@@ -445,7 +431,6 @@ export function ShareModal({
                   whoCanSee={whoCanSee}
                   canChange={isOwner}
                   onChoose={setWhoCanSee}
-                  offerOrganization={!isPersonalHome}
                 />
                 {/* Current user permissions */}
                 <div>
@@ -564,7 +549,6 @@ export function ShareModal({
                   resourceType={resourceType}
                   resourceId={resourceId}
                   resourceName={resourceName}
-                  offerOrganization={!isPersonalHome}
                 />
               </TabsContent>
             </div>

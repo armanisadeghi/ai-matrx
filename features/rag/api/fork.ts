@@ -17,7 +17,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 export async function forkProcessedDocument(
   sourceId: string,

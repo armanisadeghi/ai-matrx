@@ -19,7 +19,7 @@ import type { GscDigRuleContent } from "@/features/marketing/search-console/lib/
 import { serializeDigConditions } from "@/features/marketing/search-console/lib/dig-rules";
 import { makeAssertData } from "@/utils/errors";
 import { writeOne } from "@/utils/supabase/writeOne";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { fetchFeatureKnobValues } from "@/features/admin/limits/service";
 import { isJsonObject } from "@/types/json";
 

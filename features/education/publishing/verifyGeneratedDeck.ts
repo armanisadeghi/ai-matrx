@@ -12,7 +12,7 @@ import {
 import { fcService } from "@/features/flashcards/data/fcService";
 import { FC_MANDATES } from "@/features/flashcards/data/mandates";
 import type { AppDispatch, AppStore } from "@/lib/redux/store";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 export interface DeckCardVerification {
   cardId: string;

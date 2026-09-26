@@ -23,7 +23,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { apiPost, buildPath } from "@/lib/api/typed-client";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { components } from "@/types/python-generated/api-types";
 
 // Wire shapes DERIVED from the generated OpenAPI contract, never hand-mirrored.

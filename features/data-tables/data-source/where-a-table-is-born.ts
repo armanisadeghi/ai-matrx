@@ -27,7 +27,7 @@
 //                      bootstrap into every importer of the seam).
 
 import { createClient } from "@/utils/supabase/client";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 import { standInOrganizationId } from "@/features/unified-data/objectOrganization";
 

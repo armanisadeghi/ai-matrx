@@ -18,7 +18,7 @@ import {
 } from "@ai-matrx/design-system";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { toast } from "@/lib/toast";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 import {
   attachTermList,

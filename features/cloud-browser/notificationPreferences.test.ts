@@ -49,7 +49,7 @@ function table(name: string) {
   return chain;
 }
 
-jest.mock("@/lib/organizations/personalOrg", () => ({
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: async () => "org_personal",
 }));
 

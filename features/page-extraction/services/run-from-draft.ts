@@ -13,7 +13,7 @@
 "use client";
 
 import { createJob, updateJob } from "@/features/page-extraction/api/jobs";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type { ChunkingConfigDraft } from "@/features/page-extraction/redux/pageExtractionSlice";
 import type {
   PageExtractionJob,

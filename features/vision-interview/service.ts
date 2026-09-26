@@ -14,7 +14,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { interviewDb } from "@/utils/supabase/interviewDb";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { readAllRows } from "@ai-matrx/data/db";
 import {
   defineChannelNamespace,

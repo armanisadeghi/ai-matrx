@@ -33,7 +33,7 @@ import type { Database } from "@/types/database.types";
 import type { paths } from "@/types/python-generated/api-types";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
 import { invalidateMandateCache } from "./service";
-import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import {
   peekSelectedOrganizationId,
   waitForOrganizationAdmission,
@@ -42,11 +42,9 @@ import {
 /**
  * THE TENANCY CONTEXT OF A BINDING WRITE.
  *  · an org binding is written in THAT organization's context;
- *  · a PERSONAL binding (the user rung — it wins in every organization) is
- *    written in the workspace the person has selected, and when they have
- *    none it is filed in their OWN workspace. A personal choice never asks
- *    "Which workspace is this for?" (review 2026-09-25: Duplicate & modify on a
- *    personal page stopped at that question, then refused the write).
+ *  · a user-rung binding (it wins in every organization) is written in the
+ *    organization the person has selected; with none selected they are asked
+ *    to choose one.
  */
 async function bindingScope(
   principal: MandateBindingPrincipalInput,
@@ -58,10 +56,7 @@ async function bindingScope(
   if (peekSelectedOrganizationId()) return {};
   await waitForOrganizationAdmission();
   if (peekSelectedOrganizationId()) return {};
-  // org-fallback-deliberate: a user-rung binding is the person's OWN row (it
-  // applies in every organization), so with no workspace selected it is filed
-  // by name in their own workspace — never an organization chosen for them.
-  return { scopeOverrides: { organization_id: await resolvePersonalOrgId() } };
+  return { scopeOverrides: { organization_id: await ensureOrgId(null) } };
 }
 import type { ConsumptionMap } from "./provision-shapes";
 import {

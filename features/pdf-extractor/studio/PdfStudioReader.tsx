@@ -32,7 +32,7 @@ import {
   sourceRefusalSentence,
 } from "@/features/sources/api/sourcesApi";
 import { toast } from "@/lib/toast";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import React, {
   useEffect,

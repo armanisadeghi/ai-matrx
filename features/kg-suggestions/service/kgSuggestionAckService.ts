@@ -13,7 +13,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 function requireCurrentUser(expectedUserId: string): void {
   if (requireUserId() !== expectedUserId) {
@@ -42,13 +42,10 @@ export async function ackSuggestions(
 ): Promise<void> {
   requireCurrentUser(userId);
   if (suggestionIds.length === 0) return;
-  // org-fallback-deliberate: a dismissal is the signed-in PERSON's own
-  // cross-organization preference — the new-suggestion toast is global, RLS
-  // scopes every row to auth.uid(), and nobody else may read or act on it. It
-  // belongs in the user's own personal workspace whatever organization happens
-  // to be selected, so re-filing it under the active org would split one
-  // person's "never show me this again" across tenants.
-  const organizationId = await resolvePersonalOrgId();
+  // A dismissal is filed in the organization the person has selected (asked
+  // when none is). RLS scopes every row to auth.uid(), and the read side keys
+  // on (user_id, suggestion_id), so the dismissal holds across organizations.
+  const organizationId = await ensureOrgId(null);
   const rows = suggestionIds.map((suggestion_id) => ({
     user_id: userId,
     suggestion_id,

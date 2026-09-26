@@ -21,7 +21,7 @@
 "use client";
 
 import { StickyNote } from "lucide-react";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { noteCreateErrorMessage } from "@/features/notes/utils/writeErrors";
 import { registerVirtualSource } from "@/features/files/virtual-sources/registry";
 import { NotesInlinePreview } from "./NotesInlinePreview";

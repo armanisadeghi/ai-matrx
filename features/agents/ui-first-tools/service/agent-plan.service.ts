@@ -8,7 +8,7 @@
  */
 
 import { db } from "./supabase-typed";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import type {
   CxAgentPlanRow,
   CxPlanStatus,

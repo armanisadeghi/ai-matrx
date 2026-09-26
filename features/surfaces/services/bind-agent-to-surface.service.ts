@@ -27,7 +27,7 @@ import {
   getSurfaceAncestry,
   surfaceAcceptsAgentBindings,
 } from "@/features/surfaces/manifests/registry";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import {
   isValueMappingMap,
   sanitizeWritePolicyMap,

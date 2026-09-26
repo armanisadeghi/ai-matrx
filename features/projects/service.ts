@@ -16,7 +16,7 @@ import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { pgErrorToError } from "@ai-matrx/data";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import {

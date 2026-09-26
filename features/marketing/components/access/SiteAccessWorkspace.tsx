@@ -71,7 +71,6 @@ export function SiteAccessWorkspace({
     updateLevel,
     refresh,
     whoCanSee,
-    personalHome,
     setWhoCanSee,
     organizationDefault,
   } = useSharing(
@@ -332,7 +331,6 @@ export function SiteAccessWorkspace({
                 <>
                   {/* WHO CAN SEE THIS (SHARE-LANE-CONTROL): absent for a kind with no lane door. */}
                   <WhoCanSeeThis
-                    offerOrganization={!personalHome}
                     whoCanSee={whoCanSee}
                     canChange={isOwner}
                     onChoose={setWhoCanSee}
@@ -372,7 +370,6 @@ export function SiteAccessWorkspace({
 
               {view === "public" && (
                 <PublicAccessTab
-                  offerOrganization={!personalHome}
                   isPublic={resourceIsPublic}
                   publicPermission={publicPermission}
                   isOwner={isOwner}

@@ -17,7 +17,7 @@ jest.mock("@/features/scopes/host/associationsStore", () => ({
   getAssociationsStore: jest.fn(),
 }));
 jest.mock("@/features/scopes/service/associationsService", () => ({ associationsService: { add: jest.fn() } }));
-jest.mock("@/lib/organizations/personalOrg", () => ({ ensureOrgId: jest.fn(async () => "org-1") }));
+jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: jest.fn(async () => "org-1") }));
 jest.mock("@/utils/auth/getUserId", () => ({ getUserId: () => "u-1" }));
 
 import { projectSource, rangeToSource, sourceToRanges } from "../projection";

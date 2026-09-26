@@ -344,7 +344,6 @@ function OneMandateRecordBody({
           verdict.loading,
           verdict.error,
           nameOfOrg,
-          holderVerdict.ownWorkspace,
         )
       : null;
   // The list's and dashboard's own feature words ("SEO", "Shortcuts").

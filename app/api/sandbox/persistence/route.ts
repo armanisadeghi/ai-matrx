@@ -7,7 +7,7 @@ import {
 } from "@/lib/sandbox/orchestrator-routing";
 import type { SandboxTier, UserPersistenceResponse } from "@/types/sandbox";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
-import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
+import { ensureOrgIdServer } from "@/lib/organizations/ensureOrgId";
 import {
   isOrganizationRequiredServerError,
   organizationRequiredResponse,

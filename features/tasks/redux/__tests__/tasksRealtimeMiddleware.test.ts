@@ -21,7 +21,7 @@ jest.mock("@/utils/auth/getUserId", () => ({
   requireUserId: () => "u1",
   getUserId: () => "u1",
 }));
-jest.mock("@/lib/organizations/personalOrg", () => ({
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: async (id: string) => id,
 }));
 jest.mock("@/features/tasks/services/taskService", () => ({

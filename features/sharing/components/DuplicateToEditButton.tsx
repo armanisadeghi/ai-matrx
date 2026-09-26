@@ -97,7 +97,7 @@ export function DuplicateToEditButton({
       }
     } catch (e) {
       // The person closed the organization picker. That is an ANSWER — "not now" — so
-      // nothing happened and nothing is said (lib/organizations/personalOrg#ensureOrgId).
+      // nothing happened and nothing is said (lib/organizations/ensureOrgId).
       if (e instanceof Error && e.name === "OrganizationSelectionCancelled") {
         setBusy(false);
         return;

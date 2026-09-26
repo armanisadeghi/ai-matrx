@@ -1,7 +1,7 @@
 const ensureOrgId = jest.fn<Promise<string>, [string | null | undefined]>();
 const resolveSystemOrgId = jest.fn<Promise<string>, []>();
 
-jest.mock("@/lib/organizations/personalOrg", () => ({
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: (organizationId: string | null | undefined) =>
     ensureOrgId(organizationId),
 }));

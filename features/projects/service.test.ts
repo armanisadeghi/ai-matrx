@@ -13,7 +13,7 @@ jest.mock("@/utils/auth/getUserId", () => ({
   requireUserId: () => "00000000-0000-4000-8000-000000000001",
 }));
 
-jest.mock("@/lib/organizations/personalOrg", () => ({
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: (organizationId: string) => Promise.resolve(organizationId),
 }));
 

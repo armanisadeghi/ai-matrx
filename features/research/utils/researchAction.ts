@@ -16,7 +16,7 @@
  *     the door's words, never the generic envelope text).
  * Returns the action's result, or `null` when it did not run or failed.
  */
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { toast } from "@/lib/toast";
 import { sourceRefusalSentence } from "@/features/sources/api/sourcesApi";
