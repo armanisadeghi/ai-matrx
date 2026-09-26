@@ -511,7 +511,7 @@ export function waitFromQueueRow(row: unknown): RecordChangeWait | null {
         ? "An agent asked to change a table that already existed, and this organization asks a person first."
         : "Somebody asked for this change, and this organization asks a person first.",
     howToChange:
-      "An administrator changes this in the organization's settings, under Agent changes to this organization's data.",
+      "An owner or admin changes this in the organization's Settings, Configuration, under Agent changes to this organization's data.",
     reason: "queued",
   };
   const base = {
