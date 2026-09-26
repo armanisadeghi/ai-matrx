@@ -100,6 +100,11 @@ export function DocumentAgentReview({
   // escapes, {{variables}}, inline tags…) as markers it cannot alter; the
   // result gets them back byte-for-byte before review (review/protectedSpans).
   const agentInput = prepared ? maskProtectedSpans(prepared.content) : null;
+  const unmaskedForDisplay = agentInput
+    ? unmaskProtectedSpans(agentAction.result, agentInput.spans)
+    : null;
+  const shownAgentResult =
+    unmaskedForDisplay && !("error" in unmaskedForDisplay) ? unmaskedForDisplay.text : agentAction.result;
   const receiveResult = (raw: string) => {
     if (!agentInput) return;
     const restored = unmaskProtectedSpans(raw, agentInput.spans);
@@ -207,7 +212,9 @@ export function DocumentAgentReview({
         phase={agentAction.phase}
         isBusy={agentAction.isBusy}
         isThinking={agentAction.isThinking}
-        result={agentAction.result}
+        // The person reads the result with its protected spans back in place,
+        // never the markers the agent worked with.
+        result={shownAgentResult}
         error={agentAction.error}
         agentName={agentName}
         onSelectAgent={(id) => {
