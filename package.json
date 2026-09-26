@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.2373",
+  "version": "0.4.2374",
   "private": true,
   "scripts": {
     "dev": "bash scripts/agent-dev-server.sh start",
@@ -478,6 +478,7 @@
     "check:impl-doors:strict": "tsx scripts/check-impl-doors.ts --strict",
     "check:gate-db-sessions": "tsx scripts/check-gate-db-sessions.ts",
     "check:gate-db-sessions:self-test": "tsx scripts/check-gate-db-sessions.ts --self-test",
+    "check:production-guard:self-test": "tsx --test scripts/lib/production-guard.selftest.mts && jest scripts/__tests__/production-guard.test.ts --no-coverage",
     "check:door-rows": "tsx scripts/check-door-rows.ts",
     "check:door-rows:strict": "tsx scripts/check-door-rows.ts --strict",
     "check:door-rows:self-test": "tsx scripts/check-door-rows.ts --self-test",
