@@ -15,6 +15,12 @@
 import { useState } from "react";
 import { Loader2, SearchX } from "lucide-react";
 import Link from "next/link";
+import * as associationsRoot from "@ai-matrx/associations";
+import {
+  AssociationCardGrid,
+  PrimaryEntityProvider,
+  type PrimaryEntity,
+} from "@ai-matrx/associations/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -71,6 +77,8 @@ export interface SourceSidePanesProps {
   attachments: SourceAttachment[] | null;
   /** Open the Save panel's attach picker. */
   onAttach: (() => void) | null;
+  /** The Source the filed-under grid anchors on (its head capture). */
+  source: { id: string; orgId: string | null; label: string } | null;
 }
 
 const TABS: { key: SideTab; label: string }[] = [
@@ -300,7 +308,39 @@ function EntitiesTab({
   );
 }
 
-function AssociationsTab({ attachments, onAttach }: SourceSidePanesProps) {
+/**
+ * `@ai-matrx/associations` 0.11.0 ships the filed-under mode
+ * (`direction: "outgoing"`): the grid lists what the Source is filed under and
+ * its "+" files it (`processed_document → container`, the edge the door
+ * writes). Until the installed package carries it, the list below stands in —
+ * and says so. Delete the fallback once the app is on 0.11.0.
+ */
+const FILED_UNDER_SUPPORTED = "isAssociationTargetType" in associationsRoot;
+
+function AssociationsTab(props: SourceSidePanesProps) {
+  const { source } = props;
+  if (!FILED_UNDER_SUPPORTED || !source) {
+    return <AttachmentsListFallback {...props} />;
+  }
+  // Typed against the installed package; 0.11.0's PrimaryFiledEntity accepts
+  // it directly and this conversion becomes a no-op.
+  const primary = {
+    type: "processed_document",
+    id: source.id,
+    orgId: source.orgId,
+    label: source.label,
+    direction: "outgoing",
+  } as unknown as PrimaryEntity;
+  return (
+    <div className="h-full min-w-0 overflow-y-auto overflow-x-hidden p-3">
+      <PrimaryEntityProvider value={primary}>
+        <AssociationCardGrid />
+      </PrimaryEntityProvider>
+    </div>
+  );
+}
+
+function AttachmentsListFallback({ attachments, onAttach }: SourceSidePanesProps) {
   return (
     <div className="h-full min-w-0 overflow-y-auto overflow-x-hidden">
       <div className="space-y-2 p-3">
@@ -352,6 +392,10 @@ function AssociationsTab({ attachments, onAttach }: SourceSidePanesProps) {
             Attach to a project, topic or Library
           </Button>
         )}
+        <p className="text-[11px] text-muted-foreground" data-testid="filed-under-fallback">
+          Showing a simple list: this build's association package predates
+          filed-under cards (needs @ai-matrx/associations 0.11.0).
+        </p>
       </div>
     </div>
   );

@@ -495,6 +495,11 @@ export function SourceStudio({ documentId, deepLink }: SourceStudioProps) {
                 onEntityGo={goToEntity}
                 attachments={facts ? facts.attachments : version.loading ? [] : null}
                 onAttach={doc ? () => setSaveOpen(true) : null}
+                source={
+                  doc
+                    ? { id: headId, orgId: doc.organization_id, label: doc.name }
+                    : null
+                }
               />
   );
   const partsList = (
