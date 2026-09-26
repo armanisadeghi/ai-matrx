@@ -35,7 +35,13 @@ import {
   buildRagViewerContextData,
   type RagViewerActivePage,
 } from "@/features/rag/agent-context/buildRagViewerContextData";
-import { BookMarked, GitFork, Loader2, AlertCircle, BrainCircuit } from "lucide-react";
+import {
+  BookMarked,
+  GitFork,
+  Loader2,
+  AlertCircle,
+  BrainCircuit,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,9 +50,7 @@ import { EntityModeHeader } from "@/features/shell/components/header/templates/E
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@ai-matrx/design-system";
 import { apiGet, buildPath } from "@/lib/api/typed-client";
-import {
-  OrganizationRequiredNotice,
-} from "@/features/organizations/components/OrganizationRequiredNotice";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import type { components } from "@/types/python-generated/api-types";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
@@ -56,6 +60,13 @@ import { forkProcessedDocument } from "@/features/rag/api/fork";
 import { StatusBadge } from "./StatusBadge";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useLibraryDoc } from "@/features/rag/hooks/useLibrary";
+import { usePortionLocators } from "@/features/sources/hooks/usePortionLocators";
+import {
+  PORTION_KIND_WORD,
+  portionKindOf,
+  portionLabel,
+  type PortionLocatorRow,
+} from "@/features/sources/portionLocator";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useFilesLibraryProvenance } from "@/features/rag/hooks/useLibraryProvenance";
 import {
@@ -116,6 +127,10 @@ export function LibraryPreviewPage({
     readError: docReadError,
     reload: reloadDoc,
   } = useLibraryDoc(documentId);
+  // Every portion's kind + locator (page n · heading path · t0–t1 speaker):
+  // the list and the pane header name portions from these, never "p.N" for a
+  // web section or a transcript segment.
+  const { byIndex: locators } = usePortionLocators(documentId);
   // The hook reports `loading` until the read for THIS id has settled, so
   // "not loading and no doc" really means missing / deleted / not readable.
   const docUnavailable = !docLoading && !doc;
@@ -257,178 +272,182 @@ export function LibraryPreviewPage({
 
   return (
     <Frame getScope={getScope}>
-    <div className="relative flex flex-col bg-background h-full">
-      {!embedded && (
-        <EntityModeHeader
-          backHref="/rag/library"
-          entityLabel={docLoading || !doc ? "Loading…" : doc.name}
-          actions={
-            doc
-              ? [
-                  {
-                    label: "Knowledge Assets",
-                    icon: BrainCircuit,
-                    onPress: () => setAssetsOpen(true),
-                  },
-                  {
-                    label: "Make my copy",
-                    icon: GitFork,
-                    onPress: () => void handleFork(),
-                    disabled: forking,
-                  },
-                ]
-              : []
-          }
-        />
-      )}
-      <div
-        className={cn(
-          "flex-1 min-h-0 flex flex-col",
-          !embedded && "pt-[var(--shell-header-h)]",
+      <div className="relative flex flex-col bg-background h-full">
+        {!embedded && (
+          <EntityModeHeader
+            backHref="/rag/library"
+            entityLabel={docLoading || !doc ? "Loading…" : doc.name}
+            actions={
+              doc
+                ? [
+                    {
+                      label: "Knowledge Assets",
+                      icon: BrainCircuit,
+                      onPress: () => setAssetsOpen(true),
+                    },
+                    {
+                      label: "Make my copy",
+                      icon: GitFork,
+                      onPress: () => void handleFork(),
+                      disabled: forking,
+                    },
+                  ]
+                : []
+            }
+          />
         )}
-      >
-        {!embedded && doc && (
-          <div className="border-b px-4 py-1.5 flex items-center gap-2 min-w-0 shrink-0">
-            <StatusBadge status={(doc.status as DocStatus) ?? "unknown"} />
-            {provenanceLabel && (
-              <span
-                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary"
-                title="You can read this document through a shared-knowledge grant"
-              >
-                <BookMarked className="h-3 w-3" />
-                {provenanceLabel}
+        <div
+          className={cn(
+            "flex-1 min-h-0 flex flex-col",
+            !embedded && "pt-[var(--shell-header-h)]",
+          )}
+        >
+          {!embedded && doc && (
+            <div className="border-b px-4 py-1.5 flex items-center gap-2 min-w-0 shrink-0">
+              <StatusBadge status={(doc.status as DocStatus) ?? "unknown"} />
+              {provenanceLabel && (
+                <span
+                  className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary"
+                  title="You can read this document through a shared-knowledge grant"
+                >
+                  <BookMarked className="h-3 w-3" />
+                  {provenanceLabel}
+                </span>
+              )}
+              <span className="text-xs text-muted-foreground whitespace-nowrap truncate">
+                {doc.pagesPersisted} pages · {doc.chunks}{" "}
+                {RAG_VOCAB.segmentsShort.toLowerCase()} · {doc.embeddingsOai}{" "}
+                embeds
               </span>
-            )}
-            <span className="text-xs text-muted-foreground whitespace-nowrap truncate">
-              {doc.pagesPersisted} pages · {doc.chunks}{" "}
-              {RAG_VOCAB.segmentsShort.toLowerCase()} · {doc.embeddingsOai}{" "}
-              embeds
-            </span>
-          </div>
-        )}
+            </div>
+          )}
 
-        {/* In-document search — present in both modes. In embedded surfaces (the
+          {/* In-document search — present in both modes. In embedded surfaces (the
           /files Knowledge tab) the document header is dropped, so the Knowledge
           Assets entry rides along as the bar's trailing slot instead of a
           floating button. */}
-        {doc && !docError && (
-          <>
-            {!hideSearchBar && (
-              <DocumentSearchBar
-                query={search.query}
-                onQueryChange={search.setQuery}
-                onSubmit={handleSearch}
-                onClear={search.clear}
-                loading={search.loading}
-                hasSearched={search.hasSearched}
-                summary={search.summary}
-                rightSlot={
-                  embedded ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setAssetsOpen(true)}
-                      className="h-7 px-2 text-xs shrink-0"
-                      title="Build premium knowledge representations from this document"
-                    >
-                      Knowledge Assets
-                    </Button>
-                  ) : undefined
-                }
-              />
-            )}
-            {search.hasSearched && (
-              <DocumentSearchSummary
-                activeQuery={search.activeQuery}
-                summary={search.summary}
-                loading={search.loading}
-                error={search.error}
-                activePageNumber={activePageIndex + 1}
-                onJumpToPage={jumpToPage}
-              />
-            )}
-          </>
-        )}
+          {doc && !docError && (
+            <>
+              {!hideSearchBar && (
+                <DocumentSearchBar
+                  query={search.query}
+                  onQueryChange={search.setQuery}
+                  onSubmit={handleSearch}
+                  onClear={search.clear}
+                  loading={search.loading}
+                  hasSearched={search.hasSearched}
+                  summary={search.summary}
+                  rightSlot={
+                    embedded ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setAssetsOpen(true)}
+                        className="h-7 px-2 text-xs shrink-0"
+                        title="Build premium knowledge representations from this document"
+                      >
+                        Knowledge Assets
+                      </Button>
+                    ) : undefined
+                  }
+                />
+              )}
+              {search.hasSearched && (
+                <DocumentSearchSummary
+                  activeQuery={search.activeQuery}
+                  summary={search.summary}
+                  loading={search.loading}
+                  error={search.error}
+                  activePageNumber={activePageIndex + 1}
+                  onJumpToPage={jumpToPage}
+                />
+              )}
+            </>
+          )}
 
-        {docUnavailable && (
-          <AccessGate
-            token="processed_document"
-            id={documentId}
-            error={docReadError ?? (docError ? new Error(docError) : undefined)}
-            onRetry={reloadDoc}
-            fallbackHref="/rag/library"
-            fallbackLabel="Your library"
-          />
-        )}
-
-        {!docUnavailable && (
-          // `minmax(0, 1fr)` (instead of bare `1fr`) is critical here:
-          // CSS Grid defaults the third track to `minmax(auto, 1fr)`,
-          // which lets the column grow past the available space when the
-          // page content has long unbroken text. With `minmax(0, 1fr)`
-          // the column hard-caps at the remaining viewport width and the
-          // inner `<pre>` wraps as expected.
-          <div className="flex-1 min-h-0 grid grid-cols-[220px_360px_minmax(0,1fr)] divide-x overflow-hidden">
-            {/* Left: pages list */}
-            <PagesNav
-              documentId={documentId}
-              totalPages={doc?.pagesPersisted ?? 0}
-              activePageIndex={activePageIndex}
-              onSelect={setActivePageIndex}
-              seedPages={doc?.pages ?? []}
+          {docUnavailable && (
+            <AccessGate
+              token="processed_document"
+              id={documentId}
+              error={
+                docReadError ?? (docError ? new Error(docError) : undefined)
+              }
+              onRetry={reloadDoc}
+              fallbackHref="/rag/library"
+              fallbackLabel="Your library"
             />
+          )}
 
-            {/* Middle: per-page segments + ranked search results — sits next to
+          {!docUnavailable && (
+            // `minmax(0, 1fr)` (instead of bare `1fr`) is critical here:
+            // CSS Grid defaults the third track to `minmax(auto, 1fr)`,
+            // which lets the column grow past the available space when the
+            // page content has long unbroken text. With `minmax(0, 1fr)`
+            // the column hard-caps at the remaining viewport width and the
+            // inner `<pre>` wraps as expected.
+            <div className="flex-1 min-h-0 grid grid-cols-[220px_360px_minmax(0,1fr)] divide-x overflow-hidden">
+              {/* Left: pages list */}
+              <PagesNav
+                documentId={documentId}
+                totalPages={doc?.pagesPersisted ?? 0}
+                activePageIndex={activePageIndex}
+                onSelect={setActivePageIndex}
+                seedPages={doc?.pages ?? []}
+                locators={locators}
+              />
+
+              {/* Middle: per-page segments + ranked search results — sits next to
               Pages so the user sees the page-by-page breakdown directly
               alongside the page list, without the wide page-text panel in
               between. */}
-            <RightRail
-              documentId={documentId}
-              activePageNumber={activePageIndex + 1}
-              search={search}
-              onJumpToPage={jumpToPage}
-            />
+              <RightRail
+                documentId={documentId}
+                activePageNumber={activePageIndex + 1}
+                search={search}
+                onJumpToPage={jumpToPage}
+              />
 
-            {/* Right: page text — gets the remaining 1fr and is the place to
+              {/* Right: page text — gets the remaining 1fr and is the place to
               read the cleaned / raw text of the active page, with the active
               search term highlighted in place. */}
-            <PageContent
-              documentId={documentId}
-              pageIndex={activePageIndex}
-              totalPages={doc?.pagesPersisted ?? 0}
-              onPageChange={setActivePageIndex}
-              query={search.activeQuery}
-              onActivePageLoaded={handleActivePageLoaded}
-            />
-          </div>
-        )}
-      </div>
+              <PageContent
+                documentId={documentId}
+                pageIndex={activePageIndex}
+                totalPages={doc?.pagesPersisted ?? 0}
+                onPageChange={setActivePageIndex}
+                query={search.activeQuery}
+                onActivePageLoaded={handleActivePageLoaded}
+                locator={locators.get(activePageIndex) ?? null}
+              />
+            </div>
+          )}
+        </div>
 
-      {/* Knowledge Asset Builder — resizable right drawer. The doc stays fully
+        {/* Knowledge Asset Builder — resizable right drawer. The doc stays fully
           visible behind it (the panel sits alongside, not over), so the user
           reads the source while building / inspecting representations. */}
-      {doc && (
-        <MatrxDynamicPanelHost
-          open={assetsOpen}
-          onOpenChange={setAssetsOpen}
-          title="Knowledge Assets"
-          description={doc.name}
-          position="right"
-          defaultSize={46}
-          minSize={28}
-          maxSize={80}
-          contentClassName="p-0"
-        >
-          <KnowledgeAssetPanel
-            doc={{
-              id: documentId,
-              name: doc.name,
-              totalPages: doc.pagesPersisted ?? null,
-            }}
-          />
-        </MatrxDynamicPanelHost>
-      )}
-    </div>
+        {doc && (
+          <MatrxDynamicPanelHost
+            open={assetsOpen}
+            onOpenChange={setAssetsOpen}
+            title="Knowledge Assets"
+            description={doc.name}
+            position="right"
+            defaultSize={46}
+            minSize={28}
+            maxSize={80}
+            contentClassName="p-0"
+          >
+            <KnowledgeAssetPanel
+              doc={{
+                id: documentId,
+                name: doc.name,
+                totalPages: doc.pagesPersisted ?? null,
+              }}
+            />
+          </MatrxDynamicPanelHost>
+        )}
+      </div>
     </Frame>
   );
 }
@@ -469,11 +488,13 @@ function PagesNav({
   activePageIndex,
   onSelect,
   seedPages,
+  locators,
 }: {
   documentId: string;
   totalPages: number;
   activePageIndex: number;
   onSelect: (idx: number) => void;
+  locators: Map<number, PortionLocatorRow>;
   seedPages: {
     pageIndex: number;
     pageNumber: number;
@@ -510,7 +531,7 @@ function PagesNav({
           "px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground",
         )}
       >
-        Pages ({totalPages})
+        {portionsHeading(locators, totalPages)}
       </div>
       <ScrollArea className="flex-1">
         <ul className="divide-y">
@@ -525,21 +546,10 @@ function PagesNav({
                     : "")
                 }
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium tabular-nums">
-                    p.{p.pageNumber}
-                  </span>
-                  {p.sectionKind && (
-                    <Badge variant="outline" className="text-[10px] px-1 py-0">
-                      {p.sectionKind}
-                    </Badge>
-                  )}
-                </div>
-                {p.sectionTitle && (
-                  <div className="text-xs text-muted-foreground break-words mt-0.5">
-                    {p.sectionTitle}
-                  </div>
-                )}
+                <PortionNavLabel
+                  page={p}
+                  locator={locators.get(p.pageIndex) ?? null}
+                />
               </button>
             </li>
           ))}
@@ -554,6 +564,63 @@ function PagesNav({
   );
 }
 
+/** "Pages (12)" for a PDF; "Sections (7)" / "Segments (40)" when every portion is one kind. */
+function portionsHeading(
+  locators: Map<number, PortionLocatorRow>,
+  total: number,
+): string {
+  const kinds = new Set([...locators.values()].map((l) => portionKindOf(l)));
+  if (kinds.size === 1) {
+    const only = [...kinds][0];
+    return `${PORTION_KIND_WORD[only]}s (${total})`;
+  }
+  return kinds.size > 1 ? `Parts (${total})` : `Pages (${total})`;
+}
+
+function PortionNavLabel({
+  page,
+  locator,
+}: {
+  page: {
+    pageIndex: number;
+    pageNumber: number;
+    sectionKind: string | null;
+    sectionTitle: string | null;
+  };
+  locator: PortionLocatorRow | null;
+}) {
+  const kind = locator ? portionKindOf(locator) : "page";
+  if (locator && kind !== "page") {
+    return (
+      <div className="flex items-start justify-between gap-2">
+        <span className="break-words font-medium">{portionLabel(locator)}</span>
+        <Badge variant="outline" className="shrink-0 px-1 py-0 text-[10px]">
+          {PORTION_KIND_WORD[kind]} {page.pageNumber}
+        </Badge>
+      </div>
+    );
+  }
+  return (
+    <>
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-medium tabular-nums">
+          {locator ? portionLabel(locator) : `Page ${page.pageNumber}`}
+        </span>
+        {page.sectionKind && page.sectionKind !== "section" && (
+          <Badge variant="outline" className="text-[10px] px-1 py-0">
+            {page.sectionKind}
+          </Badge>
+        )}
+      </div>
+      {page.sectionTitle && (
+        <div className="text-xs text-muted-foreground break-words mt-0.5">
+          {page.sectionTitle}
+        </div>
+      )}
+    </>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Middle — selected page content
 // ---------------------------------------------------------------------------
@@ -565,10 +632,13 @@ function PageContent({
   onPageChange,
   query,
   onActivePageLoaded,
+  locator = null,
 }: {
   documentId: string;
   pageIndex: number;
   totalPages: number;
+  /** The active portion's kind + locator — names the pane header. */
+  locator?: PortionLocatorRow | null;
   onPageChange: (idx: number) => void;
   /** Active search term — literal matches are highlighted in the page text. */
   query: string;
@@ -704,10 +774,11 @@ function PageContent({
     );
   }
 
-  const pageLabel =
-    page?.section_title?.trim() ||
-    page?.section_kind?.trim() ||
-    `Page ${pageIndex + 1}`;
+  const pageLabel = locator
+    ? portionLabel(locator)
+    : page?.section_title?.trim() ||
+      page?.section_kind?.trim() ||
+      `Page ${pageIndex + 1}`;
 
   return (
     <div className="flex flex-col min-h-0 min-w-0">
