@@ -56,6 +56,7 @@ import {
 } from 'lucide-react';
 import { toast } from "@/lib/toast";
 import { cn } from '@/lib/utils';
+import { ReadFailure } from '@/components/read-state/ReadFailure';
 import FeedbackDetailDialog from './FeedbackDetailDialog';
 import { useRegisterCategoryEditor } from '@/features/admin/users/components/FeedbackConsoleEditorStore';
 
@@ -109,6 +110,7 @@ export default function CategoriesTab() {
     const [categories, setCategories] = useState<FeedbackCategory[]>([]);
     const [allFeedback, setAllFeedback] = useState<UserFeedback[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<unknown>(null);
     const [saving, setSaving] = useState(false);
     const [editing, setEditing] = useState<EditingCategory | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<FeedbackCategory | null>(null);
@@ -158,7 +160,10 @@ export default function CategoriesTab() {
         setLoading(true);
         try {
             const [catRes, feedbackResult] = await Promise.all([
-                fetch('/api/admin/feedback/categories').then(r => r.json()),
+                fetch('/api/admin/feedback/categories').then(async (r) => {
+                    if (!r.ok) throw new Error(`Loading feedback categories failed (${r.status})`);
+                    return r.json();
+                }),
                 getAllFeedback(),
             ]);
             const cats: FeedbackCategory[] = catRes.categories ?? [];
@@ -167,8 +172,13 @@ export default function CategoriesTab() {
             setExpandedCategories(new Set(cats.map((c: FeedbackCategory) => c.id).concat(['uncategorized'])));
             if (feedbackResult.success && feedbackResult.data) {
                 setAllFeedback(feedbackResult.data);
+                setLoadError(null);
+            } else {
+                // Categories without their feedback would say "No items in this category".
+                setLoadError(feedbackResult.error ? new Error(feedbackResult.error) : true);
             }
-        } catch {
+        } catch (err) {
+            setLoadError(err);
             toast.error('Failed to load data');
         } finally {
             setLoading(false);
@@ -288,6 +298,10 @@ export default function CategoriesTab() {
                 <p className="text-sm text-muted-foreground">Loading...</p>
             </Card>
         );
+    }
+
+    if (loadError) {
+        return <ReadFailure error={loadError} what="the feedback categories and their items" onRetry={() => void loadData()} />;
     }
 
     return (

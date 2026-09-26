@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -73,6 +74,7 @@ export default function EnumDetail({
   const [isCopied, setIsCopied] = useState(false);
   const [enumUsage, setEnumUsage] = useState<EnumUsage[]>([]);
   const [loadingUsage, setLoadingUsage] = useState(false);
+  const [usageError, setUsageError] = useState<unknown>(null);
 
   const { getEnumUsage } = useEnums();
 
@@ -88,8 +90,9 @@ export default function EnumDetail({
     try {
       const usage = await getEnumUsage(enumType.schema, enumType.name);
       setEnumUsage(usage);
+      setUsageError(null);
     } catch (error) {
-      console.error("Error loading enum usage:", error);
+      setUsageError(error);
     } finally {
       setLoadingUsage(false);
     }
@@ -373,6 +376,12 @@ export default function EnumDetail({
               <div className="flex justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-700 dark:border-slate-300"></div>
               </div>
+            ) : usageError && enumUsage.length === 0 ? (
+              <ReadFailure
+                error={usageError}
+                what="where this enum is used"
+                onRetry={() => void loadEnumUsage()}
+              />
             ) : enumUsage.length === 0 ? (
               <div className="text-center py-8">
                 <div className="text-slate-500 dark:text-slate-400">

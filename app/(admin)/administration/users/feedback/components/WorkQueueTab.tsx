@@ -28,6 +28,7 @@ import {
     Eye,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { ReadFailure } from '@/components/read-state/ReadFailure';
 import { toast } from "@/lib/toast";
 import FeedbackDetailDialog from './FeedbackDetailDialog';
 import { CopyButtons } from '@/components/agent-copy/CopyButtons';
@@ -54,6 +55,7 @@ export default function WorkQueueTab() {
     const [items, setItems] = useState<UserFeedback[]>([]);
     const [categories, setCategories] = useState<FeedbackCategory[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<unknown>(null);
     const [reordering, setReordering] = useState<string | null>(null);
     const [selectedItem, setSelectedItem] = useState<UserFeedback | null>(null);
     const [detailOpen, setDetailOpen] = useState(false);
@@ -70,11 +72,13 @@ export default function WorkQueueTab() {
             ]);
             if (queueResult.success && queueResult.data) {
                 setItems(queueResult.data);
+                setLoadError(null);
             } else {
+                setLoadError(queueResult.error ? new Error(queueResult.error) : true);
                 toast.error(`Failed to load work queue: ${queueResult.error}`);
             }
         } catch (error) {
-            console.error('Error loading work queue:', error);
+            setLoadError(error);
             toast.error('Failed to load work queue');
         } finally {
             setLoading(false);
@@ -194,7 +198,9 @@ export default function WorkQueueTab() {
                     </div>
                 </div>
 
-                {items.length === 0 ? (
+                {loadError && items.length === 0 ? (
+                    <ReadFailure error={loadError} what="the agent work queue" onRetry={() => void loadQueue()} />
+                ) : items.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                         <ListOrdered className="w-10 h-10 mb-3 opacity-30" />
                         <p className="text-sm font-medium">Work queue is empty</p>

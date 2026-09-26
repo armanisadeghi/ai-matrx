@@ -18,8 +18,10 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectBuiltinAgents,
   selectAgentsSliceStatus,
+  selectAgentsSliceError,
 } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
+import { fetchAgentsList } from "@/features/agents/redux/agent-definition/thunks";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { CreateAgentAppForm } from "@/features/agent-apps/components/CreateAgentAppForm";
 import type { CreateAgentAppInput } from "@/features/agent-apps/types";
 import { pushAppHref } from "@/lib/deployment/navigate";
@@ -36,9 +38,13 @@ export default function AdminNewSystemAppPage() {
 
   const builtins = useAppSelector(selectBuiltinAgents);
   const sliceStatus = useAppSelector(selectAgentsSliceStatus);
+  const sliceError = useAppSelector(selectAgentsSliceError);
 
+  // fetchAgentsList (not the picker-era fetchAgentsListFull) writes the
+  // slice's status and error, so "No system agents yet" below is only said
+  // after a read that succeeded.
   useEffect(() => {
-    dispatch(fetchAgentsListFull());
+    dispatch(fetchAgentsList());
   }, [dispatch]);
 
   const [submitting, setSubmitting] = useState(false);
@@ -90,7 +96,7 @@ export default function AdminNewSystemAppPage() {
     [],
   );
 
-  if (sliceStatus === "loading" && builtins.length === 0) {
+  if ((sliceStatus === "loading" || sliceStatus === "idle") && builtins.length === 0) {
     return (
       <div className="h-full flex items-center justify-center">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -144,6 +150,16 @@ export default function AdminNewSystemAppPage() {
           </CardContent>
         </Card>
       </div>
+    );
+  }
+
+  if ((sliceStatus === "failed" || sliceError) && systemAgentCount === 0) {
+    return (
+      <ReadFailure
+        error={sliceError ?? true}
+        what="the system agents"
+        onRetry={() => void dispatch(fetchAgentsList())}
+      />
     );
   }
 

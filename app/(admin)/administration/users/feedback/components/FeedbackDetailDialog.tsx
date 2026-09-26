@@ -120,6 +120,7 @@ import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { AdminUserDoorControls } from "@/features/admin/users/components/AdminUserRef";
 import { feedbackHref } from "@/features/admin/feedback/doors";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface FeedbackDetailDialogProps {
   feedback: UserFeedback;
@@ -237,6 +238,7 @@ export default function FeedbackDetailDialog({
   // Comments state
   const [comments, setComments] = useState<FeedbackComment[]>([]);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [commentsError, setCommentsError] = useState<unknown>(null);
   const [newComment, setNewComment] = useState("");
   const [isSendingComment, setIsSendingComment] = useState(false);
   const commentsEndRef = useRef<HTMLDivElement>(null);
@@ -254,6 +256,7 @@ export default function FeedbackDetailDialog({
   const [isSendingUserReview, setIsSendingUserReview] = useState(false);
   const [userMessages, setUserMessages] = useState<FeedbackUserMessage[]>([]);
   const [isLoadingUserMessages, setIsLoadingUserMessages] = useState(false);
+  const [userMessagesError, setUserMessagesError] = useState<unknown>(null);
   const [userReplyText, setUserReplyText] = useState("");
   const [isSendingUserReply, setIsSendingUserReply] = useState(false);
   const userMessagesEndRef = useRef<HTMLDivElement>(null);
@@ -431,9 +434,12 @@ export default function FeedbackDetailDialog({
       const result = await getFeedbackComments(item.id);
       if (result.success && result.data) {
         setComments(result.data);
+        setCommentsError(null);
+      } else {
+        setCommentsError(result.error ? new Error(result.error) : true);
       }
     } catch (error) {
-      console.error("Error loading comments:", error);
+      setCommentsError(error);
     } finally {
       setIsLoadingComments(false);
     }
@@ -445,9 +451,12 @@ export default function FeedbackDetailDialog({
       const result = await getUserMessages(item.id);
       if (result.success && result.data) {
         setUserMessages(result.data);
+        setUserMessagesError(null);
+      } else {
+        setUserMessagesError(result.error ? new Error(result.error) : true);
       }
     } catch (error) {
-      console.error("Error loading user messages:", error);
+      setUserMessagesError(error);
     } finally {
       setIsLoadingUserMessages(false);
     }
@@ -500,12 +509,14 @@ export default function FeedbackDetailDialog({
   useEffect(() => {
     setActiveTab(initialTab || "submission");
     setComments([]);
+    setCommentsError(null);
     setNewComment("");
     setPendingTestResult(null);
     setTestFeedbackText("");
     setShowUserReviewCompose(false);
     setUserReviewMessage("");
     setUserMessages([]);
+    setUserMessagesError(null);
     setUserReplyText("");
   }, [feedback.id, initialTab]);
 
@@ -2077,6 +2088,12 @@ export default function FeedbackDetailDialog({
                     <Loader2 className="w-5 h-5 animate-spin mr-2" />
                     Loading comments...
                   </div>
+                ) : commentsError && comments.length === 0 ? (
+                  <ReadFailure
+                    error={commentsError}
+                    what="the comments on this feedback"
+                    onRetry={() => void loadComments()}
+                  />
                 ) : comments.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                     <MessageSquare className="w-8 h-8 mb-2 opacity-30" />
@@ -2654,6 +2671,12 @@ export default function FeedbackDetailDialog({
                     <Loader2 className="w-5 h-5 animate-spin mr-2" />
                     Loading user messages...
                   </div>
+                ) : userMessagesError && userMessages.length === 0 ? (
+                  <ReadFailure
+                    error={userMessagesError}
+                    what="the messages with this user"
+                    onRetry={() => void loadUserMessages()}
+                  />
                 ) : userMessages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                     <Users className="w-8 h-8 mb-2 opacity-30" />

@@ -182,12 +182,13 @@ export function useEnums({
       try {
         return await getEnumUsage(schema, name);
       } catch (err) {
-        setError(
+        const failure =
           err instanceof Error
             ? err
-            : new Error("An error occurred while fetching enum usage"),
-        );
-        return [];
+            : new Error("An error occurred while fetching enum usage");
+        setError(failure);
+        // Rethrow: an empty array here read as "this enum is used nowhere".
+        throw failure;
       }
     },
     [],

@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { AlertCircle, AlertTriangle, Info, Megaphone, Trash2, Calendar, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from "@/lib/toast";
+import { ReadFailure } from '@/components/read-state/ReadFailure';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -49,6 +50,7 @@ const announcementTypeColors: Record<AnnouncementType, string> = {
 export default function AnnouncementTable() {
     const [announcements, setAnnouncements] = useState<SystemAnnouncement[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<unknown>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [viewDialogOpen, setViewDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -61,11 +63,19 @@ export default function AnnouncementTable() {
 
     async function loadAnnouncements() {
         setLoading(true);
-        const result = await getAllAnnouncements();
-        if (result.success && result.data) {
-            setAnnouncements(result.data);
+        try {
+            const result = await getAllAnnouncements();
+            if (result.success && result.data) {
+                setAnnouncements(result.data);
+                setLoadError(null);
+            } else {
+                setLoadError(result.error ? new Error(result.error) : true);
+            }
+        } catch (err) {
+            setLoadError(err);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     }
 
     const handleToggleActive = async (announcementId: string, isActive: boolean) => {
@@ -155,6 +165,10 @@ export default function AnnouncementTable() {
                 <p className="text-gray-600 dark:text-gray-400">Loading announcements...</p>
             </Card>
         );
+    }
+
+    if (loadError && announcements.length === 0) {
+        return <ReadFailure error={loadError} what="the announcements" onRetry={() => void loadAnnouncements()} />;
     }
 
     if (announcements.length === 0) {

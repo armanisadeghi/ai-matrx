@@ -26,6 +26,7 @@ import { UserSearchField } from "@/features/user-search/UserSearchField";
 import { AdminUserSearchResponseSchema } from "@/features/user-search/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Textarea } from "@/components/ui/textarea";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface EmailTemplate {
   id: string;
@@ -61,6 +62,8 @@ export default function AdminEmailPage() {
   const [userSearch, setUserSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [usersError, setUsersError] = useState<unknown>(null);
+  const [usersAttempt, setUsersAttempt] = useState(0);
   const [result, setResult] = useState<{
     success: boolean;
     msg: string;
@@ -100,6 +103,7 @@ export default function AdminEmailPage() {
           return AdminUserSearchResponseSchema.parse(payload);
         })
         .then((data) => {
+          setUsersError(null);
           setUsers(
             data.users.flatMap((user) =>
               user.email
@@ -114,10 +118,10 @@ export default function AdminEmailPage() {
             ),
           );
         })
-        .catch(console.error)
+        .catch((err: unknown) => setUsersError(err))
         .finally(() => setLoadingUsers(false));
     }
-  }, [recipientMode, users.length]);
+  }, [recipientMode, users.length, usersAttempt]);
 
   const handleTemplateSelect = (templateId: string) => {
     const template = templates.find((t) => t.id === templateId);
@@ -326,6 +330,12 @@ export default function AdminEmailPage() {
                         <Loader2 className="w-4 h-4 animate-spin" />
                         Loading users...
                       </div>
+                    ) : usersError && users.length === 0 ? (
+                      <ReadFailure
+                        error={usersError}
+                        what="the user list"
+                        onRetry={() => setUsersAttempt((n) => n + 1)}
+                      />
                     ) : (
                       <div className="space-y-2">
                         <UserSearchField
