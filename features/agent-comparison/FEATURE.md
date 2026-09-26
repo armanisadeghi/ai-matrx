@@ -40,17 +40,40 @@ and Runs floating windows.
 
 | Concern | Path |
 |---|---|
-| Route shim | [app/(core)/agents/battle/page.tsx](../../app/(core)/agents/battle/page.tsx) |
-| Page shell | [components/BattlePage.tsx](./components/BattlePage.tsx) |
-| Single column | [components/BattleColumn.tsx](./components/BattleColumn.tsx) |
-| Toolbar | [components/BattleToolbar.tsx](./components/BattleToolbar.tsx) |
+| Routes | `app/(core)/agents/battle/<mode>/page.tsx` (new battle) + `<mode>/[setId]/page.tsx` (one saved battle); Open mode is the root, its battles at `open/[setId]` |
+| Route table | [shared/battleRoutes.ts](./shared/battleRoutes.ts) — `battleUrl`, `battleModeBasePath` |
+| URL ↔ screen sync | [shared/useBattleRoute.tsx](./shared/useBattleRoute.tsx) — also declares the mounted mode |
+| Header (every mode) | [shared/BattleHeader.tsx](./shared/BattleHeader.tsx) + mode nav in [shared/ModePicker.tsx](./shared/ModePicker.tsx) |
+| Save path (every mode) | [shared/battlePersistence.ts](./shared/battlePersistence.ts) — `createBattlePersistence` |
+| Battle-wide Alchemy | [shared/BattleAlchemy.tsx](./shared/BattleAlchemy.tsx) over [shared/battleSnapshot.ts](./shared/battleSnapshot.ts) |
+| Open-mode page / toolbar / column | [components/BattlePage.tsx](./components/BattlePage.tsx), [components/BattleToolbar.tsx](./components/BattleToolbar.tsx), [components/BattleColumn.tsx](./components/BattleColumn.tsx) |
 | Shared windows | [components/SharedContextWindow.tsx](./components/SharedContextWindow.tsx), [components/SharedRunsWindow.tsx](./components/SharedRunsWindow.tsx) |
-| Loader dialog | [components/ComparisonSetLoaderDialog.tsx](./components/ComparisonSetLoaderDialog.tsx) |
-| Redux | [redux/battleSlice.ts](./redux/battleSlice.ts), [redux/selectors.ts](./redux/selectors.ts), [redux/thunks.ts](./redux/thunks.ts) |
+| Open a saved battle | [components/ComparisonSetLoaderDialog.tsx](./components/ComparisonSetLoaderDialog.tsx) |
+| Redux | [redux/battleSlice.ts](./redux/battleSlice.ts), [redux/selectors.ts](./redux/selectors.ts), [redux/thunks.ts](./redux/thunks.ts); one slice per mode under `modes/<mode>/redux/` |
 | Supabase CRUD | [service/comparisonSetsService.ts](./service/comparisonSetsService.ts) |
-| Tables | `public.cmp_comparison_sets`, `public.cmp_comparison_entries` (see [migrations/cmp_comparison_sets.sql](../../migrations/cmp_comparison_sets.sql)) |
+| Tables (certified canonical, 2026-09-26) | `agent.cmp_comparison_sets` (token `comparison_set`), `agent.cmp_comparison_entries` (`cmp_entry`, component of the set), `agent.cmp_response_feedback` (`cmp_feedback`) |
 
----
+## Battle identity — the invariants
+
+- **A battle IS its `cmp_comparison_sets` row; its URL is `battleUrl(mode, id)`.** Every mode's first
+  Submit all creates the row BEFORE the runs start (`persist<Mode>Battle`), and `useBattleRoute`
+  replaces the URL. Opening a battle URL loads it through that mode's own `load<Mode>BattleSet`; a
+  battle saved in another mode is redirected to that mode's URL.
+- **Every write goes through `createBattlePersistence`** — create, or update metadata AND entries.
+  It refuses to write a battle with no columns. A save failure never blocks the run; it comes back as
+  `persistError` and `reportBattleSubmit` shows it.
+- **Each mode builds its own metadata and entries.** What a mode holds constant goes on the set row
+  (`metadata.locked`, including `resolved_variables` — what the run used, defaults included); what
+  varies goes on each entry. Never flatten this into a shared shape: the modes are different experiments.
+- **Request Mod saves `lastRequest`, never the emptied composer.** A composer clears the moment it
+  sends; `modes/request-mod/columnRequest.ts` picks the request that actually ran. A loaded column that
+  already ran does NOT get its request back as a draft (Submit all would send it twice).
+- **Shared surfaces read the MOUNTED mode** (`agentComparison.mountedMode`, set by `useBattleRoute`):
+  `selectActiveBattleColumns` and `selectMountedBattleSetId`. Every mode's slice survives navigation, so
+  "the first slice with columns" is wrong — it put Settings' columns in Model's runs table and filed
+  every mode's ratings under Open mode's battle.
+- **`entries` are upserted, then the stale ones deleted** (`replaceEntries`), so a failed write keeps
+  the previous columns.
 
 ## Reused primitives — DO NOT recreate
 
@@ -136,21 +159,22 @@ and Runs floating windows.
   floating-window context.
 
 ### Save / Load
-- **Save** (toolbar): if `activeSetId` is null, prompt for a name; INSERT
-  one `cmp_comparison_sets` row, then bulk INSERT `cmp_comparison_entries`
-  for every column whose `conversationId` has been initialized (i.e. has
-  an `agentId` set). On re-save: UPDATE the set, DELETE+INSERT entries.
-- **Load** (toolbar): list user's sets in a dialog. Selecting one resets
-  `state.battle.columns` to match the entries (in `display_order`), creates
-  manual instances for each `conversation_id`, and calls `loadConversation`
-  to stream message history into Redux. A hydrated server row is a continuation
-  even when it has zero messages; resubmitting it must never assert `is_new`.
+- **First Submit all** creates the battle (automatic name `<agent> · <Mode> battle · <date>`) and the
+  URL gains its id. **Save battle / Save changes** runs the same persist path; **Rename battle…** and
+  **Save a copy…** (`save<Mode>BattleAs`) act on the saved row. **Start a new battle** empties the page;
+  the battle stays saved and the URL returns to the mode's base path.
+- **Open a saved battle** lists the person's battles (this mode first, "All modes" for the rest); every
+  row is a link to its battle URL. Deleting the battle on screen detaches it; the page keeps its content
+  as a new, unsaved battle.
+- A hydrated server row is a continuation even when it has zero messages; resubmitting it must never
+  assert `is_new`.
 
 ---
 
 ## Surface key
 
-`SURFACE_KEY = "agent-battle"`. All columns share the same surface key —
+Open mode: `BATTLE_SURFACE_KEY = "agent-comparison"`; each locked mode has its own
+(`MODEL_SURFACE_KEY = "agent-comparison-model"`, …). All columns of a mode share it —
 focus events and pending-navigation intents are unused on this page
 (each column manages its own conversation; no fork/retry routing here).
 
@@ -158,7 +182,7 @@ focus events and pending-navigation intents are unused on this page
 
 ## Source feature
 
-`sourceFeature = "agent-battle"`. Set on each `createManualInstance` and
+`sourceFeature = "agent-comparison"`. Set on each `createManualInstance` and
 on the `launchConversation` invocation so the conversation record is
 attributable to this page in analytics.
 
@@ -192,6 +216,16 @@ attributable to this page in analytics.
 ---
 
 ## Change Log
+
+- 2026-09-26 — **Every battle has a URL and one header.** All nine modes mount `BattleHeader` (name
+  left, mode nav center, actions in "…", blind test, battle-wide Alchemy, Submit all); Conversation mode
+  joined the nav. Battles are created on first Submit all and live at `/agents/battle/<mode>/<id>`.
+  Fixed: re-save dropped every change to the locked setup (metadata was never rewritten); Request Mod
+  saved the emptied composer after every run; ratings were filed under Open mode's battle in every
+  mode; shared runs table/feedback read the first non-empty mode slice (Variations missing); server
+  run durations are seconds but were formatted as milliseconds ("6ms" for a 6 s run) and reloaded
+  runs carried milliseconds in the seconds field; an unpicked Model column now says it runs on the
+  agent's default model. Tables certified canonical.
 
 Model mode at `/agents/battle/model` has the dedicated UI surface
 `matrx-user/agent-comparison-model`. Its mounted runtime exposes the locked

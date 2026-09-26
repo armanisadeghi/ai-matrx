@@ -42,6 +42,7 @@ import {
   type BattleSubmitResult,
 } from "@/features/agent-comparison/shared/battlePersistence";
 import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import {
   addRequestModColumn,
   removeRequestModColumn,
@@ -369,6 +370,7 @@ interface PersistedRequestModEntryMeta {
   label: string;
   user_message: string;
   variables: Record<string, unknown>;
+  resolved_variables?: Record<string, unknown>;
 }
 
 function buildRequestModEntries(state: RootState): UpsertEntryInput[] {
@@ -382,6 +384,8 @@ function buildRequestModEntries(state: RootState): UpsertEntryInput[] {
       label: col.label,
       user_message: request.user_message,
       variables: request.variables,
+      // What the column's run uses, defaults included — a record, not reloaded.
+      resolved_variables: selectResolvedVariables(col.conversationId)(state),
     };
     out.push({
       conversationId: col.conversationId,

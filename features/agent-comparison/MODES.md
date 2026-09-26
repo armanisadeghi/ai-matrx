@@ -112,17 +112,17 @@ manages both, so the per-column body is just `BoundColumn` without
 a prerequisite, and files/resources remain valid request input.
 
 Cross-mode UX shipped in addition to the modes:
-- **ModePicker** (`shared/ModePicker.tsx`) — mounted at the top of every
-  comparison page; click-to-switch nav across all modes. Active mode is
-  highlighted; deferred modes render as disabled chips with a "soon" tag.
+- **BattleHeader** (`shared/BattleHeader.tsx`) — the one header every mode
+  mounts; the mode switcher (`BattleModeNav`, catalog in `shared/ModePicker.tsx`)
+  sits in its center. Each mode passes only its actions; see FEATURE.md
+  § Battle identity for the save/URL contract every mode shares.
 - **PresetMenu** (`modes/settings/components/PresetMenu.tsx`) — one-click
   templates for the most common Settings-mode comparisons (reasoning
   effort sweep, thinking level sweep, temperature sweep, top-p sweep, max
   tokens sweep). Loading a preset replaces the variant list; locked input
   is preserved.
-- **Mode badges** in `ComparisonSetLoaderDialog` — every saved set
-  displays its mode (open/settings/tools/...) as a colored badge so the
-  user can identify cross-mode sets at a glance.
+- **Mode badges** in `ComparisonSetLoaderDialog` — every saved battle
+  shows its mode; each row links to that battle's own URL.
 
 The slice can be **shared** across simpler modes that have the same
 column shape (a `conversationId` + some mode-specific overrides). Modes
@@ -240,8 +240,8 @@ Reuses imported directly from the agent-comparison core:
 - `shared/BoundColumn` (with `hideInput` since the input is page-level locked)
 - `components/ResponseFeedbackBar` (mounted inside BoundColumn)
 - `components/SharedRunsWindow` + `components/RunsComparisonTable`
-- `components/ComparisonSetLoaderDialog` (with `modeFilter="settings"` +
-  `loadFn={dispatch(loadSettingsBattleSet)}`)
+- `components/ComparisonSetLoaderDialog` (with `mode="settings"`; rows link
+  to battle URLs, which load through `loadSettingsBattleSet`)
 - `service/comparisonSetsService` + `service/responseFeedbackService`
 
 Per-column overrides are persisted in the shared `instanceModelOverrides`
@@ -251,7 +251,7 @@ captures the per-column override map; on load, those overrides are
 re-applied to the recreated instance via `setOverrides`.
 
 The set row's `metadata` stores `{ mode: "settings", locked: {...} }` —
-that's what the loader dialog's `modeFilter` keys off.
+that's what the loader dialog's mode filter and the battle-URL redirect key off.
 
 ### Pattern to follow for Mode 3+
 
@@ -265,7 +265,10 @@ that's what the loader dialog's `modeFilter` keys off.
 5. **Page**: pair a `LockedInputSection` (whatever's frozen at the top)
    with N columns each running `BoundColumn` and a mode-specific header
    chip.
-6. **Toolbar's loader**: pass `modeFilter="<your-mode>"` + a `loadFn`.
+6. **Persistence + route**: build the mode's persist/rename with
+   `createBattlePersistence`, call it through `persistForRun` in Submit all,
+   mount `useBattleRoute` in the page, add `<mode>/[setId]/page.tsx`, a
+   `battleRoutes.ts` entry, and a `selectActiveBattleColumns` case.
 
 ---
 

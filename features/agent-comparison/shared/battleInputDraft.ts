@@ -11,6 +11,7 @@ import { createManualInstance } from "@/features/agents/redux/execution-system/t
 import { copyInstanceRequestDraft } from "@/features/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk";
 import { setSubmitOnEnter } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { generateConversationId } from "@/features/agents/redux/execution-system/utils/ids";
+import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 
 const BATTLE_SOURCE_FEATURE = "agent-comparison" as const;
 
@@ -69,12 +70,22 @@ export async function replaceBattleInputDraft({
   return conversationId;
 }
 
+/**
+ * The shared request as the person left it. `variables` are the values they
+ * set (what a reload puts back); `resolvedVariables` are the values the run
+ * actually used — their values over scope values over the agent's defaults —
+ * so a saved battle records what ran even when every value was a default.
+ */
 export function readBattleInputDraft(
   state: RootState,
   conversationId: string | null,
-): { userMessage: string; variables: Record<string, unknown> } {
+): {
+  userMessage: string;
+  variables: Record<string, unknown>;
+  resolvedVariables: Record<string, unknown>;
+} {
   if (!conversationId) {
-    return { userMessage: "", variables: {} };
+    return { userMessage: "", variables: {}, resolvedVariables: {} };
   }
   return {
     userMessage:
@@ -82,6 +93,7 @@ export function readBattleInputDraft(
     variables:
       state.instanceVariableValues.byConversationId[conversationId]
         ?.userValues ?? {},
+    resolvedVariables: selectResolvedVariables(conversationId)(state),
   };
 }
 

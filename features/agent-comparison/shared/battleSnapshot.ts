@@ -28,6 +28,7 @@ import {
   type MutableTotals,
 } from "@/features/agents/components/run-controls/panels/shared";
 import type { ActiveRequest } from "@/features/agents/types/request.types";
+import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { RESPONSE_FEEDBACK_METRICS } from "./feedbackMetrics";
 import { columnRequestToSave } from "../modes/request-mod/columnRequest";
 import { blindAnonLabel } from "./blind";
@@ -113,8 +114,42 @@ function versionLabel(v: "current" | number | null | undefined): string {
 
 function modelLabel(state: RootState, modelId: unknown): string | null {
   if (typeof modelId !== "string" || !modelId) return null;
-  const row = state.modelRegistry?.entities?.[modelId];
-  return row?.common_name ?? row?.name ?? modelId;
+  const row =
+    state.modelRegistry?.entities?.[modelId] ??
+    state.modelRegistry?.identityById?.[modelId];
+  return row?.common_name || row?.name || modelId;
+}
+
+/**
+ * Every model id the mounted battle names, so the Alchemy control can load
+ * their names before anyone copies — a payload that says
+ * "b32f2079-…" instead of "Gemini 3.8 Flash" tells an AI nothing.
+ */
+export function battleModelIds(state: RootState): string[] {
+  const mode = state.agentComparison.mountedMode;
+  if (!mode) return [];
+  const ids = new Set<string>();
+  for (const col of selectActiveBattleColumns(state)) {
+    const o = state.instanceModelOverrides.byConversationId[col.conversationId];
+    for (const v of [o?.overrides.model, o?.baseSettings.model]) {
+      if (typeof v === "string" && v) ids.add(v);
+    }
+  }
+  const synthetic =
+    mode === "system-prompt"
+      ? state.agentComparisonSystemPrompt.columns
+      : mode === "tools"
+        ? state.agentComparisonTools.columns
+        : mode === "tuning"
+          ? state.agentComparisonTuning.columns
+          : mode === "variations"
+            ? state.agentComparisonVariations.columns
+            : [];
+  for (const c of synthetic) {
+    const id = state.agentDefinition.agents?.[c.syntheticAgentId]?.modelId;
+    if (id) ids.add(id);
+  }
+  return [...ids];
 }
 
 function systemText(state: RootState, agentId: string): string {
@@ -133,8 +168,8 @@ function draftOf(
   if (!conversationId) return { message: "", variables: {} };
   return {
     message: state.instanceUserInput.byConversationId[conversationId]?.text ?? "",
-    variables:
-      state.instanceVariableValues.byConversationId[conversationId]?.userValues ?? {},
+    // What the run uses: the person's values over scope values over defaults.
+    variables: selectResolvedVariables(conversationId)(state),
   };
 }
 
@@ -313,8 +348,17 @@ export function buildBattleSnapshot(state: RootState): BattleSnapshot | null {
     const messages = selectConversationMessages(col.conversationId)(state);
     const transcript = messages
       .filter((m) => m.role === "user" || m.role === "assistant")
-      .map((m) => ({ role: m.role, text: extractFlatText(m) }));
-    const answer = selectLatestAnswerText(col.conversationId)(state) ?? "";
+      .map((m) => ({ role: m.role, text: extractFlatText(m) }))
+      .filter((m) => m.text.trim());
+    // A reloaded battle has no live request, so the latest-answer selector is
+    // empty; the transcript still holds the answer.
+    const lastAssistant = [...transcript]
+      .reverse()
+      .find((m) => m.role === "assistant" && m.text.trim());
+    const answer =
+      selectLatestAnswerText(col.conversationId)(state) ||
+      lastAssistant?.text ||
+      "";
     const error = selectLatestError(col.conversationId)(state);
     const fb = state.agentComparison.feedbackByConversation[col.conversationId];
     const label = identity

@@ -186,6 +186,16 @@ export function VariationsToolbar({
   };
 
   const actions: HeaderAction[] = [
+    // The per-variation editor is this mode's main tool; keep it visible.
+    ...(columns.length > 0
+      ? [
+          {
+            icon: "Pencil",
+            label: editorOpen ? "Close variation editor" : "Edit variations",
+            onPress: onToggleEditor,
+          },
+        ]
+      : []),
     {
       icon: "Activity",
       label: runsWindowOpen ? "Close runs comparison" : "Compare runs",
@@ -204,15 +214,6 @@ export function VariationsToolbar({
             onPress: () => {
               void dispatch(addColumnToVariationsBattle(undefined));
             },
-          },
-        ]
-      : []),
-    ...(columns.length > 0
-      ? [
-          {
-            icon: "Pencil",
-            label: editorOpen ? "Close variation editor" : "Edit variations",
-            onPress: onToggleEditor,
           },
         ]
       : []),

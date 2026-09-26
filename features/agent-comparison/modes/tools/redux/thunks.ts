@@ -497,7 +497,7 @@ function buildToolsEntries(state: RootState): UpsertEntryInput[] {
 function buildSetMetadata(state: RootState): Record<string, unknown> {
   const { sourceAgentId, agentVersion, agentVersionId } =
     state.agentComparisonTools.locked;
-  const { variables, userMessage } = readBattleInputDraft(
+  const { variables, userMessage, resolvedVariables } = readBattleInputDraft(
     state,
     state.agentComparisonTools.inputConversationId,
   );
@@ -509,6 +509,7 @@ function buildSetMetadata(state: RootState): Record<string, unknown> {
       agent_version_id: agentVersionId,
       variables,
       user_message: userMessage,
+      resolved_variables: resolvedVariables,
     },
   };
 }

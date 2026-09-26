@@ -21,10 +21,13 @@ import {
   textExportItem,
 } from "@/components/agent-copy/export";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
-import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useEffect } from "react";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { fetchModelIdentityById } from "@/features/ai-models/redux/modelRegistrySlice";
 import { selectActiveBattleColumns } from "./activeBattleColumns";
 import {
   battleMarkdown,
+  battleModelIds,
   battleRows,
   buildBattleSnapshot,
   type BattleSnapshot,
@@ -32,7 +35,18 @@ import {
 
 export function BattleAlchemy() {
   const store = useAppStore();
+  const dispatch = useAppDispatch();
   const columns = useAppSelector(selectActiveBattleColumns);
+
+  // Load the names of the models this battle compares, so every copy names
+  // them. The thunk skips ids it already has or is already fetching.
+  const modelIdsKey = useAppSelector((state) => battleModelIds(state).join(","));
+  useEffect(() => {
+    for (const id of modelIdsKey ? modelIdsKey.split(",") : []) {
+      void dispatch(fetchModelIdentityById(id));
+    }
+  }, [modelIdsKey, dispatch]);
+
   if (columns.length === 0) return null;
 
   const snapshot = (): BattleSnapshot => {
