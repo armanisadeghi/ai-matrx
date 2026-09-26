@@ -14,7 +14,8 @@ jest.mock("@ai-matrx/data/db", () => ({
 }));
 jest.mock("@/utils/supabase/client", () => ({ createClient: jest.fn() }));
 jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({ SurfaceRuntimeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
-jest.mock("@/features/surfaces/manifests/admin-sandbox.manifest", () => ({ ADMIN_SANDBOX_SURFACE_NAME: "admin/sandbox", createAdminSandboxScope: jest.fn() }));
+// Keep the real manifest (the surface registry validates it at load, via the page's error menu); only the scope factory is replaced.
+jest.mock("@/features/surfaces/manifests/admin-sandbox.manifest", () => ({ ...jest.requireActual("@/features/surfaces/manifests/admin-sandbox.manifest"), createAdminSandboxScope: jest.fn() }));
 jest.mock("@/features/admin/users/components/AdminUserRef", () => ({ AdminUserRef: () => null }));
 jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
 jest.mock("@/components/navigation/AppLink", () => ({ __esModule: true, default: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
