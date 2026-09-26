@@ -218,7 +218,7 @@ describe("compact table contract cells", () => {
     const markup = renderToStaticMarkup(
       <MandateInputsCell compact row={{ ...row, provisionKey: "test.offer" }} offeredValues={["first_value", "second_value", "third_value", "fourth_value", "fifth_value"]} />,
     );
-    for (const value of ["first_value", "second_value", "third_value", "fourth_value", "fifth_value", "User text"]) expect(markup).toContain(value);
+    for (const value of ["First Value", "Second Value", "Third Value", "Fourth Value", "Fifth Value", "User text"]) expect(markup).toContain(value);
     expect(markup).toContain("truncate");
     expect(markup).not.toContain("flex-wrap");
   });
@@ -231,7 +231,7 @@ describe("compact table contract cells", () => {
   });
   it("keeps every required output key in the compact summary", () => {
     const markup = renderToStaticMarkup(<MandateOutputCell compact row={{ ...row, mandate: { ...mandate, output_kind: null }, requiredOutputKeys: ["one", "two", "three", "four", "five"] }} />);
-    expect(markup).toContain("one, two, three, four, five");
+    expect(markup).toContain("One, Two, Three, Four, Five");
     expect(markup).not.toContain("flex-wrap");
   });
 });

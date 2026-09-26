@@ -15,6 +15,13 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import type { MandateRow } from "./mandate-health";
+import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
+
+/** A machine name as a person reads it (`prompt_config` → "Prompt Config").
+ * Described inputs are already words and pass through. UX punch list
+ * 2026-09-26: the peek and list showed raw snake_case in monospace. */
+const plain = (name: string) =>
+  /^[a-z0-9_.]+$/.test(name) ? displayLabelForKey(name) : name;
 
 const KIND_REGISTRY_BASE = "/administration/utilities/kind-registry";
 const CONTRACT_BADGE_CLASS =
@@ -56,16 +63,14 @@ function ChipRow({
   items,
   maxChips,
   title,
-  mono = true,
   compact = false,
 }: {
   items: readonly string[];
   maxChips: number;
   title: string;
-  mono?: boolean;
   compact?: boolean;
 }) {
-  const inputs = [...items, "User text"];
+  const inputs = [...items.map(plain), "User text"];
   if (compact) return <CompactMandateText text={inputs.join(", ")} description={title} />;
   const shown = inputs.slice(0, maxChips);
   const hidden = inputs.length - shown.length;
@@ -75,9 +80,7 @@ function ChipRow({
         <Badge
           key={name}
           variant="outline"
-          className={
-            mono ? `${CONTRACT_BADGE_CLASS} font-mono` : CONTRACT_BADGE_CLASS
-          }
+          className={CONTRACT_BADGE_CLASS}
         >
           {name}
         </Badge>
@@ -115,7 +118,7 @@ export function MandateInputsCell({
           className="text-xs text-muted-foreground"
           title={`Inputs are declared by the Provision "${row.provisionKey}" — open the mandate to see every offered value.`}
         >
-          <span className="font-mono text-[10px]">{row.provisionKey}</span>
+          <span className="text-[10px]">Declared by its provision</span>
         </span>
       );
     }
@@ -130,7 +133,6 @@ export function MandateInputsCell({
           items={row.draftInputDescriptions}
           compact={compact}
           maxChips={maxChips}
-          mono={false}
           title={`This job's own described inputs: ${row.draftInputDescriptions.join(", ")} — described, not yet formalized as typed values.`}
         />
       );
@@ -184,16 +186,16 @@ export function MandateOutputCell({
       >
         <Badge
           variant="secondary"
-          className={`${compact ? "max-w-full truncate whitespace-nowrap px-1.5 py-0.5 text-[10px]" : CONTRACT_BADGE_CLASS} font-mono hover:bg-secondary/80 hover:text-secondary-foreground`}
+          className={`${compact ? "max-w-full truncate whitespace-nowrap px-1.5 py-0.5 text-[10px]" : CONTRACT_BADGE_CLASS} hover:bg-secondary/80 hover:text-secondary-foreground`}
         >
-          {kind}
+          {displayLabelForKey(kind)}
         </Badge>
       </a>
     );
   }
   const keys = row.requiredOutputKeys;
   if (keys.length > 0) {
-    if (compact) return <CompactMandateText text={keys.join(", ")} description={`No registered kind, but the contract requires these output keys: ${keys.join(", ")}.`} />;
+    if (compact) return <CompactMandateText text={keys.map(plain).join(", ")} description={`No registered kind, but the contract requires these output keys: ${keys.join(", ")}.`} />;
     const shown = keys.slice(0, maxChips);
     const hidden = keys.length - shown.length;
     return (
@@ -205,9 +207,9 @@ export function MandateOutputCell({
           <Badge
             key={key}
             variant="outline"
-            className={`${CONTRACT_BADGE_CLASS} font-mono`}
+            className={CONTRACT_BADGE_CLASS}
           >
-            {key}
+            {plain(key)}
           </Badge>
         ))}
         {hidden > 0 && (
@@ -222,7 +224,7 @@ export function MandateOutputCell({
       className={`${CONTRACT_BADGE_CLASS} border-amber-500/40 bg-amber-500/10 text-amber-600`}
       title="This mandate promises nothing about its output — no registered kind and no required output keys. That is a contract gap: consumers can't know what they'll get."
     >
-      unspecified
+      Not declared
     </Badge>
   );
 }
