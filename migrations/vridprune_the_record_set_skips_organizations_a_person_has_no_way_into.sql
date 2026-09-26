@@ -1,5 +1,4 @@
 -- vridprune_the_record_set_skips_organizations_a_person_has_no_way_into
--- target: clone
 -- based-on: custom.visible_record_ids(uuid, permission_level) a99682186e83ae0581e5708b4d9cfe5f9c2af9f7c17b8a10a4289aeab8c6d5b1
 --
 -- 🚨 WHERE THIS FILE LIVES, AND WHY. migrations/rehearsal/ is scanned by no release path, so no
