@@ -19,8 +19,9 @@ variables-vs-Context-Policies rules and the teardown plan were centralized into 
    if ever wanted again, is a NEW design against live tables.
 4. **Do not create per-feature scope state.** Use `appContextSlice` + `resolve_full_context` +
    `selectResolvedContext`.
-5. **Personal organization is a real org row** (`organizations.is_personal = true`) — there is no
-   frontend personal-org sentinel and none may be reintroduced.
+5. **Every organization is a real org row, and organizations are equal** (no personal or business
+   type — law: `common-docs/policies/access-ladder.md`); there is no frontend org sentinel and none
+   may be introduced.
 6. **`hooks/useContextItems.ts` is known stale** (file-level TS errors). Do not extend it;
    consumers migrate to `features/scopes/hooks/useContextValues.ts`.
 7. **The legacy slices here are still wired in `rootReducer`** (`redux/scope/`, `hierarchySlice`,
@@ -51,11 +52,11 @@ variables-vs-Context-Policies rules and the teardown plan were centralized into 
   files the task under the organization it is handed (the project's), not the active one.
   Lane HIERARCHY-CASCADE.
 
-- 2026-09-17 — **A refused project or task create now REACHES the person.** `createProjectThunk` / `createTaskThunk` resolve the organization through `ensureOrgId`, which stopped falling back to the personal workspace and started THROWING on 2026-09-17. A rejected thunk on its own is a dead Create button, so both writes go through `withOrganizationRefusalShown` (`lib/organizations/organizationRefusalToast.ts`): the person is told the project/task was not created and where to pick an organization, and the throw still propagates so no surface shows a record that was never written. Guard: `pnpm check:org-refusal-honesty` (+ `:self-test`).
+- 2026-09-17 — **A refused project or task create now REACHES the person.** `createProjectThunk` / `createTaskThunk` resolve the organization through `ensureOrgId`, which THROWS when no organization is selected. A rejected thunk on its own is a dead Create button, so both writes go through `withOrganizationRefusalShown` (`lib/organizations/organizationRefusalToast.ts`): the person is told the project/task was not created and where to pick an organization, and the throw still propagates so no surface shows a record that was never written. Guard: `pnpm check:org-refusal-honesty` (+ `:self-test`).
 
 - 2026-09-17 — **`useHierarchySelection` no longer auto-selects the first organization.** The
   `autoSelectFirst` option seeded the org level with `orgs[0]` — whichever organization sorted
-  first, which can be a membership in someone else's personal workspace, and which the projects,
+  first, which is not a choice the person made, and which the projects,
   tasks and scope reads below it then scoped to. It is now `autoSelectActiveOrg`: it seeds from
   the organization the person SELECTED (`appContext.organization_id`) when that is one of their
   memberships, and otherwise leaves the level empty so the cascade's own organization picker is

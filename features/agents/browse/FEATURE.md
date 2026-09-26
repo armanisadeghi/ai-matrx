@@ -166,7 +166,7 @@ and tools are NULL). Builtins with a public card stay in **System**, never Publi
 
 `orgs` and `shared` may overlap for the same row. That is correct and intentional — they answer different questions, and hiding an org row because it also carries a grant would make "what does my team have?" lie.
 
-**UI shape:** one fixed `My Orgs` tab (blended across all your orgs) with a dropdown to narrow to one. Not one chip per org — a user belongs to a personal org + N companies and N grows, so a chip-per-org tab bar has unbounded width and offers no blended view. `components/official/ListScopeSwitcher.tsx` still uses the chip shape; if this proves better it should absorb it rather than the two diverging.
+**UI shape:** one fixed `My Orgs` tab (blended across all your orgs) with a dropdown to narrow to one. Not one chip per org — a person belongs to many organizations and the number grows, so a chip-per-org tab bar has unbounded width and offers no blended view. `components/official/ListScopeSwitcher.tsx` still uses the chip shape; if this proves better it should absorb it rather than the two diverging.
 
 Org/Owner/Access columns appear only when scope ≠ `mine` — inside "Mine" every row has the same owner, so they'd be pure noise.
 

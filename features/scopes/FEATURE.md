@@ -138,8 +138,9 @@ this directory.
 7. **New entity types go into `platform.entity_types` FIRST**, then into the generated
    `EntityType` union — never the reverse. Never hand-write a per-consumer whitelist of allowed
    source tokens.
-8. **Personal organization is a real org row** (`organizations.is_personal = true`) — never
-   synthesize or persist a fake personal org id in Redux, routes, RPC args, or edges.
+8. **Every organization is a real org row, and organizations are equal** (no personal or business
+   type — law: `common-docs/policies/access-ladder.md`) — never synthesize or persist a fake org id
+   in Redux, routes, RPC args, or edges.
 9. **Templates are read-only catalog here.** Mutations happen in seed scripts / admin paths.
 10. **Transport failures warn; database refusals scream.** `service/rpcResult.ts` uses
     `@ai-matrx/data/net` (the NetError vocabulary) for browser-network and upstream-connect/reset classification. Never
@@ -148,10 +149,7 @@ this directory.
     sentinels remain local and non-persisting; every ordinary `22P02`/`P0001` stays red.
 11. 🚨 **A record's VALUES go only to people who can open the RECORD, and a `SECURITY DEFINER`
     function is where that is decided.** RLS does not run inside a DEFINER function, so the table
-    policy everybody reasons about is not what stands in the way: on 2026-09-11
-    `public.get_scope_context` authorized on organization membership alone and handed a
-    `personal` scope's 16 populated cells to a colleague who could not see the scope itself.
-    Every DEFINER door that serves cell values now calls `context._assert_scope_readable(scope_id,
+    policy everybody reasons about is not what stands in the way. Every DEFINER door that serves cell values now calls `context._assert_scope_readable(scope_id,
     'viewer'|'editor')` (or `context._scope_readable` / `_scope_readable_for` to filter), and
     `context.context_item_values` is a registered **component of `scope`** on the generated
     `iam.apply_rls(…,'component')` lane. Adding a door without the membrane, or hand-writing a
@@ -563,12 +561,12 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
   template (`registry/entityRegistry.test.ts`).
 
 
-- 2026-09-17 — **The associations `ensureOrgId` port speaks its refusal.** The port resolved the active organization with a loud personal-org fallback; that fallback was deleted platform-wide on 2026-09-17 and the port now THROWS. The package's `errorSink` reaches the admin Error Inspector, not the person, so a category created with no organization selected would simply never have appeared. The port is wrapped in `withOrganizationRefusalShown`: the person is told, and the package still fails.
+- 2026-09-17 — **The associations `ensureOrgId` port speaks its refusal.** The port now THROWS when no organization is selected. The package's `errorSink` reaches the admin Error Inspector, not the person, so a category created with no organization selected would simply never have appeared. The port is wrapped in `withOrganizationRefusalShown`: the person is told, and the package still fails.
 
 - 2026-09-17 — **A template applies to the organization the person selected, never `organizations[0]`.**
   `TemplatesGalleryPanel` computed its apply target as "the active organization, else the first in
   the list", so the Apply link (and the surface's `template_target_organization_id`) could point at
-  a co-membership — including someone else's personal workspace — while writing scope types and
+  a co-membership the person never chose — while writing scope types and
   context items there. The target is now the selected organization or nothing; with nothing, the
   catalog still browses and a compact `OrganizationRequiredNotice` carries the picker.
   Law: `../../common-docs/policies/context-is-carried-never-rebuilt.md`.
@@ -594,30 +592,6 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
   with a self-test proving the recorder sees a real call. The package carries its own pair
   (`mount-is-inert`, `no-node-env-gating`), both proven failing-then-passing. After: 0 rpc 400s on
   `/administration/billing/spend` (25→0) and on `/administration` (0 of 7 reads).
-
-- 2026-09-11 — **B-7 fix round 1** (independent verification V-7). `list_scopes`, `get_scope_tree`
-  and `search_scopes` were handing a non-creator member the **complete row** of a `personal` scope —
-  name, slug, visibility, `created_by` — in the same breath as the table gave them 0 rows; all three
-  now filter on `context._readable_scope_ids()` (measured: the personal scope goes from PRESENT to
-  absent for the member, stays PRESENT for the creator, totals 15→14 with only that one removed, and
-  **zero** (member, org) pairs platform-wide lose a scope). The guard's class test was a substring
-  match a comment defeated, and is now structural: `context.scope_door_registry` plus a call-shaped
-  test on the body with comments, literals and dollar-quoted blocks stripped — proven RED on all four
-  decoy routes. `set_context_value` no longer tells a user who cannot view the record that they can
-  view it (one function, `context._scope_denial_message`, chooses both sentences).
-
-- 2026-09-11 — **B-7: the scope access membrane.** The leak was never in the table policy
-  (`context_item_values_select`'s subquery over `context.scopes` is itself RLS-filtered, so a
-  `personal` scope's values already went from 37 visible to 0). It was in the `SECURITY DEFINER`
-  door: 59 DEFINER functions read the scopes tables and **zero** called `iam.has_access('scope', …)`.
-  The eight that serve cell values now go through `context._assert_scope_readable` /
-  `_scope_readable` / `_scope_readable_for`, and `context.context_item_values` is registered as a
-  component of `scope` on the generated lane. That also closed the mirror-image defect: a real
-  `viewer` grant used to open the record and hand over **0** values and **0** field labels — it now
-  conveys all 37, while the grantee's DELETE affects 0 rows. `anon`'s SELECT/INSERT/UPDATE/DELETE
-  grants on the values table were revoked. Byte parity proven on `get_scope_context` across all 15
-  readable scopes, both lanes. Guard: `pnpm check:scope-access-membrane`, proven RED on four
-  injected regressions then GREEN. Rule 11 above; `migrations/ctx_scope_access_membrane_b7.sql`.
 
 - 2026-09-10 — **DC-009: local entity-types re-export shim deleted.** Every importer now imports
   `@ai-matrx/associations` directly; the vocabulary paragraph above no longer names a local file.

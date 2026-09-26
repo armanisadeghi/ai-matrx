@@ -4,8 +4,15 @@
 
 RLS is the ceiling, never the view definition. A list query that relies on
 "RLS will filter it to what makes sense" is a defect the moment a user
-belongs to more than one org (every user does — personal org + N
-companies). Every list query MUST declare its own scope explicitly.
+belongs to more than one org (organizations are unlimited and equal). Every
+list query MUST declare its own scope explicitly.
+
+The scope tabs decide what a person SEES in a list, never who CAN open a
+record — that is the record's access level (law:
+`common-docs/policies/access-ladder.md`). Which scope a list shows by default
+is the per-type knob "who sees this in lists by default" (*only me*, *my team
+or department*, *everyone in the organization*: system default → organization
+override → the person's own override).
 
 ## The canonical scope model — a FIXED vocabulary
 
@@ -18,7 +25,7 @@ learns on one page must mean the same thing on every other page.
 | Scope              | The question it answers          | Reach                                                                                                 |
 | ------------------ | -------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | **Mine**           | What did I make?                 | `created_by = auth.uid()` (some tables use `user_id` — check)                                         |
-| **My Orgs**        | What does my team have?          | created by someone else, in a **non-personal** org I belong to, at a visibility that admits org-mates |
+| **My Orgs**        | What does my team have?          | created by someone else, in an org I belong to, at a visibility that admits org-mates                 |
 | **Shared with me** | What did someone hand me?        | an explicit `iam.permissions` grant (to me, or to one of my orgs)                                     |
 | **Industry**       | What does my field publish?      | see below                                                                                             |
 | **Public**         | What has a tenant published?     | `visibility = 'public'`, not mine                                                                     |
@@ -80,8 +87,8 @@ respect `parent_id`, so attaching `workers-comp` sees `ca-workers-comp` content.
 
 `Mine · My Orgs · Shared · Industry · Public` as fixed tabs, each showing a TRUE
 server count. **My Orgs and Industry each render as ONE tab with a dropdown to
-narrow**, never one chip per org/industry — a user belongs to a personal org + N
-companies and may attach several industries, so a chip-per-entity tab bar has
+narrow**, never one chip per org/industry — a person belongs to many organizations
+and may attach several industries, so a chip-per-entity tab bar has
 unbounded width and offers no blended view.
 
 **Narrowing options come from the COUNTS QUERY, never from a Redux slice.**
@@ -116,8 +123,9 @@ rendered for anyone. A tab bar must be self-sufficient from its own query.
   shared-with-me fetcher instead).
 - `components/official/ListScopeSwitcher.tsx` — controlled segmented
   control (Mine / Shared* / org chips). Loads orgs through
-  `useUserOrganizations` and excludes the personal org from chips
-  (personal-org content already lives under Mine).
+  `useUserOrganizations` and still excludes `is_personal` organizations from
+  the chips, as the `*_list_scope_counts` RPCs still do for My Orgs — a live
+  defect against the law (organizations are equal); it goes with the flag.
 
 ## Consumer rules
 
@@ -214,5 +222,5 @@ Invariants the template carries, all of them learned the hard way:
   template rules recorded. Worked implementation: `/agents/all`.
 - 2026-07-22 — Primitive created (types, `applyListScope`,
   `ListScopeSwitcher`) as part of the VIEW LAW rollout across the 14 bare-RLS
-  personal-space list surfaces; wired as the reference implementation into
+  list surfaces; wired as the reference implementation into
   the transcripts list page.

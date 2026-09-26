@@ -114,7 +114,7 @@ cost. The owned ledgers above remain the canonical everyday view.
 
 ### Organization → users
 
-1. The Organizations tab lists every shared, personal, and system organization, including organizations with zero memberships; each row carries the canonical 2–3 letter abbreviation from `iam.organizations`.
+1. The Organizations tab lists every organization, the platform's system organization included, including organizations with zero memberships; each row carries the canonical 2–3 letter abbreviation from `iam.organizations`.
 2. Selecting an organization shows every active member with role and join date.
 3. A member action pivots back to every organization for that user.
 
@@ -123,7 +123,7 @@ cost. The owned ledgers above remain the canonical everyday view.
 1. The admin selects an existing account through `UserSearchField`; inline typing remains available, while the search action opens the full sortable/filterable directory.
 2. The API route verifies `requireSuperAdmin()` for every method.
 3. The server calls `public.admin_manage_organization_membership` through the authenticated session so `auth.uid()` remains the acting administrator.
-4. The database function validates the action and role, locks the organization's active memberships, protects the last owner, constrains personal-organization repair to restoring the creator or removing legacy extra members, performs canonical add/reactivate, role change, or soft removal, and writes `iam.org_admin_audit`.
+4. The database function validates the action and role, locks the organization's active memberships, protects the last owner, performs canonical add/reactivate, role change, or soft removal, and writes `iam.org_admin_audit`.
 5. The client reloads both reciprocal projections after success.
 
 ### Grant MCP access without changing role
@@ -140,7 +140,7 @@ cost. The owned ledgers above remain the canonical everyday view.
 - Never create an admin-only organization or membership table. Extend the canonical IAM projection.
 - The browser never receives a secret key and never writes `iam.memberships` directly.
 - Super-admin is verified at both the API boundary and the database mutation boundary.
-- Personal organizations are visible but constrained to repair operations: restore the creator as owner or remove legacy extra members. `personal` means one individual's space, not a small shared organization.
+- Organizations are equal and anyone may be invited into any organization (law: `common-docs/policies/access-ladder.md`). `admin_manage_organization_membership` still limits an `is_personal` organization to repair operations (restore the creator as owner, remove extra members) — a live defect against the law; it goes with the flag.
 - An organization cannot lose or demote its last owner.
 - Removal is a soft delete. Re-adding the same user reactivates the canonical membership row.
 - Account and organization screens link to the same Organizations tab; do not build separate per-user and per-organization membership managers.

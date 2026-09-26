@@ -12,7 +12,7 @@
 
 Matrx is membership-first (a user joins many orgs), but enterprises onboard an org and manage its people. This is that surface. It covers the safe management path: see every member, who's active vs dormant, file usage, spend; set per-member budgets / storage caps / tiers; suspend / remove; and invite.
 
-**Multi-org invariant (load-bearing):** a user belongs to many orgs, so admin power is **scoped to this org only**. Metrics and controls never reach the user's personal-org resources or another org's data. Removing a membership leaves the person's resources and ownership unchanged; ownership transfer requires a separate audited door that is not exposed here.
+**Multi-org invariant (load-bearing):** a user belongs to many orgs, so admin power is **scoped to this org only**. Metrics and controls never reach records owned by another organization. Removing a membership leaves the person's resources and ownership unchanged; ownership transfer requires a separate audited door that is not exposed here.
 
 ---
 
@@ -61,7 +61,7 @@ Every read and write goes through the `public.org_admin_*` RPC family; each RPC 
 - `/admin/users/[userId]` — member detail: identity, status actions, usage metrics, controls, resource summary
 - `/admin/users/[userId]/resources` — read-only member resource inventory
 
-**Surfaced from:** `OrgManage` header → "Manage users" button (owners/admins, non-personal orgs).
+**Surfaced from:** `OrgManage` header → "Manage users" button (owners/admins). `OrgManage` still hides it, org Trash and Delete for an `is_personal` organization — a live defect against the law (organizations are equal); it goes with the flag.
 
 **Feature code** (`features/organizations/admin/`):
 
@@ -78,7 +78,7 @@ Every read and write goes through the `public.org_admin_*` RPC family; each RPC 
 
 ## Invariants
 
-- **Org-scoped only.** Never read/write outside `organization_id = <this org>`. Personal resources are untouchable here.
+- **Org-scoped only.** Never read/write outside `organization_id = <this org>`. Records owned by the person's other organizations are untouchable here.
 - **One RPC family, one audit log.** All governance writes flow through `org_admin_*`; each writes `iam.org_admin_audit`.
 - **Guards live in the DB:** owners can't be suspended; you can't change your own status; the last owner can't be removed; bulk ownership reassignment is not client-callable.
 - **Reuse, don't fork:** invite via `InvitationManager`; role/remove for the _Members_ settings tab still use `MemberManagement` — this console is the heavier admin surface, not a replacement.
