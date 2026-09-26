@@ -23,6 +23,7 @@ import { rowCells, splitRowSegments, unescapeCellPipes } from "@ai-matrx/content
 // reader; tests and the corpus gate judge it against an independent GFM parser
 // (scripts/lib/gfm-table-oracle.ts).
 export { rowCells, splitRowSegments } from "@ai-matrx/content-ir/source";
+
 /** Length of the run of backslashes ending just before `index`. */
 function backslashRunBefore(text: string, index: number): number {
   let run = 0;
