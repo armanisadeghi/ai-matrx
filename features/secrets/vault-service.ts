@@ -64,6 +64,7 @@ import {
   type VaultPrincipal,
   type VaultPasswordHistoryResponse,
   type VaultPasswordHistoryRevealResponse,
+  type VaultPasswordHistoryRestoreResponse,
   type VaultRevealResponse,
   type VaultScope,
   type VaultTransferResponse,
@@ -124,6 +125,14 @@ export class VaultRecentAuthRequiredError extends Error {
     super(
       "Confirm your identity with your current Matrx password, then try showing or copying this value again.",
     );
+  }
+}
+
+/** The history chain advanced after the person reviewed it. A caller must
+ * reload its value-free timeline before asking them to confirm again. */
+export class VaultPasswordHistoryConflictError extends Error {
+  constructor() {
+    super("Password history changed. Refresh the timeline and try again.");
   }
 }
 
@@ -664,7 +673,13 @@ async function vaultFetch<T>(
         throw new VaultImportTransportError("idempotency_result_removed");
       throw new VaultImportTransportError("request_rejected");
     }
-    if (resp.status === 401 && path.endsWith("/reveal")) {
+    if (resp.status === 409 && path.endsWith("/password-history/restore")) {
+      throw new VaultPasswordHistoryConflictError();
+    }
+    if (
+      resp.status === 401 &&
+      (path.endsWith("/reveal") || path.endsWith("/password-history/restore"))
+    ) {
       let body: unknown;
       try {
         body = await resp.json();
@@ -921,6 +936,28 @@ export function revealVaultPasswordHistory(
     {
       method: "POST",
       body: JSON.stringify({ field_id: fieldId, revision }),
+      cache: "no-store",
+    },
+  );
+}
+
+/** Restore a recorded predecessor as a new current password revision. The
+ * endpoint is no-store and returns metadata only. */
+export function restoreVaultPasswordHistory(
+  itemId: string,
+  fieldId: string,
+  revision: number,
+  expectedHistoryRevision: number,
+): Promise<VaultPasswordHistoryRestoreResponse> {
+  return vaultFetch<VaultPasswordHistoryRestoreResponse>(
+    `/items/${encodeURIComponent(itemId)}/password-history/restore`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        field_id: fieldId,
+        revision,
+        expected_history_revision: expectedHistoryRevision,
+      }),
       cache: "no-store",
     },
   );

@@ -785,6 +785,7 @@ export function VaultWorkspace({
                     definitions={defsByKey}
                     busy={vault.busy}
                     actions={vault.actions}
+                    onItemChanged={vault.refresh}
                     onClose={() => setSelectedId(null)}
                   />
                 </div>
@@ -1160,6 +1161,7 @@ export function VaultWorkspace({
                 definitions={defsByKey}
                 busy={vault.busy}
                 actions={vault.actions}
+                onItemChanged={vault.refresh}
                 onClose={() => setSelectedId(null)}
               />
             )}

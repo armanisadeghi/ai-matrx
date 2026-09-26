@@ -3,6 +3,9 @@ import { createRoot, type Root } from "react-dom/client";
 
 const fetchVaultPasswordHistory = jest.fn();
 const revealVaultPasswordHistory = jest.fn();
+const restoreVaultPasswordHistory = jest.fn();
+const toastError = jest.fn();
+const toastSuccess = jest.fn();
 let authStateListener:
   ((event: string, session?: { user: { id: string } } | null) => void) | null =
   null;
@@ -12,9 +15,17 @@ jest.mock("../vault-service", () => ({
     fetchVaultPasswordHistory(...args),
   revealVaultPasswordHistory: (...args: unknown[]) =>
     revealVaultPasswordHistory(...args),
+  restoreVaultPasswordHistory: (...args: unknown[]) =>
+    restoreVaultPasswordHistory(...args),
   VaultRecentAuthRequiredError: class VaultRecentAuthRequiredError extends Error {},
+  VaultPasswordHistoryConflictError: class VaultPasswordHistoryConflictError extends Error {},
 }));
-jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn() } }));
+jest.mock("@/lib/toast", () => ({
+  toast: {
+    error: (...args: unknown[]) => toastError(...args),
+    success: (...args: unknown[]) => toastSuccess(...args),
+  },
+}));
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({
     auth: {
@@ -27,6 +38,18 @@ jest.mock("@/utils/supabase/client", () => ({
 }));
 jest.mock("./SecretValue", () => ({
   VaultRevealReauthDialog: () => null,
+}));
+jest.mock("@/components/ui/confirm-dialog", () => ({
+  ConfirmDialog: ({
+    open,
+    onConfirm,
+  }: {
+    open: boolean;
+    onConfirm: () => Promise<void>;
+  }) =>
+    open ? (
+      <button onClick={() => void onConfirm()}>Confirm restore</button>
+    ) : null,
 }));
 
 import { VaultPasswordHistoryPanel } from "./VaultPasswordHistoryPanel";
@@ -62,6 +85,9 @@ describe("VaultPasswordHistoryPanel", () => {
     root = createRoot(host);
     fetchVaultPasswordHistory.mockReset();
     revealVaultPasswordHistory.mockReset();
+    restoreVaultPasswordHistory.mockReset();
+    toastError.mockReset();
+    toastSuccess.mockReset();
     authStateListener = null;
   });
 
@@ -271,6 +297,78 @@ describe("VaultPasswordHistoryPanel", () => {
     expect(fetchVaultPasswordHistory).toHaveBeenLastCalledWith("item-a", 2);
     expect(host.textContent).not.toContain(
       "Some recorded changes are unavailable",
+    );
+  });
+
+  test("restores only an available revision older than the chain head after confirmation", async () => {
+    fetchVaultPasswordHistory.mockResolvedValue({
+      entries: [
+        {
+          revision: 2,
+          recorded_at: "2026-09-25T01:00:00Z",
+          field_id: "field-password",
+          capture_started_at: "2026-09-25T00:00:00Z",
+          value_availability: "available",
+        },
+        {
+          revision: 1,
+          recorded_at: "2026-09-25T00:00:00Z",
+          field_id: "field-password",
+          capture_started_at: "2026-09-25T00:00:00Z",
+          value_availability: "available",
+        },
+      ],
+      count: 2,
+      capture_cutoff_at: "2026-09-25T00:00:00Z",
+      value_availability: "available",
+      next_before_revision: null,
+      omitted_count: 0,
+      incomplete: false,
+    } as never);
+    restoreVaultPasswordHistory.mockResolvedValue({
+      item_id: "item-a",
+      field_id: "field-password",
+      restored_from_revision: 1,
+      history_revision: 3,
+    });
+    const onItemChanged = jest.fn().mockResolvedValue(undefined);
+
+    await act(async () => {
+      root.render(
+        <VaultPasswordHistoryPanel
+          itemId="item-a"
+          field={field}
+          currentUserId="user-a"
+          onItemChanged={onItemChanged}
+        />,
+      );
+    });
+    expect(host.textContent).toContain("Restore");
+    expect(host.querySelectorAll("button")).toHaveLength(3);
+    await act(async () => {
+      (
+        Array.from(host.querySelectorAll("button")).find(
+          (button) => button.textContent === "Restore",
+        ) as HTMLButtonElement
+      ).click();
+    });
+    expect(host.textContent).toContain("Confirm restore");
+    await act(async () => {
+      (
+        Array.from(host.querySelectorAll("button")).find(
+          (button) => button.textContent === "Confirm restore",
+        ) as HTMLButtonElement
+      ).click();
+    });
+    expect(restoreVaultPasswordHistory).toHaveBeenCalledWith(
+      "item-a",
+      "field-password",
+      1,
+      2,
+    );
+    expect(onItemChanged).toHaveBeenCalledTimes(1);
+    expect(toastSuccess).toHaveBeenCalledWith(
+      "Password restored from its recorded history.",
     );
   });
 });

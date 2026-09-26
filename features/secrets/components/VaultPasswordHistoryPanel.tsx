@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { Eye, EyeOff, History, Loader2, ShieldAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
 
@@ -16,6 +17,8 @@ import { useTransientSecret } from "../vault-hooks";
 import {
   fetchVaultPasswordHistory,
   revealVaultPasswordHistory,
+  restoreVaultPasswordHistory,
+  VaultPasswordHistoryConflictError,
   VaultRecentAuthRequiredError,
 } from "../vault-service";
 import type { VaultField, VaultPasswordHistoryResponse } from "../types";
@@ -25,12 +28,15 @@ type Props = {
   itemId: string;
   field: VaultField;
   currentUserId: string | null;
+  /** Reload the masked item after a value-changing history restore. */
+  onItemChanged?: () => Promise<void>;
 };
 
 export function VaultPasswordHistoryPanel({
   itemId,
   field,
   currentUserId,
+  onItemChanged,
 }: Props) {
   const [history, setHistory] = useState<VaultPasswordHistoryResponse | null>(
     null,
@@ -40,6 +46,9 @@ export function VaultPasswordHistoryPanel({
   const [error, setError] = useState<string | null>(null);
   const [workingRevision, setWorkingRevision] = useState<number | null>(null);
   const [revealedRevision, setRevealedRevision] = useState<number | null>(null);
+  const [pendingRestoreRevision, setPendingRestoreRevision] = useState<
+    number | null
+  >(null);
   const [reauthOpen, setReauthOpen] = useState(false);
   const secret = useTransientSecret();
   const generation = useRef(0);
@@ -54,6 +63,9 @@ export function VaultPasswordHistoryPanel({
     secret.clear();
     revealedIdentity.current = null;
     setLoadingMore(false);
+    setPendingRestoreRevision(null);
+    setWorkingRevision(null);
+    setRevealedRevision(null);
   }
 
   useEffect(() => {
@@ -108,6 +120,7 @@ export function VaultPasswordHistoryPanel({
       secret.clear();
       revealedIdentity.current = null;
       setWorkingRevision(null);
+      setPendingRestoreRevision(null);
       setLoadingMore(false);
       setLoading(false);
       setError("Your account changed. Reopen this credential from the Vault.");
@@ -177,6 +190,83 @@ export function VaultPasswordHistoryPanel({
     }
   };
 
+  const refreshHistory = async () => {
+    const request = ++generation.current;
+    setLoading(true);
+    setError(null);
+    try {
+      const next = await fetchVaultPasswordHistory(itemId);
+      if (generation.current === request) setHistory(next);
+    } catch {
+      if (generation.current === request)
+        setError(
+          "Password history is unavailable right now. Try again shortly.",
+        );
+    } finally {
+      if (generation.current === request) setLoading(false);
+    }
+  };
+
+  const restore = async (revision: number, expectedHistoryRevision: number) => {
+    const request = ++generation.current;
+    setWorkingRevision(revision);
+    try {
+      const result = await restoreVaultPasswordHistory(
+        itemId,
+        field.id,
+        revision,
+        expectedHistoryRevision,
+      );
+      if (
+        generation.current !== request ||
+        result.item_id !== itemId ||
+        result.field_id !== field.id ||
+        result.restored_from_revision !== revision
+      )
+        return;
+      secret.clear();
+      revealedIdentity.current = null;
+      setRevealedRevision(null);
+      setPendingRestoreRevision(null);
+      toast.success("Password restored from its recorded history.");
+      await onItemChanged?.();
+      if (generation.current !== request) return;
+      await refreshHistory();
+    } catch (cause) {
+      if (generation.current !== request) return;
+      if (cause instanceof VaultRecentAuthRequiredError) {
+        setReauthOpen(true);
+        return;
+      }
+      if (cause instanceof VaultPasswordHistoryConflictError) {
+        setPendingRestoreRevision(null);
+        setWorkingRevision(null);
+        toast.error(
+          "Password history changed. The timeline was refreshed; review it before restoring.",
+        );
+        await refreshHistory();
+        return;
+      }
+      setPendingRestoreRevision(null);
+      toast.error(
+        "This recorded password can no longer be restored. Refresh the timeline and try again.",
+      );
+    } finally {
+      if (generation.current === request) setWorkingRevision(null);
+    }
+  };
+
+  const currentHistoryRevision =
+    history?.entries.reduce(
+      (head, entry) => Math.max(head, entry.revision),
+      0,
+    ) ?? 0;
+  const pendingRestore =
+    pendingRestoreRevision !== null &&
+    currentHistoryRevision > pendingRestoreRevision
+      ? pendingRestoreRevision
+      : null;
+
   return (
     <section
       className="space-y-3 rounded-lg border border-border bg-muted/25 p-3"
@@ -217,6 +307,8 @@ export function VaultPasswordHistoryPanel({
               revealedRevision === entry.revision &&
               revealedIdentity.current === identity;
             const working = workingRevision === entry.revision;
+            const restoreAvailable =
+              valueAvailable && entry.revision < currentHistoryRevision;
             return (
               <li
                 key={`${entry.field_id}:${entry.revision}`}
@@ -230,30 +322,48 @@ export function VaultPasswordHistoryPanel({
                     </span>
                   </div>
                   {valueAvailable ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={working}
-                      onClick={() => {
-                        if (showing) {
-                          secret.clear();
-                          revealedIdentity.current = null;
-                          setRevealedRevision(null);
-                        } else void reveal(entry.revision);
-                      }}
-                    >
-                      {working ? (
-                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                      ) : showing ? (
-                        <EyeOff className="mr-1.5 h-3.5 w-3.5" />
-                      ) : (
-                        <Eye className="mr-1.5 h-3.5 w-3.5" />
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={working}
+                        onClick={() => {
+                          if (showing) {
+                            secret.clear();
+                            revealedIdentity.current = null;
+                            setRevealedRevision(null);
+                          } else void reveal(entry.revision);
+                        }}
+                      >
+                        {working ? (
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        ) : showing ? (
+                          <EyeOff className="mr-1.5 h-3.5 w-3.5" />
+                        ) : (
+                          <Eye className="mr-1.5 h-3.5 w-3.5" />
+                        )}
+                        {showing ? "Hide" : "Show old password"}
+                      </Button>
+                      {restoreAvailable && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={working}
+                          onClick={() => {
+                            secret.clear();
+                            revealedIdentity.current = null;
+                            setRevealedRevision(null);
+                            setPendingRestoreRevision(entry.revision);
+                          }}
+                        >
+                          Restore
+                        </Button>
                       )}
-                      {showing ? "Hide" : "Show old password"}
-                    </Button>
+                    </div>
                   ) : (
-                    <span className="text-[11px] text-muted-foreground">
-                      Old value unavailable
+                    <span className="max-w-xs text-[11px] text-muted-foreground">
+                      Old value unavailable. Restore becomes available only
+                      after password history capture is enabled.
                     </span>
                   )}
                 </div>
@@ -296,6 +406,32 @@ export function VaultPasswordHistoryPanel({
       <VaultRevealReauthDialog
         open={reauthOpen}
         onClose={() => setReauthOpen(false)}
+      />
+      <ConfirmDialog
+        open={pendingRestore !== null}
+        onOpenChange={(open) => {
+          if (!open && workingRevision === null)
+            setPendingRestoreRevision(null);
+        }}
+        title="Restore this password"
+        description={
+          <>
+            This replaces the current password with the recorded password from
+            this change and records a new password-history revision. Any app,
+            service, or device using the current password will need the restored
+            password.
+          </>
+        }
+        confirmLabel="Restore password"
+        busy={pendingRestore !== null && workingRevision === pendingRestore}
+        onConfirm={async () => {
+          if (
+            pendingRestore === null ||
+            currentHistoryRevision <= pendingRestore
+          )
+            return;
+          await restore(pendingRestore, currentHistoryRevision);
+        }}
       />
     </section>
   );

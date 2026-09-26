@@ -216,6 +216,10 @@ export type VaultPasswordHistoryResponse =
   ApiSchemas["VaultPasswordHistoryResponse"];
 export type VaultPasswordHistoryRevealResponse =
   ApiSchemas["VaultPasswordHistoryRevealResponse"];
+/** A restore result is deliberately value-free. The restored password stays
+ * entirely inside the server-side mutation boundary. */
+export type VaultPasswordHistoryRestoreResponse =
+  ApiSchemas["VaultPasswordHistoryRestoreResponse"];
 export type VaultShareRequest = ApiSchemas["VaultShareRequest"];
 export type VaultAuditEntry = ApiSchemas["VaultAuditEntry"];
 export type VaultGrant = ApiSchemas["VaultGrantOut"];

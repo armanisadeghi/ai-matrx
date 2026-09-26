@@ -123,6 +123,7 @@ interface VaultItemDetailProps {
   definitions: Map<string, CredentialDefinition>;
   busy: boolean;
   actions: VaultActions;
+  onItemChanged?: () => Promise<void>;
   onClose: () => void;
 }
 
@@ -147,6 +148,7 @@ export function VaultItemDetail({
   definitions,
   busy,
   actions,
+  onItemChanged,
   onClose,
 }: VaultItemDetailProps) {
   const caps = item.capabilities;
@@ -684,6 +686,7 @@ export function VaultItemDetail({
             itemId={item.id}
             field={passwordHistoryField}
             currentUserId={currentUserId}
+            onItemChanged={onItemChanged}
           />
         )}
 
