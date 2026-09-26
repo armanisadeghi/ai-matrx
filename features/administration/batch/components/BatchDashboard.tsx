@@ -49,6 +49,7 @@ import { DELIVERY, fmtInt, fmtPct, fmtUsd } from "./presentation";
 import { WorkItemsPanel } from "./WorkItemsPanel";
 import { ProviderBatchesPanel } from "./ProviderBatchesPanel";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const WINDOWS: { key: SavingsWindow; label: string }[] = [
   { key: "7d", label: "7 days" },
@@ -125,11 +126,16 @@ function UndeliveredBand({
 function SavingsBand({
   savings,
   loading,
+  error,
+  onRetry,
   window,
   onWindowChange,
 }: {
   savings: SavingsRollup | null;
   loading: boolean;
+  /** The savings read's failure — the band says it instead of a figure or "no work". */
+  error: string | null;
+  onRetry: () => void;
   window: SavingsWindow;
   onWindowChange: (w: SavingsWindow) => void;
 }) {
@@ -140,7 +146,9 @@ function SavingsBand({
           <PiggyBank className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-sm font-semibold">Savings</h2>
           <span className="text-xs text-muted-foreground">
-            {loading || !savings
+            {error
+              ? "not measured — the read failed"
+              : loading || !savings
               ? "measuring…"
               : `across ${fmtInt(savings.items)} completed ${savings.items === 1 ? "item" : "items"}`}
           </span>
@@ -164,7 +172,9 @@ function SavingsBand({
         </div>
       </header>
 
-      {loading || !savings ? (
+      {error ? (
+        <ReadFailure error={error} what="the batch savings" onRetry={onRetry} />
+      ) : loading || !savings ? (
         <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-12 w-full" />
@@ -558,6 +568,8 @@ export function BatchDashboard() {
           <SavingsBand
             savings={savings}
             loading={savingsLoading}
+            error={savingsError}
+            onRetry={() => setRefreshTick((t) => t + 1)}
             window={savingsWindow}
             onWindowChange={setSavingsWindow}
           />

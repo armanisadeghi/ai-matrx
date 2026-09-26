@@ -19,16 +19,23 @@ export function useGitHubConnection() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * The inventory READ's own failure (never an action's), so a list drawn from
+   * `inventory` can say "couldn't load" instead of "no repositories yet".
+   */
+  const [readError, setReadError] = useState<string | null>(null);
 
   const reload = async () => {
     setLoading(true);
     setError(null);
     try {
       setInventory(await loadGitHubConnectionInventory());
+      setReadError(null);
     } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : "Unable to load GitHub.",
-      );
+      const message =
+        cause instanceof Error ? cause.message : "Unable to load GitHub.";
+      setError(message);
+      setReadError(message);
     } finally {
       setLoading(false);
     }
@@ -40,13 +47,16 @@ export function useGitHubConnection() {
     let active = true;
     void loadGitHubConnectionInventory()
       .then((loaded) => {
-        if (active) setInventory(loaded);
+        if (!active) return;
+        setInventory(loaded);
+        setReadError(null);
       })
       .catch((cause: unknown) => {
         if (active) {
-          setError(
-            cause instanceof Error ? cause.message : "Unable to load GitHub.",
-          );
+          const message =
+            cause instanceof Error ? cause.message : "Unable to load GitHub.";
+          setError(message);
+          setReadError(message);
         }
       })
       .finally(() => {
@@ -128,6 +138,7 @@ export function useGitHubConnection() {
     loading: isAuthenticated && loading,
     busy,
     error,
+    readError: isAuthenticated ? readError : null,
     reload,
     connect,
     install,

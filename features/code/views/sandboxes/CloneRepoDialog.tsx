@@ -177,6 +177,8 @@ export function CloneRepoDialog({
               }}
               disabled={cloning || github.loading}
               loading={github.loading}
+              error={github.readError}
+              onRetry={() => void github.reload()}
             />
           ) : (
             /* Not connected: the SAME card, which carries the connect button

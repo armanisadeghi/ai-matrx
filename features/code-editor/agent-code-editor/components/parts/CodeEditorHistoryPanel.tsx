@@ -140,7 +140,7 @@ export function CodeEditorHistoryPanel({
           </div>
         )}
 
-        {status !== "loading" && rows.length === 0 && (
+        {status !== "loading" && errorMessages.length === 0 && rows.length === 0 && (
           <div className="px-3 pt-4 text-center">
             <p className="text-[10px] text-muted-foreground">
               No conversations yet. Click "New" to start.

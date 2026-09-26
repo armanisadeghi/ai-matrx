@@ -17,6 +17,7 @@ import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { GitHubConnectionCard } from "./GitHubConnectionCard";
 import type { GitHubRepository } from "./types";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 /**
  * Search over what the row actually SHOWS: full name, visibility word, and
@@ -61,6 +62,9 @@ export function GitHubRepositoryPicker({
    * "Loading…" told the user two contradictory things at once.
    */
   loading = false,
+  /** The inventory read's failure (`useGitHubConnection().readError`). */
+  error = null,
+  onRetry,
 }: {
   repositories: GitHubRepository[];
   selectedId: string | null;
@@ -68,6 +72,8 @@ export function GitHubRepositoryPicker({
   disabled?: boolean;
   showConnectionCard?: boolean;
   loading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }) {
   const [query, setQuery] = useState("");
   const matches = useMemo(
@@ -96,6 +102,8 @@ export function GitHubRepositoryPicker({
           <p className="px-3 py-4 text-center text-xs text-muted-foreground">
             Loading your repositories…
           </p>
+        ) : error && repositories.length === 0 ? (
+          <ReadFailure error={error} what="your GitHub repositories" onRetry={onRetry} />
         ) : matches.length === 0 ? (
           <p className="px-3 py-4 text-center text-xs text-muted-foreground">
             {repositories.length === 0

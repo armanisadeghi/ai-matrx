@@ -38,6 +38,7 @@ import {
 } from "../service";
 import { PrintLabelDialog } from "../labels/components/PrintLabelDialog";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface AttributeRow {
   key: string;
@@ -50,6 +51,7 @@ export function AssetDetail({ assetId }: { assetId: string }) {
   const [artifacts, setArtifacts] = useState<IntakeArtifact[]>([]);
   const [identifiers, setIdentifiers] = useState<AssetIdentifier[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [notesDraft, setNotesDraft] = useState("");
   const [saving, setSaving] = useState(false);
   // A Retry that cannot succeed is the lie the access gate exists to kill, so
@@ -89,9 +91,10 @@ export function AssetDetail({ assetId }: { assetId: string }) {
         setNotesDraft(loaded?.notes ?? "");
         setArtifacts(arts);
         setIdentifiers(ids);
+        setLoadError(null);
       } catch (err) {
         console.error("[commerce-intake] asset load failed", err);
-        toast.error("Could not load the asset.");
+        if (!cancelled) setLoadError(err ?? new Error("The asset read failed"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -163,6 +166,17 @@ export function AssetDetail({ assetId }: { assetId: string }) {
       <div className="flex justify-center py-16">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
+    );
+  }
+  if (loadError) {
+    // The read itself failed — not "no such asset", and not "no identifiers".
+    return (
+      <ReadFailure
+        error={loadError}
+        what="this intake asset"
+        onRetry={() => setReloadNonce((n) => n + 1)}
+        size="default"
+      />
     );
   }
   if (!asset) {
