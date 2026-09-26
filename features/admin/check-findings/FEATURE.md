@@ -72,6 +72,12 @@ adapter). Registered in `features/admin/constants/admin-categories.ts` (Reportin
   marks the item accepted; *Mark OK failed* with the server's error + remedy (claimable again);
   *interrupted* for a committing marker older than 5 min; *accept landed, still reported* when a
   run that started after the commit still lists it. A second click is a no-op (`already_landed`).
+- **Where the button lives.** Mark OK (or "No accept — why?", or "fix the check") is drawn INSIDE
+  the State cell, and State is the second column right after Finding, so the decision is on screen
+  at every width from 375px (the phone card carries the State cell) without scrolling sideways. It
+  used to be the trailing Actions column, which sat past the right edge below ~1500px; the group
+  label (work unit) also lived in the first column with a 60vw cap and blew the old leading State
+  column out to ~480px. Finding now leads (the label lands in the wide column, capped at 20rem).
 - The one-line `findings accept` command stays in the dialog as the secondary path ("Prefer a
   terminal?").
 - matrx-frontend checks with no adapter get "No accept — why?" with the rules file's own
@@ -86,8 +92,6 @@ adapter). Registered in `features/admin/constants/admin-categories.ts` (Reportin
 - "First seen" is the item row's `created_at` (ingest time), not the first run's commit time.
 - Production holds ONE check today (`visibility-vocabulary`, two owner hand-run ingests on
   2026-09-26); no schedule is approved, so nothing else arrives until one is.
-- At a ~800px-wide window the findings table's Actions column (Mark OK) is not reachable by
-  scrolling; it shows at ~1500px. Not fixed here.
 
 ---
 
@@ -100,3 +104,5 @@ adapter). Registered in `features/admin/constants/admin-categories.ts` (Reportin
   "Marked OK — landing" marker, loud failure with remedy, copy-command kept as secondary. Verified
   on localhost as admin@admin.com against a real production ingest: commit `6d263b0bff` landed on
   main, the next ingest marked the item accepted (basis allowlist).
+- `2026-09-26` — Mark OK reachable at every width: the decision moved into the State cell, State
+  follows Finding, group label capped at 20rem. Verified on localhost at 375 / 800 / 1024 / 1500.
