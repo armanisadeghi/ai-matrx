@@ -28,6 +28,7 @@ import type { InstanceContextEntry } from "@/features/agents/types/instance.type
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import type { ValueMapping, ValueMappingMap } from "@/features/surfaces/types";
 import { isValueMappingMap } from "@/features/surfaces/types";
+import { parseQualifiedValueKey } from "@ai-matrx/alchemy/declare";
 import { assertNativeContextValue } from "./context-value-contract";
 
 // ---------------------------------------------------------------------------
@@ -80,6 +81,27 @@ export interface ResolveOptions {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Read a mapped surface value by its key (Matrx Alchemy ALC-14, R22). A bare
+ * key reads the screen value; a dotted item key ("table_row.status") reads the
+ * clicked item's value from the reserved `__item` scope entry — only when that
+ * item is of the named type, and never falling back to a screen value.
+ */
+export function readSurfaceScopeValue(
+  applicationScope: ApplicationScope,
+  key: string,
+): unknown {
+  const parsed = parseQualifiedValueKey(key);
+  if (!parsed || !parsed.itemType) return applicationScope[key];
+  const item = (applicationScope as Record<string, unknown>).__item;
+  if (!item || typeof item !== "object") return undefined;
+  const { itemType, values } = item as { itemType?: unknown; values?: unknown };
+  if (itemType !== parsed.itemType || !values || typeof values !== "object") {
+    return undefined;
+  }
+  return (values as Record<string, unknown>)[parsed.name];
+}
 
 function inferContextType(value: unknown): ContextObjectType {
   if (typeof value === "string") {
@@ -237,7 +259,7 @@ function resolveOne(
 
   switch (mapping.mapType) {
     case "surface_value": {
-      const v = applicationScope[mapping.target];
+      const v = readSurfaceScopeValue(applicationScope, mapping.target);
       if (v === undefined) {
         if (mapping.required) {
           errors.push(

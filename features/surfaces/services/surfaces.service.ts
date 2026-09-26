@@ -1,5 +1,6 @@
 "use client";
 
+import { qualifyValueKey } from "@ai-matrx/alchemy/declare";
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 import type {
@@ -554,9 +555,18 @@ export const SURFACE_TIERS: readonly SurfaceTier[] = [
 const VALUE_TYPES = ["string", "number", "boolean", "object", "array"] as const;
 type DbValueType = (typeof VALUE_TYPES)[number];
 
+/**
+ * The key a binding names this value by (Matrx Alchemy ALC-14, R22): the bare
+ * name for a screen value, "<item_type>.<name>" for an item value. Rows from
+ * before the ALC-14 migration carry no item_type and keep their bare name.
+ */
+export function bindingKeyOfValueRow(row: { name: string; item_type?: string | null }): string {
+  return qualifyValueKey(row.item_type ?? "", row.name);
+}
+
 function rowToSurfaceValue(row: UiSurfaceValueRow): SurfaceValue {
   return {
-    name: row.name,
+    name: bindingKeyOfValueRow(row),
     label: row.label,
     description: row.description,
     valueType: (VALUE_TYPES.includes(row.value_type as DbValueType)
@@ -594,7 +604,7 @@ export async function listSurfaceValues(
   if (!groups || groups.length === 0) return rows;
   const groupOrder = new Map(groups.map((g) => [g.key, g.sortOrder] as const));
   const rowGroup = new Map(
-    (data ?? []).map((r) => [r.name, (r as { group_key?: string }).group_key ?? "general"] as const),
+    (data ?? []).map((r) => [bindingKeyOfValueRow(r), (r as { group_key?: string }).group_key ?? "general"] as const),
   );
   return rows
     .map((row, i) => ({ row, i }))
