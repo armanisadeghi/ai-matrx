@@ -6,11 +6,13 @@
  * the editor (marked) showed `err|warn` (verify-RC-B4 R4-3). Only inline code
  * inside a table cell is touched; code outside a table keeps every byte.
  */
+import { unescapeCellPipes } from "./gfm-cell-pipes";
+
 type Node = { type: string; value?: string; children?: Node[] };
 
 function unescapeCodeIn(node: Node): void {
   if (node.type === "inlineCode" && typeof node.value === "string") {
-    node.value = node.value.replace(/\\\|/g, "|");
+    node.value = unescapeCellPipes(node.value);
     return;
   }
   node.children?.forEach(unescapeCodeIn);

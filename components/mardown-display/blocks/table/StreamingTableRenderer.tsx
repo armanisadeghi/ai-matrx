@@ -10,6 +10,7 @@ import React, {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { RichContent } from "@/components/rich-content/RichContent";
+import { unescapeCellPipes } from "@/components/markdown-core/syntax/gfm-cell-pipes";
 import { useMarkdownStreaming } from "@/components/markdown-core/streaming-context";
 import { Button } from "@/components/ui/button";
 import {
@@ -896,7 +897,7 @@ const StreamingTableRendererCore: React.FC<
                               // is still arriving).
                               <RichContent
                                 level="inline"
-                                source={header}
+                                source={unescapeCellPipes(header)}
                                 isStreaming={
                                   trailingRowStreaming && rows.length === 0
                                 }
@@ -999,7 +1000,7 @@ const StreamingTableRendererCore: React.FC<
                           ) : row[colIndex] ? (
                             <RichContent
                               level="inline"
-                              source={row[colIndex]}
+                              source={unescapeCellPipes(row[colIndex])}
                               isStreaming={
                                 trailingRowStreaming &&
                                 rowIndex === rows.length - 1

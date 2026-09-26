@@ -41,13 +41,13 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "general.privacy",
     "label": "Always watching",
-    "description": "Allow the assistant to observe screen context even when not invoked.",
+    "description": "Whether the assistant may observe screen context even when not invoked. Set on the Assistant tab, alongside its other activation controls.",
     "controlId": "settings-control-assistant-always-watching"
   },
   {
     "tabId": "general.privacy",
     "label": "Desktop notifications",
-    "description": "Show OS-level banners for new messages.",
+    "description": "Whether new-message banners show on your desktop. Set on the Messaging tab, where turning it on also asks your browser for permission.",
     "controlId": "settings-control-notifications-desktop-notifications"
   },
   {
@@ -87,138 +87,16 @@ export const staticSettingsControlIndex = [
     "controlId": "settings-control-theme-color-mode"
   },
   {
-    "tabId": "appearance",
-    "label": "Accent theme",
-    "description": "Custom color scheme overlays.",
-    "controlId": "settings-control-theme-accent-theme"
-  },
-  {
-    "tabId": "appearance",
-    "label": "Dashboard layout",
-    "controlId": "settings-control-layout-dashboard-layout"
-  },
-  {
-    "tabId": "appearance",
-    "label": "Sidebar",
-    "controlId": "settings-control-layout-sidebar"
-  },
-  {
-    "tabId": "appearance",
-    "label": "Header",
-    "controlId": "settings-control-layout-header"
-  },
-  {
-    "tabId": "appearance",
-    "label": "Window mode",
-    "controlId": "settings-control-layout-window-mode"
-  },
-  {
     "tabId": "appearance.theme",
     "label": "Color mode",
     "description": "Use your device setting, light, or dark. Applies before first paint and syncs across tabs.",
     "controlId": "settings-control-theme-color-mode"
   },
   {
-    "tabId": "appearance.theme",
-    "label": "Accent theme",
-    "description": "Custom color scheme overlays.",
-    "controlId": "settings-control-theme-accent-theme"
-  },
-  {
-    "tabId": "appearance.theme",
-    "label": "Dashboard layout",
-    "controlId": "settings-control-layout-dashboard-layout"
-  },
-  {
-    "tabId": "appearance.theme",
-    "label": "Sidebar",
-    "controlId": "settings-control-layout-sidebar"
-  },
-  {
-    "tabId": "appearance.theme",
-    "label": "Header",
-    "controlId": "settings-control-layout-header"
-  },
-  {
-    "tabId": "appearance.theme",
-    "label": "Window mode",
-    "controlId": "settings-control-layout-window-mode"
-  },
-  {
     "tabId": "appearance.density",
     "label": "Color mode",
     "description": "Use your device setting, light, or dark. Applies before first paint and syncs across tabs.",
     "controlId": "settings-control-theme-color-mode"
-  },
-  {
-    "tabId": "appearance.density",
-    "label": "Accent theme",
-    "description": "Custom color scheme overlays.",
-    "controlId": "settings-control-theme-accent-theme"
-  },
-  {
-    "tabId": "appearance.density",
-    "label": "Dashboard layout",
-    "controlId": "settings-control-layout-dashboard-layout"
-  },
-  {
-    "tabId": "appearance.density",
-    "label": "Sidebar",
-    "controlId": "settings-control-layout-sidebar"
-  },
-  {
-    "tabId": "appearance.density",
-    "label": "Header",
-    "controlId": "settings-control-layout-header"
-  },
-  {
-    "tabId": "appearance.density",
-    "label": "Window mode",
-    "controlId": "settings-control-layout-window-mode"
-  },
-  {
-    "tabId": "appearance.accent",
-    "label": "Color mode",
-    "description": "Use your device setting, light, or dark. Applies before first paint and syncs across tabs.",
-    "controlId": "settings-control-theme-color-mode"
-  },
-  {
-    "tabId": "appearance.accent",
-    "label": "Accent theme",
-    "description": "Custom color scheme overlays.",
-    "controlId": "settings-control-theme-accent-theme"
-  },
-  {
-    "tabId": "appearance.accent",
-    "label": "Dashboard layout",
-    "controlId": "settings-control-layout-dashboard-layout"
-  },
-  {
-    "tabId": "appearance.accent",
-    "label": "Sidebar",
-    "controlId": "settings-control-layout-sidebar"
-  },
-  {
-    "tabId": "appearance.accent",
-    "label": "Header",
-    "controlId": "settings-control-layout-header"
-  },
-  {
-    "tabId": "appearance.accent",
-    "label": "Window mode",
-    "controlId": "settings-control-layout-window-mode"
-  },
-  {
-    "tabId": "appearance.layout",
-    "label": "Layout style",
-    "description": "How the shell chrome arranges around content.",
-    "controlId": "settings-control-presentation-layout-style"
-  },
-  {
-    "tabId": "appearance.layout",
-    "label": "Render inside a window frame",
-    "description": "Wraps the shell inside a WindowPanel. Useful when embedding in another app.",
-    "controlId": "settings-control-presentation-render-inside-a-window-frame"
   },
   {
     "tabId": "appearance.windows",
@@ -301,19 +179,15 @@ export const staticSettingsControlIndex = [
   },
   {
     "tabId": "ai.assistants",
-    "label": "Provider",
-    "controlId": "settings-control-model-provider"
-  },
-  {
-    "tabId": "ai.assistants",
-    "label": "Preferred model",
-    "description": "Used by the assistant when a surface does not choose a model.",
-    "controlId": "settings-control-model-preferred-model"
+    "label": "Default AI model",
+    "description": "Chat, quick questions and everyday drafting answer with this model unless you pick another. Your organization can set one for everyone; yours wins for you.",
+    "controlId": "settings-control-model-default-ai-model"
   },
   {
     "tabId": "ai.textGeneration",
-    "label": "Model",
-    "controlId": "settings-control-model-style-model"
+    "label": "Default AI model",
+    "description": "Chat, quick questions and everyday drafting answer with this model unless you pick another. Your organization can set one for everyone; yours wins for you.",
+    "controlId": "settings-control-model-style-default-ai-model"
   },
   {
     "tabId": "ai.textGeneration",
@@ -329,12 +203,6 @@ export const staticSettingsControlIndex = [
     "tabId": "ai.textGeneration",
     "label": "Language",
     "controlId": "settings-control-model-style-language"
-  },
-  {
-    "tabId": "ai.textGeneration",
-    "label": "Plagiarism check",
-    "description": "Run output through a plagiarism check before showing it.",
-    "controlId": "settings-control-model-style-plagiarism-check"
   },
   {
     "tabId": "ai.imageGeneration",
@@ -472,24 +340,14 @@ export const staticSettingsControlIndex = [
   {
     "tabId": "voice.input",
     "label": "Emotion / tone",
-    "description": "Descriptive hint like 'cheerful' or 'calm'.",
+    "description": "Applied to every Cartesia voice (read-aloud, live conversation, Listen panel). Only the values Cartesia actually supports are offered — a free-text word like 'cheerful' used to be accepted here and silently ignored.",
     "controlId": "settings-control-voice-emotion-tone"
   },
   {
     "tabId": "voice.input",
-    "label": "Wake word",
-    "description": "Phrase that activates the assistant.",
-    "controlId": "settings-control-voice-wake-word"
-  },
-  {
-    "tabId": "voice.input",
-    "label": "Enable microphone",
-    "controlId": "settings-control-devices-enable-microphone"
-  },
-  {
-    "tabId": "voice.input",
-    "label": "Enable speaker",
-    "controlId": "settings-control-devices-enable-speaker"
+    "label": "Microphone & speaker",
+    "description": "Choose which microphone and speaker AI Matrx uses.",
+    "controlId": "settings-control-devices-microphone-speaker"
   },
   {
     "tabId": "voice.input",
@@ -556,39 +414,9 @@ export const staticSettingsControlIndex = [
   },
   {
     "tabId": "communication.video",
-    "label": "Background",
-    "controlId": "settings-control-video-background"
-  },
-  {
-    "tabId": "communication.video",
-    "label": "Video filter",
-    "controlId": "settings-control-video-video-filter"
-  },
-  {
-    "tabId": "communication.video",
     "label": "Camera, microphone & speakers",
     "description": "Meetings use your saved devices from the unified device settings.",
     "controlId": "settings-control-devices-camera-microphone-speakers"
-  },
-  {
-    "tabId": "communication.video",
-    "label": "Meeting type",
-    "controlId": "settings-control-meeting-meeting-type"
-  },
-  {
-    "tabId": "communication.video",
-    "label": "Layout",
-    "controlId": "settings-control-meeting-layout"
-  },
-  {
-    "tabId": "communication.video",
-    "label": "Meeting notes",
-    "controlId": "settings-control-meeting-meeting-notes"
-  },
-  {
-    "tabId": "communication.video",
-    "label": "AI activity",
-    "controlId": "settings-control-meeting-ai-activity"
   },
   {
     "tabId": "communication.messaging",
@@ -640,50 +468,9 @@ export const staticSettingsControlIndex = [
   },
   {
     "tabId": "learning.flashcards",
-    "label": "Education level",
-    "controlId": "settings-control-session-education-level"
-  },
-  {
-    "tabId": "learning.flashcards",
-    "label": "Study mode",
-    "controlId": "settings-control-session-study-mode"
-  },
-  {
-    "tabId": "learning.flashcards",
-    "label": "Language",
-    "controlId": "settings-control-session-language"
-  },
-  {
-    "tabId": "learning.flashcards",
     "label": "Tutor voice",
     "description": "The voice tutor is one of AI Matrx's live assistants, so it speaks in your live conversation voice (Eve unless you pick one).",
     "controlId": "settings-control-tutor-tutor-voice"
-  },
-  {
-    "tabId": "learning.flashcards",
-    "label": "Tutor persona",
-    "controlId": "settings-control-tutor-tutor-persona"
-  },
-  {
-    "tabId": "learning.flashcards",
-    "label": "Font size",
-    "controlId": "settings-control-difficulty-font-size"
-  },
-  {
-    "tabId": "learning.flashcards",
-    "label": "Card difficulty",
-    "controlId": "settings-control-difficulty-card-difficulty"
-  },
-  {
-    "tabId": "learning.flashcards",
-    "label": "AI tutor difficulty",
-    "controlId": "settings-control-difficulty-ai-tutor-difficulty"
-  },
-  {
-    "tabId": "learning.flashcards",
-    "label": "Target score",
-    "description": "Mastery threshold before cards are retired from active rotation.",
-    "controlId": "settings-control-difficulty-target-score"
   },
   {
     "tabId": "organizations",
