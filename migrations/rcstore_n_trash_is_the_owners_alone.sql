@@ -1,3 +1,4 @@
+-- chair-step: replaces three access-kernel functions and bumps the proved kernel fingerprint, then regenerates content.document's policies; runs only when named, after rule 27 on the clone
 -- RC-A1 follow-up (chair ruling 2026-09-25, Google Drive behaviour): a document in its owner's
 -- trash is visible only to its owner (and the platform admin lane); people it was shared with and
 -- members of its organization lose it while it is trashed and get it back on restore.
