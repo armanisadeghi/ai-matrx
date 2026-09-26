@@ -1,3 +1,4 @@
+-- chair-step: the only DROPs are DROP CONSTRAINT IF EXISTS immediately re-added wider (mode += stream, apply_policy += queued, new column checks); no column, row or table is removed; rehearsed up/inverse/up on the dev clone 2026-09-26 (Alchemy chair, ALC-14 step 1).
 -- Matrx Alchemy ALC-14 — Declare columns + re-key STEP 1 of 3 (CONTRACT §2.7, chair rulings N4/N5).
 --
 -- Additive only. Every new column has a default, so every live emitter keeps working
