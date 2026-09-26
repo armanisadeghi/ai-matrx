@@ -25,6 +25,7 @@ import {
   Code2,
   Eye,
   Focus,
+  Hash,
   Keyboard,
   ListTree,
   Loader2,
@@ -34,7 +35,6 @@ import {
   MoreHorizontal,
   Save,
   Search,
-  ShieldCheck,
   Type,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -411,6 +411,20 @@ export default function RichEditorImpl({
   };
 
   const lockedCount = (loadStats?.lockedBlocks ?? 0) + (loadStats?.lockedChildren ?? 0);
+  // What the old status bar row said, now carried by the toolbar's word count (its
+  // tooltip) and the Save button — no row of its own (UI audit B, 2026-09-26).
+  const documentFacts = [
+    `${metrics.words.toLocaleString()} words · ${metrics.characters.toLocaleString()} characters · ${metrics.readingMinutes} min read`,
+    metrics.islands > 0 ? `${metrics.islands} protected (kinds, XML sections, code, math and variables are never rewritten by the editor)` : null,
+    view === "visual" && lockedCount > 0 ? `${lockedCount} kept as written (edit with its pencil or in Source)` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const saveStatus = dirty
+    ? "Unsaved changes"
+    : saveState
+      ? `Saved ${saveState.at.toLocaleTimeString()}${saveState.verified ? " · verified byte-for-byte" : ""}`
+      : "No changes";
 
   const body =
     view === "preview" ? (
@@ -478,6 +492,8 @@ export default function RichEditorImpl({
       ? [{ id: "islands", label: renderIslands ? "Show protected blocks as source" : "Render protected blocks", icon: AlignLeft, active: renderIslands, run: () => setRenderIslands((on) => !on) }]
       : []),
     { id: "shortcuts", label: "Keyboard shortcuts (⌘/)", icon: Keyboard, run: () => setHelpOpen(true) },
+    // Desktop shows the count in the toolbar; a phone reads it from the tools menu.
+    ...(isMobile ? [{ id: "count", label: `${metrics.words.toLocaleString()} words · ${saveStatus}`, icon: Hash, run: () => toast.info(documentFacts) }] : []),
   ];
 
   const micButton =
@@ -513,7 +529,7 @@ export default function RichEditorImpl({
           "flex h-8 items-center gap-1.5 rounded-md px-3 text-xs font-medium",
           dirty ? "bg-primary text-primary-foreground hover:bg-primary/90" : "border border-border text-muted-foreground",
         )}
-        title="Save (⌘S) — only what you changed is written"
+        title={`${saveStatus}. Save (⌘S) — only what you changed is written`}
       >
         {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
         {dirty ? saveLabel : "Saved"}
@@ -549,6 +565,9 @@ export default function RichEditorImpl({
           </div>
         )}
         {/* ── Toolbar ─────────────────────────────────────────────────── */}
+        {/* The find widget floats from this anchor over the text; nothing here
+            ever adds a row under the toolbar (UI audit B, 2026-09-26). */}
+        <div className="relative z-20 shrink-0">
         {!focusMode && (
           <div className="matrx-touch-targets flex min-h-10 items-center gap-1 border-b border-border bg-card/80 px-2 py-1 backdrop-blur">
             {/* The tools scroll sideways on a narrow screen; the host's actions and
@@ -644,6 +663,11 @@ export default function RichEditorImpl({
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
+              {!isMobile && (
+                <span className="shrink-0 whitespace-nowrap px-1 text-[11px] tabular-nums text-muted-foreground" title={documentFacts}>
+                  {metrics.words.toLocaleString()} words
+                </span>
+              )}
               {toolbarExtras}
               {cancelButton}
               {saveButton}
@@ -671,6 +695,7 @@ export default function RichEditorImpl({
             }}
           />
         )}
+        </div>
 
         {/* ── Body ────────────────────────────────────────────────────── */}
         <div className="flex min-h-0 flex-1">
@@ -679,40 +704,21 @@ export default function RichEditorImpl({
               <OutlinePanel entries={outline} onJump={jump} />
             </aside>
           )}
-          <div className="min-h-0 min-w-0 flex-1">{body}</div>
+          <div className="relative min-h-0 min-w-0 flex-1">
+            {body}
+            {/* Dictation's live words float over the bottom of the text — never a strip that moves it. */}
+            {mic.isRecording && mic.liveTranscript && (
+              <div
+                className="pointer-events-none absolute inset-x-3 bottom-3 z-20 mx-auto max-w-xl truncate rounded-lg border border-border bg-popover/95 px-3 py-1.5 text-xs text-muted-foreground shadow-lg backdrop-blur"
+                aria-live="polite"
+              >
+                <Mic className="mr-1.5 inline h-3 w-3 text-destructive" aria-hidden />
+                {mic.liveTranscript}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* ── Status bar ──────────────────────────────────────────────── */}
-        {!focusMode && (
-          <div className="flex min-h-7 flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-border bg-card/60 px-3 py-1 text-[11px] text-muted-foreground pb-safe">
-            {/* Live dictation shows IN the status bar — never a row of its own above the text. */}
-            {mic.isRecording && mic.liveTranscript && (
-              <span className="min-w-0 max-w-full truncate text-primary" aria-live="polite">
-                Hearing: {mic.liveTranscript}
-              </span>
-            )}
-            <span>
-              {metrics.words.toLocaleString()} words · {metrics.characters.toLocaleString()} characters · {metrics.readingMinutes} min read
-            </span>
-            {metrics.islands > 0 && (
-              <span className="flex items-center gap-1" title="Kinds, XML sections, code, math, variables and other protected content are never rewritten by the editor.">
-                <ShieldCheck className="h-3 w-3" /> {metrics.islands} protected
-              </span>
-            )}
-            {view === "visual" && lockedCount > 0 && (
-              <span title="Markdown the visual editor cannot hold byte-for-byte (tables it can't map, raw HTML, indented code…) is shown rendered and kept exactly as written; edit it with its pencil or in Source.">
-                {lockedCount} kept as written
-              </span>
-            )}
-            <span className="ml-auto">
-              {dirty
-                ? "Unsaved changes"
-                : saveState
-                  ? `Saved ${saveState.at.toLocaleTimeString()}${saveState.verified ? " · verified byte-for-byte" : ""}`
-                  : "No changes"}
-            </span>
-          </div>
-        )}
       </div>
 
       {/* ── Mobile outline ────────────────────────────────────────────── */}

@@ -25,6 +25,7 @@ import { useRichEditorContext } from "../RichEditorContext";
 interface Target {
   pos: number;
   top: number;
+  left: number;
   height: number;
 }
 
@@ -61,7 +62,9 @@ export function BlockHandle({ editor, container }: { editor: Editor | null; cont
       if (!hit) return;
       const rect = hit.dom.getBoundingClientRect();
       const hostRect = host.getBoundingClientRect();
-      setTarget({ pos: hit.pos, top: rect.top - hostRect.top + host.scrollTop, height: rect.height });
+      // The grip sits just left of the block's own text (Notion), not at the scroller's edge.
+      const left = Math.max(0, rect.left - hostRect.left - 28);
+      setTarget({ pos: hit.pos, top: rect.top - hostRect.top + host.scrollTop, left, height: rect.height });
     };
     const onLeave = () => {
       if (!menuOpen) setTarget(null);
@@ -102,8 +105,8 @@ export function BlockHandle({ editor, container }: { editor: Editor | null; cont
 
   return (
     <div
-      className="absolute left-0 z-10 flex w-7 items-start justify-center"
-      style={{ top: target.top, height: Math.min(target.height, 32) }}
+      className="absolute z-10 flex w-7 items-start justify-center"
+      style={{ top: target.top, left: target.left, height: Math.min(target.height, 32) }}
     >
       {/* The grip is NOT the Radix trigger: a Radix trigger opens on pointerdown and
           cancels it, which kills the native drag before it starts. The grip opens the
