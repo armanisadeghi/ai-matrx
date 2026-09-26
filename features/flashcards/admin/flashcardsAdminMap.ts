@@ -173,13 +173,17 @@ export const flashcardsAdminMap: FeatureAdminMap = {
       ],
     },
     {
-      url: "/education/fastfire/capture-test",
+      url: "/administration/education/fastfire-capture-test",
       label: "Audio capture test (admin)",
       description:
-        "Prove-it surface: record cards, play back full-session + per-card WAVs with real durations/waveforms. Admin-only; removable.",
-      filePath: "app/(core)/education/fastfire/capture-test/page.tsx",
+        "Prove-it surface: record cards, play back full-session + per-card WAVs with real durations/waveforms. Admin-only; owner-mandated to be kept permanently.",
+      filePath:
+        "app/(admin)/administration/education/fastfire-capture-test/page.tsx",
       status: "Live",
-      notes: ["Gated by selectIsAdmin", "Temporary dev aid for the audio core"],
+      notes: [
+        "Gated by selectIsAdmin — moved under (admin) 2026-09-26 so the gate can actually pass (admin power is lane-scoped, per Arman's 2026-09-25 ruling)",
+        "The old /education/fastfire/capture-test path redirects here",
+      ],
     },
     {
       url: "/education/flashcards/sessions",

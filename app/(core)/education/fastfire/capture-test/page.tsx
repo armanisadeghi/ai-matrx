@@ -1,23 +1,16 @@
-// /education/fastfire/capture-test — admin-only proof surface for the audio core.
+// /education/fastfire/capture-test — moved to the admin lane 2026-09-26.
 //
-// The audio capture core (Web-Audio PCM → WAV) is the technical heart of Fast
-// Fire and the one piece that needed real engineering. Before any AI grading is
-// trusted, the owner proves the core works by recording + playing it back here
-// (owner direction 2026-06-30, core-first reset). The surface itself is admin-
-// gated (selectIsAdmin) and code-split (browser-only Web Audio), so this server
-// shell only renders the client boundary. Removable once the core is settled.
-import type { Metadata } from "next";
-import { CaptureTestClient } from "@/features/flashcards/fast-fire/capture-test/CaptureTestClient";
+// The surface (real-audio capture proof, owner-mandated to be kept
+// permanently) gates on `selectIsAdmin`, which is ADMIN POWER: true only
+// inside the `(admin)` route group (Arman's 2026-09-25 ruling — admin
+// privileges never extend beyond `/administration/**`). Living under
+// `(core)/education` it could never open that lane, so every visitor,
+// including super admins, permanently saw "admin-only development surface."
+// The real page now lives at /administration/education/fastfire-capture-test;
+// this old path redirects there so existing links (the flashcards admin map)
+// keep working.
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Fast Fire — Audio Capture Test",
-  robots: { index: false, follow: false },
-};
-
-export default function FastFireCaptureTestPage() {
-  return (
-    <div className="scroll-page-end-space h-full overflow-y-auto">
-      <CaptureTestClient />
-    </div>
-  );
+export default function FastFireCaptureTestRedirect() {
+  redirect("/administration/education/fastfire-capture-test");
 }
