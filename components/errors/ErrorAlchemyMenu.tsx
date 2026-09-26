@@ -296,3 +296,82 @@ function useInlinePlacement(
   }, [state.truncated, state.target, self]);
   return state;
 }
+
+/**
+ * Read an error render's text from the DOM at click time — for renders that
+ * pass their words as children (a destructive `Alert`). The menu's own text is
+ * excluded; a `[data-error-title]` / heading child becomes the title.
+ */
+const BLOCK_TAGS = new Set([
+  "P", "DIV", "LI", "UL", "OL", "SECTION", "ARTICLE", "HEADER", "FOOTER", "PRE",
+  "BLOCKQUOTE", "DD", "DT", "DL", "TR", "TABLE", "H1", "H2", "H3", "H4", "H5", "H6",
+]);
+
+/**
+ * The words of a subtree, one entry per block element — `textContent` runs
+ * sibling paragraphs together ("couldn't loadYour workspace…", RC-B12 R2-3).
+ */
+function blockTexts(root: Node): string[] {
+  const blocks: string[] = [];
+  let current = "";
+  const flush = () => {
+    const text = tidySentence(current.replace(/\s+/g, " ").trim());
+    if (text) blocks.push(text);
+    current = "";
+  };
+  const walk = (node: Node) => {
+    if (node.nodeType === 3) {
+      current += node.textContent ?? "";
+      return;
+    }
+    if (node.nodeType !== 1) return;
+    const tag = (node as Element).tagName;
+    if (tag === "BR") {
+      flush();
+      return;
+    }
+    const block = BLOCK_TAGS.has(tag);
+    if (block) flush();
+    node.childNodes.forEach(walk);
+    if (block) flush();
+  };
+  walk(root);
+  flush();
+  return blocks;
+}
+
+/**
+ * A render that writes `{error}.` after a message that already ends in a
+ * full stop shows "try again.." — the copy says it once. A real ellipsis
+ * ("...") stays (RC-B12 round 4).
+ */
+export function tidySentence(text: string): string {
+  return text.replace(/(?<!\.)([.!?])\.(?!\.)/g, "$1");
+}
+
+/** Blocks joined as sentences: a block that ends without punctuation gets a period. */
+function joinBlocks(blocks: string[]): string {
+  return blocks
+    .map((text, i) => (i < blocks.length - 1 && !/[.!?:;…]$/.test(text) ? `${text}.` : text))
+    .join(" ");
+}
+
+export function readRenderedError(root: Element | null): ErrorAlchemyInput {
+  if (!root) return { message: "An error is shown on this page.", source: "alert" };
+  const clone = root.cloneNode(true) as Element;
+  // The menu and the render's own controls (Retry, Dismiss…) are not the error.
+  clone
+    .querySelectorAll("[data-error-alchemy-menu], button, [role=button]")
+    .forEach((n) => n.remove());
+  const titleEl = clone.querySelector("[data-error-title], h1, h2, h3, h4, h5, h6");
+  let title = titleEl ? joinBlocks(blockTexts(titleEl)) || undefined : undefined;
+  titleEl?.remove();
+  let blocks = blockTexts(clone);
+  // No heading: a short first block followed by more is the box's title.
+  if (!title && blocks.length > 1 && blocks[0].length <= 100) {
+    title = blocks[0];
+    blocks = blocks.slice(1);
+  }
+  const message = joinBlocks(blocks) || title || "An error is shown on this page.";
+  return { title: message === title ? undefined : title, message, source: "alert" };
+}
