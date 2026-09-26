@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-26T08:49:13.323Z",
+  "generated_at": "2026-09-26T09:26:00.381Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -2948,6 +2948,12 @@
       "checksum": "2d280aa65f54a917a76c723611ab9b01167dde7eff17c5617dff9dbf7a2f722e",
       "applied_at": "2026-09-25 04:03:22.677325+00"
     },
+    "migrations/campaign/movercarry_copying_again_is_judged_by_what_it_changes.sql": {
+      "source": "matrx-frontend",
+      "filename": "movercarry_copying_again_is_judged_by_what_it_changes.sql",
+      "checksum": "f98d87f9a2a624342efcf74cd635b400d428f7f931c4d4a53cdc4a6d4991f535",
+      "applied_at": "2026-09-26 09:11:58.630921+00"
+    },
     "migrations/campaign/navfix_one_switch_per_organization.sql": {
       "source": "matrx-frontend",
       "filename": "navfix_one_switch_per_organization.sql",
@@ -5053,6 +5059,18 @@
       "filename": "trashcoverage2_every_archivable_thing_a_person_sees_is_in_trash.sql",
       "checksum": "497c0f64767ed79d8406f85c5b17cf88b3238ae360199e82f167325450781aeb",
       "applied_at": "2026-09-26 08:40:41.03514+00"
+    },
+    "migrations/campaign/trashcoverage2_organization_trash_walks_shared_and_own_personal_rows_apart.sql": {
+      "source": "matrx-frontend",
+      "filename": "trashcoverage2_organization_trash_walks_shared_and_own_personal_rows_apart.sql",
+      "checksum": "d7d1f20743f30f55158961d83f6ad19c625ca6aeda7ebe8202b5c8a198ef0c7b",
+      "applied_at": "2026-09-26 09:25:59.139885+00"
+    },
+    "migrations/campaign/trashcoverage2_the_in_parent_title_is_computed_after_the_page_is_cut.sql": {
+      "source": "matrx-frontend",
+      "filename": "trashcoverage2_the_in_parent_title_is_computed_after_the_page_is_cut.sql",
+      "checksum": "f0da150763b2b9bccfe5a2876e6d24d0de6d95a8e2bc1e2aa6c0b9f5fa364ed3",
+      "applied_at": "2026-09-26 09:01:54.259823+00"
     },
     "migrations/campaign/trashcoverage_every_archived_kind_is_restorable_from_trash.sql": {
       "source": "campaign",
