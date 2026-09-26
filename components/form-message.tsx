@@ -4,7 +4,7 @@ import { CheckCircle, AlertTriangle, Info } from "lucide-react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const messageVariants = cva(
-  "flex items-center gap-3 p-4 rounded-lg text-sm font-medium",
+  "relative flex items-center gap-3 p-4 rounded-lg text-sm font-medium",
   {
     variants: {
       variant: {
@@ -81,11 +81,16 @@ export function FormMessage({
       })}
     >
       {getIcon()}
-      <span>
-        {messageText}
-        {/* An auth error carries the Alchemy Menu on its own line (RC-B12). */}
-        {messageType === "error" && <ErrorAlchemyMenu error={messageText} />}
-      </span>
+      <span>{messageText}</span>
+      {/* An auth error carries the Alchemy Menu (RC-B12) in the box's own
+          right padding: inline at the end of a line that nearly filled the
+          box it wrapped and grew the box 20px at 375px. */}
+      {messageType === "error" && (
+        <ErrorAlchemyMenu
+          error={messageText}
+          className="absolute right-0 top-1/2 -translate-y-1/2"
+        />
+      )}
     </div>
   );
 }
