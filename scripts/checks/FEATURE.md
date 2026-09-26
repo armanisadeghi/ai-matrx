@@ -143,6 +143,8 @@ log, holding its own lock (`--with-checks` runs it in the foreground instead;
 | `pnpm test:release-checks` | the runner at its seams (clean = one line; screams, hangs, exit codes → findings; JSON shape) |
 | `pnpm test:release-fail-forward` | the wiring: no check before the push, nothing fails after it, after phase detached, no stash |
 | `pnpm test:release-outcome` | the rollout watch is consulted in the after phase and a dead rollout is an ERROR finding |
+| `pnpm findings [paths…] [--check id]` | NEW items (MATRX-ITEM) of the converted checks touching those paths, each with its fix and exact accept command; exit 1 when any. Registry + accept adapters: `scripts/findings/registry.mjs` |
+| `pnpm findings accept <check> '<key>' --reason "…" [--no-commit]` | writes the key into THAT check's own allowlist (reason, accepted-by, date), re-runs it to prove the item is known and nothing else moved, commits only that file. Tests: `pnpm test:findings` |
 
 ## Timings (sandbox, 2026-09-20, disk under heavy load)
 
@@ -169,6 +171,12 @@ the after phase; the two things that made the build — migrations and the
 push — are the ship path.
 
 ## Change log
+
+- 2026-09-26 — `pnpm findings` / `pnpm findings accept` (PLAN.md decision 8 + C1): the
+  in-session face of the item line. Accept adapters for visibility-vocabulary, access-guard-check
+  (in-place allowlist append), api-contract-ratchet (sibling `api-contracts-baseline.reasons.json`),
+  record-toasts (`reasons` map; `--update` keeps it). finalize-and-ship step 4 runs it on the diff.
+  aidream twin: `scripts/findings.py`.
 
 - 2026-09-26 — Seven self-tests stopped planting fixtures in the live tree
   (org-refusal-honesty, org-three-states, no-default-organization[-sql],

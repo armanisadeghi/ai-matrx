@@ -77,6 +77,26 @@ advance is information, not a warning or a reason for a repair loop.
 
 Do not broaden scheduled release preparation into a full validation sweep.
 
+### 4. Open findings in the files you touched — part of done
+
+Run the findings tool on the files in your diff (feature authors; release owners skip it):
+
+```bash
+# the task's files: uncommitted + committed-but-unpushed (add any you already pushed this task)
+files=$(git diff --name-only HEAD; git diff --name-only origin/main...HEAD)
+[ -n "$files" ] && pnpm findings $files                      # matrx-frontend
+[ -n "$files" ] && uv run python scripts/findings.py $files  # aidream
+```
+
+Never run it with no paths as a done-check: no paths means every converted check's whole backlog.
+
+Exit 1 means a converted check names a NEW item in a file you touched. **An open finding in files
+you touched is part of done: fix it, or accept it with a reason.** Each item prints its fix hint
+and the exact accept command (`pnpm findings accept <check> '<key>' --reason "<why>"`), which
+writes the key into that check's own allowlist with your reason, proves the item is now known,
+and commits only that allowlist. Accept only what is genuinely fine and say why; never accept to
+get green. Known debt is not printed and is not yours unless you touched it.
+
 ### 5. Commit & push
 
 Plain git, per the global commit rules: review `git status` + `git diff` first, stage the **specific** files (never blind `git add -A`), write a conventional commit (`feat(...)`/`fix(...)`) via a HEREDOC, then `git push origin main`. Quality gates (`check:doctrine`, UI primitives, migrations, dead-relations) run at **release time** via `./scripts/release.sh` / `pnpm check:release-gates` — not on every commit. The one narrow runtime admission is different: `release.sh` read-only checks the committed candidate's required surface registrations before tag/push. It neither syncs nor repairs manifests, and it does not make advisory registry drift a release gate.
