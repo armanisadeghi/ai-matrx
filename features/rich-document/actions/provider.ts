@@ -255,7 +255,15 @@ export function toAlchemyAction(rd: RichDocumentAction): Action {
       ? {
           subscribe: (onChange: () => void, t: ClickTarget) => {
             const ctx = ctxOf(t);
-            return ctx && rd.subscribe ? rd.subscribe(onChange, ctx) : () => undefined;
+            if (!ctx || !rd.subscribe) return () => undefined;
+            // A store's hydration read notifies INSIDE subscribe; that is not a
+            // change (it looped the menu engine before @ai-matrx/alchemy 0.8.3).
+            let subscribing = true;
+            const off = rd.subscribe(() => {
+              if (!subscribing) onChange();
+            }, ctx);
+            subscribing = false;
+            return off;
           },
         }
       : {}),
