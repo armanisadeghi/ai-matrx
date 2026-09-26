@@ -18,6 +18,7 @@ import { VOICE_COMMUNICATOR_MANDATE_KEY } from "@/features/voice-agent/relay/use
 import { VoiceOrb } from "@/features/voice-agent/components/VoiceOrb";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
+import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 import type { SourceFeature } from "@/types/python-generated/source-attribution";
 import { cn } from "@/lib/utils";
 
@@ -143,7 +144,14 @@ function ActiveAmbientVoiceAssistant({
   const submissionPhase = useAppSelector(
     selectSubmissionPhase(conversationId ?? ""),
   );
+  const quickChatOpen = useAppSelector((state) =>
+    selectIsOverlayOpen(state, "quickChat"),
+  );
   const voiceLive = relay.status !== "idle" && relay.status !== "error";
+
+  useEffect(() => {
+    if (submissionPhase !== "pending") openedConversationRef.current = null;
+  }, [submissionPhase]);
 
   useEffect(() => {
     if (
@@ -155,12 +163,12 @@ function ActiveAmbientVoiceAssistant({
       return;
     }
     openedConversationRef.current = conversationId;
+    if (quickChatOpen) return;
     openQuickChat({
       initialConversationId: conversationId,
       title: "Assistant",
     });
-    onDismiss();
-  }, [conversationId, mode, onDismiss, openQuickChat, submissionPhase]);
+  }, [conversationId, mode, openQuickChat, quickChatOpen, submissionPhase]);
 
   const switchToText = () => {
     if (voiceLive) void relay.stop();
@@ -193,6 +201,8 @@ function ActiveAmbientVoiceAssistant({
                   : relay.status === "interrupting"
                     ? "One moment"
                     : "Tap to try again";
+
+  if (quickChatOpen && mode === "text") return null;
 
   return (
     <div className="ambient-assistant-dock fixed left-1/2 z-[35] w-[min(470px,calc(100vw-2rem))] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200">

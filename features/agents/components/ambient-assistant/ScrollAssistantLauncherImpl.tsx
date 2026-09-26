@@ -15,6 +15,7 @@ import { useAuthGuardedAction } from "@/features/auth/components/useAuthGuardedA
 import { useSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
+import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
 import { cn } from "@/lib/utils";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
@@ -94,6 +95,13 @@ function AuthenticatedAmbientAssistant({
   const submissionPhase = useAppSelector(
     selectSubmissionPhase(conversationId ?? ""),
   );
+  const quickChatOpen = useAppSelector((state) =>
+    selectIsOverlayOpen(state, "quickChat"),
+  );
+
+  useEffect(() => {
+    if (submissionPhase !== "pending") openedConversationRef.current = null;
+  }, [submissionPhase]);
 
   useEffect(() => {
     if (
@@ -104,14 +112,14 @@ function AuthenticatedAmbientAssistant({
       return;
     }
     openedConversationRef.current = conversationId;
+    if (quickChatOpen) return;
     openQuickChat({
       initialConversationId: conversationId,
       title: "Assistant",
     });
-    setDismissed(true);
-  }, [conversationId, openQuickChat, submissionPhase]);
+  }, [conversationId, openQuickChat, quickChatOpen, submissionPhase]);
 
-  if (dismissed) return null;
+  if (dismissed || quickChatOpen) return null;
 
   const dismiss = () => {
     if (conversationId) close(conversationId);
