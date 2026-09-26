@@ -1063,9 +1063,9 @@ sal` and an invented id comes back as the handler's error. Handlers in
   points at the targets. The list-route mount registers no handlers, and each
   handler re-checks the row the canonical write RETURNS, throwing when the
   value did not land rather than reporting a success the DB never took).
-  `matrx-user/settings` (7 ask-policy ENTITY targets — `theme_mode`,
-  `accent_theme`, `display_layout`, `text_generation_style`,
-  `language_defaults`, `assistant_name`, `voice_persona` — handled in
+  `matrx-user/settings` (5 ask-policy ENTITY targets — `theme_mode`,
+  `text_generation_style`, `language_defaults` (voice, text generation),
+  `assistant_name`, `voice_persona` (emotion only) — handled in
   `features/settings/route-shell/SettingsTabContentImpl.tsx`. Every one
   dispatches `getSliceBinding(slice).write(key, value)`, the exact action
   `useSetting` fires for the user's own click, so there is no parallel write
@@ -2006,6 +2006,8 @@ regex/uniqueness) are the second and third chips of that campaign, not blockers
 on the first.
 
 ## Change Log
+
+- **2026-09-26 — `matrx-user/settings` loses `accent_theme` and `display_layout`** (settings truth sweep): both wrote preferences nothing in any app read, so an agent could report a change that never happened. Handlers removed from the code; the two `ui.ui_surface_write_target` rows deleted and the settings surface re-synced (`sync-surface-manifests-direct --surface matrx-user/settings`), because the direct sync never deletes a removed target — a removed target must also be removed from the mirror. `language_defaults` drops `flashcards` (no reader); `voice_persona` carries only `emotion`.
 
 - **2026-09-26 — Declare moved into `@ai-matrx/alchemy` (Matrx Alchemy ALC-14); ONE sync path.** `SurfaceManifest` extends the package's `SurfaceDeclaration` and now REQUIRES `client` (= name prefix), `executionMode` and `description` (backfilled byte-identical from `ui.ui_surface`, 210/210). Value sensitivity nests under `sensitivity`. `manifests/registry.ts` resolves through `createDeclarationRegistry` (214 resolved manifests identical before/after). Agent roles and client tools are extension slots in [`declare/surface-declare.ts`](./declare/surface-declare.ts), which also holds `SYNC_SCHEMA` (flip only after the chair applies `migrations/alchemy_declare_columns_and_item_key.sql`). `check:surface-drift` runs the package's `validateDeclarations`; `emit-surface-sync-sql.ts`, the admin sync service (via [`services/execute-sync-plan.ts`](./services/execute-sync-plan.ts)) and `sync-surface-manifests-direct.ts --check` all use the package plan — the service's own row builders are gone; governance columns are insert-only on every path; `--check` EXPLAINs every plan statement read-only. Bindings accept dotted item keys (`table_row.status`, read from the reserved `__item` scope entry). `matrx-user/workflow` gained a manifest; `check:surface-impact` counts aidream's JSON declarations as owners.
 

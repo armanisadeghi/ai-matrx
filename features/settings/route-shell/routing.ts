@@ -19,10 +19,22 @@ const kebabToCamel = (s: string): string =>
 const camelToKebab = (s: string): string =>
   s.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
 
+/**
+ * Tabs removed by the settings truth sweep (2026-09-25/26) → where their one
+ * remaining truth lives. A bookmarked or linked old address opens the
+ * replacement instead of an empty "choose a setting" page.
+ */
+export const RETIRED_TAB_IDS: Readonly<Record<string, string>> = {
+  "appearance.accent": "appearance.theme",
+  "appearance.layout": "appearance.theme",
+  "voice.tts": "voice.voices",
+};
+
 /** Convert URL path segments (from a catch-all route) into a tab id. */
 export function urlToTabId(segments: string[] | undefined): string {
   if (!segments || segments.length === 0) return "";
-  return segments.filter(Boolean).map(kebabToCamel).join(".");
+  const id = segments.filter(Boolean).map(kebabToCamel).join(".");
+  return RETIRED_TAB_IDS[id] ?? id;
 }
 
 /** Build the href for a tab id. */
