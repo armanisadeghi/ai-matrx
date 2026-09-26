@@ -48,6 +48,15 @@ begin
 end;
 $function$;
 
+-- DD-223: the access decision is declared IN DATA before any grant. Same shape as the three
+-- topic-admit functions already registered (custom, platform, scheduler).
+insert into platform.client_callable_door (schema_name, function_name, identity_args, identity_argtypes,
+                                           reason, declared_by, signed_in_callers, anonymous_callers)
+values ('platform', 'comments_topic_admits', 'p_topic text', array['text'::regtype]::oid[],
+        'Not a door a screen calls: it is reached only through platform.realtime_topic_admits, the USING clause of the one RLS policy on realtime.messages, which Postgres evaluates AS the subscribing role. It takes no organization and no identity argument (the seat comes from the session) and answers only true/false about a topic string the caller already knows — true exactly when iam.has_access(<entity_type>, <entity_id>, viewer) is true for the signed-in person, which that person can already ask iam.has_access directly — so a client calling it learns nothing it could not learn by trying to subscribe.',
+        'rca2g_comment_delete_is_announced_by_id.sql', true, false);
+grant execute on function platform.comments_topic_admits(text) to authenticated;
+
 comment on function platform.comments_topic_admits(text) is
   'RC-A2g: admits a socket to the private topic comments:<entity_type>:<entity_id> only when the signed-in person can view that record. Registered in platform.realtime_topic_prefix.';
 
