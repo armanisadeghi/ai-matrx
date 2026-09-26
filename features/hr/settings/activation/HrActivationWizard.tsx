@@ -1117,7 +1117,7 @@ function RefusalPanel({
           ) : null}
         </div>
       </div>
-    </div>
+    <ErrorAlchemyMenu /></div>
   );
 }
 

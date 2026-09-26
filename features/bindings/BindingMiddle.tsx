@@ -298,6 +298,7 @@ export function BindingMiddleRow({
               className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-2.5 py-2"
             >
               <StatusToken status="error" label="Invalid" />
+              <ErrorAlchemyMenu error={problem} operation="Check this mapping" />
               <p className="min-w-0 flex-1 text-[12px] leading-relaxed text-destructive">
                 <span className="sr-only">{`Mapping issue ${index + 1}: `}</span>
                 <TextWithDoors text={problem} defaultToken="agent" />

@@ -113,6 +113,7 @@ import {
 } from "./hooks";
 import type { KeywordIntelTab, KeywordScope } from "./types";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const TAB_LABELS: Record<KeywordIntelTab, string> = {
   overview: "Summary",
   research: "Pipeline",
@@ -1387,7 +1388,7 @@ function ReadFailure({
       <Button size="sm" variant="outline" className="h-7" onClick={onRetry}>
         Retry
       </Button>
-    </div>
+    <ErrorAlchemyMenu /></div>
   );
 }
 

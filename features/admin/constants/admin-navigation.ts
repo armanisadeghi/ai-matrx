@@ -211,6 +211,14 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           ]),
         ],
       },
+      {
+        // SUPPORT, not management (Arman, 2026-09-26): the System Agents pages
+        // manage the platform's own agents only. Looking into an
+        // organization's or a person's agents is tech support, and lives here.
+        name: "Support",
+        iconName: "LifeBuoy",
+        destinations: [destination("/administration/agents/support")],
+      },
     ],
   },
   {
@@ -218,8 +226,11 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
     // the application. AI keeps its meaning (models and what involves them);
     // Agents and Workflows are things we make with them. For now Intelligence
     // holds only Mandates — a mandate is a named job fulfilled by an Agent, an
-    // Orchestra, or a Workflow, so it is NEVER under Agents. ONE menu entry;
-    // every other mandate page is reached from inside the list's header.
+    // Orchestra, or a Workflow, so it is NEVER under Agents. ONE menu entry
+    // for managing them; every other mandate management page is reached from
+    // inside the list's header. Mandate support lookup (Arman, 2026-09-26) is
+    // a SEPARATE entry: a tech-support tool over organizations' and people's
+    // mandates, never the management page.
     name: "Intelligence",
     slug: "intelligence",
     iconName: INTELLIGENCE_ICON_NAME,
@@ -236,6 +247,19 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
             "/administration/intelligence/mandates/window",
             "/administration/intelligence/mandates/[mandateKey]",
             "/administration/intelligence/mandates/[mandateKey]/overrides",
+          ]),
+        ],
+      },
+      {
+        // SUPPORT, not management (Arman, 2026-09-26): its own entry, never
+        // the main mandates page. Its literal `support` segment also matches
+        // the `[mandateKey]` pattern above; findAdminNavigationLocation prefers
+        // a literal match over a dynamic one, so it highlights HERE.
+        name: "Support",
+        iconName: "LifeBuoy",
+        destinations: [
+          destination("/administration/intelligence/mandates/support", [
+            "/administration/intelligence/mandates/support/[mandateId]",
           ]),
         ],
       },
@@ -968,14 +992,38 @@ export function destinationOwnsPathname(
   return patterns.some((pattern) => routePatternRegex(pattern).test(pathname));
 }
 
+/** How specifically `pattern` names `pathname`: literal segments that match. */
+function literalMatchScore(pattern: string, pathname: string): number {
+  if (!routePatternRegex(pattern).test(pathname)) return -1;
+  return pathOnly(pattern)
+    .split("/")
+    .filter((part) => part && !/^\[.+\]$/.test(part)).length;
+}
+
+/**
+ * The destination that owns `pathname`. SPECIFIC BEFORE GENERAL: when several
+ * destinations match, the one whose pattern names more literal segments wins
+ * (`/mandates/support` over `/mandates/[mandateKey]`); ties keep declaration
+ * order.
+ */
 export function findAdminNavigationLocation(
   pathname: string,
 ): AdminNavigationLocation | null {
-  return (
-    getAdminNavigationLocations().find(({ destination: item }) =>
-      destinationOwnsPathname(item, pathname),
-    ) ?? null
-  );
+  let best: AdminNavigationLocation | null = null;
+  let bestScore = -1;
+  for (const location of getAdminNavigationLocations()) {
+    const item = location.destination;
+    const score = Math.max(
+      ...[item.link, ...item.ownedRoutes].map((pattern) =>
+        literalMatchScore(pattern, pathname),
+      ),
+    );
+    if (score > bestScore) {
+      best = location;
+      bestScore = score;
+    }
+  }
+  return bestScore >= 0 ? best : null;
 }
 
 export function findAdminNavigationDomainBySlug(

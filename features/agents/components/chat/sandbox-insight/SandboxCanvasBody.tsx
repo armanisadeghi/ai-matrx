@@ -50,6 +50,7 @@ import type { SandboxInstance } from "@/types/sandbox";
 import { selectLiveToolLifecycleByConversation } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { SandboxActivityFeed } from "./SandboxActivityFeed";
 import { isSandboxTool } from "./sandbox-activity";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The agent's working directory in every sandbox image. */
 const AGENT_HOME = "/home/agent";
@@ -278,6 +279,7 @@ export function SandboxCanvasBody({
           <PaneNotice
             title="This sandbox can't be read"
             body={error}
+            menu={<ErrorAlchemyMenu error={error} operation="Read this conversation's sandbox" />}
             remedy="Attach or start a sandbox from the chat input's sandbox control, then reopen this pane."
           />
         ) : loading ? (
@@ -313,10 +315,13 @@ function PaneNotice({
   title,
   body,
   remedy,
+  menu,
 }: {
   title: string;
   body: string;
   remedy?: string;
+  /** The Alchemy Menu, when this notice shows a failure. */
+  menu?: React.ReactNode;
 }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
@@ -325,6 +330,7 @@ function PaneNotice({
       {remedy && (
         <p className="max-w-xs text-xs text-muted-foreground">{remedy}</p>
       )}
+      {menu}
     </div>
   );
 }

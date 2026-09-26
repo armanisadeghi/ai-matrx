@@ -190,7 +190,7 @@ function RefusalPanel({
           {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           Save anyway
         </Button>
-      </div>
+      <ErrorAlchemyMenu /></div>
     );
   }
 
@@ -200,7 +200,7 @@ function RefusalPanel({
         {refusal.detail ??
           "The server refused this rule, and nothing was saved."}
       </p>
-    </div>
+    <ErrorAlchemyMenu /></div>
   );
 }
 

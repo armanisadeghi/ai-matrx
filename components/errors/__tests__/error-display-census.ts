@@ -61,10 +61,10 @@ const RED =
 const NOTICE =
   /(?<!(?:hover|focus|focus-visible|focus-within|active|group-hover|peer-hover|disabled|placeholder|visited):)\b(?:text|bg|border)-(?:amber-\d{2,3}|orange-\d{2,3}|warning|yellow-\d{2,3})\b/;
 const FAILURE_WORDS =
-  /something went wrong|\boops\b|did(?:n['’]t| not) work|could(?:n['’]t| not) (?:load|save|read|open|find|update|create|delete|connect|send|start|reach|be (?:loaded|saved|read))|failed to (?:load|save|read|fetch|create|update|delete|send|start|connect|open)|unable to (?:load|save|read|fetch|open|find|create|update|delete|send|start|connect|reach|play|process|generate)|error (?:loading|saving|fetching|reading|creating|updating|deleting|sending|connecting|processing)|\b(?:save|load|upload|download|delete|update|sync|send|fetch|import|export|connection|request|generation) failed\b|\bnot saved\b|unexpected error|an error occurred|failed to compile|\btemplate error\b|permission denied|access denied|\btimed out\b|\bnot authori[sz]ed\b/i;
+  /something went wrong|\boops\b|(?:page|app|screen) crashed|server refused|did(?:n['’]t| not) work|could(?:n['’]t| not) (?:load|save|read|open|find|update|create|delete|connect|send|start|reach|be (?:loaded|saved|read))|failed to (?:load|save|read|fetch|create|update|delete|send|start|connect|open)|unable to (?:load|save|read|fetch|open|find|create|update|delete|send|start|connect|reach|play|process|generate)|error (?:loading|saving|fetching|reading|creating|updating|deleting|sending|connecting|processing)|\b(?:save|load|upload|download|delete|update|sync|send|fetch|import|export|connection|request|generation) failed\b|\bnot saved\b|unexpected error|an error occurred|failed to compile|\btemplate error\b|permission denied|access denied|\btimed out\b|\bnot authori[sz]ed\b/i;
 /** Words that only mean an error when the text is painted red ("Error: {detail}"). */
 const RED_ONLY_WORDS = /\berror\b\s*:?|\bdenied\b|\binvalid\b/i;
-const ERROR_NAME = /(?:[eE]rror|Err$|^err$|^e$|[fF]ailure|[rR]efusal|^why$|Why$|[pP]roblem)/;
+const ERROR_NAME = /(?:[eE]rror|Err$|^err$|^e$|[fF]ailure|[rR]efusal|^why$|Why$|[pP]roblem(?!_?[sS]tatement))/;
 /** Message-like names count only in red text: an amber `{message}` is usually a warning. */
 const MESSAGE_NAME = /(?:^msg$|Msg$|^message$|Message$|^reason$|Reason$|^detail$|Detail$)/;
 /** A branch condition that means "we are in the error state". */
@@ -182,9 +182,111 @@ function isErrorLeaf(leaf: ts.Expression, names: RegExp = ERROR_NAME): boolean {
     if (/\.(length|count|size|total)$/.test(text)) return false;
     // An identifier of an error (its digest, id or code) is a reference, not the error shown.
     if (/\.(digest|id|code|errorId|error_id|error_code|errorCode)$/.test(text)) return false;
-    return text.split(/\??\.|\[|\]/).some((part) => names.test(part));
+    const parts = text.split(/\??\.|\[|\]/).filter(Boolean);
+    const last = parts[parts.length - 1];
+    // `problem.title` is a math problem's title; only a value NAMED problem is one.
+    return parts.some((part) => names.test(part) && !(/^problems?$/i.test(part) && part !== last));
   }
-  if (ts.isIdentifier(leaf)) return names.test(leaf.text);
+  if (ts.isIdentifier(leaf)) return names.test(leaf.text) || ERROR_CONSTANT.test(leaf.text);
+  return false;
+}
+
+/** A module constant holding an error sentence (`ORGANIZATION_UNAVAILABLE_TITLE`, `LOAD_ERROR_TITLE`). */
+const ERROR_NAME_NO_E = /(?:[eE]rror|Err$|^err$|[fF]ailure|[rR]efusal|^why$|Why$|[pP]roblem(?!_?[sS]tatement))/;
+const ERROR_CONSTANT = /^[A-Z][A-Z0-9_]*(?:ERROR|FAILED|FAILURE|REFUSED|CRASH|UNAVAILABLE_(?:TITLE|DESCRIPTION|MESSAGE))[A-Z0-9_]*$/;
+/** Props a neutral component renders as its words. */
+const WORD_PROPS = /^(message|description|title|text|body|detail|details|subtitle|heading|label|children)$/;
+
+/**
+ * An error handed to a neutral component by prop — `<EmptyCatalogue
+ * message={`Could not load skills: ${error}`} />`, `<EmptyState
+ * description={error} />`. The component draws it without a menu, so the
+ * call site is the error display (RC-B12 round 5).
+ */
+let carryingHere: ReadonlySet<string> = new Set();
+
+/**
+ * Components that draw the menu themselves — a local `ErrorPane` whose body
+ * holds `<ErrorAlchemyMenu/>` carries every error handed to it. The tree
+ * census resolves these across imports (`carryingComponentsResolver`); a
+ * single-file census sees only the file's own definitions.
+ */
+let carryingResolver: ((source: string, fileName: string) => ReadonlySet<string>) | null = null;
+export function setCarryingComponentsResolver(
+  resolver: ((source: string, fileName: string) => ReadonlySet<string>) | null,
+): void {
+  carryingResolver = resolver;
+}
+
+/** Names of the components DEFINED in this source whose render holds a visible carrier (or a known carrying component). */
+export function componentsThatCarry(source: string, fileName = "file.tsx", known: ReadonlySet<string> = new Set()): Set<string> {
+  const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const out = new Set<string>();
+  const bodies: Array<[string, ts.Node]> = [];
+  sf.forEachChild(function top(n) {
+    if (ts.isFunctionDeclaration(n) && n.name && /^[A-Z]/.test(n.name.text) && n.body) bodies.push([n.name.text, n.body]);
+    if (ts.isVariableStatement(n)) {
+      for (const d of n.declarationList.declarations) {
+        if (ts.isIdentifier(d.name) && /^[A-Z]/.test(d.name.text) && d.initializer) bodies.push([d.name.text, d.initializer]);
+      }
+    }
+    if (ts.isExportAssignment(n)) n.forEachChild(top);
+  });
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [name, body] of bodies) {
+      if (out.has(name)) continue;
+      let found = false;
+      body.forEachChild(function visit(m) {
+        if (found) return;
+        if ((ts.isJsxElement(m) || ts.isJsxSelfClosingElement(m))) {
+          const tag = tagName(m);
+          if ((CARRIER_NAMES.has(tag) && !isHiddenMenu(m)) || known.has(tag) || out.has(tag)) {
+            found = true;
+            return;
+          }
+        }
+        m.forEachChild(visit);
+      });
+      if (found) {
+        out.add(name);
+        changed = true;
+      }
+    }
+  }
+  return out;
+}
+
+function errorFedByProp(node: JsxLike): boolean {
+  const name = tagName(node);
+  if (!/^[A-Z]/.test(name) || CARRIER_NAMES.has(name) || WRAPPER_NAMES.has(name) || CONTROLS.test(name)) return false;
+  if (carryingHere.has(name)) return false;
+  // Copy controls and confirm/ask dialogs are not error displays.
+  if (/^(Alert|AlertTitle|AlertDescription|Tooltip|TooltipContent|Toast|\w*Dialog\w*|Sheet\w*|Trans|FormattedMessage|CopyButtons|MatrxCopyMenu)$/.test(name)) return false;
+  const props = attributes(node).properties;
+  // `title` beside children or a label is the hover tooltip, not the words shown.
+  const titleIsTooltip =
+    (ts.isJsxElement(node) && node.children.some((c) => !ts.isJsxText(c) || c.getText().trim())) ||
+    props.some((p) => ts.isJsxAttribute(p) && /^(label|value)$/.test(p.name.getText()));
+  for (const prop of props) {
+    if (!ts.isJsxAttribute(prop) || !WORD_PROPS.test(prop.name.getText()) || !prop.initializer) continue;
+    if (prop.name.getText() === "title" && titleIsTooltip) continue;
+    const init = prop.initializer;
+    if (ts.isStringLiteral(init)) {
+      if (FAILURE_WORDS.test(init.text)) return true;
+      continue;
+    }
+    if (!ts.isJsxExpression(init) || !init.expression) continue;
+    const leaves: ts.Expression[] = [];
+    renderedLeaves(init.expression, leaves);
+    for (const leaf of leaves) {
+      // `e` is an error only when it is caught; a `.map((e) => …)` row is not.
+      if (isErrorLeaf(leaf, ERROR_NAME_NO_E)) return true;
+      const text = ts.isStringLiteral(leaf) || ts.isNoSubstitutionTemplateLiteral(leaf) ? leaf.text : ts.isTemplateExpression(leaf) ? leaf.getText() : "";
+      if (text && FAILURE_WORDS.test(text)) return true;
+    }
+  }
   return false;
 }
 
@@ -278,6 +380,9 @@ function classify(node: JsxLike): ErrorDisplayHit["reason"] | null {
   // shown (`{load.status === "error" ? <p className="text-destructive">{load.detail}</p> : …}`).
   if ((red || NOTICE.test(className)) && (renderedAny || words.trim()) && inErrorBranch(node)) return "red-error";
   if (FAILURE_WORDS.test(words)) return "failure-words";
+  if (errorFedByProp(node)) return "failure-words";
+  // An error constant rendered as the element's own words.
+  if (errorLeaves.some((leaf) => ERROR_CONSTANT.test(leaf))) return "failure-words";
   const role = attrText(node, "role") ?? "";
   if ((/status/.test(role) || NOTICE.test(className)) && errorLeaves.length > 0) return "status-error";
   return null;
@@ -288,9 +393,15 @@ function classify(node: JsxLike): ErrorDisplayHit["reason"] | null {
  * `invisible`, or `opacity-0` with no hover/focus reveal (a dense row's
  * `opacity-0 group-hover:opacity-100` menu IS visible when it matters).
  */
+/** Hidden by class or by an inline `display: none`. */
+function isHiddenStyled(node: JsxLike): boolean {
+  if (isHiddenElement(attrText(node, "className") ?? "")) return true;
+  return /display\s*:\s*["'`]none["'`]/.test(attrText(node, "style") ?? "");
+}
+
 function isHiddenMenu(node: JsxLike): boolean {
   const cls = attrText(node, "className") ?? "";
-  if (isHiddenElement(cls)) return true;
+  if (isHiddenStyled(node)) return true;
   // Zero size: nothing to see or tap.
   if (/(?<![\w:-])size-0\b/.test(cls) || (/(?<![\w:-])w-0\b/.test(cls) && /(?<![\w:-])h-0\b/.test(cls))) return true;
   return /(?<![\w:-])opacity-0\b/.test(cls) && !/(?:hover|focus|focus-within|focus-visible):opacity-/.test(cls);
@@ -298,6 +409,7 @@ function isHiddenMenu(node: JsxLike): boolean {
 
 /** Hidden at every width: `hidden` / `sr-only` / `invisible` with no responsive reveal. */
 function isHiddenElement(cls: string): boolean {
+  if (/(?<![\w:-])scale-0\b/.test(cls) && !/(?:hover|focus|focus-within|group-hover):scale-/.test(cls)) return true;
   if (!/(?<![\w:-])(?:hidden|sr-only|invisible)\b/.test(cls)) return false;
   return !/(?:^|\s)[\w-]+:(?:block|inline|inline-block|inline-flex|flex|grid|visible|not-sr-only)\b/.test(cls);
 }
@@ -307,7 +419,15 @@ function containsCarrier(node: ts.Node): boolean {
   node.forEachChild(function visit(n) {
     if (found) return;
     // A menu inside a hidden element of the box is never seen.
-    if ((ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n)) && isHiddenElement(attrText(n, "className") ?? "")) return;
+    if ((ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n)) && isHiddenStyled(n)) return;
+    // `{false && <Menu/>}` never renders.
+    if (
+      ts.isBinaryExpression(n) &&
+      n.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken &&
+      n.left.kind === ts.SyntaxKind.FalseKeyword
+    ) {
+      return;
+    }
     if ((ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n)) && CARRIER_NAMES.has(tagName(n))) {
       // A hidden menu carries nothing.
       if (!isHiddenMenu(n)) {
@@ -353,6 +473,7 @@ function jsxAncestors(node: ts.Node): JsxLike[] {
 }
 
 export function findErrorDisplays(source: string, fileName = "file.tsx"): ErrorDisplayHit[] {
+  carryingHere = carryingResolver ? carryingResolver(source, fileName) : componentsThatCarry(source, fileName);
   const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const hits: ErrorDisplayHit[] = [];
   const counted = new Set<ts.Node>();
@@ -413,6 +534,17 @@ export function uncarriedErrorDisplays(source: string, fileName?: string): Error
  * any error branch renders when nothing failed — a copy-for-AI icon on a
  * healthy row. Every such menu is a placement defect (RC-B12 round 2).
  */
+function enclosingComponentName(node: ts.Node): string | null {
+  let cur: ts.Node | undefined = node.parent;
+  let name: string | null = null;
+  while (cur) {
+    if (ts.isFunctionDeclaration(cur) && cur.name) name = cur.name.text;
+    else if (ts.isVariableDeclaration(cur) && ts.isIdentifier(cur.name)) name = cur.name.text;
+    cur = cur.parent;
+  }
+  return name && /^[A-Z]/.test(name) ? name : null;
+}
+
 export function findOrphanMenus(source: string, fileName = "file.tsx"): number[] {
   const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const lines: number[] = [];
@@ -428,7 +560,20 @@ export function findOrphanMenus(source: string, fileName = "file.tsx"): number[]
             WRAPPER_NAMES.has(tagName(a)) ||
             isDestructiveAlert(a),
         );
-        if (!inDisplay && !inErrorBranch(n)) {
+        // A menu handed the error itself (`error={problem}`) reports that
+        // error; one inside a component that exists only to show a failure
+        // (`function ErrorState`, `RefusalPanel`) is never on a healthy screen.
+        const errorInit = (() => {
+          for (const prop of attributes(n).properties) {
+            if (ts.isJsxAttribute(prop) && prop.name.getText() === "error" && prop.initializer && ts.isJsxExpression(prop.initializer) && prop.initializer.expression) {
+              return prop.initializer.expression;
+            }
+          }
+          return null;
+        })();
+        const handedError = errorInit !== null && isErrorLeaf(errorInit, ERROR_NAME_NO_E);
+        const inFailureComponent = enclosingComponentName(n) !== null && /Error|Failure|Refus|Unavailable/.test(enclosingComponentName(n)!);
+        if (!inDisplay && !inErrorBranch(n) && !handedError && !inFailureComponent) {
           lines.push(sf.getLineAndCharacterOfPosition(n.getStart()).line + 1);
         }
       }

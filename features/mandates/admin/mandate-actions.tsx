@@ -34,6 +34,7 @@ import { useGuardedRebind } from "./useGuardedRebind";
 import { promoteMandateToSystem } from "./promotion";
 import type { MandateCodeTruth, MandateDefinitionRow } from "./service";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** A lineage relative, always rendered with a door. */
 export function LineageChip({
@@ -357,6 +358,7 @@ export function PromoteToSystemMandateButton({
               <TextWithDoors text={refusal.hint} />
             </p>
           ) : null}
+          <ErrorAlchemyMenu error={refusal.message} />
         </div>
       ) : null}
     </div>

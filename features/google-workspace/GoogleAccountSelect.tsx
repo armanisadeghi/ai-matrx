@@ -19,6 +19,12 @@ export interface GoogleAccountSelectProps {
   label?: string;
   disabled?: boolean;
   className?: string;
+  /**
+   * A reviewer must name the account before a provider read can begin. This is
+   * deliberately opt-in: the established workspace picker keeps its existing
+   * selected-account behaviour.
+   */
+  requireExplicitSelection?: boolean;
 }
 
 /**
@@ -33,24 +39,24 @@ export function GoogleAccountSelect({
   label = "Google account",
   disabled = false,
   className,
+  requireExplicitSelection = false,
 }: GoogleAccountSelectProps) {
   const selected =
     connections.find((connection) => connection.id === connectionId) ??
-    connections[0] ??
-    null;
-  if (!selected) return null;
+    (requireExplicitSelection ? null : (connections[0] ?? null));
+  if (!selected && !requireExplicitSelection) return null;
 
   return (
     <div className={cn("grid gap-1.5", className)}>
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      {connections.length === 1 ? (
+      {connections.length === 1 && selected ? (
         <div className="flex min-h-11 items-center gap-2 rounded-md border border-border bg-muted/20 px-3 text-sm text-foreground">
           <UserRound className="h-4 w-4 shrink-0 text-muted-foreground" />
           <span className="truncate">{googleConnectionLabel(selected)}</span>
         </div>
       ) : (
         <Select
-          value={selected.id}
+          value={selected?.id}
           onValueChange={onConnectionChange}
           disabled={disabled}
         >
@@ -58,7 +64,7 @@ export function GoogleAccountSelect({
             className="h-11"
             aria-label={`Choose ${label.toLocaleLowerCase()}`}
           >
-            <SelectValue />
+            <SelectValue placeholder={`Choose ${label.toLocaleLowerCase()}`} />
           </SelectTrigger>
           <SelectContent>
             {connections.map((connection) => (

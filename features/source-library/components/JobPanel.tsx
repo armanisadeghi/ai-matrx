@@ -82,6 +82,7 @@ import type {
     JobStatus,
     TranscriptLane,
 } from "../types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /* ──────────────────────────── the words ──────────────────────────── */
 
@@ -327,6 +328,7 @@ function JobItem({
                                 text={item.error}
                                 tone={item.status === "failed" ? "destructive" : "muted"}
                             />
+                            <ErrorAlchemyMenu error={item.error} operation="Process this item" />
                             {item.retryable && (
                                 <p className="mt-1 text-xs text-muted-foreground">
                                     This one can be requeued with Retry failed items.
@@ -513,6 +515,7 @@ export function JobPanel({
                                 "This job could not be read from the server, so nothing about it can be shown."
                             }
                         />
+                        <ErrorAlchemyMenu error={error} operation="Read this job" />
                     </div>
                     <Button variant="outline" size="sm" onClick={() => void reload()}>
                         <RotateCw className="mr-1.5 h-4 w-4" aria-hidden />
@@ -592,6 +595,7 @@ export function JobPanel({
                     {job.error && (
                         <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2">
                             <ServerSentence text={job.error} />
+                            <ErrorAlchemyMenu error={job.error} operation="Run this job" />
                         </div>
                     )}
 
@@ -633,6 +637,7 @@ export function JobPanel({
                         >
                             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
                             <ServerSentence text={problem} tone="muted" />
+                            <ErrorAlchemyMenu error={problem} operation="Read this job's items" />
                         </div>
                     ))}
 
@@ -641,6 +646,7 @@ export function JobPanel({
                     {error && (
                         <div className="flex flex-wrap items-center gap-2 rounded-md border border-warning/40 bg-warning/5 px-3 py-2">
                             <ServerSentence text={error} tone="muted" className="flex-1" />
+                            <ErrorAlchemyMenu error={error} operation="Read this job" />
                             <Button variant="outline" size="sm" onClick={() => void reload()}>
                                 <RotateCw className="mr-1.5 h-4 w-4" aria-hidden />
                                 Read it again
@@ -651,6 +657,7 @@ export function JobPanel({
                     {actionError && (
                         <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2">
                             <ServerSentence text={actionError} />
+                            <ErrorAlchemyMenu error={actionError} />
                         </div>
                     )}
 

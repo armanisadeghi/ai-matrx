@@ -39,6 +39,7 @@ import {
   type OrganizationState,
 } from "@/features/organizations/useOrganizationRequired";
 import { Button } from "@/components/ui/button";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
 
 // The recogniser's ONE home is `lib/organizations/organizationRequiredError`.
@@ -344,29 +345,21 @@ function OrganizationUnavailableNotice({
       role="status"
       data-testid="organization-unavailable-notice"
     >
-      <div
-        className={
-          compact
-            ? "space-y-2 p-3"
-            : "mx-auto flex max-w-md flex-col items-center gap-3 p-6 text-center"
+      {/* Through the ONE error primitive: this refusal is shown on every page
+          that needs an organization (73 of them), and each one must carry the
+          Alchemy Menu with the failed read (RC-B12 round 5). */}
+      <ErrorNotice
+        size={compact ? "compact" : "default"}
+        title={ORGANIZATION_UNAVAILABLE_TITLE}
+        message={ORGANIZATION_UNAVAILABLE_DESCRIPTION}
+        operation="Check which organization you are working in"
+        className={compact ? "m-3" : "mx-auto my-6 max-w-md"}
+        actions={
+          <Button size="sm" variant="outline" onClick={onClick}>
+            Try again
+          </Button>
         }
-      >
-        <h3 className="text-sm font-semibold text-foreground">
-          {ORGANIZATION_UNAVAILABLE_TITLE}
-        </h3>
-        <p
-          className={
-            compact
-              ? "text-xs text-muted-foreground"
-              : "text-sm text-muted-foreground"
-          }
-        >
-          {ORGANIZATION_UNAVAILABLE_DESCRIPTION}
-        </p>
-        <Button size="sm" variant="outline" onClick={onClick}>
-          Try again
-        </Button>
-      </div>
+      />
     </div>
   );
 }

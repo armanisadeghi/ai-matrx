@@ -15,6 +15,7 @@
 import { readAllRows } from "@ai-matrx/data/db";
 import type { AppDispatch } from "@/lib/redux/store";
 import { supabase } from "@/utils/supabase/client";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 import {
   fetchMandateCodeTruthReport,
@@ -108,6 +109,10 @@ async function readDefinitions(): Promise<Map<string, DefinitionFacts>> {
           .from("definition")
           .select("id,mandate_key,label,origin", { count: "exact" })
           .is("deleted_at", null)
+          // The admin management pages name SYSTEM mandates only (Arman,
+          // 2026-09-26): a finding's label and its Fix link never resolve to
+          // an organization's or a person's copy of the key.
+          .eq("organization_id", SYSTEM_ORGANIZATION_ID)
           .order("id", { ascending: true })
           .range(from, to),
       ).then((result) => ({
@@ -117,7 +122,7 @@ async function readDefinitions(): Promise<Map<string, DefinitionFacts>> {
       })),
     { label: "mandate.definition" },
   );
-  // Several org/personal rows can share a key; any "code" origin wins.
+  // One system row per key; any "code" origin wins.
   const out = new Map<string, DefinitionFacts>();
   for (const row of rows) {
     const prev = out.get(row.mandate_key);

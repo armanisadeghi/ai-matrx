@@ -1,10 +1,8 @@
 // features/rich-document/actions/handlers/app.ts
 //
-// App-level navigation actions — feedback dialog, announcements, user
-// preferences. Not tied to the content itself; just convenient places to
-// surface them from any RichDocument overflow menu.
+// Feedback on this content — the one "app" action a content menu carries.
 
-import { Bug, Megaphone, Settings } from "lucide-react";
+import { Bug } from "lucide-react";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { registerAction } from "../provider";
 
@@ -22,30 +20,6 @@ registerAction({
   },
 });
 
-registerAction({
-  id: "announcements",
-  label: "Announcements",
-  icon: Megaphone,
-  iconColor: "text-purple-500 dark:text-purple-400",
-  category: "app",
-  supportedSources: "*",
-  renderSlot: "overflow",
-  order: 1,
-  run: (ctx) => {
-    ctx.dispatch(openOverlay({ overlayId: "announcements" }));
-  },
-});
-
-registerAction({
-  id: "preferences",
-  label: "Preferences",
-  icon: Settings,
-  iconColor: "text-slate-500 dark:text-slate-400",
-  category: "app",
-  supportedSources: "*",
-  renderSlot: "overflow",
-  order: 2,
-  run: (ctx) => {
-    ctx.dispatch(openOverlay({ overlayId: "userPreferences", data: null }));
-  },
-});
+// Announcements and Preferences are app navigation, not actions on content
+// (they read no value here). They live in the user menu only (ALC-15, CONTRACT
+// A3; contentActionRegistry and this registry both dropped them).

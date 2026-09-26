@@ -68,6 +68,12 @@ export interface MandateRecordPageProps {
   canManageOrg?: boolean;
   /** Where Back goes when the tab did not come from a list. */
   listHref?: string;
+  /**
+   * Admin routes only. `system` (default) = the MANAGEMENT page, which opens
+   * system mandates only; `support` = Mandate support lookup, which opens an
+   * organization's or a person's mandate by id (Arman, 2026-09-26).
+   */
+  lane?: "system" | "support";
 }
 
 export function MandateRecordPage(props: MandateRecordPageProps) {
@@ -90,6 +96,7 @@ function MandateRecordPageInner({
   orgId = null,
   canManageOrg = false,
   listHref = MANDATE_LIST_PREVIEW_HREF,
+  lane = "system",
 }: MandateRecordPageProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -145,6 +152,7 @@ function MandateRecordPageInner({
             tabs={tabs}
             showAdminPanels={level === "system" ? undefined : false}
             readOnly={readOnly}
+            systemOnly={level === "system" && lane === "system"}
             activeTab={activeTab}
             onTabChange={onTabChange}
             listHref={listHref}

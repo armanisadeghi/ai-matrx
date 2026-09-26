@@ -242,6 +242,9 @@ export function UnconvertedCallsPage() {
     <EntityListPage
       config={CONFIG}
       defaultScope={{ kind: "system" }}
+      // An admin management page: the platform's own records, no scope tabs
+      // (Arman, 2026-09-26).
+      scopeTabs={false}
       clearsShellHeader={false}
       headerActions={
         <Link

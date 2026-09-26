@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The canonical link system this view studies. Legacy sets carry a different one. */
 const FC_SET_SYSTEM = "fc_set";
@@ -58,11 +59,14 @@ function Notice({
   title,
   body,
   debug,
+  menu,
 }: {
   icon: React.ReactNode;
   title: string;
   body: string;
   debug?: React.ReactNode;
+  /** The Alchemy Menu, when this notice shows a failure. */
+  menu?: React.ReactNode;
 }): React.ReactElement {
   return (
     <div className="flex flex-col">
@@ -70,6 +74,7 @@ function Notice({
         <div className="text-muted-foreground">{icon}</div>
         <p className="text-sm font-medium text-foreground">{title}</p>
         <p className="max-w-sm text-xs text-muted-foreground">{body}</p>
+        {menu}
       </div>
       {debug}
     </div>
@@ -199,6 +204,7 @@ export function CanvasFlashcardsView({
           icon={<Info className="h-5 w-5" />}
           title="Couldn't load this flashcard set"
           body={error}
+          menu={<ErrorAlchemyMenu error={error} operation="Load this flashcard set" />}
           debug={debugStrip}
         />
       </div>

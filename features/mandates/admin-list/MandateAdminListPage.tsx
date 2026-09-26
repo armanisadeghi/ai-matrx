@@ -4,14 +4,25 @@
 //
 // /administration/intelligence/mandates — the NEW admin mandate list, built
 // beside the old console (features/mandates/admin/MandatesConsole.tsx, left
-// untouched) on the canonical `EntityListPage`. One top row: the PLATFORM
-// scopes — System / Organizations / Users / All (the admin seat never acts as
-// itself: no Mine, no My Orgs, Arman 2026-09-26) — on the left; the table's own title row
-// carries search, saved views and the column picker. The whole query lives in
-// the URL, so Back restores scope, search, filters and sort.
+// untouched) on the canonical `EntityListPage`.
+//
+// TWO PAGES, ONE COMPONENT (Arman, 2026-09-26 — asked five times):
+//   lane "system"   /administration/intelligence/mandates — THE management
+//                   page: creating, editing, binding and updating the SYSTEM
+//                   mandates. No scope tabs, no owner column, no org or person
+//                   rows anywhere (the database door is system-only).
+//   lane "support"  /administration/intelligence/mandates/support — Mandate
+//                   support lookup: Organizations / Users / All with an Owner
+//                   column, for looking into a tenant's mandates during tech
+//                   support. Never linked as the main mandates page.
+// The admin seat never acts as itself on either (no Mine, no My Orgs). The
+// table's own title row carries search, saved views and the column picker. The
+// whole query lives in the URL, so Back restores scope, search, filters and sort.
 
 import { useEffect, useRef } from "react";
+import Link from "next/link";
 import { BrainCircuit } from "lucide-react";
+import { ADMIN_MANDATES_HOME } from "@/features/mandates/admin-routes";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import type { EntityBulkAction } from "@/lib/entity-list/selection";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -36,7 +47,8 @@ import type { WorkflowImpactVerdict } from "@/features/mandates/admin/workflow-i
 import { recordToast, toast } from "@/lib/toast";
 import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
-import { adminMandateListConfig } from "./listConfig";
+import { adminMandateListConfig, supportMandateListConfig } from "./listConfig";
+import type { MandateAdminLane } from "./rpc";
 import { MandateAdminPagesNav } from "./MandateAdminPagesNav";
 import {
   MandateAdminListActionsContext,
@@ -59,7 +71,12 @@ const SOURCE_LABEL: Record<string, string> = {
   sources: "Where each mandate is declared and called",
 };
 
-export function MandateAdminListPage() {
+export function MandateAdminListPage({
+  lane = "system",
+}: {
+  /** `system` = the management page; `support` = Mandate support lookup. */
+  lane?: MandateAdminLane;
+} = {}) {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
   const accessToken = useAppSelector(selectAccessToken);
@@ -193,7 +210,8 @@ export function MandateAdminListPage() {
   // only the server reports ride the organization header, and each of those
   // that cannot run says so in the notice below — the rows never wait for it.
   const ready = authReady && Boolean(accessToken);
-  const service = createMandateAdminService(dispatch);
+  const service = createMandateAdminService(dispatch, lane);
+  const support = lane === "support";
 
   if (!ready) {
     return (
@@ -215,9 +233,9 @@ export function MandateAdminListPage() {
     >
       <EntityListPage
         config={{
-          ...adminMandateListConfig,
+          ...(support ? supportMandateListConfig : adminMandateListConfig),
           service,
-          serviceKey: `${userId ?? ""}:${listState.version}`,
+          serviceKey: `${lane}:${userId ?? ""}:${listState.version}`,
           bulkActions,
           bulkSelection: {
             noun: "mandate",
@@ -228,11 +246,15 @@ export function MandateAdminListPage() {
               row.workflowVerdicts.length > 0,
           },
         }}
-        defaultScope={{ kind: "system" }}
+        // admin-support-only: /administration/intelligence/mandates/support
+        defaultScope={support ? { kind: "platform_all" } : { kind: "system" }}
+        // The management page has ONE corpus — the platform's own mandates —
+        // so it draws no scope tabs at all.
+        scopeTabs={support}
         clearsShellHeader={false}
         notice={
           <EntitySourceFailures
-            operation="Load the admin mandate list's columns"
+            operation={support ? "Load the mandate support lookup's columns" : "Load the admin mandate list's columns"}
             failures={Object.entries(listState.failures).map(([source, message]) => ({
               label: SOURCE_LABEL[source] ?? source,
               error: message,
@@ -240,8 +262,28 @@ export function MandateAdminListPage() {
             onRetry={retryMandateAdminFailures}
           />
         }
-        headerActions={<MandateAdminPagesNav />}
+        headerActions={support ? <MandateSupportLookupLabel /> : <MandateAdminPagesNav />}
       />
     </MandateAdminListActionsContext.Provider>
+  );
+}
+
+/**
+ * The support lookup names itself plainly: it is a tech-support tool over
+ * organizations' and people's mandates, not where mandates are managed.
+ */
+function MandateSupportLookupLabel() {
+  return (
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <span className="rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 font-medium text-amber-700 dark:text-amber-300">
+        Support tool
+      </span>
+      <span className="hidden sm:inline">
+        Organizations&apos; and people&apos;s mandates, for tech support.
+      </span>
+      <Link href={ADMIN_MANDATES_HOME} className="font-medium text-foreground hover:underline">
+        Manage system mandates
+      </Link>
+    </div>
   );
 }

@@ -17,13 +17,16 @@
 // code-scan cells (Declared in, Called from, Call sites, Language) are read
 // for the page's keys AFTER the paint (./store.ts `ensureMandateSourceFacts`).
 //
-// Scopes (admin list — THE ADMIN SEAT, Arman 2026-09-26: "No one acts as
-// themselves in admin"). The corpus is the whole platform; nothing is scoped
-// to the signed-in admin:
-//   system          homed in the platform's system organization
-//   platform_orgs   homed in any organization (narrowable to one)
-//   platform_users  homed in any person's personal organization (narrowable to one person)
-//   platform_all    everything
+// TWO LANES (Arman, 2026-09-26). Nothing is ever scoped to the signed-in admin.
+//   system   the MANAGEMENT page (/administration/intelligence/mandates): the
+//            platform's own mandates and nothing else — one corpus, no tabs,
+//            no owner column (public.mnd_admin_list).
+//   support  the SUPPORT lookup (/administration/intelligence/mandates/support):
+//            organizations' and people's mandates, for tech support
+//            (public.mnd_admin_support_list):
+//              platform_orgs   homed in any organization (narrowable to one)
+//              platform_users  homed in any person's personal organization (narrowable to one person)
+//              platform_all    everything
 
 import type { AppDispatch } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
@@ -46,6 +49,7 @@ import { fetchProvisions } from "@/features/mandates/provisions";
 import { ALL_FACT_SECTIONS, buildFacts, sectionsFor, type MandateAdminReports } from "./facts";
 import {
   callMandateAdminList,
+  type MandateAdminLane,
   type MandateAdminCountsAnswer,
   type MandateAdminFacetsAnswer,
   type MandateAdminPageAnswer,
@@ -63,27 +67,36 @@ import {
 } from "./store";
 import type { MandateAdminRow } from "./types";
 
-/** The admin list's scope kinds → the words `mnd_admin_list` answers. */
-const SERVER_SCOPE: Partial<Record<EntityListQuery["scope"]["kind"], string>> = {
-  system: "system",
-  platform_orgs: "orgs",
-  platform_users: "users",
-  platform_all: "all",
+/** Each lane's scope kinds → the words its database door answers. */
+const SERVER_SCOPE: Record<
+  MandateAdminLane,
+  Partial<Record<EntityListQuery["scope"]["kind"], string>>
+> = {
+  system: { system: "system" },
+  support: { platform_orgs: "orgs", platform_users: "users", platform_all: "all" },
 };
 
 /** The scope half of every call. */
-export function scopeArgs(query: Pick<EntityListQuery, "scope" | "search" | "filters">) {
+export function scopeArgs(
+  query: Pick<EntityListQuery, "scope" | "search" | "filters">,
+  lane: MandateAdminLane = "system",
+) {
   const scope = query.scope;
-  const p_scope = SERVER_SCOPE[scope.kind];
+  const p_scope = SERVER_SCOPE[lane][scope.kind];
   if (!p_scope) {
-    // A personal-seat scope never reaches the admin list (check:admin-no-personal-seat).
+    // The management page has no tenant view and the support lookup has no
+    // system view; a personal-seat scope reaches neither
+    // (check:admin-no-personal-seat).
     throw new Error(
-      `The admin mandate list has no "${scope.kind}" scope. Use System, Organizations, Users or All.`,
+      lane === "system"
+        ? `The admin mandate list manages system mandates only — "${scope.kind}" is not one of its views. Look it up on Mandate support lookup.`
+        : `Mandate support lookup has no "${scope.kind}" view. Use Organizations, Users or All.`,
     );
   }
   return {
     p_scope,
     p_org_id:
+      // admin-support-only: /administration/intelligence/mandates/support
       (scope.kind === "platform_orgs" || scope.kind === "platform_users") && scope.organizationId
         ? scope.organizationId
         : undefined,
@@ -261,14 +274,20 @@ function buildPageRows(
   return rows;
 }
 
-export function countsFromAnswer(answer: MandateAdminCountsAnswer): EntityScopeCounts {
+export function countsFromAnswer(
+  answer: MandateAdminCountsAnswer,
+  lane: MandateAdminLane = "support",
+): EntityScopeCounts {
+  // The management page has one corpus and no tabs: its only count is System.
+  if (lane === "system") {
+    return { byKind: { system: answer.system ?? 0 }, narrow: {} };
+  }
   const options = (list: MandateAdminCountsAnswer["orgs_narrow"] | undefined): ScopeNarrowOption[] =>
     (list ?? []).map((option) => ({ id: option.id, label: option.label, count: option.count }));
   const orgs = options(answer.orgs_narrow);
   const users = options(answer.users_narrow);
   return {
     byKind: {
-      system: answer.system,
       platform_orgs: answer.orgs,
       platform_users: answer.users,
       platform_all: answer.all,
@@ -286,6 +305,7 @@ export function countsFromAnswer(answer: MandateAdminCountsAnswer): EntityScopeC
 
 export function createMandateAdminService(
   dispatch: AppDispatch,
+  lane: MandateAdminLane = "system",
 ): EntityListService<MandateAdminRow> {
   const reportsNow = () => ensureMandateAdminReports(dispatch);
   return {
@@ -294,7 +314,7 @@ export function createMandateAdminService(
       const searching = Boolean(query.search.trim());
       const args = {
         p_mode: "page",
-        ...scopeArgs(query),
+        ...scopeArgs(query, lane),
         p_sort: sort.sort,
         p_dir: sort.direction,
         p_limit: sort.pageSize,
@@ -302,8 +322,8 @@ export function createMandateAdminService(
         p_facts: buildFacts(reports, sectionsFor(query, searching ? null : sort.sort)) as Json,
       };
       // ONE database call: the page answer carries its own rows (`console`).
-      const { answer, data } = await readDbOnce(JSON.stringify(args), async () => {
-        const page = await callMandateAdminList<MandateAdminPageAnswer>(args);
+      const { answer, data } = await readDbOnce(`${lane}:${JSON.stringify(args)}`, async () => {
+        const page = await callMandateAdminList<MandateAdminPageAnswer>(args, lane);
         if (page.rows.length === 0) return { answer: page, data: null };
         if (page.console) return { answer: page, data: consoleDataFromPage(page.console) };
         // A database older than the 2026-09-25 migration: read them, loudly.
@@ -326,25 +346,32 @@ export function createMandateAdminService(
     },
     fetchCounts: async (query) => {
       const reports = await reportsNow();
-      // Counts answer EVERY tab at once, whatever tab is active (the shell
-      // asks with its generic query), so the scope half is the whole platform.
+      // Counts answer EVERY tab of the lane at once, whatever tab is active
+      // (the shell asks with its generic query).
       const args = {
         p_mode: "counts",
-        ...scopeArgs({ ...query, scope: { kind: "platform_all" } }),
+        ...scopeArgs(
+          // admin-support-only: /administration/intelligence/mandates/support
+          { ...query, scope: lane === "system" ? { kind: "system" } : { kind: "platform_all" } },
+          lane,
+        ),
         p_facts: buildFacts(reports, sectionsFor(query)) as Json,
       };
-      const answer = await readDbOnce(JSON.stringify(args), () =>
-        callMandateAdminList<MandateAdminCountsAnswer>(args),
+      const answer = await readDbOnce(`${lane}:${JSON.stringify(args)}`, () =>
+        callMandateAdminList<MandateAdminCountsAnswer>(args, lane),
       );
-      return countsFromAnswer(answer);
+      return countsFromAnswer(answer, lane);
     },
     fetchFacets: async (query) => {
       const reports = await reportsNow();
-      const answer = await callMandateAdminList<MandateAdminFacetsAnswer>({
-        p_mode: "facets",
-        ...scopeArgs(query),
-        p_facts: buildFacts(reports, ALL_FACT_SECTIONS) as Json,
-      });
+      const answer = await callMandateAdminList<MandateAdminFacetsAnswer>(
+        {
+          p_mode: "facets",
+          ...scopeArgs(query, lane),
+          p_facts: buildFacts(reports, ALL_FACT_SECTIONS) as Json,
+        },
+        lane,
+      );
       return { byKind: answer };
     },
   };

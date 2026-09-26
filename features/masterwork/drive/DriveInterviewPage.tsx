@@ -77,6 +77,7 @@ import {
 } from "./driveSession";
 import { matchDriveVoiceCommand } from "./voiceCommands";
 import { useDriveSettings, type DriveSettingsValues } from "./useDriveSettings";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const SOURCE_FEATURE = "masterwork" as const;
 
@@ -190,6 +191,7 @@ export function DriveInterviewPage({
             <RotateCw className="h-8 w-8" />
             Try again
           </DriveBigButton>
+          <ErrorAlchemyMenu error={failure.reason} operation="Read your interview settings" />
         </DriveMessage>
       </DriveShell>
     );
@@ -202,7 +204,9 @@ export function DriveInterviewPage({
           headline="No interviewer is ready"
           body={`Nobody is bound to conduct a driving interview yet, so there is no one to talk to. An administrator binds an agent to "${interviewerKey}" and this page works.`}
           detail={interviewer.error ?? undefined}
-        />
+        >
+          <ErrorAlchemyMenu error={interviewer.error ?? undefined} operation="Find the driving interviewer" />
+        </DriveMessage>
       </DriveShell>
     );
   }
@@ -214,7 +218,9 @@ export function DriveInterviewPage({
             headline="The voice layer is unavailable"
             body="This page can only work out loud, and the voice layer has no Communicator bound — so there is nothing honest to offer here."
             detail={communicator.error ?? undefined}
-          />
+          >
+            <ErrorAlchemyMenu error={communicator.error ?? undefined} operation="Find the voice layer" />
+          </DriveMessage>
         </DriveShell>
       );
     }

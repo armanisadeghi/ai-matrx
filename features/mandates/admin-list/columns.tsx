@@ -591,19 +591,6 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
       ),
     { defaultHidden: true },
   ),
-  facetColumn(
-    "homeLabel",
-    "Owner",
-    170,
-    (row) => (
-      <span className="flex min-w-0 items-center gap-1.5">
-        <span className="shrink-0 rounded bg-muted px-1 text-[10px] font-medium uppercase text-muted-foreground">
-          {row.ownerLevel === "system" ? "System" : row.ownerLevel === "user" ? "User" : "Org"}
-        </span>
-        {row.ownerLevel === "system" ? null : <TextCell value={row.homeLabel} />}
-      </span>
-    ),
-  ),
   {
     id: "goal",
     label: "Goal",
@@ -630,4 +617,30 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
       cell: (row) => timeCell(row.createdAt),
     },
   },
+];
+
+/**
+ * WHO OWNS IT — the support lookup's column only. The management list shows
+ * the platform's own mandates, so every row there has the same owner and the
+ * column (and its filter) does not exist on it (Arman, 2026-09-26).
+ */
+export const MANDATE_OWNER_COLUMN: Spec = facetColumn(
+  "homeLabel",
+  "Owner",
+  170,
+  (row) => (
+    <span className="flex min-w-0 items-center gap-1.5">
+      <span className="shrink-0 rounded bg-muted px-1 text-[10px] font-medium uppercase text-muted-foreground">
+        {row.ownerLevel === "system" ? "System" : row.ownerLevel === "user" ? "User" : "Org"}
+      </span>
+      {row.ownerLevel === "system" ? null : <TextCell value={row.homeLabel} />}
+    </span>
+  ),
+);
+
+/** Mandate support lookup: the management columns with the Owner column second. */
+export const SUPPORT_MANDATE_COLUMNS: Spec[] = [
+  ADMIN_MANDATE_COLUMNS[0],
+  MANDATE_OWNER_COLUMN,
+  ...ADMIN_MANDATE_COLUMNS.slice(1),
 ];

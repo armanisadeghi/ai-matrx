@@ -426,6 +426,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Agent support lookup",
+        description:
+          "Support tool: look into an organization's or a person's agents while doing tech support. The System Agents pages manage the platform's own agents only.",
+        iconName: "LifeBuoy",
+        link: "/administration/agents/support",
+        isNew: true,
+      },
+      {
         title: "Agents Shortcuts",
         description:
           "Browse and edit global agent shortcuts, enabled contexts, and agent bindings.",
@@ -898,9 +906,17 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Mandates",
         description:
-          "Every mandate — the job, what holds it, who customized it — with its dashboard, health, unconverted AI calls and the classic console reached from inside the page.",
+          "The system mandates — create, edit, bind and update them — with their dashboard, health, unconverted AI calls and the classic console reached from inside the page.",
         iconName: "Plug",
         link: "/administration/intelligence/mandates",
+        isNew: true,
+      },
+      {
+        title: "Mandate support lookup",
+        description:
+          "Support tool: look into an organization's or a person's mandates while doing tech support. The Mandates page manages system mandates only.",
+        iconName: "LifeBuoy",
+        link: "/administration/intelligence/mandates/support",
         isNew: true,
       },
       {

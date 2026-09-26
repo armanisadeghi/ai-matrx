@@ -200,6 +200,7 @@ export function ServedRunForm({
                 : `The server needs ${serverGaps.length} ${
                     serverGaps.length === 1 ? "input" : "inputs"
                   } before this run can start:`}
+              <ErrorAlchemyMenu operation="Start this run" />
             </p>
             {serverGaps.length === 0 && (
               <p className="mt-1 flex items-start gap-1.5 text-[11px] text-amber-800/80 dark:text-amber-200/80">

@@ -2465,6 +2465,7 @@ function BindingDraft({
                                   text={problem}
                                   defaultToken="agent"
                                 />
+                                <ErrorAlchemyMenu error={problem} operation="Check this binding" />
                               </FieldHelp>
                             </span>
                           ),
@@ -2510,7 +2511,10 @@ function BindingDraft({
                         <PropertyRow
                           label="Mandate Holder defaults"
                           value={
-                            <StatusToken status="error" label={settingsError} />
+                            <span className="inline-flex items-center gap-1">
+                              <StatusToken status="error" label={settingsError} />
+                              <ErrorAlchemyMenu error={settingsError} operation="Read the Mandate Holder defaults" />
+                            </span>
                           }
                         />
                         <Button
@@ -2636,6 +2640,7 @@ function BindingDraft({
                   </Button>
                 ) : null}
               </div>
+              <ErrorAlchemyMenu error={saveError.text} operation="Save this binding" />
             </div>
           ) : null}
 
@@ -2657,6 +2662,7 @@ function BindingDraft({
                 <span className="min-w-0">
                   <span className="font-medium">Save unavailable: </span>
                   <TextWithDoors text={saveRefusal} defaultToken="agent" />
+                  <ErrorAlchemyMenu error={saveRefusal} operation="Save this binding" />
                 </span>
               </p>
             ) : null}

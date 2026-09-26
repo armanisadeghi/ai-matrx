@@ -25853,8 +25853,13 @@ export type Database = {
         Returns: {
           attachments: Json
           chunk_count: number
+          current_chunk_count: number
+          current_document_id: string
+          current_entity_count: number
           entity_count: number
+          indexing: boolean
           processed_document_id: string
+          stale_chunk_count: number
         }[]
       }
     }
@@ -56078,6 +56083,10 @@ export type Database = {
       }
     }
     Functions: {
+      _agent_open_to_every_member: {
+        Args: { p_agent_id: string; p_organization_id: string }
+        Returns: boolean
+      }
       _api_key_base62: { Args: { p_bytes: string }; Returns: string }
       _apply_rls_unchecked: {
         Args: {
@@ -60119,6 +60128,22 @@ export type Database = {
         Returns: boolean
       }
       _admin_list_pretty: { Args: { p_segment: string }; Returns: string }
+      _admin_list_read: {
+        Args: {
+          p_dir: string
+          p_facts: Json
+          p_filters: Json
+          p_lane: string
+          p_limit: number
+          p_mode: string
+          p_offset: number
+          p_org_id: string
+          p_scope: string
+          p_search: string
+          p_sort: string
+        }
+        Returns: Json
+      }
       _admin_list_rows: {
         Args: { p_facts: Json; p_q: string }
         Returns: {
@@ -83235,6 +83260,21 @@ export type Database = {
         Returns: string
       }
       mnd_admin_list: {
+        Args: {
+          p_dir?: string
+          p_facts?: Json
+          p_filters?: Json
+          p_limit?: number
+          p_mode?: string
+          p_offset?: number
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+          p_sort?: string
+        }
+        Returns: Json
+      }
+      mnd_admin_support_list: {
         Args: {
           p_dir?: string
           p_facts?: Json

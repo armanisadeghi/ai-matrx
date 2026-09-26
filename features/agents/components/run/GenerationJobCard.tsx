@@ -93,7 +93,10 @@ export function describeEstimate(estimate: VideoJobEstimate): string {
   if (estimate.seconds === null) {
     return "Cost shows when the video lands (duration set by the model)";
   }
-  return "Cost shows when the video lands (no catalog price for this model)";
+  // The per-second price was not readable from here (ai.offering is
+  // admin-only under RLS) — say when the cost arrives, never claim the model
+  // has no price.
+  return "Cost shows when the video lands";
 }
 
 export function GenerationJobCard({
@@ -151,7 +154,10 @@ export function GenerationJobCard({
       aria-live="polite"
       data-testid="generation-job-card"
       className={cn(
-        "w-full max-w-md rounded-lg border border-border bg-card p-3 text-sm",
+        // A definite width: the card often sits in a shrink-to-fit column,
+        // where w-full resolves against its own (truncating) content and
+        // collapses to one character.
+        "w-[min(28rem,calc(100vw-2rem))] rounded-lg border border-border bg-card p-3 text-sm",
         className,
       )}
     >

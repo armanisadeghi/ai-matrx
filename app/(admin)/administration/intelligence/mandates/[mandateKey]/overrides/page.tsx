@@ -12,5 +12,5 @@ export default async function IntelligenceMandateOverridesRoute({
 }) {
   // The App Router already decodes dynamic segment params.
   const { mandateKey } = await params;
-  return <OverridesPreviewPage mandateKey={mandateKey} />;
+  return <OverridesPreviewPage mandateKey={mandateKey} systemOnly />;
 }

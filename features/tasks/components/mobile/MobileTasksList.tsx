@@ -9,7 +9,13 @@ import {
   X,
   Loader2,
 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useDispatchThunk } from "@/lib/redux/hooks";
+import {
+  selectFullContextError,
+  selectFullContextStatus,
+} from "@/features/agent-context/redux/hierarchySlice";
+import { fetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import {
   selectFilteredTasks,
   selectProjects,
@@ -62,6 +68,12 @@ export default function MobileTasksList({
   onTaskSelect,
 }: MobileTasksListProps) {
   const dispatch = useAppDispatch();
+  const dispatchThunk = useDispatchThunk();
+  // The task list is a projection of the one hierarchy read. Until it
+  // succeeds an empty list means "unknown" — a failed read must say so, never
+  // "No tasks yet" (the desktop workbench already did; RC-B12 round 5).
+  const hierarchyStatus = useAppSelector(selectFullContextStatus);
+  const hierarchyError = useAppSelector(selectFullContextError);
   const filteredTasks = useAppSelector(selectFilteredTasks);
   const projects = useAppSelector(selectProjects);
   const newTaskTitle = useAppSelector(selectNewTaskTitle);
@@ -293,6 +305,31 @@ export default function MobileTasksList({
                   Select a project from the menu to get started
                 </p>
               </div>
+            </div>
+          ) : filteredTasks.length === 0 && hierarchyStatus === "error" ? (
+            <div className="p-4">
+              <ErrorNotice
+                title="Your tasks couldn't load"
+                error={hierarchyError}
+                message={hierarchyError ?? "The task list could not be read."}
+                operation="Load your tasks"
+                actions={
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void dispatchThunk(fetchFullContext())}
+                  >
+                    Retry
+                  </Button>
+                }
+              />
+            </div>
+          ) : filteredTasks.length === 0 && hierarchyStatus !== "success" ? (
+            <div
+              className="flex items-center justify-center h-full p-8"
+              aria-busy="true"
+            >
+              <p className="text-muted-foreground text-sm">Loading your tasks…</p>
             </div>
           ) : filteredTasks.length === 0 ? (
             <div className="flex items-center justify-center h-full p-8">

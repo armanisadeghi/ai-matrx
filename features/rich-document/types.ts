@@ -149,8 +149,7 @@ export type RichDocumentActionId =
   | "debug-stream"
   // App-level
   | "submit-feedback"
-  | "announcements"
-  | "preferences"
+
   // Stubs
   | "convert-to-broker"
   | "add-to-docs"

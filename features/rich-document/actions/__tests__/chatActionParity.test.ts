@@ -84,8 +84,6 @@ const FORMER_CHAT_ACTIONS: Record<
   "srv-restore-compaction": { id: "server-api-admin-restore-compaction", role: "assistant" },
   // App
   "submit-feedback": { id: "submit-feedback", role: "assistant" },
-  announcements: { id: "announcements", role: "assistant" },
-  "user-preferences": { id: "preferences", role: "assistant" },
 };
 
 function flatten(items: MenuItem[]): MenuItem[] {

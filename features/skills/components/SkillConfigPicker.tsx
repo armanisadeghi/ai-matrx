@@ -1,5 +1,6 @@
 "use client";
 
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import * as React from "react";
 import {
   Check,
@@ -319,7 +320,13 @@ export function SkillConfigPicker({
             {loading && skills.length === 0 ? (
               <EmptyCatalogue message="Loading skills…" />
             ) : error ? (
-              <EmptyCatalogue message={`Could not load skills: ${error}`} />
+              <ErrorNotice
+                size="compact"
+                className="m-4"
+                title="Could not load skills"
+                error={error}
+                operation="List the skills you can assign"
+              />
             ) : visibleSkills.length === 0 ? (
               <EmptyCatalogue message="No skills match these filters." />
             ) : (

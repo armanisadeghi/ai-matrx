@@ -9,6 +9,7 @@ import { Check, Loader2, Plus, RotateCcw, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@ai-matrx/design-system";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** 14px square check glyph — fixed footprint in both states. */
 export function CheckGlyph({ on }: { on: boolean }) {
   return (
@@ -237,7 +238,7 @@ export function ErrorRow({
         <RotateCcw className="h-3 w-3" />
         Retry
       </button>
-    </div>
+    <ErrorAlchemyMenu /></div>
   );
 }
 

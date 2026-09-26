@@ -7,6 +7,13 @@
 // mandate's page, a row click opens the quick look (MandatePeek), and the
 // row menu carries Quick look / Open / new tab / copy. The service is built
 // by the page (it needs the viewer and dispatch), so it is left empty here.
+//
+// TWO CONFIGS, ONE LIST (Arman, 2026-09-26):
+//   adminMandateListConfig    the MANAGEMENT page — system mandates only: one
+//                             scope, no tabs, no Owner column; rows open by key.
+//   supportMandateListConfig  the SUPPORT lookup — Organizations / Users / All
+//                             with the Owner column; rows open by id (a tenant
+//                             key can repeat across organizations).
 
 import { mandateStatusLabel } from "@/features/mandates/status/mandate-status";
 import { useState } from "react";
@@ -22,9 +29,15 @@ import type {
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
 import { EMPTY_FACETS, EMPTY_SCOPE_COUNTS } from "@/lib/entity-list/types";
-import { ADMIN_LIST_SCOPES } from "@/lib/list-scope/types";
-import { ADMIN_MANDATES_HOME, adminMandateRecordHref as adminMandateHref } from "@/features/mandates/admin-routes";
-import { ADMIN_MANDATE_COLUMNS } from "./columns";
+import { ADMIN_SUPPORT_LIST_SCOPES } from "@/lib/list-scope/types"; // admin-support-only: /administration/intelligence/mandates/support
+import {
+  ADMIN_MANDATES_HOME,
+  ADMIN_MANDATES_SUPPORT,
+  adminMandateRecordHref,
+  adminMandateSupportRecordHref,
+} from "@/features/mandates/admin-routes";
+import { ADMIN_MANDATE_COLUMNS, SUPPORT_MANDATE_COLUMNS } from "./columns";
+import type { MandateAdminLane } from "./rpc";
 import { MandatePeek } from "./MandatePeek";
 import type { MandateAdminRow } from "./types";
 
@@ -61,13 +74,22 @@ async function removeMandate(row: MandateAdminRow): Promise<void> {
   }
 }
 
-function useMandateAdminRowActions(
-  list: EntityListController<MandateAdminRow>,
-): EntityRowActionsResult<MandateAdminRow> {
+/** Where a row opens: management by key, support by id. */
+export function mandateAdminRowHref(lane: MandateAdminLane, row: MandateAdminRow): string {
+  return lane === "system"
+    ? adminMandateRecordHref(row.mandateKey)
+    : adminMandateSupportRecordHref(row.id);
+}
+
+const rowActionsFor = (lane: MandateAdminLane) =>
+  function useMandateAdminRowActions(
+    list: EntityListController<MandateAdminRow>,
+  ): EntityRowActionsResult<MandateAdminRow> {
   const [peekId, setPeekId] = useState<string | null>(null);
+  const hrefFor = (row: MandateAdminRow) => mandateAdminRowHref(lane, row);
 
   const menuFor = (row: MandateAdminRow) => (): ItemMenuConfig => {
-    const href = adminMandateHref(row.mandateKey);
+    const href = hrefFor(row);
     return {
       sections: [
         {
@@ -111,18 +133,27 @@ function useMandateAdminRowActions(
   return {
     actions: { menuFor, onOpenRow: (row) => setPeekId(row.id) },
     modals: peekId ? (
-      <MandatePeek rowId={peekId} rows={list.rows} onClose={() => setPeekId(null)} />
+      <MandatePeek
+        rowId={peekId}
+        rows={list.rows}
+        onClose={() => setPeekId(null)}
+        hrefFor={hrefFor}
+      />
     ) : null,
   };
-}
+  };
+
+const managementRowActions = rowActionsFor("system");
+const supportRowActions = rowActionsFor("support");
 
 export const adminMandateListConfig: EntityListConfig<MandateAdminRow> = {
   surfaceKey: "admin-mandates-list-preview",
   entityLabel: { singular: "mandate", plural: "mandates" },
   sourceFeature: "agents-other",
   getRowEntity: (row) => ({ type: "mandate", id: row.id, title: row.name }),
-  // THE ADMIN SEAT (Arman, 2026-09-26): platform scopes only — never Mine / My Orgs.
-  scopes: ADMIN_LIST_SCOPES,
+  // THE MANAGEMENT PAGE (Arman, 2026-09-26): the platform's own mandates and
+  // nothing else — one scope, and the page renders no scope tabs for it.
+  scopes: ["system"],
   service: {
     fetchPage: async () => ({ rows: [], total: 0 }),
     fetchCounts: async () => EMPTY_SCOPE_COUNTS,
@@ -133,12 +164,12 @@ export const adminMandateListConfig: EntityListConfig<MandateAdminRow> = {
   prefsDefaults: { sort: "name", direction: "asc", pageSize: 50 },
   getRowId: (row) => row.id,
   getRowName: (row) => row.name,
-  door: { column: "name", hrefFor: (row) => adminMandateHref(row.mandateKey) },
+  door: { column: "name", hrefFor: (row) => mandateAdminRowHref("system", row) },
   urlState: true,
   supportsArchived: false,
   tableToolbar: { tableId: "admin-mandates-list-preview" },
   searchPlaceholder: "Search mandates, keys, agents…",
-  useRowActions: useMandateAdminRowActions,
+  useRowActions: managementRowActions,
   facetSections: [
     {
       // THE STATUS facet — the same values the Status column filters by.
@@ -163,5 +194,29 @@ export const adminMandateListConfig: EntityListConfig<MandateAdminRow> = {
   emptyState: {
     title: "No mandates here",
     description: "Nothing in this scope.",
+  },
+};
+
+/**
+ * MANDATE SUPPORT LOOKUP — the same list over organizations' and people's
+ * mandates, for tech support. Never the management page (Arman, 2026-09-26).
+ */
+export const supportMandateListConfig: EntityListConfig<MandateAdminRow> = {
+  ...adminMandateListConfig,
+  surfaceKey: "admin-mandates-support-lookup",
+  scopes: ADMIN_SUPPORT_LIST_SCOPES, // admin-support-only: /administration/intelligence/mandates/support
+  columns: SUPPORT_MANDATE_COLUMNS,
+  door: { column: "name", hrefFor: (row) => mandateAdminRowHref("support", row) },
+  tableToolbar: { tableId: "admin-mandates-support-lookup" },
+  searchPlaceholder: "Search organizations' and people's mandates…",
+  useRowActions: supportRowActions,
+  copy: {
+    ...adminMandateListConfig.copy!,
+    listLabel: "Mandates (support lookup)",
+    location: ADMIN_MANDATES_SUPPORT,
+  },
+  emptyState: {
+    title: "No mandates here",
+    description: "No organization or person in this view owns a mandate that matches.",
   },
 };

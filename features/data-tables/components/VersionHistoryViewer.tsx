@@ -55,6 +55,7 @@ import {
 import { isServiceFailure } from "../types";
 import { useRowVersions } from "../hooks/useRowVersions";
 import type { RowVersion } from "../types";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 type Props = {
   rowId: string | null | undefined;
@@ -241,11 +242,11 @@ export function VersionHistoryViewer({
 
   if (error) {
     return (
-      <EmptyState
-        icon={<AlertCircle className="size-4 text-destructive" />}
-        title="Could not load history"
-        description={error}
+      <ErrorNotice
         className={className}
+        title="Could not load history"
+        error={error}
+        operation="Load this version history"
       />
     );
   }

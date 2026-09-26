@@ -98,11 +98,14 @@ export function MandatePeek({
   rowId,
   rows,
   onClose,
+  hrefFor = (row) => adminMandateHref(row.mandateKey),
 }: {
   rowId: string;
   /** The rows on screen, for ← → navigation. */
   rows: MandateAdminRow[];
   onClose: () => void;
+  /** Where Open goes — the lane's record page (management by key, support by id). */
+  hrefFor?: (row: MandateAdminRow) => string;
 }) {
   const [currentId, setCurrentId] = useState(rowId);
   useEffect(() => setCurrentId(rowId), [rowId]);
@@ -133,7 +136,7 @@ export function MandatePeek({
   }, [hasNext, hasPrev, index, rows]);
 
   if (!row) return null;
-  const href = adminMandateHref(row.mandateKey);
+  const href = hrefFor(row);
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>

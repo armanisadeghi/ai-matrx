@@ -2404,6 +2404,6 @@ function ErrorState({
           Try again
         </Button>
       </div>
-    </div>
+    <ErrorAlchemyMenu /></div>
   );
 }

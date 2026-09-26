@@ -183,7 +183,7 @@ export const MENU_STRUCTURE: MenuSection[] = [
   {
     submenu: "App",
     icon: Settings,
-    actionIds: ["submit-feedback", "announcements", "preferences"],
+    actionIds: ["submit-feedback"],
   },
 ];
 

@@ -31,6 +31,7 @@ import {
 } from "../document-service";
 import { isServiceFailure, type DocumentSnapshot } from "../types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 type Props = {
   documentId: string | null | undefined;
@@ -137,10 +138,11 @@ export function DocumentHistoryViewer({ documentId, editable = true }: Props) {
 
   if (error) {
     return (
-      <EmptyState
-        icon={<History className="size-4 text-destructive" />}
+      <ErrorNotice
+        className="m-4"
         title="Could not load history"
-        description={error}
+        error={error}
+        operation="Load this history"
       />
     );
   }

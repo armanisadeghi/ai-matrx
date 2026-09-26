@@ -35,7 +35,9 @@ describe("admin navigation registry", () => {
   // Arman, 2026-09-25: Mandates are a Feature of the Intelligence domain and
   // never under Agents; one menu entry; the owner's original pages keep working
   // (declared, reachable from inside the new list) but are never a menu row.
-  it("puts Mandates under Intelligence as ONE menu entry", () => {
+  // Arman, 2026-09-26: the Mandates page manages SYSTEM mandates only; the
+  // tech-support lookup over tenants' mandates is its own, separate entry.
+  it("puts Mandates under Intelligence: one management entry, one support entry", () => {
     const menuLinks = adminMenuDomains.flatMap((domain) =>
       domain.sections.flatMap((section) =>
         section.destinations.map((item) => ({ domain: domain.slug, link: item.link })),
@@ -44,7 +46,22 @@ describe("admin navigation registry", () => {
     const mandateRows = menuLinks.filter(({ link }) => /mandates/.test(link));
     expect(mandateRows).toEqual([
       { domain: "intelligence", link: "/administration/intelligence/mandates" },
+      { domain: "intelligence", link: "/administration/intelligence/mandates/support" },
     ]);
+  });
+
+  it("highlights the support lookup — never the management entry — on its pages", () => {
+    for (const path of [
+      "/administration/intelligence/mandates/support",
+      "/administration/intelligence/mandates/support/2f0c7d3e-0000-4000-8000-000000000000",
+    ]) {
+      expect(findAdminNavigationLocation(path)?.destination.link).toBe(
+        "/administration/intelligence/mandates/support",
+      );
+    }
+    expect(findAdminNavigationLocation("/administration/agents/support")?.destination.link).toBe(
+      "/administration/agents/support",
+    );
   });
 
   it("keeps every original mandate page declared and highlighting the new home", () => {

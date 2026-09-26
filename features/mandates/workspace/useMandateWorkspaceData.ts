@@ -27,9 +27,11 @@ import {
   loadFailedFailure,
   noSuchMandateFailure,
   notAnAddressFailure,
+  notASystemMandateFailure,
   readMandateAddress,
   type MandateLoadFailure,
 } from "../mandate-address";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import type { Database } from "@/types/database.types";
 import { fetchProvision, type ProvisionOffer } from "../provisions";
 import {
@@ -143,6 +145,15 @@ export async function requireMandateWorkspaceUser(
 }
 
 /** A well-formed address nothing answers to — NOT a broken read. */
+class NotASystemMandate extends Error {
+  readonly mandateId: string;
+  constructor(mandateId: string) {
+    super("This mandate belongs to an organization or a person, not the platform.");
+    this.name = "NotASystemMandate";
+    this.mandateId = mandateId;
+  }
+}
+
 class MandateNotFound extends Error {
   readonly address: string;
   constructor(address: string) {
@@ -158,7 +169,16 @@ function message(err: unknown): string {
 
 export function useMandateWorkspaceData(
   mandateKeyOrId: string,
+  options: {
+    /**
+     * The admin MANAGEMENT page: a key names the SYSTEM mandate (a tenant copy
+     * can share the key), and an id that names an organization's or a person's
+     * mandate is refused with the support lookup named (Arman, 2026-09-26).
+     */
+    systemOnly?: boolean;
+  } = {},
 ): UseMandateWorkspaceData {
+  const systemOnly = options.systemOnly === true;
   const [data, setData] = useState<MandateWorkspaceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [failure, setFailure] = useState<MandateLoadFailure | null>(null);
@@ -199,10 +219,18 @@ export function useMandateWorkspaceData(
         mandateKeyOrId,
       )
         ? await mandateQuery.eq("id", mandateKeyOrId).limit(1)
-        : await mandateQuery.eq("mandate_key", mandateKeyOrId).limit(1);
+        : systemOnly
+          ? await mandateQuery
+              .eq("mandate_key", mandateKeyOrId)
+              .eq("organization_id", SYSTEM_ORGANIZATION_ID)
+              .limit(1)
+          : await mandateQuery.eq("mandate_key", mandateKeyOrId).limit(1);
       if (mandateError) throw operationFailed("open this mandate", mandateError);
       const mandate = mandateRows?.[0];
       if (!mandate) throw new MandateNotFound(mandateKeyOrId);
+      if (systemOnly && mandate.organization_id !== SYSTEM_ORGANIZATION_ID) {
+        throw new NotASystemMandate(mandate.id);
+      }
 
       const wave1 = parseMandateWave1(mandate);
 
@@ -365,7 +393,9 @@ export function useMandateWorkspaceData(
         setFailure(
           err instanceof MandateNotFound
             ? noSuchMandateFailure(err.address)
-            : loadFailedFailure(message(err)),
+            : err instanceof NotASystemMandate
+              ? notASystemMandateFailure(err.mandateId)
+              : loadFailedFailure(message(err)),
         );
       })
       .finally(() => {
@@ -375,7 +405,7 @@ export function useMandateWorkspaceData(
     return () => {
       cancelled = true;
     };
-  }, [mandateKeyOrId, generation]);
+  }, [mandateKeyOrId, generation, systemOnly]);
 
   // The parsed binding halves, memo'd once for every consumer section.
   const parsed = useMemo(() => {

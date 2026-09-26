@@ -52,6 +52,8 @@ export function readMandateAddress(segment: string): MandateAddressKind {
 export type MandateLoadFailureKind =
   | "not-an-address"
   | "no-such-mandate"
+  /** The management page was asked for an organization's or a person's mandate. */
+  | "not-a-system-mandate"
   | "load-failed";
 
 export interface MandateLoadFailure {
@@ -80,6 +82,21 @@ export function noSuchMandateFailure(segment: string): MandateLoadFailure {
     kind: "no-such-mandate",
     message: `No mandate is registered under “${segment}”. Nothing on the platform answers to it — it was either removed or never created. Open one from the mandates list.`,
     retryable: false,
+  };
+}
+
+/**
+ * The admin MANAGEMENT page manages system mandates only (Arman, 2026-09-26):
+ * an organization's or a person's mandate is opened from Mandate support
+ * lookup, never here. `id` is that mandate's row id, for the support door.
+ */
+export function notASystemMandateFailure(id: string): MandateLoadFailure & { mandateId: string } {
+  return {
+    kind: "not-a-system-mandate",
+    message:
+      "This mandate belongs to an organization or a person, not the platform. The admin mandate pages manage system mandates only — open it from Mandate support lookup.",
+    retryable: false,
+    mandateId: id,
   };
 }
 

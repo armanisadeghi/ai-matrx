@@ -50,6 +50,7 @@ import {
   bulkDecideWorkflowSteps,
   type BulkDecisionOutcome,
 } from "../shared/workflowApi";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface BulkApproveSelection {
   /** Rows the approver picked that the server will accept. */
@@ -333,6 +334,7 @@ function BulkOutcomes({
                 <span className="font-medium">{nameFor(o.step_id)}</span>
                 {/* The reason, not a count. */}
                 <span className="mt-0.5 block">{o.detail ?? o.reason ?? "The server refused this one and did not say why."}</span>
+                <ErrorAlchemyMenu error={o.detail ?? o.reason ?? undefined} operation="Approve this timesheet step" />
               </li>
             ))}
           </ul>

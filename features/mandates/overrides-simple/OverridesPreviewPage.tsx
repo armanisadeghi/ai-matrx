@@ -18,9 +18,16 @@ import {
 import { MandateOverridesSimple } from "./MandateOverridesSimple";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
-export function OverridesPreviewPage({ mandateKey }: { mandateKey: string }) {
+export function OverridesPreviewPage({
+  mandateKey,
+  systemOnly = false,
+}: {
+  mandateKey: string;
+  /** The Intelligence management route: system mandates only (Arman, 2026-09-26). */
+  systemOnly?: boolean;
+}) {
   const { data, loading, error, failure, refresh } =
-    useMandateWorkspaceData(mandateKey);
+    useMandateWorkspaceData(mandateKey, { systemOnly });
   const resolvedKey = data ? data.mandate.mandate_key : mandateKey;
   const name = useMandateDisplayName(resolvedKey, data?.mandate.label);
   // The new pages this one sits beside — the list preview and the record

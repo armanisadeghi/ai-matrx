@@ -34,11 +34,14 @@ const visibleTask = {
 let mockFilteredTasks: TaskWithProject[] = [visibleTask];
 let mockSearchQuery = "visible";
 let mockCopyProps: CopyButtonsProps | undefined;
+let mockHierarchyStatus = "success";
+let mockHierarchyError: string | null = null;
 let mockContextMenuProps:
   { tasks: TaskWithProject[]; searchQuery: string } | undefined;
 
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
+  useDispatchThunk: () => jest.fn(),
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
 }));
 
@@ -136,8 +139,24 @@ jest.mock("@/features/tasks/components/TasksListContextMenu", () => ({
   },
 }));
 jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn() } }));
+jest.mock("@/features/agent-context/redux/hierarchySlice", () => ({
+  selectFullContextStatus: () => mockHierarchyStatus,
+  selectFullContextError: () => mockHierarchyError,
+}));
+jest.mock("@/features/agent-context/redux/hierarchyThunks", () => ({
+  fetchFullContext: jest.fn(),
+}));
+jest.mock("@/components/errors/ErrorNotice", () => ({
+  ErrorNotice: ({ title, message, error }: { title?: string; message?: string; error?: unknown }) => (
+    <div data-error-notice="">
+      {title} {message ?? String(error)}
+    </div>
+  ),
+}));
 
 beforeEach(() => {
+  mockHierarchyStatus = "success";
+  mockHierarchyError = null;
   mockFilteredTasks = [visibleTask];
   mockSearchQuery = "visible";
   mockCopyProps = undefined;
@@ -198,4 +217,27 @@ it("does not offer list copy before the mobile list can render tasks", () => {
   renderToStaticMarkup(<MobileTasksList onTaskSelect={jest.fn()} />);
 
   expect(mockCopyProps).toBeUndefined();
+});
+
+it("a failed task read is shown as the failure, never as 'No tasks yet' (RC-B12 round 5)", () => {
+  mockFilteredTasks = [];
+  mockSearchQuery = "";
+  mockHierarchyStatus = "error";
+  mockHierarchyError = "forced failure (tasks read)";
+
+  const html = renderToStaticMarkup(<MobileTasksList onTaskSelect={jest.fn()} />);
+
+  expect(html).not.toContain("No tasks yet");
+  expect(html).toContain("data-error-notice");
+  expect(html).toContain("forced failure (tasks read)");
+});
+
+it("an unfinished task read is a wait, not an empty list", () => {
+  mockFilteredTasks = [];
+  mockSearchQuery = "";
+  mockHierarchyStatus = "loading";
+
+  const html = renderToStaticMarkup(<MobileTasksList onTaskSelect={jest.fn()} />);
+
+  expect(html).not.toContain("No tasks yet");
 });

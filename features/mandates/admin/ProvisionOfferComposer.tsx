@@ -277,6 +277,7 @@ function ScaffoldForm({
           <CircleAlert className="mt-0.5 h-3 w-3 shrink-0" />
           <span>
             <TextWithDoors text={problem} />
+            <ErrorAlchemyMenu error={problem} />
           </span>
         </p>
       )}

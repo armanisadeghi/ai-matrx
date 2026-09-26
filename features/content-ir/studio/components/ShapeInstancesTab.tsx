@@ -54,6 +54,7 @@ import {
 } from "@/features/content-ir/studio/instance-service";
 import { resolveListScope, type ListScopeWord } from "@/lib/list-scope";
 import { adminDoorOpen } from "@/lib/api/adminDoor";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { shapeTestHref } from "@/features/content-ir/studio/constants";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
@@ -157,10 +158,10 @@ export default function ShapeInstancesTab({
   // could read the whole time. `null` means "whatever the registry says";
   // clicking the toggle pins an explicit scope, which is always one click away
   // and never blocked.
-  // THE ADMIN SEAT (Arman, 2026-09-26: "No one acts as themselves in admin"):
-  // inside the admin section there is no "Mine" — the list is every instance
-  // the platform holds (the unfiltered read; RLS on the admin lane is the
-  // whole platform), and the toggle is absent. The PAGE decides.
+  // THE ADMIN SEAT (Arman, 2026-09-26): the admin kind registry MANAGES the
+  // platform's own records — the list is the SYSTEM organization's instances
+  // of this kind, never a tenant's, and there is no Mine / Organization
+  // toggle. The PAGE decides (adminDoorOpen).
   const [adminSeat] = useState(() => adminDoorOpen());
   const [scope, setScope] = useState<ListScopeWord | null>(() =>
     adminSeat ? "organization" : null,
@@ -183,6 +184,7 @@ export default function ShapeInstancesTab({
         kindDefinitionId,
         archiveFilter,
         scope ?? undefined,
+        adminSeat ? SYSTEM_ORGANIZATION_ID : undefined,
       );
       setList({ status: "ready", entries });
       return entries;
@@ -191,7 +193,7 @@ export default function ShapeInstancesTab({
       setList({ status: "error", message });
       return null;
     }
-  }, [kindDefinitionId, archiveFilter, scope]);
+  }, [kindDefinitionId, archiveFilter, scope, adminSeat]);
 
   useEffect(() => {
     void (async () => {
@@ -444,7 +446,7 @@ export default function ShapeInstancesTab({
           <div className="mb-2 flex items-center gap-2">
             <span className="text-sm font-semibold text-foreground">
               {adminSeat
-                ? "All instances"
+                ? "System instances"
                 : effectiveScope === "mine"
                   ? "My instances"
                   : "Instances"}

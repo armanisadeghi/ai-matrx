@@ -205,7 +205,7 @@ function KpiTile({
 }
 
 function ReadFailure({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"><span>{message}</span><Button variant="outline" size="sm" onClick={onRetry}>Retry</Button></div>;
+  return <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"><span>{message}</span><Button variant="outline" size="sm" onClick={onRetry}>Retry</Button><ErrorAlchemyMenu /></div>;
 }
 
 function readFailureMessage(error: unknown, subject: string): string {

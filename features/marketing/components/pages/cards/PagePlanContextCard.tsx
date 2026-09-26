@@ -38,6 +38,7 @@ import { SectionCard } from "@/features/marketing/components/shared/MarketingUi"
 import { useCmsPushFacts } from "@/features/marketing/components/pages/cards/PushToCmsCard";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import type { MarketingPage, MarketingSite } from "@/features/marketing/types";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
  * THE COMPLETENESS LAW: what this card renders, agents launched from this
@@ -145,6 +146,7 @@ export function PagePlanContextCard({
           }
           actions={
             <>
+              <ErrorAlchemyMenu error={facts.error} operation="Resolve the plan behind this page" />
               <Button
                 variant="outline"
                 size="sm"

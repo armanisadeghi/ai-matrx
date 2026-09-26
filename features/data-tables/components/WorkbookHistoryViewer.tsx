@@ -36,6 +36,7 @@ import {
 } from "../workbook-service";
 import { isServiceFailure, type WorkbookSnapshot } from "../types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 type Props = {
   workbookId: string | null | undefined;
@@ -147,10 +148,11 @@ export function WorkbookHistoryViewer({ workbookId, editable = true }: Props) {
 
   if (error) {
     return (
-      <EmptyState
-        icon={<History className="size-4 text-destructive" />}
+      <ErrorNotice
+        className="m-4"
         title="Could not load history"
-        description={error}
+        error={error}
+        operation="Load this history"
       />
     );
   }

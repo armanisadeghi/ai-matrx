@@ -31,7 +31,7 @@ test("the estimate is price per second times the resolved duration, labelled as 
 
 test("an unknown price or duration is said, never invented", () => {
   expect(describeEstimate(estimateVideoJob(undefined, 0.4))).toMatch(/duration set by the model/);
-  expect(describeEstimate(estimateVideoJob(8, null))).toMatch(/no catalog price/);
+  expect(describeEstimate(estimateVideoJob(8, null))).toBe("Cost shows when the video lands");
 });
 
 test("only a per-second video price is read from the offering pricing", () => {

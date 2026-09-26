@@ -27,7 +27,15 @@
  *   fingerprint of (check, key) that no count or ordering can move. Known items
  *   are debt — written to the JSON, never printed, never handed off. A failing
  *   check with no NEW item keeps its summary finding too, so a failure is never
- *   hidden. Protocol: common-docs/projects/checks-run-in-the-app/ITEM-PROTOCOL.md.
+ *   hidden. Each item finding also carries its work `unit` and, when the check
+ *   can tell, the `basis` of a known item (accepted | debt); a run that printed
+ *   the end-of-scan marker is listed in the header's `scan_complete`.
+ *   Protocol: common-docs/projects/checks-run-in-the-app/ITEM-PROTOCOL.md.
+ * - A ROW'S ID IS DECLARED, NEVER DERIVED (F8). scripts/checks/row-classes.json
+ *   names each row's id against its command (and label); a relabelled row keeps
+ *   its id and its findings. A row nobody declared runs as `undeclared-<slug>`
+ *   and `pnpm check:release-row-classes` fails until `pnpm checks:classify`
+ *   declares it.
  *
  * Rows: every gate in `scripts/run-release-gates.sh --list` (the manifest stays
  * there, where it always was) plus the checks the old release.sh ran before the
@@ -50,7 +58,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { formatDurationMs } from "@ai-matrx/kit/format";
-import { ITEMS_ENV, ITEM_PREFIX, itemFingerprint, parseItems } from "./items.mjs";
+import { ITEMS_END_PREFIX, ITEMS_ENV, ITEM_PREFIX, itemFingerprint, itemUnit, parseItems } from "./items.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const LOG_DIR = join(REPO_ROOT, "tmp", "checks");
@@ -154,21 +162,57 @@ export function fingerprint(check, title) {
   return createHash("sha1").update(`${check}\n${normalized}`).digest("hex");
 }
 
-export function parseRows(lines, classes = loadRowClasses()) {
-  const rows = [];
-  const seen = new Set();
+export const UNDECLARED_PREFIX = "undeclared-";
+
+/**
+ * The id a NEW row is born with — used ONLY by `pnpm checks:classify` when it declares a row for
+ * the first time. After that the declaration is the id; the runner never calls this.
+ */
+export function mintRowId(label, cmd, taken) {
+  let id = slug(label);
+  if (taken.has(id)) id = `${id}-${slug(cmd).slice(0, 20)}`;
+  return id;
+}
+
+/**
+ * A row's declared id: the declaration whose command is this row's command, else (a command edit)
+ * the one whose label is this row's label and whose command no current row claims. Never a slug.
+ */
+function declaredIds(classes) {
+  const byCmd = new Map();
+  const byLabel = new Map();
+  for (const [id, entry] of Object.entries(classes ?? {})) {
+    if (typeof entry?.cmd === "string" && !byCmd.has(entry.cmd)) byCmd.set(entry.cmd, id);
+    if (typeof entry?.label === "string" && !byLabel.has(entry.label)) byLabel.set(entry.label, id);
+  }
+  return { byCmd, byLabel };
+}
+
+export function parseRows(lines, classes = loadRowClasses(), { mint = false } = {}) {
+  const parsed = [];
   for (const raw of lines) {
     const line = raw.trim();
     if (!line || line.startsWith("#")) continue;
     const bar = line.indexOf("|");
     if (bar <= 0) continue;
-    const label = line.slice(0, bar).trim();
-    const cmd = line.slice(bar + 1).trim();
-    let id = slug(label);
-    if (seen.has(id)) {
-      // The same gate twice (run-release-gates.sh lists a few in both lanes).
-      if (rows.some((r) => r.id === id && r.cmd === cmd)) continue;
-      id = `${id}-${slug(cmd).slice(0, 20)}`;
+    parsed.push({ label: line.slice(0, bar).trim(), cmd: line.slice(bar + 1).trim() });
+  }
+  const { byCmd, byLabel } = declaredIds(classes);
+  const cmds = new Set(parsed.map((p) => p.cmd));
+  const rows = [];
+  const seen = new Set();
+  for (const { label, cmd } of parsed) {
+    // The same gate twice (run-release-gates.sh lists a few in both lanes) is one row.
+    if (rows.some((r) => r.cmd === cmd)) continue;
+    let id = byCmd.get(cmd);
+    if (id === undefined) {
+      const relabelled = byLabel.get(label);
+      if (relabelled !== undefined && !cmds.has(classes[relabelled].cmd) && !seen.has(relabelled)) id = relabelled;
+    }
+    if (id === undefined || seen.has(id)) {
+      const born = mintRowId(label, cmd, seen);
+      seen.add(born);
+      id = mint ? born : `${UNDECLARED_PREFIX}${born}`;
     }
     seen.add(id);
     rows.push({
@@ -343,7 +387,7 @@ function runCommand(cmd, timeoutSeconds) {
   });
 }
 
-async function runRow(row, timeoutOverride) {
+async function runRow(row, timeoutOverride, scans) {
   const timeout = timeoutOverride || row.timeoutSeconds;
   const { code, output, ms } = await runCommand(row.cmd, timeout);
   const detail = writeLog(row.id, `# ${row.id}  ${formatDurationMs(ms, { style: "compact" })}\n$ ${row.cmd}\n${output}`);
@@ -361,9 +405,13 @@ async function runRow(row, timeoutOverride) {
       },
     ];
   }
-  const { items, errors } = parseItems(output);
+  const { items, errors, complete } = parseItems(output);
+  // The end-of-scan marker (ITEM-PROTOCOL): only a run that scanned everything may let an absent
+  // key count as fixed downstream.
+  if (complete && scans) scans[row.id] = items.reduce((n, i) => n + i.count, 0);
+  const isRecord = (l) => l.trimStart().startsWith(ITEM_PREFIX) || l.trimStart().startsWith(ITEMS_END_PREFIX);
   // Item lines are machine records, never a headline: judge the rest of the output.
-  const judged = items.length || errors.length ? plain(output).split("\n").filter((l) => !l.trimStart().startsWith(ITEM_PREFIX)).join("\n") : output;
+  const judged = items.length || errors.length || complete ? plain(output).split("\n").filter((l) => !isRecord(l)).join("\n") : output;
   const verdict = judge(row, code, judged);
   const summary = verdict && {
     check: row.id,
@@ -399,6 +447,8 @@ async function runRow(row, timeoutOverride) {
       detail,
       item_key: item.key,
       ratchet: item.status,
+      ...(item.basis ? { basis: item.basis } : {}),
+      unit: itemUnit(row.id, item),
       ...(item.file ? { file: item.file } : {}),
       ...(item.line !== null ? { line: item.line } : {}),
     });
@@ -428,7 +478,11 @@ class Gate {
   }
 }
 
-export async function runRows(rows, { workers = DEFAULT_WORKERS, dbWorkers = DEFAULT_DB_WORKERS, timeout } = {}) {
+/**
+ * `scans` (optional, an object) is filled with `{ <check>: <item lines> }` for every row whose run
+ * printed exactly one end-of-scan marker matching the item lines it printed.
+ */
+export async function runRows(rows, { workers = DEFAULT_WORKERS, dbWorkers = DEFAULT_DB_WORKERS, timeout, scans } = {}) {
   const pool = new Gate(Math.max(1, workers));
   const db = new Gate(Math.max(1, dbWorkers));
   const findings = [];
@@ -437,7 +491,7 @@ export async function runRows(rows, { workers = DEFAULT_WORKERS, dbWorkers = DEF
       await pool.acquire();
       if (row.needsDb) await db.acquire();
       try {
-        findings.push(...(await runRow(row, timeout)));
+        findings.push(...(await runRow(row, timeout, scans)));
       } catch (error) {
         findings.push({
           check: row.id,
@@ -457,13 +511,18 @@ export async function runRows(rows, { workers = DEFAULT_WORKERS, dbWorkers = DEF
   return findings.map((f) => ({ ...f, fingerprint: f.fingerprint ?? fingerprint(f.check, f.title) }));
 }
 
-/** Per check that named items: how many are new (not in its baseline) and how many are known debt. */
+/**
+ * Per check that named items: how many are new (not in its baseline) and how many are known. When
+ * the check says why a known item is covered, `accepted` (a reasoned accept) and `debt`
+ * (grandfathered baseline) split `known` — only debt is the number a shrink-only guard may read.
+ */
 export function itemTally(findings) {
   const tally = {};
   for (const f of findings) {
     if (!f.item_key) continue;
     const t = (tally[f.check] ??= { new: 0, known: 0 });
     t[f.ratchet === "known" ? "known" : "new"] += 1;
+    if (f.ratchet === "known" && f.basis) t[f.basis] = (t[f.basis] ?? 0) + 1;
   }
   return tally;
 }
@@ -559,7 +618,8 @@ export async function main(argv = process.argv.slice(2)) {
     process.stdout.write(`checks: skipped ${skipped.length} live-db row${skipped.length === 1 ? "" : "s"}${unclassified ? ` (${unclassified} unclassified — run pnpm checks:classify)` : ""}; they live in ${LIVE_DB_HOME}\n`);
   }
   const started = Date.now();
-  const findings = await runRows(rows, { workers: args.workers, dbWorkers: args.dbWorkers, timeout: args.timeout });
+  const scans = {};
+  const findings = await runRows(rows, { workers: args.workers, dbWorkers: args.dbWorkers, timeout: args.timeout, scans });
   const elapsed = formatDurationMs(Date.now() - started, { style: "compact" });
   const shown = displayFindings(findings, Object.fromEntries(rows.map((r) => [r.id, r.label])));
   if (shown.length) process.stdout.write(`${renderTable(shown)}\n`);
@@ -567,14 +627,15 @@ export async function main(argv = process.argv.slice(2)) {
   process.stdout.write(`checks: ${rows.length} run, ${shown.length} finding${shown.length === 1 ? "" : "s"}${errors ? `, ${errors} error` : ""} (${elapsed})\n`);
   if (args.json) {
     mkdirSync(dirname(args.json), { recursive: true });
-    const ordered = findings.map(({ check, category, level, title, count, fingerprint: fp, remedy, detail, item_key, ratchet, file, line }) => ({
+    const ordered = findings.map(({ check, category, level, title, count, fingerprint: fp, remedy, detail, item_key, ratchet, basis, unit, file, line }) => ({
       check, category, level, title, count, fingerprint: fp, remedy, detail,
-      ...(item_key ? { item_key, ratchet, ...(file ? { file } : {}), ...(line != null ? { line } : {}) } : {}),
+      ...(item_key ? { item_key, ratchet, ...(basis ? { basis } : {}), unit, ...(file ? { file } : {}), ...(line != null ? { line } : {}) } : {}),
     }));
     const header = { ran: rows.map((r) => r.id) };
     if (skipped.length) header.skipped_live_db = skipped.map((r) => r.id);
     const tally = itemTally(findings);
     if (Object.keys(tally).length) header.items = tally;
+    if (Object.keys(scans).length) header.scan_complete = scans;
     writeFileSync(args.json, [JSON.stringify(header), ...ordered.map((f) => JSON.stringify(f))].join("\n") + "\n");
   }
   return 0;

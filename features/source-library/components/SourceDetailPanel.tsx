@@ -76,6 +76,7 @@ import {
 } from "../transcriptService";
 import type { TranscriptStatus, VideoRow } from "../types";
 import { sourceVocabulary, type SourceVocabulary } from "../vocabulary";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /* ─────────────────────────── header pieces ─────────────────────────── */
 
@@ -444,6 +445,7 @@ export function SourceDetailPanel({
                     headline="This transcript could not be read"
                     body={loadError.message}
                 >
+                    <ErrorAlchemyMenu error={loadError} operation="Read this transcript" />
                     <div className="flex flex-col items-center gap-2">
                         {remedy ? (
                             <p className="max-w-md text-xs text-muted-foreground">{remedy}</p>

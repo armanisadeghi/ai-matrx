@@ -21,6 +21,19 @@ export function adminMandateOverridesHref(mandateKey: string): string {
   return `${adminMandateRecordHref(mandateKey)}/overrides`;
 }
 
+/**
+ * MANDATE SUPPORT LOOKUP (Arman, 2026-09-26) — a SEPARATE admin route for
+ * looking into an organization's or a person's mandates while doing tech
+ * support. The management list above shows system mandates only. A tenant
+ * mandate's key can repeat across organizations, so its record opens by id.
+ */
+export const ADMIN_MANDATES_SUPPORT = `${ADMIN_MANDATES_HOME}/support`;
+
+/** ONE organization's or person's mandate, opened from the support lookup. */
+export function adminMandateSupportRecordHref(mandateId: string): string {
+  return `${ADMIN_MANDATES_SUPPORT}/${encodeURIComponent(mandateId)}`;
+}
+
 export const ADMIN_MANDATES_DASHBOARD = `${ADMIN_MANDATES_HOME}/dashboard`;
 export const ADMIN_MANDATES_HEALTH = `${ADMIN_MANDATES_HOME}/health`;
 export const ADMIN_MANDATES_UNCONVERTED = `${ADMIN_MANDATES_HOME}/unconverted`;

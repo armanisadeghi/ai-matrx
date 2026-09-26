@@ -27,6 +27,7 @@
 import { DEFAULT_HOLDER_RUNG } from "@/features/bindings/default-holder-rung";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { adminMandateSupportRecordHref } from "@/features/mandates/admin-routes";
 import { ArrowLeft, Copy, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
@@ -175,6 +176,12 @@ export interface MandateRecordBodyProps {
    * manage it): no binding editor and no overrides are mounted at all.
    */
   readOnly?: boolean;
+  /**
+   * The admin MANAGEMENT page (Arman, 2026-09-26): only a SYSTEM mandate opens;
+   * an organization's or a person's mandate is refused with a door to Mandate
+   * support lookup.
+   */
+  systemOnly?: boolean;
 }
 
 /** Keyed to the job, exactly like the original (R-O6). */
@@ -182,7 +189,7 @@ export function MandateRecordBody(props: MandateRecordBodyProps) {
   return (
     <MandateAlchemyCaptureProvider>
       <OneMandateRecordBody
-        key={`${props.mandateKeyOrId}:${props.host}`}
+        key={`${props.mandateKeyOrId}:${props.host}:${props.systemOnly ? "system" : "any"}`}
         {...props}
       />
     </MandateAlchemyCaptureProvider>
@@ -200,6 +207,7 @@ function OneMandateRecordBody({
   tabs,
   showAdminPanels,
   readOnly = false,
+  systemOnly = false,
 }: MandateRecordBodyProps) {
   useEffect(() => {
     const openHolder = () => onTabChange("holder");
@@ -208,7 +216,7 @@ function OneMandateRecordBody({
       window.removeEventListener("matrx:open-mandate-pin", openHolder);
   }, [onTabChange]);
   const { data, loading, failure, refresh } =
-    useMandateWorkspaceData(mandateKeyOrId);
+    useMandateWorkspaceData(mandateKeyOrId, { systemOnly });
   const { organizations } = useUserOrganizations();
   const activeOrganizationId = useAppSelector(selectOrganizationId);
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
@@ -268,6 +276,23 @@ function OneMandateRecordBody({
   }
   if (failure || !data) {
     const failed = failure ?? loadFailedFailure("Unknown error.");
+    if (failed.kind === "not-a-system-mandate" && "mandateId" in failed) {
+      return (
+        <div className="mx-auto flex max-w-md flex-col items-center gap-3 px-6 py-16 text-center">
+          <p className="text-sm text-muted-foreground">{failed.message}</p>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link href={adminMandateSupportRecordHref(String(failed.mandateId))}>
+                Open in Mandate support lookup
+              </Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm">
+              <Link href={listHref}>System mandates</Link>
+            </Button>
+          </div>
+        </div>
+      );
+    }
     if (
       failed.kind === "no-such-mandate" &&
       readMandateAddress(mandateKeyOrId) === "id"

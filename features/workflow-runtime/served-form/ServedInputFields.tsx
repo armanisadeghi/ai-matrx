@@ -57,6 +57,7 @@ import {
 } from "./served-input";
 import { loadKindSources, valueTypeFromJsonSchema } from "./kind-source";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /** Stable identity for "this surface declares nothing", so effects settle. */
 export const EMPTY_SERVED_INPUTS: ServedInput[] = [];
 
@@ -453,7 +454,7 @@ export function ServedFormScream({
           </ul>
         ) : null}
       </div>
-    </div>
+    <ErrorAlchemyMenu /></div>
   );
 }
 

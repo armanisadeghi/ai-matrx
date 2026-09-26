@@ -876,7 +876,7 @@ function Notice({
   action?: { label: string; onClick: () => void };
 }) {
   return (
-    <div className="mx-auto max-w-[60ch] px-6 py-20">
+    <div role="alert" className="mx-auto max-w-[60ch] px-6 py-20">
       <div className="flex items-start gap-3 rounded-lg border border-border bg-card p-5">
         <AlertTriangle
           className={tone === "warn" ? "mt-0.5 size-5 text-warning" : ""}
@@ -896,6 +896,6 @@ function Notice({
           ) : null}
         </div>
       </div>
-    </div>
+    <ErrorAlchemyMenu /></div>
   );
 }

@@ -42,9 +42,7 @@ import { featureLabelOf } from "@/features/mandates/admin-list/rows";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { cn } from "@/lib/utils";
 import { adminDoorOpen } from "@/lib/api/adminDoor";
-import { supabase } from "@/utils/supabase/client";
-import { readAllRows } from "@ai-matrx/data/db";
-import { mandateBindings, mandateDefinitions } from "@/lib/supabase/mandateStorage";
+import { SYSTEM_HOME } from "@/features/mandates/list-door";
 import { MandateRecordBody } from "@/features/mandates/record-next/MandateRecordBody";
 import { RecordTabStrip } from "@/features/mandates/record-next/RecordTabStrip";
 import {
@@ -67,82 +65,20 @@ export interface MandateWindowNextProps {
   initialTab?: string | null;
 }
 
-type Scope = "all" | "mine" | "orgs" | "system" | "users";
+type Scope = "all" | "mine" | "orgs" | "system";
 
 /** A person's seat (user pages): what I made, what my teams have. */
 const PERSON_SCOPES: { id: Scope; label: string }[] = [
   { id: "all", label: "All" },
-  { id: "mine", label: "Mine" }, // personal-seat-ok: user pages only; the admin seat gets ADMIN_SCOPES
-  { id: "orgs", label: "My Orgs" }, // personal-seat-ok: user pages only; the admin seat gets ADMIN_SCOPES
+  { id: "mine", label: "Mine" }, // personal-seat-ok: user pages only; the admin seat shows system mandates with no tabs
+  { id: "orgs", label: "My Orgs" }, // personal-seat-ok: user pages only; the admin seat shows system mandates with no tabs
   { id: "system", label: "System" },
 ];
 
-/**
- * THE ADMIN SEAT (Arman, 2026-09-26: "No one acts as themselves in admin"):
- * inside the admin section the window answers platform questions — never
- * Mine / My Orgs. Each row names its owning organization or person.
- */
-const ADMIN_SCOPES: { id: Scope; label: string }[] = [
-  { id: "system", label: "System" },
-  { id: "orgs", label: "Organizations" },
-  { id: "users", label: "Users" },
-  { id: "all", label: "All" },
-];
-
-/**
- * The admin seat's corpus: every live mandate on the platform and its live
- * bindings, read under the admin lane (RLS `platform_admin_read` is the whole
- * platform). Complete by construction — `readAllRows`, never a capped select.
- */
-async function fetchPlatformMandates(): Promise<{
-  mandates: MandateDefinitionRow[];
-  bindingsByMandateId: Record<string, { deleted_at?: string | null }[]>;
-}> {
-  const [mandates, bindings] = await Promise.all([
-    readAllRows(
-      ({ from, to }) =>
-        mandateDefinitions(supabase)
-          .select("*", { count: "exact" })
-          .is("deleted_at", null)
-          .order("mandate_key")
-          .range(from, to),
-      { label: "mandate.definition (admin window)" },
-    ),
-    readAllRows(
-      ({ from, to }) =>
-        mandateBindings(supabase)
-          .select("id, mandate_id, deleted_at", { count: "exact" })
-          .is("deleted_at", null)
-          .order("id")
-          .range(from, to),
-      { label: "mandate.binding (admin window)" },
-    ),
-  ]);
-  const bindingsByMandateId: Record<string, { deleted_at?: string | null }[]> = {};
-  for (const binding of bindings) {
-    (bindingsByMandateId[binding.mandate_id] ??= []).push(binding);
-  }
-  return { mandates: mandates as MandateDefinitionRow[], bindingsByMandateId };
-}
-
-interface OwnerOrg {
-  name: string;
-  isPersonal: boolean;
-}
-
-/** Exclusive buckets. Person seat: System / Mine (I created it) / orgs.
- *  Admin seat: System / Organizations / Users (a personal organization). */
-function scopeOf(
-  row: MandateDefinitionRow,
-  userId: string | null,
-  adminSeat: boolean,
-  owners: Record<string, OwnerOrg>,
-): Exclude<Scope, "all"> {
+/** Exclusive buckets: System = homed in the system org; Mine = I created it. */
+function scopeOf(row: MandateDefinitionRow, userId: string | null): Exclude<Scope, "all"> {
   if ((row.organization_id ?? "").toLowerCase() === SYSTEM_ORGANIZATION_ID.toLowerCase()) {
     return "system";
-  }
-  if (adminSeat) {
-    return row.organization_id && owners[row.organization_id]?.isPersonal ? "users" : "orgs";
   }
   if (userId && row.created_by === userId) return "mine";
   return "orgs";
@@ -174,13 +110,12 @@ function MandateWindowNextInner({
     parseRecordTab(initialTab, true),
   );
   // The PAGE decides the seat (adminDoorOpen — the same rule every shared
-  // component uses to pick its admin door).
+  // component uses to pick its admin door). THE ADMIN SEAT (Arman,
+  // 2026-09-26): the admin mandate window manages SYSTEM mandates only — one
+  // corpus, no scope tabs, no organization's or person's mandate in the list.
+  // Tenant mandates are looked up on Mandate support lookup.
   const [adminSeat] = useState(() => adminDoorOpen());
-  const SCOPES = adminSeat ? ADMIN_SCOPES : PERSON_SCOPES;
   const [scope, setScope] = useState<Scope>(() => (adminSeat ? "system" : "all"));
-  // Admin seat: who owns each row (organization name + whether it is a
-  // person's personal organization), read for the rows' own organizations.
-  const [owners, setOwners] = useState<Record<string, OwnerOrg>>({});
   const [search, setSearch] = useState("");
   const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
   const [activeRowEl, setActiveRowEl] = useState<HTMLButtonElement | null>(null);
@@ -197,9 +132,9 @@ function MandateWindowNextInner({
     // are in (the one list door, `ALL_HOMES`). Any mandate write anywhere
     // re-reads it (the same bus the console and the old window use).
     const read = () => {
-      // THE ADMIN SEAT reads the WHOLE platform — never "the system plus the
-      // organizations I belong to" (`ALL_HOMES`), which is the viewer's own seat.
-      (adminSeat ? fetchPlatformMandates() : fetchMandateConsoleData())
+      // THE ADMIN SEAT reads the system's own mandates — never the whole
+      // platform, and never "the organizations I belong to" (`ALL_HOMES`).
+      fetchMandateConsoleData(adminSeat ? { home: SYSTEM_HOME } : {})
         .then((next) => {
           if (cancelled) return;
           setRows(next.mandates);
@@ -222,55 +157,21 @@ function MandateWindowNextInner({
     };
   }, [reloads, adminSeat]);
 
-  useEffect(() => {
-    if (!adminSeat || !rows) return;
-    const ids = [
-      ...new Set(
-        rows
-          .map((row) => row.organization_id)
-          .filter((id): id is string => Boolean(id) && id !== SYSTEM_ORGANIZATION_ID),
-      ),
-    ];
-    if (ids.length === 0) return;
-    let cancelled = false;
-    void supabase
-      .schema("iam")
-      .from("organizations")
-      .select("id, name, is_personal")
-      .in("id", ids)
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (error) {
-          console.error("[mandate-window-next] owner names could not be read", error);
-          return;
-        }
-        const next: Record<string, OwnerOrg> = {};
-        for (const org of data ?? []) {
-          next[org.id] = { name: org.name, isPersonal: org.is_personal === true };
-        }
-        setOwners(next);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [adminSeat, rows]);
-
   const statusOf = (row: MandateDefinitionRow) =>
     mandateStatusOfRow(row, bindingsById[row.id] ?? []);
 
   const orgNames = new Map(organizations.map((o) => [o.id, o.name]));
-  const orgName = (id: string | null) =>
-    id ? (owners[id]?.name ?? orgNames.get(id) ?? null) : null;
+  const orgName = (id: string | null) => (id ? (orgNames.get(id) ?? null) : null);
 
-  const counts: Record<Scope, number> = { all: 0, mine: 0, orgs: 0, system: 0, users: 0 };
+  const counts: Record<Scope, number> = { all: 0, mine: 0, orgs: 0, system: 0 };
   for (const row of rows ?? []) {
     counts.all += 1;
-    counts[scopeOf(row, userId, adminSeat, owners)] += 1;
+    counts[scopeOf(row, userId)] += 1;
   }
 
   const query = search.trim().toLowerCase();
   const visible = (rows ?? [])
-      .filter((row) => scope === "all" || scopeOf(row, userId, adminSeat, owners) === scope)
+      .filter((row) => scope === "all" || scopeOf(row, userId) === scope)
       .filter((row) => {
         if (!query) return true;
         return [
@@ -314,12 +215,13 @@ function MandateWindowNextInner({
   const sidebar = (
     <div className="flex h-full min-h-0 flex-col">
       <div className="shrink-0 space-y-1.5 border-b border-border px-2 py-1.5">
+        {adminSeat ? null : (
         <div
           role="tablist"
           aria-label="Whose mandates"
           className="flex items-center gap-0.5 rounded-md bg-muted/60 p-0.5"
         >
-          {SCOPES.map((s) => (
+          {PERSON_SCOPES.map((s) => (
             <button
               key={s.id}
               type="button"
@@ -338,6 +240,7 @@ function MandateWindowNextInner({
             </button>
           ))}
         </div>
+        )}
         <div className="relative">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -352,7 +255,7 @@ function MandateWindowNextInner({
       <div className="flex-1 min-h-0 space-y-px overflow-y-auto p-1">
         {visible.map((row) => {
           const feature = featureLabelOf(row.mandate_key, null);
-          const bucket = scopeOf(row, userId, adminSeat, owners);
+          const bucket = scopeOf(row, userId);
           const active = row.id === selected?.id;
           return (
             <button
@@ -380,8 +283,7 @@ function MandateWindowNextInner({
               </span>
               <span className="block truncate text-[10px] text-muted-foreground">
                 {feature}
-                {(adminSeat ? bucket !== "system" : scope === "all" && bucket === "orgs") &&
-                orgName(row.organization_id)
+                {scope === "all" && bucket === "orgs" && orgName(row.organization_id)
                   ? ` · ${orgName(row.organization_id)}`
                   : ""}
               </span>
@@ -504,6 +406,7 @@ function MandateWindowNextInner({
               key={openKey}
               mandateKeyOrId={openKey}
               host="window"
+              systemOnly={adminSeat}
               activeTab={tab}
               onTabChange={setTab}
               listHref="/mandates"

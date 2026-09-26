@@ -260,6 +260,12 @@ export async function listKindInstances(
   kindDefinitionId: string,
   archiveFilter: ArchiveFilterValue = DEFAULT_ARCHIVE_FILTER,
   scope?: ListScopeWord,
+  /**
+   * Only rows homed in this organization. The admin kind registry passes the
+   * SYSTEM organization: an admin management page shows the platform's own
+   * records, never a tenant's (Arman, 2026-09-26).
+   */
+  homeOrganizationId?: string,
 ): Promise<KindInstanceListEntry[]> {
   const { data: auth, error: authError } = await getClaimsUser(supabase);
   if (authError)
@@ -277,7 +283,8 @@ export async function listKindInstances(
     .select("id,title,validation_status,kind_version,updated_at,data,archived_at")
     .eq("kind_definition_id", kindDefinitionId)
     .is("deleted_at", null);
-  if (ownerOnly) query = query.eq("created_by", userId);
+  if (homeOrganizationId) query = query.eq("organization_id", homeOrganizationId);
+  else if (ownerOnly) query = query.eq("created_by", userId);
   // THE ARCHIVED-ITEMS LAW: a request the tab's own control sets, never a
   // literal — the default hides archived rows and one click reveals them.
   if (archiveFilter === "active") query = query.is("archived_at", null);

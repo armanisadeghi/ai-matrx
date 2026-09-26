@@ -138,6 +138,13 @@ export interface EntityListPageProps<TRow> {
    * there is pure dead space above the tabs.
    */
   clearsShellHeader?: boolean;
+  /**
+   * FALSE renders no scope tabs at all — for a list with ONE corpus and no
+   * scope separation, such as an admin MANAGEMENT page, which shows only the
+   * platform's own records (Arman, 2026-09-26). The page still queries its one
+   * scope; there is simply no choice to draw.
+   */
+  scopeTabs?: boolean;
 }
 
 export function EntityListPage<TRow>({
@@ -149,6 +156,7 @@ export function EntityListPage<TRow>({
   scopes,
   defaultScope,
   clearsShellHeader = true,
+  scopeTabs = true,
 }: EntityListPageProps<TRow>) {
   const visibleScopes = scopes ?? config.scopes;
   // 🚨 THE URL IS THE QUERY ON EVERY LIST PAGE (default ON since 2026-09-26).
@@ -644,6 +652,7 @@ export function EntityListPage<TRow>({
         )}
         <div className="flex min-w-0 items-center justify-between gap-1.5 sm:gap-2">
           <div className="min-w-0 flex-1 sm:flex-none">
+            {scopeTabs && (
             <EntityScopeTabs
               scope={list.query.scope}
               scopes={visibleScopes}
@@ -657,6 +666,7 @@ export function EntityListPage<TRow>({
               countsLoading={list.countsLoading || Boolean(list.countsError)}
               onChange={list.setScope}
             />
+            )}
           </div>
           {headerActions && (
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">

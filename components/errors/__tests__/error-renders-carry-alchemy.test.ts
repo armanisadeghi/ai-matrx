@@ -20,7 +20,13 @@
 import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { findDoubleMenus, findOrphanMenus, uncarriedErrorDisplays } from "./error-display-census";
+import { buildCarryingResolver } from "./error-census-carriers";
+import {
+  findDoubleMenus,
+  findOrphanMenus,
+  setCarryingComponentsResolver,
+  uncarriedErrorDisplays,
+} from "./error-display-census";
 
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 const SCANNED_DIRS = ["app", "components", "features", "lib"];
@@ -76,6 +82,8 @@ function walk(dir: string, out: string[]): void {
 export function censusTheTree(): Record<string, number> {
   const files: string[] = [];
   for (const dir of SCANNED_DIRS) walk(path.join(REPO_ROOT, dir), files);
+  const rels = files.map((file) => path.relative(REPO_ROOT, file).split(path.sep).join("/"));
+  setCarryingComponentsResolver(buildCarryingResolver(REPO_ROOT, rels.filter((rel) => /\.tsx$/.test(rel))));
   const found: Record<string, number> = {};
   for (const file of files) {
     const rel = path.relative(REPO_ROOT, file).split(path.sep).join("/");
@@ -83,6 +91,7 @@ export function censusTheTree(): Record<string, number> {
     const n = uncarriedErrorDisplays(fs.readFileSync(file, "utf8"), rel).length;
     if (n > 0) found[rel] = n;
   }
+  setCarryingComponentsResolver(null);
   return found;
 }
 
@@ -227,6 +236,29 @@ describe("round-4 probes (RC-B12 verify, theoretical shapes), red then green", (
   });
 });
 
+describe("round-5 probes (RC-B12 verify), red then green", () => {
+  it("an error fed by prop into a neutral component counts (EmptyCatalogue, EmptyState)", () => {
+    expect(count("{error ? <EmptyCatalogue message={`Could not load skills: ${error}`} /> : null}")).toBe(1);
+    expect(count("<EmptyState title=\"Nothing here\" description={error} />")).toBe(1);
+    expect(count("<EmptyState title={error.message} />")).toBe(1);
+    expect(count('<EmptyState title="No skills" description="Add one to start." />')).toBe(0);
+    expect(count("<ErrorNotice message={error} />")).toBe(0);
+  });
+  it("an error constant rendered as text counts, in any component", () => {
+    expect(count("<div><h3>{ORGANIZATION_UNAVAILABLE_TITLE}</h3><p>{ORGANIZATION_UNAVAILABLE_DESCRIPTION}</p></div>")).toBeGreaterThan(0);
+    expect(count("<Notice title={LOAD_ERROR_TITLE} />")).toBe(1);
+  });
+  it("a scale-0, display:none or {false && …} menu is absent", () => {
+    expect(count('<p role="alert">{error}<ErrorAlchemyMenu className="scale-0" /></p>')).toBe(1);
+    expect(count('<p role="alert">{error}<span style={{ display: "none" }}><ErrorAlchemyMenu /></span></p>')).toBe(1);
+    expect(count('<p role="alert">{error}{false && <ErrorAlchemyMenu />}</p>')).toBe(1);
+  });
+  it("'This page crashed' and 'The server refused the request' count in any colour", () => {
+    expect(count("<p>This page crashed.</p>")).toBe(1);
+    expect(count("<p>The server refused the request.</p>")).toBe(1);
+  });
+});
+
 describe("one error box carries one menu", () => {
   const doubles = (jsx: string) =>
     findDoubleMenus(`export function C({ error, ok }: any) { return (<>${jsx}</>); }`).length;
@@ -260,6 +292,8 @@ describe("a menu never shows when nothing failed", () => {
     expect(orphans('<p className="text-destructive">{error}<ErrorAlchemyMenu /></p>')).toBe(0);
     expect(orphans('{error && <p className="text-sm">{error}<ErrorAlchemyMenu /></p>}')).toBe(0);
     expect(orphans('<ErrorAlchemyMenu input={{ message: "x" }} />')).toBe(0);
+    expect(orphans('{problems.map((problem) => <div key={problem}>{problem}<ErrorAlchemyMenu error={problem} /></div>)}')).toBe(0);
+    expect(orphans('<div><ErrorAlchemyMenu error={title} /></div>')).toBe(1);
   });
 
   it("no file has an orphan menu", () => {

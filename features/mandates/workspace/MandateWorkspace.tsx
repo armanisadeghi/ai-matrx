@@ -1152,7 +1152,10 @@ export function FulfillmentSection({ resolution }: { resolution: FulfillmentView
           }
           help={
             refusal ? (
-              <TextWithDoors text={refusal} defaultToken="agent" />
+              <span>
+                <TextWithDoors text={refusal} defaultToken="agent" />
+                <ErrorAlchemyMenu error={refusal} />
+              </span>
             ) : (
               (freshness ?? undefined)
             )

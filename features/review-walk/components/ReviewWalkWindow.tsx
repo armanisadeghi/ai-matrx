@@ -845,7 +845,7 @@ function StopStatePanel({
           ? "This layer cannot be opened."
           : "The request failed.");
   return (
-    <div className="m-3 rounded-md border border-amber-500/30 bg-amber-500/5 p-4">
+    <div role="alert" className="m-3 rounded-md border border-amber-500/30 bg-amber-500/5 p-4">
       <div className="flex items-center gap-2 text-sm font-medium text-amber-800 dark:text-amber-200">
         <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
         {heading}
@@ -869,7 +869,7 @@ function StopStatePanel({
           Back up one layer
         </Button>
       )}
-    </div>
+    <ErrorAlchemyMenu /></div>
   );
 }
 

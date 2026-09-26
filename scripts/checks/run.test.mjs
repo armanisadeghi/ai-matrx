@@ -14,16 +14,32 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { EXTRA_ROWS, categorize, fingerprint, judge, parseRows, renderTable } from "./run.mjs";
+import { EXTRA_ROWS, categorize, fingerprint, judge, parseRows, renderTable, slug } from "./run.mjs";
 
 const RUNNER = new URL("./run.mjs", import.meta.url).pathname;
+
+// A row's id is DECLARED (row-classes.json), never derived from its label. These throwaway rows
+// are declared here, under the id their label would have been born with.
+function declareRows(rows, dir, classOf = () => undefined) {
+  const declared = {};
+  for (const row of rows) {
+    const bar = row.indexOf("|");
+    const label = row.slice(0, bar).trim();
+    const cls = classOf(slug(label));
+    declared[slug(label)] = { ...(cls ? { class: cls } : {}), label, cmd: row.slice(bar + 1).trim() };
+  }
+  const path = join(dir, "classes.json");
+  writeFileSync(path, JSON.stringify({ rows: declared }));
+  return path;
+}
 
 function runWithManifest(rows, extraArgs = []) {
   const dir = mkdtempSync(join(tmpdir(), "release-checks-"));
   const manifest = join(dir, "rows.txt");
   const json = join(dir, "findings.jsonl");
   writeFileSync(manifest, rows.join("\n") + "\n");
-  const out = execFileSync("node", [RUNNER, "--manifest", manifest, "--json", json, "--timeout", "2", ...extraArgs], {
+  const classes = extraArgs.includes("--classes") ? [] : ["--classes", declareRows(rows, dir)];
+  const out = execFileSync("node", [RUNNER, "--manifest", manifest, "--json", json, "--timeout", "2", ...classes, ...extraArgs], {
     encoding: "utf8",
   });
   const lines = readFileSync(json, "utf8").trim().split("\n").map((l) => JSON.parse(l));
@@ -77,10 +93,25 @@ test("judge: exit 0 with no scream is clean; a scream over exit 0 is not", () =>
   assert.match(judge(row, 1, "[31mred text[0m\n").title, /^Gate: red text$/);
 });
 
-test("parseRows keeps duplicate labels distinct only when their commands differ, and slugs ids", () => {
-  const rows = parseRows(["Same|pnpm a", "Same|pnpm a", "Same|pnpm b", "# comment", "", "no bar here"]);
-  assert.deepEqual(rows.map((r) => r.id), ["same", "same-pnpm-b"]);
-  assert.equal(rows[0].level, "warning");
+test("parseRows: one row per command; a new row is born with its label's slug only when classify declares it", () => {
+  const lines = ["Same|pnpm a", "Same|pnpm a", "Same|pnpm b", "# comment", "", "no bar here"];
+  assert.deepEqual(parseRows(lines, {}, { mint: true }).map((r) => r.id), ["same", "same-pnpm-b"]);
+  assert.equal(parseRows(lines, {}, { mint: true })[0].level, "warning");
+  // The runner never mints: a row nobody declared says so in its id (and the row-classes guard fails).
+  assert.deepEqual(parseRows(lines, {}).map((r) => r.id), ["undeclared-same", "undeclared-same-pnpm-b"]);
+});
+
+// F8 (P2-STORAGE-ATTACK): a check's id was slug(label), so editing a label orphaned every item
+// the check had ever named and re-opened them all under a new id.
+test("a row's id is DECLARED: a relabelled row keeps its id; a command edit keeps it through the label", () => {
+  const declared = { "door-rows-guard": { class: "repo-only", label: "Door rows guard", cmd: "pnpm check:door-rows" } };
+  const relabelled = parseRows(["Every door row is bounded (renamed)|pnpm check:door-rows"], declared);
+  assert.equal(relabelled[0].id, "door-rows-guard");
+  assert.equal(relabelled[0].dbClass, "repo-only");
+  const recommanded = parseRows(["Door rows guard|pnpm check:door-rows --strict"], declared);
+  assert.equal(recommanded[0].id, "door-rows-guard");
+  // Both edited at once is a new row — undeclared until classify declares it.
+  assert.equal(parseRows(["Something else|pnpm check:other"], declared)[0].id, "undeclared-something-else");
 });
 
 test("the old pre-push gates are rows now, and the migration ledger is an ERROR row", () => {
@@ -128,7 +159,7 @@ test("--list prints every row and runs nothing", () => {
   const manifest = join(dir, "rows.txt");
   const marker = join(dir, "ran");
   writeFileSync(manifest, `Touches a file|touch ${marker}\n`);
-  const out = execFileSync("node", [RUNNER, "--manifest", manifest, "--list"], { encoding: "utf8" });
+  const out = execFileSync("node", [RUNNER, "--manifest", manifest, "--list", "--classes", declareRows([`Touches a file|touch ${marker}`], dir)], { encoding: "utf8" });
   assert.match(out, /^touches-a-file\t/m);
   assert.throws(() => readFileSync(marker));
 });
@@ -136,7 +167,7 @@ test("--list prints every row and runs nothing", () => {
 test("a row's database class is DECLARED by the manifest, never guessed from its label", () => {
   const rows = parseRows(
     ["Live door rows guard|pnpm check:x", "Innocent-sounding label|pnpm check:y", "Nobody classified me|true"],
-    { "live-door-rows-guard": { class: "repo-only" }, "innocent-sounding-label": { class: "live-db" } },
+    { "live-door-rows-guard": { class: "repo-only", cmd: "pnpm check:x" }, "innocent-sounding-label": { class: "live-db", cmd: "pnpm check:y" }, "nobody-classified-me": { cmd: "true" } },
   );
   const by = Object.fromEntries(rows.map((r) => [r.id, r]));
   assert.equal(by["live-door-rows-guard"].dbClass, "repo-only");
@@ -150,15 +181,9 @@ test("a row's database class is DECLARED by the manifest, never guessed from its
 test("--skip-live-db runs no live-db or unclassified row and says so in one line", () => {
   const dir = mkdtempSync(join(tmpdir(), "release-checks-skip-"));
   const marker = (name) => join(dir, `${name}-ran`);
-  const classes = join(dir, "classes.json");
-  writeFileSync(
-    classes,
-    JSON.stringify({ rows: { "live-gate": { class: "live-db" }, "repo-gate": { class: "repo-only" }, "clone-gate": { class: "clone-db" } } }),
-  );
-  const { out, header, findings } = runWithManifest(
-    [`Live gate|touch ${marker("live")}`, `Repo gate|touch ${marker("repo")}`, `Clone gate|touch ${marker("clone")}`, `Unknown gate|touch ${marker("unknown")}`],
-    ["--classes", classes, "--skip-live-db"],
-  );
+  const rows = [`Live gate|touch ${marker("live")}`, `Repo gate|touch ${marker("repo")}`, `Clone gate|touch ${marker("clone")}`, `Unknown gate|touch ${marker("unknown")}`];
+  const classes = declareRows(rows, dir, (id) => ({ "live-gate": "live-db", "repo-gate": "repo-only", "clone-gate": "clone-db" })[id]);
+  const { out, header, findings } = runWithManifest(rows, ["--classes", classes, "--skip-live-db"]);
   assert.equal(existsSync(marker("live")), false, "a live-db row executed");
   assert.equal(existsSync(marker("unknown")), false, "an unclassified row executed");
   assert.equal(existsSync(marker("repo")), true);
@@ -316,4 +341,75 @@ test("items: a self-test row is never asked for items (its planted fixtures are 
   const { findings, header } = runWithManifest([`Guard self-test|${cmd}`]);
   assert.equal(findings.length, 0, JSON.stringify(findings));
   assert.equal(header.items, undefined);
+});
+
+// ── P2 storage v2 step 0 — basis, unit, end-of-scan (P2-STORAGE-ATTACK F5/F6/F10/F12) ─────────────
+import { endItems, itemUnit } from "./items.mjs";
+
+const END = (count) => `[ "$MATRX_ITEMS" = 1 ] && echo 'MATRX-ITEMS-END {"count":${count}}'`;
+
+test("basis: a known item says whether it is a reasoned accept or grandfathered debt; the tally splits them", () => {
+  const cmd = [
+    ITEM({ key: "a", status: "known", basis: "accepted" }),
+    ITEM({ key: "d", status: "known", basis: "debt" }),
+    ITEM({ key: "u", status: "known" }),
+    ITEM({ key: "n", status: "new" }),
+    "exit 1",
+  ].join("; ");
+  const { header, findings } = runWithManifest([`Based gate|${cmd}`]);
+  const byKey = Object.fromEntries(findings.filter((f) => f.item_key).map((f) => [f.item_key, f]));
+  assert.equal(byKey.a.basis, "accepted");
+  assert.equal(byKey.d.basis, "debt");
+  assert.equal(byKey.u.basis, undefined, "a check that cannot tell says nothing");
+  assert.equal(byKey.n.basis, undefined);
+  assert.deepEqual(header.items, { "based-gate": { new: 1, known: 3, accepted: 1, debt: 1 } });
+});
+
+test("basis: only on a known item, only accepted|debt; mixed occurrences of one key read as debt", () => {
+  const w = { env: { MATRX_ITEMS: "1" }, write: () => {} };
+  assert.throws(() => emitItem({ key: "k", status: "new", basis: "debt" }, w), /only for a known item/);
+  assert.throws(() => emitItem({ key: "k", status: "known", basis: "grandfathered" }, w), /not accepted\|debt/);
+  const { items } = parseItems(['MATRX-ITEM {"key":"k","status":"known","basis":"accepted"}', 'MATRX-ITEM {"key":"k","status":"known","basis":"debt"}'].join("\n"));
+  assert.equal(items[0].basis, "debt");
+  const lines = [];
+  emitItem({ key: "k", status: "known", basis: "accepted", unit: "public.t" }, { ...w, write: (s) => lines.push(s) });
+  assert.deepEqual(lines, ['MATRX-ITEM {"key":"k","status":"known","basis":"accepted","unit":"public.t"}\n']);
+});
+
+test("unit: every item finding carries its work unit — check × (emitter unit, else file, rule, key)", () => {
+  const cmd = [ITEM({ key: "k1", unit: "public.orders", file: "a.ts" }), ITEM({ key: "k2", file: "b.ts", rule: "r" }), ITEM({ key: "k3", rule: "r" }), ITEM({ key: "k4" })].join("; ");
+  const { findings } = runWithManifest([`Unit gate|${cmd}`]);
+  const unit = Object.fromEntries(findings.map((f) => [f.item_key, f.unit]));
+  assert.deepEqual(unit, { k1: "unit-gate|public.orders", k2: "unit-gate|b.ts", k3: "unit-gate|r", k4: "unit-gate|k4" });
+  assert.equal(itemUnit("c", { key: "k", unit: "", file: "", rule: "" }), "c|k");
+});
+
+test("end-of-scan: only a run that printed ONE marker matching its item lines is scan_complete", () => {
+  const two = `${ITEM({ key: "a" })}; ${ITEM({ key: "a" })}; ${ITEM({ key: "b" })}`;
+  const { header, findings } = runWithManifest([
+    `Complete gate|${two}; ${END(3)}; true`,
+    `Clean complete gate|${END(0)}; true`,
+    `Truncated gate|${two}; true`,
+    `Lost lines gate|${two}; ${END(5)}; true`,
+    `Twice gate|${two}; ${END(3)}; ${END(3)}; true`,
+  ]);
+  assert.deepEqual(header.scan_complete, { "complete-gate": 3, "clean-complete-gate": 0 });
+  assert.equal(findings.filter((f) => f.check === "clean-complete-gate").length, 0, "the marker is a record, never a finding");
+});
+
+test("end-of-scan: endItems prints only when asked, with the item lines this process printed", () => {
+  const lines = [];
+  const w = { env: { MATRX_ITEMS: "1" }, write: (s) => lines.push(s) };
+  endItems({ env: {}, write: (s) => lines.push(s) });
+  assert.equal(lines.length, 0);
+  emitItem({ key: "x" }, w);
+  emitItem({ key: "y" }, w);
+  lines.length = 0;
+  endItems(w);
+  const printed = Number(JSON.parse(lines[0].slice("MATRX-ITEMS-END ".length)).count);
+  assert.ok(printed >= 2, lines[0]);
+  const parsed = parseItems(['MATRX-ITEM {"key":"x"}', 'MATRX-ITEM {"key":"y"}', 'MATRX-ITEMS-END {"count":2}'].join("\n"));
+  assert.equal(parsed.complete, true);
+  assert.equal(parseItems('MATRX-ITEM {"key":"x"}').complete, false);
+  assert.equal(parseItems('MATRX-ITEM {"key":"x"}\nMATRX-ITEMS-END {"count":"x"}').errors.length, 1);
 });

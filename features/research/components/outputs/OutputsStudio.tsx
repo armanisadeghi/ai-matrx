@@ -1133,7 +1133,7 @@ function MandateUnavailableNote({ message }: { message: string }) {
         </p>
         <p className="text-[11px] text-muted-foreground break-words">{message}</p>
       </div>
-    </div>
+    <ErrorAlchemyMenu /></div>
   );
 }
 

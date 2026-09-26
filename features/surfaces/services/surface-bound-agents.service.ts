@@ -32,11 +32,11 @@ export interface SurfaceBoundAgentEntry {
 export interface SurfaceBoundAgentSection {
   /**
    * Stable section id for UI layout:
-   * `public` | `mine` | `shared` | `org:<uuid>` — or `users` on the admin
-   * seat, which has no "mine" / "shared with me".
+   * `public` | `mine` | `shared` | `org:<uuid>` — only `public` on the admin
+   * seat, which lists the platform's agents alone.
    */
-  key: "public" | "mine" | "shared" | "users" | `org:${string}`;
-  /** Display label, e.g. "Public", org name, "Users" — or the person seat's own words. */
+  key: "public" | "mine" | "shared" | `org:${string}`;
+  /** Display label: the public tab, the person's own section, an org name, or shared-with-me. */
   label: string;
   /** Stable sort key — lower renders first. */
   sortOrder: number;
@@ -421,23 +421,19 @@ function bucketBindingRows(
     });
   }
 
-  // THE ADMIN SEAT (Arman, 2026-09-26: "No one acts as themselves in admin"):
-  // inside the admin section there is no "Mine" and no "Shared with me" —
-  // every person-owned binding is one platform section, "Users".
+  // THE ADMIN SEAT (Arman, 2026-09-26): an admin page manages the platform's
+  // own records. Inside the admin section only the platform's agents are
+  // listed — no Mine, no Shared with me, no organization's or person's
+  // bindings. Looking into a tenant's agents is Agent support lookup.
   if (adminDoorOpen()) {
-    const users = dedupeAgents([...mine, ...shared]);
-    mine.length = 0;
-    shared.length = 0;
-    if (users.length > 0) {
-      sections.push({ key: "users", label: "Users", sortOrder: 20, agents: users });
-    }
+    return sections;
   }
 
   const mineDeduped = dedupeAgents(mine);
   if (mineDeduped.length > 0) {
     sections.push({
       key: "mine",
-      label: "Mine", // personal-seat-ok: user pages only; the admin seat folds this into "Users" above
+      label: "Mine", // personal-seat-ok: user pages only; the admin seat returns before this (platform agents only)
       sortOrder: 20,
       agents: mineDeduped,
     });

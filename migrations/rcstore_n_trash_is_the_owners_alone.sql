@@ -15,10 +15,11 @@
 -- read_published / read_published_by_slug / document_origin already refuse a trashed document.
 -- Census 2026-09-25 (content): 37 functions; every client-reachable door is one of the above.
 --
--- based-on: iam.has_access_for_base(uuid, text, uuid, permission_level, boolean, text[]) cd55cecb5c837fa0c22382f55c192a6c7befeb34c99d4fb73c97e28444bd9212
--- based-on: iam.accessible_entity_ids(text, permission_level, integer, boolean) 499bcbc93941e385eed9bbb3e71cd3181bbb1b0daaeb5651b6ae7cf011f4e94a
--- based-on: iam.entity_read_expr(text, text, text, text) 2aebd0e3ff51d51bed60d61d23955478a2838bac6cea9eb6d43c534e6de7a843
--- based-on: iam.entity_read_kernel_expected() 0534a771856ddd0d7b8e8957afde539399e903b7a8b33aead40ee6924126e200
+-- based-on: iam.has_access_for_base(uuid, text, uuid, permission_level, boolean, text[]) a5fa8a2601bd07c9b4675d4c090c3f6b623cd19fbf922138adc1fa892fa636f0
+-- based-on: iam.accessible_entity_ids(text, permission_level, integer, boolean) 0ebad3890b080e8ca44d64fef98226e375831560498290157c73eae0e6eb637c
+-- based-on: iam.entity_read_expr(text, text, text, text) e50fb0ca6e84563f53f633ed97a4fb4e4ff7fedb7dcbb3774c457f47314b0f34
+-- based-on: iam.entity_read_kernel_expected() 69a02c8a9a58d58a56f4508c6d78a3f5e6bc2fd0ed211dbe1d753fe33ccdc8b6
+-- based-on: iam.entity_read_kernel_members_expected() e55d8223e4ba75c075a68484f0b383c65a26c3daf10a5b14ac4a50ab40c9b252
 set local lock_timeout = '2s';
 
 create function platform.trash_is_owner_only(p_token text)
@@ -202,13 +203,13 @@ begin
       continue walk when v_detail ->> 'deleted_at' is not null
                      and v_detail_author is distinct from v_uid;
       if p_required <= 'commenter'::public.permission_level then
-        if iam.has_access_for(v_uid, v_detail_type, v_detail_id, p_required) then return true; end if;
+        if platform.detail_parent_access_for(v_uid, v_detail_type, v_detail_id, p_required) then return true; end if;
       else
         if v_detail_author = v_uid
-           and iam.has_access_for(v_uid, v_detail_type, v_detail_id, 'commenter'::public.permission_level)
+           and platform.detail_parent_access_for(v_uid, v_detail_type, v_detail_id, 'commenter'::public.permission_level)
         then return true; end if;
         if p_required >= 'admin'::public.permission_level
-           and iam.has_access_for(v_uid, v_detail_type, v_detail_id, 'admin'::public.permission_level)
+           and platform.detail_parent_access_for(v_uid, v_detail_type, v_detail_id, 'admin'::public.permission_level)
         then return true; end if;
       end if;
       continue walk;
@@ -594,7 +595,23 @@ begin
   -- ScalarArrayOpExpr and falls back to a linear scan of the array PER ROW.
   -- Against v_ids of 32,697 that is what made this function quadratic.
   for rec in
-    with have as materialized (select iam.unnest_uuids(v_ids) as id)
+    with have as materialized (select iam.unnest_uuids(v_ids) as id),
+    -- AEI-REACH survives this rebase: ask the kernel once per distinct container,
+    -- then still confirm every candidate row with the kernel below.
+    reach_cand as materialized (
+      select r.item_id, r.container_type, r.container_id
+      from platform.reachability r
+      where r.item_type = p_type and r.max_level >= p_required
+        and not exists (select 1 from have h where h.id = r.item_id)
+    ),
+    reach_containers as materialized (
+      select distinct rc.container_type, rc.container_id from reach_cand rc
+    ),
+    reach_ok as materialized (
+      select k.container_type, k.container_id
+      from reach_containers k
+      where iam.has_access_for_base(v_uid, k.container_type, k.container_id, p_required, p_include_public)
+    )
     select distinct c.id
     from (
       select p.resource_id as id
@@ -614,9 +631,10 @@ begin
       from iam.memberships m
       where m.container_type = p_type and m.user_id = v_uid and m.deleted_at is null
       union
-      select r.item_id
-      from platform.reachability r
-      where r.item_type = p_type and r.max_level >= p_required
+      select rc.item_id
+      from reach_cand rc
+      where exists (select 1 from reach_ok k
+                     where k.container_type = rc.container_type and k.container_id = rc.container_id)
       union
       select a.source_id
       from platform.associations_live a
@@ -1048,7 +1066,10 @@ begin
       -- `NULL in (…)` evaluate to NULL rather than false. 10 of web.site's 45
       -- rows have a NULL brand_id, and they were the last thing standing
       -- between this expression and a total one.
-      if p_variant = 'component' then
+      if p_variant = 'component' and iam.read_lane_v2_edge_emits(p_token, rec.parent_type, rec.fk_column) then
+        -- READ-LANE V2: use the parent policy's correlated arm where the declared edge supports it.
+        v_arms := array_append(v_arms, iam.read_lane_v2_parent_arm(rec.parent_type, rec.fk_column));
+      elsif p_variant = 'component' then
         -- 🚨 MIRROR THE DEPLOYED LANE HERE, NOT THE KERNEL, and the difference is
         -- not academic. The generated component policy calls the 2-arg
         -- `accessible_entity_ids(parent,'viewer')` — include_public => TRUE —
@@ -1445,12 +1466,39 @@ $function$;
 -- change is equivalence-preserving by construction — the same rule, platform.trash_hides, is
 -- added to the kernel and to its mirror, and only for declared tokens — and is proved after the
 -- apply with aidream scripts/_verify_entity_read_equivalence.py --table content.document --full.
-create or replace function iam.entity_read_kernel_expected()
- returns text
- language sql
- immutable
-as $function$
-  SELECT '26292aa71b0989a9ec993192a5c1b510'::text
-$function$;
+DO $rerecord$
+DECLARE
+  v_fp text := iam.entity_read_kernel_fingerprint();
+  v_members jsonb := iam.entity_read_kernel_members_live();
+  v_before jsonb := iam.entity_read_kernel_members_expected()->'members';
+  v_added text[]; v_removed text[]; v_changed text[];
+BEGIN
+  SELECT coalesce(array_agg(k ORDER BY k), '{}'::text[]) INTO v_added
+    FROM jsonb_object_keys(v_members) AS k WHERE NOT v_before ? k;
+  SELECT coalesce(array_agg(k ORDER BY k), '{}'::text[]) INTO v_removed
+    FROM jsonb_object_keys(v_before) AS k WHERE NOT v_members ? k;
+  SELECT coalesce(array_agg(k ORDER BY k), '{}'::text[]) INTO v_changed
+    FROM jsonb_object_keys(v_members) AS k
+   WHERE v_before ? k AND (v_before->>k) IS DISTINCT FROM (v_members->>k);
+  IF cardinality(v_added) <> 0 OR cardinality(v_removed) <> 0
+     OR v_changed <> ARRAY[
+       'iam.accessible_entity_ids(p_type text, p_required permission_level, p_depth integer, p_include_public boolean)',
+       'iam.has_access_for_base(p_user_id uuid, p_type text, p_id uuid, p_required permission_level, p_include_public boolean, p_path text[])'
+     ] THEN
+    RAISE EXCEPTION 'rcstore-n: refusing to re-record unrelated kernel drift (added %, removed %, changed %)',
+      v_added, v_removed, v_changed;
+  END IF;
+  EXECUTE format($ddl$CREATE OR REPLACE FUNCTION iam.entity_read_kernel_expected()
+RETURNS text LANGUAGE sql IMMUTABLE AS $f$ SELECT %L::text $f$$ddl$, v_fp);
+  EXECUTE format($ddl$CREATE OR REPLACE FUNCTION iam.entity_read_kernel_members_expected()
+RETURNS jsonb LANGUAGE sql IMMUTABLE AS $f$ SELECT %L::jsonb $f$$ddl$,
+    jsonb_build_object('fingerprint', v_fp, 'members', v_members)::text);
+  IF iam.entity_read_kernel_fingerprint() IS DISTINCT FROM iam.entity_read_kernel_expected()
+     OR (iam.entity_read_kernel_members_expected()->'members') IS DISTINCT FROM iam.entity_read_kernel_members_live()
+     OR (iam.entity_read_kernel_members_expected()->>'fingerprint') IS DISTINCT FROM iam.entity_read_kernel_expected() THEN
+    RAISE EXCEPTION 'rcstore-n: kernel fingerprint re-record did not match the live kernel';
+  END IF;
+END
+$rerecord$;
 
 select iam.apply_rls('content', 'document', 'document', 'entity');

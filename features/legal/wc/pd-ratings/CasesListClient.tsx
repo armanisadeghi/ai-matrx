@@ -29,6 +29,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
 import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { formatRelativeTime } from "@/utils/datetime";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const CASES_TRAIL = [
   { label: "Legal", href: "/legal" },
@@ -114,6 +115,7 @@ export function CasesListClient() {
           icon={AlertCircle}
           title="Couldn't load your cases"
           description={(error as Error).message ?? "Try refreshing."}
+          actions={<ErrorAlchemyMenu error={error} operation="List your saved cases" />}
         />
       </>
     );

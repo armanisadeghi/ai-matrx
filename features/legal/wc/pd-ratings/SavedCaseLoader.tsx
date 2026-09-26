@@ -13,6 +13,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 const LOADER_TRAIL = [
   { label: "Legal", href: "/legal" },
   { label: "CA WC", href: "/legal/ca-wc" },
@@ -115,6 +116,6 @@ function ErrorState({
           {detail && <p className="mt-1 text-xs text-muted-foreground">{detail}</p>}
         </div>
       </div>
-    </>
+    <ErrorAlchemyMenu /></>
   );
 }

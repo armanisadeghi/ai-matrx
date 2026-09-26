@@ -75,6 +75,7 @@ import { createSittingStore, type SittingBase } from "../sitting/sitting";
 import { useDialogSitting } from "../sitting/useDialogSitting";
 import { SittingResumed } from "../sitting/SittingResumed";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /**
  * THE PLAN BEING SET UP IS IN-PROGRESS WORK. The cold-walk-6 census
  * (2026-09-17) drove this page the way a person does — typed into "What do you
@@ -896,7 +897,7 @@ function Refusal({
       <h3 className="text-sm font-semibold">{title}</h3>
       <p className="mt-1 whitespace-pre-line text-sm">{body}</p>
       {action ? <div className="mt-3">{action}</div> : null}
-    </section>
+    <ErrorAlchemyMenu /></section>
   );
 }
 

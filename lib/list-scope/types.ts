@@ -41,10 +41,13 @@
 
 // THE ADMIN SEAT (Arman, 2026-09-26): "No one acts as themselves in admin."
 // An admin page never shows mine / orgs / shared — those are PERSONAL-SEAT
-// questions ("what did I make?", "what does MY team have?"). An admin page
-// answers platform questions instead, and declares ADMIN_LIST_SCOPES:
+// questions ("what did I make?", "what does MY team have?").
 //
-//   system          → what does the platform ship?
+// AN ADMIN MANAGEMENT PAGE HAS NO SCOPE LANES AT ALL: it manages the
+// platform's own records (the `system` scope, alone, with no tabs). Looking
+// into a tenant's records is tech support, and lives only on a separate
+// support route (…/support), which declares ADMIN_SUPPORT_LIST_SCOPES:
+//
 //   platform_orgs   → every organization's records   (narrowable to one org)
 //   platform_users  → every person's own records     (narrowable to one person,
 //                                                      by their personal org id)
@@ -80,9 +83,11 @@ export type ListScope =
   /** ADMIN: the whole platform corpus. */
   | { kind: "platform_all" };
 
-/** The scopes an ADMIN page declares — never a personal-seat scope. */
-export const ADMIN_LIST_SCOPES: ListScopeKind[] = [
-  "system",
+/**
+ * The scopes an admin SUPPORT route declares (…/support, e.g. Mandate support
+ * lookup) — never on a management page, never a personal-seat scope.
+ */
+export const ADMIN_SUPPORT_LIST_SCOPES: ListScopeKind[] = [
   "platform_orgs",
   "platform_users",
   "platform_all",

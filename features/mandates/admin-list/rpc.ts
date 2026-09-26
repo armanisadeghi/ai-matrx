@@ -1,9 +1,14 @@
 // features/mandates/admin-list/rpc.ts
 //
-// The ONE call into `public.mnd_admin_list` (migrations/mnd_admin_list_server_read_2026_09_24.sql,
-// extended by migrations/mnd_admin_list_sources_contract_page_rows_2026_09_25.sql).
+// The ONE call into the admin mandate read (migrations/mnd_admin_list_server_read_2026_09_24.sql,
+// extended by migrations/mnd_admin_list_sources_contract_page_rows_2026_09_25.sql and
+// split into two doors by migrations/mnd_admin_list_system_only_support_lookup_2026_09_26.sql).
 // Platform admins only; RLS-respecting. Its four modes — page, counts, facets,
 // agents — answer with JSON whose shapes are declared here.
+//
+// TWO LANES, TWO DOORS (Arman, 2026-09-26):
+//   system   public.mnd_admin_list          the management page — SYSTEM mandates only
+//   support  public.mnd_admin_support_list  the support lookup — organizations' and people's
 
 import type { Database, Json } from "@/types/database.types";
 import type {
@@ -14,6 +19,14 @@ import { supabase } from "@/utils/supabase/client";
 
 export type MandateAdminListArgs =
   Database["public"]["Functions"]["mnd_admin_list"]["Args"];
+
+/** Which admin page is asking: the management list or the support lookup. */
+export type MandateAdminLane = "system" | "support";
+
+const DOOR: Record<MandateAdminLane, "mnd_admin_list" | "mnd_admin_support_list"> = {
+  system: "mnd_admin_list",
+  support: "mnd_admin_support_list",
+};
 
 /** One row of a `page` answer: the ids plus the facts only the database knows. */
 export interface MandateAdminPageRow {
@@ -75,21 +88,28 @@ export interface MandateAdminPageAnswer {
   console?: MandateAdminPageConsole;
 }
 
-/** The admin seat's platform scopes — there is no "mine" (Arman, 2026-09-26). */
+/**
+ * The counts answer. The management lane answers `system` alone (it has one
+ * corpus and no tabs); the support lane answers its three views and their
+ * narrows. There is never a "mine" (Arman, 2026-09-26).
+ */
 export interface MandateAdminCountsAnswer {
-  system: number;
-  orgs: number;
-  users: number;
-  all: number;
-  orgs_narrow: { id: string; label: string; count: number }[];
+  system?: number;
+  orgs?: number;
+  users?: number;
+  all?: number;
+  orgs_narrow?: { id: string; label: string; count: number }[];
   /** One option per person; `id` is that person's personal organization. */
-  users_narrow: { id: string; label: string; count: number }[];
+  users_narrow?: { id: string; label: string; count: number }[];
 }
 
 export type MandateAdminFacetsAnswer = Record<string, { value: string; count: number }[]>;
 
-export async function callMandateAdminList<T>(args: MandateAdminListArgs): Promise<T> {
-  const { data, error } = await supabase.rpc("mnd_admin_list", args);
+export async function callMandateAdminList<T>(
+  args: MandateAdminListArgs,
+  lane: MandateAdminLane = "system",
+): Promise<T> {
+  const { data, error } = await supabase.rpc(DOOR[lane], args);
   if (error) {
     // A door's refusal is a sentence written for a person and is carried
     // intact; a statement timeout is not, so it gets plain words. `code` rides
@@ -97,7 +117,7 @@ export async function callMandateAdminList<T>(args: MandateAdminListArgs): Promi
     const message =
       error.code === "57014"
         ? "The mandate list took too long to answer. Try again in a moment."
-        : `Mandate list (${args.p_mode ?? "page"}): ${error.message}`;
+        : `${lane === "support" ? "Mandate support lookup" : "Mandate list"} (${args.p_mode ?? "page"}): ${error.message}`;
     throw Object.assign(new Error(message), {
       code: error.code,
       details: error.details,
