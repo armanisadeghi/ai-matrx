@@ -328,7 +328,7 @@ function ItemCard({ item, active }: { item: ResolvedItem; active: boolean }) {
                 Post on the whole document
               </Button>
             )}
-            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); api.discardDraft(item.key); }}>
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); void run(api.discardDraft(item.key)); }}>
               Discard
             </Button>
             </>

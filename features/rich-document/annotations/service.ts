@@ -162,6 +162,7 @@ export async function listCommentThreads(source: AnnotationSource): Promise<Comm
       commentId: row.id,
       version: typeof row.version === "number" ? row.version : null,
       editedAt: row.edited_at ?? null,
+      clientRequestId: row.client_request_id ?? undefined,
     });
   }
   for (const row of replies) {
