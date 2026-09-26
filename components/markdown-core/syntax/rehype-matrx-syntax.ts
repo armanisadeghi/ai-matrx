@@ -37,9 +37,17 @@ function classList(el: Element): string[] {
   return typeof cls === "string" ? String(cls).split(/\s+/) : [];
 }
 
+// Zero layout width: the "#" hangs past the heading's last word, so an
+// invisible anchor can never wrap onto a line of its own and grow the heading
+// (UI audit C, 2026-09-26). No hover on touch screens, so no anchor there.
 const ANCHOR_CLASS = [
   "matrx-heading-anchor",
-  "ml-2",
+  "relative",
+  "left-2",
+  "inline-block",
+  "w-0",
+  "whitespace-nowrap",
+  "[@media(hover:none)]:hidden",
   "select-none",
   "text-[0.8em]",
   "font-normal",

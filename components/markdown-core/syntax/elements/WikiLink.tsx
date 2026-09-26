@@ -7,14 +7,14 @@
 // wikilink-resolver.ts). States, each honest:
 //   resolving → the name, dotted underline, not yet a link
 //   found     → a real link to the record's page (registry route)
-//   missing   → the name with a dashed underline + a "Create" button that
-//               makes a note with that name (then links to it)
+//   missing   → the name with a dashed underline; the name itself is the
+//               button that makes a note with that name (then links to it)
 //   error     → the name, with the reason on hover
 // Never an href that goes nowhere.
 
 import { useContext, useEffect, useState, type ReactNode } from "react";
 import { ReactReduxContext } from "react-redux";
-import { FilePlus2, Link2Off } from "lucide-react";
+import { Link2Off } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import type { WikiResolution } from "./wikilink-resolver";
@@ -140,24 +140,26 @@ export function WikiLink(props: WikiLinkProps) {
     }
   };
 
+  // The name IS the control (Obsidian's unresolved link): one click creates
+  // the note. Never a separate "Create" word inside someone's sentence (UI
+  // audit C, 2026-09-26) — and exempt from the touch floor, so running text
+  // never grows a 44px line.
   return (
-    <span data-content-chrome="" data-wikilink="missing" className="inline-flex items-baseline gap-1">
-      <span title={`No page named "${resolution.title}" yet`} className="text-muted-foreground underline decoration-dashed underline-offset-2">
-        {label}
-      </span>
-      <button
-        type="button"
-        onClick={create}
-        disabled={creating}
-        title={`Create a note named "${resolution.title}"`}
-        className={cn(
-          "inline-flex items-center gap-0.5 self-center rounded px-1 text-[0.75em] font-medium text-primary hover:bg-primary/10",
-          creating && "opacity-60",
-        )}
-      >
-        <FilePlus2 className="h-3 w-3" aria-hidden />
-        {creating ? "Creating…" : "Create"}
-      </button>
-    </span>
+    <button
+      type="button"
+      data-content-chrome=""
+      data-wikilink="missing"
+      data-touch-exempt=""
+      onClick={create}
+      disabled={creating}
+      aria-busy={creating || undefined}
+      title={creating ? `Creating "${resolution.title}"…` : `No page named "${resolution.title}" yet. Click to create it.`}
+      className={cn(
+        "inline cursor-pointer border-0 bg-transparent p-0 align-baseline font-[inherit] text-[length:inherit] leading-[inherit] text-muted-foreground underline decoration-dashed underline-offset-2 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring",
+        creating && "cursor-wait opacity-60",
+      )}
+    >
+      {label}
+    </button>
   );
 }
