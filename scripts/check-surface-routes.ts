@@ -37,6 +37,11 @@
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import {
+  findDeadUrlPatterns,
+  routeSegments,
+  urlPatternMatchesRoute,
+} from "@ai-matrx/alchemy/checks";
 import { ALL_MANIFESTS } from "@/features/surfaces/manifests/registry";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 import {
@@ -154,44 +159,6 @@ function collectAppRoutes(): string[] {
  * Path → comparable segments. A dynamic segment (`[id]`, `:id`) becomes `*`;
  * a catch-all (`[...rest]`, `[[...rest]]`) becomes `**` and absorbs the tail.
  */
-function segmentsOf(path: string): string[] {
-  return path
-    .split("?")[0]
-    .split("#")[0]
-    .split("/")
-    .filter(Boolean)
-    .map((segment) => {
-      if (/^\[\[?\.\.\..+\]\]?$/.test(segment)) return "**";
-      if (segment.startsWith("[") || segment.startsWith(":")) return "*";
-      return segment;
-    });
-}
-
-/**
- * Does a declared `urlPattern` address a live route? A literal pattern
- * segment must be a literal route segment — a dynamic route segment does NOT
- * satisfy it, or `/marketing/[brandId]/…` would "cover" the retired
- * `/marketing/brands/…` shape and hide the whole class again.
- */
-export function urlPatternMatchesRoute(
-  pattern: string,
-  routeSegments: readonly string[],
-): boolean {
-  const isPrefix = pattern.trimEnd().endsWith("*") && !pattern.endsWith("]*");
-  const segments = segmentsOf(pattern.replace(/\*+\s*$/, ""));
-  for (let i = 0; i < segments.length; i += 1) {
-    const routeSegment = routeSegments[i];
-    if (routeSegment === "**") return true; // catch-all absorbs the tail
-    if (routeSegment === undefined) return false;
-    const declared = segments[i];
-    if (declared === "**") return true;
-    if (declared === "*" ? routeSegment !== "*" : routeSegment !== declared) {
-      return false;
-    }
-  }
-  return isPrefix || routeSegments.length === segments.length;
-}
-
 function isDeliberatelyUnmapped(route: string): string | null {
   const hit = DELIBERATELY_UNMAPPED.find(
     (entry) => route === entry.prefix || route.startsWith(entry.prefix),
@@ -232,18 +199,13 @@ function main(): void {
   }
 
   // ── 3. Dead urlPatterns (ERROR) ──────────────────────────────────────
-  const appRoutes = collectAppRoutes().map(segmentsOf);
-  const deadPatterns: { surface: string; pattern: string }[] = [];
-  for (const manifest of ALL_MANIFESTS) {
-    const pattern = manifest.urlPattern;
-    if (!pattern) continue;
-    const alive = appRoutes.some((route) =>
-      urlPatternMatchesRoute(pattern, route),
-    );
-    if (!alive) {
-      deadPatterns.push({ surface: manifest.surfaceName, pattern });
-    }
-  }
+  // ALC-14: the declaration half of this check is @ai-matrx/alchemy/checks
+  // findDeadUrlPatterns; this script supplies the live route list.
+  const liveRoutes = collectAppRoutes();
+  const appRoutes = liveRoutes.map(routeSegments);
+  const deadPatterns = findDeadUrlPatterns(ALL_MANIFESTS, liveRoutes).map(
+    ({ surfaceName, urlPattern }) => ({ surface: surfaceName, pattern: urlPattern }),
+  );
   console.log(
     `  urlPatterns: ${ALL_MANIFESTS.filter((m) => m.urlPattern).length} declared over ${appRoutes.length} live app routes   DEAD: ${deadPatterns.length}`,
   );
@@ -274,7 +236,7 @@ function main(): void {
  * went undetected for the whole marketing family, against the live route tree.
  */
 function selfTest(): void {
-  const appRoutes = collectAppRoutes().map(segmentsOf);
+  const appRoutes = collectAppRoutes().map(routeSegments);
   const cases: { pattern: string; shouldBeAlive: boolean; why: string }[] = [
     {
       pattern: "/marketing/brands/[brandId]/sites/[siteId]/pages/[pageId]",
