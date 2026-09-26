@@ -23,6 +23,19 @@ export interface AuditSummaryRow {
   audit_class_reason: string | null;
 }
 
+/** One schema's roll-up of its `audit.summary` rows (computed client-side). */
+export interface AuditSchemaSummaryRow {
+  schema_name: string;
+  tables: number;
+  certified: number;
+  uncertified: number;
+  machinery: number;
+  /** Tables with at least one FAIL. */
+  failing_tables: number;
+  fails: number;
+  warns: number;
+}
+
 export interface CanonicalFindingRow {
   id: number;
   schema_name: string | null;

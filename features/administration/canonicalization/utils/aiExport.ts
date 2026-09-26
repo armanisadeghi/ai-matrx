@@ -10,6 +10,7 @@
 
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import type {
+  AuditSchemaSummaryRow,
   AuditSummaryRow,
   BrokenFunctionRow,
   CanonicalCertifyRow,
@@ -84,6 +85,43 @@ export const SUMMARY_TABLE_COPY: AuditTableCopyForAi<AuditSummaryRow> = {
     total: all.length,
   }),
 };
+
+// ─── Summary by schema ───────────────────────────────────────────────────
+
+export function auditSchemaSummaryToHuman(row: AuditSchemaSummaryRow): string {
+  return [
+    `Schema: ${row.schema_name}`,
+    `Tables: ${row.tables} (${row.certified} certified · ${row.uncertified} not certified · ${row.machinery} machinery)`,
+    `Tables with a FAIL: ${row.failing_tables}`,
+    `Gate: ${row.fails} FAIL · ${row.warns} WARN`,
+  ].join("\n");
+}
+
+export const SCHEMA_SUMMARY_TABLE_COPY: AuditTableCopyForAi<AuditSchemaSummaryRow> =
+  {
+    label: "Schema summary row",
+    listLabel: "Summary by schema",
+    location: canonicalRouteLocation(
+      "/administration/database/canonicalization/by-schema",
+    ),
+    rowKind: "canonicalization-schema-summary-row",
+    listKind: "canonicalization-schema-summary-rows",
+    rowDescription:
+      "One schema's totals, rolled up from every registered table in audit.summary.",
+    listDescription:
+      "Per-schema gate totals rolled up from audit.summary (visible rows after filters).",
+    humanRow: auditSchemaSummaryToHuman,
+    rowAttributes: (r) => ({
+      schema: r.schema_name,
+      tables: r.tables,
+      fails: r.fails,
+      warns: r.warns,
+    }),
+    listAttributes: (visible, all) => ({
+      count: visible.length,
+      total: all.length,
+    }),
+  };
 
 // ─── Findings ────────────────────────────────────────────────────────────
 

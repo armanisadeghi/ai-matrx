@@ -12,6 +12,7 @@ import {
   ShieldQuestion,
   Search,
   Loader2,
+  Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -27,6 +28,11 @@ const NAV_ITEMS = [
     label: "Summary",
     href: "/administration/database/canonicalization/summary",
     icon: ListChecks,
+  },
+  {
+    label: "By schema",
+    href: "/administration/database/canonicalization/by-schema",
+    icon: Layers,
   },
   {
     label: "Findings",

@@ -22,13 +22,16 @@ export function SummaryPage() {
   const toolbar = useCanonicalizationDatasetToolbar(reload);
 
   const onlyUncertified = searchParams.get("onlyUncertified") === "1";
+  const schemaParam = searchParams.get("schema");
   const initialColumnFilters = useMemo<
     Record<string, ColumnFilter> | undefined
-  >(
-    () =>
-      onlyUncertified ? { certified: { enumValues: ["false"] } } : undefined,
-    [onlyUncertified],
-  );
+  >(() => {
+    const filters: Record<string, ColumnFilter> = {};
+    if (onlyUncertified) filters.certified = { enumValues: ["false"] };
+    // Deep link from the By schema tab — exact match, not substring.
+    if (schemaParam) filters.schema_name = { enumValues: [schemaParam] };
+    return Object.keys(filters).length > 0 ? filters : undefined;
+  }, [onlyUncertified, schemaParam]);
 
   const columns: AuditColumnDef<AuditSummaryRow>[] = useMemo(
     () => [
