@@ -26,7 +26,9 @@
 import { useId, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Input, Textarea } from "@ai-matrx/design-system";
+import { Eye, EyeOff } from "lucide-react";
+
+import { Input } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { cn } from "@/lib/utils";
 import type {
@@ -424,6 +426,7 @@ function FieldList({
 function Credential({ render, busy, idPrefix, onSubmit }: FormProps<CredentialRender>) {
   const [values, setValues] = useState<Record<string, string>>({});
   const [authenticator, setAuthenticator] = useState("");
+  const [showAuthenticator, setShowAuthenticator] = useState(false);
 
   return (
     <div className="flex flex-col gap-4">
@@ -446,18 +449,32 @@ function Credential({ render, busy, idPrefix, onSubmit }: FormProps<CredentialRe
           <label className="text-sm font-medium" htmlFor={`${idPrefix}-authenticator`}>
             Authenticator setup key (optional)
           </label>
-          <Textarea
-            id={`${idPrefix}-authenticator`}
-            rows={2}
-            className="text-base"
-            autoComplete="off"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            value={authenticator}
-            onChange={(event) => setAuthenticator(event.target.value)}
-            placeholder="The long code shown beside the QR when you set up two-factor."
-          />
+          {/* A SETUP KEY IS A SECRET — it mints every future code — so it is
+              masked like a password, with an explicit reveal for checking a
+              long paste. */}
+          <div className="relative">
+            <Input
+              id={`${idPrefix}-authenticator`}
+              className="pr-10 text-base"
+              type={showAuthenticator ? "text" : "password"}
+              autoComplete="off"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              value={authenticator}
+              onChange={(event) => setAuthenticator(event.target.value)}
+              placeholder="The long code shown beside the QR when you set up two-factor."
+            />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+              aria-label={showAuthenticator ? "Hide setup key" : "Show setup key"}
+              aria-pressed={showAuthenticator}
+              onClick={() => setShowAuthenticator((shown) => !shown)}
+            >
+              {showAuthenticator ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          </div>
         </div>
       ) : null}
 

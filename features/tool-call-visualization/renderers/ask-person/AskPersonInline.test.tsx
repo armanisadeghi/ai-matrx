@@ -137,7 +137,21 @@ describe("AskPersonInline — the in-chat ask", () => {
     expect(text).toContain("https://example.com");
     expect(text).toContain("Authenticator setup key");
 
-    const password = container.querySelector('input[type="password"]') as HTMLInputElement;
+    // THE SETUP KEY IS MASKED LIKE A PASSWORD, and never a textarea.
+    expect(container.querySelector("textarea")).toBeNull();
+    const setupKey = container.querySelector('input[id$="-authenticator"]') as HTMLInputElement;
+    expect(setupKey.type).toBe("password");
+    expect(setupKey.getAttribute("autocomplete")).toBe("off");
+    expect(setupKey.getAttribute("spellcheck")).toBe("false");
+    const reveal = container.querySelector('button[aria-label="Show setup key"]') as HTMLButtonElement;
+    await act(async () => reveal.click());
+    expect(setupKey.type).toBe("text");
+    await act(async () => {
+      (container.querySelector('button[aria-label="Hide setup key"]') as HTMLButtonElement).click();
+    });
+    expect(setupKey.type).toBe("password");
+
+    const password = container.querySelector('input[autocomplete="current-password"]') as HTMLInputElement;
     expect(password).not.toBeNull();
     const username = container.querySelector('input[autocomplete="username"]') as HTMLInputElement;
 
@@ -156,7 +170,7 @@ describe("AskPersonInline — the in-chat ask", () => {
     });
     expect(container.textContent).toContain("Got it, I'm on it.");
     expect(container.textContent).toContain("Saved to your vault.");
-    expect(container.querySelector('input[type="password"]')).toBeNull();
+    expect(container.querySelector("input")).toBeNull();
   });
 
   it("draws vault_item with no origin line and sends only field_values", async () => {
