@@ -145,12 +145,11 @@ export const LANGUAGE_DEFAULT_FIELDS = [
     path: "userPreferences.textGeneration.language",
     summary: "default language for generated text",
   },
-  {
-    key: "flashcards",
-    path: "userPreferences.flashcard.language",
-    summary: "default language for study content",
-  },
 ] as const;
+// Flashcards was the third key until the settings truth sweep (2026-09-26):
+// `userPreferences.flashcard.language` had no reader anywhere — flashcard
+// study content does not read a preferred language — so offering it to the
+// person or to agents promised a change that never happened.
 
 export type LanguageDefaultKey =
   (typeof LANGUAGE_DEFAULT_FIELDS)[number]["key"];

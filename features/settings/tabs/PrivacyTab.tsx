@@ -1,6 +1,6 @@
 "use client";
 
-import { ShieldCheck, Eye, Lightbulb, DatabaseZap } from "lucide-react";
+import { ShieldCheck, Lightbulb, DatabaseZap } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
@@ -57,20 +57,6 @@ export default function PrivacyTab() {
         the capture-related preferences that exist today, plus the door onto
         your data's deletion schedule.
       </SettingsCallout>
-
-      <SettingsSection title="Assistant" icon={Eye}>
-        <SettingsLink
-          label="Always watching"
-          description="Whether the assistant may observe screen context even when not invoked. Set on the Assistant tab, alongside its other activation controls."
-          href={settingDoorHref({
-            scope: "user",
-            tabId: "ai.assistants",
-            controlId: "settings-control-activation-always-watching",
-          })}
-          actionLabel="Assistant"
-          last
-        />
-      </SettingsSection>
 
       <SettingsSection title="Notifications">
         <SettingsLink

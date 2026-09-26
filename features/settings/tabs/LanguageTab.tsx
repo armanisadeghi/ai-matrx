@@ -20,9 +20,6 @@ export default function LanguageTab() {
   const [textLang, setTextLang] = useSetting<string>(
     "userPreferences.textGeneration.language",
   );
-  const [flashcardLang, setFlashcardLang] = useSetting<string>(
-    "userPreferences.flashcard.language",
-  );
 
   return (
     <>
@@ -50,13 +47,6 @@ export default function LanguageTab() {
           description="Default language for generated text."
           value={textLang}
           onValueChange={setTextLang}
-          options={LANGUAGE_OPTIONS}
-        />
-        <SettingsSelect
-          label="Flashcards"
-          description="Default language for study content."
-          value={flashcardLang}
-          onValueChange={setFlashcardLang}
           options={LANGUAGE_OPTIONS}
           last
         />

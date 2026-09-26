@@ -383,7 +383,7 @@ const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "language_defaults",
     label: "Language defaults",
-    description: `Set the per-feature default languages. Expects an OBJECT with any subset of these keys: ${LANGUAGE_DEFAULT_KEYS_TEXT}. Each value must be one of: ${LANGUAGE_ENUM_TEXT}. Send only the features you want to change; at least one is required. There is no global language setting — to switch the user's whole experience, send all three keys. Saved to the user's account.`,
+    description: `Set the per-feature default languages. Expects an OBJECT with any subset of these keys: ${LANGUAGE_DEFAULT_KEYS_TEXT}. Each value must be one of: ${LANGUAGE_ENUM_TEXT}. Send only the features you want to change; at least one is required. There is no global language setting — to switch the user's whole experience, send every key. Saved to the user's account.`,
     valueType: "object",
     updatesValue: "language_defaults",
     mode: "entity",
@@ -457,7 +457,6 @@ export interface SettingsTextGenerationStyle {
 export interface SettingsLanguageDefaults {
   voice: string;
   text_generation: string;
-  flashcards: string;
 }
 
 /** `voice_persona` — spoken-reply delivery emotion (`VOICE_EMOTION_OPTIONS`). */

@@ -90,7 +90,6 @@ export function SettingsTabContentImpl({ tabId, basePath }: Props) {
       language_defaults: {
         voice: voice.language,
         text_generation: textGeneration.language,
-        flashcards: state.userPreferences.flashcard.language,
       },
       assistant_name: state.userPreferences.assistant.name,
       voice_persona: {
