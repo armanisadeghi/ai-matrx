@@ -43,6 +43,9 @@
 .rich-editor-prose code::after { content: none; }
 .rich-editor-prose a { color: hsl(var(--primary)); text-decoration: underline; cursor: text; }
 .rich-editor-prose blockquote { border-left: 3px solid hsl(var(--border)); padding-left: 1em; font-style: normal; }
+/* Typography's quote marks on a quote's first paragraph landed in every table cell of a quoted table (“Zone”); Preview draws none. */
+.rich-editor-prose blockquote p::before,
+.rich-editor-prose blockquote p::after { content: none; }
 .rich-editor-prose .rich-editor-callout blockquote,
 .rich-editor-prose .rich-editor-callout p { margin: 0.25em 0; }
 .rich-editor-prose table { border-collapse: collapse; width: 100%; margin: 0.75em 0; }
