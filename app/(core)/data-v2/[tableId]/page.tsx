@@ -9,30 +9,24 @@
 // link must be the same screen.
 
 import { use, useCallback, useMemo, useState, type ReactNode } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { RecordsMount, TablePage, WhereItLives, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import { useTable } from "@ai-matrx/records/react";
-import type { AgentBuildAsk, OpenRecordsAsk, PageView } from "@ai-matrx/records-ui";
+import type { PageView } from "@ai-matrx/records-ui";
 import type { RecordFilter } from "@ai-matrx/records";
 import { Button } from "@ai-matrx/design-system";
-import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { TableTransferOffer } from "@/features/sharing/components/TableTransferOffer";
-import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import {
   PendingTableInvitation,
   usePendingTableInvitation,
 } from "@/features/sharing/outside/PendingTableInvitation";
-import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { TableSwitcher } from "@/features/unified-data/components/TableSwitcher";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { getOrganizationMembers } from "@/features/organizations/service";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { createClient } from "@/utils/supabase/client";
 import { useSharedTable } from "@/features/unified-data/hub/useSharedTable";
@@ -45,7 +39,8 @@ import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { SheetLayout } from "@/features/data-tables/components/SheetLayout";
-import { runRowAgentAction, type RowAgentActionTarget } from "@/features/unified-data/row-agent-action/rowAgentAction";
+import { recordsUiHostFor, useRecordsUiPorts } from "@/features/data-tables/records-ui-host/recordsUiHost";
+import { useMergedGridKnob } from "@/features/data-tables/records-ui-host/mergedGridKnob";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { copyAgain } from "@/features/unified-data/cutover/copyAgain";
@@ -53,11 +48,8 @@ import {
   ROW_CHANGE_AGENT_LABEL,
   useRowChangeAgentOffer,
 } from "@/features/unified-data/row-change-agent/RowChangeAgentLink";
-import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { tableCopyEvaluation, useTableCopyEvaluation } from "@/features/unified-data/tableCopyEvaluation";
 import { replaceAddressWithoutNavigating, currentPathWithSearch } from "@/lib/url-state/addressWithoutNavigating";
-import { RECORDS_FILES } from "@/features/unified-data/recordsFiles";
-import { RECORDS_TEXT } from "@/features/unified-data/recordsCleanText";
 import { HeldWritesOnTable } from "@/features/record-change-approvals/HeldWritesOnTable";
 import { RecordStoreTableSurface, useGridContextChannel } from "@/features/unified-data/grid-agent-context/RecordStoreTableSurface";
 import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
@@ -189,7 +181,9 @@ export default function UnifiedDataTableRoute({
   const activeView = searchParams.get("view");
   // THE ONE-GRID MERGE, WALKED BEHIND ITS SWITCH (merge steps 5-8): `?grid=merged` draws the
   // package grid with the older /data grid's controls on it; without it the grid is as it was.
-  const mergedGrid = searchParams.get("grid") === "merged";
+  // `?grid=merged` forces it for a walk; otherwise the `data_tables.merged_grid` Feature Knob
+  // decides, for the TABLE's organization and this person (merge step 7; default off until step 8).
+  const gridForced = searchParams.get("grid") === "merged";
   // THE AGENT'S VIEW OF THE MERGED GRID (merge 6l): the grid tells the channel, the surface reads it.
   const gridContext = useGridContextChannel();
   /**
@@ -379,6 +373,8 @@ export default function UnifiedDataTableRoute({
    * once the share door has said this is NOT a share of an outsider's.
    */
   const readsAsMember = shared.state === "none";
+  const knobMergedGrid = useMergedGridKnob(readingOrganizationId);
+  const mergedGrid = gridForced || knobMergedGrid;
   // ONE SWITCH: does THIS organization keep its data in the record store? Set
   // once, for everybody, on the unified data ramp screen. There is no second,
   // per-person switch any more (lane NAV-FIX, 19 September).
@@ -394,168 +390,12 @@ export default function UnifiedDataTableRoute({
   });
 
   /**
-   * WHO IS IN THIS ORGANIZATION — the package's `members` port (FLD-11).
-   *
-   * A person field must offer PEOPLE, and who the people are is the platform's
-   * answer: `iam.organization_member` joined to the accounts, which this app
-   * has always read through `getOrganizationMembers`. The record store has no
-   * door onto membership and the package refuses to invent one, so the app
-   * answers the question it already knows how to answer.
+   * THE PORTS THE PACKAGE ASKS THIS APP FOR — members (FLD-11), a number clicking through
+   * (lane DRILL), "ask an agent" (onAskForOne) and a table's agent button (runAgentAction). Built
+   * by the ONE host binding every record-store table shares (one-grid merge, step 7), so the
+   * window, the overlay, the artifact, the quick sheet and the picker bind exactly these.
    */
-  const members = useCallback(async () => {
-    // Somebody else's organization's roster is not this person's to read, and
-    // the package's own "no members" sentence is the honest answer on a shared
-    // table. Their own organization answers normally.
-    // A person given this table by a share (not a member of its organization) has no roster to
-    // read: `get_organization_members_with_users` refuses her with 403 on every open (VERIFIER-21
-    // #7, two console errors). Membership is read from HER organization list, not inferred from
-    // the share door, which only lists organizations she is not in when the share is org-shaped.
-    if (!readsAsMember || !readingOrganizationId) return [];
-    // While her list loads, answer empty; the port's identity changes when it lands, so the
-    // package asks again.
-    if (myOrganizationsLoading || !myOrganizations.some((o) => o.id === readingOrganizationId)) return [];
-    const roster = await getOrganizationMembers(readingOrganizationId);
-    return roster.map((member) => ({
-      userId: member.userId,
-      name: member.user?.displayName ?? null,
-      email: member.user?.email ?? null,
-      avatarUrl: member.user?.avatarUrl ?? null,
-    }));
-  }, [readingOrganizationId, readsAsMember, myOrganizations, myOrganizationsLoading]);
-
-  /**
-   * A NUMBER ON THE CANVAS CLICKS THROUGH — `@ai-matrx/records-ui`'s
-   * `openRecords` port.
-   *
-   * 🚨 WHAT WAS ON THE SCREEN BEFORE THIS (lane TAILS-6, 2026-09-22; found by
-   * the GUIDE lane on the live seat the day before). The Dashboards tab of every
-   * table printed this to the owner of the business:
-   *
-   *     "…bind `openRecords` on <RecordsUiProvider>…"
-   *
-   * — a developer's instruction on a customer's screen. The package was right to
-   * say the port was unbound (nothing fails silently); this route was wrong to
-   * leave it unbound, because the package cannot know where THIS app puts its
-   * grid and deliberately refuses to guess an address.
-   *
-   * 🚨 AND WHAT IT NOW DOES, WHICH IS THE WHOLE THING (lane DRILL, 2026-09-22).
-   * Until hours ago the record store had no door that returned the rows behind
-   * an aggregate filter, so this callback kept the chart's grouping and threw
-   * its FILTER away: the click opened every record of the table, grouped the
-   * right way, with a sentence underneath admitting it. `custom.read_records_matching`
-   * takes that filter and evaluates it through the very same
-   * `custom.record_filter_sql` the number was counted with, so the address now
-   * carries the question too and the screen it opens holds exactly the records
-   * the number counted.
-   */
-  const onOpenRecordsFromANumber = useCallback(
-    (ask: OpenRecordsAsk) => {
-      const BUCKETS = /_(day|week|month|quarter|year)$/;
-      const groupable = Object.keys(ask.filter ?? {}).filter((key) => !BUCKETS.test(key));
-      const next = new URLSearchParams();
-      next.set("view", groupable.length > 0 ? "kanban" : "grid");
-      const field = groupable[groupable.length - 1];
-      if (field) next.set("group", field);
-      if (ask.label) next.set("from", ask.label);
-      // THE QUESTION ITSELF, not a summary of it. What goes in the address is
-      // the same object the chart handed `recordAggregate`, so the page can ask
-      // the store the identical question rather than reconstruct one.
-      if (ask.filter && Object.keys(ask.filter).length > 0) {
-        next.set("filter", JSON.stringify(ask.filter));
-      }
-      router.push(`/data-v2/${ask.tableId}?${next.toString()}`);
-    },
-    [router],
-  );
-
-  const { launchMandate } = useAgentLauncher();
-  /**
-   * ASK AN AGENT FOR A WHOLE FORM, BOOKING PAGE, PORTAL OR DIGEST —
-   * `@ai-matrx/records-ui`'s `onAskForOne` port (0.52.0).
-   *
-   * Every builder's empty state offers two ways in: build it here, or say what
-   * you want. The second is a PORT because only the server can honestly speak
-   * as an agent, and until this line existed the package drew no button at all
-   * and said so — which was right, and was also half a product.
-   *
-   * 🚨 IT LAUNCHES A MANDATE, NEVER AN AGENT ID. `data.page_guidance` is the
-   * job this surface already declares ("Data Page Guide"); which agent answers
-   * it is a binding in the database, so Arman rebinding it to something that
-   * can actually call the `records` tool improves this button with no deploy
-   * here. A hardcoded agent UUID in this file is the thing the mandate system
-   * exists to prevent.
-   *
-   * 🚨 THE SENTENCE IS CONTEXT, NOT `user_input`. Nothing structured rides
-   * `user_input` — it carries only what a human typed, and this sentence is one
-   * the package composed. The table, the thing being asked for and the
-   * suggested wording go in as named context entries, which is also what lets
-   * the agent see WHICH table without the person retyping its name.
-   */
-  const onAskForOne = useCallback(
-    (ask: AgentBuildAsk) => {
-      void launchMandate(MANDATE_KEYS.data__page_guidance, {
-        surfaceKey: `data-v2:${ask.tableId}`,
-        // THE TABLE'S ORGANIZATION (ACCESS-FIX-18): the page already knows it, so the agent's
-        // run is filed there and nothing asks "Which workspace is this for?".
-        organizationId: readingOrganizationId,
-        // The declared source feature for the unified data tables surface.
-        sourceFeature: "udt",
-        /**
-         * 🚨 A LAUNCH WITH NO DISPLAY MODE OPENS NOTHING. Measured headless on
-         * 2026-09-21 (lane AGENT-BUILDS): pressing "Ask an agent" on Ironline
-         * Fitness's `classes` table dispatched this launch and the screen did
-         * not change — no window, no composer, no dialog, nothing in
-         * `[role=dialog]` three, nine and nineteen seconds later. The execution
-         * was created in Redux and had no surface, so the person could never
-         * say the sentence the agent exists to answer, and the button was a
-         * dead control wearing a live label.
-         *
-         * `displayMode: "floating-chat"` is what every other mandate launcher
-         * that expects a conversation passes (the dictionary assistant is the
-         * worked example). `autoRun: false` because the person has not said
-         * anything yet — the suggestion is a prompt to THEM, not an
-         * instruction to the agent; `allowChat: true` because their sentence,
-         * and the agent's one clarifying question, are the whole interaction.
-         */
-        config: {
-          displayMode: "floating-chat",
-          autoRun: false,
-          allowChat: true,
-        },
-        runtime: {
-          context: {
-            records_table_id: ask.tableId,
-            records_wanted: ask.kind,
-            records_suggested_wording: ask.suggestion,
-          },
-        },
-      });
-    },
-    [launchMandate, readingOrganizationId],
-  );
-
-  /**
-   * A TABLE'S AGENT BUTTON — `@ai-matrx/records-ui`'s `runAgentAction` port (TABLE-PARITY M3,
-   * lane GRID-TAILS). Unbound, the default grid draws no agent button at all; bound, a
-   * `kind: "agent"` row action ("Draft reminder") on a row starts the SAME job the older grid
-   * starts — `data.row_action`, the row as its offer, the author's prompt as the only user
-   * input — read as the person, through the table's own organization.
-   */
-  const onRunAgentAction = useCallback(
-    (target: RowAgentActionTarget) => {
-      if (!readingOrganizationId) return;
-      void runRowAgentAction({
-        target,
-        dataSource,
-        actor: personActor(userId),
-        organizationId: readingOrganizationId,
-        actingPersonId: userId ?? null,
-        launchMandate,
-        onRefused: (title, why) => toast.error(title, { description: why }),
-      });
-    },
-    [dataSource, launchMandate, readingOrganizationId, userId],
-  );
+  const ports = useRecordsUiPorts({ organizationId: readingOrganizationId, dataSource, readsAsMember });
 
   /** TABLE-PARITY N2, in the table's one menu: absent until the store says a row change reaches a schedule. */
   const rowChangeOffer = useRowChangeAgentOffer({
@@ -827,29 +667,10 @@ export default function UnifiedDataTableRoute({
               // the store's switch is off, and the honest banner comes back.
               realtime: createRecordsRealtimePort(readingOrganizationId!),
             }}
-            host={{
-              Link,
-              density: "condensed",
-              // records-ui 0.87+: the merged grid's control layer (ignored by an older build).
-              ...(mergedGrid ? { grid: "merged" as const } : {}),
-              // The merged grid's side-chat context (6l), Clean HTML (6m) and row-action icons (6j).
-              ...(mergedGrid ? { onGridContext: gridContext.onGridContext, ...RECORDS_TEXT } : {}),
-              // The page's toasts: the where-it-lives chip's "now lives in …" outlives the
-              // re-read that re-mounts the header (UI-FIX-19).
-              notify: RECORDS_NOTIFY,
-              // A VALUE KEPT AS A FILE (BIG-VALUES-TAILS): the cell's "Open the whole text"
-              // opens /files/f/<id> and the export reads the whole text as the person.
-              // records-ui 0.85.12+ reads these two ports; an older build ignores them.
-              ...RECORDS_FILES,
-              members,
-              onAskForOne,
-              openRecords: onOpenRecordsFromANumber,
-              runAgentAction: onRunAgentAction,
-              share: recordStoreShare,
-              // AGT-N-9 / PRODUCTS row 11. The package builds the record SCOPE and
-              // hands it here; this returns the platform's ONE chat column bound to
-              // that record. Never a second chat (the canvas ruling).
-              chat: (ctx) => <RecordScopedChat ctx={ctx} organizationId={readingOrganizationId} />,
+            host={recordsUiHostFor({
+              ports,
+              merged: mergedGrid,
+              gridContext,
               // THE SHEET. The classic /data grid, ported onto the one data seam, is the
               // fifth layout of this one table page (owner's ruling 2026-09-23: no switch
               // on /data, no new route). It reads and writes the record store only.
@@ -876,7 +697,7 @@ export default function UnifiedDataTableRoute({
                   ),
                 },
               ],
-            }}
+            })}
           >
             {/* The header before records-ui hands over its actions (and, on an older build that
                 never calls `header`, the header itself): back, the title switcher, the capture. */}

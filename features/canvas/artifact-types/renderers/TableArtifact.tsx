@@ -200,6 +200,23 @@ function TableArtifactMaterialized({
           tableId={linkedTableId}
           renderCellMarkdown
           hideHeader
+          // A record-store table draws records-ui's page: the same three actions sit in its one
+          // menu rather than a second toolbar (one-grid merge, step 7).
+          recordStoreMenuExtras={[
+            {
+              key: "artifact-window",
+              label: "Open in a floating window",
+              onSelect: () => openTableWindow({ tableId: linkedTableId, title: tableTitle }),
+            },
+            {
+              key: "artifact-new-tab",
+              label: "Open the full table in a new tab",
+              onSelect: () => window.open(`/data/${linkedTableId}`, "_blank", "noopener,noreferrer"),
+            },
+            ...(reverting
+              ? []
+              : [{ key: "artifact-revert", label: "Revert to text", onSelect: () => void handleRevert() }]),
+          ]}
           toolbarTrailing={
             <>
               {/* Pop the live table into a full-size floating window. */}

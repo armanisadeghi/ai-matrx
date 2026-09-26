@@ -20,9 +20,19 @@ const CHIP_MOUNTS = [
   "app/(core)/organizations/[orgId]/tables/page.tsx",
 ];
 
+/** The one records-ui host binding every record-store table shares (one-grid merge, step 7). */
+const SHARED_BINDING = "features/data-tables/records-ui-host/recordsUiHost.tsx";
+
 describe("the where-it-lives chip's mounts bind the platform's toasts", () => {
   it.each(CHIP_MOUNTS)("%s binds notify: RECORDS_NOTIFY on its RecordsMount", (rel) => {
     const source = readFileSync(join(ROOT, rel), "utf8");
+    // A page may bind the ONE shared host binding (one-grid merge, step 7); then the binding
+    // itself must carry the toasts.
+    if (/<RecordsMount[\s\S]*?host=\{recordsUiHostFor\(/.test(source)) {
+      const binding = readFileSync(join(ROOT, SHARED_BINDING), "utf8");
+      expect(binding).toMatch(/export function recordsUiHostFor[\s\S]*?notify:\s*RECORDS_NOTIFY/);
+      return;
+    }
     expect(source).toMatch(/<RecordsMount[\s\S]*?notify:\s*RECORDS_NOTIFY/);
   });
 });

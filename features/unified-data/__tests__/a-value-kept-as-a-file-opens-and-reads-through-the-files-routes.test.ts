@@ -58,12 +58,21 @@ describe("a value kept as a file", () => {
 describe("the table page binds the file ports", () => {
   // The break: the module exists but the table page's RecordsMount host never spreads it, so
   // the cell says "in a file" with no way to open it and the export has no way to read it.
+  // The page binds the ONE shared host (one-grid merge, step 7), and that binding spreads them —
+  // so every record-store table (window, overlay, artifact, quick sheet, picker) gets them too.
   const page = readFileSync(join(process.cwd(), "app/(core)/data-v2/[tableId]/page.tsx"), "utf8");
-  it("imports the one files module", () => {
-    expect(page).toMatch(/import \{ RECORDS_FILES \} from "@\/features\/unified-data\/recordsFiles";/);
+  const binding = readFileSync(
+    join(process.cwd(), "features/data-tables/records-ui-host/recordsUiHost.tsx"),
+    "utf8",
+  );
+  it("the page's RecordsMount takes its host from the one binding", () => {
+    expect(page).toMatch(/<RecordsMount[\s\S]*?host=\{recordsUiHostFor\(/);
   });
-  it("spreads both ports into the RecordsMount host", () => {
-    const host = page.slice(page.indexOf("host={{"), page.indexOf("layouts: ["));
+  it("the binding imports the one files module", () => {
+    expect(binding).toMatch(/import \{ RECORDS_FILES \} from "@\/features\/unified-data\/recordsFiles";/);
+  });
+  it("the binding spreads both ports into the host", () => {
+    const host = binding.slice(binding.indexOf("export function recordsUiHostFor"), binding.indexOf("export function useRecordsUiPorts"));
     expect(host).toContain("...RECORDS_FILES,");
   });
 });

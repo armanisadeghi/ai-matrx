@@ -11,22 +11,36 @@
  * older door) and a table born in the record store did not open at all.
  *
  * This host asks where the table lives (`locateTable`: the record store's Table kernel by id)
- * BEFORE the viewer mounts, so the first read goes to the right store. An older table mounts
- * exactly as before. A table the person was not given, or a store that could not be asked, is
- * said in words — never an empty grid.
+ * BEFORE anything mounts. An older table mounts `UserTableViewer` exactly as before. A
+ * RECORD-STORE table never reaches `UserTableViewer` (one-grid merge, step 7): it mounts
+ * records-ui's table page through the ONE host binding the /data-v2 page uses
+ * (`RecordStoreTableHost`), and the `data_tables.merged_grid` Feature Knob picks its grid. A table
+ * the person was not given, or a store that could not be asked, is said in words — never an
+ * empty grid.
  */
 
 import { useEffect, useState, type ComponentProps } from "react";
 import UserTableViewer from "@/components/user-generated-table-data/UserTableViewer";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { locateTable } from "@/features/data-tables/data-source/locate-table";
+import { RecordStoreTableHost } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
-type ViewerProps = ComponentProps<typeof UserTableViewer>;
+type ViewerProps = ComponentProps<typeof UserTableViewer> & {
+  /**
+   * The host's own actions for a RECORD-STORE table, drawn in the table's one menu (records-ui
+   * `TablePage.menuExtras`) — the record-store twin of `toolbarTrailing`, which only the older
+   * viewer draws. Never a second toolbar row.
+   */
+  recordStoreMenuExtras?: Array<{ key: string; label: string; onSelect: () => void }>;
+};
 
-type Located = { tableId: string; state: "ready" } | { tableId: string; state: "refused"; why: string };
+type Located =
+  | { tableId: string; state: "older" }
+  | { tableId: string; state: "record"; organizationId: string }
+  | { tableId: string; state: "refused"; why: string };
 
-export function LocatedTableViewer(props: ViewerProps) {
+export function LocatedTableViewer({ recordStoreMenuExtras, ...props }: ViewerProps) {
   const { tableId } = props;
   const [located, setLocated] = useState<Located | null>(null);
 
@@ -35,7 +49,13 @@ export function LocatedTableViewer(props: ViewerProps) {
     void locateTable(tableId)
       .then((answer) => {
         if (cancelled) return;
-        setLocated(answer.ok ? { tableId, state: "ready" } : { tableId, state: "refused", why: answer.error });
+        setLocated(
+          !answer.ok
+            ? { tableId, state: "refused", why: answer.error }
+            : answer.store === "record"
+              ? { tableId, state: "record", organizationId: answer.home.organizationId }
+              : { tableId, state: "older" },
+        );
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -63,6 +83,15 @@ export function LocatedTableViewer(props: ViewerProps) {
         {located.why}
         <ErrorAlchemyMenu error={located.why} />
       </div>
+    );
+  }
+  if (located.state === "record") {
+    return (
+      <RecordStoreTableHost
+        tableId={tableId}
+        organizationId={located.organizationId}
+        menuExtras={recordStoreMenuExtras}
+      />
     );
   }
   return <UserTableViewer {...props} />;
