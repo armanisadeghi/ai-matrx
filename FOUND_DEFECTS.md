@@ -15,6 +15,25 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D350 — `audit.summary.certified` is a stale cache: a certified table can fail its live gate (2026-09-25)
+
+Found by the docs-steward's `platform.ddl_guard_log` read. `audit.summary.certified` is computed from
+`audit.canonical_findings`, a table only `audit.refresh()` rewrites. Nothing runs that on a schedule
+(no `cron.job` touches it), so every table altered since the last manual refresh keeps its old verdict.
+Measured live 2026-09-26 01:5x UTC: `tool.mcp_user_conn` reads `certified = true` while
+`iam.canonical_certify_ok('tool','mcp_user_conn','mcp_user_conn')` is **false** and
+`iam.verify_canonical` returns five FAILs (`base_org_not_null`, `base_org_fk`, `base_created_by_fk`,
+`base_updated_by_fk`, `policy_personal_owner_only` — the last says "re-run iam.apply_rls" after the
+2026-09-23 `user_id` retirement). `scraper.scrape_parsed_page` likewise reads certified while live
+verify WARNs `legacy_is_public` (the column itself is D263). The canonical-first triage law
+(`common-docs/policies/canonical-first-triage.md`) and ratchet 2 (`scripts/canonical-ratchets`) both
+read the cache, so a regressed certified table is bucketed as clean.
+**Fix:** refresh `audit.refresh()` on a schedule (needs Arman's approval by name and interval) or after
+every DDL event on a registered table, or stamp `refreshed_at` and make readers refuse a stale cache;
+then finish `tool.mcp_user_conn` (org NOT NULL + FKs + `iam.apply_rls`). A census of certified-but-
+failing tables via `canonical_certify_ok` over all of `audit.summary` hits the statement timeout —
+run it per schema.
+
 ### D349 — Global `:has()` rules turn ordinary DOM changes into whole-document restyles (2026-09-25)
 
 Traced on `/demos/spatial` (Chrome trace, invalidation tracking): a text-node insertion anywhere under
