@@ -1,19 +1,16 @@
 "use client";
 
 import { Mic } from "lucide-react";
-import { SettingsButton } from "@/components/official/settings/primitives/SettingsButton";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsLink } from "@/components/official/settings/primitives/SettingsLink";
 import { settingDoorHref } from "../doors/settingDoorTarget";
 import { VOICE_SETTING_DOORS } from "./voices/voiceSettingDoors";
-import { useSettingsTabNavigate } from "../components/SettingsPresentationContext";
 
 export default function VoiceTab() {
   // Voice, speed, language and emotion live on the Voices screen (VoicesTab)
   // — the ONE place every voice is chosen and heard. This screen keeps the
   // listening side.
-  const navigateToTab = useSettingsTabNavigate();
 
   return (
     <>
@@ -39,12 +36,16 @@ export default function VoiceTab() {
           A door there replaces the dead switches instead of leaving a
           "Devices" section whose controls did nothing. */}
       <SettingsSection title="Devices">
-        <SettingsButton
+        <SettingsLink
           label="Microphone & speaker"
           description="Choose which microphone and speaker AI Matrx uses."
           icon={Mic}
+          href={settingDoorHref({
+            scope: "user",
+            tabId: "devices",
+            controlId: "settings-control-microphone-microphone",
+          })}
           actionLabel="Open device settings"
-          onClick={() => navigateToTab("devices")}
           last
         />
       </SettingsSection>

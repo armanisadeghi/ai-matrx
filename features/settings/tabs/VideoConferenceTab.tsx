@@ -1,10 +1,10 @@
 "use client";
 
 import { Camera, Video } from "lucide-react";
-import { SettingsButton } from "@/components/official/settings/primitives/SettingsButton";
+import { SettingsLink } from "@/components/official/settings/primitives/SettingsLink";
+import { settingDoorHref } from "../doors/settingDoorTarget";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
-import { useSettingsTabNavigate } from "../components/SettingsPresentationContext";
 
 /**
  * This screen used to also offer video background, video filter, default
@@ -22,7 +22,6 @@ import { useSettingsTabNavigate } from "../components/SettingsPresentationContex
  * common-docs/projects/settings-truth-sweep/lanes/voice-comm-learning.md.
  */
 export default function VideoConferenceTab() {
-  const navigateToTab = useSettingsTabNavigate();
 
   return (
     <>
@@ -36,12 +35,16 @@ export default function VideoConferenceTab() {
           "Camera, microphone & speakers" tab, wired to real
           enumerateDevices ids. */}
       <SettingsSection title="Devices">
-        <SettingsButton
+        <SettingsLink
           label="Camera, microphone & speakers"
           description="Meetings use your saved devices from the unified device settings."
           icon={Camera}
+          href={settingDoorHref({
+            scope: "user",
+            tabId: "devices",
+            controlId: "settings-control-microphone-microphone",
+          })}
           actionLabel="Open device settings"
-          onClick={() => navigateToTab("devices")}
           last
         />
       </SettingsSection>
