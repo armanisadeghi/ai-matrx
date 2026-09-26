@@ -20,12 +20,11 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
 import { describeWriteFailure } from "@/lib/errors/writeFailure";
 
-export type OrgAutoRagField = "enabled" | "indexNonPdf" | "suggestionSweeps" | "budget";
+export type OrgAutoRagField = "enabled" | "suggestionSweeps" | "budget";
 
 /** Completes "Could not …" for a refused write of each field. */
 export const FIELD_ACTION: Record<OrgAutoRagField, string> = {
   enabled: "change auto knowledge-graph for this organization",
-  indexNonPdf: "change non-PDF auto-indexing for this organization",
   suggestionSweeps: "change scope-value suggestions for this organization",
   budget: "change the daily auto-ingest budget",
 };
@@ -35,7 +34,6 @@ export interface UseOrgAutoRagPreferenceResult {
   /** Whether this org opts into auto-ingesting NON-PDF content (notes,
    * transcripts, web scrapes, etc.). NULL/false = OFF (the default); PDFs are
    * always indexed regardless. */
-  indexNonPdf: boolean;
   /** Whether this org opts into suggestion sweeps — when a scope/field is
    * added, an agent proposes back-filled value suggestions over already-
    * extracted content. NULL/false = OFF (the default); suggestions always
@@ -55,7 +53,6 @@ export interface UseOrgAutoRagPreferenceResult {
   pendingField: OrgAutoRagField | null;
   error: string | null;
   setEnabled: (next: boolean) => Promise<void>;
-  setIndexNonPdf: (next: boolean) => Promise<void>;
   setSuggestionSweeps: (next: boolean) => Promise<void>;
   setBudgetUsd: (next: number) => Promise<void>;
 }
@@ -66,7 +63,6 @@ export function useOrgAutoRagPreference(
   organizationId: string | null,
 ): UseOrgAutoRagPreferenceResult {
   const [enabled, setEnabledState] = useState(true); // column default is TRUE
-  const [indexNonPdf, setIndexNonPdfState] = useState(false); // NULL/false = OFF default
   const [suggestionSweeps, setSuggestionSweepsState] = useState(false); // NULL/false = OFF default
   const [budgetUsd, setBudgetState] = useState<number>(DEFAULT_BUDGET_USD);
   const [usedTodayUsd, setUsedTodayState] = useState<number>(0);
@@ -87,7 +83,7 @@ export function useOrgAutoRagPreference(
         const { data, error: qErr } = await supabase
           .schema("iam").from("organization_preferences")
           .select(
-            "auto_rag_enabled, auto_index_non_pdf, suggestion_sweeps_enabled, daily_auto_rag_budget_usd, daily_auto_rag_cost_used_usd, daily_auto_rag_window_start",
+            "auto_rag_enabled, suggestion_sweeps_enabled, daily_auto_rag_budget_usd, daily_auto_rag_cost_used_usd, daily_auto_rag_window_start",
           )
           .eq("organization_id", organizationId)
           .maybeSingle();
@@ -96,8 +92,6 @@ export function useOrgAutoRagPreference(
         // Sensible defaults when the row hasn't been created yet — first
         // toggle / first auto-ingest charge will materialize it.
         setEnabledState(data?.auto_rag_enabled ?? true);
-        // NULL/false both mean OFF — the org hasn't opted into non-PDF ingest.
-        setIndexNonPdfState(data?.auto_index_non_pdf ?? false);
         // NULL/false both mean OFF — the org hasn't opted into suggestion sweeps.
         setSuggestionSweepsState(data?.suggestion_sweeps_enabled ?? false);
         setBudgetState(
@@ -162,10 +156,6 @@ export function useOrgAutoRagPreference(
     (next: boolean) => writePatch("enabled", { auto_rag_enabled: next }, () => setEnabledState(next)),
     [writePatch],
   );
-  const setIndexNonPdf = useCallback(
-    (next: boolean) => writePatch("indexNonPdf", { auto_index_non_pdf: next }, () => setIndexNonPdfState(next)),
-    [writePatch],
-  );
   const setSuggestionSweeps = useCallback(
     (next: boolean) =>
       writePatch("suggestionSweeps", { suggestion_sweeps_enabled: next }, () => setSuggestionSweepsState(next)),
@@ -186,7 +176,6 @@ export function useOrgAutoRagPreference(
 
   return {
     enabled,
-    indexNonPdf,
     suggestionSweeps,
     budgetUsd,
     usedTodayUsd,
@@ -197,7 +186,6 @@ export function useOrgAutoRagPreference(
     pendingField,
     error,
     setEnabled,
-    setIndexNonPdf,
     setSuggestionSweeps,
     setBudgetUsd,
   };

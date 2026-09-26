@@ -234,7 +234,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "kg_cost_org_detail",
     label: "KG cost org detail",
     description:
-      "Detail payload for kg_cost_open_org_id: { budget_usd, used_today_usd, window_start, daily_series, top_sources, batch_summary } plus the org's auto-Knowledge toggle state (enabled, indexNonPdf, suggestionSweeps). Absent when no org drill-down is open.",
+      "Detail payload for kg_cost_open_org_id: { budget_usd, used_today_usd, window_start, daily_series, top_sources, batch_summary } plus the org's auto-Knowledge toggle state (enabled, suggestionSweeps). Absent when no org drill-down is open.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 1500,

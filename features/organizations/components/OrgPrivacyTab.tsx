@@ -19,7 +19,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   Brain,
-  FileText,
   Lightbulb,
   Loader2,
   Pencil,
@@ -101,19 +100,6 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
         ),
       )
       .catch((err) => toastWriteFailure(err, { action: FIELD_ACTION.enabled }));
-  };
-
-  const handleToggleNonPdf = (next: boolean) => {
-    void pref
-      .setIndexNonPdf(next)
-      .then(() =>
-        toast.success(
-          next
-            ? "Non-PDF auto-indexing enabled for this org"
-            : "Non-PDF auto-indexing disabled for this org",
-        ),
-      )
-      .catch((err) => toastWriteFailure(err, { action: FIELD_ACTION.indexNonPdf }));
   };
 
   const handleToggleSuggestionSweeps = (next: boolean) => {
@@ -201,34 +187,6 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
                 aria-busy={pref.pendingField === "enabled" || undefined}
                 onCheckedChange={handleToggle}
                 disabled={!canEdit || pref.saving}
-              />
-            )}
-          </div>
-
-          {/* ── Non-PDF auto-index toggle ───────────────────────────────── */}
-          <div className="flex items-center justify-between gap-4 rounded-md border border-border bg-card/50 px-4 py-3">
-            <div className="flex items-start gap-2 min-w-0">
-              <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-              <div className="space-y-0.5 min-w-0">
-                <Label htmlFor="org-non-pdf-switch" className="text-sm">
-                  Auto-index notes, transcripts &amp; web content
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  PDFs are always indexed. Turn this on to also automatically
-                  index non-PDF content (notes, transcripts, web scrapes, and
-                  more) for this organization. Off by default.
-                </p>
-              </div>
-            </div>
-            {pref.loading ? (
-              <Skeleton className="h-6 w-10" />
-            ) : (
-              <Switch
-                id="org-non-pdf-switch"
-                checked={pref.indexNonPdf}
-                aria-busy={pref.pendingField === "indexNonPdf" || undefined}
-                onCheckedChange={handleToggleNonPdf}
-                disabled={!canEdit || !pref.enabled || pref.saving}
               />
             )}
           </div>

@@ -34,7 +34,6 @@ import {
   ExternalLink,
   BrainCircuit,
   Brain,
-  FileText,
   Lightbulb,
   TrendingUp,
   Layers,
@@ -550,9 +549,11 @@ function PendingBatchesTable({
  * Admin-editable auto-ingest switches for one org, embedded in the org-detail
  * dialog. Reuses `useOrgAutoRagPreference` — the SAME React → Supabase write
  * path the org owners' settings panel uses — so an operator can flip the
- * master auto-Knowledge switch and the non-PDF opt-in for any org. Cost figures
- * (used / budget / window) keep coming from the read-only Python `kgCostService`
- * shown above; these switches just edit the two booleans on the row.
+ * master auto-Knowledge switch and the suggestion sweeps for any org. Cost
+ * figures (used / budget / window) keep coming from the read-only Python
+ * `kgCostService` shown above; these switches just edit booleans on the row.
+ * (The per-org "index non-PDF content" switch was removed 2026-09-26: nothing
+ * reads it since the `knowledge.intelligence_policy_*` knobs decide.)
  */
 function OrgAutoIngestControls({ orgId }: { orgId: string }) {
   const pref = useOrgAutoRagPreference(orgId);
@@ -564,19 +565,6 @@ function OrgAutoIngestControls({ orgId }: { orgId: string }) {
         toast.success(next ? "Auto-Knowledge enabled" : "Auto-Knowledge disabled"),
       )
       .catch((err) => toastWriteFailure(err, { action: FIELD_ACTION.enabled }));
-  };
-
-  const handleToggleNonPdf = (next: boolean) => {
-    void pref
-      .setIndexNonPdf(next)
-      .then(() =>
-        toast.success(
-          next
-            ? "Non-PDF auto-indexing enabled"
-            : "Non-PDF auto-indexing disabled",
-        ),
-      )
-      .catch((err) => toastWriteFailure(err, { action: FIELD_ACTION.indexNonPdf }));
   };
 
   const handleToggleSuggestionSweeps = (next: boolean) => {
@@ -617,32 +605,6 @@ function OrgAutoIngestControls({ orgId }: { orgId: string }) {
                 aria-busy={pref.pendingField === "enabled" || undefined}
               onCheckedChange={handleToggleEnabled}
               disabled={pref.saving}
-            />
-          )}
-        </div>
-
-        <div className="flex items-center justify-between gap-4 border-t border-border pt-2">
-          <div className="flex items-start gap-2 min-w-0">
-            <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-            <div className="space-y-0.5 min-w-0">
-              <Label htmlFor="admin-org-non-pdf" className="text-sm">
-                Auto-index notes, transcripts &amp; web content
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                PDFs are always indexed. On = also auto-index non-PDF content.
-                Off by default.
-              </p>
-            </div>
-          </div>
-          {pref.loading ? (
-            <Skeleton className="h-6 w-10" />
-          ) : (
-            <Switch
-              id="admin-org-non-pdf"
-              checked={pref.indexNonPdf}
-                aria-busy={pref.pendingField === "indexNonPdf" || undefined}
-              onCheckedChange={handleToggleNonPdf}
-              disabled={!pref.enabled || pref.saving}
             />
           )}
         </div>
