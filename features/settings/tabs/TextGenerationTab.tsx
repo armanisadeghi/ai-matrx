@@ -1,11 +1,12 @@
 "use client";
 
 import { Type } from "lucide-react";
-import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
-import { SettingsModelPicker } from "@/components/official/settings/primitives/SettingsModelPicker";
+import { SettingsLink } from "@/components/official/settings/primitives/SettingsLink";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
+import { settingDoorHref } from "@/features/settings/doors/settingDoorTarget";
+import { CHAT_DEFAULT_MODEL_KNOB } from "@/features/ai-models/preferredChatModel";
 import { useSetting } from "../hooks/useSetting";
 import {
   CREATIVITY_LEVEL_OPTIONS,
@@ -14,12 +15,6 @@ import {
 } from "../agent-writable-settings";
 
 export default function TextGenerationTab() {
-  // null = platform default (catalog-resolved via is_primary). The legacy
-  // seeded value "GPT-4o" is folded to null at the load boundaries
-  // (stripLegacyDefaultModelSentinels).
-  const [model, setModel] = useSetting<string | null>(
-    "userPreferences.textGeneration.defaultModel",
-  );
   const [tone, setTone] = useSetting<string>(
     "userPreferences.textGeneration.tone",
   );
@@ -29,25 +24,28 @@ export default function TextGenerationTab() {
   const [language, setLanguage] = useSetting<string>(
     "userPreferences.textGeneration.language",
   );
-  const [plagiarism, setPlagiarism] = useSetting<boolean>(
-    "userPreferences.textGeneration.plagiarismCheckEnabled",
-  );
 
   return (
     <>
       <SettingsSubHeader
         title="Text generation"
-        description="Defaults for text-generation surfaces."
+        description="Your AI assistant can read and change these when it drafts text for you; no surface applies them automatically yet."
         icon={Type}
       />
       <SettingsSection title="Model & style">
-        <SettingsModelPicker
-          label="Model"
-          value={model}
-          onValueChange={setModel}
-          scope="all"
-          allowPlatformDefault
-          defaultModality="text"
+        {/* `userPreferences.textGeneration.defaultModel` had no reader — the
+            one real "default model" setting is `agents.model_prefs.chat_default_model`
+            (organization → user → device), shown on the Settings first screen.
+            This row is a door to it instead of a second, dead picker. */}
+        <SettingsLink
+          label="Default AI model"
+          description="Chat, quick questions and everyday drafting answer with this model unless you pick another. Your organization can set one for everyone; yours wins for you."
+          href={settingDoorHref({
+            scope: "user",
+            tabId: "firstScreen",
+            controlId: CHAT_DEFAULT_MODEL_KNOB,
+          })}
+          actionLabel="Change"
         />
         <SettingsSelect
           label="Tone"
@@ -66,12 +64,6 @@ export default function TextGenerationTab() {
           value={language}
           onValueChange={setLanguage}
           options={LANGUAGE_OPTIONS}
-        />
-        <SettingsSwitch
-          label="Plagiarism check"
-          description="Run output through a plagiarism check before showing it."
-          checked={plagiarism}
-          onCheckedChange={setPlagiarism}
           last
         />
       </SettingsSection>

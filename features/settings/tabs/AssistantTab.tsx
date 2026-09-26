@@ -2,25 +2,14 @@
 
 import { PenLine, SquareStack, User } from "lucide-react";
 import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
-import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import { SettingsSlider } from "@/components/official/settings/primitives/SettingsSlider";
 import { SettingsTextInput } from "@/components/official/settings/primitives/SettingsTextInput";
-import { SettingsModelPicker } from "@/components/official/settings/primitives/SettingsModelPicker";
+import { SettingsLink } from "@/components/official/settings/primitives/SettingsLink";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
+import { settingDoorHref } from "@/features/settings/doors/settingDoorTarget";
+import { CHAT_DEFAULT_MODEL_KNOB } from "@/features/ai-models/preferredChatModel";
 import { useSetting } from "../hooks/useSetting";
-import type { AIProvider } from "@/lib/ai/aiChat.types";
-
-const providerOptions: { value: AIProvider; label: string }[] = [
-  { value: "default", label: "Default" },
-  { value: "openai", label: "OpenAI" },
-  { value: "anthropic", label: "Anthropic" },
-  { value: "google", label: "Google" },
-  { value: "groq", label: "Groq" },
-  { value: "cohere", label: "Cohere" },
-  { value: "matrx", label: "Matrx" },
-  { value: "other", label: "Other" },
-];
 
 export default function AssistantTab() {
   const [alwaysActive, setAlwaysActive] = useSetting<boolean>(
@@ -38,12 +27,6 @@ export default function AssistantTab() {
   const [name, setName] = useSetting<string>("userPreferences.assistant.name");
   const [memoryLevel, setMemoryLevel] = useSetting<number>(
     "userPreferences.assistant.memoryLevel",
-  );
-  const [provider, setProvider] = useSetting<AIProvider>(
-    "userPreferences.assistant.preferredProvider",
-  );
-  const [model, setModel] = useSetting<string>(
-    "userPreferences.assistant.preferredModel",
   );
   const [restoreUnsentDrafts, setRestoreUnsentDrafts] = useSetting<boolean>(
     "userPreferences.prompts.restoreUnsentDrafts",
@@ -126,20 +109,21 @@ export default function AssistantTab() {
       </SettingsSection>
 
       <SettingsSection title="Model">
-        <SettingsSelect<AIProvider>
-          label="Provider"
-          value={provider}
-          onValueChange={setProvider}
-          options={providerOptions}
-        />
-        <SettingsModelPicker
-          label="Preferred model"
-          description="Used by the assistant when a surface does not choose a model."
-          value={model && model !== "default" ? model : null}
-          onValueChange={(modelId) => setModel(modelId ?? "default")}
-          scope="all"
-          allowPlatformDefault
-          defaultModality="text"
+        {/* The model that answers when a surface doesn't choose one is ONE
+            setting, `agents.model_prefs.chat_default_model` (organization →
+            user → device), shown on the Settings first screen. The
+            `assistant.preferredProvider` / `assistant.preferredModel` fields
+            that used to render here were a second source of truth nothing
+            read — this row is a door to the real one. */}
+        <SettingsLink
+          label="Default AI model"
+          description="Chat, quick questions and everyday drafting answer with this model unless you pick another. Your organization can set one for everyone; yours wins for you."
+          href={settingDoorHref({
+            scope: "user",
+            tabId: "firstScreen",
+            controlId: CHAT_DEFAULT_MODEL_KNOB,
+          })}
+          actionLabel="Change"
           last
         />
       </SettingsSection>
