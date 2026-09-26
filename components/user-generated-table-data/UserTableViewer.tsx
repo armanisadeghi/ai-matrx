@@ -4218,7 +4218,7 @@ const UserTableViewer = ({
                 className="h-7 gap-1.5 px-2 text-xs"
                 disabled={!cellUndo.canUndo || cellUndo.busy}
                 onClick={() => void cellUndo.undo()}
-                title="Undo last cell change (⌘Z)"
+                title="Undo the last change — a cell, or everything one action changed (⌘Z)"
               >
                 <Undo2 className="h-3.5 w-3.5" />
                 Undo

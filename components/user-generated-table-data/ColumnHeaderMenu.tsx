@@ -157,9 +157,13 @@ const ColumnHeaderMenu = ({
 }: ColumnHeaderMenuProps) => {
   const hasFilter = isActiveFilter(filter);
   const [open, setOpen] = useState(false);
-  useEffect(() => {
+  // A new outside request opens the menu once — adjusted during render (React's
+  // "storing information from previous renders"), not in an effect.
+  const [seenOpenRequest, setSeenOpenRequest] = useState(openRequest);
+  if (openRequest !== seenOpenRequest) {
+    setSeenOpenRequest(openRequest);
     if (openRequest > 0) setOpen(true);
-  }, [openRequest]);
+  }
   const [facets, setFacets] = useState<ColumnFacets | null>(null);
   const [facetError, setFacetError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
