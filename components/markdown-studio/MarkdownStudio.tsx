@@ -19,6 +19,7 @@
 "use client";
 
 import React, {
+  startTransition,
   useCallback,
   useDeferredValue,
   useEffect,
@@ -88,6 +89,9 @@ type ViewMode = StudioMode | "inspect";
 export type PreviewUpdateMode = "live" | "manual";
 
 const EMPTY = "";
+/** Past this size the preview follows a typing PAUSE, not every keystroke. */
+const LARGE_BUFFER_CHARS = 150_000;
+const LARGE_BUFFER_PAUSE_MS = 400;
 const RAW_SOURCE: ContentSource = { type: "raw" };
 
 /** The sample the buffer came from: the person's own, or the shared library. */
@@ -168,7 +172,18 @@ export function MarkdownStudio() {
   }, [loadedRef, samples, shared.samples]);
 
   // What every render reads: deferred, so typing is never held by the preview.
-  const deferredContent = useDeferredValue(content);
+  // A very large buffer re-renders the preview only once typing pauses — one
+  // re-split of a megabyte is a single uninterruptible chunk of work, and
+  // doing it per keystroke made each key take over a second to appear.
+  const [settledContent, setSettledContent] = useState(content);
+  useEffect(() => {
+    if (content.length < LARGE_BUFFER_CHARS) return undefined;
+    const timer = setTimeout(() => startTransition(() => setSettledContent(content)), LARGE_BUFFER_PAUSE_MS);
+    return () => clearTimeout(timer);
+  }, [content]);
+  const deferredContent = useDeferredValue(
+    content.length < LARGE_BUFFER_CHARS ? content : settledContent,
+  );
   const previewContent = previewUpdates === "live" ? deferredContent : manualContent;
 
   // Restore autosave on first mount.
