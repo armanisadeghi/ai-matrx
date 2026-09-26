@@ -8,7 +8,7 @@
 // (the owner check is the SERVER's, not this component's isOwner prop).
 
 import { useState } from "react";
-import { ClipboardList, Plus, Trash2, ExternalLink } from "lucide-react";
+import { ClipboardList, Plus, Trash2, ArrowUpRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -108,7 +108,7 @@ export function ClassAssignmentsPanel({
                         className="shrink-0 text-muted-foreground hover:text-foreground"
                         aria-label="Open resource"
                       >
-                        <ExternalLink className="h-3.5 w-3.5" />
+                        <ArrowUpRight className="h-3.5 w-3.5" />
                       </button>
                     )}
                   </div>

@@ -16,12 +16,12 @@ import {
   BrainCircuit,
   CheckCircle2,
   CircleHelp,
-  ExternalLink,
   Clock,
   FastForward,
   Loader2,
   Undo2,
   X,
+  AppWindow,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -310,7 +310,7 @@ export function ImpactBlockerCell({
             })
           }
         >
-          <ExternalLink className="h-3 w-3" />
+          <AppWindow className="h-3 w-3" />
           Open
         </Button>
       ) : null}

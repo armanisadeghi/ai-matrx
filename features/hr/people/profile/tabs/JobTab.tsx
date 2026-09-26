@@ -429,7 +429,9 @@ function AssignmentRow({
             <Link
               href={hrTaskHref(workflowInstanceId, org)}
               className="inline-flex items-center gap-1 text-xs text-muted-foreground underline underline-offset-2 hover:text-primary"
-            >
+               target="_blank"
+               rel="noopener noreferrer"
+             >
               See who approved this
               <ExternalLink className="h-3 w-3" aria-hidden />
             </Link>

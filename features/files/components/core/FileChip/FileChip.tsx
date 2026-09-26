@@ -16,7 +16,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { ExternalLink, X } from "lucide-react";
+import { Download, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
@@ -129,10 +129,10 @@ export function FileChip({
         <button
           type="button"
           onClick={handleOpen}
-          aria-label="Open"
+          aria-label="Download"
           className="flex h-4 w-4 items-center justify-center rounded hover:bg-accent"
         >
-          <ExternalLink className="h-3 w-3" aria-hidden="true" />
+          <Download className="h-3 w-3" aria-hidden="true" />
         </button>
       ) : null}
       {onRemove ? (

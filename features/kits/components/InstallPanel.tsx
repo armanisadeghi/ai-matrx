@@ -290,7 +290,9 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
           <Link
             href={KIT_ROUTES.table(install.ledger_table_id)}
             className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
-          >
+             target="_blank"
+             rel="noopener noreferrer"
+           >
             The install record lives in your “{KIT_INSTALLS_TABLE.name}” table
             <ExternalLink className="h-3 w-3" />
           </Link>

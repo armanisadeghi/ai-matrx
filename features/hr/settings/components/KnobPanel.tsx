@@ -309,7 +309,9 @@ export function KnobRow({
               <Link
                 href={floor.href}
                 className="inline-flex items-center gap-1 text-xs font-medium text-foreground underline-offset-2 hover:underline"
-              >
+                 target="_blank"
+                 rel="noopener noreferrer"
+               >
                 Open the rule
                 <ExternalLink className="h-3 w-3" />
               </Link>

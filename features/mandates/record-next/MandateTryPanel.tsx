@@ -387,7 +387,9 @@ function TryResult({ result }: { result: MandateTestResponse }) {
           <Link
             href={`/workflows/runs/${encodeURIComponent(holder.runId)}`}
             className="inline-flex items-center gap-1 text-primary hover:underline"
-          >
+             target="_blank"
+             rel="noopener noreferrer"
+           >
             Open the workflow run
             <ExternalLink className="h-3 w-3" />
           </Link>

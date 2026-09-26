@@ -95,7 +95,9 @@ export function PayPeriodDoor({
       href={hrPayPeriodHref(payPeriodId, orgRef)}
       title={payPeriodId}
       className={cn(DOOR_CLASS, className)}
-    >
+       target="_blank"
+       rel="noopener noreferrer"
+     >
       {label ?? shortId(payPeriodId)}
       <ExternalLink className="h-3 w-3" aria-hidden />
     </Link>

@@ -20,7 +20,7 @@ import {
   Trash2,
   CalendarClock,
   User,
-  ExternalLink,
+  ArrowUpRight,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -473,7 +473,7 @@ function ContentGroups({
                     {item.title}
                   </span>
                   {href && (
-                    <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   )}
                 </>
               );

@@ -727,6 +727,7 @@ export const UnifiedImageBlockRenderer: React.FC<
                     View full size
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={actions.openNewTab}>
+                    {/* new-tab-icon: handler calls window.open(..., "_blank", ...) defined elsewhere in this file */}
                     <ExternalLink className="w-4 h-4 mr-2" />
                     Open in new tab
                   </DropdownMenuItem>
@@ -810,6 +811,7 @@ export const UnifiedImageBlockRenderer: React.FC<
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={actions.viewOriginal}>
                         <ExternalLink className="w-4 h-4 mr-2" />
+                        {/* new-tab-icon: actions.viewOriginal (useImageActions.ts) calls window.open(`/files/f/${parentFileId}`, '_blank', 'noopener,noreferrer') */}
                         View original
                       </DropdownMenuItem>
                     </>

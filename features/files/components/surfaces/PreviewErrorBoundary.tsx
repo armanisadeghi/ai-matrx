@@ -147,6 +147,7 @@ export class PreviewErrorBoundary extends React.Component<
             onClick={() => void this.openInNewTab()}
             className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
           >
+            {/* new-tab-icon: handler calls window.open(..., "_blank", ...) defined elsewhere in this file */}
             <ExternalLink className="h-3.5 w-3.5" />
             Open in new tab
           </button>

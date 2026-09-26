@@ -27,6 +27,7 @@ import {
   RefreshCw,
   Unplug,
   User as UserIcon,
+  ArrowUpRight,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
@@ -182,7 +183,7 @@ export function GitHubConnectionCard({
           <Plus className="h-3.5 w-3.5" />
           <span className="sm:hidden">Add repository access</span>
           <span className="hidden sm:inline">Add an organization or more repositories</span>
-          <ExternalLink className="h-3 w-3" />
+          <ArrowUpRight className="h-3 w-3" />
         </Button>
       </div>
       <p className="mt-1 text-[11px] leading-tight text-muted-foreground">

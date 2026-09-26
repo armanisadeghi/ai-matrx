@@ -165,7 +165,9 @@ export function ImageEditTab({ fileId, className }: ImageEditTabProps) {
           >
             <Link
               href={`/images/edit/${encodeURIComponent(fileId)}`}
-            >
+               target="_blank"
+               rel="noopener noreferrer"
+             >
               <ExternalLink className="h-3 w-3" />
               Open in Image Studio
             </Link>

@@ -303,17 +303,18 @@ export function PreviewPane({
           {/* Open in a real new browser tab. Renders as an anchor so
            * cmd/ctrl-click, middle-click, "Copy link" etc. all behave
            * naturally — wrapping a button in target="_blank" cannot do
-           * that. */}
-          <PreviewIconButton
-            href={fileRouteHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            disabled={!file}
-            title="Open in new tab"
-            ariaLabel="Open in new tab"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </PreviewIconButton>
+           * that. Absent (not disabled) when there is no file to open. */}
+          {file ? (
+            <PreviewIconButton
+              href={fileRouteHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open in new tab"
+              ariaLabel="Open in new tab"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </PreviewIconButton>
+          ) : null}
           {/* All other file actions (Rename, Visibility, Show details,
            * Show versions, Duplicate, Delete, …) live in the full menu
            * here. Same items the user gets from a right-click anywhere

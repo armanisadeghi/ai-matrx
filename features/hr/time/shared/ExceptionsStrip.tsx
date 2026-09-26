@@ -122,7 +122,9 @@ export function ExceptionsStrip({
         <Link
           href={resolvedQueueHref}
           className="inline-flex items-center gap-1 text-xs font-medium underline underline-offset-4"
-        >
+           target="_blank"
+           rel="noopener noreferrer"
+         >
           Open the full queue
           <ExternalLink className="h-3 w-3" aria-hidden />
         </Link>

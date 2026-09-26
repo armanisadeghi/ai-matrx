@@ -859,7 +859,7 @@ export function TryItNowPanel({
               value={
                 runHolder.runId ? (
                   <Button asChild size="sm" variant="outline">
-                    <Link href={`/workflows/runs/${runHolder.runId}`}>
+                    <Link href={`/workflows/runs/${runHolder.runId}`} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="mr-2 size-4" />
                       Open run
                     </Link>

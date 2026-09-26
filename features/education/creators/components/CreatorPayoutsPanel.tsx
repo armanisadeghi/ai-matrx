@@ -154,6 +154,7 @@ export function CreatorPayoutsPanel() {
               {busy ? (
                 <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
               ) : (
+                {/* new-tab-icon: onOpenDashboard (above) calls window.open(r.url, '_blank', ...); disabled={busy} is a transient in-flight state while the Stripe URL is fetched, not "nothing to open" */}
                 <ExternalLink className="mr-1.5 h-4 w-4" />
               )}
               Open my Stripe dashboard

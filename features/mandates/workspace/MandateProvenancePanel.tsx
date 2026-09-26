@@ -53,7 +53,9 @@ function SurfaceLink({ href, children }: { href: string; children: string }) {
     <Link
       href={href}
       className="inline-flex items-center gap-1 underline underline-offset-2 hover:text-primary"
-    >
+       target="_blank"
+       rel="noopener noreferrer"
+     >
       {children}
       <ExternalLink className="size-3" aria-hidden="true" />
     </Link>

@@ -7,7 +7,7 @@
  * components only lay it out.
  */
 
-import { ArrowRight, CircleHelp, ExternalLink } from "lucide-react";
+import { ArrowRight, CircleHelp, AppWindow } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -192,7 +192,7 @@ export function WorkflowImpactBlockerCell({
             })
           }
         >
-          <ExternalLink className="h-3 w-3" />
+          <AppWindow className="h-3 w-3" />
           Open
         </Button>
       ) : null}

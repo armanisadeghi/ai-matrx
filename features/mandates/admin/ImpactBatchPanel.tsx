@@ -31,7 +31,6 @@ import {
   AlertTriangle,
   ArrowRight,
   CheckCircle2,
-  ExternalLink,
   FastForward,
   FlaskConical,
   History,
@@ -40,6 +39,7 @@ import {
   RefreshCw,
   UserRound,
   Wrench,
+  AppWindow,
 } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table";
@@ -675,7 +675,7 @@ export function ImpactBatchPanel({
               title="Open this mandate in place — review its settings, test it, or fix why it is set aside."
               onClick={() => openOne(r)}
             >
-              <ExternalLink className="h-3 w-3" />
+              <AppWindow className="h-3 w-3" />
               Open
             </Button>
             {isSettingsFixable(r) ? (
