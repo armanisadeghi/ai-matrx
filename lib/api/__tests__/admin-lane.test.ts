@@ -5,7 +5,11 @@
  * rides a request bound to any other organization.
  */
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
-import { adminLaneOrganizationId, withAdminLaneHeader } from "@/lib/api/admin-lane";
+import {
+  adminLaneHeadersFor,
+  adminLaneOrganizationId,
+  withAdminLaneHeader,
+} from "@/lib/api/admin-lane";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 
 const OTHER_ORG = "44444444-4444-4444-8444-444444444444";
@@ -36,5 +40,34 @@ describe("the admin lane", () => {
     expect(applyOrganizationContextHeader({}, SYSTEM_ORGANIZATION_ID)).not.toHaveProperty(
       "x-matrx-admin-lane",
     );
+  });
+
+  // Independent security review, 2026-09-26: `adminLaneHeadersFor` is the half the
+  // python-client, the transport and the execution system use. It had no guard.
+  it("the transport half marks only a platform-tenant request inside the admin section", () => {
+    onPage("/administration/intelligence/mandates/x");
+    expect(adminLaneHeadersFor(SYSTEM_ORGANIZATION_ID)).toEqual({ "x-matrx-admin-lane": "1" });
+    expect(adminLaneHeadersFor(OTHER_ORG)).toEqual({});
+    expect(adminLaneHeadersFor(null)).toEqual({});
+  });
+
+  it("the transport half never marks a request from a user page", () => {
+    onPage("/notes");
+    expect(adminLaneHeadersFor(SYSTEM_ORGANIZATION_ID)).toEqual({});
+  });
+
+  it("an ORGANIZATION's own admin pages are user pages: no platform tenant, no header", () => {
+    onPage(`/organizations/${OTHER_ORG}/admin/members`);
+    expect(adminLaneOrganizationId()).toBeNull();
+    expect(adminLaneHeadersFor(SYSTEM_ORGANIZATION_ID)).toEqual({});
+    expect(applyOrganizationContextHeader({}, SYSTEM_ORGANIZATION_ID)).not.toHaveProperty(
+      "x-matrx-admin-lane",
+    );
+  });
+
+  it("a user path that merely starts like an admin prefix is a user page", () => {
+    onPage("/administrationx/anything");
+    expect(adminLaneOrganizationId()).toBeNull();
+    expect(adminLaneHeadersFor(SYSTEM_ORGANIZATION_ID)).toEqual({});
   });
 });
