@@ -18,6 +18,7 @@
  * are persisted to Redux so components can read them after creation.
  */
 
+import { adminLaneOrganizationId } from "@/lib/api/admin-lane";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type {
@@ -227,7 +228,10 @@ export const launchAgentExecution = createAsyncThunk<
       // and proceeds with the answer — never a raw MandateOrganizationUnresolved
       // refusal. A declined picker rejects with OrganizationSelectionCancelled,
       // which every toast boundary treats as "nothing happened".
-      const selectedOrganizationId = getState().appContext?.organization_id ?? null;
+      // THE ADMIN SEAT (lib/api/admin-lane.ts): in the admin section the run
+      // is platform work in the platform tenant — never a workspace prompt.
+      const selectedOrganizationId =
+        adminLaneOrganizationId() ?? getState().appContext?.organization_id ?? null;
       const questionOrganizationId =
         organizationId ??
         selectedOrganizationId ??
