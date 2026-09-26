@@ -145,7 +145,9 @@ function asText(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value : null;
 }
 
-function policyOf(raw: Record<string, unknown>): RecordChangeApprovalPolicy | null {
+function policyOf(
+  raw: Record<string, unknown>,
+): RecordChangeApprovalPolicy | null {
   const why = asText(raw["why"]);
   const how = asText(raw["how_to_change"]);
   // A wait with no sentence for the person and no way to change the setting is
@@ -187,7 +189,9 @@ function fieldKeysOf(spec: Record<string, unknown>): string[] {
   if (!Array.isArray(declared)) return [];
   return declared
     .map((entry) => asRecord(entry)?.["name"])
-    .filter((name): name is string => typeof name === "string" && name.length > 0);
+    .filter(
+      (name): name is string => typeof name === "string" && name.length > 0,
+    );
 }
 
 /**
@@ -330,6 +334,33 @@ export function heldWriteOfStep(step: {
     : readRecordChangeWait(fromError);
 }
 
+/**
+ * The interrupt-payload key that marks a pause as a HELD CHANGE — matches
+ * `matrx_records.held.HELD_WRITE_MARKER` on the server. Never renamed alone.
+ */
+export const HELD_WRITE_MARKER = "matrx_held_write";
+
+/**
+ * The wait a PAUSED run is holding, or null (lane HELD-WRITE-RESUME,
+ * 2026-09-26). A workflow step whose change waits for a person pauses the run
+ * exactly as a Pause & Ask does; its interrupt payload carries the store's wait
+ * under `held_write` and the marker the server resumes from. Read through the
+ * ONE wait reader, so the run page draws the same card as the chat.
+ */
+export function heldWriteOfInterrupt(
+  payload: unknown,
+): RecordChangeWait | null {
+  const body = asRecord(payload);
+  if (!body || !asRecord(body[HELD_WRITE_MARKER])) return null;
+  const wait = body[HELD_WRITE_KEY];
+  return wait === undefined || wait === null
+    ? null
+    : readRecordChangeWait(wait);
+}
+
+/** The failure code a step stopped with when its change was held (older runs). */
+export const HELD_FOR_APPROVAL = "held_for_approval";
+
 /** `day_rate` → `Day rate`, for a key the declaration gave no label for. */
 function humanKey(key: string): string {
   const words = key.replace(/[_-]+/g, " ").trim();
@@ -443,7 +474,8 @@ export function approvalChangeFor(
       { label: "Holds", after: fieldTypeSentence(wait.change) },
       {
         label: "Table",
-        after: options.tableName?.trim() || "the table the agent was asked about",
+        after:
+          options.tableName?.trim() || "the table the agent was asked about",
       },
     ];
     return {
@@ -480,12 +512,12 @@ export function declinedSentence(wait: RecordChangeWait): string {
       : wait.change.change === "delete"
         ? "The record was not moved to the trash."
         : wait.change.change === "field"
-      ? `The column ${wait.change.label} was not added.`
-      : wait.change.change === "records"
-        ? `${wait.change.rows.length} ${
-            wait.change.rows.length === 1 ? "record was" : "records were"
-          } not written.`
-        : `The table ${wait.change.name} was not created.`;
+          ? `The column ${wait.change.label} was not added.`
+          : wait.change.change === "records"
+            ? `${wait.change.rows.length} ${
+                wait.change.rows.length === 1 ? "record was" : "records were"
+              } not written.`
+            : `The table ${wait.change.name} was not created.`;
   return `${what} ${wait.policy.howToChange}`;
 }
 

@@ -84,8 +84,12 @@ export function RunFailureCard({
   // Status is authoritative over anything the row recorded: a run cancelled
   // after a step had already errored must still read as cancelled. The
   // recorded technical line is kept either way — never dropped.
+  // A run that ended because a person REFUSED a held change is cancelled on
+  // the row, but it was not stopped by anyone pressing Stop: it keeps its own
+  // cause and the refusal's words (lane HELD-WRITE-RESUME).
+  const refused = cancelled && error?.cause === "refused";
   const explanation = explainRunFailure(
-    cancelled ? { ...(error ?? {}), ...CANCELLED_FAILURE } : error,
+    cancelled && !refused ? { ...(error ?? {}), ...CANCELLED_FAILURE } : error,
     whatItRan,
   );
 

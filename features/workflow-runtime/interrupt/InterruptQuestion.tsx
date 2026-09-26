@@ -60,6 +60,8 @@ import {
   coerceAnswerValues,
 } from "./interrupt-view";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { heldWriteOfInterrupt } from "@/features/record-change-approvals/recordChangeApproval";
+import { HeldInterrupt } from "./HeldInterrupt";
 
 /**
  * Where the host is drawing questions.
@@ -88,7 +90,10 @@ export function useInterruptQuestion(runId: string): {
   const interrupt = useAppSelector(selectRunInterrupt(runId));
   const payload = interrupt?.payload;
   const view = useMemo(
-    () => (payload ? parseInterruptPayload(payload) : null),
+    () =>
+      payload && !heldWriteOfInterrupt(payload)
+        ? parseInterruptPayload(payload)
+        : null,
     [payload],
   );
   if (!interrupt || !view) return null;
@@ -104,6 +109,24 @@ export function InterruptQuestion({
   placement = "all",
 }: InterruptQuestionProps) {
   const question = useInterruptQuestion(runId);
+  const interrupt = useAppSelector(selectRunInterrupt(runId));
+  // A PAUSE ON A HELD CHANGE is answered by the approval card, never by a
+  // question form (lane HELD-WRITE-RESUME). It sits in the run's panel.
+  const held = useMemo(
+    () => (interrupt ? heldWriteOfInterrupt(interrupt.payload) : null),
+    [interrupt],
+  );
+  if (held && interrupt) {
+    if (placement === "showcase") return null;
+    return (
+      <HeldInterrupt
+        key={`${runId}:${interrupt.checkpointId}`}
+        runId={runId}
+        checkpointId={interrupt.checkpointId}
+        wait={held}
+      />
+    );
+  }
   if (!question) return null;
   if (placement === "panel" && question.view.presentation === "showcase") {
     return null;
@@ -307,7 +330,10 @@ function AnswerControl({
   sending: boolean;
   onSend: (value: Record<string, unknown>) => void;
 }) {
-  const fields = useMemo(() => answerFieldsOf(view.schemaHint), [view.schemaHint]);
+  const fields = useMemo(
+    () => answerFieldsOf(view.schemaHint),
+    [view.schemaHint],
+  );
 
   // Seed: the author's default answer belongs to the free-text field, which is
   // the only field a question with no schema has.
@@ -363,9 +389,7 @@ function AnswerControl({
           field={field}
           kind={field.kind ? kinds[field.kind] : undefined}
           value={values[field.name]}
-          onChange={(v) =>
-            setValues((prev) => ({ ...prev, [field.name]: v }))
-          }
+          onChange={(v) => setValues((prev) => ({ ...prev, [field.name]: v }))}
         />
       ))}
 
@@ -450,7 +474,8 @@ function AnswerField({
           <code className="font-mono">{resolution.unregisteredVariant}</code> is
           not registered on{" "}
           <code className="font-mono">{field.kind ?? "this field's kind"}</code>{" "}
-          — rendered with the next rung down. Register it, or stop asking for it.
+          — rendered with the next rung down. Register it, or stop asking for
+          it.
         </p>
       ) : null}
     </label>

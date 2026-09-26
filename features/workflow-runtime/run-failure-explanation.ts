@@ -151,6 +151,16 @@ const CAUSE_COPY: Record<string, CauseCopy> = {
     nextStep:
       "Approve or refuse the change on the step's card below, or on the table's page. The steps after it did not run.",
   },
+  // NOT A FAULT EITHER (lane HELD-WRITE-RESUME, 2026-09-26): a person refused
+  // the step's held change, so nothing was written and the run ended there.
+  refused: {
+    headline: (what, where) =>
+      where
+        ? `“${where}”'s change was refused, so nothing was written and the run ended there.`
+        : `${what}'s change was refused, so nothing was written and the run ended there.`,
+    nextStep:
+      "If the change should be made after all, run the workflow again — it will ask again before it writes.",
+  },
   missing_input: {
     // Headline is generated per-field by `fieldHeadline` before this is
     // consulted; this fires only when the server had no field name.

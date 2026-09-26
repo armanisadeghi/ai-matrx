@@ -36,6 +36,10 @@ import {
   type RunResultWrapper,
 } from "@ai-matrx/content-ir";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import {
+  HELD_FOR_APPROVAL,
+  HELD_WRITE_MARKER,
+} from "@/features/record-change-approvals/recordChangeApproval";
 
 export type NodeRunPhase =
   "running" | "settled" | "failed" | "skipped" | "retrying";
@@ -197,7 +201,9 @@ export type RunActivityKind =
   | "tool"
   | "warning"
   | "delivered"
-  | "child";
+  | "child"
+  /** A step's change is waiting for a person (lane HELD-WRITE-RESUME) — never a failure. */
+  | "held";
 
 export interface RunActivityEntry {
   /** Monotonic per run — a stable React key that survives the ring shifting. */
@@ -741,6 +747,17 @@ function applyEvent(
         payload: asRecord(event.payload) ?? {},
         checkpointId: event.checkpoint_id ?? "",
       };
+      // A pause on a HELD CHANGE is said as held, in the held colour — the
+      // same words the approval card uses (lane HELD-WRITE-RESUME).
+      if (append && asRecord(asRecord(event.payload)?.[HELD_WRITE_MARKER])) {
+        pushActivity(run, {
+          nodeId: event.node_id,
+          kind: "held",
+          text: null,
+          detail: null,
+          ts: event.ts,
+        });
+      }
       break;
     case "node_started": {
       const key = keyOf(event);
@@ -845,7 +862,9 @@ function applyEvent(
         message:
           typeof event.error_message === "string" ? event.error_message : null,
         details:
-          errorDetails && typeof errorDetails === "object" && !Array.isArray(errorDetails)
+          errorDetails &&
+          typeof errorDetails === "object" &&
+          !Array.isArray(errorDetails)
             ? (errorDetails as Record<string, unknown>)
             : null,
       };
@@ -853,8 +872,13 @@ function applyEvent(
       if (append) {
         pushActivity(run, {
           nodeId: event.node_id,
-          kind: "failed",
-          text: invocation.error.message,
+          // An older run STOPPED on a held change (code `held_for_approval`):
+          // held, not failed — the card's words, not the error colour.
+          kind: invocation.error.type === HELD_FOR_APPROVAL ? "held" : "failed",
+          text:
+            invocation.error.type === HELD_FOR_APPROVAL
+              ? null
+              : invocation.error.message,
           detail: null,
           ts: event.ts,
         });

@@ -240,6 +240,9 @@ describe("workflow-runs slice", () => {
     expect(state.byRunId[RUN_ID]?.nodes[key]?.error).toEqual({
       type: "ToolError",
       message: "boom",
+      // The failure's details ride along since HELD-WRITE-TAILS (null when the
+      // event carries none) — the run view reads a held change from there.
+      details: null,
     });
 
     state = apply(state, {

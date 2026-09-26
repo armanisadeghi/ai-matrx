@@ -18,19 +18,31 @@
 import { Clock } from "lucide-react";
 
 import { RecordChangeApprovalCard } from "./RecordChangeApprovalCard";
-import { heldWriteHeadline, type RecordChangeWait } from "./recordChangeApproval";
+import {
+  heldWriteHeadline,
+  type RecordChangeWait,
+} from "./recordChangeApproval";
 import { useHeldWriteTableName } from "./useHeldWriteTableName";
 
 export function HeldStepCard({
   wait,
   identity,
   stopped,
+  paused = false,
+  onDecided,
 }: {
   wait: RecordChangeWait;
   /** The step's identity in the run (run id + invocation) — the card's key. */
   identity: string;
   /** True when the run stopped at this step because the change is held. */
   stopped: boolean;
+  /**
+   * True when the run is PAUSED at this step (lane HELD-WRITE-RESUME): deciding
+   * carries the run on — approved, with the new row; refused, the run ends.
+   */
+  paused?: boolean;
+  /** Told once the decision is taken — a paused run resumes from here. */
+  onDecided?: () => void;
 }) {
   const tableName = useHeldWriteTableName(wait);
   return (
@@ -42,14 +54,17 @@ export function HeldStepCard({
         </p>
       </div>
       <p className="text-xs text-muted-foreground">
-        {stopped
-          ? "Nothing was written yet, so the steps after this one did not run. Approve it and the change lands in the table."
-          : "Nothing was written yet. Approve it and the change lands."}
+        {paused
+          ? "Nothing was written yet, and the run is paused here. Approve it and the run carries on with the new row; refuse it and the run ends."
+          : stopped
+            ? "Nothing was written yet, so the steps after this one did not run. Approve it and the change lands in the table."
+            : "Nothing was written yet. Approve it and the change lands."}
       </p>
       <RecordChangeApprovalCard
         wait={wait}
         callId={identity}
         {...(tableName ? { tableName } : {})}
+        {...(onDecided ? { onDecided } : {})}
       />
     </div>
   );

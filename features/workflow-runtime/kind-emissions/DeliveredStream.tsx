@@ -27,14 +27,25 @@
  */
 
 import React from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Clock } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
-import { KindSlot, kindSlotPhase } from "@/features/content-ir/react/slot/KindSlot";
+import {
+  KindSlot,
+  kindSlotPhase,
+} from "@/features/content-ir/react/slot/KindSlot";
 import { cn } from "@/lib/utils";
 
-import { selectNodeAggregate } from "../redux/workflow-runs.selectors";
+import {
+  selectNodeAggregate,
+  selectRunInterrupt,
+} from "../redux/workflow-runs.selectors";
+import {
+  HELD_FOR_APPROVAL,
+  HELD_WRITE_MARKER,
+} from "@/features/record-change-approvals/recordChangeApproval";
+
 import type { NodeInvocationState } from "../redux/workflow-runs.slice";
 import { WorkflowDocumentActions } from "../components/WorkflowDocumentActions";
 import { workflowDocumentText } from "../workflow-document-text";
@@ -43,8 +54,18 @@ import {
   emissionsByDeliverable,
   suppressClaimedEmissions,
 } from "./emission-routing";
-import { EmissionRender, emissionKey, type RenderableEmission } from "./EmissionRender";
+import {
+  EmissionRender,
+  emissionKey,
+  type RenderableEmission,
+} from "./EmissionRender";
 import type { DeclaredDeliverable } from "./result-schema";
+
+function asHeldMarker(payload: unknown): unknown {
+  return payload && typeof payload === "object"
+    ? (payload as Record<string, unknown>)[HELD_WRITE_MARKER]
+    : null;
+}
 
 /** The latest invocation that actually produced something renderable. */
 function settledOutput(
@@ -137,9 +158,23 @@ function DeliverableSlotCard({
   deliverable: DeclaredDeliverable;
   emission: RenderableEmission | null;
 }) {
-  const aggregate = useAppSelector(selectNodeAggregate(runId, deliverable.nodeId));
+  const aggregate = useAppSelector(
+    selectNodeAggregate(runId, deliverable.nodeId),
+  );
+  const interrupt = useAppSelector(selectRunInterrupt(runId));
   const produced = settledOutput(aggregate.invocations);
   const settled = emission !== null || produced !== null;
+  // A step whose change is HELD for a person is waiting, not failed — the
+  // slot says what the approval card says (lane HELD-WRITE-RESUME): paused on
+  // it (the run's interrupt carries the held marker) or, on an older run,
+  // stopped with the code `held_for_approval`.
+  const held =
+    !settled &&
+    ((interrupt?.nodeId === deliverable.nodeId &&
+      Boolean(asHeldMarker(interrupt.payload))) ||
+      aggregate.invocations.some(
+        (invocation) => invocation.error?.type === HELD_FOR_APPROVAL,
+      ));
   const phase = kindSlotPhase({
     started: aggregate.phase !== "idle" && aggregate.phase !== "waiting",
     settled,
@@ -175,43 +210,60 @@ function DeliverableSlotCard({
         ) : null}
         {!settled ? (
           <span className="shrink-0 text-[10px] text-muted-foreground/80">
-            {phase === "arriving"
-              ? "being made"
-              : phase === "failed"
-                ? "hit a problem"
-                : "coming up"}
+            {held
+              ? "waiting for your approval"
+              : phase === "arriving"
+                ? "being made"
+                : phase === "failed"
+                  ? "hit a problem"
+                  : "coming up"}
           </span>
         ) : null}
       </header>
       <div className="p-3">
-        <KindSlot
-          slotKey={`${runId}:${deliverable.nodeId}`}
-          kind={liveKind}
-          phase={phase}
-          chrome="bare"
-          error={
-            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-              This one didn&apos;t get made — see the step for what to do.
-            </p>
-          }
-        >
-          {emission ? (
-            <EmissionRender runId={runId} emission={emission} variant="bare" />
-          ) : produced && produced.outputKind ? (
-            <>
-              <KindInstanceRender
-                kind={produced.outputKind}
-                value={produced.output}
-                showRoutingNote={false}
+        {held ? (
+          <p
+            data-deliverable-held=""
+            className="flex items-center gap-1.5 text-xs text-muted-foreground"
+          >
+            <Clock className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+            Waiting for your approval — nothing was written yet. Approve it on
+            the card and this fills in.
+          </p>
+        ) : (
+          <KindSlot
+            slotKey={`${runId}:${deliverable.nodeId}`}
+            kind={liveKind}
+            phase={phase}
+            chrome="bare"
+            error={
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                This one didn&apos;t get made — see the step for what to do.
+              </p>
+            }
+          >
+            {emission ? (
+              <EmissionRender
+                runId={runId}
+                emission={emission}
                 variant="bare"
               />
-              <WorkflowDocumentActions
-                content={workflowDocumentText(produced.output)}
-              />
-            </>
-          ) : null}
-        </KindSlot>
+            ) : produced && produced.outputKind ? (
+              <>
+                <KindInstanceRender
+                  kind={produced.outputKind}
+                  value={produced.output}
+                  showRoutingNote={false}
+                  variant="bare"
+                />
+                <WorkflowDocumentActions
+                  content={workflowDocumentText(produced.output)}
+                />
+              </>
+            ) : null}
+          </KindSlot>
+        )}
       </div>
     </section>
   );

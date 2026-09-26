@@ -163,6 +163,15 @@ export function activityLine(
         detail,
         tone: "fail",
       };
+    case "held":
+      // The approval card's own words (lane HELD-WRITE-RESUME) — a held change
+      // is waiting for a person, never "ran into a problem".
+      return {
+        text: "Waiting for your approval — nothing was written yet",
+        stepLabel,
+        detail,
+        tone: "warn",
+      };
     case "retry":
       return { text: "Trying again", stepLabel, detail, tone: "warn" };
     case "progress":
