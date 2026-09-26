@@ -188,7 +188,22 @@ function islandField(registry: IslandPortalRegistry): Extension {
       }
       if (render === value.render && !refresh && !tr.docChanged && !tr.selection) return value;
       if (tr.docChanged && !refresh && tr.state.doc.length >= LARGE_SOURCE) {
-        return { render, blocks: null, decorations: value.decorations.map(tr.changes) };
+        // A mapped BLOCK replace must still cover whole lines and must not be
+        // one the edit touched — otherwise CodeMirror's line tiles and height
+        // map disagree and a click throws inside posAtCoords ("reading
+        // 'length'", found in the dev log 2026-09-26). Those islands show as
+        // source until the idle re-tokenize puts them back.
+        const touched: Array<[number, number]> = [];
+        tr.changes.iterChangedRanges((_fa, _ta, fromB, toB) => touched.push([fromB, toB]));
+        const doc = tr.state.doc;
+        const decorations = value.decorations.map(tr.changes).update({
+          filter: (from, to, deco) => {
+            if (!deco.spec.block) return true;
+            if (touched.some(([f, t]) => from <= t + 1 && to >= f - 1)) return false;
+            return doc.lineAt(from).from === from && doc.lineAt(to).to === to;
+          },
+        });
+        return { render, blocks: null, decorations };
       }
       const blocks =
         tr.docChanged || refresh || !value.blocks ? tokenizeSource(tr.state.doc.toString()) : value.blocks;
