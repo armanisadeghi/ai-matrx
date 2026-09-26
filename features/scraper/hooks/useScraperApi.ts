@@ -163,6 +163,10 @@ export interface ScraperApiState {
   hasError: boolean;
   error: string | null;
   statusMessage: string | null;
+  /** The server's closing count for a search-and-scrape run ("Saved 2 Sources from 3 pages read."). */
+  landedSentence: string | null;
+  /** What a search-and-scrape run found and could not save — shown as "found", never as Sources. */
+  landedReport: SearchAndScrapeReport | null;
 }
 
 /** Rich failure info for scraper demos and debugging — safe to JSON.stringify */
@@ -512,19 +516,69 @@ interface ResultEnvelope {
 // ============================================================================
 
 /** Extract results from a V2 typed data payload or untyped record */
-function extractResultsFromData(
+export interface SearchAndScrapeReport {
+  /** The search hits read from — web addresses, not Sources. */
+  candidates: Array<{ url: string; title: string }>;
+  /** Each page that was read but not saved, with the server's reason. */
+  notSaved: Array<{ url: string; reason: string }>;
+}
+
+/** The "found / not saved" half of a search-and-scrape run, from the stream's metadata. */
+export function searchAndScrapeReport(
+  metadata: Record<string, unknown>,
+): SearchAndScrapeReport | null {
+  const candidates = Array.isArray(metadata.search_candidates)
+    ? (metadata.search_candidates as Array<{ url: string; title: string }>)
+    : [];
+  const notSaved = Array.isArray(metadata.pages_not_saved)
+    ? (metadata.pages_not_saved as Array<Record<string, unknown>>).map((p) => ({
+        url: typeof p.url === "string" ? p.url : "",
+        reason:
+          typeof p.reason === "string" && p.reason.trim()
+            ? p.reason
+            : "The server did not give a reason for this page.",
+      }))
+    : [];
+  return candidates.length || notSaved.length ? { candidates, notSaved } : null;
+}
+
+export function extractResultsFromData(
   eventData: TypedDataPayload | Record<string, unknown>,
   results: Array<Record<string, unknown>>,
   metadata: Record<string, unknown>,
+  /**
+   * A SCRAPE surface lists only pages it read. The search-and-scrape streams
+   * first send the search hits (`type: "search_results"`, no body, no Source);
+   * appending them as pages rendered 6 rows for "Max pages = 2", each hit
+   * saying it "was not added to your Sources" (seated walk #2, 2026-09-27).
+   */
+  options: { pagesOnly?: boolean } = {},
 ): {
   results: Array<Record<string, unknown>>;
   metadata: Record<string, unknown>;
 } {
   const d = eventData as Record<string, unknown>;
+  if (options.pagesOnly && d.type === "search_results") {
+    // Candidates, not pages (server `role: "candidates"`): kept aside as "found".
+    const found = Array.isArray(d.results)
+      ? (d.results as Array<Record<string, unknown>>).map((r) => ({
+          url: typeof r.url === "string" ? r.url : "",
+          title: typeof r.title === "string" ? r.title : "",
+        }))
+      : [];
+    return { results, metadata: { ...metadata, search_candidates: found } };
+  }
 
   if (Array.isArray(d.results) && (d.results as unknown[]).length > 0) {
     results = [...results, ...(d.results as Array<Record<string, unknown>>)];
-    if (d.metadata) metadata = d.metadata as Record<string, unknown>;
+    // A page's own metadata replaces the envelope's, but never the run's found candidates.
+    if (d.metadata)
+      metadata = {
+        ...(d.metadata as Record<string, unknown>),
+        ...(metadata.search_candidates
+          ? { search_candidates: metadata.search_candidates }
+          : {}),
+      };
   } else if ("text_data" in d || "overview" in d || "url" in d) {
     results = [...results, d];
   } else if ("keyword" in d) {
@@ -557,6 +611,7 @@ async function consumeScrapeStream(
    * wants the final array (every other caller) leaves this unset.
    */
   onRowsAppended?: (newRows: Array<Record<string, unknown>>) => void,
+  options: { pagesOnly?: boolean } = {},
 ): Promise<{
   results: Array<Record<string, unknown>>;
   metadata: Record<string, unknown>;
@@ -565,6 +620,8 @@ async function consumeScrapeStream(
   let metadata: Record<string, unknown> = {};
   let sawEndEvent = false;
   let eventCount = 0;
+  let landedSentence: string | null = null;
+  let pagesNotSaved: Array<Record<string, unknown>> = [];
 
   const syncPartial = () => {
     if (partialRef) {
@@ -621,11 +678,18 @@ async function consumeScrapeStream(
       onInfo: (data: InfoPayload) => {
         const msg = data.user_message ?? data.system_message;
         if (msg) onStatus(msg);
+        // The server's own closing count ("Saved 2 Sources from 3 pages read.").
+        if ((data as { code?: string }).code === "sources_landed" && msg) {
+          landedSentence = msg;
+          const md = (data as { metadata?: Record<string, unknown> }).metadata;
+          if (md && Array.isArray(md.pages_not_saved))
+            pagesNotSaved = md.pages_not_saved as Array<Record<string, unknown>>;
+        }
       },
 
       onData: (data: TypedDataPayload | Record<string, unknown>) => {
         const previousCount = results.length;
-        const extracted = extractResultsFromData(data, results, metadata);
+        const extracted = extractResultsFromData(data, results, metadata, options);
         results = extracted.results;
         metadata = extracted.metadata;
         syncPartial();
@@ -700,6 +764,12 @@ async function consumeScrapeStream(
     );
   }
 
+  if (landedSentence)
+    metadata = {
+      ...metadata,
+      sources_landed_message: landedSentence,
+      pages_not_saved: pagesNotSaved,
+    };
   syncPartial();
   return { results, metadata };
 }
@@ -837,6 +907,8 @@ export function useScraperApi(): UseScraperApiReturn {
   const [errorDiagnostics, setErrorDiagnostics] =
     useState<ScraperApiErrorDiagnostics | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [landedSentence, setLandedSentence] = useState<string | null>(null);
+  const [landedReport, setLandedReport] = useState<SearchAndScrapeReport | null>(null);
 
   // AbortController for in-flight requests — cancelled on unmount or via cancel()
   const abortRef = useRef<AbortController | null>(null);
@@ -1548,7 +1620,15 @@ export function useScraperApi(): UseScraperApiReturn {
           ctx.streamEventLog,
           ctx.partialRef,
           signal,
+          undefined,
+          { pagesOnly: true },
         );
+        setLandedSentence(
+          typeof metadata.sources_landed_message === "string"
+            ? metadata.sources_landed_message
+            : null,
+        );
+        setLandedReport(searchAndScrapeReport(metadata));
 
         stage = "validate_nonempty_results";
         if (!results.length) throw new Error("No results returned");
@@ -1661,7 +1741,15 @@ export function useScraperApi(): UseScraperApiReturn {
           ctx.streamEventLog,
           ctx.partialRef,
           signal,
+          undefined,
+          { pagesOnly: true },
         );
+        setLandedSentence(
+          typeof metadata.sources_landed_message === "string"
+            ? metadata.sources_landed_message
+            : null,
+        );
+        setLandedReport(searchAndScrapeReport(metadata));
 
         stage = "validate_nonempty_results";
         if (!results.length) throw new Error("No results returned");
@@ -1747,6 +1835,8 @@ export function useScraperApi(): UseScraperApiReturn {
     setError(null);
     setErrorDiagnostics(null);
     setStatusMessage(null);
+    setLandedSentence(null);
+    setLandedReport(null);
     setIsLoading(false);
   }, []);
 
@@ -1763,6 +1853,8 @@ export function useScraperApi(): UseScraperApiReturn {
     // kind gets plain words — a new consumer cannot forget to build them.
     failure: error ? classifyScrapeFailure({ error, diagnostics: errorDiagnostics }) : null,
     statusMessage,
+    landedSentence,
+    landedReport,
     scrapeUrl,
     scrapeUrlSilent,
     scrapeUrlRaw,

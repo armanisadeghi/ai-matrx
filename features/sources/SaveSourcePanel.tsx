@@ -57,6 +57,7 @@ import {
 } from "@/features/sources/api/sourcesApi";
 import { processSourceNow } from "@/features/sources/api/processNow";
 import {
+  filedPlacesWords,
   SAVE_TARGET_TOKENS,
   buildAttachTargets,
   hasSomethingToSave,
@@ -242,9 +243,11 @@ export function SaveSourcePanel({
     setBusy(false);
     const uniqueNotes = [...new Set(notes)];
     setResultNotices([...refusals, ...uniqueNotes]);
-    const filed = attachTo.length
-      ? ` and filed in ${attachTo.length} ${attachTo.length === 1 ? "place" : "places"}`
-      : "";
+    const libraryName = libraryId
+      ? (libraries.find((l) => l.id === libraryId)?.name ?? "you chose")
+      : null;
+    const placesWords = filedPlacesWords(staged, libraryName);
+    const filed = placesWords ? ` and ${placesWords}` : "";
     if (refusals.length === 0) {
       toast.success(
         `${save ? "Saved" : "Filed"} ${results.length === 1 ? "1 Source" : `${results.length} Sources`}${save ? filed : ""}.${uniqueNotes[0] ? ` ${uniqueNotes[0]}` : ""}`,

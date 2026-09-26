@@ -102,7 +102,7 @@ function classifyKind(
   if (httpStatus === 401 || httpStatus === 403 || httpStatus === 429)
     return "blocked";
   if (
-    /enotfound|eai_again|dns|invalid url|could not resolve|name not resolved|econnrefused/.test(
+    /enotfound|eai_again|dns|invalid url|could not resolve|name not resolved|econnrefused|name or service not known|nodename nor servname|temporary failure in name resolution|getaddrinfo|no address associated with hostname|err_name_not_resolved|connection refused|no route to host|network is unreachable|err_connection_refused|err_address_unreachable/.test(
       m,
     )
   )
@@ -124,6 +124,51 @@ function classifyKind(
 }
 
 const PASTE_REMEDY = "Paste the text in instead, or try another link.";
+
+/** The host a failure is about, so no sentence says "that page" when it can name it. */
+function hostOf(diagnostics: ScraperApiErrorDiagnostics | null): string | null {
+  const received = diagnostics?.received;
+  const first = received?.firstResult;
+  const raw =
+    received?.requestedUrl ??
+    (typeof first?.url === "string" ? first.url : null) ??
+    received?.requestedUrls?.[0] ??
+    null;
+  if (!raw) return null;
+  try {
+    return new URL(/^[a-z]+:\/\//i.test(raw) ? raw : `https://${raw}`).hostname || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Every string the failed row carries — the resolver's words often live only in its details. */
+function rowTexts(diagnostics: ScraperApiErrorDiagnostics | null): string {
+  const first = diagnostics?.received?.firstResult;
+  if (!first) return "";
+  const out: string[] = [];
+  const walk = (v: unknown, depth: number) => {
+    if (depth > 3 || v == null) return;
+    if (typeof v === "string") out.push(v);
+    else if (Array.isArray(v)) v.forEach((x) => walk(x, depth + 1));
+    else if (typeof v === "object")
+      Object.values(v as Record<string, unknown>).forEach((x) => walk(x, depth + 1));
+  };
+  walk(first.failure_message, 0);
+  walk(first.failure_details, 0);
+  walk(first.error, 0);
+  return out.join(" ");
+}
+
+/** The server's own "We could not reach <host>: …" sentence (matrx_scraper/unreachable.py). */
+function serverUnreachableSentence(
+  diagnostics: ScraperApiErrorDiagnostics | null,
+): string | null {
+  const message = diagnostics?.received?.firstResult?.failure_message;
+  return typeof message === "string" && /^We could not reach \S/.test(message.trim())
+    ? message.trim()
+    : null;
+}
 
 function plainWords(
   kind: ScrapeFailureKind,
@@ -203,10 +248,22 @@ export function classifyScrapeFailure(input: {
   const developerMessage = raw.trim() || "Scraping failed";
   const base = stripUrlLabel(developerMessage.replace(DEVELOPER_SUFFIX, ""));
   const httpStatus = readHttpStatus(input.diagnostics);
-  const kind = input.diagnostics?.needsOrganization
+  const host = hostOf(input.diagnostics);
+  const serverSentence = serverUnreachableSentence(input.diagnostics);
+  const texts = `${base || developerMessage} ${rowTexts(input.diagnostics)}`;
+  const kind: ScrapeFailureKind = input.diagnostics?.needsOrganization
     ? "needs_organization"
-    : classifyKind(base || developerMessage, httpStatus);
-  const { title, remedy } = plainWords(kind, httpStatus);
+    : serverSentence
+      ? "bad_address"
+      : classifyKind(texts, httpStatus);
+  // A host we never reached has no HTTP status; an older server records a fake 500.
+  const words = plainWords(kind, kind === "bad_address" ? null : httpStatus);
+  let { title } = words;
+  const { remedy } = words;
+  if (serverSentence) title = serverSentence;
+  else if (host && kind === "bad_address")
+    title = `We could not reach ${host}: nothing answered at that address, so nothing was read.`;
+  else if (host && kind === "unknown") title = `We could not read the page at ${host}.`;
   return {
     kind,
     title,

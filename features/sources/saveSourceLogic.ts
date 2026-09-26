@@ -130,3 +130,22 @@ export function intelligenceSentence(
       return "Your organization's policy never processes this kind of Source.";
   }
 }
+
+/**
+ * "filed in AI Advancements, June 2026 and AI Matrx" — every place the Save
+ * sent, by name. A count ("filed in 1 place") hid which place was missing when
+ * a person believed they had chosen two (seated walk #2, 2026-09-27).
+ */
+export function filedPlacesWords(
+  staged: readonly StagedTarget[],
+  libraryName: string | null,
+): string {
+  const names = staged.map((t) => t.label.trim() || t.token);
+  if (libraryName) names.push(`the Library ${libraryName}`);
+  if (!names.length) return "";
+  const list =
+    names.length === 1
+      ? names[0]
+      : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  return `filed in ${list}`;
+}

@@ -33,6 +33,8 @@ export default function ScraperSearchAndScrapePage() {
     error,
     errorDiagnostics,
     statusMessage,
+    landedSentence,
+    landedReport,
     reset,
   } = useScraperApi();
 
@@ -283,6 +285,33 @@ export default function ScraperSearchAndScrapePage() {
               </div>
             )}
 
+            {!isLoading && (landedSentence || landedReport) ? (
+              <div className="space-y-1 px-4 pt-2 text-xs text-muted-foreground" aria-live="polite">
+                {landedSentence ? <p>{landedSentence}</p> : null}
+                {landedReport?.candidates.length ? (
+                  <details>
+                    <summary className="cursor-pointer">
+                      Found {landedReport.candidates.length} search{" "}
+                      {landedReport.candidates.length === 1 ? "result" : "results"} to read from —
+                      web addresses, not Sources
+                    </summary>
+                    <ul className="mt-1 space-y-0.5 pl-4">
+                      {landedReport.candidates.map((c) => (
+                        <li key={c.url} className="truncate">
+                          {c.title || c.url}{" "}
+                          <span className="text-muted-foreground/70">{c.url}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ) : null}
+                {landedReport?.notSaved.map((p) => (
+                  <p key={p.url} className="text-amber-700 dark:text-amber-400">
+                    Not saved: {p.url} — {p.reason}
+                  </p>
+                ))}
+              </div>
+            ) : null}
             {selectedResult ? (
               <SaveSourceButton
                 key={selectedResult.processedDocumentId ?? selectedResult.url}
