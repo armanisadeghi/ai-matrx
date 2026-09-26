@@ -217,6 +217,7 @@ export function AnalysisView({
     lines.push(`Server: ${apiConfig.baseUrl}`);
     lines.push(`Redux mode: ${reduxMode}`);
     lines.push(`Drift rows: ${result.report.driftCount} / ${result.report.rows.length}`);
+    lines.push(`Blank-line-only differences at block edges (not drift): ${result.report.edgeWhitespaceRows}`);
     lines.push(`V2 vs Redux: ${(result.report.v2VsRedux * 100).toFixed(1)}%`);
     lines.push(`V2 vs Server: ${(result.report.v2VsServer * 100).toFixed(1)}%`);
     lines.push(`Redux vs Server: ${(result.report.reduxVsServer * 100).toFixed(1)}%`);
@@ -444,6 +445,9 @@ function DriftHero({ result }: { result: RunResult }) {
             {result.timings.v2.toFixed(1)}ms · Redux{" "}
             {result.timings.redux.toFixed(1)}ms · Server{" "}
             {result.timings.server.toFixed(1)}ms
+            {result.report.edgeWhitespaceRows > 0
+              ? ` · ${result.report.edgeWhitespaceRows} differ only by blank lines at block edges (renders the same, not drift)`
+              : ""}
           </p>
         </div>
       </div>

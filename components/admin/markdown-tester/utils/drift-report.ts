@@ -64,6 +64,7 @@ export function buildDriftReportXml(
   out.push(`  </context>`);
   out.push(`  <summary>`);
   out.push(`    <drift-rows>${r.driftCount} of ${r.rows.length}</drift-rows>`);
+  out.push(`    <edge-whitespace-rows note="differ only by blank lines at block edges; render identically, not drift">${r.edgeWhitespaceRows}</edge-whitespace-rows>`);
   out.push(
     `    <byte-equality v2-vs-redux="${(r.v2VsRedux * 100).toFixed(1)}%" v2-vs-server="${(r.v2VsServer * 100).toFixed(1)}%" redux-vs-server="${(r.reduxVsServer * 100).toFixed(1)}%" />`,
   );

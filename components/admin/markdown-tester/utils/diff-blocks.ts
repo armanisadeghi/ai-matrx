@@ -3,12 +3,15 @@
 // block index, computes per-cell match status, and exposes byte-level
 // diff helpers for the drift report.
 //
-// "Match" is byte-for-byte equality of:
+// "Match" is equality of:
 //   - block type
 //   - block content (server-emitted content is normalized to `string` —
-//     `null` is treated as "")
-// Any character difference (whitespace, trailing newline, escape) counts
-// as drift. That's the point.
+//     `null` is treated as "") with BLANK LINES AT THE BLOCK'S EDGES ignored.
+// Where one parser keeps the blank line between two blocks and another drops
+// it, CommonMark/GFM render the same page, so it is not drift (chair ruling
+// 2026-09-26). Such rows are counted in `edgeWhitespaceRows` so the report
+// still says they exist. An EMPTY block (whitespace only) is not a block and
+// is dropped before alignment. Every other character difference is drift.
 
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import type { SplitterBlock } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
@@ -42,6 +45,8 @@ export interface DiffReport {
   rows: DiffRow[];
   /** Count of rows where at least one cell is type-drift / content-drift / missing. */
   driftCount: number;
+  /** Rows that differ ONLY by blank lines at block edges (not drift). */
+  edgeWhitespaceRows: number;
   /** Per-pair byte equality (0..1). */
   v2VsRedux: number;
   v2VsServer: number;
@@ -49,19 +54,28 @@ export interface DiffReport {
 }
 
 function normalizeSplitter(blocks: SplitterBlock[]): NormalizedBlock[] {
-  return blocks.map((b, i) => ({
-    index: i,
-    type: b.type,
-    content: b.content ?? "",
-  }));
+  return blocks
+    .map((b, i) => ({
+      index: i,
+      type: b.type,
+      content: b.content ?? "",
+    }))
+    .filter((b) => b.content.trim() !== "" || b.type !== "text");
 }
 
 function normalizeRendered(blocks: RenderBlockPayload[]): NormalizedBlock[] {
-  return blocks.map((b, i) => ({
-    index: b.blockIndex ?? i,
-    type: b.type,
-    content: b.content ?? "",
-  }));
+  return blocks
+    .map((b, i) => ({
+      index: b.blockIndex ?? i,
+      type: b.type,
+      content: b.content ?? "",
+    }))
+    .filter((b) => b.content.trim() !== "" || b.type !== "text");
+}
+
+/** The block's content without the blank lines at its start and end. */
+export function withoutEdgeBlankLines(content: string): string {
+  return content.replace(/^(?:[ \t]*\n)+/, "").replace(/(?:\n[ \t]*)+$/, "");
 }
 
 export interface DiffInputs {
@@ -96,11 +110,15 @@ function compareToBaseline(
   if (baseline.type !== other.type) {
     return { block: other, status: "type-drift", firstDiffAt: -1 };
   }
-  const firstDiffAt = findFirstDifferingChar(baseline.content, other.content);
+  const a = withoutEdgeBlankLines(baseline.content);
+  const b = withoutEdgeBlankLines(other.content);
+  const firstDiffAt = findFirstDifferingChar(a, b);
   if (firstDiffAt === -1) {
     return { block: other, status: "match", firstDiffAt: -1 };
   }
-  return { block: other, status: "content-drift", firstDiffAt };
+  // Report the offset in the other block's own text (its leading blank lines included).
+  const lead = other.content.length - other.content.replace(/^(?:[ \t]*\n)+/, "").length;
+  return { block: other, status: "content-drift", firstDiffAt: firstDiffAt + lead };
 }
 
 function describeCell(
@@ -128,7 +146,13 @@ function pairwiseByteEquality(
   for (let i = 0; i < max; i++) {
     const x = a[i];
     const y = b[i];
-    if (x && y && x.type === y.type && x.content === y.content) matches++;
+    if (
+      x &&
+      y &&
+      x.type === y.type &&
+      withoutEdgeBlankLines(x.content) === withoutEdgeBlankLines(y.content)
+    )
+      matches++;
   }
   return matches / max;
 }
@@ -141,6 +165,7 @@ export function diffBlocks(inputs: DiffInputs): DiffReport {
   const totalRows = Math.max(v2.length, redux.length, server.length);
   const rows: DiffRow[] = [];
   let driftCount = 0;
+  let edgeWhitespaceRows = 0;
 
   for (let i = 0; i < totalRows; i++) {
     const baseline = v2[i];
@@ -159,6 +184,10 @@ export function diffBlocks(inputs: DiffInputs): DiffReport {
       reduxCell.status !== "match" ||
       serverCell.status !== "match";
     if (isDrift) driftCount++;
+    else if (
+      [redux[i], server[i]].some((o) => o && baseline && o.content !== baseline.content)
+    )
+      edgeWhitespaceRows++;
 
     rows.push({
       index: i,
@@ -173,6 +202,7 @@ export function diffBlocks(inputs: DiffInputs): DiffReport {
   return {
     rows,
     driftCount,
+    edgeWhitespaceRows,
     v2VsRedux: pairwiseByteEquality(v2, redux),
     v2VsServer: pairwiseByteEquality(v2, server),
     reduxVsServer: pairwiseByteEquality(redux, server),
